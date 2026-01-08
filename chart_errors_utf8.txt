@@ -1,0 +1,28 @@
+﻿components/ui/chart.tsx(6,20): error TS2307: Cannot find module '@/lib/utils' or its corresponding type declarations.
+components/ui/chart.tsx(50,5): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/ui/chart.tsx(51,7): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/ui/chart.tsx(60,9): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/ui/chart.tsx(61,9): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/ui/chart.tsx(80,5): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/ui/chart.tsx(119,7): error TS2339: Property 'payload' does not exist on type 'Omit<Omit<Props<ValueType, NameType>, PropertiesReadFromContext> & { active?: boolean; includeHidden?: boolean; ... 17 more ...; axisId?: AxisId; } & ClassAttributes<...> & HTMLAttributes<...> & { ...; }, "ref">'.
+components/ui/chart.tsx(124,7): error TS2339: Property 'label' does not exist on type 'Omit<Omit<Props<ValueType, NameType>, PropertiesReadFromContext> & { active?: boolean; includeHidden?: boolean; ... 17 more ...; axisId?: AxisId; } & ClassAttributes<...> & HTMLAttributes<...> & { ...; }, "ref">'.
+components/ui/chart.tsx(151,11): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/ui/chart.tsx(161,14): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/ui/chart.tsx(179,7): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/ui/chart.tsx(187,9): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/ui/chart.tsx(194,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/ui/chart.tsx(204,19): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/ui/chart.tsx(206,23): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/ui/chart.tsx(209,25): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/ui/chart.tsx(229,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/ui/chart.tsx(235,23): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/ui/chart.tsx(237,25): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/ui/chart.tsx(242,25): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/ui/chart.tsx(264,41): error TS2344: Type '"payload" | "verticalAlign"' does not satisfy the constraint '"string" | "children" | "style" | "clipPath" | "filter" | "mask" | "path" | "key" | "suppressHydrationWarning" | "className" | "id" | "lang" | "tabIndex" | "role" | "content" | ... 422 more ... | "onBBoxUpdate"'.
+  Type '"payload"' is not assignable to type '"string" | "children" | "style" | "clipPath" | "filter" | "mask" | "path" | "key" | "suppressHydrationWarning" | "className" | "id" | "lang" | "tabIndex" | "role" | "content" | ... 422 more ... | "onBBoxUpdate"'.
+components/ui/chart.tsx(275,19): error TS2339: Property 'length' does not exist on type 'unknown'.
+components/ui/chart.tsx(280,7): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/ui/chart.tsx(288,18): error TS2339: Property 'map' does not exist on type 'unknown'.
+components/ui/chart.tsx(293,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/ui/chart.tsx(300,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/ui/chart.tsx(302,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.

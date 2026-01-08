@@ -1,0 +1,518 @@
+﻿.next/types/app/[orgName]/dashboard/layout.ts(28,13): error TS2344: Type 'OmitWithTag<DashboardLayoutProps, keyof LayoutProps, "default">' does not satisfy the constraint '{ [x: string]: never; }'.
+  Property 'leftPanel' is incompatible with index signature.
+    Type 'string | number | bigint | boolean | ReactElement<any, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | Promise<...> | null' is not assignable to type 'never'.
+      Type 'null' is not assignable to type 'never'.
+.next/types/app/[orgName]/modules/workspaces/[workspaceId]/project/page.ts(2,24): error TS2306: File 'D:/komal/CRM_Tech_Fe/app/[orgName]/modules/workspaces/[workspaceId]/project/page.tsx' is not a module.
+.next/types/app/[orgName]/modules/workspaces/[workspaceId]/project/page.ts(5,29): error TS2306: File 'D:/komal/CRM_Tech_Fe/app/[orgName]/modules/workspaces/[workspaceId]/project/page.tsx' is not a module.
+.next/types/app/[orgName]/modules/workspaces/[workspaceId]/projects/[projectId]/settings/page.ts(28,13): error TS2344: Type 'OmitWithTag<ProjectSettingsPageProps, keyof PageProps, "default">' does not satisfy the constraint '{ [x: string]: never; }'.
+  Property 'teams' is incompatible with index signature.
+    Type 'Team[]' is not assignable to type 'never'.
+.next/types/app/[orgName]/modules/workspaces/[workspaceId]/projects/[projectId]/settings/page.ts(28,29): error TS2559: Type 'ProjectSettingsPageProps' has no properties in common with type 'PageProps'.
+app/[orgName]/dashboard/page.tsx(61,29): error TS7006: Parameter 'prev' implicitly has an 'any' type.
+app/[orgName]/dashboard/page.tsx(63,29): error TS7006: Parameter 'prev' implicitly has an 'any' type.
+app/[orgName]/dashboard/page.tsx(65,29): error TS7006: Parameter 'prev' implicitly has an 'any' type.
+app/[orgName]/dashboard/page.tsx(70,31): error TS7006: Parameter 'prev' implicitly has an 'any' type.
+app/[orgName]/dashboard/page.tsx(76,31): error TS7006: Parameter 'prev' implicitly has an 'any' type.
+app/[orgName]/modules/administration/roles/page.tsx(51,45): error TS7006: Parameter 'prev' implicitly has an 'any' type.
+app/[orgName]/modules/administration/roles/page.tsx(67,6): error TS7006: Parameter 'role' implicitly has an 'any' type.
+app/[orgName]/modules/administration/roles/page.tsx(74,29): error TS7006: Parameter 'r' implicitly has an 'any' type.
+app/[orgName]/modules/administration/roles/page.tsx(75,29): error TS7006: Parameter 'r' implicitly has an 'any' type.
+app/[orgName]/modules/administration/roles/page.tsx(76,29): error TS7006: Parameter 'sum' implicitly has an 'any' type.
+app/[orgName]/modules/administration/roles/page.tsx(76,34): error TS7006: Parameter 'r' implicitly has an 'any' type.
+app/[orgName]/modules/administration/roles/page.tsx(82,41): error TS7006: Parameter 'prev' implicitly has an 'any' type.
+app/[orgName]/modules/administration/roles/page.tsx(84,48): error TS7006: Parameter 'r' implicitly has an 'any' type.
+app/[orgName]/modules/administration/roles/page.tsx(152,38): error TS7006: Parameter 'role' implicitly has an 'any' type.
+app/[orgName]/modules/administration/roles/page.tsx(173,54): error TS7006: Parameter 'perm' implicitly has an 'any' type.
+app/[orgName]/modules/attendance/daily/page.tsx(163,16): error TS2322: Type '{ mode: "single"; selected: Date; onSelect: Dispatch<SetStateAction<Date>>; initialFocus: true; }' is not assignable to type 'IntrinsicAttributes & (DayPickerProps & { buttonVariant?: "link" | "secondary" | "destructive" | "default" | "outline" | "ghost" | null | undefined; })'.
+  Type '{ mode: "single"; selected: Date; onSelect: Dispatch<SetStateAction<Date>>; initialFocus: true; }' is not assignable to type '(IntrinsicAttributes & PropsBase & PropsSingle & { buttonVariant?: "link" | "secondary" | "destructive" | "default" | "outline" | "ghost" | null | undefined; }) | (IntrinsicAttributes & ... 2 more ... & { ...; })'.
+    Property 'required' is missing in type '{ mode: "single"; selected: Date; onSelect: Dispatch<SetStateAction<Date>>; initialFocus: true; }' but required in type 'PropsSingleRequired'.
+app/[orgName]/modules/crm/clients/[id]/page.tsx(143,55): error TS7006: Parameter 'n' implicitly has an 'any' type.
+app/[orgName]/modules/crm/clients/[id]/page.tsx(271,28): error TS7006: Parameter 'a' implicitly has an 'any' type.
+app/[orgName]/modules/crm/clients/[id]/page.tsx(271,31): error TS7006: Parameter 'b' implicitly has an 'any' type.
+app/[orgName]/modules/crm/clients/[id]/page.tsx(272,27): error TS7006: Parameter 'activity' implicitly has an 'any' type.
+app/[orgName]/modules/crm/clients/create/page.tsx(39,17): error TS2345: Argument of type '{ name: string; contactPerson: string; email: string; phone: string; address: string; status: "Active"; totalValue: number; projectsCount: number; lastContact: string; gst: string; website: string; notes: string; }' is not assignable to parameter of type 'Omit<Client, "id" | "createdAt" | "updatedAt">'.
+  Type '{ name: string; contactPerson: string; email: string; phone: string; address: string; status: "Active"; totalValue: number; projectsCount: number; lastContact: string; gst: string; website: string; notes: string; }' is missing the following properties from type 'Omit<Client, "id" | "createdAt" | "updatedAt">': clientFirmName, firstName, lastName, taxId, and 3 more.
+app/[orgName]/modules/crm/clients/deleted/page.tsx(148,51): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'SetStateAction<string | null>'.
+  Type 'undefined' is not assignable to type 'SetStateAction<string | null>'.
+app/[orgName]/modules/crm/clients/page.tsx(181,9): error TS2322: Type '{ title: string; rightSlot: Element; }' is not assignable to type 'IntrinsicAttributes & SubHeaderProps'.
+  Property 'rightSlot' does not exist on type 'IntrinsicAttributes & SubHeaderProps'.
+app/[orgName]/modules/crm/clients/page.tsx(223,125): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'SetStateAction<string | null>'.
+  Type 'undefined' is not assignable to type 'SetStateAction<string | null>'.
+app/[orgName]/modules/crm/clients/page.tsx(229,114): error TS2345: Argument of type 'string | null | undefined' is not assignable to parameter of type 'SetStateAction<string | null>'.
+  Type 'undefined' is not assignable to type 'SetStateAction<string | null>'.
+app/[orgName]/modules/crm/clients/page.tsx(234,69): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+app/[orgName]/modules/crm/clients/page.tsx(241,113): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'SetStateAction<string | null>'.
+  Type 'undefined' is not assignable to type 'SetStateAction<string | null>'.
+app/[orgName]/modules/crm/clients/page.tsx(325,35): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ name: string; email: string; address1: string; address2: string; city: string; state: string; pinCode: number; country: string; phone: string; mobile: string; altPhone: string; altMobile: string; }'.
+  No index signature with a parameter of type 'string' was found on type '{ name: string; email: string; address1: string; address2: string; city: string; state: string; pinCode: number; country: string; phone: string; mobile: string; altPhone: string; altMobile: string; }'.
+app/[orgName]/modules/crm/leads/[id]/page.tsx(161,13): error TS7006: Parameter 'prev' implicitly has an 'any' type.
+app/[orgName]/modules/crm/leads/[id]/page.tsx(185,15): error TS7006: Parameter 'prev' implicitly has an 'any' type.
+app/[orgName]/modules/crm/leads/[id]/page.tsx(447,45): error TS7006: Parameter 'n' implicitly has an 'any' type.
+app/[orgName]/modules/crm/leads/[id]/page.tsx(497,7): error TS2322: Type '{ children: Element; title: Element; padding: string; }' is not assignable to type 'IntrinsicAttributes & CustomCardProps'.
+  Property 'title' does not exist on type 'IntrinsicAttributes & CustomCardProps'.
+app/[orgName]/modules/crm/leads/[id]/page.tsx(523,7): error TS2322: Type '{ children: Element; title: Element; padding: string; }' is not assignable to type 'IntrinsicAttributes & CustomCardProps'.
+  Property 'title' does not exist on type 'IntrinsicAttributes & CustomCardProps'.
+app/[orgName]/modules/crm/leads/[id]/page.tsx(600,34): error TS7006: Parameter 'stage' implicitly has an 'any' type.
+app/[orgName]/modules/crm/leads/[id]/page.tsx(600,41): error TS7006: Parameter 'index' implicitly has an 'any' type.
+app/[orgName]/modules/crm/leads/add/page.tsx(244,27): error TS2322: Type 'string | { line1: string; line2: string; country: string; postalCode: string; }' is not assignable to type 'string | number | readonly string[] | undefined'.
+  Type '{ line1: string; line2: string; country: string; postalCode: string; }' is not assignable to type 'string | number | readonly string[] | undefined'.
+app/[orgName]/modules/firm-management/add/page.tsx(53,25): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ FirmName: string; email: string; phone: string; invoicePrefix: string; add: { address1: string; address2: string; city: string; state: string; country: string; pinCode: number; }; contactPerson: { name: string; ... 10 more ...; altMobile: string; }; ... 5 more ...; cinNo: string; }'.
+  No index signature with a parameter of type 'string' was found on type '{ FirmName: string; email: string; phone: string; invoicePrefix: string; add: { address1: string; address2: string; city: string; state: string; country: string; pinCode: number; }; contactPerson: { name: string; ... 10 more ...; altMobile: string; }; ... 5 more ...; cinNo: string; }'.
+app/[orgName]/modules/firm-management/add/page.tsx(88,34): error TS2345: Argument of type 'string | number' is not assignable to parameter of type 'string'.
+  Type 'number' is not assignable to type 'string'.
+app/[orgName]/modules/firm-management/deleted/page.tsx(342,3): error TS2322: Type '{ open: boolean; onOpenChange: () => void; title: string; description: string; confirmText: string; cancelText: string; confirmClassName: string; onConfirm: () => void; }' is not assignable to type 'IntrinsicAttributes & DialogProps'.
+  Property 'title' does not exist on type 'IntrinsicAttributes & DialogProps'.
+app/[orgName]/modules/firm-management/firms/[id]/create-invoice/page.tsx(75,23): error TS2322: Type 'string' is not assignable to type 'number'.
+app/[orgName]/modules/firm-management/firms/[id]/create-invoice/page.tsx(77,28): error TS2322: Type 'null' is not assignable to type 'string'.
+app/[orgName]/modules/firm-management/firms/[id]/create-invoice/page.tsx(77,46): error TS2322: Type 'null' is not assignable to type 'string'.
+app/[orgName]/modules/firm-management/firms/[id]/create-invoice/page.tsx(175,19): error TS2345: Argument of type '(prev: Invoice) => { client: { firstName: string; lastName: string; email: string; phone: string; taxId: string; clientFirmName: string; address: { address1: string; address2: string; city: string; state: string; country: string; pinCode: number; }; client_id: string | undefined; }; ... 37 more ...; __v?: number | u...' is not assignable to parameter of type 'SetStateAction<Invoice>'.
+  Type '(prev: Invoice) => { client: { firstName: string; lastName: string; email: string; phone: string; taxId: string; clientFirmName: string; address: { address1: string; address2: string; city: string; state: string; country: string; pinCode: number; }; client_id: string | undefined; }; ... 37 more ...; __v?: number | u...' is not assignable to type '(prevState: Invoice) => Invoice'.
+    Call signature return types '{ client: { firstName: string; lastName: string; email: string; phone: string; taxId: string; clientFirmName: string; address: { address1: string; address2: string; city: string; state: string; country: string; pinCode: number; }; client_id: string | undefined; }; ... 37 more ...; __v?: number | undefined; }' and 'Invoice' are incompatible.
+      The types of 'client.client_id' are incompatible between these types.
+        Type 'string | undefined' is not assignable to type 'string'.
+          Type 'undefined' is not assignable to type 'string'.
+app/[orgName]/modules/firm-management/firms/[id]/create-invoice/page.tsx(267,94): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+app/[orgName]/modules/firm-management/firms/[id]/create-invoice/page.tsx(295,92): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+app/[orgName]/modules/firm-management/firms/[id]/create-invoice/page.tsx(298,106): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+app/[orgName]/modules/firm-management/firms/[id]/create-invoice/page.tsx(301,107): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+app/[orgName]/modules/firm-management/firms/[id]/create-invoice/page.tsx(305,59): error TS2339: Property 'taxId' does not exist on type 'InvoiceItem'.
+app/[orgName]/modules/firm-management/firms/[id]/create-invoice/page.tsx(305,99): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+app/[orgName]/modules/firm-management/firms/[id]/create-invoice/page.tsx(315,97): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+app/[orgName]/modules/firm-management/firms/[id]/create-invoice/page.tsx(345,15): error TS2322: Type '{ name: string; value: string; }' is not assignable to type 'string'.
+app/[orgName]/modules/firm-management/firms/[id]/create-invoice/page.tsx(357,42): error TS2559: Type 'Invoice' has no properties in common with type '{ reminders?: Reminder[] | undefined; }'.
+app/[orgName]/modules/firm-management/firms/[id]/edit/page.tsx(9,22): error TS2307: Cannot find module '@/types/firmTypes' or its corresponding type declarations.
+app/[orgName]/modules/firm-management/firms/[id]/edit/page.tsx(72,15): error TS7006: Parameter 'prev' implicitly has an 'any' type.
+app/[orgName]/modules/firm-management/firms/[id]/edit/page.tsx(77,15): error TS7006: Parameter 'prev' implicitly has an 'any' type.
+app/[orgName]/modules/firm-management/firms/[id]/edit/page.tsx(82,15): error TS7006: Parameter 'prev' implicitly has an 'any' type.
+app/[orgName]/modules/firm-management/firms/[id]/edit/page.tsx(250,17): error TS2322: Type '(name: string, value: string) => void' is not assignable to type '(e: ChangeEvent<HTMLSelectElement>) => void'.
+  Target signature provides too few arguments. Expected 2 or more, but got 1.
+app/[orgName]/modules/firm-management/firms/[id]/page.tsx(162,47): error TS7006: Parameter 'rateObj' implicitly has an 'any' type.
+app/[orgName]/modules/firm-management/firms/[id]/page.tsx(162,56): error TS7006: Parameter 'subIdx' implicitly has an 'any' type.
+app/[orgName]/modules/firm-management/firms/add/page.tsx(55,25): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ FirmName: string; email: string; phone: string; invoicePrefix: string; add: { address1: string; address2: string; city: string; state: string; country: string; pinCode: number; }; contactPerson: { name: string; ... 10 more ...; altMobile: string; }; ... 5 more ...; cinNo: string; }'.
+  No index signature with a parameter of type 'string' was found on type '{ FirmName: string; email: string; phone: string; invoicePrefix: string; add: { address1: string; address2: string; city: string; state: string; country: string; pinCode: number; }; contactPerson: { name: string; ... 10 more ...; altMobile: string; }; ... 5 more ...; cinNo: string; }'.
+app/[orgName]/modules/firm-management/firms/deleted/page.tsx(138,9): error TS2322: Type '{ title: string; description: string; breadcrumbItems: { label: string; href: string; }[]; }' is not assignable to type 'IntrinsicAttributes & SubHeaderProps'.
+  Property 'description' does not exist on type 'IntrinsicAttributes & SubHeaderProps'.
+app/[orgName]/modules/firm-management/firms/deleted/page.tsx(357,3): error TS2322: Type '{ open: boolean; onOpenChange: () => void; title: string; description: string; confirmText: string; cancelText: string; confirmClassName: string; onConfirm: () => void; }' is not assignable to type 'IntrinsicAttributes & DialogProps'.
+  Property 'title' does not exist on type 'IntrinsicAttributes & DialogProps'.
+app/[orgName]/modules/invoice/[id]/page.tsx(49,47): error TS2345: Argument of type 'string | string[]' is not assignable to parameter of type 'string'.
+  Type 'string[]' is not assignable to type 'string'.
+app/[orgName]/modules/invoice/[id]/page.tsx(246,15): error TS2322: Type '{ name: string; value: string; }' is not assignable to type 'string'.
+app/[orgName]/modules/invoice/[id]/page.tsx(261,24): error TS7006: Parameter 'formData' implicitly has an 'any' type.
+app/[orgName]/modules/invoice/create/page.tsx(107,7): error TS2322: Type 'string' is not assignable to type 'number'.
+app/[orgName]/modules/invoice/create/page.tsx(122,7): error TS2322: Type 'null' is not assignable to type 'string'.
+app/[orgName]/modules/invoice/create/page.tsx(123,7): error TS2322: Type 'null' is not assignable to type 'string'.
+app/[orgName]/modules/invoice/create/page.tsx(133,5): error TS2739: Type '{ id: string; description: string; quantity: number; taxRate: number; amount: number; }' is missing the following properties from type 'InvoiceItem': itemName, unitPrice
+app/[orgName]/modules/invoice/create/page.tsx(180,48): error TS2551: Property 'isDeleted' does not exist on type 'Client'. Did you mean 'deleted'?
+app/[orgName]/modules/invoice/create/page.tsx(226,11): error TS2739: Type '{ discount?: number | undefined; tax?: number | undefined; sac?: string | undefined; hsn?: string | undefined; id: string; description: string; quantity: number; taxRate: number; amount: number; }' is missing the following properties from type 'InvoiceItem': itemName, unitPrice
+app/[orgName]/modules/invoice/create/page.tsx(266,11): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+app/[orgName]/modules/invoice/create/page.tsx(408,51): error TS2551: Property 'firmId' does not exist on type 'Invoice'. Did you mean 'firm'?
+app/[orgName]/modules/invoice/create/page.tsx(426,51): error TS2551: Property 'clientId' does not exist on type 'Invoice'. Did you mean 'client'?
+app/[orgName]/modules/invoice/create/page.tsx(429,92): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+app/[orgName]/modules/invoice/create/page.tsx(466,122): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+app/[orgName]/modules/invoice/create/page.tsx(467,127): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+app/[orgName]/modules/invoice/create/page.tsx(470,106): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+app/[orgName]/modules/invoice/create/page.tsx(473,107): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+app/[orgName]/modules/invoice/create/page.tsx(476,139): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+app/[orgName]/modules/invoice/create/page.tsx(480,51): error TS2339: Property 'taxId' does not exist on type 'InvoiceItem'.
+app/[orgName]/modules/invoice/create/page.tsx(487,139): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+app/[orgName]/modules/invoice/create/page.tsx(492,97): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+app/[orgName]/modules/invoice/create/page.tsx(558,18): error TS2304: Cannot find name 'Label'.
+app/[orgName]/modules/invoice/create/page.tsx(558,68): error TS2304: Cannot find name 'Label'.
+app/[orgName]/modules/invoice/create/page.tsx(566,166): error TS2322: Type '{ open: boolean; onClose: () => void; onSave: (data: any) => void; dueDate: string; }' is not assignable to type 'IntrinsicAttributes & RecurringInvoiceModalProps'.
+  Property 'dueDate' does not exist on type 'IntrinsicAttributes & RecurringInvoiceModalProps'.
+app/[orgName]/modules/invoice/create/page.tsx(568,74): error TS2322: Type '{ open: boolean; onClose: () => void; formData: Invoice; }' is not assignable to type 'IntrinsicAttributes & InvoiceProps'.
+  Property 'formData' does not exist on type 'IntrinsicAttributes & InvoiceProps'.
+app/[orgName]/modules/organization/[id]/page.tsx(29,38): error TS2345: Argument of type 'string | string[]' is not assignable to parameter of type 'string'.
+  Type 'string[]' is not assignable to type 'string'.
+app/[orgName]/modules/organization/[id]/page.tsx(81,42): error TS2345: Argument of type 'string | string[]' is not assignable to parameter of type 'string'.
+  Type 'string[]' is not assignable to type 'string'.
+app/[orgName]/modules/workspaces/[workspaceId]/dashboard/page.tsx(44,11): error TS2322: Type 'null' is not assignable to type 'AnalyticsData'.
+app/[orgName]/modules/workspaces/[workspaceId]/members/page.tsx(10,58): error TS2339: Property 'organization' does not exist on type 'Organization'.
+app/[orgName]/modules/workspaces/[workspaceId]/projects/[projectId]/allboards/page.tsx(402,11): error TS2322: Type 'string | null' is not assignable to type 'string'.
+  Type 'null' is not assignable to type 'string'.
+app/[orgName]/modules/workspaces/[workspaceId]/projects/[projectId]/settings/page.tsx(197,13): error TS2322: Type '{ parentId: string; entityId: string; workspaceId: string; level: "project"; }' is not assignable to type 'IntrinsicAttributes & PeopleProps'.
+  Property 'workspaceId' does not exist on type 'IntrinsicAttributes & PeopleProps'.
+app/[orgName]/modules/workspaces/[workspaceId]/projects/[projectId]/teams/[teamId]/settings/page.tsx(23,58): error TS2339: Property 'organization' does not exist on type 'Organization'.
+app/[orgName]/SupportDashboard/page.tsx(681,55): error TS18046: 'percent' is of type 'unknown'.
+app/BillingPlans/Billing.tsx(284,18): error TS18048: 'plan.trialDays' is possibly 'undefined'.
+app/hrmcubicle/org/employees/page.tsx(26,27): error TS2322: Type '{ tabs: string[]; activeTab: string; onTabChange: Dispatch<SetStateAction<string>>; }' is not assignable to type 'IntrinsicAttributes & TabBarProps'.
+  Property 'activeTab' does not exist on type 'IntrinsicAttributes & TabBarProps'.
+app/hrmcubicle/org/onboarding/page.tsx(69,29): error TS2322: Type '{ tabs: string[]; activeTab: string; onTabChange: Dispatch<SetStateAction<string>>; }' is not assignable to type 'IntrinsicAttributes & TabBarProps'.
+  Property 'activeTab' does not exist on type 'IntrinsicAttributes & TabBarProps'.
+app/hrmcubicle/org/onboarding/page.tsx(74,11): error TS2322: Type '{ id: string; name: string; role: string; dept: string; location: string; joiningDate: string; email: string; stage: string; action: string; }[]' is not assignable to type 'Candidate[]'.
+  Type '{ id: string; name: string; role: string; dept: string; location: string; joiningDate: string; email: string; stage: string; action: string; }' is missing the following properties from type 'Candidate': joining, tasks
+app/hrmcubicle/org/onboarding/page.tsx(77,27): error TS2345: Argument of type '(prev: never[]) => Candidate[]' is not assignable to parameter of type 'SetStateAction<never[]>'.
+  Type '(prev: never[]) => Candidate[]' is not assignable to type '(prevState: never[]) => never[]'.
+    Type 'Candidate[]' is not assignable to type 'never[]'.
+      Type 'Candidate' is not assignable to type 'never'.
+app/hrmcubicle/org/onboarding/page.tsx(90,59): error TS2339: Property 'id' does not exist on type 'never'.
+app/hrmcubicle/org/onboarding/page.tsx(93,38): error TS2339: Property 'id' does not exist on type 'never'.
+app/hrmcubicle/org/onboarding/page.tsx(94,40): error TS2339: Property 'name' does not exist on type 'never'.
+app/hrmcubicle/org/onboarding/page.tsx(95,47): error TS2339: Property 'joiningDate' does not exist on type 'never'.
+app/hrmcubicle/org/onboarding/page.tsx(96,44): error TS2339: Property 'location' does not exist on type 'never'.
+app/hrmcubicle/org/onboarding/page.tsx(97,46): error TS2339: Property 'dept' does not exist on type 'never'.
+app/hrmcubicle/org/onboarding/page.tsx(113,77): error TS2339: Property 'id' does not exist on type 'never'.
+app/hrmcubicle/org/page.tsx(48,9): error TS2322: Type '{ tabs: string[]; activeTab: string; onTabChange: Dispatch<SetStateAction<string>>; }' is not assignable to type 'IntrinsicAttributes & TabBarProps'.
+  Property 'activeTab' does not exist on type 'IntrinsicAttributes & TabBarProps'.
+app/hrmcubicle/page.tsx(23,9): error TS2322: Type '{ tabs: string[]; activeTab: string; onTabChange: Dispatch<SetStateAction<string>>; }' is not assignable to type 'IntrinsicAttributes & TabBarProps'.
+  Property 'activeTab' does not exist on type 'IntrinsicAttributes & TabBarProps'.
+app/hrmcubicle/timeattend/attendance/page.tsx(38,63): error TS2339: Property 'empNo' does not exist on type '{ id: string; name: string; department: string; jobTitle: string; reportingTo: string; location: string; }'.
+app/hrmcubicle/timeattend/attendance/page.tsx(40,67): error TS2339: Property 'captureScheme' does not exist on type '{ id: string; name: string; department: string; jobTitle: string; reportingTo: string; location: string; }'.
+app/hrmcubicle/timeattend/attendance/page.tsx(66,52): error TS2322: Type '{ id: string; name: string; department: string; jobTitle: string; reportingTo: string; location: string; }[]' is not assignable to type 'Employee[]'.
+  Property 'empNo' is missing in type '{ id: string; name: string; department: string; jobTitle: string; reportingTo: string; location: string; }' but required in type 'Employee'.
+app/hrmcubicle/timeattend/attendance/page.tsx(69,36): error TS2322: Type '{ id: string; name: string; department: string; jobTitle: string; reportingTo: string; location: string; }[]' is not assignable to type 'Employee[]'.
+  Type '{ id: string; name: string; department: string; jobTitle: string; reportingTo: string; location: string; }' is missing the following properties from type 'Employee': title, employeeNumber, manager, captureScheme
+app/hrmcubicle/timeattend/shifts/page.tsx(8,42): error TS1261: Already included file name 'D:/komal/CRM_Tech_Fe/components/hrm/timeattend/shifts/AddAutoAssignmentShiftWizard.tsx' differs from file name 'D:/komal/CRM_Tech_Fe/components/hrm/timeattend/shifts/addautoassignmentshiftwizard.tsx' only in casing.
+  The file is in the program because:
+    Imported via "@/components/hrm/timeattend/shifts/AddAutoAssignmentShiftWizard" from file 'D:/komal/CRM_Tech_Fe/app/hrmcubicle/timeattend/shifts/page.tsx'
+    Matched by include pattern '**/*.tsx' in 'D:/komal/CRM_Tech_Fe/tsconfig.json'
+app/user-profile/UserProfile.tsx(38,30): error TS2339: Property 'avatarUrl' does not exist on type '{}'.
+app/user-profile/UserProfile.tsx(46,62): error TS2339: Property 'firstName' does not exist on type '{}'.
+app/user-profile/UserProfile.tsx(46,84): error TS2339: Property 'lastName' does not exist on type '{}'.
+app/user-profile/UserProfile.tsx(47,53): error TS2339: Property 'role' does not exist on type '{}'.
+app/user-profile/UserProfile.tsx(48,61): error TS2339: Property 'city' does not exist on type '{}'.
+app/user-profile/UserProfile.tsx(48,85): error TS2339: Property 'state' does not exist on type '{}'.
+app/user-profile/UserProfile.tsx(48,110): error TS2339: Property 'country' does not exist on type '{}'.
+app/user-profile/UserProfile.tsx(68,26): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{}'.
+  No index signature with a parameter of type 'string' was found on type '{}'.
+app/user-profile/UserProfile.tsx(84,45): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{}'.
+  No index signature with a parameter of type 'string' was found on type '{}'.
+app/user-profile/UserProfile.tsx(105,26): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{}'.
+  No index signature with a parameter of type 'string' was found on type '{}'.
+app/user-profile/UserProfile.tsx(118,104): error TS2339: Property 'country' does not exist on type '{}'.
+app/user-profile/UserProfile.tsx(119,107): error TS2339: Property 'city' does not exist on type '{}'.
+app/user-profile/UserProfile.tsx(119,125): error TS2339: Property 'state' does not exist on type '{}'.
+components/custom/CustomDialog.tsx(42,5): error TS2322: Type '{ defaultChecked?: boolean | undefined; defaultValue?: string | number | readonly string[] | undefined; suppressContentEditableWarning?: boolean | undefined; suppressHydrationWarning?: boolean | undefined; ... 273 more ...; className: string; }' is not assignable to type 'IntrinsicAttributes & HTMLAttributes<HTMLDivElement>'.
+  Property 'ref' does not exist on type 'IntrinsicAttributes & HTMLAttributes<HTMLDivElement>'.
+components/custom/CustomDialog.tsx(81,5): error TS2322: Type '{ defaultChecked?: boolean | undefined; defaultValue?: string | number | readonly string[] | undefined; suppressContentEditableWarning?: boolean | undefined; suppressHydrationWarning?: boolean | undefined; ... 273 more ...; className: string; }' is not assignable to type 'IntrinsicAttributes & HTMLAttributes<HTMLDivElement>'.
+  Property 'ref' does not exist on type 'IntrinsicAttributes & HTMLAttributes<HTMLDivElement>'.
+components/custom/CustomInvoiceOptions.tsx(115,5): error TS2353: Object literal may only specify known properties, and 'content' does not exist in type 'UseReactToPrintOptions'.
+components/custom/CustomInvoiceOptions.tsx(296,78): error TS2322: Type '{ open: boolean; onClose: () => void; formData: any; }' is not assignable to type 'IntrinsicAttributes & InvoiceProps'.
+  Property 'formData' does not exist on type 'IntrinsicAttributes & InvoiceProps'.
+components/custom/ErrorMessage.tsx(4,32): error TS7031: Binding element 'message' implicitly has an 'any' type.
+components/custom/invoice/ShareInvoice.tsx(3,27): error TS2307: Cannot find module 'react-web-share' or its corresponding type declarations.
+components/custom/organization/all-org.tsx(42,38): error TS2345: Argument of type 'string | string[]' is not assignable to parameter of type 'string'.
+  Type 'string[]' is not assignable to type 'string'.
+components/hrm/org/emloyees/probation/completedprobationactiontable.tsx(3,26): error TS2307: Cannot find module '@/types' or its corresponding type declarations.
+components/hrm/org/emloyees/probation/inprobationemployeelist.tsx(43,42): error TS7006: Parameter 'e' implicitly has an 'any' type.
+components/hrm/org/emloyees/probation/inprobationemployeelist.tsx(53,49): error TS7006: Parameter 'e' implicitly has an 'any' type.
+components/hrm/org/emloyees/probation/inprobationemployeelist.tsx(98,27): error TS7006: Parameter 'emp' implicitly has an 'any' type.
+components/hrm/org/emloyees/probation/inprobationemployeelist.tsx(134,9): error TS2322: Type '(id: number, newDate: string) => void' is not assignable to type '(data: { status: string; date?: string | undefined; feedback: string; }) => void'.
+  Target signature provides too few arguments. Expected 2 or more, but got 1.
+components/hrm/org/emloyees/probation/probationfeedbackform.tsx(184,31): error TS7006: Parameter 'index' implicitly has an 'any' type.
+components/hrm/org/emloyees/probation/probationfeedbackform.tsx(184,38): error TS7006: Parameter 'value' implicitly has an 'any' type.
+components/hrm/org/emloyees/probation/probationfeedbackform.tsx(187,21): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type '{}'.
+components/hrm/org/emloyees/probation/probationfeedbackform.tsx(191,29): error TS7006: Parameter 'index' implicitly has an 'any' type.
+components/hrm/org/emloyees/probation/probationfeedbackform.tsx(191,36): error TS7006: Parameter 'value' implicitly has an 'any' type.
+components/hrm/org/emloyees/probation/probationfeedbackform.tsx(194,21): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type '{}'.
+components/hrm/org/emloyees/probation/probationfeedbackform.tsx(199,27): error TS7006: Parameter 'newFormData' implicitly has an 'any' type.
+components/hrm/org/emloyees/probation/probationfeedbackform.tsx(295,48): error TS7006: Parameter 'q' implicitly has an 'any' type.
+components/hrm/org/emloyees/probation/probationfeedbackform.tsx(295,51): error TS7006: Parameter 'i' implicitly has an 'any' type.
+components/hrm/org/emloyees/probation/probationfeedbackform.tsx(303,32): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type '{}'.
+components/hrm/org/emloyees/probation/probationfeedbackform.tsx(312,32): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type '{}'.
+components/hrm/org/emloyees/probation/probationfeedbackform.tsx(319,42): error TS7006: Parameter 'opt' implicitly has an 'any' type.
+components/hrm/org/emloyees/probation/probationfeedbackform.tsx(319,47): error TS7006: Parameter 'idx' implicitly has an 'any' type.
+components/hrm/org/emloyees/probation/probationfeedbackform.tsx(326,37): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type '{}'.
+components/hrm/org/emloyees/probation/probationfeedbackform.tsx(327,37): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type '{}'.
+components/hrm/org/emloyees/probation/probationfeedbackform.tsx(334,54): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type '{}'.
+components/hrm/org/emloyees/probation/probationfeedbackform.tsx(336,90): error TS7006: Parameter 'x' implicitly has an 'any' type.
+components/hrm/org/emloyees/probation/probationfeedbackform.tsx(356,31): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type '{}'.
+components/hrm/org/emloyees/probation/probationpolicy.tsx(54,5): error TS2741: Property 'empCode' is missing in type '{ id: number; name: string; title: string; department: string; subDepartment: string; location: string; businessUnit: string; joiningDate: string; probationEnd: string; feedback: string; waitingOn: string; }' but required in type 'Employee'.
+components/hrm/org/emloyees/probation/probationpolicy.tsx(67,5): error TS2741: Property 'empCode' is missing in type '{ id: number; name: string; title: string; department: string; subDepartment: string; location: string; businessUnit: string; joiningDate: string; probationEnd: string; feedback: string; waitingOn: string; }' but required in type 'Employee'.
+components/hrm/org/emloyees/settings/customiseprofile.tsx(131,7): error TS2345: Argument of type '({ id: number; title: string; fields: { label: string; type: string; required: boolean; readonly?: boolean | undefined; }[]; editing?: boolean | undefined; } | { fields: Record<string, string>; id: number; title: string; editing?: boolean | undefined; })[]' is not assignable to parameter of type 'SetStateAction<{ id: number; title: string; fields: { label: string; type: string; required: boolean; readonly?: boolean | undefined; }[]; editing?: boolean | undefined; }[]>'.
+  Type '({ id: number; title: string; fields: { label: string; type: string; required: boolean; readonly?: boolean | undefined; }[]; editing?: boolean | undefined; } | { fields: Record<string, string>; id: number; title: string; editing?: boolean | undefined; })[]' is not assignable to type '{ id: number; title: string; fields: { label: string; type: string; required: boolean; readonly?: boolean | undefined; }[]; editing?: boolean | undefined; }[]'.
+    Type '{ id: number; title: string; fields: { label: string; type: string; required: boolean; readonly?: boolean | undefined; }[]; editing?: boolean | undefined; } | { fields: Record<string, string>; id: number; title: string; editing?: boolean | undefined; }' is not assignable to type '{ id: number; title: string; fields: { label: string; type: string; required: boolean; readonly?: boolean | undefined; }[]; editing?: boolean | undefined; }'.
+      Type '{ fields: Record<string, string>; id: number; title: string; editing?: boolean; }' is not assignable to type '{ id: number; title: string; fields: { label: string; type: string; required: boolean; readonly?: boolean | undefined; }[]; editing?: boolean | undefined; }'.
+        Types of property 'fields' are incompatible.
+          Type 'Record<string, string>' is missing the following properties from type '{ label: string; type: string; required: boolean; readonly?: boolean | undefined; }[]': length, pop, push, concat, and 35 more.
+components/hrm/org/onboarding/newjoinee/newjoinerspage.tsx(376,85): error TS18048: 'group.primaryRuleValue' is possibly 'undefined'.
+components/hrm/org/onboarding/newjoinee/newjoinerspage.tsx(377,89): error TS18048: 'group.primaryRuleValue' is possibly 'undefined'.
+components/hrm/org/onboarding/newjoinee/newjoinerspage.tsx(385,87): error TS18048: 'group.secondaryRuleValue' is possibly 'undefined'.
+components/hrm/org/onboarding/newjoinee/newjoinerspage.tsx(386,91): error TS18048: 'group.secondaryRuleValue' is possibly 'undefined'.
+components/hrm/org/onboarding/onboardinggroups/onboardinggroup.tsx(62,85): error TS18048: 'group.primaryRuleValue' is possibly 'undefined'.
+components/hrm/org/onboarding/onboardinggroups/onboardinggroup.tsx(63,89): error TS18048: 'group.primaryRuleValue' is possibly 'undefined'.
+components/hrm/org/onboarding/onboardinggroups/onboardinggroup.tsx(71,87): error TS18048: 'group.secondaryRuleValue' is possibly 'undefined'.
+components/hrm/org/onboarding/onboardinggroups/onboardinggroup.tsx(72,91): error TS18048: 'group.secondaryRuleValue' is possibly 'undefined'.
+components/hrm/org/onboarding/onboardinggroups/onboardinggroup.tsx(110,16): error TS2322: Type 'OnboardingGroup | { id: number; taskCount: number; matchingEmployees: Employee[]; name: string; primaryRule: string; primaryRuleValue: string; secondaryRule?: string | undefined; secondaryRuleValue?: string | undefined; autoGroup: string; stages: string[]; }' is not assignable to type 'OnboardingGroup'.
+  Type '{ id: number; taskCount: number; matchingEmployees: Employee[]; name: string; primaryRule: string; primaryRuleValue: string; secondaryRule?: string; secondaryRuleValue?: string; autoGroup: string; stages: string[]; }' is not assignable to type 'OnboardingGroup'.
+    Types of property 'autoGroup' are incompatible.
+      Type 'string' is not assignable to type '"yes" | "no" | undefined'.
+components/hrm/org/onboarding/onboardinggroups/onboardinggroup.tsx(110,27): error TS2322: Type '{ id: number; taskCount: number; matchingEmployees: Employee[]; name: string; primaryRule: string; primaryRuleValue: string; secondaryRule?: string; secondaryRuleValue?: string; autoGroup: string; stages: string[]; }' is not assignable to type 'OnboardingGroup'.
+  Types of property 'autoGroup' are incompatible.
+    Type 'string' is not assignable to type '"yes" | "no" | undefined'.
+components/hrm/org/onboarding/preboarding/candidate/candidatedashboard.tsx(16,28): error TS7006: Parameter 'task' implicitly has an 'any' type.
+components/hrm/org/onboarding/preboarding/candidate/candidatedashboard.tsx(20,31): error TS7006: Parameter 'taskId' implicitly has an 'any' type.
+components/hrm/org/onboarding/preboarding/candidate/candidatedashboard.tsx(20,39): error TS7006: Parameter 'newStatus' implicitly has an 'any' type.
+components/hrm/org/onboarding/preboarding/candidate/documentuploadmodal.tsx(12,47): error TS7031: Binding element 'task' implicitly has an 'any' type.
+components/hrm/org/onboarding/preboarding/candidate/documentuploadmodal.tsx(12,53): error TS7031: Binding element 'onClose' implicitly has an 'any' type.
+components/hrm/org/onboarding/preboarding/candidate/documentuploadmodal.tsx(12,62): error TS7031: Binding element 'onStatusChange' implicitly has an 'any' type.
+components/hrm/org/onboarding/preboarding/candidate/documentuploadmodal.tsx(18,30): error TS7006: Parameter 'field' implicitly has an 'any' type.
+components/hrm/org/onboarding/preboarding/candidate/documentuploadmodal.tsx(18,37): error TS7006: Parameter 'value' implicitly has an 'any' type.
+components/hrm/org/onboarding/preboarding/candidate/documentuploadmodal.tsx(22,13): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{}'.
+  No index signature with a parameter of type 'string' was found on type '{}'.
+components/hrm/org/onboarding/preboarding/candidate/documentuploadmodal.tsx(28,29): error TS7006: Parameter 'event' implicitly has an 'any' type.
+components/hrm/org/onboarding/preboarding/candidate/documentuploadmodal.tsx(41,16): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{}'.
+  No index signature with a parameter of type 'string' was found on type '{}'.
+components/hrm/org/onboarding/preboarding/candidate/documentuploadmodal.tsx(42,13): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{}'.
+  No index signature with a parameter of type 'string' was found on type '{}'.
+components/hrm/org/onboarding/preboarding/candidate/documentuploadmodal.tsx(94,32): error TS7006: Parameter 'e' implicitly has an 'any' type.
+components/hrm/org/onboarding/preboarding/candidate/documentuploadmodal.tsx(96,32): error TS7006: Parameter 'e' implicitly has an 'any' type.
+components/hrm/org/onboarding/preboarding/candidate/documentuploadmodal.tsx(98,32): error TS7006: Parameter 'e' implicitly has an 'any' type.
+components/hrm/org/onboarding/preboarding/candidate/documentuploadmodal.tsx(99,20): error TS2741: Property 'placeholder' is missing in type '{ label: string; type: string; onChange: (e: any) => void; }' but required in type '{ label: any; placeholder: any; type?: string | undefined; onChange: any; }'.
+components/hrm/org/onboarding/preboarding/candidate/documentuploadmodal.tsx(100,32): error TS7006: Parameter 'e' implicitly has an 'any' type.
+components/hrm/org/onboarding/preboarding/candidate/documentuploadmodal.tsx(102,32): error TS7006: Parameter 'e' implicitly has an 'any' type.
+components/hrm/org/onboarding/preboarding/candidate/documentuploadmodal.tsx(104,32): error TS7006: Parameter 'e' implicitly has an 'any' type.
+components/hrm/org/onboarding/preboarding/candidate/documentuploadmodal.tsx(106,55): error TS7053: Element implicitly has an 'any' type because expression of type '"aadhaar"' can't be used to index type '{}'.
+  Property 'aadhaar' does not exist on type '{}'.
+components/hrm/org/onboarding/preboarding/candidate/documentuploadmodal.tsx(115,32): error TS7006: Parameter 'e' implicitly has an 'any' type.
+components/hrm/org/onboarding/preboarding/candidate/documentuploadmodal.tsx(117,32): error TS7006: Parameter 'e' implicitly has an 'any' type.
+components/hrm/org/onboarding/preboarding/candidate/documentuploadmodal.tsx(118,20): error TS2741: Property 'placeholder' is missing in type '{ label: string; type: string; onChange: (e: any) => void; }' but required in type '{ label: any; placeholder: any; type?: string | undefined; onChange: any; }'.
+components/hrm/org/onboarding/preboarding/candidate/documentuploadmodal.tsx(119,32): error TS7006: Parameter 'e' implicitly has an 'any' type.
+components/hrm/org/onboarding/preboarding/candidate/documentuploadmodal.tsx(121,32): error TS7006: Parameter 'e' implicitly has an 'any' type.
+components/hrm/org/onboarding/preboarding/candidate/documentuploadmodal.tsx(123,51): error TS7053: Element implicitly has an 'any' type because expression of type '"pan"' can't be used to index type '{}'.
+  Property 'pan' does not exist on type '{}'.
+components/hrm/org/onboarding/preboarding/candidate/documentuploadmodal.tsx(168,24): error TS7031: Binding element 'title' implicitly has an 'any' type.
+components/hrm/org/onboarding/preboarding/candidate/documentuploadmodal.tsx(168,31): error TS7031: Binding element 'children' implicitly has an 'any' type.
+components/hrm/org/onboarding/preboarding/candidate/documentuploadmodal.tsx(177,18): error TS7031: Binding element 'label' implicitly has an 'any' type.
+components/hrm/org/onboarding/preboarding/candidate/documentuploadmodal.tsx(177,25): error TS7031: Binding element 'placeholder' implicitly has an 'any' type.
+components/hrm/org/onboarding/preboarding/candidate/documentuploadmodal.tsx(177,53): error TS7031: Binding element 'onChange' implicitly has an 'any' type.
+components/hrm/org/onboarding/preboarding/candidate/documentuploadmodal.tsx(186,24): error TS7031: Binding element 'label' implicitly has an 'any' type.
+components/hrm/org/onboarding/preboarding/candidate/documentuploadmodal.tsx(186,31): error TS7031: Binding element 'options' implicitly has an 'any' type.
+components/hrm/org/onboarding/preboarding/candidate/documentuploadmodal.tsx(186,40): error TS7031: Binding element 'onChange' implicitly has an 'any' type.
+components/hrm/org/onboarding/preboarding/candidate/documentuploadmodal.tsx(192,23): error TS7006: Parameter 'opt' implicitly has an 'any' type.
+components/hrm/org/onboarding/preboarding/candidate/documentuploadmodal.tsx(200,22): error TS7031: Binding element 'label' implicitly has an 'any' type.
+components/hrm/org/onboarding/preboarding/candidate/documentuploadmodal.tsx(200,29): error TS7031: Binding element 'file' implicitly has an 'any' type.
+components/hrm/org/onboarding/preboarding/candidate/documentuploadmodal.tsx(200,35): error TS7031: Binding element 'onUpload' implicitly has an 'any' type.
+components/hrm/org/onboarding/preboarding/candidate/journeyverification.tsx(1,43): error TS7031: Binding element 'tasks' implicitly has an 'any' type.
+components/hrm/org/onboarding/preboarding/candidate/journeyverification.tsx(3,40): error TS7006: Parameter 't' implicitly has an 'any' type.
+components/hrm/org/onboarding/preboarding/candidate/statusdropdown.tsx(4,42): error TS7031: Binding element 'value' implicitly has an 'any' type.
+components/hrm/org/onboarding/preboarding/candidate/statusdropdown.tsx(4,49): error TS7031: Binding element 'onChange' implicitly has an 'any' type.
+components/hrm/org/onboarding/preboarding/createofferwizard.tsx(59,16): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ general: string; fulltime: string; government: string; freelancer: string; internship: string; internal: string; remote: string; international: string; }'.
+  No index signature with a parameter of type 'string' was found on type '{ general: string; fulltime: string; government: string; freelancer: string; internship: string; internal: string; remote: string; international: string; }'.
+components/hrm/org/onboarding/preboarding/createofferwizard.tsx(115,29): error TS2339: Property 'email' does not exist on type '{ candidateName: any; jobTitle: string; department: string; location: string; joiningDate: string; salary: string; payGroup: string; }'.
+components/hrm/org/onboarding/preboarding/createofferwizard.tsx(117,42): error TS2353: Object literal may only specify known properties, and 'email' does not exist in type 'SetStateAction<{ candidateName: any; jobTitle: string; department: string; location: string; joiningDate: string; salary: string; payGroup: string; }>'.
+components/hrm/org/onboarding/preboarding/createofferwizard.tsx(123,29): error TS2339: Property 'phone' does not exist on type '{ candidateName: any; jobTitle: string; department: string; location: string; joiningDate: string; salary: string; payGroup: string; }'.
+components/hrm/org/onboarding/preboarding/createofferwizard.tsx(125,42): error TS2353: Object literal may only specify known properties, and 'phone' does not exist in type 'SetStateAction<{ candidateName: any; jobTitle: string; department: string; location: string; joiningDate: string; salary: string; payGroup: string; }>'.
+components/hrm/org/onboarding/preboarding/createofferwizard.tsx(145,62): error TS2353: Object literal may only specify known properties, and 'legalEntity' does not exist in type 'SetStateAction<{ candidateName: any; jobTitle: string; department: string; location: string; joiningDate: string; salary: string; payGroup: string; }>'.
+components/hrm/org/onboarding/preboarding/createofferwizard.tsx(146,29): error TS2339: Property 'legalEntity' does not exist on type '{ candidateName: any; jobTitle: string; department: string; location: string; joiningDate: string; salary: string; payGroup: string; }'.
+components/hrm/org/onboarding/preboarding/createofferwizard.tsx(160,29): error TS2339: Property 'manager' does not exist on type '{ candidateName: any; jobTitle: string; department: string; location: string; joiningDate: string; salary: string; payGroup: string; }'.
+components/hrm/org/onboarding/preboarding/createofferwizard.tsx(162,42): error TS2353: Object literal may only specify known properties, and 'manager' does not exist in type 'SetStateAction<{ candidateName: any; jobTitle: string; department: string; location: string; joiningDate: string; salary: string; payGroup: string; }>'.
+components/hrm/org/onboarding/preboarding/createofferwizard.tsx(179,62): error TS2353: Object literal may only specify known properties, and 'workerType' does not exist in type 'SetStateAction<{ candidateName: any; jobTitle: string; department: string; location: string; joiningDate: string; salary: string; payGroup: string; }>'.
+components/hrm/org/onboarding/preboarding/createofferwizard.tsx(180,29): error TS2339: Property 'workerType' does not exist on type '{ candidateName: any; jobTitle: string; department: string; location: string; joiningDate: string; salary: string; payGroup: string; }'.
+components/hrm/org/onboarding/preboarding/createofferwizard.tsx(234,31): error TS2339: Property 'offerValidTill' does not exist on type '{ candidateName: any; jobTitle: string; department: string; location: string; joiningDate: string; salary: string; payGroup: string; }'.
+components/hrm/org/onboarding/preboarding/createofferwizard.tsx(236,44): error TS2353: Object literal may only specify known properties, and 'offerValidTill' does not exist in type 'SetStateAction<{ candidateName: any; jobTitle: string; department: string; location: string; joiningDate: string; salary: string; payGroup: string; }>'.
+components/hrm/org/onboarding/preboarding/createofferwizard.tsx(269,23): error TS7006: Parameter 'n' implicitly has an 'any' type.
+components/hrm/org/onboarding/preboarding/createofferwizard.tsx(286,21): error TS2339: Property 'email' does not exist on type '{ candidateName: any; jobTitle: string; department: string; location: string; joiningDate: string; salary: string; payGroup: string; }'.
+components/hrm/org/onboarding/preboarding/createofferwizard.tsx(290,21): error TS2339: Property 'phone' does not exist on type '{ candidateName: any; jobTitle: string; department: string; location: string; joiningDate: string; salary: string; payGroup: string; }'.
+components/hrm/org/onboarding/preboarding/createofferwizard.tsx(294,21): error TS2339: Property 'recruiter' does not exist on type '{ candidateName: any; jobTitle: string; department: string; location: string; joiningDate: string; salary: string; payGroup: string; }'.
+components/hrm/org/onboarding/preboarding/createofferwizard.tsx(298,21): error TS2339: Property 'source' does not exist on type '{ candidateName: any; jobTitle: string; department: string; location: string; joiningDate: string; salary: string; payGroup: string; }'.
+components/hrm/org/onboarding/preboarding/createofferwizard.tsx(302,21): error TS2339: Property 'appliedOn' does not exist on type '{ candidateName: any; jobTitle: string; department: string; location: string; joiningDate: string; salary: string; payGroup: string; }'.
+components/hrm/org/onboarding/preboarding/createofferwizard.tsx(356,40): error TS2353: Object literal may only specify known properties, and 'remunerationType' does not exist in type 'SetStateAction<{ candidateName: any; jobTitle: string; department: string; location: string; joiningDate: string; salary: string; payGroup: string; }>'.
+components/hrm/org/onboarding/preboarding/createofferwizard.tsx(358,27): error TS2339: Property 'remunerationType' does not exist on type '{ candidateName: any; jobTitle: string; department: string; location: string; joiningDate: string; salary: string; payGroup: string; }'.
+components/hrm/org/onboarding/preboarding/createofferwizard.tsx(396,40): error TS2353: Object literal may only specify known properties, and 'structureType' does not exist in type 'SetStateAction<{ candidateName: any; jobTitle: string; department: string; location: string; joiningDate: string; salary: string; payGroup: string; }>'.
+components/hrm/org/onboarding/preboarding/createofferwizard.tsx(398,27): error TS2339: Property 'structureType' does not exist on type '{ candidateName: any; jobTitle: string; department: string; location: string; joiningDate: string; salary: string; payGroup: string; }'.
+components/hrm/org/onboarding/preboarding/createofferwizard.tsx(414,38): error TS2353: Object literal may only specify known properties, and 'showStructure' does not exist in type 'SetStateAction<{ candidateName: any; jobTitle: string; department: string; location: string; joiningDate: string; salary: string; payGroup: string; }>'.
+components/hrm/org/onboarding/preboarding/createofferwizard.tsx(414,63): error TS2339: Property 'showStructure' does not exist on type '{ candidateName: any; jobTitle: string; department: string; location: string; joiningDate: string; salary: string; payGroup: string; }'.
+components/hrm/org/onboarding/preboarding/createofferwizard.tsx(418,19): error TS2339: Property 'showStructure' does not exist on type '{ candidateName: any; jobTitle: string; department: string; location: string; joiningDate: string; salary: string; payGroup: string; }'.
+components/hrm/org/onboarding/preboarding/createofferwizard.tsx(428,31): error TS2339: Property 'includeBonus' does not exist on type '{ candidateName: any; jobTitle: string; department: string; location: string; joiningDate: string; salary: string; payGroup: string; }'.
+components/hrm/org/onboarding/preboarding/createofferwizard.tsx(430,42): error TS2353: Object literal may only specify known properties, and 'includeBonus' does not exist in type 'SetStateAction<{ candidateName: any; jobTitle: string; department: string; location: string; joiningDate: string; salary: string; payGroup: string; }>'.
+components/hrm/org/onboarding/preboarding/createofferwizard.tsx(463,36): error TS2339: Property 'showStructure' does not exist on type '{ candidateName: any; jobTitle: string; department: string; location: string; joiningDate: string; salary: string; payGroup: string; }'.
+components/hrm/org/onboarding/preboarding/createofferwizard.tsx(585,27): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ general: string; fulltime: string; government: string; freelancer: string; internship: string; internal: string; remote: string; international: string; }'.
+  No index signature with a parameter of type 'string' was found on type '{ general: string; fulltime: string; government: string; freelancer: string; internship: string; internal: string; remote: string; international: string; }'.
+components/hrm/org/onboarding/preboarding/preboardinglist.tsx(237,9): error TS2719: Type 'Candidate | null' is not assignable to type 'Candidate | null'. Two different types with this name exist, but they are unrelated.
+  Type 'Candidate' is missing the following properties from type 'Candidate': pendingSince, department, email, mobile
+components/hrm/org/onboarding/preboarding/preboardinglist.tsx(255,18): error TS2322: Type 'string | null' is not assignable to type 'string | undefined'.
+  Type 'null' is not assignable to type 'string | undefined'.
+components/hrm/org/onboarding/settings/candidate-portal/candidatehome.tsx(6,33): error TS1261: Already included file name 'D:/komal/CRM_Tech_Fe/components/hrm/org/onboarding/settings/candidate-portal/EditCandidatePortal.tsx' differs from file name 'D:/komal/CRM_Tech_Fe/components/hrm/org/onboarding/settings/candidate-portal/editcandidateportal.tsx' only in casing.
+  The file is in the program because:
+    Imported via "./EditCandidatePortal" from file 'D:/komal/CRM_Tech_Fe/components/hrm/org/onboarding/settings/candidate-portal/candidatehome.tsx'
+    Matched by include pattern '**/*.tsx' in 'D:/komal/CRM_Tech_Fe/tsconfig.json'
+components/hrm/org/onboarding/settings/offer-templates/offertemplates.tsx(18,25): error TS7006: Parameter 'newOffer' implicitly has an 'any' type.
+components/hrm/org/onboarding/settings/offer-templates/offertemplates.tsx(25,25): error TS7006: Parameter 'action' implicitly has an 'any' type.
+components/hrm/org/onboarding/settings/offer-templates/offertemplates.tsx(25,33): error TS7006: Parameter 'offer' implicitly has an 'any' type.
+components/hrm/org/onboarding/settings/offer-templates/offertemplates.tsx(90,62): error TS2339: Property 'createdBy' does not exist on type '{ id: string; name: string; description: string; createdAt: string; }'.
+components/hrm/org/onboarding/settings/offer-templates/offertemplates.tsx(92,22): error TS2339: Property 'lastUsed' does not exist on type '{ id: string; name: string; description: string; createdAt: string; }'.
+components/hrm/org/onboarding/settings/offer-templates/offertemplates.tsx(92,44): error TS2339: Property 'lastUsed' does not exist on type '{ id: string; name: string; description: string; createdAt: string; }'.
+components/hrm/org/onboarding/settings/offer-templates/offertemplates.tsx(95,22): error TS2339: Property 'updatedBy' does not exist on type '{ id: string; name: string; description: string; createdAt: string; }'.
+components/hrm/org/onboarding/settings/offer-templates/offertemplates.tsx(98,28): error TS2339: Property 'updatedBy' does not exist on type '{ id: string; name: string; description: string; createdAt: string; }'.
+components/hrm/org/onboarding/settings/offer-templates/offertemplates.tsx(100,32): error TS2339: Property 'updatedBy' does not exist on type '{ id: string; name: string; description: string; createdAt: string; }'.
+components/hrm/org/onboarding/settings/offer-templates/offertemplates.tsx(142,20): error TS7006: Parameter 'template' implicitly has an 'any' type.
+components/hrm/org/onboarding/settings/offer-templates/offertemplatewizard.tsx(10,47): error TS7031: Binding element 'open' implicitly has an 'any' type.
+components/hrm/org/onboarding/settings/offer-templates/offertemplatewizard.tsx(10,53): error TS7031: Binding element 'onClose' implicitly has an 'any' type.
+components/hrm/org/onboarding/settings/offer-templates/offertemplatewizard.tsx(10,62): error TS7031: Binding element 'onCreate' implicitly has an 'any' type.
+components/hrm/org/onboarding/settings/offer-templates/offertemplatewizard.tsx(15,15): error TS7006: Parameter 'i' implicitly has an 'any' type.
+components/hrm/org/onboarding/settings/offer-templates/stepfinalize.tsx(7,40): error TS7031: Binding element 'payload' implicitly has an 'any' type.
+components/hrm/org/onboarding/settings/offer-templates/stepsetup.tsx(4,37): error TS7031: Binding element 'payload' implicitly has an 'any' type.
+components/hrm/org/onboarding/settings/offer-templates/stepsetup.tsx(4,46): error TS7031: Binding element 'setPayload' implicitly has an 'any' type.
+components/hrm/org/onboarding/settings/offer-templates/stepsetup.tsx(34,24): error TS7006: Parameter 'l' implicitly has an 'any' type.
+components/hrm/org/onboarding/settings/offer-templates/stepsetup.tsx(34,27): error TS7006: Parameter 'i' implicitly has an 'any' type.
+components/hrm/org/onboarding/settings/offer-templates/stepsetup.tsx(37,116): error TS7006: Parameter '_' implicitly has an 'any' type.
+components/hrm/org/onboarding/settings/offer-templates/stepsetup.tsx(37,118): error TS7006: Parameter 'idx' implicitly has an 'any' type.
+components/hrm/org/onboarding/tasktemplates/templateslist.tsx(15,26): error TS7006: Parameter 'newTask' implicitly has an 'any' type.
+components/hrm/org/onboarding/tasktemplates/templateslist.tsx(41,22): error TS2322: Type '{ tasks: { id: number; name: string; owner: string; when: string; appliesTo: string[]; }[]; }' is not assignable to type 'IntrinsicAttributes'.
+  Property 'tasks' does not exist on type 'IntrinsicAttributes'.
+components/hrm/org/setup.tsx(12,28): error TS1261: Already included file name 'D:/komal/CRM_Tech_Fe/components/hrm/org/orgSetupWIzard.tsx' differs from file name 'D:/komal/CRM_Tech_Fe/components/hrm/org/orgSetupWizard.tsx' only in casing.
+  The file is in the program because:
+    Imported via "./orgSetupWIzard" from file 'D:/komal/CRM_Tech_Fe/components/hrm/org/setup.tsx'
+    Matched by include pattern '**/*.tsx' in 'D:/komal/CRM_Tech_Fe/tsconfig.json'
+components/hrm/timeattend/atttendancetracking/assignmentrulemodal.tsx(6,47): error TS7031: Binding element 'open' implicitly has an 'any' type.
+components/hrm/timeattend/atttendancetracking/assignmentrulemodal.tsx(6,53): error TS7031: Binding element 'onClose' implicitly has an 'any' type.
+components/hrm/timeattend/atttendancetracking/assignmentrulemodal.tsx(6,62): error TS7031: Binding element 'onSave' implicitly has an 'any' type.
+components/hrm/timeattend/atttendancetracking/assignmentrulemodal.tsx(35,30): error TS7006: Parameter 'group' implicitly has an 'any' type.
+components/hrm/timeattend/atttendancetracking/assignmentrulemodal.tsx(87,33): error TS2538: Type 'null' cannot be used as an index type.
+components/hrm/timeattend/atttendancetracking/assignmentrulemodal.tsx(87,54): error TS7006: Parameter 'opt' implicitly has an 'any' type.
+components/hrm/timeattend/atttendancetracking/assignmentrulemodal.tsx(91,57): error TS2345: Argument of type 'any' is not assignable to parameter of type 'never'.
+components/hrm/timeattend/atttendancetracking/assignmentrulemodal.tsx(93,44): error TS2345: Argument of type '(prev: never[]) => any[]' is not assignable to parameter of type 'SetStateAction<never[]>'.
+  Type '(prev: never[]) => any[]' is not assignable to type '(prevState: never[]) => never[]'.
+    Type 'any[]' is not assignable to type 'never[]'.
+      Type 'any' is not assignable to type 'never'.
+components/hrm/timeattend/atttendancetracking/assignmentrulemodal.tsx(94,43): error TS2345: Argument of type 'any' is not assignable to parameter of type 'never'.
+components/hrm/timeattend/atttendancetracking/capturescheme.tsx(730,19): error TS2345: Argument of type '(prev: any[]) => any[]' is not assignable to parameter of type 'Policy[]'.
+components/hrm/timeattend/atttendancetracking/capturescheme.tsx(829,56): error TS2339: Property 'id' does not exist on type 'Employee'.
+components/hrm/timeattend/atttendancetracking/captureschemewizard.tsx(16,44): error TS7031: Binding element 'open' implicitly has an 'any' type.
+components/hrm/timeattend/atttendancetracking/captureschemewizard.tsx(16,50): error TS7031: Binding element 'onClose' implicitly has an 'any' type.
+components/hrm/timeattend/atttendancetracking/captureschemewizard.tsx(16,59): error TS7031: Binding element 'selectedAnswers' implicitly has an 'any' type.
+components/hrm/timeattend/atttendancetracking/captureschemewizard.tsx(16,76): error TS7031: Binding element 'onSave' implicitly has an 'any' type.
+components/hrm/timeattend/atttendancetracking/captureschemewizard.tsx(45,28): error TS7006: Parameter 'data' implicitly has an 'any' type.
+components/hrm/timeattend/atttendancetracking/captureschemewizard.tsx(140,38): error TS7006: Parameter 'e' implicitly has an 'any' type.
+components/hrm/timeattend/atttendancetracking/captureschemewizard.tsx(142,26): error TS2741: Property 'onChange' is missing in type '{ label: string; }' but required in type '{ label: any; onChange: any; }'.
+components/hrm/timeattend/atttendancetracking/captureschemewizard.tsx(143,26): error TS2741: Property 'onChange' is missing in type '{ label: string; }' but required in type '{ label: any; onChange: any; }'.
+components/hrm/timeattend/atttendancetracking/captureschemewizard.tsx(144,26): error TS2741: Property 'onChange' is missing in type '{ label: string; }' but required in type '{ label: any; onChange: any; }'.
+components/hrm/timeattend/atttendancetracking/captureschemewizard.tsx(196,32): error TS2741: Property 'children' is missing in type '{ label: string; }' but required in type '{ label: any; children: any; }'.
+components/hrm/timeattend/atttendancetracking/captureschemewizard.tsx(197,32): error TS2741: Property 'children' is missing in type '{ label: string; }' but required in type '{ label: any; children: any; }'.
+components/hrm/timeattend/atttendancetracking/captureschemewizard.tsx(223,32): error TS2741: Property 'children' is missing in type '{ label: string; }' but required in type '{ label: any; children: any; }'.
+components/hrm/timeattend/atttendancetracking/captureschemewizard.tsx(290,32): error TS2741: Property 'children' is missing in type '{ label: string; }' but required in type '{ label: any; children: any; }'.
+components/hrm/timeattend/atttendancetracking/captureschemewizard.tsx(299,32): error TS2741: Property 'children' is missing in type '{ label: string; }' but required in type '{ label: any; children: any; }'.
+components/hrm/timeattend/atttendancetracking/captureschemewizard.tsx(345,9): error TS2322: Type '{ open: boolean; onClose: () => void; onSelect: (data: any) => void; }' is not assignable to type 'IntrinsicAttributes & GeoFenceDrawerProps'.
+  Property 'onSelect' does not exist on type 'IntrinsicAttributes & GeoFenceDrawerProps'.
+components/hrm/timeattend/atttendancetracking/captureschemewizard.tsx(352,27): error TS7031: Binding element 'label' implicitly has an 'any' type.
+components/hrm/timeattend/atttendancetracking/captureschemewizard.tsx(352,34): error TS7031: Binding element 'children' implicitly has an 'any' type.
+components/hrm/timeattend/atttendancetracking/captureschemewizard.tsx(375,21): error TS7031: Binding element 'label' implicitly has an 'any' type.
+components/hrm/timeattend/atttendancetracking/captureschemewizard.tsx(375,28): error TS7031: Binding element 'onChange' implicitly has an 'any' type.
+components/hrm/timeattend/atttendancetracking/routinisesettings.tsx(15,44): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ adjustment: boolean; regularisation: boolean; partial: boolean; approval: boolean; }'.
+  No index signature with a parameter of type 'string' was found on type '{ adjustment: boolean; regularisation: boolean; partial: boolean; approval: boolean; }'.
+components/hrm/timeattend/dashboard/attendanceanalytics/mosthoursworked.tsx(102,30): error TS2614: Module '"@/components/hrm/timeattend/dashboard/attendanceanalytics/employeehourstable"' has no exported member 'EmployeeHours'. Did you mean to use 'import EmployeeHours from "@/components/hrm/timeattend/dashboard/attendanceanalytics/employeehourstable"' instead?
+components/hrm/timeattend/shifts/addweeklyoffruleswizard.tsx(163,61): error TS2339: Property 'allow3Days' does not exist on type '{}'.
+components/hrm/timeattend/shifts/addweeklyoffruleswizard.tsx(179,67): error TS2339: Property 'requiresApproval' does not exist on type '{}'.
+components/hrm/topbar.tsx(408,53): error TS2304: Cannot find name 'user'.
+components/hrm/topbar.tsx(417,48): error TS2304: Cannot find name 'handleLogout'.
+components/invoice/RecordPaymentModal.tsx(73,27): error TS2345: Argument of type 'string' is not assignable to parameter of type 'SetStateAction<number>'.
+components/project-board.tsx(175,16): error TS7006: Parameter 'prev' implicitly has an 'any' type.
+components/project-board.tsx(175,16): error TS2345: Argument of type '(prev: any) => any[]' is not assignable to parameter of type 'any[]'.
+components/project-board.tsx(324,11): error TS2322: Type '(tasks: any[]) => void' is not assignable to type 'Dispatch<SetStateAction<any[]>>'.
+  Types of parameters 'tasks' and 'value' are incompatible.
+    Type 'SetStateAction<any[]>' is not assignable to type 'any[]'.
+      Type '(prevState: any[]) => any[]' is not assignable to type 'any[]'.
+components/project-creation-dialog.tsx(16,30): error TS2307: Cannot find module '@/types' or its corresponding type declarations.
+components/project-dashboard.tsx(117,39): error TS2345: Argument of type 'null' is not assignable to parameter of type 'string | undefined'.
+components/project-dashboard.tsx(272,121): error TS2322: Type 'Dispatch<SetStateAction<never[]>>' is not assignable to type '(tasks: any[]) => void'.
+  Types of parameters 'value' and 'tasks' are incompatible.
+    Type 'any[]' is not assignable to type 'SetStateAction<never[]>'.
+      Type 'any[]' is not assignable to type 'never[]'.
+        Type 'any' is not assignable to type 'never'.
+components/project-dashboard.tsx(275,91): error TS2322: Type 'Dispatch<SetStateAction<never[]>>' is not assignable to type 'Dispatch<SetStateAction<Team[]>>'.
+  Type 'SetStateAction<Team[]>' is not assignable to type 'SetStateAction<never[]>'.
+    Type 'Team[]' is not assignable to type 'SetStateAction<never[]>'.
+      Type 'Team[]' is not assignable to type 'never[]'.
+        Type 'Team' is not assignable to type 'never'.
+components/project-settings.tsx(52,11): error TS2353: Object literal may only specify known properties, and 'description' does not exist in type 'Partial<Column>'.
+components/project-settings.tsx(86,7): error TS2322: Type '"REMOVE_PROJECT_MEMBER"' is not assignable to type '"SET_CURRENT_WORKSPACE" | "SET_CURRENT_PROJECT" | "SET_CURRENT_BOARD" | "SET_VIEW_MODE" | "SET_CURRENT_MODULE" | "CREATE_WORKSPACE" | "UPDATE_WORKSPACE" | "SOFT_DELETE_WORKSPACE" | ... 18 more ... | "DELETE_COLUMN"'.
+components/project-settings.tsx(87,7): error TS2322: Type '{ projectId: string; memberId: string; }' is not assignable to type 'string | Workspace | Project | Task | Team | Board | Column | { id: string; updates: Partial<Workspace>; } | ... 8 more ... | { ...; }'.
+  Property 'teamId' is missing in type '{ projectId: string; memberId: string; }' but required in type '{ teamId: string; memberId: string; }'.
+components/project-settings.tsx(134,40): error TS2322: Type 'Dispatch<SetStateAction<"public" | "private">>' is not assignable to type '(value: string) => void'.
+  Types of parameters 'value' and 'value' are incompatible.
+    Type 'string' is not assignable to type 'SetStateAction<"public" | "private">'.
+components/project/features/Features.tsx(77,16): error TS2322: Type '{ onToggle: () => void; id: string; title: string; description: string; learnMoreLink: string; icon: Element; enabled: boolean; category: string; configurable?: undefined; key: string; } | { ...; }' is not assignable to type 'IntrinsicAttributes & FeatureCardProps'.
+  Property 'emoji' is missing in type '{ onToggle: () => void; id: string; title: string; description: string; learnMoreLink: string; icon: Element; enabled: boolean; category: string; configurable?: undefined; key: string; }' but required in type 'FeatureCardProps'.
+components/project/People.tsx(101,44): error TS2554: Expected 0 arguments, but got 1.
+components/project/People.tsx(283,93): error TS2345: Argument of type '"team" | "project" | "org" | "workspace"' is not assignable to parameter of type '"team" | "project" | "workspace"'.
+  Type '"org"' is not assignable to type '"team" | "project" | "workspace"'.
+components/project/Workflow.tsx(450,20): error TS7031: Binding element 'boardId' implicitly has an 'any' type.
+components/project/Workflow.tsx(450,28): error TS7031: Binding element 'teams' implicitly has an 'any' type.
+components/project/Workflow.tsx(514,46): error TS7006: Parameter 's' implicitly has an 'any' type.
+components/project/Workflow.tsx(707,36): error TS7006: Parameter 's' implicitly has an 'any' type.
+components/project/Workflow.tsx(715,40): error TS7006: Parameter 't' implicitly has an 'any' type.
+components/project/Workflow.tsx(770,38): error TS7006: Parameter 't' implicitly has an 'any' type.
+components/project/Workflow.tsx(781,41): error TS7006: Parameter 's' implicitly has an 'any' type.
+components/project/Workflow.tsx(789,51): error TS7006: Parameter 't' implicitly has an 'any' type.
+components/project/Workflow.tsx(816,21): error TS7006: Parameter 'team' implicitly has an 'any' type.
+components/project/Workflow.tsx(901,3): error TS2322: Type '{ open: boolean; onClose: () => void; workflowId: string; state: any; allStates: any[]; transitions: any[]; onSave: (updatedTransitions: any[]) => void; }' is not assignable to type 'IntrinsicAttributes & UpdateWorkflowModalProps'.
+  Property 'state' does not exist on type 'IntrinsicAttributes & UpdateWorkflowModalProps'.
+components/projectsettings-detailform.tsx(82,7): error TS2322: Type '{ name: string; description: string; visibility: "public" | "private"; id: string; template?: string; members: string[]; }' is not assignable to type 'string | Workspace | Project | Task | Team | Board | Column | { id: string; updates: Partial<Workspace>; } | ... 8 more ... | { ...; }'.
+  Type '{ name: string; description: string; visibility: "public" | "private"; id: string; template?: string | undefined; members: string[]; }' is missing the following properties from type 'Project': workspaceId, status, createdAt
+components/sendInviteModal.tsx(97,36): error TS7006: Parameter 'role' implicitly has an 'any' type.
+components/task-dialog.tsx(164,75): error TS2339: Property '_id' does not exist on type 'AxiosResponse<any, any>'.
+components/team-management.tsx(26,27): error TS2307: Cannot find module '@/types' or its corresponding type declarations.
+components/theme-toggle.tsx(96,36): error TS7053: Element implicitly has an 'any' type because expression of type 'ColorTheme' can't be used to index type '{ readonly red: { readonly name: "Red"; readonly description: "Energy ΓÇó Passion ΓÇó Danger"; readonly color: "hsl(0, 84%, 60%)"; readonly gradient: "linear-gradient(135deg, hsl(0, 84%, 60%) 0%, hsl(0, 72%, 51%) 100%)"; }; readonly orange: { ...; }; readonly blue: { ...; }; readonly pink: { ...; }; readonly lightblue: ...'.
+  Property 'yellow' does not exist on type '{ readonly red: { readonly name: "Red"; readonly description: "Energy ΓÇó Passion ΓÇó Danger"; readonly color: "hsl(0, 84%, 60%)"; readonly gradient: "linear-gradient(135deg, hsl(0, 84%, 60%) 0%, hsl(0, 72%, 51%) 100%)"; }; readonly orange: { ...; }; readonly blue: { ...; }; readonly pink: { ...; }; readonly lightblue: ...'.
+components/theme-toggle.tsx(175,25): error TS7053: Element implicitly has an 'any' type because expression of type 'ColorTheme' can't be used to index type '{ readonly red: { readonly name: "Red"; readonly description: "Energy ΓÇó Passion ΓÇó Danger"; readonly color: "hsl(0, 84%, 60%)"; readonly gradient: "linear-gradient(135deg, hsl(0, 84%, 60%) 0%, hsl(0, 72%, 51%) 100%)"; }; readonly orange: { ...; }; readonly blue: { ...; }; readonly pink: { ...; }; readonly lightblue: ...'.
+  Property 'yellow' does not exist on type '{ readonly red: { readonly name: "Red"; readonly description: "Energy ΓÇó Passion ΓÇó Danger"; readonly color: "hsl(0, 84%, 60%)"; readonly gradient: "linear-gradient(135deg, hsl(0, 84%, 60%) 0%, hsl(0, 72%, 51%) 100%)"; }; readonly orange: { ...; }; readonly blue: { ...; }; readonly pink: { ...; }; readonly lightblue: ...'.
+components/toggleOverlayPanel.tsx(70,39): error TS2339: Property 'orgName' does not exist on type 'never'.
+components/toggleOverlayPanel.tsx(74,55): error TS2339: Property 'orgName' does not exist on type 'never'.
+components/toggleOverlayPanel.tsx(85,33): error TS2339: Property 'organization' does not exist on type 'Organization'.
+components/toggleOverlayPanel.tsx(86,35): error TS2339: Property 'permissions' does not exist on type 'string'.
+components/toggleOverlayPanel.tsx(134,52): error TS2339: Property 'orgId' does not exist on type 'never'.
+components/toggleOverlayPanel.tsx(137,27): error TS2339: Property 'orgName' does not exist on type 'never'.
+components/toggleOverlayPanel.tsx(139,51): error TS2339: Property 'orgId' does not exist on type 'never'.
+components/toggleOverlayPanel.tsx(143,41): error TS2339: Property 'orgName' does not exist on type 'never'.
+components/toggleOverlayPanel.tsx(204,55): error TS2339: Property 'orgName' does not exist on type 'never'.
+components/toggleOverlayPanel.tsx(205,54): error TS2339: Property 'orgName' does not exist on type 'never'.
+components/toggleOverlayPanel.tsx(211,30): error TS2339: Property 'orgName' does not exist on type 'never'.
+components/toggleOverlayPanel.tsx(212,54): error TS2339: Property 'orgId' does not exist on type 'never'.
+components/ui/chart.tsx(119,7): error TS2339: Property 'payload' does not exist on type 'Omit<Omit<Props<ValueType, NameType>, PropertiesReadFromContext> & { active?: boolean | undefined; includeHidden?: boolean | undefined; ... 17 more ...; axisId?: AxisId | undefined; } & ClassAttributes<...> & HTMLAttributes<...> & { ...; }, "ref">'.
+components/ui/chart.tsx(124,7): error TS2339: Property 'label' does not exist on type 'Omit<Omit<Props<ValueType, NameType>, PropertiesReadFromContext> & { active?: boolean | undefined; includeHidden?: boolean | undefined; ... 17 more ...; axisId?: AxisId | undefined; } & ClassAttributes<...> & HTMLAttributes<...> & { ...; }, "ref">'.
+components/ui/chart.tsx(188,25): error TS7006: Parameter 'item' implicitly has an 'any' type.
+components/ui/chart.tsx(188,31): error TS7006: Parameter 'index' implicitly has an 'any' type.
+components/ui/chart.tsx(264,41): error TS2344: Type '"verticalAlign" | "payload"' does not satisfy the constraint '"string" | "media" | "spacing" | "order" | "height" | "width" | "transformOrigin" | "rotate" | "scale" | "cursor" | "fill" | "stroke" | "strokeWidth" | "fontFamily" | "fontSize" | ... 428 more ... | "onBBoxUpdate"'.
+  Type '"payload"' is not assignable to type '"string" | "media" | "spacing" | "order" | "height" | "width" | "transformOrigin" | "rotate" | "scale" | "cursor" | "fill" | "stroke" | "strokeWidth" | "fontFamily" | "fontSize" | ... 428 more ... | "onBBoxUpdate"'.
+components/ui/chart.tsx(275,19): error TS2339: Property 'length' does not exist on type '{}'.
+components/ui/chart.tsx(288,18): error TS2339: Property 'map' does not exist on type '{}'.
+components/ui/chart.tsx(288,23): error TS7006: Parameter 'item' implicitly has an 'any' type.
+components/ui/tabs.tsx(36,21): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type '{ default: string; custom: string; }'.
+components/ui/tabs.tsx(70,21): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type '{ default: string; custom: string; }'.
+components/workspace-dashboard.tsx(113,20): error TS7006: Parameter 'prev' implicitly has an 'any' type.
+lib/store.ts(963,11): error TS2353: Object literal may only specify known properties, and 'createdAt' does not exist in type 'Client'.
+lib/store.ts(1164,13): error TS2345: Argument of type '(state: AppStore) => { invoices: (Invoice | { isDeleted: boolean; status: string; updatedAt: string; activities: { id: string; type: string; title: string; description: string; performedBy: string; performedAt: string; }[]; ... 34 more ...; __v?: number | undefined; })[]; }' is not assignable to parameter of type 'AppStore | Partial<AppStore> | ((state: AppStore) => AppStore | Partial<AppStore>)'.
+  Type '(state: AppStore) => { invoices: (Invoice | { isDeleted: boolean; status: string; updatedAt: string; activities: { id: string; type: string; title: string; description: string; performedBy: string; performedAt: string; }[]; ... 34 more ...; __v?: number | undefined; })[]; }' is not assignable to type '(state: AppStore) => AppStore | Partial<AppStore>'.
+    Type '{ invoices: (Invoice | { isDeleted: boolean; status: string; updatedAt: string; activities: { id: string; type: string; title: string; description: string; performedBy: string; performedAt: string; }[]; ... 34 more ...; __v?: number; })[]; }' is not assignable to type 'AppStore | Partial<AppStore>'.
+      Type '{ invoices: (Invoice | { isDeleted: boolean; status: string; updatedAt: string; activities: { id: string; type: string; title: string; description: string; performedBy: string; performedAt: string; }[]; ... 34 more ...; __v?: number; })[]; }' is not assignable to type 'Partial<AppStore>'.
+        Types of property 'invoices' are incompatible.
+          Type '(Invoice | { isDeleted: boolean; status: string; updatedAt: string; activities: { id: string; type: string; title: string; description: string; performedBy: string; performedAt: string; }[]; ... 34 more ...; __v?: number | undefined; })[]' is not assignable to type 'Invoice[]'.
+            Type 'Invoice | { isDeleted: boolean; status: string; updatedAt: string; activities: { id: string; type: string; title: string; description: string; performedBy: string; performedAt: string; }[]; ... 34 more ...; __v?: number | undefined; }' is not assignable to type 'Invoice'.
+              Type '{ isDeleted: boolean; status: string; updatedAt: string; activities: { id: string; type: string; title: string; description: string; performedBy: string; performedAt: string; }[]; id: string; orgId: string; ... 32 more ...; __v?: number; }' is not assignable to type 'Invoice'.
+                Types of property 'status' are incompatible.
+                  Type 'string' is not assignable to type '"Paid" | "Draft" | "Pending" | "Overdue" | "Cancelled"'.
+lib/store.ts(1321,13): error TS2345: Argument of type '(state: AppStore) => { invoices: (Invoice | { paidAmount: number; status: "Paid" | "Draft" | "Pending" | "Overdue" | "Cancelled"; updatedAt: string; activities: { ...; }[]; ... 34 more ...; __v?: number | undefined; })[]; }' is not assignable to parameter of type 'AppStore | Partial<AppStore> | ((state: AppStore) => AppStore | Partial<AppStore>)'.
+  Type '(state: AppStore) => { invoices: (Invoice | { paidAmount: number; status: "Paid" | "Draft" | "Pending" | "Overdue" | "Cancelled"; updatedAt: string; activities: { ...; }[]; ... 34 more ...; __v?: number | undefined; })[]; }' is not assignable to type '(state: AppStore) => AppStore | Partial<AppStore>'.
+    Type '{ invoices: (Invoice | { paidAmount: number; status: "Paid" | "Draft" | "Pending" | "Overdue" | "Cancelled"; updatedAt: string; activities: { id: string; type: string; title: string; description: string; performedBy: string; performedAt: string; }[]; ... 34 more ...; __v?: number; })[]; }' is not assignable to type 'AppStore | Partial<AppStore>'.
+      Type '{ invoices: (Invoice | { paidAmount: number; status: "Paid" | "Draft" | "Pending" | "Overdue" | "Cancelled"; updatedAt: string; activities: { id: string; type: string; title: string; description: string; performedBy: string; performedAt: string; }[]; ... 34 more ...; __v?: number; })[]; }' is not assignable to type 'Partial<AppStore>'.
+        Types of property 'invoices' are incompatible.
+          Type '(Invoice | { paidAmount: number; status: "Paid" | "Draft" | "Pending" | "Overdue" | "Cancelled"; updatedAt: string; activities: { id: string; type: string; title: string; description: string; performedBy: string; performedAt: string; }[]; ... 34 more ...; __v?: number | undefined; })[]' is not assignable to type 'Invoice[]'.
+            Type 'Invoice | { paidAmount: number; status: "Paid" | "Draft" | "Pending" | "Overdue" | "Cancelled"; updatedAt: string; activities: { id: string; type: string; title: string; description: string; performedBy: string; performedAt: string; }[]; ... 34 more ...; __v?: number | undefined; }' is not assignable to type 'Invoice'.
+              Type '{ paidAmount: number; status: "Paid" | "Draft" | "Pending" | "Overdue" | "Cancelled"; updatedAt: string; activities: { id: string; type: string; title: string; description: string; performedBy: string; performedAt: string; }[]; ... 34 more ...; __v?: number; }' is not assignable to type 'Invoice'.
+                Types of property 'activities' are incompatible.
+                  Type '{ id: string; type: string; title: string; description: string; performedBy: string; performedAt: string; }[]' is not assignable to type 'ActivityEntry[]'.
+                    Type '{ id: string; type: string; title: string; description: string; performedBy: string; performedAt: string; }' is not assignable to type 'ActivityEntry'.
+                      Types of property 'type' are incompatible.
+                        Type 'string' is not assignable to type '"email" | "note" | "call" | "meeting" | "status_change" | "created" | "updated" | "deleted" | "restored"'.
+lib/store.ts(1400,11): error TS2353: Object literal may only specify known properties, and 'id' does not exist in type 'Firm'.
+lib/store.ts(1409,18): error TS2339: Property 'id' does not exist on type 'Firm'.
+lib/store.ts(1418,18): error TS2339: Property 'id' does not exist on type 'Firm'.
+lib/store.ts(1427,18): error TS2339: Property 'id' does not exist on type 'Firm'.
+lib/store.ts(1433,60): error TS2339: Property 'id' does not exist on type 'Firm'.
