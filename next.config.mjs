@@ -9,7 +9,16 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  productionBrowserSourceMaps: true, // <-- add this
+  productionBrowserSourceMaps: true,
+  experimental: {
+    optimizePackageImports: [
+      "lucide-react",
+      "@radix-ui/react-icons",
+      "framer-motion",
+      "recharts",
+      "date-fns",
+    ],
+  },
 }
 
 export default nextConfig

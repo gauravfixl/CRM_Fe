@@ -1,6 +1,10 @@
 {
   "compilerOptions": {
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": true,
     "target": "ES6",
     "skipLibCheck": true,
@@ -18,10 +22,92 @@
         "name": "next"
       }
     ],
+    "baseUrl": ".",
     "paths": {
-      "@/*": ["./*"]
+      "@/*": [
+        "./src/*"
+      ],
+      "@/components/*": [
+        "./src/shared/components/*"
+      ],
+      "@/lib/*": [
+        "./src/lib/*"
+      ],
+      "@/utils/*": [
+        "./src/shared/utils/*"
+      ],
+      "@/contexts/*": [
+        "./src/shared/contexts/*"
+      ],
+      "@/stores/*": [
+        "./src/shared/store/*"
+      ],
+      "@/data/*": [
+        "./src/shared/data/*"
+      ],
+      "@/config/*": [
+        "./src/config/*"
+      ],
+      "@/styles/*": [
+        "./src/styles/*"
+      ],
+      "@/hooks/billingHooks": [
+        "./src/modules/crm/invoices/hooks/billingHooks"
+      ],
+      "@/hooks/invoiceHooks": [
+        "./src/modules/crm/invoices/hooks/invoiceHooks"
+      ],
+      "@/hooks/clientHooks": [
+        "./src/modules/crm/clients/hooks/clientHooks"
+      ],
+      "@/hooks/firmHooks": [
+        "./src/modules/crm/firms/hooks/firmHooks"
+      ],
+      "@/hooks/leadHooks": [
+        "./src/modules/crm/leads/hooks/leadHooks"
+      ],
+      "@/hooks/orgHooks": [
+        "./src/modules/crm/organizations/hooks/orgHooks"
+      ],
+      "@/hooks/userHooks": [
+        "./src/modules/crm/users/hooks/userHooks"
+      ],
+      "@/hooks/boardHooks": [
+        "./src/modules/project-management/tasks/hooks/boardHooks"
+      ],
+      "@/hooks/taskHooks": [
+        "./src/modules/project-management/tasks/hooks/taskHooks"
+      ],
+      "@/hooks/projectHooks": [
+        "./src/modules/project-management/projects/hooks/projectHooks"
+      ],
+      "@/hooks/projectMemberHooks": [
+        "./src/modules/project-management/projects/hooks/projectMemberHooks"
+      ],
+      "@/hooks/teamHooks": [
+        "./src/modules/project-management/teams/hooks/teamHooks"
+      ],
+      "@/hooks/workspaceHooks": [
+        "./src/modules/project-management/workspace/hooks/workspaceHooks"
+      ],
+      "@/hooks/authHooks": [
+        "./src/modules/auth/hooks/authHooks"
+      ],
+      "@/hooks/*": [
+        "./src/hooks/*"
+      ]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "hooks/customHooks.tsx"],
-  "exclude": ["node_modules"]
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    "src/hooks/customHooks.tsx",
+    "src/**/*.ts",
+    "src/**/*.tsx"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }
