@@ -59,6 +59,7 @@ export const CustomSidebar = React.forwardRef<HTMLDivElement, WithChildren & { c
               "data-[state=closed]:w-[64px] data-[state=open]:w-[240px]",
               className
             )}
+            style={{ zoom: "0.9" }}
           >
             {children}
           </aside>

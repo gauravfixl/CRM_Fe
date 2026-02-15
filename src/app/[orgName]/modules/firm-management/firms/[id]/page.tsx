@@ -95,7 +95,7 @@ export default function FirmDetailsPage() {
         title="View Firm"
         breadcrumbItems={[
           { label: "All Firms", href: `/${params.orgName}/modules/firm-management/firms` },
-          { label: "View", href: `/${params.orgName}/modules/firm-management/firms/${params.firmId}` },
+          { label: "View", href: `/${params.orgName}/modules/firm-management/firms/${params.id}` },
         ]}
       />
 
@@ -121,7 +121,7 @@ export default function FirmDetailsPage() {
                 <div><dt className="font-small">GST:</dt><dd>{firm?.gst_no || "-"}</dd></div>
                 <div><dt className="font-small">Phone:</dt><dd>{firm?.phone || "-"}</dd></div>
                 <div><dt className="font-small">Email:</dt><dd>{firm?.email || "-"}</dd></div>
-                <div><dt className="font-small">Address:</dt><dd>{firm?.add?.address1}, {firm?.add?.city}, {firm?.add?.state}, {firm?.add?.country} - {firm?.add?.pincode}</dd></div>
+                <div><dt className="font-small">Address:</dt><dd>{firm?.add?.address1}, {firm?.add?.city}, {firm?.add?.state}, {firm?.add?.country} - {firm?.add?.pinCode}</dd></div>
               </dl>
             </FlatCardContent>
           </FlatCard>
@@ -158,12 +158,14 @@ export default function FirmDetailsPage() {
                       { key: "taxName", label: "Tax Name" },
                       { key: "rate", label: "Rate (%)" },
                     ]}
-                    data={taxes.flatMap((t, idx) =>
-                      (t.taxRates || []).map((rateObj, subIdx) => ({
-                        sno: idx + 1, // e.g. 1-1, 1-2 if multiple inside one doc
-                        taxName: rateObj.name,
-                        rate: rateObj.rate,
-                      }))
+                    data={(taxes || []).flatMap((t, idx) =>
+                      Array.isArray(t?.taxRates)
+                        ? t.taxRates.map((rateObj: any, subIdx: number) => ({
+                          sno: `${idx + 1}-${subIdx + 1}`,
+                          taxName: rateObj.name || "-",
+                          rate: rateObj.rate || 0,
+                        }))
+                        : []
                     )}
                     emptyMessage="No Taxes To Show"
                   />

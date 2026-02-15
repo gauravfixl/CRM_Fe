@@ -217,7 +217,7 @@ export interface ContactPerson {
   city?: string
   state?: string
   country?: string
-  pincode?: string
+  pinCode?: string | number
 }
 
 export interface FirmAddress {

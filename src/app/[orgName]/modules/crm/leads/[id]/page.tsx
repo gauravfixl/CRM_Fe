@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 
 import { CustomButton } from "@/components/custom/CustomButton";
+import { CustomInput } from "@/components/custom/CustomInput";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -229,7 +230,7 @@ export default function LeadDetailsPage() {
                     </div>
                     <div className="flex items-center gap-2 text-zinc-500 font-medium">
                       <Clock className="h-4 w-4 text-purple-500" />
-                      <span>Created {new Date(lead.createdAt).toLocaleDateString()}</span>
+                      <span>Created {lead.createdAt ? new Date(lead.createdAt).toLocaleDateString() : "N/A"}</span>
                     </div>
                     <div className="flex items-center gap-2 text-zinc-500 font-medium">
                       <Target className="h-4 w-4 text-emerald-500" />
@@ -352,7 +353,7 @@ export default function LeadDetailsPage() {
                               <span className="text-xs font-bold text-zinc-900 uppercase tracking-tighter">Stage Transitioned to</span>
                               <Badge variant="outline" className="bg-white px-2 py-0 text-[10px] font-black">{entry.stage}</Badge>
                             </div>
-                            <span className="text-[10px] text-zinc-400 font-bold">{new Date(entry.enteredAt).toLocaleString()}</span>
+                            <span className="text-[10px] text-zinc-400 font-bold">{entry.enteredAt ? new Date(entry.enteredAt).toLocaleString() : "N/A"}</span>
                           </div>
                           <p className="text-xs text-zinc-500 font-normal">{entry.notes || "No additional transition details recorded."}</p>
                         </div>

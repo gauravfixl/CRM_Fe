@@ -49,6 +49,10 @@ export default function EditLeadPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState<any>(null);
 
+  const handleBack = () => {
+    if (step > 1) setStep(step - 1);
+  };
+
   useEffect(() => {
     const fetchLead = async () => {
       try {
@@ -167,7 +171,7 @@ export default function EditLeadPage() {
             {STEPS.map((s, idx) => (
               <div key={s.id} className="flex items-center">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold transition-all duration-300 ${step === s.id ? `${s.color} text-white scale-110 shadow-lg` :
-                    step > s.id ? "bg-zinc-200 text-zinc-500" : "bg-white border-2 border-zinc-100 text-zinc-300"
+                  step > s.id ? "bg-zinc-200 text-zinc-500" : "bg-white border-2 border-zinc-100 text-zinc-300"
                   }`}>
                   {step > s.id ? <CheckCircle2 className="h-4 w-4" /> : s.id}
                 </div>
@@ -259,9 +263,9 @@ export default function EditLeadPage() {
                         <CustomSelect value={formData.priority} onValueChange={(v) => setFormData({ ...formData, priority: v })}>
                           <CustomSelectTrigger className="bg-zinc-50/50 h-11"><CustomSelectValue /></CustomSelectTrigger>
                           <CustomSelectContent>
-                            <SelectItem value="High">High Priority</SelectItem>
-                            <SelectItem value="Medium">Standard</SelectItem>
-                            <SelectItem value="Low">Low Priority</SelectItem>
+                            <CustomSelectItem value="High">High Priority</CustomSelectItem>
+                            <CustomSelectItem value="Medium">Standard</CustomSelectItem>
+                            <CustomSelectItem value="Low">Low Priority</CustomSelectItem>
                           </CustomSelectContent>
                         </CustomSelect>
                       </div>

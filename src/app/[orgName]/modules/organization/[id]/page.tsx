@@ -12,7 +12,8 @@ import SubHeader from "@/components/custom/SubHeader"
 
 export default function OrganizationProfilePage() {
   const params = useParams()
-  const orgId = params?.id || ""
+  const orgName = (params?.orgName as string) || ""
+  const orgId = (params?.id as string) || ""
 
   const { showLoader, hideLoader } = useLoaderStore()
   const [orgData, setOrgData] = useState<any>(null)
@@ -77,8 +78,8 @@ export default function OrganizationProfilePage() {
       <SubHeader
         title={orgData.name}
         breadcrumbItems={[
-          { label: "All Organizations", href: `/${params.orgName}/modules/organization/all-org` },
-          { label: `${decodeURIComponent(params.orgName)} - Detail`, href: `/${params.orgId}/crm` },
+          { label: "All Organizations", href: `/${orgName}/modules/organization/all-org` },
+          { label: `${decodeURIComponent(orgName)} - Detail`, href: `/${orgId}/crm` },
         ]}
         rightControls={
           <Permission module="organization" action="SEND_INVITATION">

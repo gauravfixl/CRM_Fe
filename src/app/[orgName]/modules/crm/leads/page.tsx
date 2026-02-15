@@ -183,6 +183,19 @@ export default function LeadsPage() {
     );
   };
 
+  const handleDeleteSelected = () => {
+    if (selectedLeads.length === 0) return;
+    setLeads(prev => prev.filter(l => !selectedLeads.includes(l._id)));
+    setSelectedLeads([]);
+    toast.success(`${selectedLeads.length} leads removed successfully`);
+  };
+
+  const handleRemoveLead = (id: string) => {
+    setLeads(prev => prev.filter(l => l._id !== id));
+    setSelectedLeads(prev => prev.filter(i => i !== id));
+    toast.success("Lead removed successfully");
+  };
+
   const getStageBadge = (stage: Lead["stage"]) => {
     const styles: Record<string, string> = {
       New: "bg-blue-100 text-blue-700 border-blue-200",
@@ -279,7 +292,11 @@ export default function LeadsPage() {
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
-              <CustomButton variant="outline" className="h-10 px-4 font-normal text-zinc-600 rounded-lg border-zinc-200">
+              <CustomButton
+                variant="outline"
+                className="h-10 px-4 font-normal text-zinc-600 rounded-lg border-zinc-200"
+                onClick={() => toast.info("Advanced filtering panel coming soon")}
+              >
                 <Filter className="mr-2 h-4 w-4 text-zinc-400" /> Filters
               </CustomButton>
             </div>
@@ -295,7 +312,12 @@ export default function LeadsPage() {
                   <p className="text-xs font-semibold text-zinc-500 px-2 py-1 bg-zinc-100 rounded-md">
                     {selectedLeads.length} selected
                   </p>
-                  <CustomButton variant="ghost" size="sm" className="h-9 text-xs font-normal text-red-500 hover:bg-red-50">
+                  <CustomButton
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleDeleteSelected}
+                    className="h-9 text-xs font-normal text-red-500 hover:bg-red-50"
+                  >
                     <Trash2 className="mr-2 h-4 w-4" /> Delete selected
                   </CustomButton>
                 </motion.div>
@@ -371,7 +393,10 @@ export default function LeadsPage() {
                                 Edit Particulars
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem className="text-xs text-red-600">
+                              <DropdownMenuItem
+                                className="text-xs text-red-600 focus:bg-red-50 focus:text-red-600"
+                                onClick={() => handleRemoveLead(lead._id)}
+                              >
                                 Remove Lead
                               </DropdownMenuItem>
                             </DropdownMenuContent>

@@ -1,312 +1,350 @@
 "use client"
 
-import { useState, useRef } from "react"
-import { Calendar, Download, MoreVertical } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { cn } from "@/lib/utils"
+import React, { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from "recharts"
-import html2canvas from "html2canvas"
-import jsPDF from "jspdf"
-import MostHoursWorked from "@/components/hrm/timeattend/dashboard/attendanceanalytics/attendanceanalytics"
-import LeaveSummary from "@/components/hrm/timeattend/dashboard/leavesummary"
-import LeaveDashboard from "@/components/hrm/timeattend/dashboard/leaveanalytics/leaveanalytics"
+  Clock,
+  CalendarCheck,
+  Coffee,
+  UserCheck,
+  CheckCircle2,
+  AlertTriangle,
+  Users,
+  TrendingUp,
+  Download,
+  UserPlus,
+  Search,
+  Filter
+} from "lucide-react";
+import { Card } from "@/shared/components/ui/card";
+import { Button } from "@/shared/components/ui/button";
+import { Badge } from "@/shared/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/shared/components/ui/avatar";
+import { useToast } from "@/shared/components/ui/use-toast";
+import { useAttendanceStore } from "@/shared/data/attendance-store";
+import { Input } from "@/shared/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/shared/components/ui/dialog";
+import { Label } from "@/shared/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
 
-export default function AttendanceSummaryPage() {
-  const [selectedTab, setSelectedTab] = useState("Attendance Summary")
-  const [viewMode, setViewMode] = useState<"count" | "percentage">("count")
+const TimeAttendDashboard = () => {
+  const { toast } = useToast();
+  const { logs, clockIn, clockOut } = useAttendanceStore();
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [isMounted, setIsMounted] = useState(false);
+  const [isManualEntryOpen, setIsManualEntryOpen] = useState(false);
+  const [manualEntry, setManualEntry] = useState({
+    empId: "",
+    empName: "",
+    action: "in"
+  });
 
-  const arrivalChartRef = useRef<HTMLDivElement>(null)
-  const wfhChartRef = useRef<HTMLDivElement>(null)
+  // Prevent Hydration Error
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
-  const exportChart = async (ref: React.RefObject<HTMLDivElement>, type: string) => {
-    if (!ref.current) return
-    const canvas = await html2canvas(ref.current)
-    const imgData = canvas.toDataURL("image/png")
-    if (type === "png") {
-      const link = document.createElement("a")
-      link.href = imgData
-      link.download = "chart.png"
-      link.click()
-    } else {
-      const pdf = new jsPDF("l", "mm", "a4")
-      const imgWidth = 280
-      const imgHeight = (canvas.height * imgWidth) / canvas.width
-      pdf.addImage(imgData, "PNG", 10, 10, imgWidth, imgHeight)
-      pdf.save("chart.pdf")
+  // Live Clock
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Mock Team Data (In production, this would come from employee store)
+  const teamMembers = [
+    { id: "EMP001", name: "Drashi Garg", status: "In", time: "09:28 AM", avatar: "DG", dept: "Engineering" },
+    { id: "EMP002", name: "Aditya Singh", status: "In", time: "09:30 AM", avatar: "AS", dept: "Sales" },
+    { id: "EMP003", name: "Rohan Gupta", status: "Late", time: "10:15 AM", avatar: "RG", dept: "Engineering" },
+    { id: "EMP004", name: "Sneha Kapoor", status: "Absent", time: "--", avatar: "SK", dept: "HR" },
+    { id: "EMP005", name: "Vikram Malhotra", status: "In", time: "09:45 AM", avatar: "VM", dept: "Product" },
+    { id: "EMP006", name: "Priya Sharma", status: "Leave", time: "--", avatar: "PS", dept: "Marketing" },
+  ];
+
+  const handleManualEntry = () => {
+    if (!manualEntry.empId || !manualEntry.empName) {
+      toast({ title: "Error", description: "Please fill all fields", variant: "destructive" });
+      return;
     }
-  }
 
-  const tabs = [
-    "Attendance Summary",
-    "Attendance Analytics",
-    "Leave Summary",
-    "Leave Analytics",
-  ]
+    if (manualEntry.action === "in") {
+      clockIn(manualEntry.empId, manualEntry.empName);
+      toast({ title: "Attendance Marked", description: `${manualEntry.empName} clocked in successfully.` });
+    } else {
+      clockOut(manualEntry.empId);
+      toast({ title: "Checkout Recorded", description: `${manualEntry.empName} clocked out.` });
+    }
 
-  const summary = [
-    { label: "Total Employees", value: 143 },
-    { label: "Early/On Time Arrivals", value: 0 },
-    { label: "Late Arrivals", value: 0 },
-    { label: "Not In Yet", value: 143, link: "View Employees" },
-    { label: "Work From Home", value: 0 },
-    { label: "On Duty", value: 0 },
-    { label: "Remote Clock-In", value: 0 },
-    { label: "Holiday/Weekly Off", value: 0 },
-  ]
+    setIsManualEntryOpen(false);
+    setManualEntry({ empId: "", empName: "", action: "in" });
+  };
 
-  const pastStats = [
-    {
-      label: "Employees Present",
-      value: "0%",
-      subtext:
-        "Range of employees that were present during the selected duration.",
-    },
-    {
-      label: "Avg. Work Hours Spent",
-      value: "0h/day",
-      subtext:
-        "Avg. effective hours spent by employees during the selected duration.",
-    },
-    {
-      label: "Avg. Overtime Hours",
-      value: "0h/day",
-      subtext:
-        "Avg. OT hours worked by employees during the selected duration.",
-    },
-    {
-      label: "Total Attendance Discrepancies",
-      value: "0",
-      subtext:
-        "Total penalties due to attendance discrepancies during selected period.",
-    },
-  ]
+  if (!isMounted) return <div className="p-8">Loading Dashboard...</div>;
 
-  const dataArrival = [
-    { date: "02 Sep", early: 0, late: 0, noLogs: 143, holiday: 0 },
-    { date: "03 Sep", early: 0, late: 0, noLogs: 143, holiday: 0 },
-    { date: "04 Sep", early: 0, late: 0, noLogs: 143, holiday: 0 },
-    { date: "05 Sep", early: 2, late: 1, noLogs: 140, holiday: 0 },
-    { date: "06 Sep", early: 0, late: 0, noLogs: 0, holiday: 143 },
-    { date: "07 Sep", early: 0, late: 0, noLogs: 0, holiday: 143 },
-    { date: "08 Sep", early: 0, late: 0, noLogs: 143, holiday: 0 },
-  ]
+  // Calculate Stats
+  const presentCount = teamMembers.filter(m => m.status === 'In').length;
+  const lateCount = teamMembers.filter(m => m.status === 'Late').length;
+  const absentCount = teamMembers.filter(m => m.status === 'Absent').length;
+  const onLeaveCount = teamMembers.filter(m => m.status === 'Leave').length;
 
-  const dataWFH = [
-    { date: "02 Sep", wfh: 0, duty: 0, holiday: 0 },
-    { date: "03 Sep", wfh: 0, duty: 0, holiday: 0 },
-    { date: "04 Sep", wfh: 0, duty: 0, holiday: 0 },
-    { date: "05 Sep", wfh: 2, duty: 0, holiday: 0 },
-    { date: "06 Sep", wfh: 0, duty: 0, holiday: 143 },
-    { date: "07 Sep", wfh: 0, duty: 0, holiday: 143 },
-    { date: "08 Sep", wfh: 0, duty: 0, holiday: 0 },
-  ]
+  const stats = [
+    { label: "Present today", value: presentCount, color: "bg-[#CB9DF0]", icon: <UserCheck className="text-slate-800" />, textColor: "text-slate-900" },
+    { label: "Late arrivals", value: lateCount, color: "bg-[#F0C1E1]", icon: <Clock className="text-slate-800" />, textColor: "text-slate-900" },
+    { label: "On leave", value: onLeaveCount, color: "bg-[#FFF9BF]", icon: <Coffee className="text-slate-800" />, textColor: "text-slate-900" },
+    { label: "Absent", value: absentCount, color: "bg-rose-100", icon: <AlertTriangle className="text-rose-600" />, textColor: "text-rose-900" },
+  ];
 
   return (
-   
-    <div className="p-5 space-y-5 text-[12px] text-gray-700">
-      {/* Tabs */}
-      <div className="flex items-center gap-6 border-b pb-2 text-[13px] font-medium">
-        {tabs.map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setSelectedTab(tab)}
-            className={cn(
-              "pb-1 transition-colors",
-              selectedTab === tab
-                ? "border-b-2 border-primary text-primary"
-                : "text-gray-500 hover:text-primary"
-            )}
-          >
-            {tab}
-          </button>
-        ))}
-      </div>
-{selectedTab === "Attendance Summary" && (
-  <>
-    {/* Filter bar */}
-      <div className="flex flex-wrap justify-end gap-2 text-[11px]">
-        <select className="border rounded-md px-2 py-1">
-          <option>All Departments</option>
-        </select>
-        <select className="border rounded-md px-2 py-1">
-          <option>All Locations</option>
-        </select>
-      </div>
-
-      {/* Today's attendance */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {summary.map((item) => (
-          <Card
-            key={item.label}
-            className="border text-[12px] shadow-sm hover:shadow transition"
-          >
-            <CardContent className="p-3">
-              <div className="text-gray-500 text-[11px]">{item.label}</div>
-              <div className="text-[20px] font-semibold">{item.value}</div>
-              {item.link && (
-                <button className="text-[11px] text-blue-600 hover:underline">
-                  {item.link}
-                </button>
-              )}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Past attendance */}
-      <div>
-        <div className="text-[13px] font-medium mb-2">
-          Attendance for past dates
+    <div className="flex-1 min-h-screen bg-[#fcfdff] p-8 space-y-8" style={{ zoom: '0.6' }}>
+      <div className="flex flex-col md:flex-row justify-between md:items-center gap-6">
+        <div>
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Team Attendance</h1>
+          <p className="text-slate-500 font-medium">Monitor and manage workforce attendance in real-time.</p>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
-          {pastStats.map((stat) => (
-            <Card key={stat.label} className="border text-[12px]">
-              <CardContent className="p-3">
-                <div className="text-[22px] font-semibold">{stat.value}</div>
-                <div className="text-[11px] font-medium mt-1">
-                  {stat.label}
+
+        <div className="flex gap-3">
+          <Dialog open={isManualEntryOpen} onOpenChange={setIsManualEntryOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-[#CB9DF0] hover:bg-[#b580e0] text-white rounded-xl h-12 px-6 shadow-lg font-bold">
+                <UserPlus className="mr-2 h-5 w-5" /> Manual Entry
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="bg-white rounded-[2rem] border-none p-8">
+              <DialogHeader>
+                <DialogTitle>Manual Attendance Entry</DialogTitle>
+                <DialogDescription>Mark attendance for employees who forgot to punch or had biometric issues.</DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-6 py-4">
+                <div className="space-y-2">
+                  <Label>Employee ID</Label>
+                  <Input
+                    placeholder="e.g. EMP007"
+                    value={manualEntry.empId}
+                    onChange={e => setManualEntry({ ...manualEntry, empId: e.target.value })}
+                    className="rounded-xl bg-slate-50 border-none h-12"
+                  />
                 </div>
-                <div className="text-[10px] text-gray-500 mt-1 leading-tight">
-                  {stat.subtext}
+                <div className="space-y-2">
+                  <Label>Employee Name</Label>
+                  <Input
+                    placeholder="e.g. Rahul Verma"
+                    value={manualEntry.empName}
+                    onChange={e => setManualEntry({ ...manualEntry, empName: e.target.value })}
+                    className="rounded-xl bg-slate-50 border-none h-12"
+                  />
                 </div>
-              </CardContent>
+                <div className="space-y-2">
+                  <Label>Action</Label>
+                  <Select value={manualEntry.action} onValueChange={v => setManualEntry({ ...manualEntry, action: v })}>
+                    <SelectTrigger className="rounded-xl h-12 bg-slate-50 border-none">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="in">Clock In</SelectItem>
+                      <SelectItem value="out">Clock Out</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button className="w-full bg-slate-900 text-white rounded-xl h-12 font-bold" onClick={handleManualEntry}>
+                  Submit Entry
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          <Button variant="outline" className="rounded-xl h-12 border-slate-200 font-bold text-slate-600 hover:bg-slate-50">
+            <Download className="mr-2 h-4 w-4" /> Export
+          </Button>
+        </div>
+      </div>
+
+      {/* Top Stats Row */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {stats.map((stat, i) => (
+          <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
+            <Card className={`border-none shadow-lg rounded-[2rem] ${stat.color} p-6 flex items-center gap-4`}>
+              <div className="h-14 w-14 bg-white/30 rounded-2xl flex items-center justify-center backdrop-blur-sm shadow-sm">
+                {stat.icon}
+              </div>
+              <div>
+                <p className={`text-xs font-bold tracking-widest ${stat.textColor} opacity-80 mb-1`}>{stat.label}</p>
+                <h3 className={`text-3xl font-black ${stat.textColor}`}>{stat.value}</h3>
+              </div>
             </Card>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Live Team Status */}
+      <Card className="border-none shadow-xl shadow-slate-200/50 rounded-[2.5rem] bg-white p-8">
+        <div className="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-6">
+          <div>
+            <h3 className="font-black text-xl text-slate-900">Live Team Status</h3>
+            <p className="text-sm text-slate-500 font-medium">Real-time attendance tracking for {currentTime.toLocaleDateString()}</p>
+          </div>
+          <div className="flex gap-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+              <Input placeholder="Search employee..." className="pl-10 rounded-xl bg-slate-50 border-none h-10 w-64" />
+            </div>
+            <Button variant="outline" size="icon" className="rounded-xl border-slate-200">
+              <Filter size={18} />
+            </Button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {teamMembers.map((member) => (
+            <div key={member.id} className="p-4 border border-slate-100 rounded-[1.5rem] hover:shadow-md transition-all bg-white group">
+              <div className="flex items-center gap-4">
+                <Avatar className={`h-12 w-12 font-bold ${member.status === 'In' ? 'bg-emerald-100 text-emerald-700' :
+                  member.status === 'Late' ? 'bg-amber-100 text-amber-700' :
+                    member.status === 'Leave' ? 'bg-blue-100 text-blue-700' :
+                      'bg-rose-100 text-rose-700'
+                  }`}>
+                  <AvatarFallback>{member.avatar}</AvatarFallback>
+                </Avatar>
+                <div className="flex-1">
+                  <h4 className="font-bold text-slate-900 text-sm group-hover:text-indigo-600 transition-colors">{member.name}</h4>
+                  <p className="text-xs text-slate-400 font-medium">{member.dept}</p>
+                </div>
+              </div>
+              <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-50">
+                <Badge className={`border-none font-bold text-xs ${member.status === 'In' ? 'bg-emerald-100 text-emerald-700' :
+                  member.status === 'Late' ? 'bg-amber-100 text-amber-700' :
+                    member.status === 'Leave' ? 'bg-blue-100 text-blue-700' :
+                      'bg-rose-100 text-rose-700'
+                  }`}>
+                  {member.status}
+                </Badge>
+                <span className="text-xs text-slate-500 font-bold font-mono">{member.time}</span>
+              </div>
+            </div>
           ))}
         </div>
-      </div>
-
-      {/* Employee Arrival Stats Graph */}
-      <Card ref={arrivalChartRef} className="border shadow-sm">
-        <CardContent className="p-3 space-y-2">
-          <div className="flex justify-between items-center text-[12px]">
-            <div className="font-medium">Employees arrival stats</div>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() =>
-                  setViewMode(viewMode === "count" ? "percentage" : "count")
-                }
-                className="text-blue-600 text-[11px] hover:underline"
-              >
-                {viewMode === "count"
-                  ? "View as Percentage"
-                  : "View as Count"}
-              </button>
-              <div className="relative group">
-                <MoreVertical className="h-4 w-4 cursor-pointer text-gray-500" />
-                <div className="absolute right-0 top-5 hidden group-hover:block bg-white border rounded-md shadow-md text-[11px]">
-                  <button
-                    onClick={() => exportChart(arrivalChartRef, "png")}
-                    className="block px-3 py-1 hover:bg-gray-100 w-full text-left"
-                  >
-                    Export as PNG
-                  </button>
-                  <button
-                    onClick={() => exportChart(arrivalChartRef, "pdf")}
-                    className="block px-3 py-1 hover:bg-gray-100 w-full text-left"
-                  >
-                    Export as PDF
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-       <ResponsiveContainer width="100%" height={220}>
-  <BarChart
-    data={dataArrival}
-    barCategoryGap="25%"  // slimmer bars but still visible (default ~10-15%)
-    barGap={3}            // small internal spacing
-  >
-    <XAxis dataKey="date" fontSize={10} />
-    <YAxis fontSize={10} />
-    <Tooltip />
-    <Legend wrapperStyle={{ fontSize: "10px" }} />
-    <Bar dataKey="early" stackId="a" fill="#8BC34A" name="Early/On Time Arrival" />
-    <Bar dataKey="late" stackId="a" fill="#E57373" name="Late Arrival" />
-    <Bar dataKey="noLogs" stackId="a" fill="#BA68C8" name="No Logs / On Leave" />
-    <Bar dataKey="holiday" stackId="a" fill="#4FC3F7" name="Holiday / Weekly-Off" />
-  </BarChart>
-</ResponsiveContainer>
-
-        </CardContent>
       </Card>
 
-      {/* Work from home/OD Stats Graph */}
-      <Card ref={wfhChartRef} className="border shadow-sm">
-        <CardContent className="p-3 space-y-2">
-          <div className="flex justify-between items-center text-[12px]">
-            <div className="font-medium">Work from home/OD stats</div>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() =>
-                  setViewMode(viewMode === "count" ? "percentage" : "count")
-                }
-                className="text-blue-600 text-[11px] hover:underline"
-              >
-                {viewMode === "count"
-                  ? "View as Percentage"
-                  : "View as Count"}
-              </button>
-              <div className="relative group">
-                <MoreVertical className="h-4 w-4 cursor-pointer text-gray-500" />
-                <div className="absolute right-0 top-5 hidden group-hover:block bg-white border rounded-md shadow-md text-[11px]">
-                  <button
-                    onClick={() => exportChart(wfhChartRef, "png")}
-                    className="block px-3 py-1 hover:bg-gray-100 w-full text-left"
-                  >
-                    Export as PNG
-                  </button>
-                  <button
-                    onClick={() => exportChart(wfhChartRef, "pdf")}
-                    className="block px-3 py-1 hover:bg-gray-100 w-full text-left"
-                  >
-                    Export as PDF
-                  </button>
+      {/* Shift & Overtime Analysis */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <Card className="lg:col-span-2 border-none shadow-xl shadow-slate-200/50 rounded-[2.5rem] bg-white p-8">
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h3 className="font-black text-xl text-slate-900">Shift Coverage</h3>
+              <p className="text-sm font-bold text-slate-400">Staff distribution across active shifts</p>
+            </div>
+            <Badge className="bg-indigo-50 text-indigo-600 font-bold border-none">3 Active Shifts</Badge>
+          </div>
+          <div className="space-y-6">
+            {[
+              { name: 'Morning Shift (09:00 - 18:00)', count: 42, capacity: 50, color: 'bg-amber-400' },
+              { name: 'Evening Shift (14:00 - 23:00)', count: 18, capacity: 20, color: 'bg-indigo-400' },
+              { name: 'Night Shift (22:00 - 07:00)', count: 8, capacity: 15, color: 'bg-slate-800' }
+            ].map((shift, i) => (
+              <div key={i} className="space-y-2">
+                <div className="flex justify-between text-xs font-bold text-slate-500 uppercase tracking-wider">
+                  <span>{shift.name}</span>
+                  <span>{shift.count}/{shift.capacity} Staff</span>
+                </div>
+                <div className="h-4 bg-slate-50 rounded-full overflow-hidden flex">
+                  {Array.from({ length: shift.capacity }).map((_, idx) => (
+                    <div
+                      key={idx}
+                      className={`flex-1 border-r border-white/50 last:border-0 ${idx < shift.count ? shift.color : 'bg-transparent'}`}
+                    />
+                  ))}
                 </div>
               </div>
-            </div>
+            ))}
           </div>
+        </Card>
 
-<ResponsiveContainer width="100%" height={220}>
-  <BarChart
-    data={dataWFH}
-    barCategoryGap="25%"  // makes bars slimmer but still visible
-    barGap={3}            // small internal spacing
-  >
-    <XAxis dataKey="date" fontSize={10} />
-    <YAxis fontSize={10} />
-    <Tooltip />
-    <Legend wrapperStyle={{ fontSize: "10px" }} />
-    <Bar dataKey="wfh" stackId="b" fill="#FBC02D" name="Work From Home" />
-    <Bar dataKey="duty" stackId="b" fill="#CE93D8" name="On Duty" />
-    <Bar dataKey="holiday" stackId="b" fill="#4FC3F7" name="Holiday / Weekly-Off" />
-  </BarChart>
-</ResponsiveContainer>
+        <Card className="border-none shadow-xl shadow-slate-200/50 rounded-[2.5rem] bg-gradient-to-br from-indigo-600 to-indigo-800 text-white p-8 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-3 bg-white/10 rounded-xl backdrop-blur-sm">
+                <TrendingUp className="text-amber-300" size={24} />
+              </div>
+              <span className="font-bold text-indigo-100 uppercase tracking-widest text-xs">Overtime this Month</span>
+            </div>
+            <h3 className="text-5xl font-black mt-4">128.5 <span className="text-xl font-bold text-indigo-200">hrs</span></h3>
+            <p className="text-indigo-200 font-medium text-sm mt-2">+12% vs last month</p>
+          </div>
+          <div className="space-y-3 mt-8">
+            <div className="flex justify-between items-center text-sm font-bold bg-white/10 p-3 rounded-xl backdrop-blur-sm">
+              <span>Approved</span>
+              <span className="text-emerald-300">85.0 hrs</span>
+            </div>
+            <div className="flex justify-between items-center text-sm font-bold bg-white/10 p-3 rounded-xl backdrop-blur-sm">
+              <span>Pending</span>
+              <span className="text-amber-300">43.5 hrs</span>
+            </div>
+            <Button className="w-full bg-white text-indigo-900 font-black hover:bg-indigo-50 mt-2 rounded-xl">Manage OT Requests</Button>
+          </div>
+        </Card>
+      </div>
 
-        </CardContent>
-      </Card> {/* your existing summary + charts */}
-  </>
-)}
-{selectedTab === "Attendance Analytics" && (
-  <MostHoursWorked />
-)}
-{selectedTab === "Leave Summary" && (
-   <LeaveSummary/>
-)}
-{selectedTab === "Leave Analytics" && (
- <LeaveDashboard/>
-)}
-     
-     
+      {/* Quick Insights */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <Card className="border-none shadow-xl shadow-slate-200/50 rounded-[2.5rem] bg-gradient-to-br from-slate-900 to-slate-800 text-white p-8">
+          <h3 className="font-black text-xl mb-6">Department Attendance Rate</h3>
+          <div className="space-y-4">
+            <DeptBar name="Engineering" rate={92} color="from-[#CB9DF0] to-violet-500" />
+            <DeptBar name="Sales" rate={88} color="from-[#F0C1E1] to-pink-500" />
+            <DeptBar name="Product" rate={95} color="from-emerald-400 to-emerald-600" />
+            <DeptBar name="HR & Admin" rate={100} color="from-amber-400 to-orange-500" />
+          </div>
+        </Card>
+
+        <Card className="border-none shadow-xl shadow-slate-200/50 rounded-[2.5rem] bg-white p-8">
+          <h3 className="font-black text-xl text-slate-900 mb-6">Pending Actions</h3>
+          <div className="space-y-3">
+            <ActionItem icon={<AlertTriangle className="text-amber-500" />} title="3 Regularization Requests" action="Review" />
+            <ActionItem icon={<Clock className="text-indigo-500" />} title="5 Late Punch-ins Today" action="View" />
+            <ActionItem icon={<CheckCircle2 className="text-emerald-500" />} title="Weekly Report Ready" action="Download" />
+          </div>
+        </Card>
+      </div>
+    </div >
+  );
+};
+
+function DeptBar({ name, rate, color }: any) {
+  return (
+    <div>
+      <div className="flex justify-between text-xs font-bold uppercase tracking-widest mb-2 opacity-80">
+        <span>{name}</span>
+        <span>{rate}%</span>
+      </div>
+      <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
+        <div className={`h-full bg-gradient-to-r ${color}`} style={{ width: `${rate}%` }} />
+      </div>
     </div>
-  )
+  );
 }
+
+function ActionItem({ icon, title, action }: any) {
+  return (
+    <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl hover:bg-slate-100 transition-colors cursor-pointer group">
+      <div className="flex items-center gap-3">
+        <div className="h-10 w-10 bg-white rounded-xl flex items-center justify-center shadow-sm">
+          {icon}
+        </div>
+        <span className="font-bold text-slate-900 text-sm">{title}</span>
+      </div>
+      <Button variant="ghost" size="sm" className="text-indigo-600 font-bold group-hover:bg-indigo-50">
+        {action}
+      </Button>
+    </div>
+  );
+}
+
+export default TimeAttendDashboard;

@@ -21,7 +21,7 @@ import {
   CustomDropdownMenuItem,
   CustomDropdownMenuTrigger,
 } from "@/components/custom/CustomDropdownMenu"
-import { MoreHorizontal, Plus, Search, Trash2, Eye, Edit, Activity, Users, Building } from "lucide-react"
+import { MoreHorizontal, Plus, Search, Trash2, Eye, Edit, Activity, Users, Building2 } from "lucide-react"
 import { useAppStore } from "@/lib/store"
 import { toast } from "sonner"
 import { getAllFirms, deleteFirm } from "@/hooks/firmHooks"
@@ -178,7 +178,7 @@ export default function FirmsPage() {
           <SmallCard>
             <SmallCardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <SmallCardTitle className="text-sm font-medium">Total Firms</SmallCardTitle>
-              <Building className="h-4 w-4 text-muted-foreground" />
+              <Building2 className="h-4 w-4 text-muted-foreground" />
             </SmallCardHeader>
             <SmallCardContent>
               <div className="text-2xl font-bold">{totalFirms}</div>

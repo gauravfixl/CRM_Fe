@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle ,CardFooter} from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -36,7 +36,14 @@ import { toast } from "sonner"
 import { getAllDeletedFirms } from "@/hooks/firmHooks"
 import { useEffect } from "react"
 import { restoreFirm } from "@/hooks/firmHooks"
-import {CustomDialog} from "@/components/custom/CustomDialog"
+import {
+  CustomDialog,
+  CustomDialogContent,
+  CustomDialogHeader,
+  CustomDialogTitle,
+  CustomDialogDescription,
+  CustomDialogFooter
+} from "@/components/custom/CustomDialog"
 import { useLoaderStore } from "@/lib/loaderStore"
 import { Permission } from "@/components/custom/Permission"
 const getStatusColor = (status: string) => {
@@ -60,14 +67,14 @@ export default function DeletedFirmsPage() {
   const [deletedFirms, setDeletedFirms] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-const pageSize = 10; // Adjust as needed
+  const pageSize = 10; // Adjust as needed
 
 
   // Filter deleted firms only
   // const deletedFirms = firms.filter(firm => firm.isDeleted)
-const [orgName, setOrgName]= useState("")
+  const [orgName, setOrgName] = useState("")
   useEffect(() => {
-   const storedOrg = localStorage.getItem("orgName") || "";
+    const storedOrg = localStorage.getItem("orgName") || "";
     setOrgName(storedOrg);
   }, []);
 
@@ -77,7 +84,7 @@ const [orgName, setOrgName]= useState("")
   //   firm.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
   //   firm.id.toLowerCase().includes(searchTerm.toLowerCase())
   // )
-const handleRestoreFirm = async (firmId: string) => {
+  const handleRestoreFirm = async (firmId: string) => {
     try {
       showLoader()  // <-- SHOW LOADER
       const response = await restoreFirm(firmId)
@@ -98,7 +105,7 @@ const handleRestoreFirm = async (firmId: string) => {
 
 
 
- useEffect(() => {
+  useEffect(() => {
     const fetchDeletedFirms = async () => {
       try {
         showLoader()  // <-- SHOW LOADER while fetching
@@ -114,32 +121,32 @@ const handleRestoreFirm = async (firmId: string) => {
     fetchDeletedFirms()
   }, [showLoader, hideLoader])
   function truncateWebsite(url: string, startLength = 10, endLength = 10) {
-  if (url.length <= startLength + endLength + 3) return url
-  const start = url.slice(0, startLength)
-  const end = url.slice(-endLength)
-  return `${start}...${end}`
-}
-const totalPages = Math.ceil(deletedFirms.length / pageSize) || 1;
-const startIndex = (currentPage - 1) * pageSize;
-const currentDeletedFirms = deletedFirms.slice(startIndex, startIndex + pageSize);
+    if (url.length <= startLength + endLength + 3) return url
+    const start = url.slice(0, startLength)
+    const end = url.slice(-endLength)
+    return `${start}...${end}`
+  }
+  const totalPages = Math.ceil(deletedFirms.length / pageSize) || 1;
+  const startIndex = (currentPage - 1) * pageSize;
+  const currentDeletedFirms = deletedFirms.slice(startIndex, startIndex + pageSize);
 
 
   return (
     <div className="space-y-3 deleted-firms-page">
-   <div className="flex flex-col items-start space-y-4">
-  <Link href={`/${orgName}/modules/firm-management/firms`}>
-    <Button variant="outline" size="sm">
-      <ArrowLeft className="mr-2 h-4 w-4" />
-      Back to Firms
-    </Button>
-  </Link>
-  <div>
-    <h1 className="text-3xl font-bold tracking-tight ">Deleted Firms</h1>
-    <p className="text-muted-foreground">
-      Manage and restore deleted firms
-    </p>
-  </div>
-</div>
+      <div className="flex flex-col items-start space-y-4">
+        <Link href={`/${orgName}/modules/firm-management/firms`}>
+          <Button variant="outline" size="sm">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Firms
+          </Button>
+        </Link>
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight ">Deleted Firms</h1>
+          <p className="text-muted-foreground">
+            Manage and restore deleted firms
+          </p>
+        </div>
+      </div>
 
       <div className="grid gap-4 md:grid-cols-3">
         <Card className="deleted-firms-header-card">
@@ -155,7 +162,7 @@ const currentDeletedFirms = deletedFirms.slice(startIndex, startIndex + pageSize
           </CardContent>
         </Card>
         {/* <Card> */}
-          {/* <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        {/* <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Employees</CardTitle>
             <Building className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -243,27 +250,27 @@ const currentDeletedFirms = deletedFirms.slice(startIndex, startIndex + pageSize
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center">
-                     
-                        {[ firm.add.city]
+
+                        {[firm.add.city]
                           .filter(Boolean)
                           .join(", ")}
                       </div>
 
                     </TableCell>
-              <TableCell className="text-center">
-  {firm.website ? (
-    <a
-      href={firm.website}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="text-blue-600 underline"
-    >
-      {truncateWebsite(firm.website)}
-    </a>
-  ) : (
-    "-"
-  )}
-</TableCell>
+                    <TableCell className="text-center">
+                      {firm.website ? (
+                        <a
+                          href={firm.website}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 underline"
+                        >
+                          {truncateWebsite(firm.website)}
+                        </a>
+                      ) : (
+                        "-"
+                      )}
+                    </TableCell>
 
                     <TableCell className="font-medium">{firm.gst_no}</TableCell>
                     {/* <TableCell>
@@ -278,28 +285,28 @@ const currentDeletedFirms = deletedFirms.slice(startIndex, startIndex + pageSize
                       </div>
                     </TableCell>
                     <Permission module="firm" action="RESTORE_FIRM">
-                    <TableCell>
-                <DropdownMenu>
-  <DropdownMenuTrigger asChild>
-    <Button variant="ghost" className="h-8 w-8 p-0">
-      <MoreHorizontal className="h-4 w-4" />
-    </Button>
-  </DropdownMenuTrigger>
-  <DropdownMenuContent align="end">
-    <DropdownMenuItem
-      className="text-green-600"
-      onSelect={() => {
-        // Radix will close the dropdown automatically first
-        setTimeout(() => setRestoreConfirmId(firm._id), 0);
-      }}
-    >
-      <RotateCcw className="mr-2 h-4 w-4" />
-      Restore Firm
-    </DropdownMenuItem>
-  </DropdownMenuContent>
-</DropdownMenu>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              className="text-green-600"
+                              onSelect={() => {
+                                // Radix will close the dropdown automatically first
+                                setTimeout(() => setRestoreConfirmId(firm._id), 0);
+                              }}
+                            >
+                              <RotateCcw className="mr-2 h-4 w-4" />
+                              Restore Firm
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
 
-                    </TableCell>
+                      </TableCell>
                     </Permission>
                   </TableRow>
                 ))}
@@ -308,47 +315,64 @@ const currentDeletedFirms = deletedFirms.slice(startIndex, startIndex + pageSize
           )}
         </CardContent>
         {deletedFirms.length > 0 && (
-  <CardFooter className="flex justify-between items-center delete-firms-page-controls">
-    <span className="text-sm text-muted-foreground">
-      Page {currentPage} of {totalPages}
-    </span>
-    <div className="flex space-x-2">
-      <Button
-        variant="outline"
-        size="sm"
-        disabled={currentPage === 1}
-        onClick={() => setCurrentPage(prev => prev - 1)}
-      >
-        Previous
-      </Button>
-      <Button
-        variant="outline"
-        size="sm"
-        disabled={currentPage === totalPages}
-        onClick={() => setCurrentPage(prev => prev + 1)}
-      >
-        Next
-      </Button>
-    </div>
-  </CardFooter>
-)}
+          <CardFooter className="flex justify-between items-center delete-firms-page-controls">
+            <span className="text-sm text-muted-foreground">
+              Page {currentPage} of {totalPages}
+            </span>
+            <div className="flex space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(prev => prev - 1)}
+              >
+                Previous
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage(prev => prev + 1)}
+              >
+                Next
+              </Button>
+            </div>
+          </CardFooter>
+        )}
 
       </Card>
 
-  
-<CustomDialog
-  open={!!restoreConfirmId}
-  onOpenChange={() => setRestoreConfirmId(null)}
-  title="Restore Firm"
-  description="Are you sure you want to restore this firm? It will be moved back to the active firms list."
-  confirmText="Restore"
-  cancelText="Cancel"
-  confirmClassName="bg-green-600 hover:bg-green-700"
-  onConfirm={() => {
-    if (restoreConfirmId) handleRestoreFirm(restoreConfirmId)
-    setRestoreConfirmId(null)
-  }}
-/>
+
+      <CustomDialog
+        open={!!restoreConfirmId}
+        onOpenChange={() => setRestoreConfirmId(null)}
+      >
+        <CustomDialogContent>
+          <CustomDialogHeader>
+            <CustomDialogTitle>Restore Firm</CustomDialogTitle>
+            <CustomDialogDescription>
+              Are you sure you want to restore this firm? It will be moved back to the active firms list.
+            </CustomDialogDescription>
+          </CustomDialogHeader>
+          <CustomDialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setRestoreConfirmId(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="bg-green-600 hover:bg-green-700 text-white"
+              onClick={() => {
+                if (restoreConfirmId) handleRestoreFirm(restoreConfirmId)
+                setRestoreConfirmId(null)
+              }}
+            >
+              Restore
+            </Button>
+          </CustomDialogFooter>
+        </CustomDialogContent>
+      </CustomDialog>
     </div>
   )
 }

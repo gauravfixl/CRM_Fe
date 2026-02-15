@@ -332,7 +332,7 @@ export function TaskDialog({ boardId, taskId, open, onOpenChange, tasks, filterD
                       <div key={subtask._id} className="flex items-center gap-3 p-2 rounded-md border border-slate-100 hover:bg-slate-50 group transition-colors">
                         <div className={`w-1.5 h-1.5 rounded-full ${subtask.status === 'done' ? 'bg-green-500' : 'bg-slate-300'}`} />
                         <span className="text-sm text-slate-700 flex-1">{subtask.name}</span>
-                        <span className="text-[10px] font-mono text-slate-400 opacity-0 group-hover:opacity-100 uppercase">{subtask.taskCode}</span>
+                        <span className="text-[10px] text-slate-400 opacity-0 group-hover:opacity-100 uppercase">{subtask.taskCode}</span>
                       </div>
                     ))}
                   </div>

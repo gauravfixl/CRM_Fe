@@ -1,327 +1,294 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import Link from "next/link"
-import { useParams, useRouter } from "next/navigation"
-import { CustomButton } from "@/components/custom/CustomButton"
-import { CustomInput } from "@/components/custom/CustomInput"
+import React, { useState } from "react"
+import { useParams } from "next/navigation"
 import {
-    CustomTable,
-    CustomTableBody,
-    CustomTableCell,
-    CustomTableHead,
-    CustomTableHeader,
-    CustomTableRow,
-} from "@/components/custom/CustomTable"
-import { FlatCard, FlatCardContent, FlatCardDescription, FlatCardFooter, FlatCardHeader, FlatCardTitle } from "@/components/custom/FlatCard"
+    Building2,
+    Search,
+    Filter,
+    MoreHorizontal,
+    Plus,
+    LayoutDashboard,
+    Users,
+    Briefcase,
+    Settings,
+    Trash2,
+    RefreshCcw,
+    Shield
+} from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
 import {
-    CustomDropdownMenu,
-    CustomDropdownMenuContent,
-    CustomDropdownMenuItem,
-    CustomDropdownMenuTrigger,
-} from "@/components/custom/CustomDropdownMenu"
-import { MoreHorizontal, Plus, Eye, Edit, Trash2, Users, FolderKanban, BarChart3 } from "lucide-react"
-import { SmallCard, SmallCardContent, SmallCardHeader, SmallCardTitle } from "@/components/custom/SmallCard"
-import SubHeader from "@/components/custom/SubHeader"
-import { useLoaderStore } from "@/lib/loaderStore"
-import { getMyWorkspaces, deleteWorkspace, type Workspace } from "@/modules/project-management/workspace/hooks/workspaceHooks"
-import { showSuccess, showError } from "@/utils/toast"
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table"
 import {
-    CustomDialog,
-    CustomDialogContent,
-    CustomDialogDescription,
-    CustomDialogFooter,
-    CustomDialogHeader,
-    CustomDialogTitle
-} from "@/components/custom/CustomDialog"
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { SmallCard, SmallCardContent, SmallCardHeader } from "@/shared/components/custom/SmallCard"
+import { toast } from "sonner"
 
-export default function WorkspaceManagementPage() {
-    const [workspaces, setWorkspaces] = useState<Workspace[]>([])
-    const [searchTerm, setSearchTerm] = useState("")
-    const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
-    const [currentPage, setCurrentPage] = useState(1)
-    const pageSize = 10
+export default function WorkspaceManagePage() {
+    const params = useParams()
+    const [isLoading, setIsLoading] = useState(false)
+    const [searchQuery, setSearchQuery] = useState("")
+    const [isCreateOpen, setIsCreateOpen] = useState(false)
+    const [newWorkspace, setNewWorkspace] = useState({ name: "", description: "" })
 
-    const { showLoader, hideLoader } = useLoaderStore()
-    const params = useParams() as { orgName?: string }
-    const router = useRouter()
-    const [orgName, setOrgName] = useState("")
+    // Mock Data
+    const [workspaces, setWorkspaces] = useState([
+        { id: "1", name: "Engineering", description: "Core product development", members: 12, projects: 5, status: "ACTIVE", owner: "John Doe" },
+        { id: "2", name: "Marketing", description: "Global campaigns", members: 8, projects: 3, status: "ACTIVE", owner: "Sarah Smith" },
+        { id: "3", name: "Client Projects", description: "External deliverables", members: 15, projects: 8, status: "ACTIVE", owner: "Mike Brown" },
+    ])
 
-    useEffect(() => {
-        const pOrg = params.orgName
-        const storedOrg = localStorage.getItem("orgName") || ""
-        setOrgName((pOrg && pOrg !== "null") ? pOrg : storedOrg)
-    }, [params.orgName])
-
-    // Fetch workspaces on mount
-    useEffect(() => {
-        const fetchWorkspaces = async () => {
-            try {
-                showLoader()
-                // Using getMyWorkspaces for broader compatibility as getAllWorkspaces might require super-admin
-                const res = await getMyWorkspaces()
-                // API might return data in .data.workspaces or .data.data
-                const workspacesData = res?.data?.workspaces || (Array.isArray(res?.data?.data) ? res.data.data : [])
-                setWorkspaces(workspacesData)
-            } catch (err: any) {
-                if (err?.response?.status !== 401) {
-                    console.error("Failed to fetch workspaces:", err)
-                }
-            } finally {
-                hideLoader()
-            }
-        }
-
-        fetchWorkspaces()
-    }, [showLoader, hideLoader])
-
-    // Filter workspaces
-    const filteredWorkspaces = workspaces.filter(workspace =>
-        workspace.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        workspace.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        workspace.createdBy?.email?.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-
-    const totalPages = Math.ceil(filteredWorkspaces.length / pageSize)
-    const startIndex = (currentPage - 1) * pageSize
-    const currentWorkspaces = filteredWorkspaces.slice(startIndex, startIndex + pageSize)
-
-    const handleDeleteWorkspace = async (workspaceId: string) => {
-        try {
-            showLoader()
-            await deleteWorkspace(workspaceId)
-            setWorkspaces(workspaces.filter(w => w._id !== workspaceId))
-            setDeleteConfirmId(null)
-            showSuccess("Workspace deleted successfully!")
-        } catch (err) {
-            console.error("Error deleting workspace:", err)
-            showError("Failed to delete workspace!")
-        } finally {
-            hideLoader()
-        }
+    const handleAction = (msg: string) => {
+        setIsLoading(true)
+        setTimeout(() => {
+            setIsLoading(false)
+            toast.success(msg)
+        }, 800)
     }
 
-    const totalWorkspaces = workspaces.length
-    const activeWorkspaces = workspaces.filter(w => !w.isDeleted).length
+    const createWorkspace = () => {
+        if (!newWorkspace.name) return toast.error("Workspace name is required")
+
+        setIsLoading(true)
+        // Simulation of backend logic: createWorkspace -> validates -> creates -> assigns admin -> generates token
+        setTimeout(() => {
+            const newWs = {
+                id: Date.now().toString(),
+                name: newWorkspace.name,
+                description: newWorkspace.description,
+                members: 1, // Creator
+                projects: 0,
+                status: "ACTIVE",
+                owner: "Current User"
+            }
+            setWorkspaces([...workspaces, newWs])
+            setIsLoading(false)
+            setIsCreateOpen(false)
+            setNewWorkspace({ name: "", description: "" })
+            toast.success("Workspace created successfully")
+        }, 1000)
+    }
 
     return (
-        <>
-            <SubHeader
-                title="Workspace Management"
-                breadcrumbItems={[
-                    { label: "Dashboard", href: `/${orgName}/dashboard` },
-                    { label: "Workspaces", href: `/${orgName}/modules/workspaces/manage` },
-                ]}
-                rightControls={
-                    <div className="flex space-x-2">
-                        <Link href={`/${orgName}/modules/workspaces/create`}>
-                            <CustomButton className="flex items-center gap-1 text-xs h-8 px-3">
-                                <Plus className="w-4 h-4" /> Create Workspace
-                            </CustomButton>
-                        </Link>
+        <div className="flex flex-col gap-6 p-6 min-h-screen bg-[#fafafa]">
+            {/* PAGE HEADER */}
+            <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-2 text-[10px] font-medium text-zinc-400">
+                    <span>PROJECT MANAGEMENT</span>
+                    <span>/</span>
+                    <span className="text-zinc-900 font-semibold">WORKSPACES</span>
+                </div>
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mt-2">
+                    <div>
+                        <h1 className="text-xl font-bold text-zinc-900 tracking-tight">Workspace Administration</h1>
+                        <p className="text-xs text-zinc-500 font-medium">Manage organization departments and project containers.</p>
                     </div>
-                }
-            />
+                    <div className="flex items-center gap-2">
+                        <Button
+                            variant="outline"
+                            onClick={() => handleAction("Workspaces refreshed")}
+                            className="h-8 rounded-md border-zinc-200 text-xs font-medium bg-white px-3 shadow-sm active:scale-95"
+                        >
+                            <RefreshCcw className="w-3.5 h-3.5 mr-2" />
+                            Refresh
+                        </Button>
+                        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+                            <DialogTrigger asChild>
+                                <Button className="h-8 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium px-3 shadow-sm active:scale-95">
+                                    <Plus className="w-3.5 h-3.5 mr-2" />
+                                    New Workspace
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent className="sm:max-w-[425px]">
+                                <DialogHeader>
+                                    <DialogTitle>Create Workspace</DialogTitle>
+                                    <DialogDescription>
+                                        Create a new workspace to group projects and members. You will be assigned as the Workspace Admin.
+                                    </DialogDescription>
+                                </DialogHeader>
+                                <div className="grid gap-4 py-4">
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="name">Workspace Name</Label>
+                                        <Input
+                                            id="name"
+                                            placeholder="e.g. Engineering"
+                                            value={newWorkspace.name}
+                                            onChange={(e) => setNewWorkspace({ ...newWorkspace, name: e.target.value })}
+                                        />
+                                    </div>
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="desc">Description</Label>
+                                        <Input
+                                            id="desc"
+                                            placeholder="Brief description of purpose"
+                                            value={newWorkspace.description}
+                                            onChange={(e) => setNewWorkspace({ ...newWorkspace, description: e.target.value })}
+                                        />
+                                    </div>
+                                </div>
+                                <DialogFooter>
+                                    <Button onClick={createWorkspace} disabled={isLoading}>
+                                        {isLoading ? "Creating..." : "Create Workspace"}
+                                    </Button>
+                                </DialogFooter>
+                            </DialogContent>
+                        </Dialog>
+                    </div>
+                </div>
+            </div>
 
-            <div className="space-y-4 p-4">
-                {/* Dashboard cards */}
-                <div className="grid gap-4 md:grid-cols-4">
-                    <SmallCard>
-                        <SmallCardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <SmallCardTitle className="text-sm font-medium">Total Workspaces</SmallCardTitle>
-                            <FolderKanban className="h-4 w-4 text-muted-foreground" />
-                        </SmallCardHeader>
-                        <SmallCardContent>
-                            <div className="text-2xl font-bold">{totalWorkspaces}</div>
-                            <p className="text-xs text-muted-foreground">All workspaces</p>
-                        </SmallCardContent>
-                    </SmallCard>
+            {/* STATS CARDS */}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <SmallCard className="bg-gradient-to-br from-blue-500 to-blue-700 border-t border-white/20 border-none text-white shadow-[0_8px_30px_rgb(59,130,246,0.3)] hover:shadow-[0_20px_40px_rgba(37,99,235,0.4)] hover:-translate-y-1 transform transition-all duration-300">
+                    <SmallCardHeader className="flex flex-row items-center justify-between pb-1 px-4 pt-4">
+                        <p className="text-[11px] text-white font-medium uppercase tracking-wider">Total Workspaces</p>
+                        <Building2 className="w-4 h-4 text-white" />
+                    </SmallCardHeader>
+                    <SmallCardContent className="px-4 pb-4">
+                        <p className="text-2xl font-bold text-white drop-shadow-md">{workspaces.length}</p>
+                        <p className="text-[10px] text-white">Active departments</p>
+                    </SmallCardContent>
+                </SmallCard>
 
-                    <SmallCard>
-                        <SmallCardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <SmallCardTitle className="text-sm font-medium">Active Workspaces</SmallCardTitle>
-                            <BarChart3 className="h-4 w-4 text-muted-foreground" />
-                        </SmallCardHeader>
-                        <SmallCardContent>
-                            <div className="text-2xl font-bold text-green-600">{activeWorkspaces}</div>
-                            <p className="text-xs text-muted-foreground">Currently active</p>
-                        </SmallCardContent>
-                    </SmallCard>
+                <SmallCard className="bg-white border-t border-white shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.1)] hover:-translate-y-1 transform transition-all duration-300">
+                    <SmallCardHeader className="flex flex-row items-center justify-between pb-1 px-4 pt-4">
+                        <p className="text-[11px] text-zinc-500 font-medium tracking-tight">Total Projects</p>
+                        <Briefcase className="w-4 h-4 text-zinc-300" />
+                    </SmallCardHeader>
+                    <SmallCardContent className="px-4 pb-4">
+                        <p className="text-2xl font-bold text-zinc-900">16</p>
+                        <p className="text-[10px] text-zinc-400">Across all workspaces</p>
+                    </SmallCardContent>
+                </SmallCard>
 
-                    <SmallCard>
-                        <SmallCardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <SmallCardTitle className="text-sm font-medium">My Workspaces</SmallCardTitle>
-                            <Users className="h-4 w-4 text-muted-foreground" />
-                        </SmallCardHeader>
-                        <SmallCardContent>
-                            <div className="text-2xl font-bold">{activeWorkspaces}</div>
-                            <p className="text-xs text-muted-foreground">Where I'm a member</p>
-                        </SmallCardContent>
-                    </SmallCard>
+                <SmallCard className="bg-white border-t border-white shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.1)] hover:-translate-y-1 transform transition-all duration-300">
+                    <SmallCardHeader className="flex flex-row items-center justify-between pb-1 px-4 pt-4">
+                        <p className="text-[11px] text-zinc-500 font-medium tracking-tight">Active Members</p>
+                        <Users className="w-4 h-4 text-zinc-300" />
+                    </SmallCardHeader>
+                    <SmallCardContent className="px-4 pb-4">
+                        <p className="text-2xl font-bold text-zinc-900">35</p>
+                        <p className="text-[10px] text-zinc-400">Collaborating users</p>
+                    </SmallCardContent>
+                </SmallCard>
 
-                    <SmallCard>
-                        <SmallCardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <SmallCardTitle className="text-sm font-medium">Total Projects</SmallCardTitle>
-                            <FolderKanban className="h-4 w-4 text-muted-foreground" />
-                        </SmallCardHeader>
-                        <SmallCardContent>
-                            <div className="text-2xl font-bold">0</div>
-                            <p className="text-xs text-muted-foreground">Across all workspaces</p>
-                        </SmallCardContent>
-                    </SmallCard>
+                <SmallCard className="bg-white border-t border-white shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.1)] hover:-translate-y-1 transform transition-all duration-300">
+                    <SmallCardHeader className="flex flex-row items-center justify-between pb-1 px-4 pt-4">
+                        <p className="text-[11px] text-zinc-500 font-medium tracking-tight">Efficiency</p>
+                        <LayoutDashboard className="w-4 h-4 text-zinc-300" />
+                    </SmallCardHeader>
+                    <SmallCardContent className="px-4 pb-4">
+                        <p className="text-2xl font-bold text-zinc-900">92%</p>
+                        <p className="text-[10px] text-zinc-400">Task completion rate</p>
+                    </SmallCardContent>
+                </SmallCard>
+            </div>
+
+            {/* CONTENT */}
+            <div className="bg-white rounded-lg border border-zinc-200 shadow-sm overflow-hidden flex flex-col">
+                <div className="p-4 border-b border-zinc-100 flex items-center justify-between bg-zinc-50/20">
+                    <div className="relative w-full md:w-80 group">
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-400" />
+                        <Input
+                            placeholder="Search workspaces..."
+                            className="pl-9 h-9 bg-white border-zinc-200 rounded-md text-xs font-medium focus:ring-1 focus:ring-blue-100"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                    </div>
                 </div>
 
-                <FlatCard>
-                    <FlatCardHeader>
-                        <div className="flex flex-row justify-between items-center w-full">
-                            <div>
-                                <FlatCardTitle>Workspace Directory</FlatCardTitle>
-                                <FlatCardDescription className="pt-1">
-                                    Manage all your workspaces and projects
-                                </FlatCardDescription>
-                            </div>
-
-                            <div className="flex items-center space-x-2">
-                                <div className="relative max-w-sm w-full md:w-auto">
-                                    <CustomInput
-                                        placeholder="Search workspaces..."
-                                        value={searchTerm}
-                                        onChange={(e) => setSearchTerm(e.target.value)}
-                                        className="pl-10"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    </FlatCardHeader>
-
-                    <FlatCardContent>
-                        {currentWorkspaces.length > 0 ? (
-                            <CustomTable>
-                                <CustomTableHeader>
-                                    <CustomTableRow>
-                                        <CustomTableHead>Workspace Name</CustomTableHead>
-                                        <CustomTableHead>Description</CustomTableHead>
-                                        <CustomTableHead>Created By</CustomTableHead>
-                                        <CustomTableHead>Created At</CustomTableHead>
-                                        <CustomTableHead>Actions</CustomTableHead>
-                                    </CustomTableRow>
-                                </CustomTableHeader>
-                                <CustomTableBody>
-                                    {currentWorkspaces.map((workspace) => (
-                                        <CustomTableRow
-                                            key={workspace._id}
-                                            className="cursor-pointer hover:bg-slate-50/50 transition-colors group"
-                                            onClick={() => {
-                                                const wId = (workspace as any)._id || (workspace as any).id;
-                                                console.log("Navigating to workspace root:", wId, workspace);
-                                                if (wId) {
-                                                    router.push(`/${orgName}/modules/workspaces/${wId}`);
-                                                } else {
-                                                    showError("Workspace ID not found!");
-                                                }
-                                            }}
-                                        >
-                                            <CustomTableCell className="font-semibold text-primary group-hover:underline">
-                                                {workspace.name || "Unnamed Workspace"}
-                                            </CustomTableCell>
-                                            <CustomTableCell>{workspace.description || "--"}</CustomTableCell>
-                                            <CustomTableCell>{(workspace.createdBy as any)?.email || (workspace.createdBy as any)?.fullName || (typeof workspace.createdBy === 'string' ? workspace.createdBy : "--")}</CustomTableCell>
-                                            <CustomTableCell>
-                                                {workspace.createdAt && !isNaN(Date.parse(workspace.createdAt))
-                                                    ? new Date(workspace.createdAt).toLocaleDateString()
-                                                    : "Recently Created"}
-                                            </CustomTableCell>
-                                            <CustomTableCell>
-                                                <div onClick={(e) => e.stopPropagation()}>
-                                                    <CustomDropdownMenu>
-                                                        <CustomDropdownMenuTrigger asChild>
-                                                            <CustomButton variant="ghost" className="h-8 w-8 p-0">
-                                                                <MoreHorizontal className="h-4 w-4" />
-                                                            </CustomButton>
-                                                        </CustomDropdownMenuTrigger>
-                                                        <CustomDropdownMenuContent align="end">
-                                                            <CustomDropdownMenuItem asChild>
-                                                                <Link href={`/${orgName}/modules/workspaces/${(workspace as any)._id || (workspace as any).id}`} className="flex items-center w-full cursor-pointer">
-                                                                    <Eye className="mr-2 h-4 w-4" /> View Details
-                                                                </Link>
-                                                            </CustomDropdownMenuItem>
-                                                            <CustomDropdownMenuItem asChild>
-                                                                <Link href={`/${orgName}/modules/workspaces/${(workspace as any)._id || (workspace as any).id}/settings`} className="flex items-center w-full cursor-pointer">
-                                                                    <Edit className="mr-2 h-4 w-4" /> Edit Workspace
-                                                                </Link>
-                                                            </CustomDropdownMenuItem>
-                                                            <CustomDropdownMenuItem
-                                                                className="text-red-600"
-                                                                onSelect={() => {
-                                                                    setTimeout(() => setDeleteConfirmId(workspace._id), 0)
-                                                                }}
-                                                            >
-                                                                <Trash2 className="mr-2 h-4 w-4" /> Delete Workspace
-                                                            </CustomDropdownMenuItem>
-                                                        </CustomDropdownMenuContent>
-                                                    </CustomDropdownMenu>
-                                                </div>
-                                            </CustomTableCell>
-                                        </CustomTableRow>
-                                    ))}
-                                </CustomTableBody>
-                            </CustomTable>
-                        ) : (
-                            <div className="text-center text-muted-foreground py-6">
-                                No workspaces found.
-                            </div>
-                        )}
-                    </FlatCardContent>
-
-                    {currentWorkspaces.length > 0 && (
-                        <FlatCardFooter className="flex justify-between items-center">
-                            <span className="text-sm text-muted-foreground">
-                                Page {currentPage} of {totalPages}
-                            </span>
-                            <div className="flex space-x-2">
-                                <CustomButton
-                                    variant="outline"
-                                    size="sm"
-                                    disabled={currentPage === 1}
-                                    onClick={() => setCurrentPage((prev) => prev - 1)}
-                                >
-                                    Previous
-                                </CustomButton>
-                                <CustomButton
-                                    variant="outline"
-                                    size="sm"
-                                    disabled={currentPage === totalPages}
-                                    onClick={() => setCurrentPage((prev) => prev + 1)}
-                                >
-                                    Next
-                                </CustomButton>
-                            </div>
-                        </FlatCardFooter>
-                    )}
-                </FlatCard>
-
-                {/* Delete confirm dialog */}
-                <CustomDialog
-                    open={!!deleteConfirmId}
-                    onOpenChange={() => setDeleteConfirmId(null)}
-                >
-                    <CustomDialogContent>
-                        <CustomDialogHeader>
-                            <CustomDialogTitle>Delete Workspace</CustomDialogTitle>
-                            <CustomDialogDescription>
-                                Are you sure you want to delete this workspace? This will also delete all projects, boards, and tasks within it.
-                            </CustomDialogDescription>
-                        </CustomDialogHeader>
-                        <CustomDialogFooter>
-                            <CustomButton variant="outline" onClick={() => setDeleteConfirmId(null)}>Cancel</CustomButton>
-                            <CustomButton variant="destructive" onClick={() => {
-                                if (deleteConfirmId) handleDeleteWorkspace(deleteConfirmId);
-                                setDeleteConfirmId(null);
-                            }}>Delete</CustomButton>
-                        </CustomDialogFooter>
-                    </CustomDialogContent>
-                </CustomDialog>
+                <Table>
+                    <TableHeader className="bg-zinc-50/50">
+                        <TableRow>
+                            <TableHead className="py-3 px-4 font-semibold text-[11px] text-zinc-500 uppercase">Workspace Name</TableHead>
+                            <TableHead className="py-3 font-semibold text-[11px] text-zinc-500 uppercase">Description</TableHead>
+                            <TableHead className="py-3 font-semibold text-[11px] text-zinc-500 uppercase text-center">Projects</TableHead>
+                            <TableHead className="py-3 font-semibold text-[11px] text-zinc-500 uppercase text-center">Members</TableHead>
+                            <TableHead className="py-3 font-semibold text-[11px] text-zinc-500 uppercase text-center">Status</TableHead>
+                            <TableHead className="py-3 text-right pr-4 font-semibold text-[11px] text-zinc-500 uppercase">Actions</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {workspaces.map((ws) => (
+                            <TableRow key={ws.id} className="hover:bg-zinc-50/50 transition-colors">
+                                <TableCell className="py-3 px-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 border border-blue-100">
+                                            <Building2 className="w-4 h-4" />
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-xs font-bold text-zinc-900">{ws.name}</span>
+                                            <span className="text-[10px] text-zinc-400 font-medium">Owner: {ws.owner}</span>
+                                        </div>
+                                    </div>
+                                </TableCell>
+                                <TableCell className="py-3">
+                                    <span className="text-xs text-zinc-500 font-medium">{ws.description}</span>
+                                </TableCell>
+                                <TableCell className="py-3 text-center">
+                                    <Badge variant="outline" className="bg-white text-zinc-600 border-zinc-200">{ws.projects}</Badge>
+                                </TableCell>
+                                <TableCell className="py-3 text-center">
+                                    <div className="flex items-center justify-center gap-1 text-zinc-500">
+                                        <Users className="w-3 h-3" />
+                                        <span className="text-xs font-bold">{ws.members}</span>
+                                    </div>
+                                </TableCell>
+                                <TableCell className="py-3 text-center">
+                                    <Badge className="bg-emerald-50 text-emerald-600 border-none text-[10px] uppercase font-bold">
+                                        {ws.status}
+                                    </Badge>
+                                </TableCell>
+                                <TableCell className="py-3 text-right pr-4">
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" className="h-7 w-7 p-0 hover:bg-zinc-100 rounded-md">
+                                                <MoreHorizontal className="h-4 w-4 text-zinc-400" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end" className="w-48 shadow-xl border-zinc-100">
+                                            <DropdownMenuItem onClick={() => handleAction("Opening settings...")}>
+                                                <Settings className="w-3.5 h-3.5 mr-2" /> Settings
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => handleAction("Viewing analytics...")}>
+                                                <LayoutDashboard className="w-3.5 h-3.5 mr-2" /> Analytics
+                                            </DropdownMenuItem>
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuItem className="text-rose-600" onClick={() => handleAction("Delete initiated...")}>
+                                                <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete Workspace
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
             </div>
-        </>
+        </div>
     )
 }

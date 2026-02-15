@@ -36,7 +36,14 @@ import { toast } from "sonner"
 import { getAllDeletedFirms } from "@/hooks/firmHooks"
 import { useEffect } from "react"
 import { restoreFirm } from "@/hooks/firmHooks"
-import { CustomDialog } from "@/components/custom/CustomDialog"
+import {
+  CustomDialog,
+  CustomDialogContent,
+  CustomDialogHeader,
+  CustomDialogTitle,
+  CustomDialogDescription,
+  CustomDialogFooter
+} from "@/components/custom/CustomDialog"
 import { useLoaderStore } from "@/lib/loaderStore"
 import { Permission } from "@/components/custom/Permission"
 import { Breadcrumb } from "@/components/custom/CustomBreadCrumb"
@@ -259,9 +266,7 @@ export default function DeletedFirmsPage() {
                     <CustomTableCell>
                       <div className="flex items-center">
 
-                        {[firm.add.city]
-                          .filter(Boolean)
-                          .join(", ")}
+                        {firm.add?.city}
                       </div>
 
                     </CustomTableCell>
@@ -289,7 +294,7 @@ export default function DeletedFirmsPage() {
                     <CustomTableCell>
                       <div className="flex items-center text-sm">
                         <Calendar className="mr-2 h-3 w-3" />
-                        {new Date(firm.deletedAt).toLocaleDateString()}
+                        {firm.deletedAt ? new Date(firm.deletedAt).toLocaleDateString() : "N/A"}
                       </div>
                     </CustomTableCell>
                     <Permission module="firm" action="RESTORE_FIRM">
@@ -354,16 +359,33 @@ export default function DeletedFirmsPage() {
       <CustomDialog
         open={!!restoreConfirmId}
         onOpenChange={() => setRestoreConfirmId(null)}
-        title="Restore Firm"
-        description="Are you sure you want to restore this firm? It will be moved back to the active firms list."
-        confirmText="Restore"
-        cancelText="Cancel"
-        confirmClassName="bg-green-600 hover:bg-green-700"
-        onConfirm={() => {
-          if (restoreConfirmId) handleRestoreFirm(restoreConfirmId)
-          setRestoreConfirmId(null)
-        }}
-      />
+      >
+        <CustomDialogContent>
+          <CustomDialogHeader>
+            <CustomDialogTitle>Restore Firm</CustomDialogTitle>
+            <CustomDialogDescription>
+              Are you sure you want to restore this firm? It will be moved back to the active firms list.
+            </CustomDialogDescription>
+          </CustomDialogHeader>
+          <CustomDialogFooter>
+            <CustomButton
+              variant="outline"
+              onClick={() => setRestoreConfirmId(null)}
+            >
+              Cancel
+            </CustomButton>
+            <CustomButton
+              className="bg-green-600 hover:bg-green-700 text-white"
+              onClick={() => {
+                if (restoreConfirmId) handleRestoreFirm(restoreConfirmId)
+                setRestoreConfirmId(null)
+              }}
+            >
+              Restore
+            </CustomButton>
+          </CustomDialogFooter>
+        </CustomDialogContent>
+      </CustomDialog>
     </div>
   </>
   )

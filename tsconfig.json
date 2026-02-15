@@ -30,9 +30,6 @@
       "@/components/*": [
         "./src/shared/components/*"
       ],
-      "@/lib/*": [
-        "./src/lib/*"
-      ],
       "@/utils/*": [
         "./src/shared/utils/*"
       ],

@@ -1,299 +1,226 @@
 "use client"
 
-import { useState } from "react"
-import Link from "next/link"
+import React, { useState } from "react"
 import { useParams } from "next/navigation"
-import { CustomButton } from "@/components/custom/CustomButton"
-import { CustomInput } from "@/components/custom/CustomInput"
 import {
-    CustomTable,
-    CustomTableBody,
-    CustomTableCell,
-    CustomTableHead,
-    CustomTableHeader,
-    CustomTableRow,
-} from "@/components/custom/CustomTable"
-import {
-    Sheet,
-    SheetContent,
-    SheetDescription,
-    SheetHeader,
-    SheetTitle,
-} from "@/components/ui/sheet"
+    CheckCircle2,
+    Search,
+    Filter,
+    Plus,
+    MoreHorizontal,
+    LayoutDashboard,
+    Calendar,
+    User,
+    ArrowUpCircle,
+    ArrowDownCircle,
+    AlertCircle,
+    Clock
+} from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import SubHeader from "@/components/custom/SubHeader"
-import { Search, Filter, Plus, CheckCircle2, AlertCircle, Clock, MoreHorizontal } from "lucide-react"
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table"
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
+    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { SmallCard, SmallCardContent, SmallCardHeader } from "@/shared/components/custom/SmallCard"
+import { toast } from "sonner"
 
-// Mock Data Types
-type TaskPriority = 'Low' | 'Medium' | 'High' | 'Urgent'
-type TaskStatus = 'Todo' | 'In Progress' | 'Review' | 'Done'
+export default function GlobalTasksPage() {
+    const params = useParams()
+    const [isLoading, setIsLoading] = useState(false)
+    const [searchQuery, setSearchQuery] = useState("")
 
-interface Task {
-    id: string
-    key: string
-    title: string
-    project: string
-    status: TaskStatus
-    priority: TaskPriority
-    assignee: { name: string, avatar?: string, initials: string }
-    dueDate: string
-}
+    const tasks = [
+        { id: "T-101", title: "Design Homepage Mockups", project: "Website Redesign", assignee: "Alice", priority: "HIGH", status: "IN_PROGRESS", due: "Tomorrow" },
+        { id: "T-102", title: "Setup CI/CD Pipeline", project: "Backend Migration", assignee: "Bob", priority: "CRITICAL", status: "TODO", due: "Today" },
+        { id: "T-103", title: "Draft Q1 Blog Post", project: "Marketing", assignee: "Charlie", priority: "LOW", status: "Review", due: "Next Week" },
+        { id: "T-104", title: "Fix Login Bug", project: "Mobile App Beta", assignee: "Dave", priority: "HIGH", status: "DONE", due: "Yesterday" },
+    ]
 
-// Mock Data
-const MOCK_TASKS: Task[] = [
-    { id: '1', key: 'CRM-101', title: 'Fix Sidebar Navigation', project: 'CRM Frontend', status: 'In Progress', priority: 'High', assignee: { name: 'John Doe', initials: 'JD' }, dueDate: '2024-02-15' },
-    { id: '2', key: 'CRM-102', title: 'Design Task Drawer', project: 'CRM Frontend', status: 'Todo', priority: 'Medium', assignee: { name: 'Sarah Smith', initials: 'SS' }, dueDate: '2024-02-16' },
-    { id: '3', key: 'API-505', title: 'Backend Auth API', project: 'CRM Backend', status: 'Review', priority: 'Urgent', assignee: { name: 'Mike Ross', initials: 'MR' }, dueDate: '2024-02-14' },
-    { id: '4', key: 'APP-22', title: 'Splash Screen Animation', project: 'Mobile App', status: 'Done', priority: 'Low', assignee: { name: 'Jane Doe', initials: 'JD' }, dueDate: '2024-01-20' },
-    { id: '5', key: 'CRM-103', title: 'Unit Tests for Redux', project: 'CRM Frontend', status: 'Todo', priority: 'Medium', assignee: { name: 'John Doe', initials: 'JD' }, dueDate: '2024-02-20' },
-]
-
-export default function TasksPage() {
-    const params = useParams() as { orgName: string }
-    const [searchTerm, setSearchTerm] = useState("")
-    const [selectedTask, setSelectedTask] = useState<Task | null>(null)
-    const isSheetOpen = !!selectedTask
-
-    const filteredTasks = MOCK_TASKS.filter(task =>
-        task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        task.key.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        task.project.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-
-    const getPriorityColor = (p: TaskPriority) => {
-        switch (p) {
-            case 'Urgent': return 'bg-red-100 text-red-700 border-red-200'
-            case 'High': return 'bg-orange-100 text-orange-700 border-orange-200'
-            case 'Medium': return 'bg-yellow-100 text-yellow-700 border-yellow-200'
-            case 'Low': return 'bg-blue-100 text-blue-700 border-blue-200'
-            default: return 'bg-zinc-100 text-zinc-700'
-        }
-    }
-
-    const getStatusIcon = (s: TaskStatus) => {
-        switch (s) {
-            case 'Todo': return <CheckCircle2 className="w-4 h-4 text-zinc-400" />
-            case 'In Progress': return <Clock className="w-4 h-4 text-blue-500" />
-            case 'Review': return <AlertCircle className="w-4 h-4 text-purple-500" />
-            case 'Done': return <CheckCircle2 className="w-4 h-4 text-green-500" />
-        }
+    const handleAction = (msg: string) => {
+        setIsLoading(true)
+        setTimeout(() => {
+            setIsLoading(false)
+            toast.success(msg)
+        }, 800)
     }
 
     return (
-        <div className="flex flex-col h-full bg-zinc-50 dark:bg-zinc-900/50">
-            <SubHeader
-                title="All Tasks"
-                breadcrumbItems={[
-                    { label: "Dashboard", href: `/${params.orgName}/dashboard` },
-                    { label: "Project Management", href: `/${params.orgName}/modules/workspaces` },
-                    { label: "Tasks", href: `/${params.orgName}/modules/workspaces/tasks` },
-                ]}
-                rightControls={
-                    <CustomButton className="flex items-center gap-1 text-xs h-8 px-3">
-                        <Plus className="w-4 h-4" /> Create Task
-                    </CustomButton>
-                }
-            />
-
-            <div className="p-6 space-y-6">
-                {/* Filters */}
-                <div className="flex items-center justify-between">
-                    <div className="relative">
-                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-zinc-400" />
-                        <CustomInput
-                            placeholder="Search tasks..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="pl-9 h-9 w-[300px] bg-white dark:bg-zinc-950"
-                        />
+        <div className="flex flex-col gap-6 p-6 min-h-screen bg-[#fafafa]">
+            {/* PAGE HEADER */}
+            <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-2 text-[10px] font-medium text-zinc-400">
+                    <span>PROJECTS</span>
+                    <span>/</span>
+                    <span className="text-zinc-900 font-semibold">GLOBAL TASKS</span>
+                </div>
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mt-2">
+                    <div>
+                        <h1 className="text-xl font-bold text-zinc-900 tracking-tight">All Tasks</h1>
+                        <p className="text-xs text-zinc-500 font-medium">Global view of all assignments across every project and workspace.</p>
                     </div>
                     <div className="flex items-center gap-2">
-                        <CustomButton variant="outline" size="sm" className="h-9 gap-2">
-                            <Filter className="h-3.5 w-3.5" /> Filter
-                        </CustomButton>
+                        <Button className="h-8 rounded-md bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium px-3 shadow-sm active:scale-95" onClick={() => handleAction("Create Task Dialog")}>
+                            <Plus className="w-3.5 h-3.5 mr-2" />
+                            New Task
+                        </Button>
                     </div>
-                </div>
-
-                {/* Tasks Table */}
-                <div className="bg-white dark:bg-zinc-950 rounded-lg border border-zinc-200 dark:border-zinc-800 overflow-hidden shadow-sm">
-                    <CustomTable>
-                        <CustomTableHeader>
-                            <CustomTableRow className="bg-zinc-50/50 dark:bg-zinc-900/50">
-                                <CustomTableHead className="w-[100px]">ID</CustomTableHead>
-                                <CustomTableHead>Title</CustomTableHead>
-                                <CustomTableHead>Project</CustomTableHead>
-                                <CustomTableHead>Status</CustomTableHead>
-                                <CustomTableHead>Priority</CustomTableHead>
-                                <CustomTableHead>Assignee</CustomTableHead>
-                                <CustomTableHead>Due Date</CustomTableHead>
-                                <CustomTableHead className="w-[50px]"></CustomTableHead>
-                            </CustomTableRow>
-                        </CustomTableHeader>
-                        <CustomTableBody>
-                            {filteredTasks.length > 0 ? filteredTasks.map(task => (
-                                <CustomTableRow
-                                    key={task.id}
-                                    className="cursor-pointer hover:bg-blue-50/30 dark:hover:bg-blue-900/10 transition-colors"
-                                    onClick={() => setSelectedTask(task)}
-                                >
-                                    <CustomTableCell className="font-mono text-xs text-zinc-500">{task.key}</CustomTableCell>
-                                    <CustomTableCell className="font-medium text-zinc-800 dark:text-zinc-200">
-                                        {task.title}
-                                    </CustomTableCell>
-                                    <CustomTableCell>
-                                        <Badge variant="outline" className="font-normal text-zinc-500">
-                                            {task.project}
-                                        </Badge>
-                                    </CustomTableCell>
-                                    <CustomTableCell>
-                                        <div className="flex items-center gap-2">
-                                            {getStatusIcon(task.status)}
-                                            <span className="text-sm">{task.status}</span>
-                                        </div>
-                                    </CustomTableCell>
-                                    <CustomTableCell>
-                                        <Badge className={`rounded-md font-normal text-xs px-2 py-0.5 border ${getPriorityColor(task.priority)} bg-opacity-50`}>
-                                            {task.priority}
-                                        </Badge>
-                                    </CustomTableCell>
-                                    <CustomTableCell>
-                                        <div className="flex items-center gap-2">
-                                            <Avatar className="h-6 w-6">
-                                                <AvatarFallback className="text-[10px] bg-blue-100 text-blue-700">{task.assignee.initials}</AvatarFallback>
-                                            </Avatar>
-                                            <span className="text-sm text-zinc-600 dark:text-zinc-400">{task.assignee.name}</span>
-                                        </div>
-                                    </CustomTableCell>
-                                    <CustomTableCell className="text-zinc-500">
-                                        {new Date(task.dueDate).toLocaleDateString()}
-                                    </CustomTableCell>
-                                    <CustomTableCell onClick={(e) => e.stopPropagation()}>
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <CustomButton variant="ghost" size="icon" className="h-8 w-8 hover:bg-zinc-100">
-                                                    <MoreHorizontal className="h-4 w-4 text-zinc-400" />
-                                                </CustomButton>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
-                                                <DropdownMenuItem>Edit Task</DropdownMenuItem>
-                                                <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </CustomTableCell>
-                                </CustomTableRow>
-                            )) : (
-                                <CustomTableRow>
-                                    <CustomTableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                                        No tasks found matching your filters.
-                                    </CustomTableCell>
-                                </CustomTableRow>
-                            )}
-                        </CustomTableBody>
-                    </CustomTable>
                 </div>
             </div>
 
-            {/* Task Detail Drawer */}
-            <Sheet open={isSheetOpen} onOpenChange={(open) => !open && setSelectedTask(null)}>
-                <SheetContent className="sm:max-w-2xl w-full">
-                    {selectedTask ? (
-                        <div className="h-full flex flex-col">
-                            <SheetHeader className="mb-6">
-                                <div className="flex items-center gap-3 mb-2">
-                                    <span className="text-xs font-mono text-zinc-400">{selectedTask.key}</span>
-                                    <Badge variant="outline">{selectedTask.project}</Badge>
-                                </div>
-                                <SheetTitle className="text-xl">{selectedTask.title}</SheetTitle>
-                                <SheetDescription>
-                                    Created by You • Last updated 2 days ago
-                                </SheetDescription>
-                            </SheetHeader>
+            {/* STATS CARDS */}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <SmallCard className="bg-gradient-to-br from-indigo-500 to-indigo-700 border-t border-white/20 border-none text-white shadow-[0_8px_30px_rgb(99,102,241,0.3)] hover:shadow-[0_20px_40px_rgba(79,70,229,0.4)] hover:-translate-y-1 transform transition-all duration-300">
+                    <SmallCardHeader className="flex flex-row items-center justify-between pb-1 px-4 pt-4">
+                        <p className="text-[11px] text-white font-medium uppercase tracking-wider">My Tasks</p>
+                        <CheckCircle2 className="w-4 h-4 text-white" />
+                    </SmallCardHeader>
+                    <SmallCardContent className="px-4 pb-4">
+                        <p className="text-2xl font-bold text-white drop-shadow-md">12</p>
+                        <p className="text-[10px] text-white">3 due today</p>
+                    </SmallCardContent>
+                </SmallCard>
 
-                            <div className="flex-1 overflow-y-auto space-y-6 pr-4">
-                                {/* Status & Properties */}
-                                <div className="grid grid-cols-2 gap-4 p-4 bg-zinc-50 dark:bg-zinc-900 rounded-lg border">
-                                    <div>
-                                        <label className="text-xs font-medium text-zinc-500">Status</label>
-                                        <div className="mt-1 flex items-center gap-2 font-medium">
-                                            {getStatusIcon(selectedTask.status)} {selectedTask.status}
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label className="text-xs font-medium text-zinc-500">Priority</label>
-                                        <div className="mt-1">
-                                            <Badge className={`${getPriorityColor(selectedTask.priority)} border`}>
-                                                {selectedTask.priority}
-                                            </Badge>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label className="text-xs font-medium text-zinc-500">Assignee</label>
-                                        <div className="mt-1 flex items-center gap-2">
-                                            <Avatar className="h-6 w-6">
-                                                <AvatarFallback className="text-[10px] bg-blue-100 text-blue-700">{selectedTask.assignee.initials}</AvatarFallback>
-                                            </Avatar>
-                                            <span>{selectedTask.assignee.name}</span>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label className="text-xs font-medium text-zinc-500">Due Date</label>
-                                        <div className="mt-1 flex items-center gap-2">
-                                            <Clock className="w-4 h-4 text-zinc-400" />
-                                            <span>{new Date(selectedTask.dueDate).toLocaleDateString()}</span>
-                                        </div>
-                                    </div>
-                                </div>
+                <SmallCard className="bg-white border-t border-white shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.1)] hover:-translate-y-1 transform transition-all duration-300">
+                    <SmallCardHeader className="flex flex-row items-center justify-between pb-1 px-4 pt-4">
+                        <p className="text-[11px] text-zinc-500 font-medium tracking-tight">Overdue</p>
+                        <AlertCircle className="w-4 h-4 text-rose-500" />
+                    </SmallCardHeader>
+                    <SmallCardContent className="px-4 pb-4">
+                        <p className="text-2xl font-bold text-rose-600">5</p>
+                        <p className="text-[10px] text-zinc-400">Action required</p>
+                    </SmallCardContent>
+                </SmallCard>
 
-                                {/* Description */}
-                                <div>
-                                    <h3 className="text-sm font-medium mb-2">Description</h3>
-                                    <div className="text-sm text-zinc-600 dark:text-zinc-300 leading-relaxed min-h-[100px] p-4 border rounded-md">
-                                        This is a placeholder description. In the real implementation, this would be a rich text editor content area.
-                                        <br /><br />
-                                        - Check navigation links
-                                        <br />
-                                        - Ensure active state is correct
-                                        <br />
-                                        - Verify mobile responsiveness
-                                    </div>
-                                </div>
+                <SmallCard className="bg-white border-t border-white shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.1)] hover:-translate-y-1 transform transition-all duration-300">
+                    <SmallCardHeader className="flex flex-row items-center justify-between pb-1 px-4 pt-4">
+                        <p className="text-[11px] text-zinc-500 font-medium tracking-tight">Completed This Week</p>
+                        <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                    </SmallCardHeader>
+                    <SmallCardContent className="px-4 pb-4">
+                        <p className="text-2xl font-bold text-zinc-900">45</p>
+                        <p className="text-[10px] text-zinc-400">Top performer: Alice</p>
+                    </SmallCardContent>
+                </SmallCard>
 
-                                {/* Activity / Comments Placeholder */}
-                                <div>
-                                    <h3 className="text-sm font-medium mb-4">Activity</h3>
-                                    <div className="space-y-4">
-                                        <div className="flex gap-3">
-                                            <Avatar className="h-8 w-8">
-                                                <AvatarFallback>JD</AvatarFallback>
-                                            </Avatar>
-                                            <div className="flex-1">
-                                                <div className="bg-zinc-100 dark:bg-zinc-800 p-3 rounded-md rounded-tl-none">
-                                                    <p className="text-xs font-medium mb-1">John Doe</p>
-                                                    <p className="text-sm text-zinc-600 dark:text-zinc-300">Working on this now. Should be done by EOD.</p>
-                                                </div>
-                                                <span className="text-xs text-zinc-400 mt-1 block">2 hours ago</span>
-                                            </div>
+                <SmallCard className="bg-white border-t border-white shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.1)] hover:-translate-y-1 transform transition-all duration-300">
+                    <SmallCardHeader className="flex flex-row items-center justify-between pb-1 px-4 pt-4">
+                        <p className="text-[11px] text-zinc-500 font-medium tracking-tight">Backlog</p>
+                        <Clock className="w-4 h-4 text-zinc-300" />
+                    </SmallCardHeader>
+                    <SmallCardContent className="px-4 pb-4">
+                        <p className="text-2xl font-bold text-zinc-900">128</p>
+                        <p className="text-[10px] text-zinc-400">Unassigned tasks</p>
+                    </SmallCardContent>
+                </SmallCard>
+            </div>
+
+            {/* TASKS TABLE */}
+            <div className="bg-white rounded-lg border border-zinc-200 shadow-sm overflow-hidden flex flex-col">
+                <div className="p-4 border-b border-zinc-100 flex items-center justify-between bg-zinc-50/20">
+                    <div className="relative w-full md:w-80 group">
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-400" />
+                        <Input
+                            placeholder="Search tasks..."
+                            className="pl-9 h-9 bg-white border-zinc-200 rounded-md text-xs font-medium focus:ring-1 focus:ring-indigo-100"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                    </div>
+                    <div className="flex gap-2">
+                        <Button variant="outline" className="h-8 text-[10px] font-bold uppercase transition-colors">
+                            <Filter className="w-3.5 h-3.5 mr-2" /> Filter
+                        </Button>
+                    </div>
+                </div>
+
+                <Table>
+                    <TableHeader className="bg-zinc-50/50">
+                        <TableRow>
+                            <TableHead className="py-3 px-4 font-semibold text-[11px] text-zinc-500 uppercase">Task</TableHead>
+                            <TableHead className="py-3 font-semibold text-[11px] text-zinc-500 uppercase">Project</TableHead>
+                            <TableHead className="py-3 font-semibold text-[11px] text-zinc-500 uppercase">Priority</TableHead>
+                            <TableHead className="py-3 font-semibold text-[11px] text-zinc-500 uppercase text-center">Status</TableHead>
+                            <TableHead className="py-3 font-semibold text-[11px] text-zinc-500 uppercase text-center">Due Date</TableHead>
+                            <TableHead className="py-3 font-semibold text-[11px] text-zinc-500 uppercase text-center">Assignee</TableHead>
+                            <TableHead className="py-3 text-right pr-4 font-semibold text-[11px] text-zinc-500 uppercase">Actions</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {tasks.map((t) => (
+                            <TableRow key={t.id} className="hover:bg-zinc-50/50 transition-colors">
+                                <TableCell className="py-3 px-4">
+                                    <div className="flex flex-col">
+                                        <span className="text-xs font-bold text-zinc-900">{t.title}</span>
+                                        <span className="text-[10px] text-zinc-400 font-mono">{t.id}</span>
+                                    </div>
+                                </TableCell>
+                                <TableCell className="py-3">
+                                    <span className="text-xs font-medium text-zinc-600">{t.project}</span>
+                                </TableCell>
+                                <TableCell className="py-3">
+                                    <div className="flex items-center gap-1.5">
+                                        {t.priority === 'CRITICAL' && <ArrowUpCircle className="w-3.5 h-3.5 text-rose-500" />}
+                                        {t.priority === 'HIGH' && <ArrowUpCircle className="w-3.5 h-3.5 text-amber-500" />}
+                                        {t.priority === 'LOW' && <ArrowDownCircle className="w-3.5 h-3.5 text-blue-500" />}
+                                        <span className={`text-[10px] font-bold uppercase ${t.priority === 'CRITICAL' ? 'text-rose-600' :
+                                                t.priority === 'HIGH' ? 'text-amber-600' :
+                                                    'text-zinc-500'
+                                            }`}>{t.priority}</span>
+                                    </div>
+                                </TableCell>
+                                <TableCell className="py-3 text-center">
+                                    <Badge className={`text-[9px] uppercase font-bold border-none px-2 py-0.5 ${t.status === 'DONE' ? 'bg-emerald-50 text-emerald-600' :
+                                            t.status === 'IN_PROGRESS' ? 'bg-indigo-50 text-indigo-600' :
+                                                'bg-zinc-100 text-zinc-500'
+                                        }`}>
+                                        {t.status}
+                                    </Badge>
+                                </TableCell>
+                                <TableCell className="py-3 text-center text-xs text-zinc-500 font-medium">
+                                    {t.due}
+                                </TableCell>
+                                <TableCell className="py-3 text-center">
+                                    <div className="flex items-center justify-center gap-2">
+                                        <div className="w-6 h-6 rounded-full bg-zinc-100 flex items-center justify-center text-[10px] font-bold text-zinc-600">
+                                            {t.assignee[0]}
                                         </div>
                                     </div>
-                                </div>
-                            </div>
-
-                            {/* Footer Actions */}
-                            <div className="pt-4 mt-4 border-t flex justify-end gap-2">
-                                <CustomButton variant="outline" onClick={() => setSelectedTask(null)}>Close</CustomButton>
-                                <CustomButton>Save Changes</CustomButton>
-                            </div>
-                        </div>
-                    ) : null}
-                </SheetContent>
-            </Sheet>
+                                </TableCell>
+                                <TableCell className="py-3 text-right pr-4">
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" className="h-7 w-7 p-0 hover:bg-zinc-100 rounded-md">
+                                                <MoreHorizontal className="h-4 w-4 text-zinc-400" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end" className="w-48 shadow-xl border-zinc-100">
+                                            <DropdownMenuItem onClick={() => handleAction("View details")}>
+                                                View Details
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => handleAction("Edit task")}>
+                                                Edit Task
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </div>
         </div>
     )
 }

@@ -15,6 +15,7 @@ import { signInUser, pwlessLogin, otpLogin } from "@/hooks/authHooks"
 import { ErrorMessage } from "@/components/custom/ErrorMessage"
 import { jwtDecode } from "jwt-decode"
 import { supportAgentLogin } from "@/hooks/supportHooks"
+import { useBrandingStore } from "../../../lib/useBrandingStore"
 
 export default function SignInPage() {
   const [showPassword, setShowPassword] = useState(false)
@@ -101,18 +102,25 @@ export default function SignInPage() {
     }
   };
 
+  const { loginLogoUrl, primaryColor, orgName } = useBrandingStore()
+
   return (
     <div className="signin-page min-h-screen flex items-center justify-center bg-[#1e293b] p-4">
       <div className="signin-container w-full max-w-md">
         <Card className="signin-card shadow-2xl border-0">
           <CardHeader className="signin-header space-y-4 text-center">
             <div className="signin-logo flex justify-center">
-              <div className="signin-logo-icon flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl">
-                <Building2 className="w-8 h-8 text-white" />
+              <div className="signin-logo-icon flex items-center justify-center w-16 h-16 bg-primary rounded-2xl"
+                style={{ backgroundColor: primaryColor }}>
+                {loginLogoUrl ? (
+                  <img src={loginLogoUrl} alt="Logo" className="w-10 h-10 object-contain" />
+                ) : (
+                  <Building2 className="w-8 h-8 text-white" />
+                )}
               </div>
             </div>
             <div>
-              <CardTitle className="signin-title text-2xl font-bold text-blue-600">Cubicle</CardTitle>
+              <CardTitle className="signin-title text-2xl font-bold text-primary" style={{ color: primaryColor }}>{orgName || "Cubicle"}</CardTitle>
               <CardDescription className="signin-subtitle text-gray-600">Sign in to your account to continue</CardDescription>
             </div>
           </CardHeader>
@@ -154,7 +162,7 @@ export default function SignInPage() {
                 {!isOtpMode && <Link href="/auth/forgot-pwd" className="signin-forgot text-sm text-blue-600 hover:underline">Forgot Password?</Link>}
               </div>
 
-              <Button type="submit" className="signin-submit w-full h-11 bg-blue-600 hover:bg-blue-700" disabled={isLoading}>
+              <Button type="submit" className="signin-submit w-full h-11 bg-primary hover:opacity-90" style={{ backgroundColor: primaryColor }} disabled={isLoading}>
                 {isLoading ? "Processing..." : isOtpMode ? (otpSent ? "Verify OTP" : "Send OTP") : "Sign In"}
               </Button>
             </form>

@@ -8,9 +8,8 @@ const SmallCard = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "border border-transparent bg-white text-gray-800 shadow-md transition-all duration-200 p-3",
-      "text-sm", // smaller text overall
-      "hover:shadow-xl hover:-translate-y-1 hover:scale-[1.01]", // 3D lift effect
+      "border bg-white text-gray-800 shadow-sm transition-all duration-200",
+      "text-sm",
       className
     )}
     {...props}

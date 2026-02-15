@@ -1,0 +1,488 @@
+workspace
+createWorkspace – What It Does:
+Creates a new workspace under the logged-in user’s organization.
+Steps:
+● Validates workspace name and description.
+● Checks for duplicate workspace names for the user.
+● Creates the workspace.
+● Assigns the creator as a WorkspaceAdmin member.
+● Generates a workspace-specific JWT token and sets it in a cookie.
+● Updates the user’s currentWorkspace.
+🔑 updateWorkspace – What It Does:
+Updates an existing workspace’s name and description.
+Steps:
+● Validates workspace inputs.
+● Fetches the workspace by ID.
+● Updates name and description.
+🔑 deleteWorkspace – What It Does:
+Soft-deletes a workspace and its related projects and members.
+Steps:
+● Marks the workspace as isDeleted: true.
+● Marks all projects under the workspace as deleted.
+● Marks all workspace members as deleted.
+🔑 getAllWorkspace – What It Does:
+Fetches all active workspaces in the organization for admin access.
+🔑 getMyWorkspace – What It Does:
+Fetches all workspaces the logged-in user is an active member of.
+🔑 getWorkspaceById – What It Does:
+Fetches a specific workspace by ID.
+Steps:
+● Validates workspace ID.
+● Checks if the user is a member of the workspace.
+● Fetches workspace details along with creator info.
+● Generates workspace-specific JWT token.
+🔑 getWorkspaceAnalytics – What It Does:
+Generates analytics for a workspace.
+Steps:
+● Counts total projects and members.
+● Counts active and completed tasks.
+● Aggregates tasks per member.
+● Aggregates tasks per project and per team.
+● Calculates workload distribution.
+🔑 workspacemember – What It Does:
+Fetches members of a workspace with optional filters.
+Steps:
+● Supports pagination, email search, and custom permission filters.
+● Populates user and role info.
+● Returns members with their permissions and status.
+🔑 AddworkspaceMember – What It Does:
+Adds a user to a workspace.
+Steps:
+● Validates workspace and organization membership.
+● Checks if user is already a member.
+● Assigns the specified role.
+● Creates a new workspace member record.
+🔑 RemoveworkspaceMember – What It Does:
+Removes a user from a workspace (soft delete).
+Steps:
+● Validates workspace and user.
+● Marks the member as deleted and sets status: removed.
+● Sends an email notification to the removed user.
+project
+createProject – What It Does
+● Extracts user and organization context from auth token
+● Validates workspace ID and project input using Zod
+● Checks that:
+○ Workspace exists
+○ Project template exists
+○ Project name is unique in the workspace
+● Validates workflow states in the template
+● Finds the “ProjectAdmin” role for the project owner
+● Creates the main project document
+● Creates associated workflow and board from the template
+● Attaches board to the project
+● Creates automation rules if defined in the template
+● Creates project membership for the creator with owner role
+● Creates tasks based on the template
+● Generates a project-specific token and sets it in cookie
+✏️ updateProject – What It Does
+● Placeholder route (currently only acknowledges the route hit)
+🗑 deleteProject – What It Does
+● Validates workspace and project IDs
+● Finds project scoped to workspace and organization
+● Deletes:
+○ Project members
+○ Tasks
+○ Boards
+○ Workflows
+○ Audit logs
+○ Teams and team members associated with the project
+● Deletes the project itself
+● Uses MongoDB session + transaction to ensure atomicity
+🗄 archiveProject – What It Does
+● Placeholder route (intended for archiving a project)
+📂 getAllProjectsByWorkspace – What It Does
+● Validates workspace ID
+● Extracts query parameters (pagination, filters like visibility, type, archive status)
+● Fetches projects in the workspace with applied filters
+● Populates creator info
+● Returns paginated list of projects
+👤 getMyProjectsByWorkspace – What It Does
+● Validates workspace ID
+● Fetches projects where the authenticated user is a member
+● Returns list of projects in the workspace that the user belongs to
+🔍 getProjectById – What It Does
+● Validates project ID and workspace ID
+● Checks that the project exists in the workspace and organization
+● Fetches project details along with:
+○ Creator info
+○ Workspace info
+○ Organization info
+○ Board info
+● Checks if the user is a project member
+● Fetches role and permissions
+● Generates project token and sets cookie
+● Returns project details
+👥 getAssignableMembers – What It Does
+● Validates workspace ID
+● Confirms project belongs to workspace and organization
+● Fetches all project members
+● Fetches all workspace members
+● Returns users who are part of the workspace but not yet assigned to the project
+📊 getProjectAnalytics – What It Does
+● Validates project ID
+● Confirms project exists
+● Calculates project metrics:
+○ Total tasks
+○ Completed tasks
+○ Pending tasks
+○ Overdue tasks
+○ Tasks per member
+○ Tasks per workflow state
+● Returns aggregated analytics for the project
+teams
+createTeam – What It Does:
+Creates a new team in a project and optionally attaches a custom board.
+Steps:
+● Validates required fields (name, workspaceId, projectId).
+● Checks for duplicate team names within the project.
+● Verifies the creator is a project member.
+● Creates the team record and adds the creator as a TeamAdmin.
+● If useTeamBoard is false, creates a custom workflow and board from a template.
+● If useTeamBoard is true, links the team to the project board.
+● Generates a team-specific JWT token and sets it in a cookie.
+🔑 getTeamsByWorkspace – What It Does:
+Fetches all teams in a workspace or project with pagination.
+Steps:
+● Validates workspaceId and/or projectId.
+● Supports pagination (page, limit).
+● Returns team details with creator info and project names.
+🔑 addTeamMember – What It Does:
+Adds a user to a team with a specific role.
+Steps:
+● Validates teamId, projectId, memberId, and role.
+● Checks for duplicates.
+● Fetches role permissions from the database.
+● Creates a TeamMember record.
+● Increments the team’s membersCount.
+🔑 getTeamMembers – What It Does:
+Fetches all members of a specific team within a project.
+Steps:
+● Validates teamId and projectId.
+● Aggregates detailed member info: user profile, role, permissions, addedBy info.
+● Returns a structured list of members.
+🔑 removeTeamMember – What It Does:
+Removes a member from a team permanently.
+Steps:
+● Validates teamId and member’s team ID.
+● Deletes the TeamMember record.
+● Optionally decrements the team’s membersCount.
+🔑 changeMemberRoleInTeam – What It Does:
+Changes the role or custom permissions of a team member.
+Steps:
+● Validates teamId, projectId, memberId, and role.
+● Prevents assigning TeamAdmin role.
+● Updates role or overrides permissions if provided.
+● Returns the member’s updated role and permissions.
+🔑 toggleArchiveTeam – What It Does:
+Archives or unarchives a team.
+Steps:
+● Validates teamId.
+● Sets isArchived to true or false.
+● Returns updated team status.
+🔑 deleteTeam – What It Does:
+Deletes a team and its related data.
+Steps:
+● Validates teamId and projectId.
+● Deletes custom workflow and board if the team has a custom board.
+● Deletes the team record and all TeamMember records.
+● Removes assignedTeamId from tasks in the project.
+🔑 getMyTeamsByWorkspace – What It Does:
+Fetches all teams in a workspace that the logged-in user belongs to.
+Steps:
+● Finds the user’s ProjectMember record.
+● Fetches TeamMember entries for the user.
+● Returns all teams in the requested workspace.
+🔑 getTeamById – What It Does:
+Fetches a single team by ID.
+Steps:
+● Validates teamId.
+● Checks if the user is a project member.
+● Returns team details including creator info.
+🔑 getAssignableMembersForTeam – What It Does:
+Fetches project members who can be added to a team.
+Steps:
+● Fetches all active project members.
+● Excludes members already in the team.
+● Returns a list of assignable members.
+workflow
+createWorkflow – What It Does:
+Creates a new workflow for a project or a team.
+Steps:
+● Validates that either projectId or teamId is provided.
+● Creates a workflow record with states, transitions, and isDefaultWorkflow.
+● Saves the workflow and returns the created workflow object.
+🔑 getWorkflow – What It Does:
+Fetches a workflow scoped to a specific project.
+Steps:
+● Validates projectId and workflowId.
+● Fetches the workflow and returns its states and transitions.
+● Returns a not-found message if the workflow doesn’t exist for the given project.
+🔑 updateWorkflow – What It Does:
+Updates the name or transitions of an existing workflow.
+Steps:
+● Validates the input using a schema.
+● Validates workflowId.
+● Fetches the workflow and ensures it exists and is not deleted.
+● Validates that all transitions reference valid state keys and orders.
+● Updates workflow name and transitions.
+● Saves the workflow and returns the updated object.
+🔑 deleteWorkflow – What It Does:
+Soft-deletes a workflow.
+Steps:
+● Validates that the workflow exists and is not already deleted.
+● Sets isDeleted to true.
+● Saves the workflow and confirms deletion.
+🔑 getWorkflowForBoard – What It Does:
+Fetches workflows associated with a board (team or project board).
+Steps:
+● Validates boardId.
+● Fetches the board and identifies whether it’s a team board or project board.
+● Retrieves all workflows linked to the board’s team or project.
+● Returns a list of workflows.
+board
+createBoard – What It Does:
+Creates a new board for a project or team, optionally using a template.
+Steps:
+● Validates that either projectId or teamId is provided.
+● Validates templateId if supplied.
+● If template is provided, maps template columns and creates a workflow from template
+states and transitions.
+● Creates the board with columns, workflow reference, type, and default flags.
+● Commits transaction and returns the created board (and workflow ID if created).
+🔹 getAllBoard – What It Does:
+Fetches all boards for a specific project.
+Steps:
+● Retrieves boards filtered by projectId and not deleted.
+● Simplifies board data, including columns and default flags.
+● Returns total boards and the simplified list.
+🔹 deleteBoard – What It Does:
+Soft-deletes a board and its tasks.
+Steps:
+● Validates boardId and ensures board exists.
+● Checks if board is team-assigned and deletable.
+● Soft-deletes all tasks associated with the board.
+● Marks board as deleted, recording the deleting user.
+● Commits transaction and confirms deletion.
+🔹 getBoardById – What It Does:
+Fetches a single board by ID, optionally scoped to a team or project.
+Steps:
+● Validates boardId (and teamId if provided).
+● Fetches the board, including columns, workflow, and project info.
+● Returns board details or appropriate not-found error.
+🔹 addColumn – What It Does:
+Adds a new column to a board and syncs workflow states/transitions.
+Steps:
+● Validates boardId and column name.
+● Ensures column key is unique within the board.
+● Calculates the next order value and appends column.
+● If the board has a workflow, adds a corresponding state and generates transitions
+to/from existing states.
+● Commits transaction and returns the new column.
+🔹 updateColumn – What It Does:
+Updates a column’s name, key, or color and syncs workflow and task statuses.
+Steps:
+● Validates column name and board existence.
+● Ensures the new key is not duplicated.
+● Updates column details.
+● Updates corresponding workflow state (name/key/color) if workflow exists.
+● Updates all tasks using the old column key to the new key.
+● Commits transaction and returns updated column info.
+🔹 deleteColumn – What It Does:
+Deletes a column from a board and removes associated workflow state/transitions.
+Steps:
+● Validates boardId and column existence.
+● Prevents deletion if tasks exist in that column.
+● Removes corresponding workflow state and all transitions involving that state.
+● Removes column from the board.
+● Commits transaction and returns remaining column count.
+tasks
+createTask
+● Validates request body using createTaskSchema.
+● Extracts required fields (name, boardId, status, type, etc.).
+● Checks if project exists.
+● Checks if board exists under the project.
+● Verifies if user is a project member.
+● If assignedTeamId is provided:
+○ Validates team existence under the same project.
+○ Ensures team board matches project board.
+● Prevents duplicate task names within the same board/project.
+● Validates task status against board columns.
+● Optional parent task validation:
+○ Must exist.
+○ Must belong to the same project.
+● Validates task type (task or bug).
+● Creates task with proper column reference, board, assignee, sprint, epic, parent, and
+custom fields.
+2. getAllTasks
+● Supports optional filtering by teamId and boardId.
+● Checks project existence.
+● Fetches tasks, populating:
+○ Assignee (nested user info)
+○ Assigned team
+○ Parent task (name, code)
+● Flattens assignee info for easy frontend use.
+● Returns total task count and cleaned task list.
+3. deleteTask
+● Soft-deletes a task and all its sub-tasks.
+● Validates task, project, board, and optional team.
+● Uses session/transaction to ensure atomic deletion.
+● Marks isDeleted, deletedBy, deletedAt for both main task and subtasks.
+● Returns success message.
+4. GetAllSubTasks
+● Fetches sub-tasks of a parent task for a given board.
+● Validates projectId, taskId, and boardId.
+● Ensures parent task belongs to the same project.
+● Returns sub-tasks sorted by creation date.
+5. getTaskById
+● Validates task ID.
+● Fetches task and populates:
+○ Project info
+○ Assigned team info
+● Returns task details or 404 if not found.
+6. updateTask
+● Validates taskId and projectId.
+● Checks project and task existence.
+● Validates request body using updateTaskSchema.
+● If status is updated:
+○ Checks if board exists.
+○ Validates status against board columns.
+○ Validates workflow transitions.
+○ Updates task history for status change.
+● Updates task fields atomically.
+● Logs all changes to AuditLog.
+● Returns updated task with optional status transition info.
+7. reorderTasks
+● Moves task from one column to another within a board.
+● Validates task, board, project IDs.
+● Validates from and to columns exist.
+● Checks workflow for allowed transition.
+● Updates task status, column order, and history.
+● Logs the move in AuditLog.
+● Returns task and transition info.
+8. getTasksByBoardColumn
+● Fetches all tasks for a given board.
+● Validates board ID.
+● Fetches board and tasks in parallel.
+● Groups tasks by board columns.
+● Populates assignee info.
+● Returns column-wise grouped tasks with tasks nested under columns.
+projectmember
+assignMember
+● Validates request body using addMemberSchema.
+● Checks if workspace exists under the organization.
+● Finds the workspace member and ensures they are not removed.
+● Verifies the project belongs to the workspace and organization.
+● Checks if the user is already a project member.
+● Fetches the role by name from RolePermission.
+● Creates a new ProjectMember with role, userId, projectId, workspaceId, and
+organizationId.
+● Returns the added user info (email and role).
+2. getAllProjectMembers
+● Requires projectId.
+● Supports pagination (page, limit).
+● Fetches project members and populates:
+○ User info (email, fullName)
+○ Role info (role, permissions)
+● Determines effective permissions (role default or custom override).
+● Returns formatted members list with pagination info.
+3. UpdateProjectMember
+● Requires projectId and memberId.
+● Fetches project member and current role.
+● If role has changed:
+○ Fetches new role.
+○ Updates role, resets custom permissions.
+● If role unchanged and custom permissions are provided:
+○ Applies override permissions.
+● Saves updates and returns updated member info.
+4. RemoveProjectMember
+● Requires memberId and projectId.
+● Fetches project member and ensures they exist.
+● Prevents removal if the member is a ProjectOwner.
+● Deletes the project member.
+● Unassigns all tasks assigned to this member.
+● Returns confirmation of removal and unassigned tasks
+document
+ploadDocument
+● Handles uploading files and images for a document.
+● Determines the level of the document based on what is provided:
+○ taskId → task-level
+○ projectId → project-level
+○ workspaceId → workspace-level
+○ else → organization-level
+● Uploads files to Cloudinary:
+○ file → stored under documents/files
+○ image → stored under documents/images
+● Saves a Document record in the database with metadata: organization, uploader, level,
+file/image info.
+● Returns the created document on success.
+2. getDocuments
+● Fetches documents filtered by any combination of:
+○ taskId, projectId, workspaceId, organizationId
+● Only includes documents that are not deleted (isDeleted = false).
+● Populates uploader info (firstName, lastName, email).
+● Returns total count and document list.
+3. deleteDocument
+● Performs soft/hard delete of a document:
+○ Validates documentId.
+○ Removes file/image from Cloudinary if present.
+○ Deletes the document record from the database.
+● Returns confirmation of deletion.
+4. getStorageUsage
+● Calculates storage usage for an organization:
+○ Counts total documents.
+○ Sums sizes of all file and image fields.
+○ Returns total size in bytes, MB, and GB along with file count.
+project template
+1. listTemplates
+● Fetches templates filtered by:
+○ category (optional)
+○ recommended (optional boolean)
+○ System templates vs organization-specific templates.
+● Combines system and org-specific templates into a single list.
+● Returns total count and template details (name, description, boardType, category,
+recommended, previewImage).
+2. getTemplate
+● Fetches a single template by its ID.
+● Returns template data if found.
+● Returns 404 if template does not exist.
+3. createTemplate
+● Validates request body using createSchema.
+● Checks for duplicate template name (system templates vs org templates).
+● Uploads preview image to Cloudinary if provided.
+● Creates a new ProjectTemplate document:
+○ Marks isSystem true if user is SuperAdmin.
+○ Stores createdBy as the current user.
+● Returns the created template data.
+4. updateTemplate
+● Validates request body using updateSchema.
+● Fetches template by ID and ensures it exists.
+● Optionally enforces version control (prevents conflicts from concurrent edits).
+● Updates template fields and increments version.
+● Returns updated template data.
+5. deleteTemplate
+● Fetches template by ID.
+● Prevents deletion if it is a system template (isSystem = true).
+● Deletes the template if allowed.
+● Returns confirmation message.
+comment
+createComment
+● Creates a new comment for a task.
+● Supports nested comments via parentId for threading.
+● Associates the comment with:
+○ taskId (mandatory)
+○ projectId, workspaceId, organizationId (optional)
+○ createdBy → the current user
+● Uses a transaction to ensure safe creation.
+● Returns the created comment on success.
+2. getCommentsByTask
+● Fetches all non-deleted comments for a specific task.
+● Populates author info (name, avatar).
+● Builds a threaded structure:
+○ Comments with parentId become replies to their parent comment.
+○ Top-level comments (no parent) are returned as roots with replies arrays.
+● Returns the structured comment tree.
+3. deleteComment
+● Performs a soft delete by setting isDeleted = true.
+● Only marks the comment as deleted; does not remove from DB.
+● Returns a confirmation message.

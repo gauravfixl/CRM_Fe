@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation"
 import { Bell, Search, Settings, Plus, Filter, Download, MoreVertical, Building2 } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { SidebarTrigger } from "@/components/ui/sidebar"
+import { SidebarTrigger, useSidebar } from "@/shared/components/ui/sidebar"
 import { ThemeToggle } from "@/components/theme-toggle"
 import {
   DropdownMenu,
@@ -29,6 +29,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useRouter } from "next/navigation"
 import { Switch } from "@/components/ui/switch"
 import { useAuthStore } from "@/lib/useAuthStore"
+import { useBrandingStore } from "../../lib/useBrandingStore"
 import { logoutUser } from "@/hooks/authHooks"
 
 // Helper function to get first two letters of email (uppercase)
@@ -99,7 +100,7 @@ const getModuleActions = (pathname: string) => {
     }
   }
 
-  if (pathname.includes('/project-management')) {
+  if (pathname.includes('/projectmanagement') || pathname.includes('/project-management')) {
     return {
       title: "Project Management",
       actions: [
@@ -133,7 +134,8 @@ const getModuleActions = (pathname: string) => {
   }
 }
 
-export function AppHeader({ setSidebarOpen }: { setSidebarOpen: React.Dispatch<React.SetStateAction<boolean>> }) {
+export function AppHeader({ setSidebarOpen }: { setSidebarOpen?: React.Dispatch<React.SetStateAction<boolean>> }) {
+  const { toggleSidebar } = useSidebar()
   const pathname = usePathname()
   const [isModulePanelOpen, setIsModulePanelOpen] = useState(false)
   const moduleActions = getModuleActions(pathname)
@@ -141,6 +143,7 @@ export function AppHeader({ setSidebarOpen }: { setSidebarOpen: React.Dispatch<R
   const router = useRouter()
   // inside AppHeader component
   const { user } = useAuthStore()
+  const { logoUrl } = useBrandingStore()
   const handleLogout = async () => {
     await logoutUser();
     // Optional: you can do extra cleanup or tracking here if needed
@@ -180,12 +183,15 @@ export function AppHeader({ setSidebarOpen }: { setSidebarOpen: React.Dispatch<R
       <button
         onClick={() => {
           console.log("Header button clicked — toggling sidebar")
-          setSidebarOpen(prev => !prev)
+          if (setSidebarOpen) {
+            setSidebarOpen(prev => !prev)
+          } else {
+            toggleSidebar()
+          }
         }}
         className="flex items-center gap-2 cursor-pointer"
       >
-        {/* <Building2 className="size-5 text-primary" /> */}
-        <img src="/images/cubicleweb.png" alt="Logo" className="h-12 w-12 object-contain" />
+        <img src={logoUrl || "/images/cubicleweb.png"} alt="Logo" className="h-12 w-12 object-contain" />
       </button>
 
 

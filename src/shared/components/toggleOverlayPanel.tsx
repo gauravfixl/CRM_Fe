@@ -39,7 +39,7 @@ const MODULES_MAP: Record<string, { label: string; url: string; icon: React.Reac
   dashboard: { label: "Dashboard", url: "/dashboard", icon: <Home size={18} /> },
   lead: { label: "Lead Management", url: "/modules/crm/leads", icon: <Users size={18} /> },
   invoice: { label: "Invoices", url: "/modules/invoice/all", icon: <FileText size={18} /> },
-  project: { label: "Project Management", url: "/modules/workspaces", icon: <FolderKanban size={18} /> },
+  project: { label: "Project Management", url: "/projectmanagement", icon: <FolderKanban size={18} /> },
   organization: { label: "Organization Management", url: "/modules/organization/all-org", icon: <Building size={18} /> },
   firm: { label: "Firm Management", url: "/modules/firm-management/firms", icon: <Target size={18} /> },
   client: { label: "Client Management", url: "/modules/crm/clients", icon: <Target size={18} /> },
@@ -91,7 +91,7 @@ export default function ToggleOverlayPanel() {
 
   const prefixUrl = React.useCallback((url: string) => {
     if (!currentOrg) return url;
-    if (url.startsWith("/hrmcubicle")) return url;
+    if (url.startsWith("/hrmcubicle") || url.startsWith("/projectmanagement")) return url;
     const cleanPath = url.startsWith("/") ? url : `/${url}`;
     return `/${currentOrg}${cleanPath}`;
   }, [currentOrg]);

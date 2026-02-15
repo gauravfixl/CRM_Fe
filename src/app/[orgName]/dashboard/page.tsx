@@ -106,7 +106,7 @@ export default function DashboardPage() {
   }, [setOrganizations])
 
   return (
-    <div className="relative h-[90vh] overflow-hidden organization-dashboard">
+    <div className="relative h-[90vh] overflow-hidden organization-dashboard font-outfit">
       {/* Fixed Background */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary/50 via-white to-primary/20 pointer-events-none z-0 bg-fixed" />
 
@@ -119,8 +119,8 @@ export default function DashboardPage() {
                 <Sparkles className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h6 className="font-bold text-white">Organization Dashboard</h6>
-                <p className="text-sm text-white">Welcome back! Here's what's happening today.</p>
+                <h6 className="text-sm font-semibold text-white tracking-tight normal-case">Organisation Dashboard</h6>
+                <p className="text-xs font-medium text-white/80">Welcome Back! Here's What's Happening Today.</p>
               </div>
             </div>
           </div>
@@ -128,52 +128,52 @@ export default function DashboardPage() {
 
         <div className="flex-1 space-y-4 p-4 md:p-8">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <SmallCard className="border bg-gradient-to-r from-primary/70 to-primary text-white">
+            <SmallCard className="border bg-gradient-to-r from-primary/70 to-primary text-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
               <SmallCardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-white text-sm opacity-80">Total Users</p>
-                    <p className="text-white text-2xl font-bold">2,847</p>
-                    <p className="text-white text-xs mt-1">+12% from last month</p>
+                    <p className="text-white text-xs opacity-80">Total Users</p>
+                    <p className="text-white text-xl font-semibold mt-1">2,847</p>
+                    <p className="text-white text-[10px] mt-1">+12% From Last Month</p>
                   </div>
                   <Users className="w-5 h-5 text-white" />
                 </div>
               </SmallCardContent>
             </SmallCard>
 
-            <SmallCard className="border bg-white">
+            <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
               <SmallCardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-gray-600 text-sm">Organizations</p>
-                    <p className="text-2xl font-bold text-gray-900">{organizations?.length || 0}</p>
-                    <p className="text-green-600 text-xs mt-1">+3 new this week</p>
+                    <p className="text-gray-600 text-xs">Organizations</p>
+                    <p className="text-xl font-semibold text-gray-900 mt-1">{organizations?.length || 0}</p>
+                    <p className="text-green-600 text-[10px] mt-1">+3 New This Week</p>
                   </div>
                   <Building2 className="w-5 h-5 text-primary" />
                 </div>
               </SmallCardContent>
             </SmallCard>
 
-            <SmallCard className="border bg-white">
+            <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
               <SmallCardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-gray-600 text-sm">Active Sessions</p>
-                    <p className="text-2xl font-bold text-gray-900">1,234</p>
-                    <p className="text-blue-600 text-xs mt-1">+8% increase</p>
+                    <p className="text-gray-600 text-xs">Active Sessions</p>
+                    <p className="text-xl font-semibold text-gray-900 mt-1">1,234</p>
+                    <p className="text-blue-600 text-[10px] mt-1">+8% Increase</p>
                   </div>
                   <Activity className="w-5 h-5 text-primary" />
                 </div>
               </SmallCardContent>
             </SmallCard>
 
-            <SmallCard className="border bg-white">
+            <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
               <SmallCardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-gray-600 text-sm">Growth Rate</p>
-                    <p className="text-2xl font-bold text-gray-900">24.5%</p>
-                    <p className="text-green-600 text-xs mt-1">Above target</p>
+                    <p className="text-gray-600 text-xs">Growth Rate</p>
+                    <p className="text-xl font-semibold text-gray-900 mt-1">24.5%</p>
+                    <p className="text-green-600 text-[10px] mt-1">Above Target</p>
                   </div>
                   <TrendingUp className="w-5 h-5 text-primary" />
                 </div>
@@ -181,9 +181,9 @@ export default function DashboardPage() {
             </SmallCard>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border p-4">
+          <div className="bg-white rounded-xl shadow-md border p-4">
             <div className="flex items-center justify-between mb-4">
-              <p className="text-base font-semibold text-gray-900">Performance Metrics</p>
+              <p className="text-base font-medium text-gray-900">Performance Metrics</p>
               <Badge variant="secondary" className="bg-primary/10 text-primary text-xs px-2 py-0.5">Live Data</Badge>
             </div>
             <StatsCards />
@@ -191,9 +191,9 @@ export default function DashboardPage() {
 
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mt-4">
             {[
-              { title: "Manage Users", desc: "Add, edit, or remove user accounts", icon: Users, color: "bg-blue-500", from: "from-blue-50", to: "to-indigo-50" },
-              { title: "Organizations", desc: "Configure organization settings", icon: Building2, color: "bg-green-500", from: "from-green-50", to: "to-emerald-50" },
-              { title: "System Settings", desc: "Configure system preferences", icon: Settings, color: "bg-purple-500", from: "from-purple-50", to: "to-violet-50" },
+              { title: "Manage Users", desc: "Add, Edit, Or Remove User Accounts", icon: Users, color: "bg-blue-500", from: "from-blue-50", to: "to-indigo-50" },
+              { title: "Organizations", desc: "Configure Organization Settings", icon: Building2, color: "bg-green-500", from: "from-green-50", to: "to-emerald-50" },
+              { title: "System Settings", desc: "Configure System Preferences", icon: Settings, color: "bg-purple-500", from: "from-purple-50", to: "to-violet-50" },
             ].map((item, i) => (
               <SmallCard key={i} className={`border bg-gradient-to-br ${item.from} ${item.to} hover:shadow-md transition-all duration-200 cursor-pointer`}>
                 <SmallCardContent className="p-4">

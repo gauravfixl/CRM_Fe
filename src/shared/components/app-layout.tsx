@@ -9,6 +9,7 @@ import LoaderWrapper from './custom/LoaderWrapper'
 import React, { useState, ReactNode } from 'react'
 import { SupportAccessProvider } from '@/contexts/AuthContext'
 import { useModule } from '@/app/context/ModuleContext'
+import { useLoaderStore } from '@/lib/loaderStore'
 
 /**
  * Routes that don't require authentication layout
@@ -40,6 +41,7 @@ type AppLayoutProps = {
 export function AppLayout({ children, leftPanel: propLeftPanel, rightPanel: propRightPanel }: AppLayoutProps) {
   const pathname = usePathname()
   const { leftPanel: contextLeftPanel, rightPanel: contextRightPanel } = useModule()
+  const { showLoader, hideLoader } = useLoaderStore()
 
   const leftPanel = propLeftPanel || contextLeftPanel
   const rightPanel = propRightPanel || contextRightPanel
@@ -56,24 +58,31 @@ export function AppLayout({ children, leftPanel: propLeftPanel, rightPanel: prop
 
   useTokenRefresher(!isAuthRoute)
 
-  // Reset scroll on navigation
+  // Reset scroll on navigation & trigger loader
   const scrollContainerRef = React.useRef<HTMLDivElement>(null)
   React.useEffect(() => {
+    showLoader()
+    const timer = setTimeout(() => {
+      hideLoader()
+    }, 500) // Snappier feel
+
     if (scrollContainerRef.current) {
       scrollContainerRef.current.scrollTop = 0
     }
-  }, [pathname])
+    return () => clearTimeout(timer)
+  }, [pathname, showLoader, hideLoader])
 
   if (isAuthRoute) {
     return <>{children}</>
   }
 
   return (
-    <>
-      <AppHeader setSidebarOpen={setSidebarOpen} />
+    <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
       <SupportAccessProvider>
-        <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
-          <div className="flex w-full h-screen overflow-hidden pt-[63px]">
+        <div className="flex flex-col w-full h-screen overflow-hidden bg-background">
+          <AppHeader setSidebarOpen={setSidebarOpen} />
+
+          <div className="flex flex-1 pt-[63px] overflow-hidden">
             <AppSidebar open={sidebarOpen} setOpen={setSidebarOpen} />
 
             {leftPanel && (
@@ -82,10 +91,9 @@ export function AppLayout({ children, leftPanel: propLeftPanel, rightPanel: prop
               </aside>
             )}
 
-            <SidebarInset className="flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-background">
-              <LoaderWrapper />
-
-              <div ref={scrollContainerRef} className={`flex-1 flex flex-col gap-4 h-full ${pathname?.endsWith('/dashboard') ? 'overflow-hidden p-0' : 'overflow-auto p-4'}`}>
+            <SidebarInset className="flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-transparent">
+              <div ref={scrollContainerRef} className={`flex-1 flex flex-col gap-4 h-full relative z-0 isolate ${pathname?.endsWith('/dashboard') ? 'overflow-hidden p-0' : 'overflow-auto p-4'}`}>
+                <LoaderWrapper />
                 <div className="min-w-0 w-full flex-1 flex flex-col">
                   {children}
                 </div>
@@ -98,8 +106,8 @@ export function AppLayout({ children, leftPanel: propLeftPanel, rightPanel: prop
               </aside>
             )}
           </div>
-        </SidebarProvider>
+        </div>
       </SupportAccessProvider>
-    </>
+    </SidebarProvider>
   )
 }

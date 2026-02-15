@@ -1,11 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { DollarSign, Users, CreditCard, Activity } from 'lucide-react'
-import { SmallCard,SmallCardContent,SmallCardHeader } from "../custom/SmallCard"
+import { SmallCard, SmallCardContent, SmallCardHeader } from "../custom/SmallCard"
 
 export function StatsCards() {
   return (
- <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-      <SmallCard>
+    <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+      <SmallCard className="shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
         <SmallCardHeader className="flex flex-row items-center justify-between pb-1">
           <p className="text-xs text-gray-600">Revenue</p>
           <DollarSign className="w-4 h-4 text-gray-400" />
@@ -16,7 +16,7 @@ export function StatsCards() {
         </SmallCardContent>
       </SmallCard>
 
-      <SmallCard>
+      <SmallCard className="shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
         <SmallCardHeader className="flex flex-row items-center justify-between pb-1">
           <p className="text-xs text-gray-600">Sales</p>
           <CreditCard className="w-4 h-4 text-gray-400" />
@@ -27,7 +27,7 @@ export function StatsCards() {
         </SmallCardContent>
       </SmallCard>
 
-      <SmallCard>
+      <SmallCard className="shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
         <SmallCardHeader className="flex flex-row items-center justify-between pb-1">
           <p className="text-xs text-gray-600">Active Now</p>
           <Activity className="w-4 h-4 text-gray-400" />

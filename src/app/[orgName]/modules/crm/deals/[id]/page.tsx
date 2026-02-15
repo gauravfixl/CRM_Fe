@@ -28,7 +28,8 @@ import {
     PieChart,
     ShieldCheck,
     Zap,
-    StickyNote
+    StickyNote,
+    Users
 } from "lucide-react";
 
 import { CustomButton } from "@/components/custom/CustomButton";
@@ -152,7 +153,7 @@ export default function DealDetailsPage() {
                                         </div>
                                         <div className="flex items-center gap-2.5 text-zinc-500 font-bold text-sm tracking-tight">
                                             <div className="p-2 bg-zinc-50 rounded-lg"><Calendar className="h-4 w-4 text-purple-500" /></div>
-                                            <span>Created {new Date(deal.createdAt).toLocaleDateString()}</span>
+                                            <span>Created {deal.createdAt ? new Date(deal.createdAt).toLocaleDateString() : "N/A"}</span>
                                         </div>
                                         <div className="flex items-center gap-2.5 text-zinc-500 font-bold text-sm tracking-tight">
                                             <div className="p-2 bg-zinc-50 rounded-lg"><Zap className="h-4 w-4 text-amber-500" /></div>

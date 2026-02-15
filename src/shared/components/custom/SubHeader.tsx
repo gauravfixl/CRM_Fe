@@ -9,6 +9,7 @@ interface BreadcrumbItem {
 
 interface SubHeaderProps {
   title?: string;
+  description?: string;
   breadcrumbItems?: BreadcrumbItem[];
   height?: string;
   paddingX?: string;
@@ -17,13 +18,14 @@ interface SubHeaderProps {
 
 const SubHeader: React.FC<SubHeaderProps> = ({
   title,
+  description,
   breadcrumbItems,
   height = "h-48",
   paddingX = "px-6",
   rightControls,
 }) => {
   return (
-    <div className={`relative w-full ${height} shadow overflow-hidden`}>
+    <div className={`relative w-full ${height} shadow overflow-hidden mb-8`}>
       {/* Background image */}
       <div
         className="absolute inset-0 bg-cover bg-center"
@@ -41,6 +43,7 @@ const SubHeader: React.FC<SubHeaderProps> = ({
               </div>
             )}
             {title && <h1 className="text-2xl font-bold text-white">{title}</h1>}
+            {description && <p className="text-white/80 mt-1">{description}</p>}
           </div>
 
           {/* Right side: buttons / controls */}
