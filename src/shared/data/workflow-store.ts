@@ -35,6 +35,7 @@ interface WorkflowStore {
     addColumn: (projectId: string, column: Omit<Column, 'id' | 'order'>) => void
     updateColumn: (projectId: string, columnId: string, updates: Partial<Column>) => void
     deleteColumn: (projectId: string, columnId: string) => void
+    moveColumn: (projectId: string, columnId: string, direction: 'left' | 'right') => void
     getConfig: (projectId: string) => BoardConfig
     canTransition: (projectId: string, from: string, to: string) => boolean
     getAllowedTransitions: (projectId: string, currentState: string) => string[]
@@ -154,6 +155,32 @@ export const useWorkflowStore = create<WorkflowStore>()(
                             transitions: config.transitions.filter(
                                 t => t.from !== columnToDelete.key && t.to !== columnToDelete.key
                             )
+                        }
+                    }
+                }
+            }),
+
+            moveColumn: (projectId, columnId, direction) => set((state) => {
+                const config = get().getConfig(projectId)
+                const columns = [...config.columns]
+                const index = columns.findIndex(c => c.id === columnId)
+                if (index === -1) return state
+
+                const newIndex = direction === 'left' ? index - 1 : index + 1
+                if (newIndex < 0 || newIndex >= columns.length) return state
+
+                const [movedColumn] = columns.splice(index, 1)
+                columns.splice(newIndex, 0, movedColumn)
+
+                // Update orders
+                const updatedColumns = columns.map((col, i) => ({ ...col, order: i }))
+
+                return {
+                    configs: {
+                        ...state.configs,
+                        [projectId]: {
+                            ...config,
+                            columns: updatedColumns
                         }
                     }
                 }

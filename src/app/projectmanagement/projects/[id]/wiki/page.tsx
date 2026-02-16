@@ -90,7 +90,7 @@ export default function WikiPage() {
     if (!mounted) return null
 
     return (
-        <div className="flex flex-col h-full gap-6">
+        <div className="flex flex-col h-full gap-6 max-w-7xl">
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex items-center gap-3">

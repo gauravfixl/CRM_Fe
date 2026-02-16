@@ -35,6 +35,8 @@ export interface Issue {
     storyPoints?: number
     parentId?: string | null
     dueDate?: string
+    startDate?: string
+    teamId?: string
     labels?: string[]
     columnOrder?: number // For drag-and-drop ordering within a column
     history?: IssueHistory[]

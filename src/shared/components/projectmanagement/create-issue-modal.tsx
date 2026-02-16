@@ -105,7 +105,10 @@ export function CreateIssueModal({ projectId: initialProjectId, isOpen, onClose 
             type,
             assigneeId: assigneeId === "automatic" ? "u1" : assigneeId,
             reporterId: "u1",
-            createdAt: new Date().toISOString()
+            createdAt: new Date().toISOString(),
+            dueDate: dueDate || undefined,
+            sprintId: status === "DONE" ? null : (sprints[0]?.id || null), // Example logic
+            labels: labels ? [labels] : [],
         })
 
         if (!createAnother) {

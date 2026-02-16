@@ -34,11 +34,12 @@ export default function GlobalCalendarPage() {
     const prevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))
     const nextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))
 
-    // Mock events
-    const tasksWithDates = issues.filter(i => i.dueDate).map(i => ({
-        ...i,
-        date: new Date(i.dueDate).getDate()
-    }))
+    // Correctly filter tasks for the current view
+    const tasksInCurrentMonth = issues.filter(i => {
+        if (!i.dueDate) return false
+        const d = new Date(i.dueDate)
+        return d.getMonth() === currentDate.getMonth() && d.getFullYear() === currentDate.getFullYear()
+    })
 
     return (
         <div className="w-full h-full p-6 space-y-6 font-sans">
@@ -85,7 +86,7 @@ export default function GlobalCalendarPage() {
                             {/* Actual days */}
                             {Array.from({ length: daysInMonth }).map((_, i) => {
                                 const day = i + 1
-                                const dayTasks = tasksWithDates.filter(t => t.date === day)
+                                const dayTasks = tasksInCurrentMonth.filter(t => t.dueDate && new Date(t.dueDate).getDate() === day)
                                 const isToday = day === new Date().getDate() && currentDate.getMonth() === new Date().getMonth()
 
                                 return (

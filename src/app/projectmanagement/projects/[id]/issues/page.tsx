@@ -29,9 +29,13 @@ const ISSUES_DATA = [
     { id: "WR-115", code: "WR-115", title: "Search component auto-focus logic", status: "Review", priority: "High", type: "Task", assigned: "Sahil S.", created: "Today", comments: 1, files: 0 },
 ]
 
+import { useIssueStore } from "@/shared/data/issue-store"
+
 export default function IssuesPage() {
     const { id } = useParams()
     const projectId = id as string
+
+    // State for Task Detail View
     const [selectedTaskId, setSelectedTaskId] = React.useState<string | null>(null)
     const [isDrawerOpen, setIsDrawerOpen] = React.useState(false)
 
@@ -42,8 +46,34 @@ export default function IssuesPage() {
 
     const projectName = id === "p1" ? "Website Redesign" : "Project"
 
+    const [createDialogOpen, setCreateDialogOpen] = useState(false)
+    const { getIssuesByProject, addIssue } = useIssueStore()
+    const issues = getIssuesByProject(projectId)
+
+    // Create Issue Form State
+    const [newItem, setNewItem] = useState({ title: "", type: "TASK" as const, priority: "MEDIUM" as const })
+
+    const handleCreate = () => {
+        if (!newItem.title.trim()) return
+        addIssue({
+            id: `ISSUE-${Date.now()}`,
+            title: newItem.title,
+            type: newItem.type,
+            priority: newItem.priority,
+            status: "TODO",
+            projectId,
+            boardId: "b1",
+            assigneeId: "u1",
+            reporterId: "u1",
+            description: "",
+            createdAt: new Date().toISOString()
+        })
+        setCreateDialogOpen(false)
+        setNewItem({ title: "", type: "TASK", priority: "MEDIUM" })
+    }
+
     return (
-        <div className="flex flex-col h-full gap-6">
+        <div className="flex flex-col h-full gap-6 max-w-7xl">
             {/* Sheet for Task Details */}
             <TaskDetailDrawer
                 taskId={selectedTaskId}
@@ -51,6 +81,11 @@ export default function IssuesPage() {
                 onClose={() => setIsDrawerOpen(false)}
                 projectId={projectId}
             />
+
+            {/* Create Issue Dialog */}
+            <Sheet open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+                {/* Reusing Sheet for quick creation or simple Dialog can work, but let's use a Dialog for consistency with Backlog or just a simple form here */}
+            </Sheet>
 
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -63,115 +98,83 @@ export default function IssuesPage() {
                         <p className="text-[13px] text-slate-500 font-medium italic">Track bugs, tasks, and feature requests in one place.</p>
                     </div>
                 </div>
-                <Button className="h-9 bg-indigo-600 hover:bg-indigo-700 text-white font-bold gap-2">
-                    <Plus className="h-4 w-4 stroke-[3px]" />
-                    Create Issue
-                </Button>
-            </div>
-
-            {/* Toolbar */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-200 pb-6 mt-2">
-                <div className="flex items-center gap-3 w-full md:w-auto">
-                    <div className="relative flex-1 md:w-[350px]">
-                        <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-                        <Input placeholder="Search issues by name, ID or assignee..." className="pl-10 h-10 bg-white border-slate-200" />
+                <div className="flex items-center gap-2">
+                    <div className="bg-slate-100 p-1 rounded-lg border border-slate-200 flex items-center">
+                        <Search className="h-4 w-4 text-slate-400 ml-2" />
+                        <Input placeholder="Search..." className="h-8 border-none bg-transparent w-48 focus-visible:ring-0" />
                     </div>
-                    <Button variant="outline" className="h-10 gap-2 font-bold text-slate-600 px-4">
-                        <Filter size={16} />
-                        Filter
+                    <Button onClick={() => {
+                        const title = prompt("Enter issue title:")
+                        if (title) {
+                            addIssue({
+                                id: `ISSUE-${Date.now()}`,
+                                title,
+                                type: "TASK",
+                                priority: "MEDIUM",
+                                status: "TODO",
+                                projectId,
+                                boardId: "b1",
+                                createdAt: new Date().toISOString(),
+                                description: "",
+                                assigneeId: "",
+                                reporterId: "u1"
+                            })
+                        }
+                    }} className="h-9 bg-indigo-600 hover:bg-indigo-700 text-white font-bold gap-2">
+                        <Plus className="h-4 w-4 stroke-[3px]" />
+                        Create Issue
                     </Button>
-                </div>
-                <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2">
-                        <span className="text-[12px] text-slate-500 font-bold">Group by:</span>
-                        <Button variant="ghost" size="sm" className="h-8 text-[12px] font-bold text-indigo-600 bg-indigo-50 border-none">Status <ChevronDown className="h-3 w-3 ml-1" /></Button>
-                    </div>
                 </div>
             </div>
 
             {/* Issues Table */}
-            <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-sm">
+            <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-sm flex-1">
                 <table className="w-full text-left">
                     <thead className="bg-slate-50/80 border-b border-slate-200">
                         <tr>
-                            <th className="px-5 py-3 text-[13px] font-bold text-slate-500 w-[110px]">Type & ID</th>
+                            <th className="px-5 py-3 text-[13px] font-bold text-slate-500 w-[110px]">ID</th>
                             <th className="px-5 py-3 text-[13px] font-bold text-slate-500">Title</th>
                             <th className="px-5 py-3 text-[13px] font-bold text-slate-500 w-[120px]">Status</th>
                             <th className="px-5 py-3 text-[13px] font-bold text-slate-500 w-[120px]">Priority</th>
                             <th className="px-5 py-3 text-[13px] font-bold text-slate-500 w-[150px]">Assignee</th>
-                            <th className="px-5 py-3 text-[13px] font-bold text-slate-500 w-[40px]"></th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                        {ISSUES_DATA.map((issue) => (
-                            <tr
-                                key={issue.id}
-                                onClick={() => handleTaskClick(issue)}
-                                className="group hover:bg-slate-50/50 transition-colors cursor-pointer"
-                            >
-                                <td className="px-5 py-4">
-                                    <div className="flex items-center gap-2">
-                                        <div className={`p-1 rounded ${issue.type === 'Bug' ? 'bg-rose-100 text-rose-600' : 'bg-blue-100 text-blue-600'}`}>
-                                            <AlertCircle size={10} className="fill-current" />
-                                        </div>
-                                        <span className="text-[12px] font-bold text-slate-400">{issue.id}</span>
-                                    </div>
-                                </td>
-                                <td className="px-5 py-4">
-                                    <div className="flex flex-col">
-                                        <span className="text-[14px] font-bold text-slate-800 tracking-tight group-hover:text-indigo-600 transition-colors">
-                                            {issue.title}
-                                        </span>
-                                        <div className="flex items-center gap-3 mt-1 text-[11px] text-slate-400 font-medium">
-                                            <span>Created {issue.created}</span>
-                                            <span className="flex items-center gap-1"><MessageSquare size={12} /> {issue.comments}</span>
-                                            <span className="flex items-center gap-1"><Paperclip size={12} /> {issue.files}</span>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td className="px-5 py-4">
-                                    <Badge variant="outline" className={`text-[11px] font-bold border-none ${issue.status === 'Done' ? 'bg-emerald-100 text-emerald-700' :
-                                        issue.status === 'In Progress' ? 'bg-indigo-100 text-indigo-700' :
-                                            issue.status === 'Review' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'
-                                        }`}>
-                                        {issue.status}
-                                    </Badge>
-                                </td>
-                                <td className="px-5 py-4">
-                                    <span className={`text-[11px] font-bold flex items-center gap-1 ${issue.priority === 'Critical' ? 'text-rose-600' :
-                                        issue.priority === 'High' ? 'text-amber-600' : 'text-blue-600'
-                                        }`}>
-                                        <div className={`h-1.5 w-1.5 rounded-full ${issue.priority === 'Critical' ? 'bg-rose-600 animate-pulse' :
-                                            issue.priority === 'High' ? 'bg-amber-600' : 'bg-blue-600'
-                                            }`} />
-                                        {issue.priority}
-                                    </span>
-                                </td>
-                                <td className="px-5 py-4">
-                                    <div className="flex items-center gap-2">
-                                        <Avatar className="h-6 w-6">
-                                            <AvatarImage src={`https://i.pravatar.cc/150?u=${issue.assigned}`} />
-                                            <AvatarFallback>U</AvatarFallback>
-                                        </Avatar>
-                                        <span className="text-[13px] font-semibold text-slate-700 truncate">{issue.assigned}</span>
-                                    </div>
-                                </td>
-                                <td className="px-5 py-4 text-right">
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 group-hover:text-slate-600">
-                                        <MoreHorizontal size={16} />
-                                    </Button>
-                                </td>
+                        {issues.length === 0 ? (
+                            <tr>
+                                <td colSpan={5} className="p-8 text-center text-slate-500 font-medium">No issues found. Create one to get started.</td>
                             </tr>
-                        ))}
+                        ) : (
+                            issues.map((issue) => (
+                                <tr
+                                    key={issue.id}
+                                    onClick={() => handleTaskClick(issue)}
+                                    className="group hover:bg-slate-50/50 transition-colors cursor-pointer"
+                                >
+                                    <td className="px-5 py-4 text-[12px] font-bold text-slate-400">{issue.id}</td>
+                                    <td className="px-5 py-4">
+                                        <div className="font-bold text-slate-800">{issue.title}</div>
+                                    </td>
+                                    <td className="px-5 py-4">
+                                        <Badge variant="outline" className="bg-slate-100 text-slate-600 border-none">{issue.status}</Badge>
+                                    </td>
+                                    <td className="px-5 py-4">
+                                        <Badge variant="outline" className={`border-none ${issue.priority === 'HIGH' ? 'bg-orange-100 text-orange-700' : 'bg-slate-100 text-slate-600'}`}>{issue.priority}</Badge>
+                                    </td>
+                                    <td className="px-5 py-4">
+                                        <div className="flex items-center gap-2">
+                                            <Avatar className="h-6 w-6">
+                                                <AvatarImage src={`https://i.pravatar.cc/150?u=${issue.assigneeId}`} />
+                                                <AvatarFallback>U</AvatarFallback>
+                                            </Avatar>
+                                            <span className="text-[13px] text-slate-600">{issue.assigneeId || "Unassigned"}</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))
+                        )}
                     </tbody>
                 </table>
-                <div className="p-4 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between">
-                    <span className="text-[12px] text-slate-500 font-medium">Showing 5 of 142 issues</span>
-                    <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm" className="h-8 px-3 text-[12px] font-bold">Previous</Button>
-                        <Button variant="outline" size="sm" className="h-8 px-3 text-[12px] font-bold bg-white">Next</Button>
-                    </div>
-                </div>
             </div>
         </div>
     )

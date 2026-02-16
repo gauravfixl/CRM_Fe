@@ -148,9 +148,9 @@ export default function ActivityFeed({ projectId, workspaceId, userId, limit = 5
                     logs.map((log) => (
                         <Card
                             key={log.id}
-                            className={`border rounded-2xl transition-all hover:shadow-md ${EVENT_COLORS[log.eventType] || "bg-slate-50 border-slate-200"}`}
+                            className={`border rounded-xl transition-all hover:shadow-sm ${EVENT_COLORS[log.eventType] || "bg-slate-50 border-slate-200"}`}
                         >
-                            <CardContent className="p-4">
+                            <CardContent className="p-3">
                                 <div className="flex items-start gap-3">
                                     {/* Icon */}
                                     <div className="p-2 bg-white rounded-xl border border-slate-200 shadow-sm shrink-0">

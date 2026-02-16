@@ -26,7 +26,7 @@ export default function ProjectDocumentsPage() {
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto bg-slate-50 p-6">
-                <div className="max-w-5xl mx-auto">
+                <div className="max-w-6xl">
                     <DocumentManager
                         projectId={projectId}
                         organizationId="org-1"

@@ -291,7 +291,7 @@ export default function BacklogPage() {
     }
 
     return (
-        <div className="flex flex-col h-full gap-5 max-w-[1400px] mx-auto pb-10 origin-top">
+        <div className="flex flex-col h-full gap-5 max-w-6xl pb-10 origin-top">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>

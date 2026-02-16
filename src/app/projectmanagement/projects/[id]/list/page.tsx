@@ -39,7 +39,7 @@ const STATUS_COLORS: Record<string, string> = {
 export default function ListPage() {
     const { id } = useParams()
     const projectId = id as string
-    const { getIssuesByProject } = useIssueStore()
+    const { getIssuesByProject, deleteIssue } = useIssueStore()
     const [search, setSearch] = React.useState("")
     const [sortConfig, setSortConfig] = React.useState<{ key: string, direction: 'asc' | 'desc' } | null>(null)
 
@@ -73,7 +73,7 @@ export default function ListPage() {
     }
 
     return (
-        <div className="flex flex-col h-full gap-4 max-w-[1400px] mx-auto pb-10 font-sans">
+        <div className="flex flex-col h-full gap-4 max-w-7xl pb-10 font-sans">
             {/* Toolbar */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
                 <div className="flex items-center gap-4">
@@ -168,8 +168,22 @@ export default function ListPage() {
                                             </Button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end" className="w-40">
-                                            <DropdownMenuItem className="text-[12px] font-medium">Edit</DropdownMenuItem>
-                                            <DropdownMenuItem className="text-[12px] font-medium text-red-600">Delete</DropdownMenuItem>
+                                            <DropdownMenuItem
+                                                className="text-[12px] font-medium"
+                                                onClick={() => alert(`Edit issue ${issue.id}`)}
+                                            >
+                                                Edit
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem
+                                                className="text-[12px] font-medium text-red-600 focus:bg-red-50 focus:text-red-700"
+                                                onClick={() => {
+                                                    if (confirm("Delete this issue?")) {
+                                                        deleteIssue(issue.id)
+                                                    }
+                                                }}
+                                            >
+                                                Delete
+                                            </DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
                                 </TableCell>

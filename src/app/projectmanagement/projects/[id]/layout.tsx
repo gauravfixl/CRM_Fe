@@ -133,13 +133,7 @@ export default function ProjectLayout({ children }: { children: React.ReactNode 
             <div className="flex-1 overflow-auto bg-white p-4 relative custom-scrollbar">
                 {children}
 
-                {/* Floating Quickstart Helper */}
-                <div className="fixed bottom-6 right-6 z-50">
-                    <Button className="bg-slate-900 hover:bg-indigo-600 text-white font-bold h-12 px-6 rounded-2xl shadow-2xl transition-all shadow-slate-200 flex items-center gap-3 text-[12px]">
-                        <Zap size={16} className="fill-current" />
-                        Quickstart
-                    </Button>
-                </div>
+
             </div>
         </div>
     )

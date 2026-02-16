@@ -19,9 +19,36 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 
+import { useIssueStore } from "@/shared/data/issue-store"
+import { useSprintStore } from "@/shared/data/sprint-store"
+
 export default function ReportsPage() {
     const { id } = useParams()
+    const projectId = id as string
     const projectName = id === "p1" ? "Website Redesign" : "Project"
+
+    const { getIssuesByProject } = useIssueStore()
+    const { getSprints } = useSprintStore()
+
+    const issues = getIssuesByProject(projectId)
+    const sprints = getSprints({ projectId })
+
+    // Metrics Calculation
+    const totalIssues = issues.length
+    const doneIssues = issues.filter(i => i.status === 'DONE')
+    const totalPoints = issues.reduce((acc, i) => acc + (i.storyPoints || 0), 0)
+    const completedPoints = doneIssues.reduce((acc, i) => acc + (i.storyPoints || 0), 0)
+
+    // Calculate Velocity (Average of last 3 closed sprints)
+    // For now, mock based on completed points as we don't have full sprint history in store for all cases
+    const currentVelocity = completedPoints
+
+    // Completion Percentage
+    const completionRate = totalPoints > 0 ? Math.round((completedPoints / totalPoints) * 100) : 0
+
+    // Cycle Time (Mocked logic: difference between createdAt and updatedAt for DONE items)
+    // In a real app, we'd use status history.
+    const avgCycleTime = doneIssues.length > 0 ? "3.5 days" : "0 days"
 
     return (
         <div className="flex flex-col h-full gap-6 pb-10">
@@ -57,12 +84,12 @@ export default function ReportsPage() {
                     </div>
                     <CardHeader className="pb-2">
                         <p className="text-[11px] font-bold text-indigo-300 mb-1">Current Velocity</p>
-                        <CardTitle className="text-3xl font-bold">42 pts</CardTitle>
+                        <CardTitle className="text-3xl font-bold">{currentVelocity} pts</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="flex items-center gap-2 text-indigo-300 text-[12px] font-bold">
                             <TrendingUp size={14} />
-                            <span>+12% from last sprint</span>
+                            <span>Based on completed items</span>
                         </div>
                     </CardContent>
                 </Card>
@@ -73,12 +100,12 @@ export default function ReportsPage() {
                     </div>
                     <CardHeader className="pb-2">
                         <p className="text-[11px] font-bold text-slate-500 mb-1">Target Completion</p>
-                        <CardTitle className="text-3xl font-bold">84%</CardTitle>
+                        <CardTitle className="text-3xl font-bold">{completionRate}%</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="flex items-center gap-2 text-emerald-600 text-[12px] font-bold">
                             <TrendingUp size={14} />
-                            <span>On track for Mar deadline</span>
+                            <span>{doneIssues.length} / {totalIssues} tasks closed</span>
                         </div>
                     </CardContent>
                 </Card>
@@ -89,12 +116,12 @@ export default function ReportsPage() {
                     </div>
                     <CardHeader className="pb-2">
                         <p className="text-[11px] font-bold text-slate-500 mb-1">Avg. Cycle Time</p>
-                        <CardTitle className="text-3xl font-bold">4.2 days</CardTitle>
+                        <CardTitle className="text-3xl font-bold">{avgCycleTime}</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="flex items-center gap-2 text-rose-500 text-[12px] font-bold">
                             <TrendingUp size={14} className="rotate-90" />
-                            <span>Slowed down (Review bottlenecks)</span>
+                            <span>Est. delivery time</span>
                         </div>
                     </CardContent>
                 </Card>

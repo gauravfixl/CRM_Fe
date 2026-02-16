@@ -26,7 +26,7 @@ export default function ProjectActivityPage() {
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto bg-slate-50 p-6">
-                <div className="max-w-4xl mx-auto">
+                <div className="max-w-3xl">
                     <ActivityFeed projectId={projectId} limit={100} />
                 </div>
             </div>

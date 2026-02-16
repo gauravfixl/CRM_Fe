@@ -68,15 +68,27 @@ export default function TimelinePage() {
                 })
                 current = addDays(current, 7)
             }
-        } else {
-            // Simple Month/Day fallback logic could go here, sticking to Weeks for Deep implementation prototype
-            let current = timelineStart
-            const step = Math.ceil(totalDays / 12)
-            for (let i = 0; i < 12; i++) {
+        } else if (viewMode === 'MONTHS') {
+            let current = new Date(timelineStart.getFullYear(), timelineStart.getMonth(), 1)
+            while (current <= timelineEnd) {
                 items.push({
-                    label: format(addDays(current, i * step), "MMM d"),
-                    leftPct: (i * step / totalDays) * 100
+                    label: format(current, "MMMM yyyy"),
+                    subLabel: "",
+                    leftPct: (differenceInDays(current, timelineStart) / totalDays) * 100
                 })
+                // Add 1 month
+                current = new Date(current.getFullYear(), current.getMonth() + 1, 1)
+            }
+        } else {
+            // DAYS view
+            let current = timelineStart
+            while (current <= timelineEnd) {
+                items.push({
+                    label: format(current, "dd"),
+                    subLabel: format(current, "MMM"),
+                    leftPct: (differenceInDays(current, timelineStart) / totalDays) * 100
+                })
+                current = addDays(current, 1)
             }
         }
         return items
@@ -84,8 +96,46 @@ export default function TimelinePage() {
 
     const projectName = projectId === "p1" ? "Website Redesign" : "Project"
 
+    // Scroll to Today
+    const timelineContainerRef = React.useRef<HTMLDivElement>(null)
+    const handleScrollToToday = () => {
+        if (timelineContainerRef.current) {
+            const today = new Date()
+            const daysFromStart = differenceInDays(today, timelineStart)
+            const leftPct = (daysFromStart / totalDays) * 100
+            // Scroll to center today
+            const scrollWidth = timelineContainerRef.current.scrollWidth
+            const clientWidth = timelineContainerRef.current.clientWidth
+            const scrollPos = (scrollWidth * (leftPct / 100)) - (clientWidth / 2)
+
+            timelineContainerRef.current.scrollTo({ left: scrollPos, behavior: 'smooth' })
+        }
+    }
+
+    // Add Milestone
+    const { addIssue } = useIssueStore()
+    const handleAddMilestone = () => {
+        const title = prompt("Enter milestone title:")
+        if (title) {
+            addIssue({
+                id: `MIL-${Date.now()}`,
+                title,
+                type: "TASK",
+                priority: "HIGH",
+                status: "TODO",
+                projectId,
+                boardId: "b1",
+                createdAt: new Date().toISOString(),
+                dueDate: addDays(new Date(), 14).toISOString(), // Default 2 weeks
+                description: "Milestone created from timeline",
+                assigneeId: "",
+                reporterId: "u1"
+            })
+        }
+    }
+
     return (
-        <div className="flex flex-col h-full gap-4 max-w-[1400px] mx-auto pb-10">
+        <div className="flex flex-col h-full gap-4 max-w-7xl pb-10">
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
@@ -99,9 +149,30 @@ export default function TimelinePage() {
                 </div>
                 <div className="flex items-center gap-3">
                     <div className="flex bg-slate-100/80 p-1 rounded-xl border border-slate-200">
-                        <Button variant="ghost" size="sm" className="h-8 text-[12px] font-bold text-slate-400">Days</Button>
-                        <Button variant="secondary" size="sm" className="h-8 text-[12px] font-bold bg-white text-indigo-600 shadow-sm border-none px-4">Weeks</Button>
-                        <Button variant="ghost" size="sm" className="h-8 text-[12px] font-bold text-slate-400">Months</Button>
+                        <Button
+                            onClick={() => setViewMode("DAYS")}
+                            variant={viewMode === "DAYS" ? "secondary" : "ghost"}
+                            size="sm"
+                            className={`h-8 text-[12px] font-bold ${viewMode === "DAYS" ? "bg-white text-indigo-600 shadow-sm" : "text-slate-400"}`}
+                        >
+                            Days
+                        </Button>
+                        <Button
+                            onClick={() => setViewMode("WEEKS")}
+                            variant={viewMode === "WEEKS" ? "secondary" : "ghost"}
+                            size="sm"
+                            className={`h-8 text-[12px] font-bold ${viewMode === "WEEKS" ? "bg-white text-indigo-600 shadow-sm" : "text-slate-400"}`}
+                        >
+                            Weeks
+                        </Button>
+                        <Button
+                            onClick={() => setViewMode("MONTHS")}
+                            variant={viewMode === "MONTHS" ? "secondary" : "ghost"}
+                            size="sm"
+                            className={`h-8 text-[12px] font-bold ${viewMode === "MONTHS" ? "bg-white text-indigo-600 shadow-sm" : "text-slate-400"}`}
+                        >
+                            Months
+                        </Button>
                     </div>
                     <Button variant="outline" size="sm" className="h-10 gap-2 font-bold text-[12px] text-slate-600 border-slate-200 rounded-xl px-4">
                         <Filter size={14} className="text-slate-400" />
@@ -119,13 +190,15 @@ export default function TimelinePage() {
                             <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:bg-white border border-transparent hover:border-slate-100 rounded-lg">
                                 <ChevronLeft size={18} />
                             </Button>
-                            <span className="text-[14px] font-bold text-slate-700 tracking-tight">January 2026 - March 2026</span>
+                            <span className="text-[14px] font-bold text-slate-700 tracking-tight">
+                                {format(timelineStart, "MMMM yyyy")} - {format(timelineEnd, "MMMM yyyy")}
+                            </span>
                             <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:bg-white border border-transparent hover:border-slate-100 rounded-lg">
                                 <ChevronRight size={18} />
                             </Button>
                         </div>
                         <div className="h-4 w-[1px] bg-slate-200" />
-                        <Button variant="ghost" size="sm" className="h-9 text-[12px] font-bold text-indigo-600 hover:bg-indigo-50">Go to Today</Button>
+                        <Button onClick={handleScrollToToday} variant="ghost" size="sm" className="h-9 text-[12px] font-bold text-indigo-600 hover:bg-indigo-50">Go to Today</Button>
                     </div>
                     <div className="flex items-center gap-3">
                         <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:text-indigo-600">
@@ -134,10 +207,10 @@ export default function TimelinePage() {
                     </div>
                 </div>
 
-                <div className="flex flex-1 relative overflow-auto custom-scrollbar">
+                <div className="flex flex-1 relative overflow-hidden custom-scrollbar">
                     {/* Sidebar with task names */}
-                    <div className="w-[280px] border-r border-slate-100 flex-shrink-0 bg-white z-10 sticky left-0 shadow-[8px_0_15px_rgba(0,0,0,0.03)]">
-                        <div className="h-12 border-b border-slate-100 bg-slate-50/50 flex items-center px-6">
+                    <div className="w-[280px] border-r border-slate-100 flex-shrink-0 bg-white z-10 shadow-[8px_0_15px_rgba(0,0,0,0.03)] overflow-y-auto">
+                        <div className="h-12 border-b border-slate-100 bg-slate-50/50 flex items-center px-6 sticky top-0 bg-slate-50 z-10">
                             <span className="text-[11px] font-bold text-slate-400">Deliverables</span>
                         </div>
                         {timelineIssues.map(item => (
@@ -150,68 +223,70 @@ export default function TimelinePage() {
                             </div>
                         ))}
                         <div className="h-16 flex items-center px-6 bg-slate-50/20">
-                            <Button variant="ghost" size="sm" className="h-9 text-indigo-600 font-bold text-[12px] p-0 hover:bg-transparent gap-2">
+                            <Button onClick={handleAddMilestone} variant="ghost" size="sm" className="h-9 text-indigo-600 font-bold text-[12px] p-0 hover:bg-transparent gap-2">
                                 <Plus size={16} /> New Milestone
                             </Button>
                         </div>
                     </div>
 
                     {/* Timeline Grid */}
-                    <div className="flex-1 min-w-[1200px] relative">
-                        {/* Days/Weeks Header */}
-                        <div className="h-12 border-b border-slate-100 flex bg-slate-50/50 relative overflow-hidden">
-                            {headers.map((h, i) => (
-                                <div
-                                    key={i}
-                                    className="absolute top-0 bottom-0 flex flex-col justify-center border-l border-slate-200 pl-2"
-                                    style={{ left: `${h.leftPct}%` }}
-                                >
-                                    <span className="text-[10px] font-bold text-slate-400 whitespace-nowrap">{h.label}</span>
-                                    {h.subLabel && <span className="text-[9px] font-medium text-slate-300">{h.subLabel}</span>}
-                                </div>
-                            ))}
-                        </div>
-
-                        {/* Visual Task Bars */}
-                        <div className="relative">
-                            {/* Vertical grid lines */}
-                            <div className="absolute inset-0 flex pointer-events-none">
+                    <div ref={timelineContainerRef} className="flex-1 overflow-x-auto relative min-w-0">
+                        <div className="min-w-[1200px] h-full relative">
+                            {/* Days/Weeks Header */}
+                            <div className="h-12 border-b border-slate-100 flex bg-slate-50/50 relative overflow-hidden">
                                 {headers.map((h, i) => (
-                                    <div key={i} className="absolute top-0 bottom-0 border-r border-slate-100/40" style={{ left: `${h.leftPct}%` }} />
-                                ))}
-                            </div>
-
-                            <div className="relative">
-                                {timelineIssues.map((item, index) => (
-                                    <div key={item.id} className="h-16 border-b border-slate-100/50 relative flex items-center group">
-                                        <div
-                                            className={`absolute h-9 rounded-xl ${item.color} shadow-lg shadow-indigo-100/20 border border-white/20 flex items-center px-4 cursor-pointer hover:scale-[1.01] hover:shadow-2xl transition-all z-10`}
-                                            style={{
-                                                left: `${item.leftPct}%`,
-                                                width: `${item.widthPct}%`,
-                                            }}
-                                        >
-                                            <span className="text-[12px] font-bold text-white whitespace-nowrap overflow-hidden text-ellipsis tracking-tight">
-                                                {item.name}
-                                            </span>
-                                            {/* Status Indicator inside bar */}
-                                            <div className="ml-auto flex items-center gap-1.5 opacity-60">
-                                                <div className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
-                                            </div>
-
-                                            {/* Handles for dragging logic */}
-                                            <div className="absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize hover:bg-white/20 rounded-r-xl" />
-                                            <div className="absolute left-0 top-0 bottom-0 w-2 cursor-ew-resize hover:bg-white/20 rounded-l-xl" />
-                                        </div>
+                                    <div
+                                        key={i}
+                                        className="absolute top-0 bottom-0 flex flex-col justify-center border-l border-slate-200 pl-2"
+                                        style={{ left: `${h.leftPct}%` }}
+                                    >
+                                        <span className="text-[10px] font-bold text-slate-400 whitespace-nowrap">{h.label}</span>
+                                        {h.subLabel && <span className="text-[9px] font-medium text-slate-300">{h.subLabel}</span>}
                                     </div>
                                 ))}
-                                <div className="h-16 flex items-center" />
                             </div>
 
-                            {/* Today Marker */}
-                            <div className="absolute top-0 bottom-0 left-[28%] w-[3px] bg-rose-500 z-20 shadow-[0_0_15px_rgba(244,63,94,0.4)]">
-                                <div className="absolute top-0 -left-[28px] h-[24px] w-[60px] bg-rose-500 rounded-xl flex items-center justify-center text-white text-[10px] font-bold shadow-lg">
-                                    Current
+                            {/* Visual Task Bars */}
+                            <div className="relative">
+                                {/* Vertical grid lines */}
+                                <div className="absolute inset-0 flex pointer-events-none">
+                                    {headers.map((h, i) => (
+                                        <div key={i} className="absolute top-0 bottom-0 border-r border-slate-100/40" style={{ left: `${h.leftPct}%` }} />
+                                    ))}
+                                </div>
+
+                                <div className="relative">
+                                    {timelineIssues.map((item, index) => (
+                                        <div key={item.id} className="h-16 border-b border-slate-100/50 relative flex items-center group">
+                                            <div
+                                                className={`absolute h-9 rounded-xl ${item.color} shadow-lg shadow-indigo-100/20 border border-white/20 flex items-center px-4 cursor-pointer hover:scale-[1.01] hover:shadow-2xl transition-all z-10`}
+                                                style={{
+                                                    left: `${item.leftPct}%`,
+                                                    width: `${item.widthPct}%`,
+                                                }}
+                                            >
+                                                <span className="text-[12px] font-bold text-white whitespace-nowrap overflow-hidden text-ellipsis tracking-tight">
+                                                    {item.name}
+                                                </span>
+                                                {/* Status Indicator inside bar */}
+                                                <div className="ml-auto flex items-center gap-1.5 opacity-60">
+                                                    <div className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
+                                                </div>
+
+                                                {/* Handles for dragging logic */}
+                                                <div className="absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize hover:bg-white/20 rounded-r-xl" />
+                                                <div className="absolute left-0 top-0 bottom-0 w-2 cursor-ew-resize hover:bg-white/20 rounded-l-xl" />
+                                            </div>
+                                        </div>
+                                    ))}
+                                    <div className="h-16 flex items-center" />
+                                </div>
+
+                                {/* Today Marker */}
+                                <div className="absolute top-0 bottom-0 left-[28%] w-[3px] bg-rose-500 z-20 shadow-[0_0_15px_rgba(244,63,94,0.4)]">
+                                    <div className="absolute top-0 -left-[28px] h-[24px] w-[60px] bg-rose-500 rounded-xl flex items-center justify-center text-white text-[10px] font-bold shadow-lg">
+                                        Current
+                                    </div>
                                 </div>
                             </div>
                         </div>

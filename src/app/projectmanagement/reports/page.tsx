@@ -12,6 +12,7 @@ import {
     Shield,
     FileText
 } from "lucide-react"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -31,9 +32,9 @@ export default function ReportsHubPage() {
             title: 'Project Execution',
             description: 'In-depth analysis of task completion, velocity, and sprint health.',
             reports: [
-                { title: 'Velocity Chart', desc: 'Track team throughput over time.', icon: <Zap size={18} />, color: 'text-indigo-600', bg: 'bg-indigo-50' },
-                { title: 'Burnup Report', desc: 'Visualize progress towards project scope.', icon: <TrendingUp size={18} />, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-                { title: 'Cumulative Flow', desc: 'Identify bottlenecks in your workflow.', icon: <Activity size={18} />, color: 'text-blue-600', bg: 'bg-blue-50' }
+                { title: 'Velocity Chart', desc: 'Track team throughput over time.', icon: <Zap size={18} />, color: 'text-indigo-600', bg: 'bg-indigo-50', href: '/projectmanagement/reports/sprint' },
+                { title: 'Burnup Report', desc: 'Visualize progress towards project scope.', icon: <TrendingUp size={18} />, color: 'text-emerald-600', bg: 'bg-emerald-50', href: '/projectmanagement/reports/sprint' },
+                { title: 'Cumulative Flow', desc: 'Identify bottlenecks in your workflow.', icon: <Activity size={18} />, color: 'text-blue-600', bg: 'bg-blue-50', href: '/projectmanagement/reports/sprint' }
             ]
         },
         {
@@ -41,9 +42,9 @@ export default function ReportsHubPage() {
             title: 'People & Capacity',
             description: 'Monitor individual workload, peak performance, and team balance.',
             reports: [
-                { title: 'Workload Balance', desc: 'Distribute tasks fairly across members.', icon: <Users size={18} />, color: 'text-amber-600', bg: 'bg-amber-50' },
-                { title: 'Time Tracking', desc: 'Analyze billable hours and logged time.', icon: <Clock size={18} />, color: 'text-slate-600', bg: 'bg-slate-50' },
-                { title: 'Member Performance', desc: 'High-level individual output metrics.', icon: <Target size={18} />, color: 'text-rose-600', bg: 'bg-rose-50' }
+                { title: 'Workload Balance', desc: 'Distribute tasks fairly across members.', icon: <Users size={18} />, color: 'text-amber-600', bg: 'bg-amber-50', href: '/projectmanagement/reports/workload' },
+                { title: 'Time Tracking', desc: 'Analyze billable hours and logged time.', icon: <Clock size={18} />, color: 'text-slate-600', bg: 'bg-slate-50', href: '/projectmanagement/reports/workload' },
+                { title: 'Member Performance', desc: 'High-level individual output metrics.', icon: <Target size={18} />, color: 'text-rose-600', bg: 'bg-rose-50', href: '/projectmanagement/reports/performance' }
             ]
         }
     ]
@@ -91,9 +92,11 @@ export default function ReportsHubPage() {
                                                 {report.desc}
                                             </CardDescription>
                                         </div>
-                                        <Button variant="outline" size="sm" className="w-full h-8 text-xs">
-                                            View Report
-                                        </Button>
+                                        <Link href={report.href}>
+                                            <Button variant="outline" size="sm" className="w-full h-8 text-xs">
+                                                View Report
+                                            </Button>
+                                        </Link>
                                     </CardContent>
                                 </Card>
                             ))}

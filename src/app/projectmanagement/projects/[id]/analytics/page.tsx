@@ -10,7 +10,7 @@ export default function ProjectAnalyticsPage() {
     const projectId = id as string
 
     return (
-        <div className="flex flex-col h-full font-sans">
+        <div className="flex flex-col h-full font-sans max-w-7xl">
             {/* Header */}
             <div className="border-b border-slate-200 bg-white px-6 py-4">
                 <div className="flex items-center gap-3">
