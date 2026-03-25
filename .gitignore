@@ -71,3 +71,6 @@ turbo/
 # Misc
 *.local
 .vercel
+
+*.md
+*.txt
