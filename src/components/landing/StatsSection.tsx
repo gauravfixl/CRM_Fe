@@ -40,7 +40,7 @@ export default function StatsSection() {
     const inView = useInView(ref, { once: true, margin: "-60px" })
 
     return (
-        <section className="py-20 bg-slate-50 dark:bg-slate-900/40 relative overflow-hidden border-y border-slate-200/60 dark:border-white/5" ref={ref}>
+        <section className="py-20 bg-gradient-to-br from-blue-50 to-indigo-50/80 dark:from-slate-900/60 dark:to-slate-800/40 relative overflow-hidden border-y border-blue-100 dark:border-white/5" ref={ref}>
             {/* Background effects */}
             <div className="absolute inset-0 pointer-events-none overflow-hidden">
                 <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-600/10 rounded-full blur-[100px]" />

@@ -171,7 +171,7 @@ export default function FeaturesSection() {
     const [expandedIndex, setExpandedIndex] = useState<number | null>(null)
 
     return (
-        <section id="features" className="py-28 bg-white dark:bg-slate-950 relative overflow-hidden transition-colors duration-500" ref={ref}>
+        <section id="features" className="py-28 bg-white dark:bg-slate-950 relative overflow-hidden transition-colors duration-500 border-b border-slate-200/60 dark:border-white/5" ref={ref}>
             {/* Animated gradient mesh background */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
                 <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/10 dark:bg-blue-500/5 rounded-full mix-blend-multiply dark:mix-blend-lighten filter blur-3xl animate-blob" />

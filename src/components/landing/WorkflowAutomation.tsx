@@ -65,7 +65,7 @@ export default function WorkflowAutomation() {
     return (
         <section
             ref={ref}
-            className="relative py-28 bg-white dark:bg-slate-950 overflow-hidden"
+            className="relative py-28 bg-gradient-to-b from-white to-slate-50/50 dark:from-slate-950 dark:to-slate-900/30 overflow-hidden border-b border-slate-200/60 dark:border-white/5"
         >
             {/* Background */}
             <div className="absolute inset-0 pointer-events-none">

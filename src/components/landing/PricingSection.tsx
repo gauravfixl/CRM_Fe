@@ -71,7 +71,7 @@ export default function PricingSection({ hideHeader = false }: { hideHeader?: bo
     const inView = useInView(ref, { once: true, margin: "-80px" })
 
     return (
-        <section id="pricing" className="py-16 bg-slate-50 dark:bg-slate-900/40 border-t border-slate-200/60 dark:border-white/5 transition-colors duration-500" ref={ref}>
+        <section id="pricing" className="py-16 bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-white/5 transition-colors duration-500" ref={ref}>
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 {/* Header - Conditionally hide or keep minimal if needed, keeping minimal for landing page usage */}
                 {!hideHeader && (

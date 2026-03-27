@@ -165,7 +165,7 @@ export default function ModulesShowcase({ isPage = false }: { isPage?: boolean }
     const active = modules.find((m) => m.id === activeId)!
 
     return (
-        <section id="modules" className={`${isPage ? "pt-10 pb-28" : "py-28"} bg-slate-50 dark:bg-slate-900/40 relative overflow-hidden transition-colors duration-500 border-y border-slate-200/60 dark:border-white/5`} ref={ref}>
+        <section id="modules" className={`${isPage ? "pt-10 pb-28" : "py-28"} bg-slate-100/80 dark:bg-slate-900/60 relative overflow-hidden transition-colors duration-500 border-y border-slate-200 dark:border-white/5`} ref={ref}>
             {/* Background decoration */}
             <div className="absolute inset-0 pointer-events-none">
                 <div className="absolute right-0 top-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-indigo-50/50 dark:bg-indigo-600/5 rounded-full blur-[100px]" />

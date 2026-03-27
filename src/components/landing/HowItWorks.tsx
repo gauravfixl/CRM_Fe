@@ -51,7 +51,7 @@ export default function HowItWorks() {
         <section
             id="how-it-works"
             ref={ref}
-            className="relative py-28 bg-gradient-to-b from-slate-50 to-white dark:from-slate-900/50 dark:to-slate-950 overflow-hidden"
+            className="relative py-28 bg-gradient-to-b from-slate-100 to-white dark:from-slate-900/60 dark:to-slate-950 overflow-hidden border-t border-slate-200 dark:border-white/5"
         >
             {/* Background decoration */}
             <div className="absolute inset-0 pointer-events-none overflow-hidden">
