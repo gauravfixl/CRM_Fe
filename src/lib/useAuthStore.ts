@@ -15,7 +15,9 @@ export interface User {
   phone: string;
   twoFAEnabled: boolean;
   isActive: boolean;
-  permissions?: Permission[]; // add permissions array
+  permissions?: Permission[];
+  avatar?: { url?: string; public_id?: string };
+  coverPhoto?: string;
 }
 
 export interface Organization {
