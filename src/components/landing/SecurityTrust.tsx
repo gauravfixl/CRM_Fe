@@ -57,7 +57,7 @@ export default function SecurityTrust() {
     return (
         <section
             ref={ref}
-            className="relative py-28 bg-gradient-to-b from-slate-50 to-white dark:from-slate-900/50 dark:to-slate-950 overflow-hidden"
+            className="relative py-28 bg-gradient-to-br from-blue-50/80 to-indigo-50/60 dark:from-slate-900/60 dark:to-indigo-950/30 overflow-hidden border-y border-blue-100 dark:border-white/5"
         >
             {/* Background */}
             <div className="absolute inset-0 pointer-events-none">

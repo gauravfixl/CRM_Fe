@@ -97,7 +97,7 @@ export default function TestimonialsSection({ hideHeader = false }: { hideHeader
     const doubled = [...testimonials, ...testimonials]
 
     return (
-        <section id="testimonials" className="py-20 bg-white dark:bg-slate-950 overflow-hidden transition-colors duration-500" ref={ref}>
+        <section id="testimonials" className="py-20 bg-gradient-to-br from-slate-100 to-purple-50/40 dark:from-slate-900/60 dark:to-purple-950/20 overflow-hidden transition-colors duration-500 border-y border-slate-200 dark:border-white/5" ref={ref}>
             {!hideHeader && (
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-12">
                     <motion.div

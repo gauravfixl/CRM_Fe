@@ -40,7 +40,7 @@ export default function IntegrationsSection() {
     return (
         <section
             ref={ref}
-            className="relative py-28 bg-white dark:bg-slate-950 overflow-hidden"
+            className="relative py-28 bg-gradient-to-br from-white to-sky-50/40 dark:from-slate-950 dark:to-sky-950/20 overflow-hidden border-b border-slate-200/60 dark:border-white/5"
         >
             {/* Background */}
             <div className="absolute inset-0 pointer-events-none">

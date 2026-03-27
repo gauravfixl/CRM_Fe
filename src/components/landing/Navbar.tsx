@@ -47,7 +47,14 @@ export default function Navbar({ solid = false }: { solid?: boolean }) {
         setMobileOpen(false)
         setActiveDropdown(null)
         if (href.startsWith("/")) {
-            window.location.href = href
+            // If already on the same page, just update the hash
+            const [path, hash] = href.split("#")
+            if (window.location.pathname === path && hash) {
+                window.location.hash = hash
+                window.dispatchEvent(new HashChangeEvent("hashchange"))
+            } else {
+                window.location.href = href
+            }
             return
         } else if (href.startsWith("#")) {
             const el = document.querySelector(href)
