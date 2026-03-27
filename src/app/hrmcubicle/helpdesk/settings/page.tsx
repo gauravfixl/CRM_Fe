@@ -39,7 +39,7 @@ import { ScrollArea } from "@/shared/components/ui/scroll-area";
 import { Separator } from "@/shared/components/ui/separator";
 import { useHelpdeskStore } from "@/shared/data/helpdesk-store";
 import { useToast } from "@/shared/components/ui/use-toast";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 const HelpdeskSettingsPage = () => {
     const { categories, slaRules, updateSLARule } = useHelpdeskStore();

@@ -25,16 +25,16 @@ const TeamOverviewPage = () => {
   const { toast } = useToast();
   const { members, attendance, leaves, approveLeave, rejectLeave } = useTeamStore();
 
-  const activeMembersCount = members.filter(m => m.status === 'Active').length;
-  const onLeaveCount = members.filter(m => m.status === 'On Leave').length;
+  const activeMembersCount = (members || []).filter(m => m.status === 'Active').length;
+  const onLeaveCount = (members || []).filter(m => m.status === 'On Leave').length;
   // Dynamic Attendance Calculation
-  const presentTodayCount = attendance.filter(a => a.status === 'Present').length;
-  const absentTodayCount = members.length - presentTodayCount - onLeaveCount;
+  const presentTodayCount = (attendance || []).filter(a => a.status === 'Present').length;
+  const absentTodayCount = (members || []).length - presentTodayCount - onLeaveCount;
 
-  const pendingLeaves = leaves.filter(l => l.status === 'Pending');
+  const pendingLeaves = (leaves || []).filter(l => l.status === 'Pending');
 
   const stats = [
-    { label: "Team Size", value: members.length, color: "bg-[#CB9DF0]", icon: <Users className="text-slate-800" />, textColor: "text-slate-900" },
+    { label: "Team Size", value: (members || []).length, color: "bg-[#CB9DF0]", icon: <Users className="text-slate-800" />, textColor: "text-slate-900" },
     { label: "Present Today", value: presentTodayCount, color: "bg-emerald-100", icon: <UserCheck className="text-emerald-600" />, textColor: "text-emerald-900" },
     { label: "On Leave", value: onLeaveCount, color: "bg-amber-100", icon: <Calendar className="text-amber-600" />, textColor: "text-amber-900" },
     { label: "Absent Today", value: absentTodayCount, color: "bg-rose-100", icon: <UserX className="text-rose-600" />, textColor: "text-rose-900" },
@@ -121,7 +121,7 @@ const TeamOverviewPage = () => {
               </Link>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              {members.slice(0, 4).map((member, i) => (
+              {(members || []).slice(0, 4).map((member, i) => (
                 <motion.div key={member.id} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
                   <Card className="border-none bg-white p-4 rounded-xl group hover:shadow-lg transition-all border border-white/50">
                     <div className="flex items-center gap-4 mb-4">

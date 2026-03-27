@@ -30,7 +30,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/sha
 import { Separator } from "@/shared/components/ui/separator";
 
 const PayrollSettingsPage = () => {
-    const { salaryComponents, statutorySettings, payCycles, addSalaryComponent, updateSalaryComponent, deleteSalaryComponent, updateStatutorySettings } = usePayrollStore();
+    const { salaryComponents, statutorySettings, addComponent: addSalaryComponent, updateComponent: updateSalaryComponent, deleteComponent: deleteSalaryComponent, updateStatutorySettings } = usePayrollStore();
+    const payCycles: { frequency?: string; payDay?: number; attendanceCutoffDay?: number }[] = [];
     const { toast } = useToast();
 
     // Dialog States
@@ -249,7 +250,7 @@ const PayrollSettingsPage = () => {
                             <CardContent className="space-y-4">
                                 <div className="space-y-2">
                                     <Label className="text-xs font-bold text-slate-500 uppercase">Frequency</Label>
-                                    <Select defaultValue={payCycles[0]?.frequency || 'Monthly'}>
+                                    <Select defaultValue={payCycles?.[0]?.frequency || 'Monthly'}>
                                         <SelectTrigger className="font-bold"><SelectValue /></SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="Monthly">Monthly</SelectItem>
@@ -262,14 +263,14 @@ const PayrollSettingsPage = () => {
                                     <div className="space-y-2">
                                         <Label className="text-xs font-bold text-slate-500 uppercase">Pay Date</Label>
                                         <div className="relative">
-                                            <Input defaultValue={payCycles[0]?.payDay} className="pl-8 font-bold" type="number" />
+                                            <Input defaultValue={payCycles?.[0]?.payDay} className="pl-8 font-bold" type="number" />
                                             <Calendar className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
                                         </div>
                                     </div>
                                     <div className="space-y-2">
                                         <Label className="text-xs font-bold text-slate-500 uppercase">Cutoff Date</Label>
                                         <div className="relative">
-                                            <Input defaultValue={payCycles[0]?.attendanceCutoffDay} className="pl-8 font-bold" type="number" />
+                                            <Input defaultValue={payCycles?.[0]?.attendanceCutoffDay} className="pl-8 font-bold" type="number" />
                                             <AlertCircle className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
                                         </div>
                                     </div>

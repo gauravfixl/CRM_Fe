@@ -26,7 +26,8 @@ import {
     History,
     CheckSquare,
     XSquare,
-    ClipboardCheck
+    ClipboardCheck,
+    Trash2
 } from 'lucide-react'
 import { Button } from "@/shared/components/ui/button"
 import { Input } from "@/shared/components/ui/input"

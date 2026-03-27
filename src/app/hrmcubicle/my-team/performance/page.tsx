@@ -41,8 +41,8 @@ const TeamPerformancePage = () => {
     const [feedback, setFeedback] = useState("");
     const [goalHeading, setGoalHeading] = useState("");
 
-    const performanceData = members.map((m: any) => {
-        const perf = performance.find((p: any) => p.empId === m.id);
+    const performanceData = (members || []).map((m: any) => {
+        const perf = (performance || []).find((p: any) => p.empId === m.id);
         return {
             ...m,
             rating: perf?.rating || "0.0",

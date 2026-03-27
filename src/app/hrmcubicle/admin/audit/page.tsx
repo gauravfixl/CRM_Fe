@@ -48,9 +48,9 @@ const AuditLogsPage = () => {
     const filteredLogs = useMemo(() => {
         return logs.filter(log => {
             const matchesSearch =
-                log.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                log.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                log.id.toLowerCase().includes(searchTerm.toLowerCase());
+                (log.description ?? "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+                (log.userName ?? "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+                (log.id ?? "").toLowerCase().includes(searchTerm.toLowerCase());
 
             const matchesModule = moduleFilter === "all" || log.module === moduleFilter;
             const matchesAction = actionFilter === "all" || log.action === actionFilter;

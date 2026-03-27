@@ -1,6 +1,8 @@
 // utils/toast.ts
 import toast from "react-hot-toast";
 
+export { toast };
+
 export const showSuccess = (message: string) => {
   toast.success(message);
 };
