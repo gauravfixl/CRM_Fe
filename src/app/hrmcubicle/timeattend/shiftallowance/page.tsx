@@ -6,6 +6,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import AddShiftAllowancePolicy from "@/components/hrm/timeattend/shiftallowance/addshiftallowancepolicy";
 import AddShiftAllowanceCode from "@/components/hrm/timeattend/shiftallowance/addshiftallowancecode";
 
+import { Card } from "@/shared/components/ui/card";
+
 interface Policy {
   name: string;
   employees: number;
@@ -93,7 +95,7 @@ const ShiftAllowancePage: React.FC = () => {
             <p className="text-slate-500 font-bold text-base mt-1">Configure and manage shift allowance policies and codes.</p>
           </div>
 
-          <TabsList className="bg-slate-100/50 p-1.5 rounded-2xl gap-2 h-auto flex justify-start items-center border border-slate-200">
+          <div className="bg-slate-100/50 p-1.5 rounded-2xl gap-2 h-auto flex justify-start items-center border border-slate-200">
             {["Shift Allowance Policy", "Shift Allowance Code"].map((tab) => (
               <button
                 key={tab}
@@ -106,7 +108,7 @@ const ShiftAllowancePage: React.FC = () => {
                 {tab}
               </button>
             ))}
-          </TabsList>
+          </div>
         </div>
 
         {/* POLICY TAB CONTENT */}

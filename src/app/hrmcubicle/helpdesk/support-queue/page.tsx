@@ -31,7 +31,8 @@ import {
     Trash2,
     Target,
     Zap,
-    LifeBuoy
+    LifeBuoy,
+    Send
 } from "lucide-react";
 import { Card, CardContent } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
@@ -42,7 +43,9 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from "@/shared/components/ui/sheet";
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
 import { Separator } from "@/shared/components/ui/separator";
+import { Textarea } from "@/shared/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/shared/components/ui/tooltip";
+import { Dialog, DialogContent, DialogTitle } from "@/shared/components/ui/dialog";
 import { useHelpdeskStore, type Ticket } from "@/shared/data/helpdesk-store";
 import { useToast } from "@/shared/components/ui/use-toast";
 import { motion, AnimatePresence } from "framer-motion";

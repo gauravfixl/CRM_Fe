@@ -375,7 +375,7 @@ export default function ClientManagementPage() {
         setClientFormData(prev => ({ ...prev, [field]: value }))
     }
 
-    const handleSaveClient = () => {
+    const handleSaveClient = async () => {
         // Validation
         if (!clientFormData.companyName || !clientFormData.contactName || !clientFormData.email) {
             toast.error("Please fill in all required fields")

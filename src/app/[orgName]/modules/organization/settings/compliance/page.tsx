@@ -3,7 +3,7 @@
 import React, { useState } from "react"
 import {
     ShieldCheck,
-    FileShield,
+    Shield,
     Lock,
     AlertCircle,
     CheckCircle2,
@@ -16,7 +16,8 @@ import {
     ExternalLink,
     Scale,
     Gavel,
-    Eye
+    Eye,
+    ArrowRight
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
@@ -27,7 +28,7 @@ import { SmallCard, SmallCardHeader, SmallCardContent } from "@/shared/component
 import { toast } from "sonner"
 
 const complianceStandards = [
-    { name: "GDPR Compliance", desc: "Data protection and privacy for EU citizens.", status: "Verified", date: "Jan 2024", icon: FileShield },
+    { name: "GDPR Compliance", desc: "Data protection and privacy for EU citizens.", status: "Verified", date: "Jan 2024", icon: Shield },
     { name: "SOC 2 Type II", desc: "Security, availability, and processing integrity.", status: "Active", date: "Feb 2024", icon: ShieldCheck },
     { name: "HIPAA Standard", desc: "Patient data privacy and security provisions.", status: "In-Progress", date: "Reviewing", icon: Scale },
 ]

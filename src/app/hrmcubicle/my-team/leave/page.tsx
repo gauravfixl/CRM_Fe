@@ -29,21 +29,21 @@ const TeamLeavePage = () => {
     const { toast } = useToast();
     const [view, setView] = useState<'pending' | 'history'>('pending');
 
-    const pendingLeaves = leaves.filter(l => l.status === 'Pending');
-    const processedLeaves = leaves.filter(l => l.status !== 'Pending');
+    const pendingLeaves = (leaves || []).filter(l => l.status === 'Pending');
+    const processedLeaves = (leaves || []).filter(l => l.status !== 'Pending');
 
     const stats = [
         { label: "Pending Actions", value: pendingLeaves.length, color: "bg-amber-100", icon: <Clock className="text-amber-600" />, textColor: "text-amber-900" },
         {
             label: "On Leave Today",
-            value: leaves.filter(l => l.status === 'Approved' && new Date(l.startDate) <= new Date() && new Date(l.endDate) >= new Date()).length,
+            value: (leaves || []).filter(l => l.status === 'Approved' && new Date(l.startDate) <= new Date() && new Date(l.endDate) >= new Date()).length,
             color: "bg-emerald-100",
             icon: <Calendar className="text-emerald-600" />,
             textColor: "text-emerald-900"
         },
         {
             label: "Upcoming Leaves",
-            value: leaves.filter(l => l.status === 'Approved' && new Date(l.startDate) > new Date()).length,
+            value: (leaves || []).filter(l => l.status === 'Approved' && new Date(l.startDate) > new Date()).length,
             color: "bg-indigo-100",
             icon: <Calendar className="text-indigo-600" />,
             textColor: "text-indigo-900"
@@ -117,7 +117,7 @@ const TeamLeavePage = () => {
                             {pendingLeaves.length > 0 ? (
                                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                     {pendingLeaves.map((leave, i) => {
-                                        const member = members.find(m => m.id === leave.empId);
+                                        const member = (members || []).find(m => m.id === leave.empId);
                                         return (
                                             <Card key={leave.id} className="border-none shadow-sm hover:shadow-xl transition-all duration-300 rounded-2xl bg-white p-6 group overflow-hidden relative border border-white/50">
                                                 <div className="absolute top-0 right-0 w-24 h-24 bg-amber-50 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />

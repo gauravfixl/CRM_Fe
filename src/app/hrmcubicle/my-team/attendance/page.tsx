@@ -34,13 +34,13 @@ const TeamAttendancePage = () => {
     const { toast } = useToast();
     const [searchTerm, setSearchTerm] = useState("");
 
-    const presentCount = attendance.filter(a => a.status === 'Present').length;
-    const absentCount = members.length - presentCount - attendance.filter(a => a.status === 'On Leave').length;
+    const presentCount = (attendance || []).filter(a => a.status === 'Present').length;
+    const absentCount = (members || []).length - presentCount - (attendance || []).filter(a => a.status === 'On Leave').length;
 
     const stats = [
         { label: "Present Today", value: presentCount, color: "bg-emerald-100", icon: <UserCheck className="text-emerald-600" /> },
         { label: "Absent", value: absentCount, color: "bg-rose-100", icon: <UserX className="text-rose-600" /> },
-        { label: "On Leave", value: attendance.filter(a => a.status === 'On Leave').length, color: "bg-amber-100", icon: <Calendar className="text-amber-600" /> },
+        { label: "On Leave", value: (attendance || []).filter(a => a.status === 'On Leave').length, color: "bg-amber-100", icon: <Calendar className="text-amber-600" /> },
     ];
 
     const getStatusColor = (status: string) => {
@@ -63,8 +63,8 @@ const TeamAttendancePage = () => {
     };
 
     // Filter attendance based on search
-    const filteredAttendance = attendance.filter(record => {
-        const member = members.find(m => m.id === record.empId);
+    const filteredAttendance = (attendance || []).filter(record => {
+        const member = (members || []).find(m => m.id === record.empId);
         return member?.name.toLowerCase().includes(searchTerm.toLowerCase());
     });
 
@@ -117,7 +117,7 @@ const TeamAttendancePage = () => {
 
                         <div className="space-y-3">
                             {filteredAttendance.map((record, i) => {
-                                const member = members.find(m => m.id === record.empId);
+                                const member = (members || []).find(m => m.id === record.empId);
                                 return (
                                     <motion.div key={i} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}>
                                         <div className="flex items-center justify-between p-4 bg-white rounded-2xl hover:shadow-lg transition-all group border border-white/50 mx-2">
