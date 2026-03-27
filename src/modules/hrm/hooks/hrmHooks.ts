@@ -61,6 +61,45 @@ export const getDepartmentList = async () => {
     }
 };
 
+export const createDepartment = async (data: { name: string; description?: string; head?: string }) => {
+    try {
+        const response = await axios.post("/organization/departments/", data);
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error creating department:", err);
+            showError(err?.response?.data?.message || "Failed to create department");
+        }
+        throw err;
+    }
+};
+
+export const updateDepartment = async (id: string, data: { name?: string; description?: string; head?: string }) => {
+    try {
+        const response = await axios.patch(`/organization/departments/${id}`, data);
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error updating department:", err);
+            showError(err?.response?.data?.message || "Failed to update department");
+        }
+        throw err;
+    }
+};
+
+export const deleteDepartment = async (id: string) => {
+    try {
+        const response = await axios.delete(`/organization/departments/${id}`);
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error deleting department:", err);
+            showError(err?.response?.data?.message || "Failed to delete department");
+        }
+        throw err;
+    }
+};
+
 // ==================== POSITION APIs ====================
 
 export const getAllPositions = async () => {
@@ -71,6 +110,45 @@ export const getAllPositions = async () => {
         if (err?.response?.status !== 401) {
             console.error("Error fetching positions:", err);
             showError("Failed to fetch positions");
+        }
+        throw err;
+    }
+};
+
+export const createPosition = async (data: { department: string; title: string; level?: string; description?: string }) => {
+    try {
+        const response = await axios.post("/organization/positions/", data);
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error creating position:", err);
+            showError(err?.response?.data?.message || "Failed to create position");
+        }
+        throw err;
+    }
+};
+
+export const updatePosition = async (id: string, data: { title?: string; level?: string; description?: string; department?: string }) => {
+    try {
+        const response = await axios.patch(`/organization/positions/${id}`, data);
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error updating position:", err);
+            showError(err?.response?.data?.message || "Failed to update position");
+        }
+        throw err;
+    }
+};
+
+export const deletePosition = async (id: string) => {
+    try {
+        const response = await axios.delete(`/organization/positions/${id}`);
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error deleting position:", err);
+            showError(err?.response?.data?.message || "Failed to delete position");
         }
         throw err;
     }
@@ -229,6 +307,101 @@ export const getAllLeaveTypes = async () => {
     }
 };
 
+export const getActiveLeaveTypes = async () => {
+    try {
+        const response = await axios.get("/leave/types/");
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error fetching active leave types:", err);
+            showError("Failed to fetch leave types");
+        }
+        throw err;
+    }
+};
+
+export const createLeaveType = async (data: {
+    name: string; code: string; isPaid: boolean;
+    annualAllocation?: number | null; allowHalfDay?: boolean;
+    accrualType?: string; monthlyAccrual?: number;
+    maxCarryForward?: number; allowEncashment?: boolean; maxEncashable?: number;
+}) => {
+    try {
+        const response = await axios.post("/leave/types/", data);
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error creating leave type:", err);
+            showError(err?.response?.data?.message || "Failed to create leave type");
+        }
+        throw err;
+    }
+};
+
+export const updateLeaveType = async (id: string, data: {
+    name?: string; annualAllocation?: number | null; allowHalfDay?: boolean;
+    accrualType?: string; monthlyAccrual?: number;
+    maxCarryForward?: number; allowEncashment?: boolean; maxEncashable?: number;
+}) => {
+    try {
+        const response = await axios.patch(`/leave/types/${id}`, data);
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error updating leave type:", err);
+            showError(err?.response?.data?.message || "Failed to update leave type");
+        }
+        throw err;
+    }
+};
+
+export const disableLeaveType = async (id: string) => {
+    try {
+        const response = await axios.delete(`/leave/types/${id}`);
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error disabling leave type:", err);
+            showError(err?.response?.data?.message || "Failed to disable leave type");
+        }
+        throw err;
+    }
+};
+
+// ==================== ATTENDANCE POLICY APIs ====================
+
+export const getActiveAttendancePolicy = async () => {
+    try {
+        const response = await axios.get("/attendance/policy/active");
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401 && err?.response?.status !== 404) {
+            console.error("Error fetching attendance policy:", err);
+            showError("Failed to fetch attendance policy");
+        }
+        throw err;
+    }
+};
+
+export const upsertAttendancePolicy = async (data: {
+    lateAllowedMinutes?: number; halfDayThresholdMinutes: number;
+    absentThresholdMinutes: number; overtimeMinMinutes?: number;
+    allowEarlyPunch?: boolean; allowLatePunch?: boolean;
+    sandwichLeaveRule?: boolean; allowBackdatedRegularization?: boolean;
+    maxBackdateDays?: number;
+}) => {
+    try {
+        const response = await axios.post("/attendance/policy/", data);
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error saving attendance policy:", err);
+            showError(err?.response?.data?.message || "Failed to save attendance policy");
+        }
+        throw err;
+    }
+};
+
 export const getLeaveBalance = async () => {
     try {
         const response = await axios.get("/leave/balance/me");
@@ -320,6 +493,62 @@ export const getAllShifts = async () => {
         if (err?.response?.status !== 401) {
             console.error("Error fetching shifts:", err);
             showError("Failed to fetch shifts");
+        }
+        throw err;
+    }
+};
+
+export const getActiveShifts = async () => {
+    try {
+        const response = await axios.get("/attendance/shifts/active");
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error fetching active shifts:", err);
+            showError("Failed to fetch active shifts");
+        }
+        throw err;
+    }
+};
+
+export const createShift = async (data: {
+    shiftType: string; startTime: string; endTime: string;
+    breakMinutes?: number; graceInMinutes?: number; graceOutMinutes?: number;
+    halfDayAfterMinutes: number; overtimeAfterMinutes?: number; isNightShift?: boolean;
+}) => {
+    try {
+        const response = await axios.post("/attendance/shifts/", data);
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error creating shift:", err);
+            showError(err?.response?.data?.message || "Failed to create shift");
+        }
+        throw err;
+    }
+};
+
+export const updateShift = async (id: string, data: { graceInMinutes?: number; graceOutMinutes?: number; isActive?: boolean }) => {
+    try {
+        const response = await axios.patch(`/attendance/shifts/${id}`, data);
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error updating shift:", err);
+            showError(err?.response?.data?.message || "Failed to update shift");
+        }
+        throw err;
+    }
+};
+
+export const disableShift = async (id: string) => {
+    try {
+        const response = await axios.delete(`/attendance/shifts/${id}`);
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error disabling shift:", err);
+            showError(err?.response?.data?.message || "Failed to disable shift");
         }
         throw err;
     }

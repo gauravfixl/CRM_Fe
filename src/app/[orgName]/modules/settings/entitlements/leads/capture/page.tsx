@@ -153,14 +153,14 @@ export default function LeadCapturePage() {
                         <CustomButton
                             variant="outline"
                             onClick={() => handleAction("Capture API Keys Rotated Successfully")}
-                            className="rounded-xl h-10 px-6 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 font-bold hover:bg-zinc-50 transition-all shadow-sm italic text-blue-600 hover:text-blue-700 hover:border-blue-200"
+                            className="rounded-xl h-10 px-6 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 font-medium hover:bg-zinc-50 transition-all shadow-sm text-blue-600 hover:text-blue-700 hover:border-blue-200"
                         >
                             <RefreshCw className="w-3.5 h-3.5 mr-2" />
-                            Rotate API Key
+                            Rotate Api Key
                         </CustomButton>
                         <CustomButton
                             onClick={openProvisionDialog}
-                            className="h-10 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-8 shadow-xl shadow-blue-500/20 border-0 italic"
+                            className="h-10 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs px-8 shadow-xl shadow-blue-500/20 border-0"
                         >
                             <Plus className="w-4 h-4 mr-2" />
                             Provision Gateway
@@ -172,47 +172,47 @@ export default function LeadCapturePage() {
             <div className="p-4 md:p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
                 {/* Protocol HUD */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <SmallCard className="bg-gradient-to-br from-blue-500 to-blue-700 border-none text-white shadow-[0_8px_30px_rgb(59,130,246,0.3)] hover:shadow-[0_20px_40px_rgba(37,99,235,0.4)] hover:-translate-y-1 transform transition-all duration-300">
-                        <SmallCardHeader className="flex flex-row items-center justify-between pb-1 px-4 pt-4">
-                            <p className="text-[11px] text-white font-medium">Intake Throughput</p>
+                    <SmallCard className="border bg-gradient-to-r from-primary/70 to-primary text-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                        <SmallCardContent className="p-4 flex flex-row items-center justify-between">
+                            <div>
+                                <p className="text-white text-xs opacity-80">Intake Throughput</p>
+                                <p className="text-white text-xl font-semibold">2.4k/Mo</p>
+                                <p className="text-[10px] text-white/80">+12.5% Intake Velocity</p>
+                            </div>
                             <Webhook className="w-4 h-4 text-white" />
-                        </SmallCardHeader>
-                        <SmallCardContent className="px-4 pb-4">
-                            <p className="text-xl font-semibold text-white drop-shadow-md">2.4k/Mo</p>
-                            <p className="text-[10px] text-white/80">+12.5% Intake Velocity</p>
                         </SmallCardContent>
                     </SmallCard>
 
-                    <SmallCard className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-sm hover:shadow-md transition-all">
-                        <SmallCardHeader className="flex flex-row items-center justify-between pb-1 px-4 pt-4">
-                            <p className="text-[11px] text-zinc-500 font-medium">Operational Health</p>
+                    <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                        <SmallCardContent className="p-4 flex flex-row items-center justify-between">
+                            <div>
+                                <p className="text-xs text-gray-600">Operational Health</p>
+                                <p className="text-xl font-semibold text-gray-900 dark:text-white">99.9%</p>
+                                <p className="text-[10px] text-emerald-600 font-medium">Node Availability</p>
+                            </div>
                             <Activity className="w-4 h-4 text-emerald-500" />
-                        </SmallCardHeader>
-                        <SmallCardContent className="px-4 pb-4">
-                            <p className="text-xl font-semibold text-zinc-900 dark:text-white">99.9%</p>
-                            <p className="text-[10px] text-emerald-600 font-medium">Node Availability</p>
                         </SmallCardContent>
                     </SmallCard>
 
-                    <SmallCard className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-sm hover:shadow-md transition-all">
-                        <SmallCardHeader className="flex flex-row items-center justify-between pb-1 px-4 pt-4">
-                            <p className="text-[11px] text-zinc-500 font-medium">Global Gateways</p>
+                    <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                        <SmallCardContent className="p-4 flex flex-row items-center justify-between">
+                            <div>
+                                <p className="text-xs text-gray-600">Global Gateways</p>
+                                <p className="text-xl font-semibold text-gray-900 dark:text-white">08</p>
+                                <p className="text-[10px] text-indigo-600 font-medium">Intake Clusters</p>
+                            </div>
                             <Globe className="w-4 h-4 text-indigo-500" />
-                        </SmallCardHeader>
-                        <SmallCardContent className="px-4 pb-4">
-                            <p className="text-xl font-semibold text-zinc-900 dark:text-white">08</p>
-                            <p className="text-[10px] text-indigo-600 font-medium">Intake Clusters</p>
                         </SmallCardContent>
                     </SmallCard>
 
-                    <SmallCard className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-sm hover:shadow-md transition-all">
-                        <SmallCardHeader className="flex flex-row items-center justify-between pb-1 px-4 pt-4">
-                            <p className="text-[11px] text-zinc-500 font-medium">Intelligent Routing</p>
+                    <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                        <SmallCardContent className="p-4 flex flex-row items-center justify-between">
+                            <div>
+                                <p className="text-xs text-gray-600">Intelligent Routing</p>
+                                <p className="text-xl font-semibold text-gray-900 dark:text-white">Active</p>
+                                <p className="text-[10px] text-amber-600 font-medium">Load Balancer Matrix</p>
+                            </div>
                             <Cpu className="w-4 h-4 text-amber-500" />
-                        </SmallCardHeader>
-                        <SmallCardContent className="px-4 pb-4">
-                            <p className="text-xl font-semibold text-zinc-900 dark:text-white">Active</p>
-                            <p className="text-[10px] text-amber-600 font-medium">Load Balancer Matrix</p>
                         </SmallCardContent>
                     </SmallCard>
                 </div>
@@ -223,7 +223,7 @@ export default function LeadCapturePage() {
                         <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-md overflow-hidden text-left">
                             <div className="px-4 py-2 border-b border-zinc-50 dark:border-zinc-800 flex items-center justify-between bg-zinc-50/40 dark:bg-zinc-900/40">
                                 <div className="text-left space-y-1">
-                                    <h4 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 leading-none">
+                                    <h4 className="text-base font-medium text-gray-900 dark:text-zinc-100 leading-none">
                                         Capture Waypoint Registry
                                     </h4>
                                     <p className="text-[11px] text-zinc-400 leading-none">
@@ -238,16 +238,16 @@ export default function LeadCapturePage() {
                                 <Table>
                                     <TableHeader className="bg-zinc-50/50 dark:bg-zinc-900/50 text-left">
                                         <TableRow className="border-b border-zinc-100 dark:border-zinc-800 px-2">
-                                            <TableHead className="px-3 py-1.5 text-[11px] font-medium text-zinc-500">
+                                            <TableHead className="px-3 py-1.5 text-[11px] font-medium text-gray-500">
                                                 Gateway Identity
                                             </TableHead>
-                                            <TableHead className="px-3 py-1.5 text-[11px] font-medium text-zinc-500 text-center">
+                                            <TableHead className="px-3 py-1.5 text-[11px] font-medium text-gray-500 text-center">
                                                 Intake Volume
                                             </TableHead>
-                                            <TableHead className="px-3 py-1.5 text-[11px] font-medium text-zinc-500 text-center">
+                                            <TableHead className="px-3 py-1.5 text-[11px] font-medium text-gray-500 text-center">
                                                 Fidelity Score
                                             </TableHead>
-                                            <TableHead className="px-3 py-1.5 text-[11px] font-medium text-zinc-500 text-right">
+                                            <TableHead className="px-3 py-1.5 text-[11px] font-medium text-gray-500 text-right">
                                                 Last Ingestion
                                             </TableHead>
                                         </TableRow>
@@ -332,22 +332,22 @@ export default function LeadCapturePage() {
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm p-4 flex items-center justify-between">
                                 <div>
-                                    <p className="text-xs text-zinc-500">Average Time To First Response</p>
-                                    <p className="text-lg font-semibold text-zinc-900 dark:text-white mt-1">2.3 Minutes</p>
+                                    <p className="text-xs text-gray-600">Average Time To First Response</p>
+                                    <p className="text-lg font-semibold text-gray-900 dark:text-white mt-1">2.3 Minutes</p>
                                 </div>
                                 <span className="text-[10px] text-emerald-600 font-medium">Within Target</span>
                             </div>
                             <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm p-4 flex items-center justify-between">
                                 <div>
-                                    <p className="text-xs text-zinc-500">Verified Capture Gateways</p>
-                                    <p className="text-lg font-semibold text-zinc-900 dark:text-white mt-1">6 Of 8</p>
+                                    <p className="text-xs text-gray-600">Verified Capture Gateways</p>
+                                    <p className="text-lg font-semibold text-gray-900 dark:text-white mt-1">6 Of 8</p>
                                 </div>
                                 <span className="text-[10px] text-blue-600 font-medium">Two In Draft</span>
                             </div>
                             <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm p-4 flex items-center justify-between">
                                 <div>
-                                    <p className="text-xs text-zinc-500">Weekend Auto-Routing</p>
-                                    <p className="text-lg font-semibold text-zinc-900 dark:text-white mt-1">Enabled</p>
+                                    <p className="text-xs text-gray-600">Weekend Auto-Routing</p>
+                                    <p className="text-lg font-semibold text-gray-900 dark:text-white mt-1">Enabled</p>
                                 </div>
                                 <span className="text-[10px] text-amber-600 font-medium">High Traffic Hours</span>
                             </div>
@@ -356,7 +356,7 @@ export default function LeadCapturePage() {
                         {/* Recent Activity + Tips row to further fill space */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div className="md:col-span-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm p-4">
-                                <h4 className="text-sm font-semibold text-zinc-900 dark:text-white mb-3">Recent Capture Activity</h4>
+                                <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-3">Recent Capture Activity</h4>
                                 <div className="space-y-2 text-xs text-zinc-600 dark:text-zinc-300">
                                     <div className="flex items-center justify-between">
                                         <span>Primary Website Contact Form</span>
@@ -373,7 +373,7 @@ export default function LeadCapturePage() {
                                 </div>
                             </div>
                             <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm p-4">
-                                <h4 className="text-sm font-semibold text-zinc-900 dark:text-white mb-2">Optimization Tips</h4>
+                                <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Optimization Tips</h4>
                                 <ul className="space-y-1 text-xs text-zinc-600 dark:text-zinc-300 list-disc list-inside">
                                     <li>Keep at least one backup capture form active.</li>
                                     <li>Archive inactive portals older than thirty days.</li>
@@ -385,9 +385,9 @@ export default function LeadCapturePage() {
 
                     {/* API Configuration Panel */}
                     <div className="lg:col-span-4 space-y-8">
-                        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-md p-6 border-none text-left">
-                            <h3 className="text-sm font-semibold text-zinc-900 dark:text-white mb-6 pb-4 border-b border-zinc-50 dark:border-zinc-800 flex items-center gap-3 leading-none">
-                                <Terminal className="w-5 h-5 text-blue-600" /> API Access Authority
+                        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-md p-6 text-left">
+                            <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-6 pb-4 border-b border-zinc-50 dark:border-zinc-800 flex items-center gap-3 leading-none">
+                                <Terminal className="w-5 h-5 text-blue-600" /> Api Access Authority
                             </h3>
                             <div className="space-y-8">
                                 <div className="space-y-4">
@@ -416,14 +416,14 @@ export default function LeadCapturePage() {
                                     <Label className="text-[11px] font-medium text-zinc-500">Capture Status</Label>
                                     <div className="flex items-center justify-between p-4 bg-zinc-50/50 dark:bg-zinc-950/20 rounded-xl border border-zinc-100/30 dark:border-zinc-800/30 group">
                                         <div className="flex flex-col space-y-2">
-                                            <span className="text-xs font-semibold tracking-tight transition-colors group-hover:text-blue-600 leading-none">Master Ingestion</span>
+                                            <span className="text-xs font-semibold transition-colors group-hover:text-blue-600 leading-none">Master Ingestion</span>
                                             <span className="text-[10px] font-medium text-zinc-400 leading-none">Global Status Control</span>
                                         </div>
                                         <Switch
                                             checked={isFormActive}
                                             onCheckedChange={(val) => {
                                                 setIsFormActive(val)
-                                                toast.info(`Global capture status synchronized: ${val ? 'ACTIVE' : 'DISABLED'}`)
+                                                toast.info(`Global capture status synchronized: ${val ? 'Active' : 'Disabled'}`)
                                             }}
                                             className="data-[state=checked]:bg-emerald-500"
                                         />
@@ -444,16 +444,16 @@ export default function LeadCapturePage() {
                         </div>
 
                         {/* Integration Quicklinks */}
-                        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-md p-6 border-none space-y-4 text-left">
-                            <h3 className="text-sm font-semibold text-zinc-900 dark:text-white mb-2 leading-none">Implementation Assets</h3>
+                        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-md p-6 space-y-4 text-left">
+                            <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-2 leading-none">Implementation Assets</h3>
                             <div className="space-y-3">
                                 {[
-                                    { name: "REST API Documentation", icon: <Terminal className="w-4 h-4" /> },
-                                    { name: "Webform JS SDK", icon: <Code2 className="w-4 h-4" /> },
+                                    { name: "Rest Api Documentation", icon: <Terminal className="w-4 h-4" /> },
+                                    { name: "Webform Js Sdk", icon: <Code2 className="w-4 h-4" /> },
                                     { name: "React Capture Hooks", icon: <Layers className="w-4 h-4" /> },
                                     { name: "Webhook Payload Specs", icon: <Webhook className="w-4 h-4" /> },
                                 ].map((asset, i) => (
-                                    <div key={i} className="flex items-center justify-between p-3 bg-zinc-50/30 dark:bg-zinc-950/20 rounded-xl hover:bg-white dark:hover:bg-zinc-900 hover:shadow-md transition-all cursor-pointer group border border-transparent hover:border-blue-100/30">
+                                    <div key={i} onClick={() => toast.info(`Opening ${asset.name}...`)} className="flex items-center justify-between p-3 bg-zinc-50/30 dark:bg-zinc-950/20 rounded-xl hover:bg-white dark:hover:bg-zinc-900 hover:shadow-md transition-all cursor-pointer group border border-transparent hover:border-blue-100/30">
                                         <div className="flex items-center gap-4 text-left">
                                             <span className="text-zinc-300 group-hover:text-blue-500 transition-colors">{asset.icon}</span>
                                             <span className="text-xs font-medium text-zinc-700 dark:text-zinc-200 group-hover:text-blue-600 group-hover:translate-x-1 transition-transform">{asset.name}</span>
@@ -467,7 +467,7 @@ export default function LeadCapturePage() {
                 </div>
 
                 {/* Algorithmic Security Matrix */}
-                <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-md p-6 relative overflow-hidden group border-none text-left">
+                <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-md p-6 relative overflow-hidden group text-left">
                     <Activity className="absolute -bottom-20 -right-20 h-96 w-96 text-indigo-600 opacity-5 group-hover:scale-110 transition-transform pointer-events-none" />
                     <div className="relative z-10 w-full text-left">
                         <div className="flex items-center justify-between mb-8 border-b border-zinc-50 dark:border-zinc-800/50 pb-6">
@@ -476,7 +476,7 @@ export default function LeadCapturePage() {
                                     <ShieldCheck className="w-8 h-8 group-hover:scale-125 transition-transform" />
                                 </div>
                                 <div className="text-left space-y-2">
-                                    <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 leading-none">Gateway Integrity Matrix</h3>
+                                    <h3 className="text-base font-medium text-gray-900 dark:text-zinc-100 leading-none">Gateway Integrity Matrix</h3>
                                     <p className="text-[10px] text-zinc-400 font-medium mt-1 leading-none">Global intake encryption and protocol verification audit</p>
                                 </div>
                             </div>
@@ -486,8 +486,8 @@ export default function LeadCapturePage() {
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-left">
                             {[
-                                { title: "Origin Whitelist Sync", val: "Active", meta: "DNS Verified", icon: <Globe className="w-4 h-4" /> },
-                                { title: "Spam Sequestration", val: "Enabled", meta: "AI Hardened", icon: <ShieldCheck className="w-4 h-4" /> },
+                                { title: "Origin Whitelist Sync", val: "Active", meta: "Dns Verified", icon: <Globe className="w-4 h-4" /> },
+                                { title: "Spam Sequestration", val: "Enabled", meta: "Ai Hardened", icon: <ShieldCheck className="w-4 h-4" /> },
                                 { title: "Ingestion Fidelity", val: "Optimal", meta: "Schema Validated", icon: <CheckCircle className="w-4 h-4" /> },
                             ].map((audit, i) => (
                                 <div key={i} className="flex flex-col space-y-6 group/audit cursor-default">
@@ -514,7 +514,7 @@ export default function LeadCapturePage() {
                             <div className="h-10 w-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-xl shadow-blue-500/20">
                                 <Webhook className="w-5 h-5" />
                             </div>
-                            <DialogTitle className="text-xl font-bold">Provision New Gateway</DialogTitle>
+                            <DialogTitle className="text-xl font-semibold">Provision New Gateway</DialogTitle>
                         </div>
                         <DialogDescription className="text-xs text-zinc-400">
                             Configure institutional intake endpoints for lead ingestion.
@@ -522,7 +522,7 @@ export default function LeadCapturePage() {
                     </DialogHeader>
                     <div className="grid gap-5 py-4">
                         <div className="space-y-2">
-                            <Label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Gateway Name</Label>
+                            <Label className="text-[10px] font-medium text-zinc-400">Gateway Name</Label>
                             <Input
                                 placeholder="e.g. Website Contact Form"
                                 value={editingEndpoint?.name ?? ''}
@@ -531,7 +531,7 @@ export default function LeadCapturePage() {
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Origin URL / Source</Label>
+                            <Label className="text-[10px] font-medium text-zinc-400">Origin Url / Source</Label>
                             <Input
                                 placeholder="https://yourdomain.com"
                                 value={editingEndpoint?.origin ?? ''}
@@ -540,7 +540,7 @@ export default function LeadCapturePage() {
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Initial Trust Protocol</Label>
+                            <Label className="text-[10px] font-medium text-zinc-400">Initial Trust Protocol</Label>
                             <Select value={editingEndpoint?.status ?? 'Active'} onValueChange={(v) => setEditingEndpoint(prev => prev ? { ...prev, status: v } : prev)}>
                                 <SelectTrigger className="h-12 rounded-2xl border-zinc-100 bg-zinc-50/50">
                                     <SelectValue />
@@ -553,8 +553,8 @@ export default function LeadCapturePage() {
                         </div>
                     </div>
                     <DialogFooter className="gap-3 mt-4">
-                        <CustomButton variant="outline" onClick={() => setIsProvisionOpen(false)} className="h-12 rounded-2xl px-6 border-zinc-100 font-bold text-zinc-400">Decline</CustomButton>
-                        <CustomButton onClick={saveEndpoint} className="h-12 rounded-2xl px-8 bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-xl shadow-blue-500/20 border-0">
+                        <CustomButton variant="outline" onClick={() => setIsProvisionOpen(false)} className="h-12 rounded-2xl px-6 border-zinc-100 font-medium text-zinc-400">Decline</CustomButton>
+                        <CustomButton onClick={saveEndpoint} className="h-12 rounded-2xl px-8 bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-xl shadow-blue-500/20 border-0">
                             Authorize Gateway
                         </CustomButton>
                     </DialogFooter>

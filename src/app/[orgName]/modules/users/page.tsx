@@ -1,352 +1,434 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useMemo } from "react"
 import {
   Users,
   UserPlus,
   Search,
-  Filter,
-  MoreHorizontal,
-  Mail,
-  Shield,
-  CheckCircle2,
-  XCircle,
-  ChevronRight,
-  Download,
-  Trash2,
-  Edit3,
-  ShieldCheck,
-  Zap,
-  Loader2,
-  RefreshCw,
   MoreVertical,
-  UserX,
+  Shield,
+  Clock,
+  Ban,
+  Edit3,
+  Trash2,
   UserCheck,
-  Building2,
-  ArrowRight
+  UserX,
 } from "lucide-react"
-import { CustomButton } from "@/components/custom/CustomButton"
-import { CustomInput } from "@/components/custom/CustomInput"
-import SubHeader from "@/components/custom/SubHeader"
-import { Badge } from "@/components/ui/badge"
-import { Checkbox } from "@/components/ui/checkbox"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/shared/components/ui/dialog"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/shared/components/ui/select"
+import { Label } from "@/shared/components/ui/label"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { getAllUsers, deleteUser } from "@/modules/crm/users/hooks/userHooks"
-import { toast } from "sonner"
-import { useParams } from "next/navigation"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Separator } from "@/components/ui/separator"
+} from "@/shared/components/ui/dropdown-menu"
+import { showSuccess, showWarning } from "@/utils/toast"
+
+type Role = "Admin" | "Manager" | "Developer" | "Member"
+type Status = "Active" | "Pending" | "Suspended"
+type MFA = "Enabled" | "Disabled"
+
+interface User {
+  id: string
+  name: string
+  email: string
+  role: Role
+  status: Status
+  mfa: MFA
+  joined: string
+}
+
+const ROLES: Role[] = ["Admin", "Manager", "Developer", "Member"]
+const STATUSES: Status[] = ["Active", "Pending", "Suspended"]
+
+const initialUsers: User[] = [
+  { id: "1", name: "Sarah Miller", email: "sarah.m@fixlsolutions.com", role: "Admin", status: "Active", mfa: "Enabled", joined: "Oct 12, 2024" },
+  { id: "2", name: "Robert Wilson", email: "robert.w@fixlsolutions.com", role: "Manager", status: "Active", mfa: "Enabled", joined: "Oct 15, 2024" },
+  { id: "3", name: "Elena Kostic", email: "elena.k@fixlsolutions.com", role: "Developer", status: "Active", mfa: "Disabled", joined: "Nov 01, 2024" },
+  { id: "4", name: "James Chen", email: "james.c@fixlsolutions.com", role: "Manager", status: "Pending", mfa: "Disabled", joined: "Jan 10, 2025" },
+  { id: "5", name: "Maria Garcia", email: "maria.g@fixlsolutions.com", role: "Member", status: "Active", mfa: "Enabled", joined: "Feb 22, 2025" },
+]
 
 export default function AllUsersPage() {
-  const params = useParams()
-  const [selectedUsers, setSelectedUsers] = useState<string[]>([])
-  const [users, setUsers] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
+  const [users, setUsers] = useState<User[]>(initialUsers)
   const [searchQuery, setSearchQuery] = useState("")
-  const [isRefreshing, setIsRefreshing] = useState(false)
+  const [roleFilter, setRoleFilter] = useState<"All" | Role>("All")
+  const [statusFilter, setStatusFilter] = useState<"All" | Status>("All")
 
-  const fetchUsers = async (showRefresh = false) => {
-    if (showRefresh) setIsRefreshing(true)
-    else setLoading(true)
+  // Modal states
+  const [inviteOpen, setInviteOpen] = useState(false)
+  const [editOpen, setEditOpen] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [selectedUser, setSelectedUser] = useState<User | null>(null)
 
-    try {
-      const res = await getAllUsers()
-      if (res?.data?.users) {
-        setUsers(res.data.users)
-      } else if (res?.data?.data) {
-        setUsers(res.data.data)
-      }
-    } catch (err) {
-      console.error("Error fetching users:", err)
-      toast.error("Failed to load users")
-    } finally {
-      setLoading(false)
-      setIsRefreshing(false)
-    }
-  }
-
-  useEffect(() => {
-    fetchUsers()
-  }, [])
+  // Form states
+  const [formName, setFormName] = useState("")
+  const [formEmail, setFormEmail] = useState("")
+  const [formRole, setFormRole] = useState<Role>("Member")
 
   const filteredUsers = useMemo(() => {
-    return users.filter(user =>
-      user.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.role?.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-  }, [users, searchQuery])
+    return users.filter((user) => {
+      const matchesSearch =
+        user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        user.role.toLowerCase().includes(searchQuery.toLowerCase())
+      const matchesRole = roleFilter === "All" || user.role === roleFilter
+      const matchesStatus = statusFilter === "All" || user.status === statusFilter
+      return matchesSearch && matchesRole && matchesStatus
+    })
+  }, [users, searchQuery, roleFilter, statusFilter])
 
-  const toggleSelect = (id: string) => {
-    setSelectedUsers(prev =>
-      prev.includes(id) ? prev.filter(u => u !== id) : [...prev, id]
-    )
-  }
-
-  const handleDeleteUser = async (userId: string) => {
-    if (!confirm("Are you sure you want to delete this user? This action cannot be undone.")) return
-
-    try {
-      await deleteUser(userId)
-      toast.success("User deleted successfully")
-      fetchUsers()
-    } catch (err) {
-      toast.error("Failed to delete user")
-    }
-  }
+  const stats = useMemo(() => ({
+    total: users.length,
+    active: users.filter((u) => u.status === "Active").length,
+    pending: users.filter((u) => u.status === "Pending").length,
+    suspended: users.filter((u) => u.status === "Suspended").length,
+  }), [users])
 
   const getInitials = (name: string) => {
-    if (!name) return "U"
-    const parts = name.split(' ')
+    const parts = name.split(" ")
     if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase()
     return name[0].toUpperCase()
   }
 
+  const cycleRoleFilter = () => {
+    const options: ("All" | Role)[] = ["All", ...ROLES]
+    const idx = options.indexOf(roleFilter)
+    setRoleFilter(options[(idx + 1) % options.length])
+  }
+
+  const cycleStatusFilter = () => {
+    const options: ("All" | Status)[] = ["All", ...STATUSES]
+    const idx = options.indexOf(statusFilter)
+    setStatusFilter(options[(idx + 1) % options.length])
+  }
+
+  const resetForm = () => {
+    setFormName("")
+    setFormEmail("")
+    setFormRole("Member")
+  }
+
+  const handleInvite = () => {
+    if (!formName.trim() || !formEmail.trim()) {
+      showWarning("Please fill in all fields")
+      return
+    }
+    const newUser: User = {
+      id: String(Date.now()),
+      name: formName.trim(),
+      email: formEmail.trim(),
+      role: formRole,
+      status: "Pending",
+      mfa: "Disabled",
+      joined: new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }),
+    }
+    setUsers((prev) => [...prev, newUser])
+    setInviteOpen(false)
+    resetForm()
+    showSuccess(`Invitation sent to ${newUser.email}`)
+  }
+
+  const handleEdit = () => {
+    if (!selectedUser) return
+    if (!formName.trim() || !formEmail.trim()) {
+      showWarning("Please fill in all fields")
+      return
+    }
+    setUsers((prev) =>
+      prev.map((u) =>
+        u.id === selectedUser.id
+          ? { ...u, name: formName.trim(), email: formEmail.trim(), role: formRole }
+          : u
+      )
+    )
+    setEditOpen(false)
+    setSelectedUser(null)
+    resetForm()
+    showSuccess("User updated successfully")
+  }
+
+  const openEditModal = (user: User) => {
+    setSelectedUser(user)
+    setFormName(user.name)
+    setFormEmail(user.email)
+    setFormRole(user.role)
+    setEditOpen(true)
+  }
+
+  const handleChangeRole = (user: User) => {
+    const idx = ROLES.indexOf(user.role)
+    const nextRole = ROLES[(idx + 1) % ROLES.length]
+    setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, role: nextRole } : u)))
+    showSuccess(`${user.name} role changed to ${nextRole}`)
+  }
+
+  const handleToggleStatus = (user: User) => {
+    const newStatus: Status = user.status === "Active" ? "Suspended" : "Active"
+    setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, status: newStatus } : u)))
+    showSuccess(`${user.name} is now ${newStatus}`)
+  }
+
+  const handleDelete = () => {
+    if (!selectedUser) return
+    setUsers((prev) => prev.filter((u) => u.id !== selectedUser.id))
+    setDeleteOpen(false)
+    showSuccess(`${selectedUser.name} has been deleted`)
+    setSelectedUser(null)
+  }
+
+  const openDeleteConfirm = (user: User) => {
+    setSelectedUser(user)
+    setDeleteOpen(true)
+  }
+
+  const roleBadgeClass = (role: Role) => {
+    switch (role) {
+      case "Admin": return "bg-purple-50 text-purple-700 border border-purple-200"
+      case "Manager": return "bg-blue-50 text-blue-700 border border-blue-200"
+      case "Developer": return "bg-amber-50 text-amber-700 border border-amber-200"
+      case "Member": return "bg-gray-50 text-gray-600 border border-gray-200"
+    }
+  }
+
+  const statusBadgeClass = (status: Status) => {
+    switch (status) {
+      case "Active": return "bg-green-50 text-green-700 border border-green-200"
+      case "Pending": return "bg-amber-50 text-amber-700 border border-amber-200"
+      case "Suspended": return "bg-red-50 text-red-700 border border-red-200"
+    }
+  }
+
+  const mfaBadgeClass = (mfa: MFA) => {
+    return mfa === "Enabled"
+      ? "bg-green-50 text-green-700 border border-green-200"
+      : "bg-gray-50 text-gray-500 border border-gray-200"
+  }
+
   return (
-    <div className="relative min-h-screen bg-[#F8F9FC] dark:bg-zinc-950">
-      <SubHeader
-        title="All Users"
-        breadcrumbItems={[
-          { label: "Identity & Access", href: "#" },
-          { label: "Users", href: "#" },
-          { label: "List", href: "#" }
-        ]}
-        rightControls={
-          <div className="flex gap-2">
-            <CustomButton
-              variant="outline"
-              size="sm"
-              onClick={() => fetchUsers(true)}
-              disabled={isRefreshing}
-              className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-              {isRefreshing ? 'Syncing...' : 'Sync Data'}
-            </CustomButton>
-            <CustomButton size="sm" className="bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-500/20 text-white">
-              <UserPlus className="w-3.5 h-3.5 mr-2" /> Invite User
-            </CustomButton>
+    <div className="min-h-screen bg-gray-50">
+      <div className="p-6 space-y-6">
+
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-semibold text-gray-900">All Users</h1>
+            <p className="text-xs text-gray-600 mt-1">Manage and monitor all users in your organization</p>
           </div>
-        }
-      />
+          <button
+            onClick={() => { resetForm(); setInviteOpen(true) }}
+            className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-white text-sm font-medium px-4 py-2 rounded-none transition-colors"
+          >
+            <UserPlus className="w-4 h-4" />
+            Invite User
+          </button>
+        </div>
 
-      <div className="p-4 md:p-8 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-
-        {/* Bulk Action Bar (Floating) */}
-        {selectedUsers.length > 0 && (
-          <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 px-6 py-3 rounded-full shadow-2xl flex items-center gap-6 border border-white/10 animate-in zoom-in-95 duration-200">
-            <span className="text-sm font-medium border-r border-white/20 pr-6">{selectedUsers.length} Users Selected</span>
-            <div className="flex items-center gap-4">
-              <button className="flex items-center gap-2 text-xs font-bold hover:text-blue-400 transition-colors uppercase tracking-wider">
-                <Edit3 className="w-4 h-4" /> Change Role
-              </button>
-              <button className="flex items-center gap-2 text-xs font-bold hover:text-blue-400 transition-colors uppercase tracking-wider">
-                <ShieldCheck className="w-4 h-4" /> Assign Permissions
-              </button>
-              <button
-                onClick={() => toast.info("Bulk delete logic coming soon")}
-                className="flex items-center gap-2 text-xs font-bold text-red-500 hover:text-red-400 transition-colors uppercase tracking-wider"
-              >
-                <Trash2 className="w-4 h-4" /> Delete
-              </button>
-            </div>
-            <button onClick={() => setSelectedUsers([])} className="ml-2 p-1 hover:bg-white/10 rounded-full transition-colors">
-              <XCircle className="w-5 h-5" />
-            </button>
-          </div>
-        )}
-
-        {/* Filters & Command Bar */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-          <div className="lg:col-span-8 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-2 shadow-sm flex items-center gap-2">
-            <div className="relative flex-1">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-11 pr-4 py-2.5 bg-transparent border-none focus:ring-0 text-sm placeholder:text-zinc-400"
-                placeholder="Search by name, email, or role..."
-              />
-            </div>
-            <Separator orientation="vertical" className="h-8" />
-            <CustomButton variant="ghost" className="h-10 text-xs px-4 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800">
-              <Filter className="w-3.5 h-3.5 mr-2" /> All filters
-            </CustomButton>
-          </div>
-
-          <div className="lg:col-span-4 grid grid-cols-2 gap-4">
-            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 shadow-sm flex items-center justify-between">
-              <div className="space-y-0.5">
-                <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest leading-none">Total Users</p>
-                <p className="text-xl font-black text-zinc-900 dark:text-zinc-100">{users.length}</p>
+        {/* Stats Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {/* Total Users - gradient primary */}
+          <div className="bg-gradient-to-br from-primary to-primary/80 rounded-none p-4 text-white">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-white/80">Total users</p>
+                <p className="text-xl font-semibold mt-1">{stats.total}</p>
+                <p className="text-[10px] text-white/60 mt-1">All registered users</p>
               </div>
-              <Users className="w-8 h-8 text-blue-500/20" />
+              <Users className="w-8 h-8 text-white/30" />
             </div>
-            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 shadow-sm flex items-center justify-between">
-              <div className="space-y-0.5">
-                <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest leading-none">Organization</p>
-                <p className="text-sm font-bold text-blue-600 truncate max-w-[100px]">{params.orgName || 'N/A'}</p>
+          </div>
+
+          {/* Active */}
+          <div className="bg-white border border-gray-200 rounded-none p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-500">Active</p>
+                <p className="text-xl font-semibold text-gray-900 mt-1">{stats.active}</p>
+                <p className="text-[10px] text-green-600 mt-1">Currently active</p>
               </div>
-              <Building2 className="w-8 h-8 text-zinc-500/20" />
+              <UserCheck className="w-8 h-8 text-green-200" />
+            </div>
+          </div>
+
+          {/* Pending */}
+          <div className="bg-white border border-gray-200 rounded-none p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-500">Pending</p>
+                <p className="text-xl font-semibold text-gray-900 mt-1">{stats.pending}</p>
+                <p className="text-[10px] text-amber-600 mt-1">Awaiting confirmation</p>
+              </div>
+              <Clock className="w-8 h-8 text-amber-200" />
+            </div>
+          </div>
+
+          {/* Suspended */}
+          <div className="bg-white border border-gray-200 rounded-none p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-500">Suspended</p>
+                <p className="text-xl font-semibold text-gray-900 mt-1">{stats.suspended}</p>
+                <p className="text-[10px] text-red-600 mt-1">Access revoked</p>
+              </div>
+              <Ban className="w-8 h-8 text-red-200" />
             </div>
           </div>
         </div>
 
-        {/* Main Users Table Table Container */}
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl shadow-xl shadow-zinc-200/50 dark:shadow-none overflow-hidden relative">
+        {/* Search + Filter Bar */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by name, email, or role..."
+              className="w-full pl-10 pr-4 py-2 h-9 bg-white border border-gray-200 rounded-none text-sm placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+            />
+          </div>
+          <button
+            onClick={cycleRoleFilter}
+            className={`inline-flex items-center gap-2 px-4 h-9 text-sm font-medium rounded-none border transition-colors ${
+              roleFilter !== "All"
+                ? "bg-primary/10 border-primary text-primary"
+                : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"
+            }`}
+          >
+            <Shield className="w-3.5 h-3.5" />
+            Role: {roleFilter}
+          </button>
+          <button
+            onClick={cycleStatusFilter}
+            className={`inline-flex items-center gap-2 px-4 h-9 text-sm font-medium rounded-none border transition-colors ${
+              statusFilter !== "All"
+                ? "bg-primary/10 border-primary text-primary"
+                : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"
+            }`}
+          >
+            Status: {statusFilter}
+          </button>
+        </div>
 
-          {loading && (
-            <div className="absolute inset-0 bg-white/60 dark:bg-zinc-950/60 backdrop-blur-sm z-10 flex flex-col items-center justify-center gap-4">
-              <Loader2 className="w-10 h-10 text-blue-600 animate-spin" />
-              <p className="text-sm font-bold text-zinc-600 dark:text-zinc-400 tracking-widest uppercase">Fetching Identity Data...</p>
-            </div>
-          )}
-
-          <div className="overflow-x-auto min-h-[400px]">
-            <table className="w-full text-left border-collapse">
-              <thead className="sticky top-0 z-20">
-                <tr className="bg-zinc-50/80 dark:bg-zinc-900/80 backdrop-blur-md border-b border-zinc-100 dark:border-zinc-800">
-                  <th className="p-5 w-14 text-center">
-                    <Checkbox
-                      checked={selectedUsers.length > 0 && selectedUsers.length === filteredUsers.length}
-                      onCheckedChange={() => {
-                        if (selectedUsers.length === filteredUsers.length) setSelectedUsers([])
-                        else setSelectedUsers(filteredUsers.map(u => u._id || u.id))
-                      }}
-                    />
-                  </th>
-                  <th className="p-5 text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-[0.2em]">identity profile</th>
-                  <th className="p-5 text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-[0.2em]">role & permissions</th>
-                  <th className="p-5 text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-[0.2em]">status</th>
-                  <th className="p-5 text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-[0.2em]">auth compliance</th>
-                  <th className="p-5 text-right w-12"></th>
+        {/* Table */}
+        <div className="bg-white border border-gray-200 rounded-none overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="border-b border-gray-200 bg-gray-50">
+                  <th className="px-4 py-3 text-xs font-medium text-gray-500">User</th>
+                  <th className="px-4 py-3 text-xs font-medium text-gray-500">Status</th>
+                  <th className="px-4 py-3 text-xs font-medium text-gray-500">MFA</th>
+                  <th className="px-4 py-3 text-xs font-medium text-gray-500">Joined date</th>
+                  <th className="px-4 py-3 text-xs font-medium text-gray-500 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-50 dark:divide-zinc-800/50">
-                {filteredUsers.length === 0 && !loading ? (
+              <tbody className="divide-y divide-gray-100">
+                {filteredUsers.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="p-20 text-center">
-                      <div className="flex flex-col items-center gap-4">
-                        <div className="h-16 w-16 bg-zinc-100 dark:bg-zinc-800 rounded-full flex items-center justify-center">
-                          <Search className="w-8 h-8 text-zinc-400" />
-                        </div>
-                        <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">No users found</h3>
-                        <p className="text-sm text-zinc-500 max-w-xs">We couldn't find any users matching your criteria. Try adjusting your search query.</p>
-                        <CustomButton variant="outline" size="sm" onClick={() => setSearchQuery("")}>Clear Search</CustomButton>
+                    <td colSpan={5} className="px-4 py-12 text-center">
+                      <div className="flex flex-col items-center gap-2">
+                        <Search className="w-6 h-6 text-gray-300" />
+                        <p className="text-sm font-medium text-gray-500">No users found</p>
+                        <p className="text-xs text-gray-400">Try adjusting your search or filters</p>
                       </div>
                     </td>
                   </tr>
                 ) : (
                   filteredUsers.map((user) => (
-                    <tr key={user._id || user.id} className="hover:bg-blue-50/30 dark:hover:bg-blue-900/5 transition-all group">
-                      <td className="p-5 text-center">
-                        <Checkbox
-                          checked={selectedUsers.includes(user._id || user.id)}
-                          onCheckedChange={() => toggleSelect(user._id || user.id)}
-                        />
-                      </td>
-                      <td className="p-5">
-                        <div className="flex items-center gap-4">
-                          <div className="h-11 w-11 rounded-2xl bg-gradient-to-br from-blue-500/10 to-indigo-500/10 flex items-center justify-center text-blue-600 dark:text-blue-400 font-black text-xs border border-blue-500/20 shadow-sm transition-all group-hover:scale-105 group-hover:bg-blue-500/20">
-                            {getInitials(user.name || user.email)}
+                    <tr key={user.id} className="hover:bg-gray-50/50 transition-colors">
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          <div className="h-9 w-9 rounded-none bg-primary/10 flex items-center justify-center text-primary font-semibold text-xs flex-shrink-0">
+                            {getInitials(user.name)}
                           </div>
-                          <div className="flex flex-col gap-0.5">
-                            <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100 group-hover:text-blue-600 transition-colors tracking-tight">{user.name || 'Unnamed User'}</span>
-                            <div className="flex items-center gap-2">
-                              <Mail className="w-3 h-3 text-zinc-400" />
-                              <span className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400">{user.email}</span>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">{user.name}</p>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <span className="text-xs text-gray-500 truncate">{user.email}</span>
+                              <span className={`inline-flex items-center text-[10px] font-medium px-1.5 py-0.5 rounded-none ${roleBadgeClass(user.role)}`}>
+                                {user.role}
+                              </span>
                             </div>
                           </div>
                         </div>
                       </td>
-                      <td className="p-5">
-                        <div className="flex flex-col gap-1.5">
-                          <div className="flex items-center gap-2">
-                            <div className={`p-1 rounded-md ${user.role?.toLowerCase().includes('admin') ? 'bg-orange-50 text-orange-600' : 'bg-zinc-100 text-zinc-500'} dark:bg-zinc-800`}>
-                              <Shield className="w-3.5 h-3.5" />
-                            </div>
-                            <span className="text-xs text-zinc-700 dark:text-zinc-300 font-bold">{user.role || 'Member'}</span>
-                          </div>
-                          <p className="text-[10px] text-zinc-400 font-medium ml-7 underline underline-offset-4 cursor-pointer hover:text-blue-500 transition-colors">View Permissions</p>
-                        </div>
+                      <td className="px-4 py-3">
+                        <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded-none ${statusBadgeClass(user.status)}`}>
+                          <span className={`h-1.5 w-1.5 rounded-full ${
+                            user.status === "Active" ? "bg-green-500" : user.status === "Pending" ? "bg-amber-500" : "bg-red-500"
+                          }`} />
+                          {user.status}
+                        </span>
                       </td>
-                      <td className="p-5">
-                        <Badge className={`
-                          ${(user.status || 'Active') === 'Active'
-                            ? 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400'
-                            : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400'
-                          } border-0 text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full flex w-fit items-center gap-1.5
-                        `}>
-                          {(user.status || 'Active') === 'Active' ? <div className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" /> : <div className="h-1.5 w-1.5 rounded-full bg-zinc-400" />}
-                          {user.status || 'Active'}
-                        </Badge>
+                      <td className="px-4 py-3">
+                        <span className={`inline-flex items-center text-xs font-medium px-2 py-1 rounded-none ${mfaBadgeClass(user.mfa)}`}>
+                          {user.mfa}
+                        </span>
                       </td>
-                      <td className="p-5">
-                        <div className="flex flex-col gap-2">
-                          <div className="flex items-center gap-2">
-                            <div className={`h-1.5 flex-1 rounded-full overflow-hidden bg-zinc-100 dark:bg-zinc-800 border dark:border-zinc-800`}>
-                              <div className={`h-full bg-blue-500 rounded-full transition-all duration-1000`} style={{ width: '85%' }}></div>
-                            </div>
-                            <span className="text-[10px] font-black text-zinc-400">85%</span>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <Badge variant="outline" className="text-[9px] font-extrabold border-zinc-200 dark:border-zinc-800 text-zinc-500 px-1.5">MFA COMPLIANT</Badge>
-                            <Badge variant="outline" className="text-[9px] font-extrabold border-zinc-200 dark:border-zinc-800 text-zinc-500 px-1.5">DEVICE TRUSTED</Badge>
-                          </div>
-                        </div>
+                      <td className="px-4 py-3">
+                        <span className="text-sm text-gray-600">{user.joined}</span>
                       </td>
-                      <td className="p-5 text-right">
+                      <td className="px-4 py-3 text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <CustomButton variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-zinc-400">
-                              <MoreVertical className="w-5 h-5" />
-                            </CustomButton>
+                            <button className="inline-flex items-center justify-center h-8 w-8 rounded-none hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-600">
+                              <MoreVertical className="w-4 h-4" />
+                            </button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-60 p-2 rounded-2xl border shadow-xl">
-                            <DropdownMenuLabel className="text-xs px-2 py-1 text-zinc-400 font-bold uppercase tracking-widest">Security Actions</DropdownMenuLabel>
-
-                            <DropdownMenuItem className="rounded-xl px-3 py-2 cursor-pointer focus:bg-blue-50 dark:focus:bg-blue-900/20 flex items-center justify-between">
-                              <div className="flex items-center gap-3">
-                                <Edit3 className="w-4 h-4 text-zinc-500" />
-                                <span className="text-sm font-bold text-zinc-700 dark:text-zinc-300">Edit Identity</span>
-                              </div>
-                              <ChevronRight className="w-4 h-4 text-zinc-300" />
-                            </DropdownMenuItem>
-
-                            <DropdownMenuItem className="rounded-xl px-3 py-2 cursor-pointer focus:bg-blue-50 dark:focus:bg-blue-900/20 flex items-center justify-between">
-                              <div className="flex items-center gap-3">
-                                <ShieldCheck className="w-4 h-4 text-zinc-500" />
-                                <span className="text-sm font-bold text-zinc-700 dark:text-zinc-300">Roles & Access</span>
-                              </div>
-                              <ChevronRight className="w-4 h-4 text-zinc-300" />
-                            </DropdownMenuItem>
-
-                            <DropdownMenuItem className="rounded-xl px-3 py-2 cursor-pointer focus:bg-blue-50 dark:focus:bg-blue-900/20 flex items-center justify-between">
-                              <div className="flex items-center gap-3">
-                                <Zap className="w-4 h-4 text-zinc-500" />
-                                <span className="text-sm font-bold text-zinc-700 dark:text-zinc-300">Reset MFA</span>
-                              </div>
-                              <ArrowRight className="w-4 h-4 text-zinc-300" />
-                            </DropdownMenuItem>
-
-                            <DropdownMenuSeparator className="my-2" />
-
+                          <DropdownMenuContent align="end" className="w-48 rounded-none">
                             <DropdownMenuItem
-                              onClick={() => handleDeleteUser(user._id || user.id)}
-                              className="rounded-xl px-3 py-2 cursor-pointer focus:bg-red-50 dark:focus:bg-red-900/20 text-red-600"
+                              onClick={() => openEditModal(user)}
+                              className="rounded-none cursor-pointer text-sm"
                             >
-                              <div className="flex items-center gap-3">
-                                <UserX className="w-4 h-4" />
-                                <span className="text-sm font-black uppercase tracking-tight">Revoke Access</span>
-                              </div>
+                              <Edit3 className="w-4 h-4 mr-2" />
+                              Edit user
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleChangeRole(user)}
+                              className="rounded-none cursor-pointer text-sm"
+                            >
+                              <Shield className="w-4 h-4 mr-2" />
+                              Change role
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleToggleStatus(user)}
+                              className="rounded-none cursor-pointer text-sm"
+                            >
+                              {user.status === "Active" ? (
+                                <>
+                                  <UserX className="w-4 h-4 mr-2" />
+                                  Suspend
+                                </>
+                              ) : (
+                                <>
+                                  <UserCheck className="w-4 h-4 mr-2" />
+                                  Activate
+                                </>
+                              )}
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onClick={() => openDeleteConfirm(user)}
+                              className="rounded-none cursor-pointer text-sm text-red-600 focus:text-red-600"
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              Delete
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -358,74 +440,171 @@ export default function AllUsersPage() {
             </table>
           </div>
 
-          {/* New Enterprise-Grade Pagination */}
-          <div className="px-6 py-5 bg-zinc-50/50 dark:bg-zinc-900/50 border-t border-zinc-100 dark:border-zinc-800 flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-6">
-              <p className="text-xs font-bold text-zinc-500 dark:text-zinc-400">
-                Displaying <span className="text-zinc-900 dark:text-zinc-100">{filteredUsers.length}</span> entities
-              </p>
-              <Separator orientation="vertical" className="h-4" />
-              <div className="flex items-center gap-2">
-                <p className="text-[10px] font-black text-zinc-400 uppercase">Items per page:</p>
-                <select className="bg-transparent text-xs font-bold focus:ring-0 border-none p-0 cursor-pointer">
-                  <option>25</option>
-                  <option>50</option>
-                  <option>100</option>
-                </select>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <CustomButton variant="outline" size="sm" className="h-9 px-4 rounded-xl border-zinc-200 bg-white dark:bg-zinc-900 shadow-sm text-xs font-bold" disabled>
-                Previous
-              </CustomButton>
-              <div className="flex items-center">
-                <button className="h-9 w-9 rounded-xl bg-blue-600 text-white font-bold text-xs shadow-lg shadow-blue-500/30">1</button>
-                <button className="h-9 w-9 rounded-xl hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-600 font-bold text-xs transition-colors">2</button>
-                <button className="h-9 w-9 rounded-xl hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-600 font-bold text-xs transition-colors">3</button>
-              </div>
-              <CustomButton variant="outline" size="sm" className="h-9 px-4 rounded-xl border-zinc-200 bg-white dark:bg-zinc-900 shadow-sm text-xs font-bold">
-                Next
-              </CustomButton>
-            </div>
-          </div>
-        </div>
-
-        {/* Global Directory Analytics Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 ">
-          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm hover:border-blue-500/50 transition-all group">
-            <div className="flex items-center justify-between mb-4">
-              <UserPlus className="w-6 h-6 text-blue-500" />
-              <ArrowRight className="w-5 h-5 text-zinc-300 group-hover:translate-x-1 transition-transform" />
-            </div>
-            <h4 className="font-extrabold text-sm text-zinc-900 dark:text-zinc-100 mb-1">Onboarding Hub</h4>
-            <p className="text-xs text-zinc-500">Monitor new identity setups and invitation lifecycles.</p>
-          </div>
-          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm hover:border-blue-500/50 transition-all group text-left">
-            <div className="flex items-center justify-between mb-4">
-              <ShieldCheck className="w-6 h-6 text-orange-500" />
-              <ArrowRight className="w-5 h-5 text-zinc-300 group-hover:translate-x-1 transition-transform" />
-            </div>
-            <h4 className="font-extrabold text-sm text-zinc-900 dark:text-zinc-100 mb-1">Identity Governance</h4>
-            <p className="text-xs text-zinc-500">Review all administrative role assignments and session trust scores.</p>
-          </div>
-          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm hover:border-blue-500/50 transition-all group">
-            <div className="flex items-center justify-between mb-4">
-              <UserX className="w-6 h-6 text-zinc-400" />
-              <ArrowRight className="w-5 h-5 text-zinc-300 group-hover:translate-x-1 transition-transform" />
-            </div>
-            <h4 className="font-extrabold text-sm text-zinc-900 dark:text-zinc-100 mb-1">Recycle Bin</h4>
-            <p className="text-xs text-zinc-500">Recently deleted users are held for 30 days before permanent purging.</p>
-          </div>
-          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm hover:border-blue-500/50 transition-all group">
-            <div className="flex items-center justify-between mb-4">
-              <Download className="w-6 h-6 text-green-500" />
-              <ArrowRight className="w-5 h-5 text-zinc-300 group-hover:translate-x-1 transition-transform" />
-            </div>
-            <h4 className="font-extrabold text-sm text-zinc-900 dark:text-zinc-100 mb-1">Data Portability</h4>
-            <p className="text-xs text-zinc-500">Export your user directory for backup or external identity auditing.</p>
+          {/* Footer */}
+          <div className="px-4 py-3 border-t border-gray-200 bg-gray-50">
+            <p className="text-xs text-gray-500">
+              Showing {filteredUsers.length} of {users.length} users
+            </p>
           </div>
         </div>
       </div>
+
+      {/* Invite User Dialog */}
+      <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
+        <DialogContent className="max-w-md rounded-none p-0 gap-0">
+          <div className="bg-gradient-to-r from-primary to-primary/80 px-5 py-4">
+            <DialogHeader>
+              <DialogTitle className="text-white text-sm font-semibold">Invite user</DialogTitle>
+              <DialogDescription className="text-white/70 text-xs">Send an invitation to a new team member</DialogDescription>
+            </DialogHeader>
+          </div>
+          <div className="p-5 space-y-4">
+            <div>
+              <Label className="text-xs text-gray-700">Full name</Label>
+              <input
+                type="text"
+                value={formName}
+                onChange={(e) => setFormName(e.target.value)}
+                placeholder="Enter full name"
+                className="w-full h-9 px-3 text-sm border border-gray-200 rounded-none focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+              />
+            </div>
+            <div>
+              <Label className="text-xs text-gray-700">Email address</Label>
+              <input
+                type="email"
+                value={formEmail}
+                onChange={(e) => setFormEmail(e.target.value)}
+                placeholder="Enter email address"
+                className="w-full h-9 px-3 text-sm border border-gray-200 rounded-none focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+              />
+            </div>
+            <div>
+              <Label className="text-xs text-gray-700">Role</Label>
+              <Select value={formRole} onValueChange={(v) => setFormRole(v as Role)}>
+                <SelectTrigger className="h-9 rounded-none text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="rounded-none">
+                  {ROLES.map((role) => (
+                    <SelectItem key={role} value={role} className="rounded-none text-sm">
+                      {role}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter className="px-5 py-3 border-t border-gray-100 bg-gray-50">
+            <button
+              onClick={() => setInviteOpen(false)}
+              className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 rounded-none transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleInvite}
+              className="px-4 py-2 text-sm font-medium bg-primary text-white hover:bg-primary/90 rounded-none transition-colors"
+            >
+              Send invitation
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit User Dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="max-w-md rounded-none p-0 gap-0">
+          <div className="bg-gradient-to-r from-primary to-primary/80 px-5 py-4">
+            <DialogHeader>
+              <DialogTitle className="text-white text-sm font-semibold">Edit user</DialogTitle>
+              <DialogDescription className="text-white/70 text-xs">Update user details and role</DialogDescription>
+            </DialogHeader>
+          </div>
+          <div className="p-5 space-y-4">
+            <div>
+              <Label className="text-xs text-gray-700">Full name</Label>
+              <input
+                type="text"
+                value={formName}
+                onChange={(e) => setFormName(e.target.value)}
+                placeholder="Enter full name"
+                className="w-full h-9 px-3 text-sm border border-gray-200 rounded-none focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+              />
+            </div>
+            <div>
+              <Label className="text-xs text-gray-700">Email address</Label>
+              <input
+                type="email"
+                value={formEmail}
+                onChange={(e) => setFormEmail(e.target.value)}
+                placeholder="Enter email address"
+                className="w-full h-9 px-3 text-sm border border-gray-200 rounded-none focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+              />
+            </div>
+            <div>
+              <Label className="text-xs text-gray-700">Role</Label>
+              <Select value={formRole} onValueChange={(v) => setFormRole(v as Role)}>
+                <SelectTrigger className="h-9 rounded-none text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="rounded-none">
+                  {ROLES.map((role) => (
+                    <SelectItem key={role} value={role} className="rounded-none text-sm">
+                      {role}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter className="px-5 py-3 border-t border-gray-100 bg-gray-50">
+            <button
+              onClick={() => setEditOpen(false)}
+              className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 rounded-none transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleEdit}
+              className="px-4 py-2 text-sm font-medium bg-primary text-white hover:bg-primary/90 rounded-none transition-colors"
+            >
+              Save changes
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <DialogContent className="max-w-md rounded-none p-0 gap-0">
+          <div className="bg-gradient-to-r from-red-600 to-red-500 px-5 py-4">
+            <DialogHeader>
+              <DialogTitle className="text-white text-sm font-semibold">Delete user</DialogTitle>
+              <DialogDescription className="text-white/70 text-xs">This action cannot be undone</DialogDescription>
+            </DialogHeader>
+          </div>
+          <div className="p-5">
+            <p className="text-sm text-gray-700">
+              Are you sure you want to delete <span className="font-semibold">{selectedUser?.name}</span>? This will permanently remove their account and all associated data.
+            </p>
+          </div>
+          <DialogFooter className="px-5 py-3 border-t border-gray-100 bg-gray-50">
+            <button
+              onClick={() => setDeleteOpen(false)}
+              className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 rounded-none transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleDelete}
+              className="px-4 py-2 text-sm font-medium bg-red-600 text-white hover:bg-red-700 rounded-none transition-colors"
+            >
+              Delete user
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

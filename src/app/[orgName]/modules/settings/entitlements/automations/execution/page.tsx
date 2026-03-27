@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter, useParams } from "next/navigation";
 import {
     Settings,
     Plus,
@@ -39,6 +40,8 @@ import {
 import { toast } from "sonner";
 
 export default function ExecutionRulesPage() {
+    const router = useRouter();
+    const params = useParams();
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
@@ -120,7 +123,7 @@ export default function ExecutionRulesPage() {
                     </div>
                 </div>
                 <div className="flex gap-2">
-                    <Button variant="outline" className="h-10 rounded-xl text-[11px] font-semibold border-zinc-200 dark:border-zinc-800">
+                    <Button variant="outline" className="h-10 rounded-xl text-[11px] font-semibold border-zinc-200 dark:border-zinc-800" onClick={() => router.push(`/${params.orgName}/modules/settings/entitlements/automations/audit`)}>
                         <RefreshCw className="w-4 h-4 mr-1.5" /> Execution Log
                     </Button>
                     <Button onClick={() => setShowCreateModal(true)} className="h-10 rounded-xl text-[11px] font-semibold bg-blue-600 hover:bg-blue-700">

@@ -53,30 +53,12 @@ interface AuthState {
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
-      user: {
-        firstName: "Dev",
-        lastName: "Admin",
-        email: "admin@fixl.com",
-        phone: "0000000000",
-        twoFAEnabled: false,
-        isActive: true,
-        permissions: []
-      },
-      organizations: [
-        {
-          orgId: "dev-org-id",
-          orgName: "Fixl",
-          orgActive: true
-        }
-      ],
-      isAuthenticated: true,
-      singleOrg: {
-        orgId: "dev-org-id",
-        orgName: "Fixl",
-        orgActive: true
-      },
-      userRole: "admin",
-      permissions: [], // initialize empty array
+      user: null,
+      organizations: [],
+      isAuthenticated: false,
+      singleOrg: null,
+      userRole: null,
+      permissions: [],
 
       login: (userData) =>
         set({

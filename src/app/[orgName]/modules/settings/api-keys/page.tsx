@@ -1,15 +1,462 @@
-"use client"
+"use client";
 
-import { AdminPlaceholder } from "@/shared/components/admin/AdminPlaceholder"
-import { Key } from "lucide-react"
+import React, { useState, useMemo } from "react";
+import {
+    Key,
+    Plus,
+    Search,
+    Filter,
+    MoreVertical,
+    Copy,
+    Trash2,
+    Shield,
+    Clock,
+    AlertTriangle,
+    Activity,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/shared/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import {
+    Dialog,
+    DialogContent,
+    DialogFooter,
+} from "@/shared/components/ui/dialog";
+import { Label } from "@/shared/components/ui/label";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/shared/components/ui/dropdown-menu";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/shared/components/ui/select";
+import { showSuccess, showWarning } from "@/utils/toast";
 
-export default function APIKeys() {
+interface ApiKey {
+    id: string;
+    name: string;
+    key: string;
+    permissions: string;
+    created: string;
+    expires: string;
+    status: string;
+}
+
+interface KeyForm {
+    name: string;
+    permissions: string;
+    expiry: string;
+}
+
+interface FormErrors {
+    name?: string;
+    permissions?: string;
+    expiry?: string;
+}
+
+const defaultFormState: KeyForm = {
+    name: "",
+    permissions: "",
+    expiry: "",
+};
+
+function generateRandomKey(): string {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    let result = "sk_live_";
+    for (let i = 0; i < 24; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+}
+
+function maskKey(key: string): string {
+    if (key.length <= 11) return key;
+    return key.slice(0, 7) + "..." + key.slice(-4);
+}
+
+function getExpiryDate(expiry: string): string {
+    const now = new Date();
+    if (expiry === "30 days") {
+        now.setDate(now.getDate() + 30);
+    } else if (expiry === "90 days") {
+        now.setDate(now.getDate() + 90);
+    } else if (expiry === "1 year") {
+        now.setFullYear(now.getFullYear() + 1);
+    } else {
+        return "Never";
+    }
+    return now.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+function getTodayFormatted(): string {
+    return new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+export default function APIKeysPage() {
+    const [showCreateModal, setShowCreateModal] = useState(false);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [statusFilter, setStatusFilter] = useState<"All" | "Active" | "Expired">("All");
+
+    const [newKey, setNewKey] = useState<KeyForm>({ ...defaultFormState });
+    const [formErrors, setFormErrors] = useState<FormErrors>({});
+
+    const [apiKeys, setApiKeys] = useState<ApiKey[]>([
+        { id: "1", name: "Production API", key: "api_prod_xxxxxxxxxxxxxxxxxxxxxxxxxxxx", permissions: "Full Access", created: "Jan 15, 2026", expires: "Jan 15, 2027", status: "Active" },
+        { id: "2", name: "Development API", key: "api_dev_xxxxxxxxxxxxxxxxxxxxxxxxxxxxx", permissions: "Read Only", created: "Feb 20, 2026", expires: "Feb 20, 2027", status: "Active" },
+        { id: "3", name: "Analytics Export", key: "api_prod_yyyyyyyyyyyyyyyyyyyyyyyyyyyy", permissions: "Read Only", created: "Dec 1, 2025", expires: "Dec 1, 2026", status: "Expired" },
+        { id: "4", name: "Webhook Signing", key: "api_prod_zzzzzzzzzzzzzzzzzzzzzzzzzzzz", permissions: "Webhooks Only", created: "Mar 1, 2026", expires: "Mar 1, 2027", status: "Active" },
+    ]);
+
+    const filteredKeys = useMemo(() => {
+        return apiKeys.filter((k) => {
+            const matchesSearch =
+                searchQuery === "" ||
+                k.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                k.permissions.toLowerCase().includes(searchQuery.toLowerCase());
+            const matchesStatus =
+                statusFilter === "All" || k.status === statusFilter;
+            return matchesSearch && matchesStatus;
+        });
+    }, [apiKeys, searchQuery, statusFilter]);
+
+    const validateForm = (form: KeyForm): FormErrors => {
+        const errors: FormErrors = {};
+        if (!form.name.trim()) errors.name = "Key name is required";
+        if (!form.permissions) errors.permissions = "Permissions are required";
+        if (!form.expiry) errors.expiry = "Expiry is required";
+        return errors;
+    };
+
+    const handleCreate = () => {
+        const errors = validateForm(newKey);
+        setFormErrors(errors);
+        if (Object.keys(errors).length > 0) return;
+
+        const generatedKey = generateRandomKey();
+        const created: ApiKey = {
+            id: Date.now().toString(),
+            name: newKey.name.trim(),
+            key: generatedKey,
+            permissions: newKey.permissions,
+            created: getTodayFormatted(),
+            expires: getExpiryDate(newKey.expiry),
+            status: "Active",
+        };
+        setApiKeys((prev) => [...prev, created]);
+        setNewKey({ ...defaultFormState });
+        setFormErrors({});
+        setShowCreateModal(false);
+        showSuccess(`API key created: ${generatedKey} — Copy it now, it won't be shown again!`);
+    };
+
+    const revokeKey = (id: string) => {
+        const key = apiKeys.find((k) => k.id === id);
+        if (!key) return;
+        const confirmed = window.confirm("Are you sure you want to revoke this key?");
+        if (!confirmed) return;
+        setApiKeys((prev) => prev.filter((k) => k.id !== id));
+        showWarning(`API key "${key.name}" revoked`);
+    };
+
+    const copyKeyToClipboard = (key: string) => {
+        navigator.clipboard.writeText(key);
+        showSuccess("API key copied to clipboard");
+    };
+
+    const cycleStatusFilter = () => {
+        setStatusFilter((prev) => {
+            if (prev === "All") return "Active";
+            if (prev === "Active") return "Expired";
+            return "All";
+        });
+    };
+
+    const totalKeys = apiKeys.length;
+    const activeKeys = apiKeys.filter((k) => k.status === "Active").length;
+    const expiredKeys = apiKeys.filter((k) => k.status === "Expired").length;
+
     return (
-        <AdminPlaceholder
-            title="API Keys"
-            description="Manage administrative API keys for programmatic access to your organization's data."
-            icon={Key}
-            type="settings"
-        />
-    )
+        <div className="space-y-6 text-[#1A1A1A]">
+            {/* Header */}
+            <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-1">
+                    <h1 className="text-[22px] font-bold tracking-tight">API Keys</h1>
+                    <p className="text-sm text-gray-600">Manage API keys for programmatic access to your organization's data.</p>
+                </div>
+                <Button
+                    onClick={() => {
+                        setNewKey({ ...defaultFormState });
+                        setFormErrors({});
+                        setShowCreateModal(true);
+                    }}
+                    className="rounded-none bg-primary hover:bg-primary/90 font-black text-sm h-11 gap-2 shadow-xl shadow-primary/20 px-6"
+                >
+                    <Plus size={16} /> Generate Key
+                </Button>
+            </div>
+
+            {/* Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="bg-gradient-to-br from-primary/80 to-primary p-6 rounded-none shadow-xl shadow-primary/20 text-white transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl">
+                    <p className="text-white text-xs opacity-80">Total Keys</p>
+                    <p className="text-white text-xl font-semibold mt-1">{totalKeys}</p>
+                    <p className="text-white text-[10px] mt-1 opacity-80">All generated keys</p>
+                </div>
+
+                <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+                    <p className="text-gray-600 text-xs">Active Keys</p>
+                    <p className="text-xl font-semibold text-gray-900 mt-1">{activeKeys}</p>
+                    <p className="text-green-600 text-[10px] mt-1">Currently valid</p>
+                </div>
+
+                <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+                    <p className="text-gray-600 text-xs">Expired Keys</p>
+                    <p className="text-xl font-semibold text-gray-900 mt-1">{expiredKeys}</p>
+                    <p className="text-amber-600 text-[10px] mt-1">Need renewal</p>
+                </div>
+
+                <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+                    <p className="text-gray-600 text-xs">API Requests 30d</p>
+                    <p className="text-xl font-semibold text-gray-900 mt-1">24,891</p>
+                    <p className="text-green-600 text-[10px] mt-1">Last 30 days</p>
+                </div>
+            </div>
+
+            {/* API Keys Table */}
+            <div className="bg-white border border-zinc-200 rounded-none shadow-xl overflow-hidden">
+                <div className="p-5 border-b border-zinc-100 flex flex-col md:flex-row gap-4 justify-between items-center bg-zinc-50/50">
+                    <div className="relative w-full md:w-96">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" size={16} />
+                        <Input
+                            placeholder="Search by name, permissions..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="pl-11 rounded-none border-zinc-200 h-10 text-sm bg-white"
+                        />
+                    </div>
+                    <div className="flex gap-2 w-full md:w-auto">
+                        <Button
+                            variant="outline"
+                            onClick={cycleStatusFilter}
+                            className="rounded-none border-zinc-200 h-10 text-sm gap-2 bg-white flex-1 md:flex-none"
+                        >
+                            <Filter size={14} /> Filter
+                            {statusFilter !== "All" && (
+                                <Badge className={`ml-1 rounded-none text-[10px] font-bold px-2 py-0.5 border-none text-white ${statusFilter === "Active" ? "bg-green-600" : "bg-amber-500"}`}>
+                                    {statusFilter}
+                                </Badge>
+                            )}
+                        </Button>
+                    </div>
+                </div>
+
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                        <thead>
+                            <tr className="bg-zinc-100/50 border-b border-zinc-100">
+                                <th className="px-6 py-4 text-xs font-bold text-gray-600">Key Name</th>
+                                <th className="px-6 py-4 text-xs font-bold text-gray-600">API Key</th>
+                                <th className="px-6 py-4 text-xs font-bold text-gray-600">Permissions</th>
+                                <th className="px-6 py-4 text-xs font-bold text-gray-600">Created</th>
+                                <th className="px-6 py-4 text-xs font-bold text-gray-600">Expires</th>
+                                <th className="px-6 py-4 text-xs font-bold text-gray-600">Status</th>
+                                <th className="px-6 py-4 text-xs font-bold text-gray-600 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-zinc-100">
+                            {filteredKeys.length === 0 ? (
+                                <tr>
+                                    <td colSpan={7} className="px-6 py-16 text-center">
+                                        <div className="flex flex-col items-center gap-3">
+                                            <Key size={40} className="text-zinc-300" />
+                                            <p className="text-sm font-bold text-gray-500">No API keys found</p>
+                                            <p className="text-xs text-gray-400">
+                                                {searchQuery || statusFilter !== "All"
+                                                    ? "Try adjusting your search or filter criteria"
+                                                    : "Generate your first API key to get started"}
+                                            </p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ) : (
+                                filteredKeys.map((apiKey) => (
+                                    <tr key={apiKey.id} className="hover:bg-primary/5 transition-colors group">
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="p-2 bg-primary/10 text-primary rounded-none border border-primary/20 group-hover:bg-primary group-hover:text-white transition-all">
+                                                    <Key size={18} />
+                                                </div>
+                                                <span className="text-sm font-bold text-gray-900">{apiKey.name}</span>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-2">
+                                                <code className="text-xs text-gray-600 bg-zinc-100 px-2 py-1 rounded-none font-mono">
+                                                    {maskKey(apiKey.key)}
+                                                </code>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => copyKeyToClipboard(apiKey.key)}
+                                                    className="h-7 w-7 p-0 rounded-none hover:bg-primary/10 hover:text-primary"
+                                                >
+                                                    <Copy size={13} />
+                                                </Button>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <Badge className="bg-primary/10 text-primary border-primary/20 rounded-none text-[10px] font-bold px-2 py-0.5">
+                                                {apiKey.permissions}
+                                            </Badge>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-1.5 text-xs text-gray-700">
+                                                <Clock size={12} className="text-primary" /> {apiKey.created}
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-1.5 text-xs text-gray-700">
+                                                {apiKey.status === "Expired" ? (
+                                                    <AlertTriangle size={12} className="text-amber-500" />
+                                                ) : (
+                                                    <Clock size={12} className="text-green-500" />
+                                                )}
+                                                {apiKey.expires}
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <Badge className={`${apiKey.status === "Active" ? "bg-green-600" : "bg-amber-500"} text-white border-none rounded-none text-[10px] font-bold px-2 py-0.5`}>
+                                                {apiKey.status}
+                                            </Badge>
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" className="h-8 w-8 p-0 rounded-none hover:bg-zinc-100">
+                                                        <MoreVertical size={16} />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end" className="rounded-none border-zinc-200 shadow-xl p-2 min-w-[180px]">
+                                                    <DropdownMenuLabel className="text-xs font-bold text-gray-600">Actions</DropdownMenuLabel>
+                                                    <DropdownMenuItem
+                                                        onClick={() => copyKeyToClipboard(apiKey.key)}
+                                                        className="text-sm p-2 flex items-center gap-2 focus:bg-primary focus:text-white cursor-pointer"
+                                                    >
+                                                        <Copy size={14} /> Copy Key
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuSeparator className="my-2" />
+                                                    <DropdownMenuItem
+                                                        onClick={() => revokeKey(apiKey.id)}
+                                                        className="text-sm p-2 text-red-600 focus:bg-red-600 focus:text-white flex items-center gap-2 cursor-pointer"
+                                                    >
+                                                        <Trash2 size={14} /> Revoke Key
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div className="p-5 bg-zinc-50 border-t border-zinc-100 flex items-center justify-between">
+                    <p className="text-sm text-gray-600">Showing {filteredKeys.length} of {apiKeys.length} API keys</p>
+                    <div className="flex items-center gap-2 text-xs text-gray-500">
+                        <Shield size={14} className="text-primary" />
+                        Keys are encrypted at rest
+                    </div>
+                </div>
+            </div>
+
+            {/* Create Modal */}
+            <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
+                <DialogContent className="max-w-md rounded-none p-0 overflow-hidden shadow-2xl border-none">
+                    <div className="bg-gradient-to-r from-primary/80 to-primary px-5 py-4 text-white relative">
+                        <h2 className="text-base font-bold flex items-center gap-2">
+                            <Plus size={16} /> Generate API Key
+                        </h2>
+                        <p className="text-xs opacity-80 mt-1">Create a new API key for programmatic access.</p>
+                    </div>
+                    <div className="p-5 space-y-4 bg-white">
+                        <div className="space-y-1.5">
+                            <Label className="text-xs font-bold text-gray-600">Key Name</Label>
+                            <Input
+                                placeholder="e.g., Production API"
+                                value={newKey.name}
+                                onChange={(e) => {
+                                    setNewKey((prev) => ({ ...prev, name: e.target.value }));
+                                    if (formErrors.name) setFormErrors((prev) => ({ ...prev, name: undefined }));
+                                }}
+                                className={`rounded-none border-zinc-200 h-9 text-sm ${formErrors.name ? "border-red-500" : ""}`}
+                            />
+                            {formErrors.name && <p className="text-xs text-red-500">{formErrors.name}</p>}
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label className="text-xs font-bold text-gray-600">Permissions</Label>
+                            <Select
+                                value={newKey.permissions}
+                                onValueChange={(val) => {
+                                    setNewKey((prev) => ({ ...prev, permissions: val }));
+                                    if (formErrors.permissions) setFormErrors((prev) => ({ ...prev, permissions: undefined }));
+                                }}
+                            >
+                                <SelectTrigger className={`rounded-none border-zinc-200 h-9 ${formErrors.permissions ? "border-red-500" : ""}`}>
+                                    <SelectValue placeholder="Select permissions" />
+                                </SelectTrigger>
+                                <SelectContent className="rounded-none">
+                                    <SelectItem value="Full Access">Full Access</SelectItem>
+                                    <SelectItem value="Read Only">Read Only</SelectItem>
+                                    <SelectItem value="Write Only">Write Only</SelectItem>
+                                    <SelectItem value="Webhooks Only">Webhooks Only</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            {formErrors.permissions && <p className="text-xs text-red-500">{formErrors.permissions}</p>}
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label className="text-xs font-bold text-gray-600">Expiry</Label>
+                            <Select
+                                value={newKey.expiry}
+                                onValueChange={(val) => {
+                                    setNewKey((prev) => ({ ...prev, expiry: val }));
+                                    if (formErrors.expiry) setFormErrors((prev) => ({ ...prev, expiry: undefined }));
+                                }}
+                            >
+                                <SelectTrigger className={`rounded-none border-zinc-200 h-9 ${formErrors.expiry ? "border-red-500" : ""}`}>
+                                    <SelectValue placeholder="Select expiry period" />
+                                </SelectTrigger>
+                                <SelectContent className="rounded-none">
+                                    <SelectItem value="30 days">30 days</SelectItem>
+                                    <SelectItem value="90 days">90 days</SelectItem>
+                                    <SelectItem value="1 year">1 year</SelectItem>
+                                    <SelectItem value="Never">Never</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            {formErrors.expiry && <p className="text-xs text-red-500">{formErrors.expiry}</p>}
+                        </div>
+                    </div>
+                    <DialogFooter className="px-5 py-3 bg-zinc-50 border-t border-zinc-100 gap-3 sm:justify-end">
+                        <Button variant="ghost" onClick={() => setShowCreateModal(false)} className="rounded-none text-sm text-gray-600 h-9">
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={handleCreate}
+                            className="bg-primary hover:bg-primary/90 rounded-none text-sm px-6 h-9 shadow-md shadow-primary/20"
+                        >
+                            Generate Key
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        </div>
+    );
 }

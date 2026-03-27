@@ -21,7 +21,8 @@ import {
     Globe,
     PlusCircle,
     Copy,
-    CheckCircle2
+    CheckCircle2,
+    XCircle
 } from "lucide-react"
 import { CustomButton } from "@/components/custom/CustomButton"
 import SubHeader from "@/components/custom/SubHeader"
@@ -43,6 +44,7 @@ import {
     DialogDescription,
     DialogFooter,
 } from "@/components/ui/dialog"
+import { showSuccess, showWarning } from "@/utils/toast"
 import { toast } from "sonner"
 import { useParams } from "next/navigation"
 import { Separator } from "@/components/ui/separator"
@@ -54,7 +56,17 @@ export default function ServiceAccountsPage() {
     const [showCreateDialog, setShowCreateDialog] = useState(false)
     const [newAccountName, setNewAccountName] = useState("")
 
-    const [accounts] = useState([
+    const [filterMode, setFilterMode] = useState<"all" | "active" | "expired">("all")
+    const filterOptions: Array<"all" | "active" | "expired"> = ["all", "active", "expired"]
+
+    const cycleFilter = () => {
+        setFilterMode(prev => {
+            const idx = filterOptions.indexOf(prev)
+            return filterOptions[(idx + 1) % filterOptions.length]
+        })
+    }
+
+    const [accounts, setAccounts] = useState([
         { id: "sa-1", name: "Backup Controller", clientId: "bak_721839405621", status: "Active", lastRotation: "2 days ago", permissions: "Full Access" },
         { id: "sa-2", name: "Billing Integration", clientId: "bil_910283746522", status: "Active", lastRotation: "15 days ago", permissions: "Read-only" },
         { id: "sa-3", name: "Monitoring Service", clientId: "mon_112233445566", status: "Expired", lastRotation: "92 days ago", permissions: "Analytics Viewer" },
@@ -63,11 +75,15 @@ export default function ServiceAccountsPage() {
     ])
 
     const filteredAccounts = useMemo(() => {
-        return accounts.filter(acc =>
-            acc.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            acc.clientId.toLowerCase().includes(searchQuery.toLowerCase())
-        )
-    }, [accounts, searchQuery])
+        return accounts.filter(acc => {
+            const matchesSearch = acc.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                acc.clientId.toLowerCase().includes(searchQuery.toLowerCase())
+            const matchesFilter = filterMode === "all" ||
+                (filterMode === "active" && acc.status === "Active") ||
+                (filterMode === "expired" && acc.status === "Expired")
+            return matchesSearch && matchesFilter
+        })
+    }, [accounts, searchQuery, filterMode])
 
     const toggleSelect = (id: string) => {
         setSelectedAccounts(prev =>
@@ -102,7 +118,7 @@ export default function ServiceAccountsPage() {
                         </CustomButton>
                         <CustomButton
                             size="sm"
-                            className="bg-purple-600 hover:bg-purple-700 shadow-lg shadow-purple-500/20 text-white"
+                            className="bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 text-white"
                             onClick={() => setShowCreateDialog(true)}
                         >
                             <PlusCircle className="w-3.5 h-3.5 mr-2" /> Create service account
@@ -118,10 +134,10 @@ export default function ServiceAccountsPage() {
                     <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 px-6 py-3 rounded-full shadow-2xl flex items-center gap-6 border border-white/10 animate-in zoom-in-95 duration-200">
                         <span className="text-sm font-medium border-r border-white/20 pr-6">{selectedAccounts.length} Accounts Selected</span>
                         <div className="flex items-center gap-4">
-                            <button onClick={() => toast.success(`Key rotation scheduled for ${selectedAccounts.length} accounts`)} className="flex items-center gap-2 text-xs font-semibold hover:text-purple-400 transition-colors">
+                            <button onClick={() => toast.success(`Key rotation scheduled for ${selectedAccounts.length} accounts`)} className="flex items-center gap-2 text-xs font-semibold hover:text-primary transition-colors">
                                 <RefreshCw className="w-4 h-4" /> Rotate keys
                             </button>
-                            <button onClick={() => toast.success(`Permissions updated for ${selectedAccounts.length} accounts`)} className="flex items-center gap-2 text-xs font-semibold hover:text-purple-400 transition-colors">
+                            <button onClick={() => toast.success(`Permissions updated for ${selectedAccounts.length} accounts`)} className="flex items-center gap-2 text-xs font-semibold hover:text-primary transition-colors">
                                 <ShieldCheck className="w-4 h-4" /> Edit permissions
                             </button>
                             <button
@@ -141,46 +157,46 @@ export default function ServiceAccountsPage() {
 
                 {/* Metrics Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 shadow-sm flex items-center justify-between group hover:border-purple-500/30 transition-all cursor-pointer" onClick={() => toast.info("Viewing all service accounts")}>
+                    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-none p-4 shadow-sm flex items-center justify-between group hover:border-primary/30 transition-all cursor-pointer" onClick={() => toast.info("Viewing all service accounts")}>
                         <div className="space-y-0.5">
                             <p className="text-[10px] font-semibold text-zinc-400 tracking-wide leading-none">Total accounts</p>
                             <p className="text-lg font-bold text-zinc-900 dark:text-zinc-100">{accounts.length}</p>
                         </div>
-                        <div className="h-10 w-10 rounded-xl bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center text-purple-600">
+                        <div className="h-10 w-10 rounded-none bg-primary/10 dark:bg-primary/20 flex items-center justify-center text-primary">
                             <Database className="w-5 h-5" />
                         </div>
                     </div>
-                    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 shadow-sm flex items-center justify-between group hover:border-emerald-500/30 transition-all cursor-pointer" onClick={() => toast.info("14 keys rotated in the last 7 days")}>
+                    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-none p-4 shadow-sm flex items-center justify-between group hover:border-emerald-500/30 transition-all cursor-pointer" onClick={() => toast.info("14 keys rotated in the last 7 days")}>
                         <div className="space-y-0.5">
                             <p className="text-[10px] font-semibold text-zinc-400 tracking-wide leading-none">Active keys</p>
                             <p className="text-lg font-bold text-zinc-900 dark:text-zinc-100">14</p>
                         </div>
-                        <div className="h-10 w-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center text-emerald-600">
+                        <div className="h-10 w-10 rounded-none bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center text-emerald-600">
                             <Key className="w-5 h-5" />
                         </div>
                     </div>
-                    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 shadow-sm flex items-center justify-between group hover:border-blue-500/30 transition-all cursor-pointer" onClick={() => toast.info("Global policy is set to Enforce")}>
+                    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-none p-4 shadow-sm flex items-center justify-between group hover:border-primary/30 transition-all cursor-pointer" onClick={() => toast.info("Global policy is set to Enforce")}>
                         <div className="space-y-0.5">
                             <p className="text-[10px] font-semibold text-zinc-400 tracking-wide leading-none">Access policy</p>
-                            <p className="text-sm font-bold text-blue-600">Enforced</p>
+                            <p className="text-sm font-bold text-primary">Enforced</p>
                         </div>
-                        <div className="h-10 w-10 rounded-xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600">
+                        <div className="h-10 w-10 rounded-none bg-primary/10 dark:bg-primary/20 flex items-center justify-center text-primary">
                             <Shield className="w-5 h-5" />
                         </div>
                     </div>
-                    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 shadow-sm flex items-center justify-between group hover:border-red-500/30 transition-all cursor-pointer" onClick={() => toast.warning("1 account has an expired key")}>
+                    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-none p-4 shadow-sm flex items-center justify-between group hover:border-red-500/30 transition-all cursor-pointer" onClick={() => toast.warning("1 account has an expired key")}>
                         <div className="space-y-0.5">
                             <p className="text-[10px] font-semibold text-zinc-400 tracking-wide leading-none">Expired keys</p>
                             <p className="text-lg font-bold text-red-600">01</p>
                         </div>
-                        <div className="h-10 w-10 rounded-xl bg-red-50 dark:bg-red-900/20 flex items-center justify-center text-red-600">
+                        <div className="h-10 w-10 rounded-none bg-red-50 dark:bg-red-900/20 flex items-center justify-center text-red-600">
                             <Clock className="w-5 h-5" />
                         </div>
                     </div>
                 </div>
 
                 {/* Filters & Command Bar */}
-                <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-2 shadow-sm flex items-center gap-2">
+                <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-none p-2 shadow-sm flex items-center gap-2">
                     <div className="relative flex-1">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
                         <input
@@ -192,13 +208,13 @@ export default function ServiceAccountsPage() {
                         />
                     </div>
                     <Separator orientation="vertical" className="h-8" />
-                    <CustomButton variant="ghost" className="h-10 text-xs px-4 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800">
-                        <Filter className="w-3.5 h-3.5 mr-2" /> All filters
+                    <CustomButton variant="ghost" className="h-10 text-xs px-4 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800" onClick={cycleFilter}>
+                        <Filter className="w-3.5 h-3.5 mr-2" /> {filterMode === "all" ? "All filters" : filterMode === "active" ? "Active only" : "Expired only"}
                     </CustomButton>
                 </div>
 
                 {/* Main Accounts Table */}
-                <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl shadow-xl shadow-zinc-200/50 dark:shadow-none overflow-hidden relative">
+                <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-none shadow-xl shadow-zinc-200/50 dark:shadow-none overflow-hidden relative">
 
                     <div className="overflow-x-auto min-h-[400px]">
                         <table className="w-full text-left border-collapse">
@@ -222,7 +238,7 @@ export default function ServiceAccountsPage() {
                             </thead>
                             <tbody className="divide-y divide-zinc-50 dark:divide-zinc-800/50">
                                 {filteredAccounts.map((account) => (
-                                    <tr key={account.id} className="hover:bg-purple-50/30 dark:hover:bg-purple-900/5 transition-all group">
+                                    <tr key={account.id} className="hover:bg-primary/5 dark:hover:bg-primary/5 transition-all group">
                                         <td className="p-5 text-center">
                                             <Checkbox
                                                 checked={selectedAccounts.includes(account.id)}
@@ -231,7 +247,7 @@ export default function ServiceAccountsPage() {
                                         </td>
                                         <td className="p-5">
                                             <div className="flex items-center gap-4">
-                                                <div className="h-10 w-10 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400 group-hover:scale-105 transition-transform">
+                                                <div className="h-10 w-10 rounded-none bg-primary/10 dark:bg-primary/20 flex items-center justify-center text-primary dark:text-primary group-hover:scale-105 transition-transform">
                                                     <Lock className="w-5 h-5" />
                                                 </div>
                                                 <div className="flex flex-col">
@@ -245,8 +261,8 @@ export default function ServiceAccountsPage() {
                                         </td>
                                         <td className="p-5">
                                             <div className="flex items-center gap-2 group/id cursor-pointer" onClick={() => copyToClipboard(account.clientId)}>
-                                                <code className="text-[11px] font-mono text-zinc-500 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded transition-colors group-hover/id:text-purple-600">{account.clientId}</code>
-                                                <Copy className="w-3 h-3 text-zinc-300 group-hover/id:text-purple-400" />
+                                                <code className="text-[11px] font-mono text-zinc-500 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded transition-colors group-hover/id:text-primary">{account.clientId}</code>
+                                                <Copy className="w-3 h-3 text-zinc-300 group-hover/id:text-primary/70" />
                                             </div>
                                         </td>
                                         <td className="p-5">
@@ -271,14 +287,14 @@ export default function ServiceAccountsPage() {
                                         <td className="p-5 text-right">
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
-                                                    <CustomButton variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-zinc-400">
+                                                    <CustomButton variant="ghost" size="icon" className="h-9 w-9 rounded-none hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-zinc-400">
                                                         <MoreVertical className="w-5 h-5" />
                                                     </CustomButton>
                                                 </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end" className="w-60 p-2 rounded-2xl border shadow-xl">
+                                                <DropdownMenuContent align="end" className="w-60 p-2 rounded-none border shadow-xl">
                                                     <DropdownMenuLabel className="text-xs px-2 py-1 text-zinc-400 font-semibold">Account actions</DropdownMenuLabel>
 
-                                                    <DropdownMenuItem onClick={() => toast.success(`Key rotation initiated for ${account.name}`)} className="rounded-xl px-3 py-2 cursor-pointer focus:bg-purple-50 dark:focus:bg-purple-900/20 flex items-center justify-between">
+                                                    <DropdownMenuItem onClick={() => toast.success(`Key rotation initiated for ${account.name}`)} className="rounded-none px-3 py-2 cursor-pointer focus:bg-primary/10 dark:focus:bg-primary/10 flex items-center justify-between">
                                                         <div className="flex items-center gap-3">
                                                             <RefreshCw className="w-4 h-4 text-zinc-500" />
                                                             <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">Rotate key</span>
@@ -286,7 +302,7 @@ export default function ServiceAccountsPage() {
                                                         <ChevronRight className="w-4 h-4 text-zinc-300" />
                                                     </DropdownMenuItem>
 
-                                                    <DropdownMenuItem onClick={() => toast.info(`Viewing policy for ${account.name}`)} className="rounded-xl px-3 py-2 cursor-pointer focus:bg-purple-50 dark:focus:bg-purple-900/20 flex items-center justify-between">
+                                                    <DropdownMenuItem onClick={() => toast.info(`Viewing policy for ${account.name}`)} className="rounded-none px-3 py-2 cursor-pointer focus:bg-primary/10 dark:focus:bg-primary/10 flex items-center justify-between">
                                                         <div className="flex items-center gap-3">
                                                             <ShieldCheck className="w-4 h-4 text-zinc-500" />
                                                             <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">Policy & access</span>
@@ -297,8 +313,8 @@ export default function ServiceAccountsPage() {
                                                     <DropdownMenuSeparator className="my-2" />
 
                                                     <DropdownMenuItem
-                                                        onClick={() => toast.error(`Service account ${account.name} deactivated`)}
-                                                        className="rounded-xl px-3 py-2 cursor-pointer focus:bg-red-50 dark:focus:bg-red-900/20 text-red-600"
+                                                        onClick={() => { setAccounts(prev => prev.filter(a => a.id !== account.id)); showSuccess(`Service account ${account.name} deleted`) }}
+                                                        className="rounded-none px-3 py-2 cursor-pointer focus:bg-red-50 dark:focus:bg-red-900/20 text-red-600"
                                                     >
                                                         <div className="flex items-center gap-3">
                                                             <Trash2 className="w-4 h-4" />
@@ -319,30 +335,30 @@ export default function ServiceAccountsPage() {
                             Showing <span className="text-zinc-900 dark:text-zinc-100">{filteredAccounts.length}</span> service identities
                         </p>
                         <div className="flex items-center gap-2">
-                            <CustomButton variant="outline" size="sm" className="h-8 rounded-lg text-[10px] font-bold" disabled>Previous</CustomButton>
-                            <CustomButton variant="outline" size="sm" className="h-8 rounded-lg text-[10px] font-bold">Next</CustomButton>
+                            <CustomButton variant="outline" size="sm" className="h-8 rounded-none text-[10px] font-semibold" onClick={() => showWarning("All records displayed")}>Previous</CustomButton>
+                            <CustomButton variant="outline" size="sm" className="h-8 rounded-none text-[10px] font-semibold" onClick={() => showWarning("All records displayed")}>Next</CustomButton>
                         </div>
                     </div>
                 </div>
 
                 {/* Info Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="bg-gradient-to-br from-purple-600 to-indigo-700 rounded-[2rem] p-8 text-white shadow-xl shadow-purple-500/20 relative overflow-hidden group">
+                    <div className="bg-gradient-to-br from-primary to-primary/80 rounded-none p-8 text-white shadow-xl shadow-primary/20 relative overflow-hidden group">
                         <Zap className="absolute -bottom-10 -right-10 h-40 w-40 opacity-10 group-hover:scale-110 transition-transform" />
                         <h4 className="text-xl font-bold mb-2">Automated Rotation</h4>
-                        <p className="text-purple-100 text-sm mb-6 max-w-sm leading-relaxed">Ensure high security standards by enabling automated key rotation for all high-privilege service accounts.</p>
+                        <p className="text-white/80 text-sm mb-6 max-w-sm leading-relaxed">Ensure high security standards by enabling automated key rotation for all high-privilege service accounts.</p>
                         <CustomButton
                             variant="outline"
-                            className="bg-white/10 hover:bg-white/20 border-white/20 text-white font-semibold rounded-xl text-xs h-10 px-6"
+                            className="bg-white/10 hover:bg-white/20 border-white/20 text-white font-semibold rounded-none text-xs h-10 px-6"
                             onClick={() => toast.info("Opening security automation settings")}
                         >
                             Configure rotation
                         </CustomButton>
                     </div>
-                    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[2rem] p-8 shadow-sm flex flex-col justify-between">
+                    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-none p-8 shadow-sm flex flex-col justify-between">
                         <div>
                             <div className="flex items-center gap-2 mb-4">
-                                <Globe className="w-5 h-5 text-blue-500" />
+                                <Globe className="w-5 h-5 text-primary" />
                                 <h5 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">External integrations</h5>
                             </div>
                             <p className="text-xs text-zinc-500 leading-relaxed">Monitor service accounts used by third-party applications and webhooks connecting to your organization.</p>
@@ -350,7 +366,7 @@ export default function ServiceAccountsPage() {
                         <CustomButton
                             variant="outline"
                             size="sm"
-                            className="mt-6 rounded-xl font-semibold text-xs border-zinc-200"
+                            className="mt-6 rounded-none font-semibold text-xs border-zinc-200"
                             onClick={() => toast.info("Viewing external integration logs")}
                         >
                             View integration logs
@@ -361,7 +377,7 @@ export default function ServiceAccountsPage() {
 
             {/* CREATE ACCOUNT DIALOG */}
             <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-                <DialogContent className="sm:max-w-[440px] rounded-2xl">
+                <DialogContent className="sm:max-w-[440px] rounded-none">
                     <DialogHeader>
                         <DialogTitle className="text-lg font-bold">New service account</DialogTitle>
                         <DialogDescription>Create a non-human identity for systems and automated workloads.</DialogDescription>
@@ -374,13 +390,13 @@ export default function ServiceAccountsPage() {
                                 value={newAccountName}
                                 onChange={e => setNewAccountName(e.target.value)}
                                 placeholder="e.g. Jenkins Integration"
-                                className="w-full border border-zinc-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20"
+                                className="w-full border border-zinc-200 rounded-none px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
                             />
                         </div>
                         <div>
                             <label className="text-[10px] font-semibold text-zinc-500 mb-1 block">Default permissions</label>
                             <select
-                                className="w-full border border-zinc-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 bg-white"
+                                className="w-full border border-zinc-200 rounded-none px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 bg-white"
                             >
                                 <option>Read-only access</option>
                                 <option>Contributor</option>
@@ -388,10 +404,10 @@ export default function ServiceAccountsPage() {
                                 <option>Custom scope...</option>
                             </select>
                         </div>
-                        <div className="p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl border border-zinc-100 dark:border-zinc-800">
+                        <div className="p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-none border border-zinc-100 dark:border-zinc-800">
                             <div className="flex items-center gap-2 text-amber-600 mb-1">
                                 <ShieldCheck className="w-4 h-4" />
-                                <span className="text-[10px] font-bold uppercase">Security tip</span>
+                                <span className="text-[10px] font-semibold">Security tip</span>
                             </div>
                             <p className="text-[10px] text-zinc-500 leading-relaxed">Always use the principle of least privilege. Only assign scopes strictly necessary for the automated task.</p>
                         </div>
@@ -399,7 +415,7 @@ export default function ServiceAccountsPage() {
                     <DialogFooter>
                         <CustomButton variant="outline" onClick={() => setShowCreateDialog(false)}>Cancel</CustomButton>
                         <CustomButton
-                            className="bg-purple-600 hover:bg-purple-700 text-white"
+                            className="bg-primary hover:bg-primary/90 text-white"
                             onClick={() => {
                                 if (!newAccountName) { toast.error("Please enter a name"); return }
                                 toast.success(`Service account '${newAccountName}' created successfully`)

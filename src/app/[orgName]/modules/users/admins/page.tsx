@@ -1,238 +1,387 @@
-"use client"
+"use client";
 
-import { useState, useEffect, useMemo } from "react"
+import { useState } from "react";
 import {
     ShieldCheck,
     Search,
-    Filter,
     MoreVertical,
-    Mail,
     Shield,
-    Loader2,
-    RefreshCw,
-    UserCheck,
-    Building2,
-    ArrowRight,
-    Info,
-    Zap
-} from "lucide-react"
-import { CustomButton } from "@/components/custom/CustomButton"
-import SubHeader from "@/components/custom/SubHeader"
-import { Badge } from "@/components/ui/badge"
-import { getAllUsers } from "@/modules/crm/users/hooks/userHooks"
-import { toast } from "sonner"
-import { useParams } from "next/navigation"
-import { Separator } from "@/components/ui/separator"
+    Trash2,
+    Pencil,
+    UserPlus,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/shared/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import {
+    Dialog,
+    DialogContent,
+    DialogFooter,
+} from "@/shared/components/ui/dialog";
+import { Label } from "@/shared/components/ui/label";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/shared/components/ui/select";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/shared/components/ui/dropdown-menu";
+import { showSuccess, showWarning } from "@/utils/toast";
+
+type Admin = {
+    id: string;
+    name: string;
+    email: string;
+    role: "Super Admin" | "Admin";
+    status: string;
+    lastActive: string;
+};
+
+const ADMIN_ROLES = ["Super Admin", "Admin"] as const;
+
+const existingUsers = [
+    { id: "u1", name: "Emily Chen", email: "emily.c@fixlsolutions.com" },
+    { id: "u2", name: "David Park", email: "david.p@fixlsolutions.com" },
+    { id: "u3", name: "Lisa Wong", email: "lisa.w@fixlsolutions.com" },
+];
+
+const initialAdmins: Admin[] = [
+    { id: "1", name: "Sarah Miller", email: "sarah.m@fixlsolutions.com", role: "Super Admin", status: "Active", lastActive: "2 mins ago" },
+    { id: "2", name: "Robert Wilson", email: "robert.w@fixlsolutions.com", role: "Admin", status: "Active", lastActive: "1 hour ago" },
+    { id: "3", name: "Vikas Singh", email: "vikas@fixlsolutions.com", role: "Super Admin", status: "Active", lastActive: "5 mins ago" },
+];
 
 export default function AdministratorsPage() {
-    const params = useParams()
-    const [users, setUsers] = useState<any[]>([])
-    const [loading, setLoading] = useState(true)
-    const [searchQuery, setSearchQuery] = useState("")
-    const [isRefreshing, setIsRefreshing] = useState(false)
+    const [admins, setAdmins] = useState<Admin[]>(initialAdmins);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [roleFilter, setRoleFilter] = useState<string>("All");
+    const [assignOpen, setAssignOpen] = useState(false);
+    const [removeOpen, setRemoveOpen] = useState(false);
+    const [editOpen, setEditOpen] = useState(false);
+    const [removeTarget, setRemoveTarget] = useState<Admin | null>(null);
+    const [editTarget, setEditTarget] = useState<Admin | null>(null);
+    const [selectedUser, setSelectedUser] = useState("");
+    const [selectedRole, setSelectedRole] = useState("");
+    const [editRole, setEditRole] = useState("");
 
-    const fetchUsers = async (showRefresh = false) => {
-        if (showRefresh) setIsRefreshing(true)
-        else setLoading(true)
+    const filtered = admins.filter((admin) => {
+        const matchesSearch =
+            admin.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            admin.email.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesRole = roleFilter === "All" || admin.role === roleFilter;
+        return matchesSearch && matchesRole;
+    });
 
-        try {
-            const res = await getAllUsers()
-            if (res?.data?.users) {
-                setUsers(res.data.users)
-            } else if (res?.data?.data) {
-                setUsers(res.data.data)
-            }
-        } catch (err) {
-            console.error("Error fetching users:", err)
-            toast.error("Failed to load administrators")
-        } finally {
-            setLoading(false)
-            setIsRefreshing(false)
-        }
-    }
-
-    useEffect(() => {
-        fetchUsers()
-    }, [])
-
-    const admins = useMemo(() => {
-        return users.filter(user => {
-            const isSearchMatch = user.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                user.email?.toLowerCase().includes(searchQuery.toLowerCase());
-            const isAdmin = user.role?.toLowerCase().includes('admin');
-            return isSearchMatch && isAdmin;
-        })
-    }, [users, searchQuery])
+    const totalAdmins = admins.length;
+    const superAdmins = admins.filter((a) => a.role === "Super Admin").length;
+    const regularAdmins = admins.filter((a) => a.role === "Admin").length;
 
     const getInitials = (name: string) => {
-        if (!name) return "A"
-        const parts = name.split(' ')
-        if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase()
-        return name[0].toUpperCase()
-    }
+        const parts = name.split(" ");
+        if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+        return name[0].toUpperCase();
+    };
+
+    const handleAssign = () => {
+        if (!selectedUser || !selectedRole) {
+            showWarning("Please select a user and role");
+            return;
+        }
+        const user = existingUsers.find((u) => u.id === selectedUser);
+        if (!user) return;
+        const newAdmin: Admin = {
+            id: Date.now().toString(),
+            name: user.name,
+            email: user.email,
+            role: selectedRole as Admin["role"],
+            status: "Active",
+            lastActive: "Just now",
+        };
+        setAdmins((prev) => [...prev, newAdmin]);
+        setSelectedUser("");
+        setSelectedRole("");
+        setAssignOpen(false);
+        showSuccess(`${user.name} assigned as ${selectedRole}`);
+    };
+
+    const handleRemove = () => {
+        if (!removeTarget) return;
+        setAdmins((prev) => prev.filter((a) => a.id !== removeTarget.id));
+        showSuccess(`${removeTarget.name} removed from administrators`);
+        setRemoveTarget(null);
+        setRemoveOpen(false);
+    };
+
+    const handleEditRole = () => {
+        if (!editTarget || !editRole) return;
+        setAdmins((prev) =>
+            prev.map((a) => (a.id === editTarget.id ? { ...a, role: editRole as Admin["role"] } : a))
+        );
+        showSuccess(`${editTarget.name} role updated to ${editRole}`);
+        setEditTarget(null);
+        setEditRole("");
+        setEditOpen(false);
+    };
+
+    const roleBadgeStyle = (role: string) => {
+        if (role === "Super Admin") return "bg-primary/10 text-primary border-primary/20";
+        return "bg-gray-100 text-gray-700 border-gray-200";
+    };
 
     return (
-        <div className="relative min-h-screen bg-[#F8F9FC] dark:bg-zinc-950">
-            <SubHeader
-                title="Administrators"
-                breadcrumbItems={[
-                    { label: "Identity & Access", href: "#" },
-                    { label: "Users", href: "#" },
-                    { label: "Administrators", href: "#" }
-                ]}
-                rightControls={
-                    <div className="flex gap-2">
-                        <CustomButton
-                            variant="outline"
-                            size="sm"
-                            onClick={() => fetchUsers(true)}
-                            disabled={isRefreshing}
-                            className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800"
-                        >
-                            <RefreshCw className={`w-3.5 h-3.5 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-                            Sync
-                        </CustomButton>
-                        <CustomButton size="sm" className="bg-orange-600 hover:bg-orange-700 shadow-lg shadow-orange-500/20 text-white">
-                            <ShieldCheck className="w-3.5 h-3.5 mr-2" /> Assign Admin Role
-                        </CustomButton>
+        <div className="min-h-screen bg-gray-50">
+            <div className="p-6 space-y-6">
+                {/* Header */}
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-xl font-semibold text-gray-900">Administrators</h1>
+                        <p className="text-xs text-gray-600 mt-1">Manage users with elevated access to your organization</p>
                     </div>
-                }
-            />
+                    <Button
+                        onClick={() => setAssignOpen(true)}
+                        className="bg-primary hover:bg-primary/90 text-white rounded-none"
+                    >
+                        <ShieldCheck className="w-4 h-4 mr-2" />
+                        Assign admin role
+                    </Button>
+                </div>
 
-            <div className="p-4 md:p-8 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-
-                {/* Security Warning Card */}
-                <div className="bg-orange-50 dark:bg-orange-900/10 border border-orange-200 dark:border-orange-800/50 rounded-2xl p-4 flex items-start gap-4">
-                    <div className="h-10 w-10 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center shrink-0">
-                        <Info className="w-5 h-5 text-orange-600 shadow-sm" />
+                {/* Stats */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bg-primary/5 border border-primary/20 rounded-none p-4">
+                        <p className="text-xs text-gray-600">Total admins</p>
+                        <p className="text-xl font-semibold text-primary mt-1">{totalAdmins}</p>
+                        <p className="text-[10px] text-gray-500 mt-0.5">All administrators</p>
                     </div>
-                    <div className="space-y-1">
-                        <h4 className="text-sm font-bold text-orange-900 dark:text-orange-100">Privileged Access Review</h4>
-                        <p className="text-xs text-orange-700/80 dark:text-orange-300/70 leading-relaxed">
-                            Administrators have elevated permissions to modify organization settings and data.
-                            We recommend conducting weekly audits of this list to maintain zero-trust security compliance.
-                        </p>
+                    <div className="bg-white border border-gray-200 rounded-none p-4">
+                        <p className="text-xs text-gray-600">Super admins</p>
+                        <p className="text-xl font-semibold text-gray-900 mt-1">{superAdmins}</p>
+                        <p className="text-[10px] text-gray-500 mt-0.5">Full access</p>
+                    </div>
+                    <div className="bg-white border border-gray-200 rounded-none p-4">
+                        <p className="text-xs text-gray-600">Regular admins</p>
+                        <p className="text-xl font-semibold text-gray-900 mt-1">{regularAdmins}</p>
+                        <p className="text-[10px] text-gray-500 mt-0.5">Limited access</p>
                     </div>
                 </div>
 
-                {/* Command Bar */}
-                <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-2 shadow-sm flex items-center gap-2">
-                    <div className="relative flex-1">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
-                        <input
-                            type="text"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-11 pr-4 py-2 bg-transparent border-none focus:ring-0 text-sm placeholder:text-zinc-400"
-                            placeholder="Search through elevated identities..."
-                        />
-                    </div>
-                    <Separator orientation="vertical" className="h-8" />
-                    <div className="px-4 text-[10px] font-black text-zinc-400 uppercase tracking-widest">
-                        Active Admins: {admins.length}
-                    </div>
+                {/* Search and Filter */}
+                <div className="bg-white border border-gray-200 rounded-none p-3 flex items-center gap-3">
+                    <Search className="w-4 h-4 text-gray-400" />
+                    <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Search by name or email..."
+                        className="flex-1 text-sm bg-transparent outline-none placeholder:text-gray-400"
+                    />
+                    <Select value={roleFilter} onValueChange={setRoleFilter}>
+                        <SelectTrigger className="w-40 rounded-none h-8 text-xs">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-none">
+                            <SelectItem value="All">All roles</SelectItem>
+                            <SelectItem value="Super Admin">Super admin</SelectItem>
+                            <SelectItem value="Admin">Admin</SelectItem>
+                        </SelectContent>
+                    </Select>
                 </div>
 
-                {/* Admin List Table */}
-                <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl shadow-xl overflow-hidden relative">
-
-                    {loading && (
-                        <div className="absolute inset-0 bg-white/60 dark:bg-zinc-950/60 backdrop-blur-sm z-10 flex flex-col items-center justify-center gap-4">
-                            <Loader2 className="w-10 h-10 text-orange-600 animate-spin" />
-                            <p className="text-sm font-bold text-zinc-600 dark:text-zinc-400 tracking-widest uppercase">Validating Privileges...</p>
-                        </div>
-                    )}
-
-                    <div className="overflow-x-auto min-h-[300px]">
-                        <table className="w-full text-left border-collapse">
-                            <thead>
-                                <tr className="bg-zinc-50/50 dark:bg-zinc-900/50 border-b border-zinc-100 dark:border-zinc-800">
-                                    <th className="p-5 text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-[0.2em]">identity</th>
-                                    <th className="p-5 text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-[0.2em]">administrative role</th>
-                                    <th className="p-5 text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-[0.2em]">access status</th>
-                                    <th className="p-5 text-right"></th>
+                {/* Table */}
+                <div className="bg-white border border-gray-200 rounded-none overflow-hidden">
+                    <table className="w-full text-left">
+                        <thead>
+                            <tr className="border-b border-gray-100 bg-gray-50">
+                                <th className="px-4 py-3 text-xs font-medium text-gray-600">Name & email</th>
+                                <th className="px-4 py-3 text-xs font-medium text-gray-600">Admin role</th>
+                                <th className="px-4 py-3 text-xs font-medium text-gray-600">Status</th>
+                                <th className="px-4 py-3 text-xs font-medium text-gray-600">Last active</th>
+                                <th className="px-4 py-3 text-xs font-medium text-gray-600 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                            {filtered.length === 0 ? (
+                                <tr>
+                                    <td colSpan={5} className="px-4 py-16 text-center">
+                                        <Shield className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                                        <p className="text-sm text-gray-500">No administrators found</p>
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody className="divide-y divide-zinc-50 dark:divide-zinc-800/50">
-                                {admins.length === 0 && !loading ? (
-                                    <tr>
-                                        <td colSpan={4} className="p-20 text-center">
-                                            <div className="flex flex-col items-center gap-4">
-                                                <Shield className="w-12 h-12 text-zinc-200" />
-                                                <h3 className="text-sm font-bold text-zinc-400 uppercase tracking-widest">No matching admins found</h3>
+                            ) : (
+                                filtered.map((admin) => (
+                                    <tr key={admin.id} className="hover:bg-gray-50 transition-colors">
+                                        <td className="px-4 py-3">
+                                            <div className="flex items-center gap-3">
+                                                <div className="h-8 w-8 rounded-none bg-primary/10 flex items-center justify-center text-primary text-xs font-semibold">
+                                                    {getInitials(admin.name)}
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-medium text-gray-900">{admin.name}</p>
+                                                    <p className="text-xs text-gray-500">{admin.email}</p>
+                                                </div>
                                             </div>
                                         </td>
+                                        <td className="px-4 py-3">
+                                            <Badge variant="outline" className={`rounded-none text-xs font-medium ${roleBadgeStyle(admin.role)}`}>
+                                                {admin.role}
+                                            </Badge>
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <Badge variant="outline" className="rounded-none text-xs font-medium bg-emerald-50 text-emerald-700 border-emerald-200">
+                                                {admin.status}
+                                            </Badge>
+                                        </td>
+                                        <td className="px-4 py-3 text-sm text-gray-600">{admin.lastActive}</td>
+                                        <td className="px-4 py-3 text-right">
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-none">
+                                                        <MoreVertical className="w-4 h-4 text-gray-500" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end" className="rounded-none">
+                                                    <DropdownMenuItem
+                                                        onClick={() => {
+                                                            setEditTarget(admin);
+                                                            setEditRole(admin.role);
+                                                            setEditOpen(true);
+                                                        }}
+                                                    >
+                                                        <Pencil className="w-3.5 h-3.5 mr-2" />
+                                                        Edit role
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem
+                                                        onClick={() => { setRemoveTarget(admin); setRemoveOpen(true); }}
+                                                        className="text-red-600"
+                                                    >
+                                                        <Trash2 className="w-3.5 h-3.5 mr-2" />
+                                                        Remove admin
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </td>
                                     </tr>
-                                ) : (
-                                    admins.map((user) => (
-                                        <tr key={user._id || user.id} className="hover:bg-orange-50/20 dark:hover:bg-orange-900/5 transition-all group">
-                                            <td className="p-5">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="h-10 w-10 rounded-xl bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-600 dark:text-orange-400 font-black text-xs border border-orange-200 transition-all group-hover:scale-105">
-                                                        {getInitials(user.name || user.email)}
-                                                    </div>
-                                                    <div className="flex flex-col gap-0.5">
-                                                        <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">{user.name || 'Unnamed Admin'}</span>
-                                                        <span className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400">{user.email}</span>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="p-5">
-                                                <div className="flex items-center gap-2">
-                                                    <Badge variant="outline" className="bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 border-orange-200 dark:border-orange-800 font-black text-[9px] uppercase tracking-wider">
-                                                        {user.role}
-                                                    </Badge>
-                                                    {user.role?.toLowerCase() === 'super admin' && (
-                                                        <div className="bg-red-100 text-red-600 p-1 rounded-md" title="Critical Access">
-                                                            <Zap className="w-3 h-3 fill-current" />
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </td>
-                                            <td className="p-5">
-                                                <Badge className="bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-0 text-[10px] font-bold">
-                                                    <UserCheck className="w-3 h-3 mr-1.5" /> Verified
-                                                </Badge>
-                                            </td>
-                                            <td className="p-5 text-right text-zinc-400">
-                                                <MoreVertical className="w-5 h-5 cursor-pointer hover:text-zinc-600 transition-colors ml-auto" />
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                {/* Global Access Config Links */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm flex items-center justify-between cursor-pointer hover:border-orange-500/50 transition-all group">
-                        <div className="flex items-center gap-4">
-                            <div className="h-12 w-12 rounded-2xl bg-orange-50 text-orange-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                <ShieldCheck className="w-6 h-6" />
-                            </div>
-                            <div>
-                                <h4 className="font-extrabold text-sm text-zinc-900 dark:text-zinc-100">Global Roles</h4>
-                                <p className="text-xs text-zinc-500">Configure directory-wide administrative hierarchies.</p>
-                            </div>
-                        </div>
-                        <ArrowRight className="w-5 h-5 text-zinc-300 group-hover:translate-x-1 transition-transform" />
-                    </div>
-                    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm flex items-center justify-between cursor-pointer hover:border-orange-500/50 transition-all group">
-                        <div className="flex items-center gap-4">
-                            <div className="h-12 w-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                <UserCheck className="w-6 h-6" />
-                            </div>
-                            <div>
-                                <h4 className="font-extrabold text-sm text-zinc-900 dark:text-zinc-100">Access Packages</h4>
-                                <p className="text-xs text-zinc-500">Bundle roles for automated departmental provisioning.</p>
-                            </div>
-                        </div>
-                        <ArrowRight className="w-5 h-5 text-zinc-300 group-hover:translate-x-1 transition-transform" />
-                    </div>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
                 </div>
             </div>
+
+            {/* Assign Admin Dialog */}
+            <Dialog open={assignOpen} onOpenChange={setAssignOpen}>
+                <DialogContent className="max-w-md rounded-none p-0 overflow-hidden">
+                    <div className="bg-primary px-6 py-4">
+                        <h2 className="text-sm font-semibold text-white">Assign admin role</h2>
+                        <p className="text-xs text-white/70 mt-0.5">Grant administrative access to an existing user</p>
+                    </div>
+                    <div className="px-6 py-4 space-y-4">
+                        <div className="space-y-2">
+                            <Label className="text-xs text-gray-700">Select user</Label>
+                            <Select value={selectedUser} onValueChange={setSelectedUser}>
+                                <SelectTrigger className="rounded-none">
+                                    <SelectValue placeholder="Choose a user" />
+                                </SelectTrigger>
+                                <SelectContent className="rounded-none">
+                                    {existingUsers.map((user) => (
+                                        <SelectItem key={user.id} value={user.id}>
+                                            {user.name} ({user.email})
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label className="text-xs text-gray-700">Admin role</Label>
+                            <Select value={selectedRole} onValueChange={setSelectedRole}>
+                                <SelectTrigger className="rounded-none">
+                                    <SelectValue placeholder="Select a role" />
+                                </SelectTrigger>
+                                <SelectContent className="rounded-none">
+                                    {ADMIN_ROLES.map((role) => (
+                                        <SelectItem key={role} value={role}>
+                                            {role}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                    <DialogFooter className="px-6 py-4 border-t border-gray-100">
+                        <Button variant="outline" onClick={() => setAssignOpen(false)} className="rounded-none">
+                            Cancel
+                        </Button>
+                        <Button onClick={handleAssign} className="bg-primary hover:bg-primary/90 text-white rounded-none">
+                            Assign role
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Remove Admin Dialog */}
+            <Dialog open={removeOpen} onOpenChange={setRemoveOpen}>
+                <DialogContent className="max-w-md rounded-none p-0 overflow-hidden">
+                    <div className="bg-primary px-6 py-4">
+                        <h2 className="text-sm font-semibold text-white">Remove admin</h2>
+                        <p className="text-xs text-white/70 mt-0.5">This will revoke administrative access</p>
+                    </div>
+                    <div className="px-6 py-4">
+                        <p className="text-sm text-gray-700">
+                            Are you sure you want to remove{" "}
+                            <span className="font-semibold">{removeTarget?.name}</span> from administrators?
+                        </p>
+                    </div>
+                    <DialogFooter className="px-6 py-4 border-t border-gray-100">
+                        <Button variant="outline" onClick={() => setRemoveOpen(false)} className="rounded-none">
+                            Cancel
+                        </Button>
+                        <Button onClick={handleRemove} variant="destructive" className="rounded-none">
+                            Remove
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Edit Role Dialog */}
+            <Dialog open={editOpen} onOpenChange={setEditOpen}>
+                <DialogContent className="max-w-md rounded-none p-0 overflow-hidden">
+                    <div className="bg-primary px-6 py-4">
+                        <h2 className="text-sm font-semibold text-white">Edit role</h2>
+                        <p className="text-xs text-white/70 mt-0.5">Change admin role for {editTarget?.name}</p>
+                    </div>
+                    <div className="px-6 py-4 space-y-4">
+                        <div className="space-y-2">
+                            <Label className="text-xs text-gray-700">Admin role</Label>
+                            <Select value={editRole} onValueChange={setEditRole}>
+                                <SelectTrigger className="rounded-none">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent className="rounded-none">
+                                    {ADMIN_ROLES.map((role) => (
+                                        <SelectItem key={role} value={role}>
+                                            {role}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                    <DialogFooter className="px-6 py-4 border-t border-gray-100">
+                        <Button variant="outline" onClick={() => setEditOpen(false)} className="rounded-none">
+                            Cancel
+                        </Button>
+                        <Button onClick={handleEditRole} className="bg-primary hover:bg-primary/90 text-white rounded-none">
+                            Update role
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
-    )
+    );
 }

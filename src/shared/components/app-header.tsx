@@ -145,8 +145,18 @@ export function AppHeader({ setSidebarOpen }: { setSidebarOpen?: React.Dispatch<
   const { user } = useAuthStore()
   const { logoUrl } = useBrandingStore()
   const handleLogout = async () => {
-    await logoutUser();
-    // Optional: you can do extra cleanup or tracking here if needed
+    try {
+      await logoutUser();
+    } catch {
+      // Even if API fails, clear client state and redirect
+    }
+    // Always reset Zustand store + clear storage + redirect
+    useAuthStore.getState().logout();
+    localStorage.removeItem("auth-storage");
+    localStorage.removeItem("orgToken");
+    localStorage.removeItem("orgID");
+    localStorage.removeItem("orgName");
+    window.location.href = "/auth/signin";
   };
   const viewOrgInvites = () => {
     // Clear any auth-related data

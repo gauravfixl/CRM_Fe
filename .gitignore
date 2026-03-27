@@ -72,5 +72,5 @@ turbo/
 *.local
 .vercel
 
-*.md
+*.md 
 *.txt

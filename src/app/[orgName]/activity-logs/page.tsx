@@ -1,84 +1,262 @@
 "use client"
 
-import React from "react"
-import SubHeader from "@/shared/components/custom/SubHeader"
-import { Monitor, Filter, Download } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
+import React, { useState, useMemo } from "react"
+import { Activity, Users, Eye, Clock, Search, Download } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Input } from "@/shared/components/ui/input"
+import { Badge } from "@/shared/components/ui/badge"
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/shared/components/ui/table"
+import { showSuccess } from "@/utils/toast"
+
+interface ActivityLog {
+    id: string
+    timestamp: string
+    user: string
+    initials: string
+    action: string
+    resource: string
+    ip: string
+    location: string
+}
+
+const activityData: ActivityLog[] = [
+    { id: "1", timestamp: "Mar 27, 2026 10:23 AM", user: "John Doe", initials: "JD", action: "Page View", resource: "/dashboard/overview", ip: "192.168.1.101", location: "Mumbai, IN" },
+    { id: "2", timestamp: "Mar 27, 2026 10:18 AM", user: "Sarah Wilson", initials: "SW", action: "Create", resource: "/leads/new", ip: "192.168.1.105", location: "Delhi, IN" },
+    { id: "3", timestamp: "Mar 27, 2026 10:12 AM", user: "Mike Chen", initials: "MC", action: "Update", resource: "/contacts/1234", ip: "10.0.0.55", location: "Bangalore, IN" },
+    { id: "4", timestamp: "Mar 27, 2026 10:05 AM", user: "Emily Brown", initials: "EB", action: "Delete", resource: "/tasks/5678", ip: "192.168.1.112", location: "Pune, IN" },
+    { id: "5", timestamp: "Mar 27, 2026 09:55 AM", user: "Raj Patel", initials: "RP", action: "Export", resource: "/reports/monthly", ip: "192.168.1.108", location: "Chennai, IN" },
+    { id: "6", timestamp: "Mar 27, 2026 09:42 AM", user: "John Doe", initials: "JD", action: "Login", resource: "/auth/login", ip: "192.168.1.101", location: "Mumbai, IN" },
+    { id: "7", timestamp: "Mar 27, 2026 09:30 AM", user: "Priya Sharma", initials: "PS", action: "Update", resource: "/deals/9012", ip: "10.0.0.42", location: "Hyderabad, IN" },
+    { id: "8", timestamp: "Mar 27, 2026 09:15 AM", user: "Alex Kumar", initials: "AK", action: "Page View", resource: "/settings/profile", ip: "192.168.1.120", location: "Kolkata, IN" },
+]
+
+const actionTypes = ["All", "Page View", "Create", "Update", "Delete", "Export", "Login"]
+
+const actionBadgeClasses: Record<string, string> = {
+    "Page View": "bg-zinc-100 text-zinc-700 border-zinc-200",
+    "Create": "bg-green-100 text-green-700 border-green-200",
+    "Update": "bg-primary/10 text-primary border-primary/20",
+    "Delete": "bg-red-100 text-red-700 border-red-200",
+    "Export": "bg-amber-100 text-amber-700 border-amber-200",
+    "Login": "bg-purple-100 text-purple-700 border-purple-200",
+}
 
 export default function ActivityLogsPage() {
+    const [search, setSearch] = useState("")
+    const [actionFilter, setActionFilter] = useState("All")
+
+    const filteredData = useMemo(() => {
+        return activityData.filter((item) => {
+            const matchesSearch =
+                search === "" ||
+                item.user.toLowerCase().includes(search.toLowerCase()) ||
+                item.resource.toLowerCase().includes(search.toLowerCase()) ||
+                item.action.toLowerCase().includes(search.toLowerCase()) ||
+                item.ip.toLowerCase().includes(search.toLowerCase())
+
+            const matchesAction =
+                actionFilter === "All" || item.action === actionFilter
+
+            return matchesSearch && matchesAction
+        })
+    }, [search, actionFilter])
+
+    const uniqueUsersToday = useMemo(() => {
+        const users = new Set(activityData.map((item) => item.user))
+        return users.size
+    }, [])
+
+    const totalActions = activityData.length
+
+    const pageViews = useMemo(() => {
+        return activityData.filter((item) => item.action === "Page View").length
+    }, [])
+
+    const handleExport = () => {
+        showSuccess("Activity logs exported successfully")
+    }
+
+    const cycleActionFilter = () => {
+        const currentIndex = actionTypes.indexOf(actionFilter)
+        const nextIndex = (currentIndex + 1) % actionTypes.length
+        setActionFilter(actionTypes[nextIndex])
+    }
+
     return (
         <div className="flex flex-col min-h-screen bg-transparent">
-            <SubHeader
-                title="User Activity"
-                breadcrumbItems={[
-                    { label: "Monitoring", href: "/monitoring" },
-                    { label: "Activity Logs", href: "/activity-logs" }
-                ]}
-                rightControls={
-                    <>
-                        <Button variant="outline" size="sm" className="h-8 gap-2 rounded-none border-dashed">
-                            <Filter className="w-3.5 h-3.5" />
-                            Filter
-                        </Button>
-                        <Button variant="outline" size="sm" className="h-8 gap-2 rounded-none border-dashed">
-                            <Download className="w-3.5 h-3.5" />
-                            Export
-                        </Button>
-                    </>
-                }
-            />
+            {/* Header */}
+            <div className="p-6 pb-0">
+                <div className="flex items-center justify-between mb-1">
+                    <div>
+                        <h1 className="text-2xl font-bold tracking-tight text-zinc-900">
+                            User Activity
+                        </h1>
+                        <p className="text-sm text-zinc-500 mt-1">
+                            Real-time monitoring of user actions across the organization.
+                        </p>
+                    </div>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 gap-2 rounded-none"
+                        onClick={handleExport}
+                    >
+                        <Download className="w-3.5 h-3.5" />
+                        Export
+                    </Button>
+                </div>
+            </div>
 
-            <div className="flex-1 p-6 pt-0 space-y-6">
-                <Card className="rounded-none border-0 shadow-sm bg-white/50 backdrop-blur-sm">
-                    <CardHeader>
-                        <CardTitle className="text-lg font-bold">Activity Feed</CardTitle>
-                        <CardDescription>Real-time stream of user actions across the organization.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <Table>
-                            <TableHeader>
-                                <TableRow className="hover:bg-transparent border-zinc-200">
-                                    <TableHead className="w-[180px]">Timestamp</TableHead>
-                                    <TableHead>User</TableHead>
-                                    <TableHead>Action</TableHead>
-                                    <TableHead>Resource</TableHead>
-                                    <TableHead className="text-right">IP Address</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {[1, 2, 3, 4, 5].map((i) => (
-                                    <TableRow key={i} className="hover:bg-zinc-50 border-zinc-100">
+            <div className="flex-1 p-6 space-y-6">
+                {/* Stats Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {/* Active Users Today - gradient primary */}
+                    <div className="bg-gradient-to-br from-primary/80 to-primary p-6 rounded-none shadow-xl shadow-primary/20 text-white">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-white text-xs opacity-80">Active Users Today</p>
+                                <p className="text-white text-xl font-semibold mt-1">{uniqueUsersToday}</p>
+                            </div>
+                            <div className="w-10 h-10 rounded-none bg-white/20 flex items-center justify-center">
+                                <Users className="w-5 h-5 text-white" />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Total Actions */}
+                    <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-gray-600 text-xs">Total Actions</p>
+                                <p className="text-xl font-semibold text-gray-900 mt-1">{totalActions}</p>
+                            </div>
+                            <div className="w-10 h-10 rounded-none bg-zinc-100 flex items-center justify-center">
+                                <Activity className="w-5 h-5 text-zinc-600" />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Page Views */}
+                    <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-gray-600 text-xs">Page Views</p>
+                                <p className="text-xl font-semibold text-gray-900 mt-1">{pageViews}</p>
+                            </div>
+                            <div className="w-10 h-10 rounded-none bg-zinc-100 flex items-center justify-center">
+                                <Eye className="w-5 h-5 text-zinc-600" />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Avg. Session Duration */}
+                    <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-gray-600 text-xs">Avg. Session Duration</p>
+                                <p className="text-xl font-semibold text-gray-900 mt-1">12m</p>
+                            </div>
+                            <div className="w-10 h-10 rounded-none bg-zinc-100 flex items-center justify-center">
+                                <Clock className="w-5 h-5 text-zinc-600" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Search and Filter */}
+                <div className="flex items-center gap-3">
+                    <div className="relative flex-1 max-w-sm">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                        <Input
+                            placeholder="Search by user, resource, action, IP..."
+                            value={search}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
+                            className="pl-9 h-9 rounded-none"
+                        />
+                    </div>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-9 gap-2 rounded-none"
+                        onClick={cycleActionFilter}
+                    >
+                        {actionFilter === "All" ? "All Actions" : actionFilter}
+                    </Button>
+                </div>
+
+                {/* Table */}
+                <div className="rounded-none border border-zinc-200 bg-white shadow-sm overflow-hidden">
+                    <Table>
+                        <TableHeader>
+                            <TableRow className="hover:bg-transparent border-zinc-200 bg-zinc-50">
+                                <TableHead className="w-[200px] text-xs font-semibold text-zinc-600">Timestamp</TableHead>
+                                <TableHead className="text-xs font-semibold text-zinc-600">User</TableHead>
+                                <TableHead className="text-xs font-semibold text-zinc-600">Action</TableHead>
+                                <TableHead className="text-xs font-semibold text-zinc-600">Resource</TableHead>
+                                <TableHead className="text-xs font-semibold text-zinc-600">IP Address</TableHead>
+                                <TableHead className="text-xs font-semibold text-zinc-600">Location</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {filteredData.length > 0 ? (
+                                filteredData.map((item) => (
+                                    <TableRow key={item.id} className="hover:bg-zinc-50/50 border-zinc-100">
                                         <TableCell className="font-mono text-xs text-zinc-500">
-                                            {new Date().toISOString().split('T')[0]} 10:{10 + i}:00
+                                            {item.timestamp}
                                         </TableCell>
                                         <TableCell>
                                             <div className="flex items-center gap-2">
-                                                <div className="w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center text-xs font-bold text-indigo-600">
-                                                    JD
+                                                <div className="w-7 h-7 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center">
+                                                    {item.initials}
                                                 </div>
-                                                <span className="text-sm font-medium">John Doe</span>
+                                                <span className="text-sm font-medium text-zinc-900">
+                                                    {item.user}
+                                                </span>
                                             </div>
                                         </TableCell>
                                         <TableCell>
-                                            <Badge variant="outline" className="rounded-none border-zinc-200 bg-white font-normal">
-                                                Page View
+                                            <Badge
+                                                variant="outline"
+                                                className={`rounded-none font-normal text-xs ${actionBadgeClasses[item.action] || "bg-zinc-100 text-zinc-700 border-zinc-200"}`}
+                                            >
+                                                {item.action}
                                             </Badge>
                                         </TableCell>
-                                        <TableCell className="text-sm text-zinc-600">
-                                            /dashboard/overview
+                                        <TableCell className="text-sm text-zinc-600 font-mono">
+                                            {item.resource}
                                         </TableCell>
-                                        <TableCell className="text-right font-mono text-xs text-zinc-400">
-                                            192.168.1.{100 + i}
+                                        <TableCell className="font-mono text-xs text-zinc-500">
+                                            {item.ip}
+                                        </TableCell>
+                                        <TableCell className="text-sm text-zinc-500">
+                                            {item.location}
                                         </TableCell>
                                     </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </CardContent>
-                </Card>
+                                ))
+                            ) : (
+                                <TableRow>
+                                    <TableCell colSpan={6} className="text-center py-8 text-sm text-zinc-400">
+                                        No activity logs found matching your criteria.
+                                    </TableCell>
+                                </TableRow>
+                            )}
+                        </TableBody>
+                    </Table>
+
+                    {/* Footer */}
+                    <div className="px-4 py-3 border-t border-zinc-200 bg-zinc-50">
+                        <p className="text-xs text-zinc-500">
+                            Showing {filteredData.length} of {activityData.length} activities
+                        </p>
+                    </div>
+                </div>
             </div>
         </div>
     )
