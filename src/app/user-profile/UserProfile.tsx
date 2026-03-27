@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, ChangeEvent, FormEvent } from "react";
+import { useState, useEffect, useRef, ChangeEvent, FormEvent } from "react";
 import { useAuthStore } from "@/lib/useAuthStore";
+import { axiosInstance } from "@/lib/axios";
 import {
   User,
   Mail,
@@ -14,12 +15,18 @@ import {
   Camera,
   Building2,
   Globe,
+  ImagePlus,
+  Loader2,
 } from "lucide-react";
 
 export default function ProfilePage() {
   const { user, updateUser, singleOrg } = useAuthStore();
   const [localUser, setLocalUser] = useState(user || {});
   const [editingSection, setEditingSection] = useState<string | null>(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [coverUploading, setCoverUploading] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const coverInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (user) setLocalUser(user);
@@ -36,6 +43,53 @@ export default function ProfilePage() {
     setEditingSection(null);
   };
 
+  const handleAvatarUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setAvatarUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("image", file);
+
+      const res = await axiosInstance.patch("/auth/updateProfilephoto", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      if (res.data?.success) {
+        updateUser({
+          avatar: { url: res.data.profilePhoto, public_id: "" },
+        } as any);
+      }
+    } catch (err) {
+      console.error("Avatar upload failed:", err);
+    } finally {
+      setAvatarUploading(false);
+      if (avatarInputRef.current) avatarInputRef.current.value = "";
+    }
+  };
+
+  const handleCoverUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setCoverUploading(true);
+    try {
+      // Store cover photo as base64 in local state since no backend API exists for cover
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64 = reader.result as string;
+        updateUser({ coverPhoto: base64 } as any);
+        setCoverUploading(false);
+      };
+      reader.readAsDataURL(file);
+    } catch (err) {
+      console.error("Cover upload failed:", err);
+      setCoverUploading(false);
+    }
+    if (coverInputRef.current) coverInputRef.current.value = "";
+  };
+
   if (!localUser) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -49,9 +103,27 @@ export default function ProfilePage() {
 
   const u = localUser as any;
   const initials = `${(u.firstName || "")[0] || ""}${(u.lastName || "")[0] || ""}`.toUpperCase();
+  const avatarUrl = u.avatar?.url;
+  const coverUrl = u.coverPhoto;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30">
+      {/* Hidden file inputs */}
+      <input
+        ref={avatarInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/jpg"
+        className="hidden"
+        onChange={handleAvatarUpload}
+      />
+      <input
+        ref={coverInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/jpg"
+        className="hidden"
+        onChange={handleCoverUpload}
+      />
+
       <div className="max-w-[1400px] mx-auto px-8 py-10">
 
         {/* Page Header */}
@@ -62,24 +134,78 @@ export default function ProfilePage() {
 
         {/* Profile Hero Card */}
         <div className="relative bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden mb-6">
-          {/* Banner */}
-          <div className="h-32 bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 relative">
-            <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0djItSDJ2LTJoMzR6bTAtMzB2Mkgydi0yaDM0em0wIDEwdjJIMnYtMmgzNHptMCAxMHYySDJ2LTJoMzR6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-30" />
+          {/* Cover Photo / Banner */}
+          <div className="h-44 relative group">
+            {coverUrl ? (
+              <img src={coverUrl} alt="Cover" className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 relative">
+                <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0djItSDJ2LTJoMzR6bTAtMzB2Mkgydi0yaDM0em0wIDEwdjJIMnYtMmgzNHptMCAxMHYySDJ2LTJoMzR6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-30" />
+              </div>
+            )}
+            {/* Cover photo overlay on hover */}
+            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition-all">
+              <button
+                onClick={() => coverInputRef.current?.click()}
+                disabled={coverUploading}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/90 text-slate-700 text-xs font-bold shadow-lg hover:bg-white transition-colors cursor-pointer"
+              >
+                {coverUploading ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Uploading...</>
+                ) : (
+                  <><ImagePlus className="w-4 h-4" /> Change Cover Photo</>
+                )}
+              </button>
+              {coverUrl && (
+                <button
+                  onClick={() => updateUser({ coverPhoto: undefined } as any)}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-red-500/90 text-white text-xs font-bold shadow-lg hover:bg-red-600 transition-colors cursor-pointer"
+                >
+                  <X className="w-4 h-4" /> Remove
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Avatar & Info */}
-          <div className="px-8 pb-8 -mt-14 relative">
+          <div className="px-8 pb-8 -mt-16 relative">
             <div className="flex flex-col sm:flex-row sm:items-end gap-5">
               {/* Avatar */}
               <div className="relative group">
-                <div className="w-28 h-28 rounded-2xl bg-white p-1 shadow-lg shadow-slate-200/50">
-                  <div className="w-full h-full rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
-                    <span className="text-3xl font-bold text-white">{initials}</span>
-                  </div>
+                <div className="w-32 h-32 rounded-2xl bg-white p-1.5 shadow-lg shadow-slate-200/50">
+                  {avatarUrl ? (
+                    <img
+                      src={avatarUrl}
+                      alt="Profile"
+                      className="w-full h-full rounded-xl object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+                      <span className="text-3xl font-bold text-white">{initials}</span>
+                    </div>
+                  )}
                 </div>
-                <button className="absolute bottom-1 right-1 w-8 h-8 bg-white rounded-lg shadow-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity border border-slate-200">
-                  <Camera className="w-4 h-4 text-slate-600" />
+                {/* Avatar upload button */}
+                <button
+                  onClick={() => avatarInputRef.current?.click()}
+                  disabled={avatarUploading}
+                  className="absolute -bottom-1 -right-1 w-10 h-10 bg-white rounded-xl shadow-md flex items-center justify-center border border-slate-200 hover:bg-blue-50 hover:border-blue-300 transition-colors cursor-pointer"
+                >
+                  {avatarUploading ? (
+                    <Loader2 className="w-4 h-4 text-blue-600 animate-spin" />
+                  ) : (
+                    <Camera className="w-4 h-4 text-slate-600" />
+                  )}
                 </button>
+                {/* Avatar remove button */}
+                {avatarUrl && (
+                  <button
+                    onClick={() => updateUser({ avatar: undefined } as any)}
+                    className="absolute -top-1 -right-1 w-7 h-7 bg-red-500 rounded-lg shadow-md flex items-center justify-center hover:bg-red-600 transition-colors cursor-pointer opacity-0 group-hover:opacity-100"
+                  >
+                    <X className="w-3.5 h-3.5 text-white" />
+                  </button>
+                )}
               </div>
 
               {/* Name & Role */}
