@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useRouter, useParams } from "next/navigation";
 import {
     BarChart3,
     HardDrive,
@@ -16,148 +17,155 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Separator } from "@/components/ui/separator";
 
 export default function UsagePage() {
+    const router = useRouter();
+    const params = useParams() as { orgName: string };
+
+    const navigateToAddons = () => {
+        router.push(`/${params.orgName}/modules/organization/subscription/addons`);
+    };
+
     return (
-        <div className="flex flex-col h-full w-full bg-slate-50/50 p-6 space-y-6 overflow-y-auto">
-            {/* HEADER */}
+        <div className="flex flex-col h-full w-full bg-slate-50/50 p-6 space-y-5 overflow-y-auto">
+            {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight text-slate-900">Usage & Limits</h1>
-                    <p className="text-sm text-slate-500 mt-1">Monitor your organization's resource consumption against plan limits.</p>
+                    <h1 className="text-sm font-semibold tracking-tight text-slate-900">Usage & Limits</h1>
+                    <p className="text-xs text-slate-500 mt-0.5">Monitor your organization's resource consumption against plan limits.</p>
                 </div>
-                <div className="flex items-center gap-2 bg-white px-3 py-1.5 border border-slate-200 rounded-none shadow-sm">
-                    <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                    <span className="text-xs font-bold text-slate-700">Real-time Metrics</span>
+                <div className="flex items-center gap-1.5 bg-white px-2.5 py-1 border border-slate-200 rounded-lg shadow-sm">
+                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="text-[10px] font-medium text-slate-700">Real-time Metrics</span>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {/* STORAGE */}
-                <Card className="border-none shadow-md rounded-none overflow-hidden hover:shadow-lg transition-shadow">
-                    <CardHeader className="bg-slate-900 text-white p-6">
-                        <CardTitle className="flex items-center gap-2 text-lg font-bold">
-                            <HardDrive className="w-5 h-5 text-blue-400" /> Storage
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {/* Storage */}
+                <Card className="border border-slate-200 shadow-sm rounded-xl overflow-hidden hover:shadow-md transition-shadow">
+                    <CardHeader className="bg-slate-900 text-white p-4">
+                        <CardTitle className="flex items-center gap-2 text-xs font-semibold">
+                            <HardDrive className="w-4 h-4 text-blue-400" /> Storage
                         </CardTitle>
-                        <CardDescription className="text-slate-400">
+                        <CardDescription className="text-slate-400 text-[10px]">
                             Cloud file storage space.
                         </CardDescription>
                     </CardHeader>
-                    <CardContent className="p-6 space-y-4">
+                    <CardContent className="p-4 space-y-3">
                         <div className="flex justify-between items-end">
-                            <span className="text-3xl font-black text-slate-900">452<span className="text-lg text-slate-400 font-bold ml-1">GB</span></span>
-                            <span className="text-sm font-bold text-slate-500">of 1TB</span>
+                            <span className="text-xl font-semibold text-slate-900">452<span className="text-xs text-slate-400 font-normal ml-0.5">Gb</span></span>
+                            <span className="text-[10px] font-medium text-slate-500">of 1Tb</span>
                         </div>
-                        <Progress value={45} className="h-3 rounded-none bg-slate-100" indicatorClassName="bg-blue-600" />
-                        <p className="text-xs text-slate-400 pt-2">Includes media, documents, and backups.</p>
+                        <Progress value={45} className="h-1.5 rounded-full bg-slate-100" indicatorClassName="bg-blue-600" />
+                        <p className="text-[10px] text-slate-400">Includes media, documents, and backups.</p>
                     </CardContent>
                 </Card>
 
-                {/* USERS */}
-                <Card className="border-none shadow-md rounded-none overflow-hidden hover:shadow-lg transition-shadow">
-                    <CardHeader className="bg-slate-900 text-white p-6">
-                        <CardTitle className="flex items-center gap-2 text-lg font-bold">
-                            <Users className="w-5 h-5 text-emerald-400" /> Active Seats
+                {/* Users */}
+                <Card className="border border-slate-200 shadow-sm rounded-xl overflow-hidden hover:shadow-md transition-shadow">
+                    <CardHeader className="bg-slate-900 text-white p-4">
+                        <CardTitle className="flex items-center gap-2 text-xs font-semibold">
+                            <Users className="w-4 h-4 text-emerald-400" /> Active Seats
                         </CardTitle>
-                        <CardDescription className="text-slate-400">
+                        <CardDescription className="text-slate-400 text-[10px]">
                             Licensed user accounts.
                         </CardDescription>
                     </CardHeader>
-                    <CardContent className="p-6 space-y-4">
+                    <CardContent className="p-4 space-y-3">
                         <div className="flex justify-between items-end">
-                            <span className="text-3xl font-black text-slate-900">18<span className="text-lg text-slate-400 font-bold ml-1">Users</span></span>
-                            <span className="text-sm font-bold text-slate-500">of 25 Seats</span>
+                            <span className="text-xl font-semibold text-slate-900">18<span className="text-xs text-slate-400 font-normal ml-0.5">Users</span></span>
+                            <span className="text-[10px] font-medium text-slate-500">of 25 Seats</span>
                         </div>
-                        <Progress value={72} className="h-3 rounded-none bg-slate-100" indicatorClassName="bg-emerald-600" />
-                        <p className="text-xs text-slate-400 pt-2">Includes Admins, Editors, and Standard users.</p>
+                        <Progress value={72} className="h-1.5 rounded-full bg-slate-100" indicatorClassName="bg-emerald-600" />
+                        <p className="text-[10px] text-slate-400">Includes Admins, Editors, and Standard users.</p>
                     </CardContent>
                 </Card>
 
-                {/* API CALLS */}
-                <Card className="border-none shadow-md rounded-none overflow-hidden hover:shadow-lg transition-shadow">
-                    <CardHeader className="bg-slate-900 text-white p-6">
-                        <CardTitle className="flex items-center gap-2 text-lg font-bold">
-                            <Zap className="w-5 h-5 text-amber-400" /> API Requests
+                {/* Api Calls */}
+                <Card className="border border-slate-200 shadow-sm rounded-xl overflow-hidden hover:shadow-md transition-shadow">
+                    <CardHeader className="bg-slate-900 text-white p-4">
+                        <CardTitle className="flex items-center gap-2 text-xs font-semibold">
+                            <Zap className="w-4 h-4 text-amber-400" /> Api Requests
                         </CardTitle>
-                        <CardDescription className="text-slate-400">
+                        <CardDescription className="text-slate-400 text-[10px]">
                             Monthly integration traffic.
                         </CardDescription>
                     </CardHeader>
-                    <CardContent className="p-6 space-y-4">
+                    <CardContent className="p-4 space-y-3">
                         <div className="flex justify-between items-end">
-                            <span className="text-3xl font-black text-slate-900">850<span className="text-lg text-slate-400 font-bold ml-1">k</span></span>
-                            <span className="text-sm font-bold text-slate-500">of 1M /mo</span>
+                            <span className="text-xl font-semibold text-slate-900">850<span className="text-xs text-slate-400 font-normal ml-0.5">k</span></span>
+                            <span className="text-[10px] font-medium text-slate-500">of 1M /mo</span>
                         </div>
-                        <Progress value={85} className="h-3 rounded-none bg-slate-100" indicatorClassName="bg-amber-500" />
-                        <p className="text-xs text-slate-400 pt-2">Resets in 12 days.</p>
+                        <Progress value={85} className="h-1.5 rounded-full bg-slate-100" indicatorClassName="bg-amber-500" />
+                        <p className="text-[10px] text-slate-400">Resets in 12 days.</p>
                     </CardContent>
                 </Card>
             </div>
 
-            {/* DETAILED STATS */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card className="border-slate-200 shadow-sm rounded-none">
-                    <CardHeader className="border-b border-slate-100 p-5 bg-slate-50/50">
-                        <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
-                            <Mail className="w-4 h-4 text-slate-600" />
+            {/* Detailed Stats */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <Card className="border-slate-200 shadow-sm rounded-xl">
+                    <CardHeader className="border-b border-slate-100 p-4 bg-slate-50/50">
+                        <CardTitle className="text-xs font-semibold text-slate-900 flex items-center gap-2">
+                            <Mail className="w-3.5 h-3.5 text-slate-600" />
                             Email Transmissions
                         </CardTitle>
                     </CardHeader>
-                    <CardContent className="p-6 py-8">
-                        <div className="space-y-6">
-                            <div className="space-y-2">
-                                <div className="flex justify-between text-sm">
-                                    <span className="font-bold text-slate-700">Transactional</span>
-                                    <span className="font-mono font-medium text-slate-500">12,405 / 50,000</span>
+                    <CardContent className="p-4 py-5">
+                        <div className="space-y-4">
+                            <div className="space-y-1.5">
+                                <div className="flex justify-between text-xs">
+                                    <span className="font-medium text-slate-700">Transactional</span>
+                                    <span className="font-mono text-slate-500 text-[10px]">12,405 / 50,000</span>
                                 </div>
-                                <Progress value={24} className="h-2 rounded-none" indicatorClassName="bg-indigo-500" />
+                                <Progress value={24} className="h-1.5 rounded-full" indicatorClassName="bg-indigo-500" />
                             </div>
-                            <div className="space-y-2">
-                                <div className="flex justify-between text-sm">
-                                    <span className="font-bold text-slate-700">Marketing / Bulk</span>
-                                    <span className="font-mono font-medium text-slate-500">5,000 / 10,000</span>
+                            <div className="space-y-1.5">
+                                <div className="flex justify-between text-xs">
+                                    <span className="font-medium text-slate-700">Marketing / Bulk</span>
+                                    <span className="font-mono text-slate-500 text-[10px]">5,000 / 10,000</span>
                                 </div>
-                                <Progress value={50} className="h-2 rounded-none" indicatorClassName="bg-purple-500" />
+                                <Progress value={50} className="h-1.5 rounded-full" indicatorClassName="bg-purple-500" />
                             </div>
                         </div>
                     </CardContent>
                 </Card>
 
-                <Card className="border-slate-200 shadow-sm rounded-none">
-                    <CardHeader className="border-b border-slate-100 p-5 bg-slate-50/50">
-                        <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
-                            <Database className="w-4 h-4 text-slate-600" />
+                <Card className="border-slate-200 shadow-sm rounded-xl">
+                    <CardHeader className="border-b border-slate-100 p-4 bg-slate-50/50">
+                        <CardTitle className="text-xs font-semibold text-slate-900 flex items-center gap-2">
+                            <Database className="w-3.5 h-3.5 text-slate-600" />
                             Database Rows
                         </CardTitle>
                     </CardHeader>
-                    <CardContent className="p-6 py-8">
-                        <div className="space-y-6">
-                            <div className="space-y-2">
-                                <div className="flex justify-between text-sm">
-                                    <span className="font-bold text-slate-700">CRM Contacts</span>
-                                    <span className="font-mono font-medium text-slate-500">45,100 / 100,000</span>
+                    <CardContent className="p-4 py-5">
+                        <div className="space-y-4">
+                            <div className="space-y-1.5">
+                                <div className="flex justify-between text-xs">
+                                    <span className="font-medium text-slate-700">Crm Contacts</span>
+                                    <span className="font-mono text-slate-500 text-[10px]">45,100 / 100,000</span>
                                 </div>
-                                <Progress value={45} className="h-2 rounded-none" indicatorClassName="bg-cyan-500" />
+                                <Progress value={45} className="h-1.5 rounded-full" indicatorClassName="bg-cyan-500" />
                             </div>
-                            <div className="space-y-2">
-                                <div className="flex justify-between text-sm">
-                                    <span className="font-bold text-slate-700">Custom Objects</span>
-                                    <span className="font-mono font-medium text-slate-500">120 / 500</span>
+                            <div className="space-y-1.5">
+                                <div className="flex justify-between text-xs">
+                                    <span className="font-medium text-slate-700">Custom Objects</span>
+                                    <span className="font-mono text-slate-500 text-[10px]">120 / 500</span>
                                 </div>
-                                <Progress value={24} className="h-2 rounded-none" indicatorClassName="bg-teal-500" />
+                                <Progress value={24} className="h-1.5 rounded-full" indicatorClassName="bg-teal-500" />
                             </div>
                         </div>
                     </CardContent>
                 </Card>
             </div>
 
-            {/* ALERT BANNER */}
-            <div className="p-4 bg-amber-50 border border-amber-200 flex items-start gap-4">
-                <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5" />
-                <div className="space-y-1">
-                    <h4 className="text-sm font-bold text-amber-900 uppercase">Approaching Limits</h4>
-                    <p className="text-xs text-amber-800">
-                        Your <strong>API Requests</strong> usage is at 85%. Consider upgrading to the High-Performance API Add-on to avoid rate limiting during peak hours.
+            {/* Alert Banner */}
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
+                <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5" />
+                <div className="space-y-0.5">
+                    <h4 className="text-xs font-medium text-amber-900">Approaching Limits</h4>
+                    <p className="text-[10px] text-amber-800">
+                        Your <strong>Api Requests</strong> usage is at 85%. Consider upgrading to the High-Performance Api Add-on to avoid rate limiting during peak hours.
                     </p>
-                    <Button variant="link" className="p-0 h-auto text-amber-900 font-bold underline text-xs">
+                    <Button variant="link" className="p-0 h-auto text-amber-900 font-medium underline text-[10px]" onClick={navigateToAddons}>
                         View Add-ons
                     </Button>
                 </div>

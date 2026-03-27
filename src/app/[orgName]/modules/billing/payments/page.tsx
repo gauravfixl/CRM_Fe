@@ -6,22 +6,15 @@ import {
     Plus,
     Trash2,
     ShieldCheck,
-    AlertCircle,
     MoreVertical,
-    CheckCircle2,
-    Calendar,
-    Lock,
+    Star,
     Globe,
-    ChevronRight
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
     Dialog,
     DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
     DialogFooter,
 } from "@/shared/components/ui/dialog";
 import { Label } from "@/shared/components/ui/label";
@@ -30,177 +23,275 @@ import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu";
+import { showSuccess, showWarning } from "@/shared/utils/toast";
+
+interface PaymentMethod {
+    id: string;
+    type: string;
+    last4: string;
+    expiry: string;
+    holder: string;
+    isPrimary: boolean;
+}
+
+const initialMethods: PaymentMethod[] = [
+    { id: "1", type: "Visa", last4: "4242", expiry: "12/26", holder: "John Doe", isPrimary: true },
+    { id: "2", type: "Mastercard", last4: "8888", expiry: "05/27", holder: "Fixl Solutions", isPrimary: false },
+];
 
 export default function PaymentsPage() {
     const [showAddCardModal, setShowAddCardModal] = useState(false);
+    const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>(initialMethods);
 
-    const [paymentMethods, setPaymentMethods] = useState([
-        { id: "1", type: "Visa", last4: "4242", expiry: "12/26", holder: "John Doe", isPrimary: true, brand: "bg-gradient-to-br from-blue-700 via-blue-600 to-indigo-800" },
-        { id: "2", type: "Mastercard", last4: "8888", expiry: "05/27", holder: "Fixl Solutions", isPrimary: false, brand: "bg-gradient-to-br from-zinc-800 to-zinc-950" },
-    ]);
+    const [formHolder, setFormHolder] = useState("");
+    const [formNumber, setFormNumber] = useState("");
+    const [formExpiry, setFormExpiry] = useState("");
+    const [formCvv, setFormCvv] = useState("");
+
+    const resetForm = () => {
+        setFormHolder("");
+        setFormNumber("");
+        setFormExpiry("");
+        setFormCvv("");
+    };
 
     const setPrimary = (id: string) => {
-        setPaymentMethods(prev => prev.map(m => ({
-            ...m,
-            isPrimary: m.id === id,
-            brand: m.id === id ? "bg-gradient-to-br from-blue-700 via-blue-600 to-indigo-800" : "bg-gradient-to-br from-zinc-800 to-zinc-950"
-        })));
+        setPaymentMethods((prev) =>
+            prev.map((m) => ({ ...m, isPrimary: m.id === id }))
+        );
+        showSuccess("Payment method set as primary");
+    };
+
+    const removeMethod = (id: string) => {
+        const method = paymentMethods.find((m) => m.id === id);
+        if (!method) return;
+        const confirmed = window.confirm(
+            `Remove ${method.type} ending in ${method.last4}?`
+        );
+        if (!confirmed) return;
+        setPaymentMethods((prev) => prev.filter((m) => m.id !== id));
+        showSuccess("Payment method removed");
+    };
+
+    const handleAddCard = () => {
+        if (!formHolder.trim() || !formNumber.trim() || !formExpiry.trim() || !formCvv.trim()) {
+            showWarning("Please fill in all fields");
+            return;
+        }
+        if (formNumber.replace(/\s/g, "").length < 16) {
+            showWarning("Please enter a valid card number");
+            return;
+        }
+        if (!/^\d{2}\/\d{2}$/.test(formExpiry.trim())) {
+            showWarning("Please enter expiry in MM/YY format");
+            return;
+        }
+        if (formCvv.trim().length < 3) {
+            showWarning("Please enter a valid CVV");
+            return;
+        }
+
+        const last4 = formNumber.replace(/\s/g, "").slice(-4);
+        const newMethod: PaymentMethod = {
+            id: Date.now().toString(),
+            type: "Visa",
+            last4,
+            expiry: formExpiry.trim(),
+            holder: formHolder.trim(),
+            isPrimary: paymentMethods.length === 0,
+        };
+        setPaymentMethods((prev) => [...prev, newMethod]);
+        resetForm();
+        setShowAddCardModal(false);
+        showSuccess("Payment method added successfully");
+    };
+
+    const getCardIcon = (type: string) => {
+        if (type === "Visa") {
+            return (
+                <div className="w-8 h-5 rounded-none bg-primary/10 text-primary flex items-center justify-center text-[10px] font-semibold">
+                    VISA
+                </div>
+            );
+        }
+        if (type === "Mastercard") {
+            return (
+                <div className="w-8 h-5 rounded-none bg-orange-100 text-orange-600 flex items-center justify-center text-[10px] font-semibold">
+                    MC
+                </div>
+            );
+        }
+        return <CreditCard size={16} className="text-gray-400" />;
     };
 
     return (
-        <div className="space-y-6 text-[#1A1A1A]">
+        <div className="space-y-6">
+            {/* Header */}
             <div className="flex items-center justify-between">
-                <div className="flex flex-col gap-1">
-                    <h1 className="text-[22px] font-bold tracking-tight">Payment Sources</h1>
-                    <p className="text-[13px] text-zinc-500">Manage your organization's payment sources and billing preferences settings.</p>
+                <div>
+                    <h1 className="text-xl font-semibold text-gray-900">Payment Methods</h1>
+                    <p className="text-xs text-gray-600 mt-1">
+                        Manage your saved payment methods and billing preferences.
+                    </p>
                 </div>
                 <Button
                     onClick={() => setShowAddCardModal(true)}
-                    className="rounded-none bg-blue-600 hover:bg-blue-700 font-black text-[11px] h-10 gap-2 shadow-xl shadow-blue-100 uppercase tracking-widest px-8"
+                    className="rounded-none bg-primary hover:bg-primary/90 text-xs font-medium h-9 gap-1.5 px-4"
                 >
-                    <Plus size={14} /> Add Secure Source
+                    <Plus size={14} />
+                    Add Payment Method
                 </Button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {/* Payment cards list */}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                 {paymentMethods.map((method) => (
-                    <div key={method.id} className="relative group perspective-1000">
-                        <div className={`aspect-[1.58/1] ${method.brand} p-8 text-white flex flex-col justify-between shadow-2xl relative overflow-hidden rounded-none border-b-4 ${method.isPrimary ? 'border-emerald-400 shadow-blue-200/50' : 'border-zinc-700 shadow-zinc-200/50'}`}>
-                            <div className="absolute top-0 right-0 w-48 h-48 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2 backdrop-blur-3xl" />
-                            <div className="absolute bottom-0 left-0 w-24 h-24 bg-blue-400/10 rounded-full translate-y-1/2 -translate-x-1/2 backdrop-blur-2xl" />
-
-                            <div className="flex justify-between items-start relative z-10">
-                                <div className="flex flex-col">
-                                    <span className="text-[9px] font-black uppercase tracking-[3px] opacity-60">Settlement Node</span>
-                                    <span className="text-[20px] font-black tracking-tight">{method.type}</span>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    {method.isPrimary && (
-                                        <Badge className="bg-emerald-400 text-emerald-950 border-none rounded-none text-[9px] font-black uppercase tracking-widest py-0.5 shadow-sm">
-                                            PRIMARY
-                                        </Badge>
-                                    )}
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <button className="text-white/40 hover:text-white transition-colors p-1 hover:bg-white/10">
-                                                <MoreVertical size={20} />
-                                            </button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end" className="rounded-none border-zinc-700 bg-zinc-900 text-white shadow-2xl p-2 min-w-[160px]">
-                                            <DropdownMenuLabel className="text-[9px] font-black uppercase tracking-[2pt] text-zinc-500 mb-2">Configurations</DropdownMenuLabel>
-                                            {!method.isPrimary && (
-                                                <DropdownMenuItem className="text-[11px] font-black uppercase tracking-tight p-2 focus:bg-blue-600 cursor-pointer" onClick={() => setPrimary(method.id)}>
-                                                    Promote to Primary
-                                                </DropdownMenuItem>
-                                            )}
-                                            <DropdownMenuItem className="text-[11px] font-black uppercase tracking-tight p-2 text-rose-400 focus:bg-rose-600 focus:text-white cursor-pointer group">
-                                                <Trash2 size={14} className="mr-2 group-hover:scale-110 transition-transform" /> Purge Source
+                    <div
+                        key={method.id}
+                        className="border border-gray-200 bg-white rounded-none p-4 space-y-3"
+                    >
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                {getCardIcon(method.type)}
+                                <span className="text-sm font-medium text-gray-900">
+                                    {method.type} ending in {method.last4}
+                                </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                {method.isPrimary && (
+                                    <Badge className="rounded-none bg-green-50 text-green-700 border border-green-200 text-[10px] font-medium px-1.5 py-0 hover:bg-green-50">
+                                        Primary
+                                    </Badge>
+                                )}
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <button className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-50 rounded-none transition-colors">
+                                            <MoreVertical size={14} />
+                                        </button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="rounded-none min-w-[150px]">
+                                        {!method.isPrimary && (
+                                            <DropdownMenuItem
+                                                className="text-xs font-medium cursor-pointer gap-2"
+                                                onClick={() => setPrimary(method.id)}
+                                            >
+                                                <Star size={13} />
+                                                Set as primary
                                             </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                </div>
+                                        )}
+                                        <DropdownMenuItem
+                                            className="text-xs font-medium text-red-600 focus:text-red-600 cursor-pointer gap-2"
+                                            onClick={() => removeMethod(method.id)}
+                                        >
+                                            <Trash2 size={13} />
+                                            Remove
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                             </div>
-
-                            <div className="space-y-6 relative z-10">
-                                <div className="text-[24px] font-black tracking-[5pt] text-white/90 drop-shadow-md">
-                                    •••• •••• •••• {method.last4}
-                                </div>
-                                <div className="flex justify-between items-end border-t border-white/10 pt-4">
-                                    <div className="flex flex-col">
-                                        <span className="text-[8px] font-black uppercase tracking-[2pt] opacity-50">Authorized Holder</span>
-                                        <span className="text-[13px] font-black uppercase tracking-tight">{method.holder}</span>
-                                    </div>
-                                    <div className="flex flex-col items-end">
-                                        <span className="text-[8px] font-black uppercase tracking-[2pt] opacity-50">Exp Cycle</span>
-                                        <span className="text-[13px] font-black font-mono">{method.expiry}</span>
-                                    </div>
-                                </div>
-                            </div>
+                        </div>
+                        <div className="flex items-center gap-4 text-xs text-gray-500">
+                            <span>{method.holder}</span>
+                            <span className="text-gray-300">|</span>
+                            <span>Expires {method.expiry}</span>
                         </div>
                     </div>
                 ))}
-
-                <button
-                    onClick={() => setShowAddCardModal(true)}
-                    className="aspect-[1.58/1] border-2 border-dashed border-zinc-200 bg-zinc-50/50 flex flex-col items-center justify-center gap-4 text-zinc-400 hover:border-blue-400 hover:bg-blue-50/30 hover:text-blue-600 transition-all rounded-none group"
-                >
-                    <div className="w-14 h-14 rounded-none border-2 border-zinc-100 group-hover:border-blue-200 bg-white flex items-center justify-center shadow-lg group-hover:shadow-blue-100 transition-all rotate-45">
-                        <Plus size={28} className="-rotate-45" />
-                    </div>
-                    <span className="text-[11px] font-black uppercase tracking-[3pt]">Link New Asset</span>
-                </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6">
-                <div className="bg-white border border-zinc-200 p-8 rounded-none space-y-5 shadow-2xl shadow-zinc-100/50">
-                    <div className="flex items-center gap-4 text-blue-600">
-                        <div className="p-3 bg-blue-50">
-                            <ShieldCheck size={28} />
-                        </div>
-                        <h3 className="font-black text-[15px] uppercase tracking-tight">Vault-Grade Integrity</h3>
+            {/* Info cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                <div className="bg-white border border-gray-200 rounded-none p-5 flex items-start gap-3">
+                    <div className="p-2 bg-primary/10 rounded-none">
+                        <ShieldCheck size={18} className="text-primary" />
                     </div>
-                    <p className="text-[13px] text-zinc-500 font-medium leading-relaxed">
-                        All settlement credentials are encrypted via hardware security modules (HSM) and processed through Tier-1 PCI-DSS compliant infrastructure.
-                    </p>
+                    <div>
+                        <h3 className="text-sm font-semibold text-gray-900">Security</h3>
+                        <p className="text-xs text-gray-600 mt-0.5 leading-relaxed">
+                            All payment data is encrypted and PCI-DSS compliant.
+                        </p>
+                    </div>
                 </div>
-                <div className="bg-zinc-900 border border-zinc-800 p-8 rounded-none space-y-5 shadow-2xl shadow-zinc-950/20 text-white">
-                    <div className="flex items-center gap-4 text-emerald-400">
-                        <div className="p-3 bg-white/5">
-                            <Globe size={28} />
-                        </div>
-                        <h3 className="font-black text-[15px] uppercase tracking-tight">Dynamic Localization</h3>
+                <div className="bg-white border border-gray-200 rounded-none p-5 flex items-start gap-3">
+                    <div className="p-2 bg-primary/10 rounded-none">
+                        <Globe size={18} className="text-primary" />
                     </div>
-                    <p className="text-[13px] text-zinc-400 font-medium leading-relaxed">
-                        Support for 180+ localized payment protocols including direct clearing and regional tax compliance vectors.
-                    </p>
+                    <div>
+                        <h3 className="text-sm font-semibold text-gray-900">Multi-currency</h3>
+                        <p className="text-xs text-gray-600 mt-0.5 leading-relaxed">
+                            Support for 135+ currencies with automatic conversion.
+                        </p>
+                    </div>
                 </div>
             </div>
 
+            {/* Add payment method modal */}
             <Dialog open={showAddCardModal} onOpenChange={setShowAddCardModal}>
-                <DialogContent className="max-w-md rounded-none p-0 overflow-hidden shadow-2xl border-none">
-                    <div className="bg-gradient-to-r from-zinc-900 to-blue-900 p-8 text-white relative">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl" />
-                        <h2 className="text-2xl font-black uppercase tracking-tight flex items-center gap-3">
-                            <Lock size={20} className="text-blue-400" /> SECURE GATEWAY
-                        </h2>
-                        <p className="text-[11px] text-zinc-400 font-bold uppercase tracking-[1pt] mt-2">Initialize encrypted payment source setup.</p>
+                <DialogContent className="max-w-md rounded-none p-0 overflow-hidden border border-gray-200">
+                    <div className="px-5 py-4 border-b border-gray-100">
+                        <h2 className="text-sm font-semibold text-gray-900">Add payment method</h2>
+                        <p className="text-xs text-gray-500 mt-0.5">Enter your card details below.</p>
                     </div>
-                    <div className="p-8 space-y-6 bg-white">
-                        <div className="space-y-3">
-                            <Label className="text-[10px] font-black uppercase tracking-[2pt] text-zinc-400">Cardholder Designation</Label>
-                            <Input placeholder="LEGAL NAME ON CARD" className="rounded-none border-zinc-200 h-12 text-[14px] font-black uppercase tracking-tight" />
+                    <div className="p-5 space-y-4">
+                        <div className="space-y-1.5">
+                            <Label className="text-xs font-medium text-gray-700">Cardholder name</Label>
+                            <Input
+                                placeholder="Name on card"
+                                value={formHolder}
+                                onChange={(e) => setFormHolder(e.target.value)}
+                                className="rounded-none h-9 text-sm"
+                            />
                         </div>
-                        <div className="space-y-3">
-                            <Label className="text-[10px] font-black uppercase tracking-[2pt] text-zinc-400">Asset Number</Label>
-                            <div className="relative">
-                                <Input placeholder="0000 0000 0000 0000" className="pl-14 rounded-none border-zinc-200 h-12 text-[14px] font-black tracking-[2pt]" />
-                                <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-300" size={20} />
-                            </div>
+                        <div className="space-y-1.5">
+                            <Label className="text-xs font-medium text-gray-700">Card number</Label>
+                            <Input
+                                placeholder="0000 0000 0000 0000"
+                                value={formNumber}
+                                onChange={(e) => setFormNumber(e.target.value)}
+                                className="rounded-none h-9 text-sm"
+                            />
                         </div>
-                        <div className="grid grid-cols-2 gap-6">
-                            <div className="space-y-3">
-                                <Label className="text-[10px] font-black uppercase tracking-[2pt] text-zinc-400">Validity Cycle</Label>
-                                <div className="relative">
-                                    <Input placeholder="MM / YY" className="pl-14 rounded-none border-zinc-200 h-12 text-[14px] font-black" />
-                                    <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-300" size={20} />
-                                </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-1.5">
+                                <Label className="text-xs font-medium text-gray-700">Expiry</Label>
+                                <Input
+                                    placeholder="MM/YY"
+                                    value={formExpiry}
+                                    onChange={(e) => setFormExpiry(e.target.value)}
+                                    className="rounded-none h-9 text-sm"
+                                />
                             </div>
-                            <div className="space-y-3">
-                                <Label className="text-[10px] font-black uppercase tracking-[2pt] text-zinc-400">Security CVC</Label>
-                                <div className="relative">
-                                    <Input placeholder="•••" className="pl-14 rounded-none border-zinc-200 h-12 text-[14px] font-black" />
-                                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-300" size={20} />
-                                </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-xs font-medium text-gray-700">CVV</Label>
+                                <Input
+                                    placeholder="123"
+                                    value={formCvv}
+                                    onChange={(e) => setFormCvv(e.target.value)}
+                                    className="rounded-none h-9 text-sm"
+                                    type="password"
+                                />
                             </div>
                         </div>
                     </div>
-                    <DialogFooter className="p-8 bg-zinc-50 border-t border-zinc-100 gap-4 sm:justify-end">
-                        <Button variant="ghost" onClick={() => setShowAddCardModal(false)} className="rounded-none font-black text-[11px] uppercase tracking-widest text-zinc-400">ABORT</Button>
-                        <Button className="bg-blue-600 hover:bg-blue-700 rounded-none font-black text-[11px] px-10 h-12 uppercase tracking-widest shadow-xl shadow-blue-100 underline underline-offset-4 decoration-blue-400">AUTHORIZE SOURCE</Button>
+                    <DialogFooter className="px-5 py-3 border-t border-gray-100 bg-gray-50 gap-2 sm:justify-end">
+                        <Button
+                            variant="ghost"
+                            onClick={() => {
+                                resetForm();
+                                setShowAddCardModal(false);
+                            }}
+                            className="rounded-none text-xs font-medium h-9"
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={handleAddCard}
+                            className="rounded-none bg-primary hover:bg-primary/90 text-xs font-medium h-9 px-5"
+                        >
+                            Add card
+                        </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

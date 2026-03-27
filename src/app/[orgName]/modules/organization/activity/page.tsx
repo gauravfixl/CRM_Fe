@@ -16,7 +16,8 @@ import {
     Building2,
     Calendar,
     ChevronRight,
-    SearchX
+    SearchX,
+    Users
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
@@ -103,7 +104,7 @@ export default function OrgActivityPage() {
     }
 
     return (
-        <div className="flex flex-col h-full w-full bg-slate-50/50 p-6 space-y-6 overflow-y-auto">
+        <div className="flex flex-col h-full w-full bg-slate-50/50 p-6 space-y-8 overflow-y-auto font-sans">
             {/* HEADER */}
             <div className="flex items-center justify-between">
                 <div>
@@ -123,52 +124,56 @@ export default function OrgActivityPage() {
             </div>
 
             {/* QUICK STATS */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <SmallCard className="bg-gradient-to-br from-blue-500 to-blue-700 border-none">
-                    <SmallCardHeader className="pb-2">
-                        <p className="text-[10px] font-bold text-blue-100 uppercase tracking-widest">Total Events (24h)</p>
-                    </SmallCardHeader>
-                    <SmallCardContent>
-                        <p className="text-2xl font-black text-white">1,284</p>
-                        <p className="text-[10px] text-blue-100 flex items-center gap-1 mt-1">
-                            <CheckCircle2 className="w-3 h-3 text-emerald-300" /> +12% from yesterday
-                        </p>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <SmallCard className="border bg-gradient-to-r from-primary/70 to-primary text-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                    <SmallCardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-white text-xs opacity-80">Total Events (24h)</p>
+                                <p className="text-white text-xl font-semibold mt-1">1,284</p>
+                                <p className="text-white text-[10px] mt-1">+12% from yesterday</p>
+                            </div>
+                            <CheckCircle2 className="w-5 h-5 text-white" />
+                        </div>
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="bg-white border-slate-200 shadow-sm">
-                    <SmallCardHeader className="pb-2">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-left">Critical Alerts</p>
-                    </SmallCardHeader>
-                    <SmallCardContent>
-                        <p className="text-2xl font-black text-slate-900 text-left">3</p>
-                        <p className="text-[10px] text-red-500 font-bold flex items-center gap-1 mt-1">
-                            <AlertCircle className="w-3 h-3" /> Requires attention
-                        </p>
+                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                    <SmallCardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-gray-600 text-xs">Critical Alerts</p>
+                                <p className="text-xl font-semibold text-gray-900 mt-1">3</p>
+                                <p className="text-red-600 text-[10px] mt-1">Requires attention</p>
+                            </div>
+                            <AlertCircle className="w-5 h-5 text-primary" />
+                        </div>
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="bg-white border-slate-200 shadow-sm">
-                    <SmallCardHeader className="pb-2">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-left">Active Admins</p>
-                    </SmallCardHeader>
-                    <SmallCardContent>
-                        <p className="text-2xl font-black text-slate-900 text-left">12</p>
-                        <p className="text-[10px] text-emerald-600 font-bold flex items-center gap-1 mt-1 text-left">
-                            <CheckCircle2 className="w-3 h-3" /> 5 online now
-                        </p>
+                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                    <SmallCardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-gray-600 text-xs">Active Admins</p>
+                                <p className="text-xl font-semibold text-gray-900 mt-1">12</p>
+                                <p className="text-green-600 text-[10px] mt-1">5 online now</p>
+                            </div>
+                            <Users className="w-5 h-5 text-primary" />
+                        </div>
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="bg-white border-slate-200 shadow-sm">
-                    <SmallCardHeader className="pb-2">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-left">Identity Sync</p>
-                    </SmallCardHeader>
-                    <SmallCardContent>
-                        <p className="text-2xl font-black text-emerald-600 text-left">100%</p>
-                        <p className="text-[10px] text-slate-400 font-medium flex items-center gap-1 mt-1 text-left">
-                            <Clock className="w-3 h-3" /> Last sync 3m ago
-                        </p>
+                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                    <SmallCardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-gray-600 text-xs">Identity Sync</p>
+                                <p className="text-xl font-semibold text-gray-900 mt-1">100%</p>
+                                <p className="text-gray-600 text-[10px] mt-1">Last sync 3m ago</p>
+                            </div>
+                            <Clock className="w-5 h-5 text-primary" />
+                        </div>
                     </SmallCardContent>
                 </SmallCard>
             </div>

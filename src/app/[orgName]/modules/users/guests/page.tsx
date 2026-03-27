@@ -4,36 +4,71 @@ import { useState, useEffect, useMemo } from "react"
 import {
     Globe,
     Search,
-    Filter,
-    MoreVertical,
-    Mail,
-    Loader2,
-    RefreshCw,
-    UserCheck,
-    Building2,
-    ArrowRight,
-    ExternalLink,
-    ShieldAlert
+    UserPlus,
+    ShieldCheck,
 } from "lucide-react"
 import { CustomButton } from "@/components/custom/CustomButton"
 import SubHeader from "@/components/custom/SubHeader"
 import { Badge } from "@/components/ui/badge"
 import { getAllUsers } from "@/modules/crm/users/hooks/userHooks"
-import { toast } from "sonner"
 import { useParams } from "next/navigation"
-import { Separator } from "@/components/ui/separator"
+import {
+    CustomDialog,
+    CustomDialogContent,
+    CustomDialogHeader,
+    CustomDialogTitle,
+    CustomDialogDescription,
+    CustomDialogFooter,
+} from "@/shared/components/custom/CustomDialog"
+import {
+    CustomSelect,
+    CustomSelectTrigger,
+    CustomSelectValue,
+    CustomSelectContent,
+    CustomSelectItem,
+} from "@/shared/components/custom/CustomSelect"
+import { CustomLabel } from "@/shared/components/custom/CustomLabel"
+import { CustomInput } from "@/shared/components/custom/CustomInput"
+import { showSuccess, showWarning } from "@/utils/toast"
+
+interface GuestUser {
+    id: string
+    _id?: string
+    name: string
+    email: string
+    domain: string
+    accessLevel: string
+    status: string
+    expires: string
+    role?: string
+}
 
 export default function GuestUsersPage() {
     const params = useParams()
     const [users, setUsers] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
     const [searchQuery, setSearchQuery] = useState("")
-    const [isRefreshing, setIsRefreshing] = useState(false)
+    const [filterAccess, setFilterAccess] = useState("all")
 
-    const fetchUsers = async (showRefresh = false) => {
-        if (showRefresh) setIsRefreshing(true)
-        else setLoading(true)
+    // Invite modal state
+    const [inviteOpen, setInviteOpen] = useState(false)
+    const [inviteName, setInviteName] = useState("")
+    const [inviteEmail, setInviteEmail] = useState("")
+    const [inviteDomain, setInviteDomain] = useState("")
+    const [inviteAccess, setInviteAccess] = useState("Viewer")
 
+    // Revoke state
+    const [revokeTarget, setRevokeTarget] = useState<GuestUser | null>(null)
+
+    // Static guest data
+    const [staticGuests, setStaticGuests] = useState<GuestUser[]>([
+        { id: "g1", name: "Emily Chen", email: "e.chen@partner.co", domain: "partner.co", accessLevel: "Viewer", status: "Active", expires: "2026-06-15" },
+        { id: "g2", name: "Marco Rossi", email: "m.rossi@vendor.io", domain: "vendor.io", accessLevel: "Editor", status: "Active", expires: "2026-05-01" },
+        { id: "g3", name: "Priya Sharma", email: "p.sharma@client.org", domain: "client.org", accessLevel: "Viewer", status: "Expired", expires: "2026-02-28" },
+    ])
+
+    const fetchUsers = async () => {
+        setLoading(true)
         try {
             const res = await getAllUsers()
             if (res?.data?.users) {
@@ -43,10 +78,8 @@ export default function GuestUsersPage() {
             }
         } catch (err) {
             console.error("Error fetching users:", err)
-            toast.error("Failed to load guest users")
         } finally {
             setLoading(false)
-            setIsRefreshing(false)
         }
     }
 
@@ -54,22 +87,88 @@ export default function GuestUsersPage() {
         fetchUsers()
     }, [])
 
-    const guests = useMemo(() => {
-        return users.filter(user => {
-            const isSearchMatch = user.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                user.email?.toLowerCase().includes(searchQuery.toLowerCase());
-            // Guest detection logic: Role includes 'guest' or email domain is external
-            const isGuest = user.role?.toLowerCase().includes('guest') ||
-                (user.email && !user.email.includes(params.orgName as string));
-            return isSearchMatch && isGuest;
-        })
-    }, [users, searchQuery, params.orgName])
+    const apiGuests = useMemo(() => {
+        return users
+            .filter((user) => {
+                const isGuest =
+                    user.role?.toLowerCase().includes("guest") ||
+                    (user.email && !user.email.includes(params.orgName as string))
+                return isGuest
+            })
+            .map((user) => ({
+                id: user._id || user.id,
+                _id: user._id,
+                name: user.name || "Guest user",
+                email: user.email || "",
+                domain: user.email?.split("@")[1] || "External",
+                accessLevel: "Viewer",
+                status: "Active",
+                expires: "2026-12-31",
+            }))
+    }, [users, params.orgName])
 
-    const getInitials = (name: string) => {
-        if (!name) return "G"
-        const parts = name.split(' ')
-        if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase()
-        return name[0].toUpperCase()
+    const allGuests = useMemo(() => {
+        return [...staticGuests, ...apiGuests]
+    }, [staticGuests, apiGuests])
+
+    const filtered = useMemo(() => {
+        return allGuests.filter((g) => {
+            const matchesSearch =
+                g.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                g.email.toLowerCase().includes(searchQuery.toLowerCase())
+            const matchesAccess =
+                filterAccess === "all" || g.accessLevel.toLowerCase() === filterAccess.toLowerCase()
+            return matchesSearch && matchesAccess
+        })
+    }, [allGuests, searchQuery, filterAccess])
+
+    const activeCount = allGuests.filter((g) => g.status === "Active").length
+    const expiredCount = allGuests.filter((g) => g.status === "Expired").length
+    const domains = new Set(allGuests.map((g) => g.domain)).size
+
+    const handleInvite = () => {
+        if (!inviteName || !inviteEmail) return
+        const newGuest: GuestUser = {
+            id: `g-${Date.now()}`,
+            name: inviteName,
+            email: inviteEmail,
+            domain: inviteDomain || inviteEmail.split("@")[1] || "External",
+            accessLevel: inviteAccess,
+            status: "Active",
+            expires: "2027-03-27",
+        }
+        setStaticGuests((prev) => [...prev, newGuest])
+        showSuccess(`${inviteName} has been invited as a guest`)
+        setInviteOpen(false)
+        setInviteName("")
+        setInviteEmail("")
+        setInviteDomain("")
+        setInviteAccess("Viewer")
+    }
+
+    const handleRevoke = () => {
+        if (!revokeTarget) return
+        setStaticGuests((prev) => prev.filter((g) => g.id !== revokeTarget.id))
+        showWarning(`Access revoked for ${revokeTarget.name}`)
+        setRevokeTarget(null)
+    }
+
+    const accessBadge = (level: string) => {
+        switch (level) {
+            case "Editor":
+                return <Badge className="bg-blue-50 text-blue-600 border border-blue-200 rounded-none text-[10px] font-medium">{level}</Badge>
+            case "Admin":
+                return <Badge className="bg-purple-50 text-purple-600 border border-purple-200 rounded-none text-[10px] font-medium">{level}</Badge>
+            default:
+                return <Badge className="bg-gray-50 text-gray-600 border border-gray-200 rounded-none text-[10px] font-medium">{level}</Badge>
+        }
+    }
+
+    const statusBadge = (status: string) => {
+        if (status === "Active") {
+            return <Badge className="bg-green-50 text-green-600 border border-green-200 rounded-none text-[10px] font-medium">{status}</Badge>
+        }
+        return <Badge className="bg-red-50 text-red-600 border border-red-200 rounded-none text-[10px] font-medium">{status}</Badge>
     }
 
     return (
@@ -77,134 +176,131 @@ export default function GuestUsersPage() {
             <SubHeader
                 title="Guest Users"
                 breadcrumbItems={[
-                    { label: "Identity & Access", href: "#" },
                     { label: "Users", href: "#" },
-                    { label: "Guests", href: "#" }
+                    { label: "Guests", href: "#" },
                 ]}
-                rightControls={
-                    <div className="flex gap-2">
-                        <CustomButton
-                            variant="outline"
-                            size="sm"
-                            onClick={() => fetchUsers(true)}
-                            disabled={isRefreshing}
-                            className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800"
-                        >
-                            <RefreshCw className={`w-3.5 h-3.5 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-                            Update
-                        </CustomButton>
-                        <CustomButton size="sm" className="bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-500/20 text-white">
-                            <Globe className="w-3.5 h-3.5 mr-2" /> Invite External User
-                        </CustomButton>
-                    </div>
-                }
             />
 
-            <div className="p-4 md:p-8 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <div className="p-4 md:p-8 space-y-6">
+                {/* Header */}
+                <div className="flex items-start justify-between">
+                    <div>
+                        <h1 className="text-xl font-semibold text-gray-900">Guest users</h1>
+                        <p className="text-xs text-gray-600 mt-1">Manage external collaborators and their access to your organization</p>
+                    </div>
+                    <CustomButton
+                        size="sm"
+                        className="rounded-none bg-primary text-white text-xs"
+                        onClick={() => setInviteOpen(true)}
+                    >
+                        <UserPlus className="w-3.5 h-3.5 mr-1" />
+                        Invite external user
+                    </CustomButton>
+                </div>
 
-                {/* External Access Insight */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm">
-                        <p className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] mb-1">active guests</p>
-                        <div className="flex items-baseline gap-2">
-                            <h3 className="text-3xl font-black text-emerald-600 tracking-tight">{guests.length}</h3>
-                            <span className="text-xs font-bold text-zinc-400">identities</span>
-                        </div>
+                {/* Stats */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="bg-white border border-gray-200 rounded-none p-4">
+                        <p className="text-xs text-gray-500">Active guests</p>
+                        <p className="text-xl font-semibold text-primary mt-1">{activeCount}</p>
+                        <p className="text-[10px] text-gray-400 mt-0.5">Currently active</p>
                     </div>
-                    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm">
-                        <p className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] mb-1">collab domains</p>
-                        <div className="flex items-baseline gap-2">
-                            <h3 className="text-3xl font-black text-blue-600 tracking-tight">
-                                {new Set(guests.map(g => g.email?.split('@')[1])).size}
-                            </h3>
-                            <span className="text-xs font-bold text-zinc-400">external systems</span>
-                        </div>
+                    <div className="bg-white border border-gray-200 rounded-none p-4">
+                        <p className="text-xs text-gray-500">Collaboration domains</p>
+                        <p className="text-xl font-semibold text-gray-900 mt-1">{domains}</p>
+                        <p className="text-[10px] text-gray-400 mt-0.5">External organizations</p>
                     </div>
-                    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm">
-                        <p className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] mb-1">security posture</p>
-                        <div className="flex items-center gap-2 mt-2">
-                            <div className="h-2 flex-1 bg-zinc-100 rounded-full overflow-hidden">
-                                <div className="h-full bg-emerald-500 w-[100%]"></div>
-                            </div>
-                            <span className="text-[10px] font-black text-emerald-600">OPTIMAL</span>
-                        </div>
+                    <div className="bg-white border border-gray-200 rounded-none p-4">
+                        <p className="text-xs text-gray-500">Security posture</p>
+                        <p className="text-xl font-semibold text-green-600 mt-1">Optimal</p>
+                        <p className="text-[10px] text-gray-400 mt-0.5">All policies enforced</p>
+                    </div>
+                    <div className="bg-white border border-gray-200 rounded-none p-4">
+                        <p className="text-xs text-gray-500">Expired guests</p>
+                        <p className="text-xl font-semibold text-gray-900 mt-1">{expiredCount}</p>
+                        <p className="text-[10px] text-gray-400 mt-0.5">Access expired</p>
                     </div>
                 </div>
 
-                {/* Search Bar */}
-                <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-2 shadow-sm flex items-center gap-2">
+                {/* Search + Filter */}
+                <div className="flex items-center gap-3">
                     <div className="relative flex-1">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                         <input
                             type="text"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-11 pr-4 py-2 bg-transparent border-none focus:ring-0 text-sm placeholder:text-zinc-400"
-                            placeholder="Search external collaborators by name or domain..."
+                            className="w-full pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-none text-sm placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-primary"
+                            placeholder="Search by name or email..."
                         />
                     </div>
+                    <CustomSelect value={filterAccess} onValueChange={setFilterAccess}>
+                        <CustomSelectTrigger className="w-[160px] rounded-none">
+                            <CustomSelectValue placeholder="Filter access" />
+                        </CustomSelectTrigger>
+                        <CustomSelectContent className="rounded-none">
+                            <CustomSelectItem value="all">All levels</CustomSelectItem>
+                            <CustomSelectItem value="viewer">Viewer</CustomSelectItem>
+                            <CustomSelectItem value="editor">Editor</CustomSelectItem>
+                            <CustomSelectItem value="admin">Admin</CustomSelectItem>
+                        </CustomSelectContent>
+                    </CustomSelect>
                 </div>
 
-                {/* Guests Table */}
-                <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl shadow-xl overflow-hidden relative">
-
-                    {loading && (
-                        <div className="absolute inset-0 bg-white/60 dark:bg-zinc-950/60 backdrop-blur-sm z-10 flex flex-col items-center justify-center gap-4">
-                            <Loader2 className="w-10 h-10 text-emerald-600 animate-spin" />
-                            <p className="text-sm font-bold text-zinc-600 dark:text-zinc-400 tracking-widest uppercase">Scanning Directory...</p>
-                        </div>
-                    )}
-
-                    <div className="overflow-x-auto min-h-[300px]">
-                        <table className="w-full text-left border-collapse">
+                {/* Table */}
+                <div className="bg-white border border-gray-200 rounded-none overflow-hidden">
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left">
                             <thead>
-                                <tr className="bg-zinc-50/50 dark:bg-zinc-900/50 border-b border-zinc-100 dark:border-zinc-800">
-                                    <th className="p-5 text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-[0.2em]">external identity</th>
-                                    <th className="p-5 text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-[0.2em]">home directory</th>
-                                    <th className="p-5 text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-[0.2em]">access status</th>
-                                    <th className="p-5 text-right"></th>
+                                <tr className="border-b border-gray-100 bg-gray-50">
+                                    <th className="px-4 py-3 text-xs font-medium text-gray-500">Name</th>
+                                    <th className="px-4 py-3 text-xs font-medium text-gray-500">Home domain</th>
+                                    <th className="px-4 py-3 text-xs font-medium text-gray-500">Access level</th>
+                                    <th className="px-4 py-3 text-xs font-medium text-gray-500">Status</th>
+                                    <th className="px-4 py-3 text-xs font-medium text-gray-500">Expires</th>
+                                    <th className="px-4 py-3 text-xs font-medium text-gray-500 text-right">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-zinc-50 dark:divide-zinc-800/50">
-                                {guests.length === 0 && !loading ? (
+                            <tbody className="divide-y divide-gray-50">
+                                {loading ? (
                                     <tr>
-                                        <td colSpan={4} className="p-20 text-center">
-                                            <div className="flex flex-col items-center gap-4">
-                                                <Globe className="w-12 h-12 text-zinc-200" />
-                                                <h3 className="text-sm font-bold text-zinc-400 uppercase tracking-widest">No guest accounts identified</h3>
-                                            </div>
+                                        <td colSpan={6} className="px-4 py-12 text-center">
+                                            <p className="text-sm text-gray-400">Loading guests...</p>
+                                        </td>
+                                    </tr>
+                                ) : filtered.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={6} className="px-4 py-12 text-center">
+                                            <Globe className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                                            <p className="text-sm text-gray-400">No guest users found</p>
                                         </td>
                                     </tr>
                                 ) : (
-                                    guests.map((user) => (
-                                        <tr key={user._id || user.id} className="hover:bg-emerald-50/20 dark:hover:bg-emerald-900/5 transition-all group">
-                                            <td className="p-5">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="h-10 w-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 font-black text-xs border border-emerald-200 transition-all group-hover:scale-105">
-                                                        {getInitials(user.name || user.email)}
-                                                    </div>
-                                                    <div className="flex flex-col gap-0.5">
-                                                        <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">{user.name || 'Vendor Identity'}</span>
-                                                        <span className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400">{user.email}</span>
-                                                    </div>
+                                    filtered.map((guest) => (
+                                        <tr key={guest.id} className="hover:bg-gray-50/50 transition-colors">
+                                            <td className="px-4 py-3">
+                                                <div>
+                                                    <p className="text-sm font-medium text-gray-900">{guest.name}</p>
+                                                    <p className="text-xs text-gray-500">{guest.email}</p>
                                                 </div>
                                             </td>
-                                            <td className="p-5">
-                                                <div className="flex items-center gap-2">
-                                                    <Building2 className="w-3.5 h-3.5 text-zinc-400" />
-                                                    <span className="text-xs text-zinc-600 dark:text-zinc-300 font-bold uppercase tracking-wider">
-                                                        {user.email?.split('@')[1] || 'External'}
-                                                    </span>
-                                                    <ExternalLink className="w-3 h-3 text-zinc-300" />
-                                                </div>
+                                            <td className="px-4 py-3">
+                                                <p className="text-xs text-gray-600">{guest.domain}</p>
                                             </td>
-                                            <td className="p-5">
-                                                <Badge className="bg-emerald-100 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border-0 text-[10px] font-bold">
-                                                    <UserCheck className="w-3 h-3 mr-1.5" /> Collaboration Active
-                                                </Badge>
+                                            <td className="px-4 py-3">{accessBadge(guest.accessLevel)}</td>
+                                            <td className="px-4 py-3">{statusBadge(guest.status)}</td>
+                                            <td className="px-4 py-3">
+                                                <p className="text-xs text-gray-600">{guest.expires}</p>
                                             </td>
-                                            <td className="p-5 text-right text-zinc-400">
-                                                <MoreVertical className="w-5 h-5 cursor-pointer hover:text-zinc-600 transition-colors ml-auto" />
+                                            <td className="px-4 py-3 text-right">
+                                                <CustomButton
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="rounded-none text-xs text-red-600 border-red-200 hover:bg-red-50"
+                                                    onClick={() => setRevokeTarget(guest)}
+                                                >
+                                                    Revoke access
+                                                </CustomButton>
                                             </td>
                                         </tr>
                                     ))
@@ -213,21 +309,88 @@ export default function GuestUsersPage() {
                         </table>
                     </div>
                 </div>
+            </div>
 
-                {/* Guest Policy Alert */}
-                <div className="p-6 rounded-3xl border-2 border-dashed border-zinc-200 dark:border-zinc-800 flex flex-col md:flex-row items-center justify-between gap-6 bg-white/40">
-                    <div className="flex items-center gap-4">
-                        <div className="h-12 w-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
-                            <ShieldAlert className="w-6 h-6" />
+            {/* Invite guest modal */}
+            <CustomDialog open={inviteOpen} onOpenChange={setInviteOpen}>
+                <CustomDialogContent className="max-w-md rounded-none p-0 overflow-hidden">
+                    <div className="bg-primary px-5 py-4">
+                        <CustomDialogTitle className="text-white text-sm font-semibold">Invite external user</CustomDialogTitle>
+                    </div>
+                    <div className="px-5 py-4 space-y-4">
+                        <div>
+                            <CustomLabel>Name</CustomLabel>
+                            <CustomInput
+                                placeholder="Full name"
+                                value={inviteName}
+                                onChange={(e) => setInviteName(e.target.value)}
+                                className="rounded-none"
+                            />
                         </div>
                         <div>
-                            <h4 className="font-extrabold text-sm text-zinc-900 dark:text-zinc-100">B2B Collaboration Policy</h4>
-                            <p className="text-xs text-zinc-500">Guest users are automatically restricted to only see their assigned projects and tasks.</p>
+                            <CustomLabel>Email</CustomLabel>
+                            <CustomInput
+                                placeholder="user@example.com"
+                                value={inviteEmail}
+                                onChange={(e) => setInviteEmail(e.target.value)}
+                                className="rounded-none"
+                            />
+                        </div>
+                        <div>
+                            <CustomLabel>Domain</CustomLabel>
+                            <CustomInput
+                                placeholder="company.com"
+                                value={inviteDomain}
+                                onChange={(e) => setInviteDomain(e.target.value)}
+                                className="rounded-none"
+                            />
+                        </div>
+                        <div>
+                            <CustomLabel>Access level</CustomLabel>
+                            <CustomSelect value={inviteAccess} onValueChange={setInviteAccess}>
+                                <CustomSelectTrigger className="w-full rounded-none">
+                                    <CustomSelectValue />
+                                </CustomSelectTrigger>
+                                <CustomSelectContent className="rounded-none">
+                                    <CustomSelectItem value="Viewer">Viewer</CustomSelectItem>
+                                    <CustomSelectItem value="Editor">Editor</CustomSelectItem>
+                                    <CustomSelectItem value="Admin">Admin</CustomSelectItem>
+                                </CustomSelectContent>
+                            </CustomSelect>
                         </div>
                     </div>
-                    <CustomButton variant="outline" size="sm" className="rounded-xl font-bold text-xs">Review Terms</CustomButton>
-                </div>
-            </div>
+                    <CustomDialogFooter className="px-5 pb-4">
+                        <CustomButton variant="outline" size="sm" className="rounded-none" onClick={() => setInviteOpen(false)}>
+                            Cancel
+                        </CustomButton>
+                        <CustomButton size="sm" className="rounded-none bg-primary text-white" onClick={handleInvite}>
+                            Send invite
+                        </CustomButton>
+                    </CustomDialogFooter>
+                </CustomDialogContent>
+            </CustomDialog>
+
+            {/* Revoke access confirmation dialog */}
+            <CustomDialog open={!!revokeTarget} onOpenChange={(open) => !open && setRevokeTarget(null)}>
+                <CustomDialogContent className="max-w-md rounded-none p-0 overflow-hidden">
+                    <div className="bg-primary px-5 py-4">
+                        <CustomDialogTitle className="text-white text-sm font-semibold">Revoke access</CustomDialogTitle>
+                    </div>
+                    <div className="px-5 py-4">
+                        <CustomDialogDescription className="text-sm text-gray-600">
+                            Are you sure you want to revoke access for <span className="font-semibold text-gray-900">{revokeTarget?.name}</span>? They will no longer be able to access any resources in your organization.
+                        </CustomDialogDescription>
+                    </div>
+                    <CustomDialogFooter className="px-5 pb-4">
+                        <CustomButton variant="outline" size="sm" className="rounded-none" onClick={() => setRevokeTarget(null)}>
+                            Cancel
+                        </CustomButton>
+                        <CustomButton variant="destructive" size="sm" className="rounded-none" onClick={handleRevoke}>
+                            Revoke access
+                        </CustomButton>
+                    </CustomDialogFooter>
+                </CustomDialogContent>
+            </CustomDialog>
         </div>
     )
 }

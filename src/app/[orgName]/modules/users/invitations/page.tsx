@@ -1,209 +1,335 @@
-"use client"
+"use client";
 
-import { useState } from "react"
+import { useState } from "react";
 import {
     UserPlus,
     Mail,
     Search,
-    Loader2,
-    RefreshCw,
-    Clock,
     Send,
     Trash2,
+    Clock,
     CheckCircle2,
     XCircle,
-    MoreVertical,
     Link2,
-    Calendar
-} from "lucide-react"
-import { CustomButton } from "@/components/custom/CustomButton"
-import SubHeader from "@/components/custom/SubHeader"
-import { Badge } from "@/components/ui/badge"
-import { toast } from "sonner"
-import { Separator } from "@/components/ui/separator"
+    MoreVertical,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/shared/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import {
+    Dialog,
+    DialogContent,
+    DialogFooter,
+} from "@/shared/components/ui/dialog";
+import { Label } from "@/shared/components/ui/label";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/shared/components/ui/select";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/shared/components/ui/dropdown-menu";
+import { showSuccess, showWarning } from "@/utils/toast";
+
+type Invitation = {
+    id: string;
+    email: string;
+    role: string;
+    status: "Pending" | "Expired" | "Accepted";
+    sentDate: string;
+    expiry: string;
+};
+
+const ROLES = ["Manager", "Contributor", "Member", "Viewer"] as const;
+
+const initialInvitations: Invitation[] = [
+    { id: "1", email: "ceo@partnerfirm.com", role: "Manager", status: "Pending", sentDate: "Mar 27, 2026", expiry: "23h left" },
+    { id: "2", email: "tech.support@vendor.io", role: "Contributor", status: "Expired", sentDate: "Mar 26, 2026", expiry: "Expired" },
+    { id: "3", email: "hr.lead@client.com", role: "Member", status: "Accepted", sentDate: "Mar 25, 2026", expiry: "N/A" },
+];
 
 export default function InvitationsPage() {
-    const [loading, setLoading] = useState(false)
-    const [searchQuery, setSearchQuery] = useState("")
+    const [invitations, setInvitations] = useState<Invitation[]>(initialInvitations);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [createOpen, setCreateOpen] = useState(false);
+    const [deleteOpen, setDeleteOpen] = useState(false);
+    const [deleteTarget, setDeleteTarget] = useState<Invitation | null>(null);
+    const [newEmail, setNewEmail] = useState("");
+    const [newRole, setNewRole] = useState("");
 
-    const invitations = [
-        { id: "inv1", email: "ceo@partnerfirm.com", role: "Manager", sentAt: "1 hour ago", expiresAt: "23h left", status: "Pending" },
-        { id: "inv2", email: "tech.support@vendor.io", role: "Contributor", sentAt: "Yesterday", expiresAt: "Expired", status: "Expired" },
-        { id: "inv3", email: "new.recruit@fixl.com", role: "Developer", sentAt: "3 days ago", expiresAt: "Expired", status: "Accepted" },
-    ]
-
-    const filteredInvites = invitations.filter(inv =>
+    const filtered = invitations.filter((inv) =>
         inv.email.toLowerCase().includes(searchQuery.toLowerCase())
-    )
+    );
 
-    const handleResend = (email: string) => {
-        toast.success(`Invitation resent to ${email}`)
-    }
+    const totalSent = invitations.length;
+    const awaiting = invitations.filter((i) => i.status === "Pending").length;
+    const accepted = invitations.filter((i) => i.status === "Accepted").length;
+    const expired = invitations.filter((i) => i.status === "Expired").length;
+    const acceptanceRate = totalSent > 0 ? Math.round((accepted / totalSent) * 100) : 0;
+
+    const handleCreate = () => {
+        if (!newEmail || !newRole) {
+            showWarning("Please fill in all fields");
+            return;
+        }
+        const invite: Invitation = {
+            id: Date.now().toString(),
+            email: newEmail,
+            role: newRole,
+            status: "Pending",
+            sentDate: "Mar 27, 2026",
+            expiry: "24h left",
+        };
+        setInvitations((prev) => [...prev, invite]);
+        setNewEmail("");
+        setNewRole("");
+        setCreateOpen(false);
+        showSuccess(`Invitation sent to ${newEmail}`);
+    };
+
+    const handleResend = (inv: Invitation) => {
+        showSuccess(`Invitation resent to ${inv.email}`);
+    };
+
+    const handleDelete = () => {
+        if (!deleteTarget) return;
+        setInvitations((prev) => prev.filter((i) => i.id !== deleteTarget.id));
+        showSuccess(`Invitation for ${deleteTarget.email} removed`);
+        setDeleteTarget(null);
+        setDeleteOpen(false);
+    };
+
+    const handleCopyLink = () => {
+        showSuccess("Signup link copied to clipboard");
+    };
+
+    const statusIcon = (status: string) => {
+        if (status === "Pending") return <Clock className="w-3.5 h-3.5 text-orange-500" />;
+        if (status === "Expired") return <XCircle className="w-3.5 h-3.5 text-red-500" />;
+        return <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />;
+    };
+
+    const statusColor = (status: string) => {
+        if (status === "Pending") return "bg-orange-50 text-orange-700 border-orange-200";
+        if (status === "Expired") return "bg-red-50 text-red-700 border-red-200";
+        return "bg-emerald-50 text-emerald-700 border-emerald-200";
+    };
 
     return (
-        <div className="relative min-h-screen bg-[#F8F9FC] dark:bg-zinc-950">
-            <SubHeader
-                title="Pending Invitations"
-                breadcrumbItems={[
-                    { label: "Identity & Access", href: "#" },
-                    { label: "Users", href: "#" },
-                    { label: "Invitations", href: "#" }
-                ]}
-                rightControls={
-                    <div className="flex gap-2">
-                        <CustomButton
-                            variant="outline"
-                            size="sm"
-                            onClick={() => toast.info("Refreshing invitations")}
-                            className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800"
-                        >
-                            <RefreshCw className="w-3.5 h-3.5 mr-2" /> Refresh
-                        </CustomButton>
-                        <CustomButton size="sm" className="bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-500/20 text-white">
-                            <UserPlus className="w-3.5 h-3.5 mr-2" /> Create Invite
-                        </CustomButton>
+        <div className="min-h-screen bg-gray-50">
+            <div className="p-6 space-y-6">
+                {/* Header */}
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-xl font-semibold text-gray-900">Pending invitations</h1>
+                        <p className="text-xs text-gray-600 mt-1">Manage and track all sent invitations to your organization</p>
                     </div>
-                }
-            />
+                    <Button
+                        onClick={() => setCreateOpen(true)}
+                        className="bg-primary hover:bg-primary/90 text-white rounded-none"
+                    >
+                        <UserPlus className="w-4 h-4 mr-2" />
+                        Create invite
+                    </Button>
+                </div>
 
-            <div className="p-4 md:p-8 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-
-                {/* Invitation Metrics Hub */}
+                {/* Stats */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 shadow-sm">
-                        <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest leading-none mb-2">Total Sent</p>
-                        <div className="flex items-center gap-3">
-                            <h3 className="text-2xl font-black text-zinc-900 dark:text-zinc-100">{invitations.length}</h3>
-                            <Badge className="bg-blue-50 text-blue-600 border-0 scale-90">Last 30d</Badge>
-                        </div>
+                    <div className="bg-primary/5 border border-primary/20 rounded-none p-4">
+                        <p className="text-xs text-gray-600">Total sent</p>
+                        <p className="text-xl font-semibold text-primary mt-1">{totalSent}</p>
+                        <p className="text-[10px] text-gray-500 mt-0.5">Last 30 days</p>
                     </div>
-                    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 shadow-sm">
-                        <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest leading-none mb-2">Awaiting Accept</p>
-                        <h3 className="text-2xl font-black text-orange-600">{invitations.filter(i => i.status === 'Pending').length}</h3>
+                    <div className="bg-white border border-gray-200 rounded-none p-4">
+                        <p className="text-xs text-gray-600">Awaiting accept</p>
+                        <p className="text-xl font-semibold text-gray-900 mt-1">{awaiting}</p>
+                        <p className="text-[10px] text-gray-500 mt-0.5">Pending response</p>
                     </div>
-                    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 shadow-sm">
-                        <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest leading-none mb-2">Acceptance Rate</p>
-                        <h3 className="text-2xl font-black text-emerald-600">33%</h3>
+                    <div className="bg-white border border-gray-200 rounded-none p-4">
+                        <p className="text-xs text-gray-600">Acceptance rate</p>
+                        <p className="text-xl font-semibold text-gray-900 mt-1">{acceptanceRate}%</p>
+                        <p className="text-[10px] text-gray-500 mt-0.5">Overall ratio</p>
                     </div>
-                    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 shadow-sm">
-                        <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest leading-none mb-2">Expired Invites</p>
-                        <h3 className="text-2xl font-black text-red-600">{invitations.filter(i => i.status === 'Expired').length}</h3>
+                    <div className="bg-white border border-gray-200 rounded-none p-4">
+                        <p className="text-xs text-gray-600">Expired</p>
+                        <p className="text-xl font-semibold text-gray-900 mt-1">{expired}</p>
+                        <p className="text-[10px] text-gray-500 mt-0.5">No longer valid</p>
                     </div>
                 </div>
 
-                {/* Command Bar */}
-                <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-2 shadow-sm flex items-center gap-2">
-                    <div className="relative flex-1">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
-                        <input
-                            type="text"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-11 pr-4 py-2 bg-transparent border-none focus:ring-0 text-sm placeholder:text-zinc-400"
-                            placeholder="Search invites by email address..."
-                        />
-                    </div>
-                    <Separator orientation="vertical" className="h-8" />
-                    <CustomButton variant="ghost" className="h-10 text-xs px-4 text-zinc-600">
-                        <Link2 className="w-3.5 h-3.5 mr-2" /> Copy Signup Link
-                    </CustomButton>
+                {/* Search */}
+                <div className="bg-white border border-gray-200 rounded-none p-3 flex items-center gap-3">
+                    <Search className="w-4 h-4 text-gray-400" />
+                    <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Search by email address..."
+                        className="flex-1 text-sm bg-transparent outline-none placeholder:text-gray-400"
+                    />
                 </div>
 
-                {/* Invitation List Table */}
-                <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl shadow-xl overflow-hidden relative">
-
-                    <div className="overflow-x-auto min-h-[300px]">
-                        <table className="w-full text-left border-collapse">
-                            <thead>
-                                <tr className="bg-zinc-50/50 dark:bg-zinc-900/50 border-b border-zinc-100 dark:border-zinc-800">
-                                    <th className="p-5 text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-[0.2em]">recipient email</th>
-                                    <th className="p-5 text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-[0.2em]">assigned role</th>
-                                    <th className="p-5 text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-[0.2em]">temporal status</th>
-                                    <th className="p-5 text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-[0.2em]">lifecycle</th>
-                                    <th className="p-5 text-right"></th>
+                {/* Table */}
+                <div className="bg-white border border-gray-200 rounded-none overflow-hidden">
+                    <table className="w-full text-left">
+                        <thead>
+                            <tr className="border-b border-gray-100 bg-gray-50">
+                                <th className="px-4 py-3 text-xs font-medium text-gray-600">Recipient email</th>
+                                <th className="px-4 py-3 text-xs font-medium text-gray-600">Assigned role</th>
+                                <th className="px-4 py-3 text-xs font-medium text-gray-600">Status</th>
+                                <th className="px-4 py-3 text-xs font-medium text-gray-600">Sent date</th>
+                                <th className="px-4 py-3 text-xs font-medium text-gray-600">Expiry</th>
+                                <th className="px-4 py-3 text-xs font-medium text-gray-600 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                            {filtered.length === 0 ? (
+                                <tr>
+                                    <td colSpan={6} className="px-4 py-16 text-center">
+                                        <Mail className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                                        <p className="text-sm text-gray-500">No invitations found</p>
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody className="divide-y divide-zinc-50 dark:divide-zinc-800/50">
-                                {filteredInvites.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={5} className="p-20 text-center">
-                                            <div className="flex flex-col items-center gap-4">
-                                                <Mail className="w-12 h-12 text-zinc-200" />
-                                                <h3 className="text-sm font-bold text-zinc-400 uppercase tracking-widest">No active invitations found</h3>
+                            ) : (
+                                filtered.map((inv) => (
+                                    <tr key={inv.id} className="hover:bg-gray-50 transition-colors">
+                                        <td className="px-4 py-3">
+                                            <div className="flex items-center gap-3">
+                                                <div className="h-8 w-8 rounded-none bg-primary/10 flex items-center justify-center">
+                                                    <Mail className="w-3.5 h-3.5 text-primary" />
+                                                </div>
+                                                <span className="text-sm font-medium text-gray-900">{inv.email}</span>
                                             </div>
                                         </td>
-                                    </tr>
-                                ) : (
-                                    filteredInvites.map((inv) => (
-                                        <tr key={inv.id} className="hover:bg-blue-50/10 transition-all group">
-                                            <td className="p-5">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="h-9 w-9 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600">
-                                                        <Mail className="w-4 h-4" />
-                                                    </div>
-                                                    <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">{inv.email}</span>
-                                                </div>
-                                            </td>
-                                            <td className="p-5">
-                                                <Badge variant="outline" className="text-[10px] font-black border-zinc-200 dark:border-zinc-800 px-2 py-0.5 rounded-md text-zinc-600 dark:text-zinc-400">
-                                                    {inv.role.toUpperCase()}
+                                        <td className="px-4 py-3">
+                                            <Badge variant="outline" className="rounded-none text-xs font-medium">
+                                                {inv.role}
+                                            </Badge>
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <div className="flex items-center gap-1.5">
+                                                {statusIcon(inv.status)}
+                                                <Badge variant="outline" className={`rounded-none text-xs font-medium ${statusColor(inv.status)}`}>
+                                                    {inv.status}
                                                 </Badge>
-                                            </td>
-                                            <td className="p-5">
-                                                <div className="flex items-center gap-2">
-                                                    {inv.status === 'Pending' && <Clock className="w-3.5 h-3.5 text-orange-500" />}
-                                                    {inv.status === 'Expired' && <XCircle className="w-3.5 h-3.5 text-red-500" />}
-                                                    {inv.status === 'Accepted' && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />}
-                                                    <span className={`text-xs font-bold ${inv.status === 'Pending' ? 'text-orange-600' :
-                                                            inv.status === 'Accepted' ? 'text-emerald-600' : 'text-red-600'
-                                                        }`}>{inv.status}</span>
-                                                </div>
-                                            </td>
-                                            <td className="p-5">
-                                                <div className="flex flex-col gap-1">
-                                                    <div className="flex items-center gap-2">
-                                                        <Calendar className="w-3 h-3 text-zinc-400" />
-                                                        <span className="text-[10px] font-bold text-zinc-500">Sent: {inv.sentAt}</span>
-                                                    </div>
-                                                    <div className="flex items-center gap-2">
-                                                        <Clock className="w-3 h-3 text-zinc-400" />
-                                                        <span className={`text-[10px] font-bold ${inv.status === 'Expired' ? 'text-red-400' : 'text-zinc-500'}`}>Expiry: {inv.expiresAt}</span>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="p-5 text-right">
-                                                <div className="flex items-center justify-end gap-2">
-                                                    {inv.status !== 'Accepted' && (
-                                                        <CustomButton
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            onClick={() => handleResend(inv.email)}
-                                                            className="h-8 rounded-lg hover:bg-blue-50 text-blue-600 font-bold text-[10px] uppercase px-3"
-                                                        >
-                                                            <Send className="w-3 h-3 mr-2" /> Resend
-                                                        </CustomButton>
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-3 text-sm text-gray-600">{inv.sentDate}</td>
+                                        <td className="px-4 py-3">
+                                            <span className={`text-sm ${inv.status === "Expired" ? "text-red-600" : "text-gray-600"}`}>
+                                                {inv.expiry}
+                                            </span>
+                                        </td>
+                                        <td className="px-4 py-3 text-right">
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-none">
+                                                        <MoreVertical className="w-4 h-4 text-gray-500" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end" className="rounded-none">
+                                                    {inv.status !== "Accepted" && (
+                                                        <DropdownMenuItem onClick={() => handleResend(inv)}>
+                                                            <Send className="w-3.5 h-3.5 mr-2" />
+                                                            Resend invitation
+                                                        </DropdownMenuItem>
                                                     )}
-                                                    <CustomButton variant="ghost" size="icon" className="h-8 w-8 text-zinc-400">
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </CustomButton>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                {/* Info Box */}
-                <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800 rounded-2xl p-4 flex items-center gap-3">
-                    <Link2 className="w-5 h-5 text-blue-600" />
-                    <p className="text-xs text-blue-800 dark:text-blue-300 font-medium">
-                        Tip: If the recipient hasn't received the email, you can copy the unique invitation link and send it manually.
-                    </p>
+                                                    <DropdownMenuItem onClick={handleCopyLink}>
+                                                        <Link2 className="w-3.5 h-3.5 mr-2" />
+                                                        Copy signup link
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem
+                                                        onClick={() => { setDeleteTarget(inv); setDeleteOpen(true); }}
+                                                        className="text-red-600"
+                                                    >
+                                                        <Trash2 className="w-3.5 h-3.5 mr-2" />
+                                                        Delete invitation
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
                 </div>
             </div>
+
+            {/* Create Invite Dialog */}
+            <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+                <DialogContent className="max-w-md rounded-none p-0 overflow-hidden">
+                    <div className="bg-primary px-6 py-4">
+                        <h2 className="text-sm font-semibold text-white">Create invite</h2>
+                        <p className="text-xs text-white/70 mt-0.5">Send an invitation to join your organization</p>
+                    </div>
+                    <div className="px-6 py-4 space-y-4">
+                        <div className="space-y-2">
+                            <Label className="text-xs text-gray-700">Email address</Label>
+                            <Input
+                                type="email"
+                                placeholder="user@example.com"
+                                value={newEmail}
+                                onChange={(e) => setNewEmail(e.target.value)}
+                                className="rounded-none"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label className="text-xs text-gray-700">Role</Label>
+                            <Select value={newRole} onValueChange={setNewRole}>
+                                <SelectTrigger className="rounded-none">
+                                    <SelectValue placeholder="Select a role" />
+                                </SelectTrigger>
+                                <SelectContent className="rounded-none">
+                                    {ROLES.map((role) => (
+                                        <SelectItem key={role} value={role}>
+                                            {role}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                    <DialogFooter className="px-6 py-4 border-t border-gray-100">
+                        <Button variant="outline" onClick={() => setCreateOpen(false)} className="rounded-none">
+                            Cancel
+                        </Button>
+                        <Button onClick={handleCreate} className="bg-primary hover:bg-primary/90 text-white rounded-none">
+                            Send invite
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Delete Confirmation Dialog */}
+            <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+                <DialogContent className="max-w-md rounded-none p-0 overflow-hidden">
+                    <div className="bg-primary px-6 py-4">
+                        <h2 className="text-sm font-semibold text-white">Delete invitation</h2>
+                        <p className="text-xs text-white/70 mt-0.5">This action cannot be undone</p>
+                    </div>
+                    <div className="px-6 py-4">
+                        <p className="text-sm text-gray-700">
+                            Are you sure you want to delete the invitation for{" "}
+                            <span className="font-semibold">{deleteTarget?.email}</span>?
+                        </p>
+                    </div>
+                    <DialogFooter className="px-6 py-4 border-t border-gray-100">
+                        <Button variant="outline" onClick={() => setDeleteOpen(false)} className="rounded-none">
+                            Cancel
+                        </Button>
+                        <Button onClick={handleDelete} variant="destructive" className="rounded-none">
+                            Delete
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
-    )
+    );
 }

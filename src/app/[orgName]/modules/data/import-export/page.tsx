@@ -33,6 +33,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/shared/components/ui/select";
+import { toast } from "sonner";
 
 export default function ImportExportPage() {
     const [showImportModal, setShowImportModal] = useState(false);
@@ -65,6 +66,7 @@ export default function ImportExportPage() {
                         setImporting(false);
                         setShowImportModal(false);
                         setImportProgress(0);
+                        toast.success("Import completed successfully");
                     }, 500);
                     return 100;
                 }
@@ -73,25 +75,32 @@ export default function ImportExportPage() {
         }, 300);
     };
 
+    const handleExport = () => {
+        toast.success("Export started. Your file will be downloaded shortly.");
+        setTimeout(() => {
+            setShowExportModal(false);
+        }, 500);
+    };
+
     return (
-        <div className="space-y-6 text-[#1A1A1A]">
+        <div className="space-y-6 text-[#1A1A1A] font-outfit">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div className="flex flex-col gap-1">
-                    <h1 className="text-[22px] font-bold tracking-tight">Import / Export Data</h1>
+                    <h1 className="text-xl font-semibold text-gray-900 tracking-tight">Import / Export Data</h1>
                     <p className="text-sm text-gray-600">Bulk transfer data between your CRM and external systems.</p>
                 </div>
                 <div className="flex gap-3">
                     <Button
                         onClick={() => setShowImportModal(true)}
                         variant="outline"
-                        className="rounded-none border-zinc-200 font-black text-sm h-11 gap-2 bg-white shadow-lg"
+                        className="rounded-xl border-zinc-200 font-semibold text-sm h-11 gap-2 bg-white shadow-lg"
                     >
                         <Upload size={16} /> Import Data
                     </Button>
                     <Button
                         onClick={() => setShowExportModal(true)}
-                        className="rounded-none bg-blue-600 hover:bg-blue-700 font-black text-sm h-11 gap-2 shadow-xl shadow-blue-100 px-6"
+                        className="rounded-xl bg-blue-600 hover:bg-blue-700 font-semibold text-sm h-11 gap-2 shadow-xl shadow-blue-100 px-6"
                     >
                         <Download size={16} /> Export Data
                     </Button>
@@ -100,42 +109,42 @@ export default function ImportExportPage() {
 
             {/* Stats */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="bg-gradient-to-br from-blue-700 to-indigo-800 p-6 rounded-none shadow-xl shadow-blue-200 text-white transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl">
-                    <p className="text-white text-sm opacity-80">Total Operations</p>
-                    <h2 className="text-white text-2xl font-bold">142</h2>
-                    <p className="text-white text-xs mt-1 opacity-80">Last 30 days</p>
+                <div className="bg-gradient-to-r from-primary/70 to-primary text-white p-6 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                    <p className="text-xs opacity-80">Total Operations</p>
+                    <h2 className="text-xl font-semibold">142</h2>
+                    <p className="text-[10px] mt-1 opacity-80">Last 30 days</p>
                 </div>
 
-                <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
-                    <p className="text-gray-600 text-sm">Records Imported</p>
-                    <h3 className="text-2xl font-bold text-gray-900">12,450</h3>
-                    <p className="text-green-600 text-xs mt-1">This month</p>
+                <div className="border bg-white p-6 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                    <p className="text-xs text-gray-500">Records Imported</p>
+                    <h3 className="text-xl font-semibold text-gray-900">12,450</h3>
+                    <p className="text-[10px] text-green-600 mt-1">This month</p>
                 </div>
 
-                <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
-                    <p className="text-gray-600 text-sm">Records Exported</p>
-                    <h3 className="text-2xl font-bold text-gray-900">8,920</h3>
-                    <p className="text-blue-600 text-xs mt-1">This month</p>
+                <div className="border bg-white p-6 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                    <p className="text-xs text-gray-500">Records Exported</p>
+                    <h3 className="text-xl font-semibold text-gray-900">8,920</h3>
+                    <p className="text-[10px] text-blue-600 mt-1">This month</p>
                 </div>
 
-                <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
-                    <p className="text-gray-600 text-sm">Success Rate</p>
-                    <h3 className="text-2xl font-bold text-gray-900">97.2%</h3>
-                    <p className="text-green-600 text-xs mt-1">Excellent quality</p>
+                <div className="border bg-white p-6 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                    <p className="text-xs text-gray-500">Success Rate</p>
+                    <h3 className="text-xl font-semibold text-gray-900">97.2%</h3>
+                    <p className="text-[10px] text-green-600 mt-1">Excellent quality</p>
                 </div>
             </div>
 
             {/* Data Modules */}
-            <div className="bg-white border border-zinc-200 rounded-none shadow-xl p-6">
-                <h3 className="text-sm font-bold text-gray-900 mb-4">Available Data Modules</h3>
+            <div className="bg-white border rounded-xl shadow-lg p-6">
+                <h3 className="text-sm font-semibold text-gray-900 mb-4">Available Data Modules</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     {dataModules.map((module, idx) => (
-                        <div key={idx} className="p-4 border border-zinc-200 rounded-none hover:border-blue-300 hover:bg-blue-50/30 transition-all cursor-pointer group">
+                        <div key={idx} className="p-4 border rounded-xl hover:border-blue-300 hover:bg-blue-50/30 transition-all cursor-pointer group">
                             <div className="flex items-center gap-3 mb-3">
-                                <div className={`${module.bg} ${module.color} p-2 rounded-none`}>
+                                <div className={`${module.bg} ${module.color} p-2 rounded-lg`}>
                                     <module.icon size={20} />
                                 </div>
-                                <span className="text-sm font-bold text-gray-900">{module.name}</span>
+                                <span className="text-sm font-semibold text-gray-900">{module.name}</span>
                             </div>
                             <p className="text-xs text-gray-600">{module.count} records</p>
                         </div>
@@ -144,10 +153,10 @@ export default function ImportExportPage() {
             </div>
 
             {/* Recent Operations */}
-            <div className="bg-white border border-zinc-200 rounded-none shadow-xl overflow-hidden">
+            <div className="bg-white border rounded-xl shadow-lg overflow-hidden">
                 <div className="p-5 border-b border-zinc-100 bg-zinc-50/50 flex items-center justify-between">
-                    <h3 className="text-sm font-bold text-gray-900">Recent Operations</h3>
-                    <Badge className="bg-blue-50 text-blue-700 border-blue-200 rounded-none text-[10px] font-bold px-2 py-0.5">
+                    <h3 className="text-sm font-semibold text-gray-900">Recent Operations</h3>
+                    <Badge className="bg-blue-50 text-blue-700 border-blue-200 rounded-full text-[10px] font-semibold px-2 py-0.5">
                         Live
                     </Badge>
                 </div>
@@ -156,12 +165,12 @@ export default function ImportExportPage() {
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-zinc-100/50 border-b border-zinc-100">
-                                <th className="px-6 py-4 text-xs font-bold text-gray-600">Type</th>
-                                <th className="px-6 py-4 text-xs font-bold text-gray-600">Module</th>
-                                <th className="px-6 py-4 text-xs font-bold text-gray-600">Records</th>
-                                <th className="px-6 py-4 text-xs font-bold text-gray-600">Status</th>
-                                <th className="px-6 py-4 text-xs font-bold text-gray-600">Time</th>
-                                <th className="px-6 py-4 text-xs font-bold text-gray-600">User</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-gray-500">Type</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-gray-500">Module</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-gray-500">Records</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-gray-500">Status</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-gray-500">Time</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-gray-500">User</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-zinc-100">
@@ -174,16 +183,16 @@ export default function ImportExportPage() {
                                             ) : (
                                                 <Download size={16} className="text-blue-600" />
                                             )}
-                                            <span className="text-sm font-bold text-gray-900">{op.type}</span>
+                                            <span className="text-sm font-semibold text-gray-900">{op.type}</span>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <Badge className="bg-zinc-100 text-zinc-700 border-zinc-200 rounded-none text-[10px] font-bold px-2 py-0.5">
+                                        <Badge className="bg-zinc-100 text-zinc-700 border-zinc-200 rounded-full text-[10px] font-semibold px-2 py-0.5">
                                             {op.module}
                                         </Badge>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <span className="text-sm font-bold text-gray-900">{op.records}</span>
+                                        <span className="text-sm font-semibold text-gray-900">{op.records}</span>
                                     </td>
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-2">
@@ -192,7 +201,7 @@ export default function ImportExportPage() {
                                             ) : (
                                                 <AlertCircle size={14} className="text-red-600" />
                                             )}
-                                            <span className={`text-xs font-bold ${op.status === "Completed" ? "text-green-600" : "text-red-600"}`}>
+                                            <span className={`text-xs font-semibold ${op.status === "Completed" ? "text-green-600" : "text-red-600"}`}>
                                                 {op.status}
                                             </span>
                                         </div>
@@ -213,7 +222,11 @@ export default function ImportExportPage() {
 
                 <div className="p-5 bg-zinc-50 border-t border-zinc-100 flex items-center justify-between">
                     <p className="text-sm text-gray-600">Showing {recentOperations.length} recent operations</p>
-                    <Button variant="link" className="text-blue-600 text-sm flex items-center gap-1 group">
+                    <Button
+                        variant="link"
+                        className="text-blue-600 text-sm flex items-center gap-1 group"
+                        onClick={() => toast.info("Showing all operation history")}
+                    >
                         View All History <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
                     </Button>
                 </div>
@@ -221,24 +234,24 @@ export default function ImportExportPage() {
 
             {/* Import Modal */}
             <Dialog open={showImportModal} onOpenChange={setShowImportModal}>
-                <DialogContent className="max-w-2xl rounded-none p-0 overflow-hidden shadow-2xl border-none">
-                    <div className="bg-gradient-to-r from-green-700 to-emerald-800 p-8 text-white relative">
+                <DialogContent className="max-w-2xl rounded-xl p-0 overflow-hidden shadow-2xl border-none">
+                    <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-5 py-4 text-white relative">
                         <div className="absolute top-0 right-0 p-4 opacity-10">
                             <Upload size={80} />
                         </div>
-                        <h2 className="text-2xl font-bold flex items-center gap-3">
-                            <Upload size={24} /> Import Data
+                        <h2 className="text-lg font-semibold flex items-center gap-3">
+                            <Upload size={20} /> Import Data
                         </h2>
-                        <p className="text-sm opacity-80 mt-2">Upload CSV or Excel file to import records into your CRM.</p>
+                        <p className="text-sm opacity-80 mt-1">Upload CSV or Excel file to import records into your CRM.</p>
                     </div>
-                    <div className="p-8 space-y-6 bg-white">
-                        <div className="space-y-3">
-                            <Label className="text-xs font-bold text-gray-600">Select Module</Label>
+                    <div className="p-6 space-y-5 bg-white">
+                        <div className="space-y-2">
+                            <Label className="text-xs font-semibold text-gray-600">Select Module</Label>
                             <Select>
-                                <SelectTrigger className="rounded-none border-zinc-200 h-12">
+                                <SelectTrigger className="rounded-lg border-zinc-200 h-9">
                                     <SelectValue placeholder="Choose data module" />
                                 </SelectTrigger>
-                                <SelectContent className="rounded-none">
+                                <SelectContent className="rounded-lg">
                                     <SelectItem value="leads">Leads</SelectItem>
                                     <SelectItem value="contacts">Contacts</SelectItem>
                                     <SelectItem value="deals">Deals</SelectItem>
@@ -246,11 +259,11 @@ export default function ImportExportPage() {
                                 </SelectContent>
                             </Select>
                         </div>
-                        <div className="space-y-3">
-                            <Label className="text-xs font-bold text-gray-600">Upload File</Label>
-                            <div className="border-2 border-dashed border-zinc-300 rounded-none p-8 text-center hover:border-blue-500 hover:bg-blue-50/30 transition-all cursor-pointer">
+                        <div className="space-y-2">
+                            <Label className="text-xs font-semibold text-gray-600">Upload File</Label>
+                            <div className="border-2 border-dashed border-zinc-300 rounded-xl p-8 text-center hover:border-blue-500 hover:bg-blue-50/30 transition-all cursor-pointer">
                                 <FileSpreadsheet size={40} className="mx-auto text-zinc-400 mb-3" />
-                                <p className="text-sm font-bold text-gray-900 mb-1">Click to upload or drag and drop</p>
+                                <p className="text-sm font-semibold text-gray-900 mb-1">Click to upload or drag and drop</p>
                                 <p className="text-xs text-gray-500">CSV, XLSX (Max 10MB)</p>
                             </div>
                         </div>
@@ -260,15 +273,15 @@ export default function ImportExportPage() {
                                     <span>Importing records...</span>
                                     <span>{importProgress}%</span>
                                 </div>
-                                <Progress value={importProgress} className="h-2 rounded-none" />
+                                <Progress value={importProgress} className="h-2 rounded-lg" />
                             </div>
                         )}
                     </div>
-                    <DialogFooter className="p-8 bg-zinc-50 border-t border-zinc-100 gap-4 sm:justify-end">
-                        <Button variant="ghost" onClick={() => setShowImportModal(false)} className="rounded-none text-sm text-gray-600" disabled={importing}>
+                    <DialogFooter className="p-6 bg-zinc-50 border-t border-zinc-100 gap-4 sm:justify-end">
+                        <Button variant="ghost" onClick={() => setShowImportModal(false)} className="rounded-xl text-sm text-gray-600 font-semibold" disabled={importing}>
                             Cancel
                         </Button>
-                        <Button onClick={handleImport} disabled={importing} className="bg-green-600 hover:bg-green-700 rounded-none text-sm px-10 h-12 shadow-xl shadow-green-100">
+                        <Button onClick={handleImport} disabled={importing} className="bg-blue-600 hover:bg-blue-700 rounded-xl text-sm font-semibold px-10 h-9 shadow-xl shadow-blue-100">
                             {importing ? "Importing..." : "Start Import"}
                         </Button>
                     </DialogFooter>
@@ -277,24 +290,24 @@ export default function ImportExportPage() {
 
             {/* Export Modal */}
             <Dialog open={showExportModal} onOpenChange={setShowExportModal}>
-                <DialogContent className="max-w-2xl rounded-none p-0 overflow-hidden shadow-2xl border-none">
-                    <div className="bg-gradient-to-r from-blue-700 to-indigo-800 p-8 text-white relative">
+                <DialogContent className="max-w-2xl rounded-xl p-0 overflow-hidden shadow-2xl border-none">
+                    <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-5 py-4 text-white relative">
                         <div className="absolute top-0 right-0 p-4 opacity-10">
                             <Download size={80} />
                         </div>
-                        <h2 className="text-2xl font-bold flex items-center gap-3">
-                            <Download size={24} /> Export Data
+                        <h2 className="text-lg font-semibold flex items-center gap-3">
+                            <Download size={20} /> Export Data
                         </h2>
-                        <p className="text-sm opacity-80 mt-2">Download your CRM data in CSV or Excel format.</p>
+                        <p className="text-sm opacity-80 mt-1">Download your CRM data in CSV or Excel format.</p>
                     </div>
-                    <div className="p-8 space-y-6 bg-white">
-                        <div className="space-y-3">
-                            <Label className="text-xs font-bold text-gray-600">Select Module</Label>
+                    <div className="p-6 space-y-5 bg-white">
+                        <div className="space-y-2">
+                            <Label className="text-xs font-semibold text-gray-600">Select Module</Label>
                             <Select>
-                                <SelectTrigger className="rounded-none border-zinc-200 h-12">
+                                <SelectTrigger className="rounded-lg border-zinc-200 h-9">
                                     <SelectValue placeholder="Choose data module" />
                                 </SelectTrigger>
-                                <SelectContent className="rounded-none">
+                                <SelectContent className="rounded-lg">
                                     <SelectItem value="leads">Leads (2,847 records)</SelectItem>
                                     <SelectItem value="contacts">Contacts (1,523 records)</SelectItem>
                                     <SelectItem value="deals">Deals (456 records)</SelectItem>
@@ -302,24 +315,27 @@ export default function ImportExportPage() {
                                 </SelectContent>
                             </Select>
                         </div>
-                        <div className="space-y-3">
-                            <Label className="text-xs font-bold text-gray-600">Export Format</Label>
+                        <div className="space-y-2">
+                            <Label className="text-xs font-semibold text-gray-600">Export Format</Label>
                             <Select defaultValue="csv">
-                                <SelectTrigger className="rounded-none border-zinc-200 h-12">
+                                <SelectTrigger className="rounded-lg border-zinc-200 h-9">
                                     <SelectValue />
                                 </SelectTrigger>
-                                <SelectContent className="rounded-none">
+                                <SelectContent className="rounded-lg">
                                     <SelectItem value="csv">CSV (.csv)</SelectItem>
                                     <SelectItem value="xlsx">Excel (.xlsx)</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
                     </div>
-                    <DialogFooter className="p-8 bg-zinc-50 border-t border-zinc-100 gap-4 sm:justify-end">
-                        <Button variant="ghost" onClick={() => setShowExportModal(false)} className="rounded-none text-sm text-gray-600">
+                    <DialogFooter className="p-6 bg-zinc-50 border-t border-zinc-100 gap-4 sm:justify-end">
+                        <Button variant="ghost" onClick={() => setShowExportModal(false)} className="rounded-xl text-sm text-gray-600 font-semibold">
                             Cancel
                         </Button>
-                        <Button className="bg-blue-600 hover:bg-blue-700 rounded-none text-sm px-10 h-12 shadow-xl shadow-blue-100">
+                        <Button
+                            onClick={handleExport}
+                            className="bg-blue-600 hover:bg-blue-700 rounded-xl text-sm font-semibold px-10 h-9 shadow-xl shadow-blue-100"
+                        >
                             Download Export
                         </Button>
                     </DialogFooter>

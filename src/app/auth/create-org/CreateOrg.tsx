@@ -97,8 +97,8 @@ export default function CreateOrganizationPage() {
 
       const response = await createOrg(newOrg)
       addOrganization(response.data)
-      showSuccess("Organization created successfully")
-      router.push(`/${response.data.orgId}/dashboard`)
+      showSuccess("Organization created successfully! Please sign in to continue.")
+      router.push("/auth/signin")
     } catch (error: any) {
       const errorMessage =
         error?.response?.data?.message || error.message || "Failed to create organization"

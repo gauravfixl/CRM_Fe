@@ -1,18 +1,18 @@
 "use client"
 
-import React, { useState } from "react"
-import { useParams } from "next/navigation"
+import { useState, useEffect } from "react"
 import {
     Briefcase,
     Search,
     Plus,
     MoreHorizontal,
-    UserCircle,
-    TrendingUp
+    ShieldCheck,
+    ArrowUpRight,
+    Crown,
+    Loader2,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
 import {
     Table,
     TableBody,
@@ -27,12 +27,11 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { SmallCard, SmallCardContent, SmallCardHeader } from "@/shared/components/custom/SmallCard"
+import { SmallCard, SmallCardContent } from "@/components/custom/SmallCard"
 import { toast } from "sonner"
 import {
     Dialog,
     DialogContent,
-    DialogDescription,
     DialogFooter,
     DialogHeader,
     DialogTitle,
@@ -46,129 +45,280 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
+import {
+    getAllPositions,
+    getDepartmentList,
+    createPosition,
+    updatePosition,
+    deletePosition,
+} from "@/modules/hrm/hooks/hrmHooks"
+
+interface Position {
+    _id: string
+    title: string
+    level: string
+    description: string
+    isActive: boolean
+    department: {
+        _id: string
+        name: string
+    }
+}
+
+interface DeptOption {
+    _id: string
+    name: string
+}
+
+const LEVELS = ["Junior", "Mid", "Senior", "Lead", "Executive"]
 
 export default function JobRolesPage() {
-    const params = useParams()
-    const [isLoading, setIsLoading] = useState(false)
     const [searchQuery, setSearchQuery] = useState("")
     const [isCreateOpen, setIsCreateOpen] = useState(false)
-    const [newItem, setNewItem] = useState({ title: "", level: "entry" })
+    const [isEditOpen, setIsEditOpen] = useState(false)
+    const [isLoading, setIsLoading] = useState(false)
+    const [pageLoading, setPageLoading] = useState(true)
+    const [newItem, setNewItem] = useState({ title: "", level: "", department: "", description: "" })
+    const [editItem, setEditItem] = useState<Position | null>(null)
 
-    // Mock Data
-    const [roles, setRoles] = useState([
-        { id: "1", title: "Junior Developer", level: "Entry Level", code: "DEV-1" },
-        { id: "2", title: "Senior Developer", level: "Senior", code: "DEV-3" },
-        { id: "3", title: "Product Manager", level: "Management", code: "PM-1" },
-        { id: "4", title: "HR Associate", level: "Associate", code: "HR-1" },
-    ])
+    const [roles, setRoles] = useState<Position[]>([])
+    const [departmentOptions, setDepartmentOptions] = useState<DeptOption[]>([])
 
-    const handleAction = (msg: string) => {
-        setIsLoading(true)
-        setTimeout(() => {
-            setIsLoading(false)
-            toast.success(msg)
-        }, 800)
+    const fetchPositions = async () => {
+        try {
+            const response = await getAllPositions()
+            setRoles(response.data?.positions || [])
+        } catch (err) {
+            toast.error("Failed to fetch positions")
+        } finally {
+            setPageLoading(false)
+        }
     }
 
-    const createRole = () => {
-        if (!newItem.title) return toast.error("Please enter role title")
+    const fetchDepartments = async () => {
+        try {
+            const response = await getDepartmentList()
+            setDepartmentOptions(response.data?.departments || [])
+        } catch (err) {
+            // silent - dropdown will just be empty
+        }
+    }
+
+    useEffect(() => {
+        fetchPositions()
+        fetchDepartments()
+    }, [])
+
+    const managementRoles = roles.filter((r) => r.level === "Lead" || r.level === "Executive").length
+    const entryLevel = roles.filter((r) => r.level === "Junior").length
+    const seniorRoles = roles.filter((r) => r.level === "Senior").length
+
+    const filtered = roles.filter(
+        (r) =>
+            r.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (r.level || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (r.department?.name || "").toLowerCase().includes(searchQuery.toLowerCase())
+    )
+
+    const handleCreate = async () => {
+        if (!newItem.title || !newItem.department) return toast.error("Please fill title and department")
         setIsLoading(true)
-        setTimeout(() => {
-            setRoles([...roles, {
-                id: Date.now().toString(),
+        try {
+            await createPosition({
                 title: newItem.title,
-                level: newItem.level,
-                code: `NEW-${Math.floor(Math.random() * 100)}`
-            }])
+                department: newItem.department,
+                level: newItem.level || undefined,
+                description: newItem.description || undefined,
+            })
             setIsCreateOpen(false)
-            setNewItem({ title: "", level: "entry" })
+            setNewItem({ title: "", level: "", department: "", description: "" })
+            toast.success("Role created")
+            await fetchPositions()
+        } catch (err) {
+            // Error already handled by hook
+        } finally {
             setIsLoading(false)
-            toast.success("Role Template Created")
-        }, 1000)
+        }
+    }
+
+    const handleUpdate = async () => {
+        if (!editItem || !editItem.title) return toast.error("Please fill the title")
+        setIsLoading(true)
+        try {
+            await updatePosition(editItem._id, {
+                title: editItem.title,
+                level: editItem.level || undefined,
+                description: editItem.description || undefined,
+                department: editItem.department?._id || undefined,
+            })
+            setIsEditOpen(false)
+            setEditItem(null)
+            toast.success("Role updated")
+            await fetchPositions()
+        } catch (err) {
+            // Error already handled by hook
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    const handleDelete = async (id: string) => {
+        try {
+            await deletePosition(id)
+            toast.success("Role deleted")
+            await fetchPositions()
+        } catch (err) {
+            // Error already handled by hook
+        }
+    }
+
+    const openEdit = (r: Position) => {
+        setEditItem({ ...r })
+        setIsEditOpen(true)
+    }
+
+    if (pageLoading) {
+        return (
+            <div className="font-outfit flex items-center justify-center min-h-screen bg-[#fafafa]">
+                <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+            </div>
+        )
     }
 
     return (
-        <div className="flex flex-col gap-6 p-6 min-h-screen bg-[#fafafa]">
-            {/* PAGE HEADER */}
+        <div className="font-outfit flex flex-col gap-6 p-6 min-h-screen bg-[#fafafa]">
+            {/* Breadcrumb */}
             <div className="flex flex-col gap-1">
-                <div className="flex items-center gap-2 text-[10px] font-medium text-zinc-400">
-                    <span>HR GOVERNANCE</span>
+                <div className="flex items-center gap-2 text-xs font-medium text-gray-400">
+                    <span>Hr governance</span>
                     <span>/</span>
-                    <span className="text-zinc-900 font-semibold">ROLES</span>
+                    <span className="text-gray-900 font-semibold">Roles</span>
                 </div>
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mt-2">
                     <div>
-                        <h1 className="text-xl font-bold text-zinc-900 tracking-tight">Job Templates</h1>
-                        <p className="text-xs text-zinc-500 font-medium">Standardize designations and hierarchy levels.</p>
+                        <h1 className="text-xl font-semibold text-gray-900 tracking-tight">Job Role Templates</h1>
+                        <p className="text-xs text-gray-500 font-medium">Standardize designations and hierarchy levels.</p>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-                            <DialogTrigger asChild>
-                                <Button className="h-8 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium px-3 shadow-sm active:scale-95">
-                                    <Plus className="w-3.5 h-3.5 mr-2" />
-                                    New Role
-                                </Button>
-                            </DialogTrigger>
-                            <DialogContent className="sm:max-w-[425px]">
-                                <DialogHeader>
-                                    <DialogTitle>Create Job Role</DialogTitle>
-                                    <DialogDescription>
-                                        Define a position template for hiring.
-                                    </DialogDescription>
-                                </DialogHeader>
-                                <div className="grid gap-4 py-4">
-                                    <div className="grid gap-2">
-                                        <Label>Job Title</Label>
-                                        <Input value={newItem.title} onChange={(e) => setNewItem({ ...newItem, title: e.target.value })} placeholder="e.g. Sales Executive" />
-                                    </div>
-                                    <div className="grid gap-2">
-                                        <Label>Level</Label>
-                                        <Select value={newItem.level} onValueChange={(v) => setNewItem({ ...newItem, level: v })}>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Select level" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="Intern">Intern</SelectItem>
-                                                <SelectItem value="Entry Level">Entry Level</SelectItem>
-                                                <SelectItem value="Associate">Associate</SelectItem>
-                                                <SelectItem value="Senior">Senior</SelectItem>
-                                                <SelectItem value="Management">Management</SelectItem>
-                                                <SelectItem value="Director">Director</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
+                    <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+                        <DialogTrigger asChild>
+                            <Button className="rounded-xl bg-blue-600 hover:bg-blue-700 font-semibold text-xs h-10 gap-2 shadow-lg px-5">
+                                <Plus className="w-4 h-4" />
+                                New role
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-md rounded-xl p-0 overflow-hidden">
+                            <DialogHeader className="bg-gradient-to-r from-blue-600 to-blue-700 px-5 py-4">
+                                <DialogTitle className="text-white font-semibold">Create role</DialogTitle>
+                            </DialogHeader>
+                            <div className="grid gap-4 px-5 py-4">
+                                <div className="grid gap-2">
+                                    <Label className="text-xs font-semibold">Job title</Label>
+                                    <Input className="h-9 rounded-lg" value={newItem.title} onChange={(e) => setNewItem({ ...newItem, title: e.target.value })} placeholder="e.g. Sales Executive" />
                                 </div>
-                                <DialogFooter>
-                                    <Button onClick={createRole} disabled={isLoading} className="bg-blue-600 hover:bg-blue-700">{isLoading ? "Creating..." : "Create Role"}</Button>
-                                </DialogFooter>
-                            </DialogContent>
-                        </Dialog>
-                    </div>
+                                <div className="grid gap-2">
+                                    <Label className="text-xs font-semibold">Department</Label>
+                                    <Select value={newItem.department} onValueChange={(v) => setNewItem({ ...newItem, department: v })}>
+                                        <SelectTrigger className="h-9 rounded-lg">
+                                            <SelectValue placeholder="Select department" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {departmentOptions.map((dept) => (
+                                                <SelectItem key={dept._id} value={dept._id}>{dept.name}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label className="text-xs font-semibold">Level</Label>
+                                    <Select value={newItem.level} onValueChange={(v) => setNewItem({ ...newItem, level: v })}>
+                                        <SelectTrigger className="h-9 rounded-lg">
+                                            <SelectValue placeholder="Select level" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {LEVELS.map((l) => (
+                                                <SelectItem key={l} value={l}>{l}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label className="text-xs font-semibold">Description (optional)</Label>
+                                    <Input className="h-9 rounded-lg" value={newItem.description} onChange={(e) => setNewItem({ ...newItem, description: e.target.value })} placeholder="e.g. Manages sales pipeline" />
+                                </div>
+                            </div>
+                            <DialogFooter className="px-5 pb-4">
+                                <Button onClick={handleCreate} disabled={isLoading} className="rounded-lg bg-blue-600 hover:bg-blue-700 font-semibold text-xs">
+                                    {isLoading ? "Creating..." : "Create role"}
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
                 </div>
             </div>
 
-            {/* STATS CARDS */}
+            {/* Stats cards */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <SmallCard className="bg-gradient-to-br from-blue-500 to-blue-700 border-t border-white/20 border-none text-white shadow-[0_8px_30px_rgb(59,130,246,0.3)] hover:shadow-[0_20px_40px_rgba(37,99,235,0.4)] hover:-translate-y-1 transform transition-all duration-300">
-                    <SmallCardHeader className="flex flex-row items-center justify-between pb-1 px-4 pt-4">
-                        <p className="text-[11px] text-white font-medium uppercase tracking-wider">Defined Roles</p>
-                        <UserCircle className="w-4 h-4 text-white" />
-                    </SmallCardHeader>
-                    <SmallCardContent className="px-4 pb-4">
-                        <p className="text-2xl font-bold text-white drop-shadow-md">{roles.length}</p>
-                        <p className="text-[10px] text-white">Unique positions</p>
+                <SmallCard className="rounded-xl border bg-gradient-to-r from-primary/70 to-primary text-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                    <SmallCardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-xs text-white/80">Total roles</p>
+                                <p className="text-xl font-semibold">{roles.length}</p>
+                                <p className="text-[10px] text-white/80">Unique positions</p>
+                            </div>
+                            <Briefcase className="w-5 h-5 text-white/80" />
+                        </div>
+                    </SmallCardContent>
+                </SmallCard>
+
+                <SmallCard className="rounded-xl border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                    <SmallCardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-xs text-gray-600">Management roles</p>
+                                <p className="text-xl font-semibold text-gray-900">{managementRoles}</p>
+                                <p className="text-[10px] text-gray-500">Leadership positions</p>
+                            </div>
+                            <Crown className="w-5 h-5 text-gray-400" />
+                        </div>
+                    </SmallCardContent>
+                </SmallCard>
+
+                <SmallCard className="rounded-xl border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                    <SmallCardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-xs text-gray-600">Entry level</p>
+                                <p className="text-xl font-semibold text-gray-900">{entryLevel}</p>
+                                <p className="text-[10px] text-gray-500">Junior positions</p>
+                            </div>
+                            <ArrowUpRight className="w-5 h-5 text-gray-400" />
+                        </div>
+                    </SmallCardContent>
+                </SmallCard>
+
+                <SmallCard className="rounded-xl border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                    <SmallCardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-xs text-gray-600">Senior roles</p>
+                                <p className="text-xl font-semibold text-gray-900">{seniorRoles}</p>
+                                <p className="text-[10px] text-gray-500">Experienced positions</p>
+                            </div>
+                            <ShieldCheck className="w-5 h-5 text-gray-400" />
+                        </div>
                     </SmallCardContent>
                 </SmallCard>
             </div>
 
-            {/* TABLE */}
-            <div className="bg-white rounded-lg border border-zinc-200 shadow-sm overflow-hidden flex flex-col">
-                <div className="p-4 border-b border-zinc-100 flex items-center justify-between bg-zinc-50/20">
-                    <div className="relative w-full md:w-80 group">
-                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-400" />
+            {/* Table */}
+            <div className="bg-white rounded-xl border shadow-sm overflow-hidden flex flex-col">
+                <div className="p-4 border-b flex items-center justify-between">
+                    <div className="relative w-full md:w-80">
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
                         <Input
                             placeholder="Search roles..."
-                            className="pl-9 h-9 bg-white border-zinc-200 rounded-md text-xs font-medium focus:ring-1 focus:ring-blue-100"
+                            className="pl-9 h-9 rounded-lg text-xs font-medium"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
@@ -176,39 +326,37 @@ export default function JobRolesPage() {
                 </div>
 
                 <Table>
-                    <TableHeader className="bg-zinc-50/50">
+                    <TableHeader>
                         <TableRow>
-                            <TableHead className="py-3 px-4 font-semibold text-[11px] text-zinc-500 uppercase">Job Title</TableHead>
-                            <TableHead className="py-3 font-semibold text-[11px] text-zinc-500 uppercase">Hierarchy Level</TableHead>
-                            <TableHead className="py-3 font-semibold text-[11px] text-zinc-500 uppercase">Role Code</TableHead>
-                            <TableHead className="py-3 text-right pr-4 font-semibold text-[11px] text-zinc-500 uppercase">Actions</TableHead>
+                            <TableHead className="py-3 px-4 text-xs font-semibold text-gray-500">Job title</TableHead>
+                            <TableHead className="py-3 text-xs font-semibold text-gray-500">Department</TableHead>
+                            <TableHead className="py-3 text-xs font-semibold text-gray-500">Level</TableHead>
+                            <TableHead className="py-3 text-right pr-4 text-xs font-semibold text-gray-500">Actions</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {roles.map((r) => (
-                            <TableRow key={r.id} className="hover:bg-zinc-50/50 transition-colors">
+                        {filtered.map((r) => (
+                            <TableRow key={r._id} className="hover:bg-gray-50 transition-colors">
                                 <TableCell className="py-3 px-4">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-lg bg-zinc-50 flex items-center justify-center border border-zinc-100 shadow-sm">
-                                            <Briefcase className="w-4 h-4 text-zinc-500" />
+                                        <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 border border-blue-100">
+                                            <Briefcase className="w-4 h-4" />
                                         </div>
-                                        <span className="text-xs font-bold text-zinc-900">{r.title}</span>
+                                        <span className="text-sm font-semibold text-gray-900">{r.title}</span>
                                     </div>
                                 </TableCell>
-                                <TableCell className="py-3">
-                                    <Badge variant="outline" className="text-xs font-normal text-zinc-600 bg-white">{r.level}</Badge>
-                                </TableCell>
-                                <TableCell className="py-3 font-mono text-xs text-zinc-500">{r.code}</TableCell>
+                                <TableCell className="py-3 text-sm text-gray-600">{r.department?.name || "-"}</TableCell>
+                                <TableCell className="py-3 text-sm text-gray-600">{r.level || "-"}</TableCell>
                                 <TableCell className="py-3 text-right pr-4">
                                     <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" className="h-7 w-7 p-0 hover:bg-zinc-100 rounded-md">
-                                                <MoreHorizontal className="h-4 w-4 text-zinc-400" />
+                                            <Button variant="ghost" className="h-7 w-7 p-0 hover:bg-gray-100 rounded-lg">
+                                                <MoreHorizontal className="h-4 w-4 text-gray-400" />
                                             </Button>
                                         </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end" className="w-48 shadow-xl border-zinc-100">
-                                            <DropdownMenuItem onClick={() => handleAction("Editing role...")}>Edit</DropdownMenuItem>
-                                            <DropdownMenuItem className="text-rose-600" onClick={() => handleAction("Deleting role...")}>Delete</DropdownMenuItem>
+                                        <DropdownMenuContent align="end" className="w-48 rounded-lg">
+                                            <DropdownMenuItem onClick={() => openEdit(r)}>Edit</DropdownMenuItem>
+                                            <DropdownMenuItem className="text-rose-600" onClick={() => handleDelete(r._id)}>Delete</DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
                                 </TableCell>
@@ -217,6 +365,63 @@ export default function JobRolesPage() {
                     </TableBody>
                 </Table>
             </div>
+
+            {/* Edit dialog */}
+            <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+                <DialogContent className="max-w-md rounded-xl p-0 overflow-hidden">
+                    <DialogHeader className="bg-gradient-to-r from-blue-600 to-blue-700 px-5 py-4">
+                        <DialogTitle className="text-white font-semibold">Edit role</DialogTitle>
+                    </DialogHeader>
+                    {editItem && (
+                        <>
+                            <div className="grid gap-4 px-5 py-4">
+                                <div className="grid gap-2">
+                                    <Label className="text-xs font-semibold">Job title</Label>
+                                    <Input className="h-9 rounded-lg" value={editItem.title} onChange={(e) => setEditItem({ ...editItem, title: e.target.value })} />
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label className="text-xs font-semibold">Department</Label>
+                                    <Select value={editItem.department?._id || ""} onValueChange={(v) => {
+                                        const dept = departmentOptions.find(d => d._id === v)
+                                        setEditItem({ ...editItem, department: { _id: v, name: dept?.name || "" } })
+                                    }}>
+                                        <SelectTrigger className="h-9 rounded-lg">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {departmentOptions.map((dept) => (
+                                                <SelectItem key={dept._id} value={dept._id}>{dept.name}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label className="text-xs font-semibold">Level</Label>
+                                    <Select value={editItem.level || ""} onValueChange={(v) => setEditItem({ ...editItem, level: v })}>
+                                        <SelectTrigger className="h-9 rounded-lg">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {LEVELS.map((l) => (
+                                                <SelectItem key={l} value={l}>{l}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label className="text-xs font-semibold">Description</Label>
+                                    <Input className="h-9 rounded-lg" value={editItem.description || ""} onChange={(e) => setEditItem({ ...editItem, description: e.target.value })} />
+                                </div>
+                            </div>
+                            <DialogFooter className="px-5 pb-4">
+                                <Button onClick={handleUpdate} disabled={isLoading} className="rounded-lg bg-blue-600 hover:bg-blue-700 font-semibold text-xs">
+                                    {isLoading ? "Saving..." : "Save changes"}
+                                </Button>
+                            </DialogFooter>
+                        </>
+                    )}
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }

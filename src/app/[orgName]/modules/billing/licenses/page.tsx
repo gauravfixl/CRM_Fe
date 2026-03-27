@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
     UserCheck,
     Search,
@@ -13,7 +13,6 @@ import {
     CheckCircle2,
     XCircle,
     Clock,
-    ChevronRight
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
@@ -26,18 +25,42 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu";
+import {
+    Dialog,
+    DialogContent,
+    DialogFooter,
+} from "@/shared/components/ui/dialog";
+import { Label } from "@/shared/components/ui/label";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/shared/components/ui/select";
+import { SmallCard, SmallCardContent } from "@/components/custom/SmallCard";
+import { showSuccess, showWarning } from "@/utils/toast";
+
+type LicenseUser = {
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+    plan: string;
+    status: string;
+    assignedDate: string;
+};
+
+const ROLES = ["HR Admin", "Sales Manager", "Developer", "Marketing Lead", "Accountant"] as const;
+const ROLE_FILTERS = ["All", ...ROLES] as const;
+const STATUS_FILTERS = ["All", "Active", "Pending", "Suspended"] as const;
 
 export default function LicensesPage() {
     const [searchQuery, setSearchQuery] = useState("");
+    const [roleFilterIndex, setRoleFilterIndex] = useState(0);
+    const [statusFilterIndex, setStatusFilterIndex] = useState(0);
 
-    const summary = [
-        { label: "Total Licenses", value: "100", sub: "Enterprise Pro Plan", color: "text-white", isHighlight: true },
-        { label: "Assigned", value: "84", sub: "Active Users", color: "text-blue-600", isHighlight: false },
-        { label: "Available", value: "16", sub: "Ready to assign", color: "text-emerald-600", isHighlight: false },
-        { label: "Pending Invitations", value: "5", sub: "Awaiting signup", color: "text-amber-600", isHighlight: false }
-    ];
-
-    const [licenseUsers, setLicenseUsers] = useState([
+    const [licenseUsers, setLicenseUsers] = useState<LicenseUser[]>([
         { id: "1", name: "Sarah Miller", email: "sarah.m@fixlsolutions.com", role: "HR Admin", plan: "Enterprise Pro", status: "Active", assignedDate: "Oct 12, 2024" },
         { id: "2", name: "Robert Wilson", email: "robert.w@fixlsolutions.com", role: "Sales Manager", plan: "Enterprise Pro", status: "Active", assignedDate: "Oct 15, 2024" },
         { id: "3", name: "Elena Kostic", email: "elena.k@fixlsolutions.com", role: "Developer", plan: "Enterprise Pro", status: "Active", assignedDate: "Nov 01, 2024" },
@@ -45,70 +68,257 @@ export default function LicensesPage() {
         { id: "5", name: "Maria Garcia", email: "maria.g@fixlsolutions.com", role: "Accountant", plan: "Enterprise Pro", status: "Active", assignedDate: "Feb 22, 2025" },
     ]);
 
+    // Modal state
+    const [showCreateModal, setShowCreateModal] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [editingUser, setEditingUser] = useState<LicenseUser | null>(null);
+    const [formName, setFormName] = useState("");
+    const [formEmail, setFormEmail] = useState("");
+    const [formRole, setFormRole] = useState<string>(ROLES[0]);
+
+    // Filters
+    const activeRoleFilter = ROLE_FILTERS[roleFilterIndex];
+    const activeStatusFilter = STATUS_FILTERS[statusFilterIndex];
+
+    const filteredUsers = useMemo(() => {
+        return licenseUsers.filter((user) => {
+            const query = searchQuery.toLowerCase();
+            const matchesSearch =
+                !query ||
+                user.name.toLowerCase().includes(query) ||
+                user.email.toLowerCase().includes(query) ||
+                user.role.toLowerCase().includes(query);
+
+            const matchesRole = activeRoleFilter === "All" || user.role === activeRoleFilter;
+            const matchesStatus = activeStatusFilter === "All" || user.status === activeStatusFilter;
+
+            return matchesSearch && matchesRole && matchesStatus;
+        });
+    }, [licenseUsers, searchQuery, activeRoleFilter, activeStatusFilter]);
+
+    // Dynamic stats
+    const summary = useMemo(() => {
+        const total = licenseUsers.length;
+        const active = licenseUsers.filter((u) => u.status === "Active").length;
+        const pending = licenseUsers.filter((u) => u.status === "Pending").length;
+        const suspended = licenseUsers.filter((u) => u.status === "Suspended").length;
+        const available = Math.max(0, 100 - total);
+
+        return [
+            { label: "Total Licenses", value: String(total), sub: "Enterprise Pro Plan", color: "text-white", isHighlight: true },
+            { label: "Assigned", value: String(active), sub: "Active Users", color: "text-primary", isHighlight: false },
+            { label: "Available", value: String(available), sub: "Ready to assign", color: "text-emerald-600", isHighlight: false },
+            { label: "Pending Invitations", value: String(pending), sub: suspended > 0 ? `${suspended} suspended` : "Awaiting signup", color: "text-amber-600", isHighlight: false },
+        ];
+    }, [licenseUsers]);
+
+    // Actions
     const toggleUserStatus = (id: string) => {
-        setLicenseUsers(prev => prev.map(user =>
-            user.id === id ? { ...user, status: user.status === "Active" ? "Suspended" : "Active" } : user
-        ));
+        setLicenseUsers((prev) =>
+            prev.map((user) => {
+                if (user.id !== id) return user;
+                const newStatus = user.status === "Suspended" ? "Active" : "Suspended";
+                showSuccess(`License ${newStatus === "Suspended" ? "suspended" : "restored"} for ${user.name}`);
+                return { ...user, status: newStatus };
+            })
+        );
     };
+
+    const removeUser = (id: string) => {
+        const user = licenseUsers.find((u) => u.id === id);
+        if (!user) return;
+        const confirmed = window.confirm(`Are you sure you want to remove the license for ${user.name}?`);
+        if (!confirmed) return;
+        setLicenseUsers((prev) => prev.filter((u) => u.id !== id));
+        showSuccess(`License removed for ${user.name}`);
+    };
+
+    const openCreateModal = () => {
+        setFormName("");
+        setFormEmail("");
+        setFormRole(ROLES[0]);
+        setShowCreateModal(true);
+    };
+
+    const handleCreate = () => {
+        if (!formName.trim() || !formEmail.trim()) {
+            showWarning("Please fill in all required fields");
+            return;
+        }
+        const newUser: LicenseUser = {
+            id: String(Date.now()),
+            name: formName.trim(),
+            email: formEmail.trim(),
+            role: formRole,
+            plan: "Enterprise Pro",
+            status: "Pending",
+            assignedDate: new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }),
+        };
+        setLicenseUsers((prev) => [...prev, newUser]);
+        setShowCreateModal(false);
+        showSuccess(`License assigned to ${newUser.name}`);
+    };
+
+    const openEditModal = (user: LicenseUser) => {
+        setEditingUser(user);
+        setFormName(user.name);
+        setFormEmail(user.email);
+        setFormRole(user.role);
+        setShowEditModal(true);
+    };
+
+    const handleEdit = () => {
+        if (!editingUser) return;
+        if (!formName.trim() || !formEmail.trim()) {
+            showWarning("Please fill in all required fields");
+            return;
+        }
+        setLicenseUsers((prev) =>
+            prev.map((u) =>
+                u.id === editingUser.id
+                    ? { ...u, name: formName.trim(), email: formEmail.trim(), role: formRole }
+                    : u
+            )
+        );
+        setShowEditModal(false);
+        setEditingUser(null);
+        showSuccess("License reassigned successfully");
+    };
+
+    const cycleRoleFilter = () => {
+        setRoleFilterIndex((prev) => (prev + 1) % ROLE_FILTERS.length);
+    };
+
+    const cycleStatusFilter = () => {
+        setStatusFilterIndex((prev) => (prev + 1) % STATUS_FILTERS.length);
+    };
+
+    const handleExport = () => {
+        showSuccess("License list exported successfully");
+    };
+
+    const renderFormFields = () => (
+        <div className="p-5 space-y-4 bg-white">
+            <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-gray-600">Full name <span className="text-rose-500">*</span></Label>
+                <Input
+                    className="rounded-none border-zinc-200 h-9 text-sm"
+                    placeholder="Enter full name"
+                    value={formName}
+                    onChange={(e) => setFormName(e.target.value)}
+                />
+            </div>
+            <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-gray-600">Email <span className="text-rose-500">*</span></Label>
+                <Input
+                    className="rounded-none border-zinc-200 h-9 text-sm"
+                    placeholder="Enter email address"
+                    value={formEmail}
+                    onChange={(e) => setFormEmail(e.target.value)}
+                />
+            </div>
+            <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-gray-600">Role</Label>
+                <Select value={formRole} onValueChange={setFormRole}>
+                    <SelectTrigger className="rounded-none border-zinc-200 h-9">
+                        <SelectValue placeholder="Select role" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-none">
+                        {ROLES.map((r) => (
+                            <SelectItem key={r} value={r}>{r}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
+            <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-gray-600">Plan</Label>
+                <Input
+                    className="rounded-none border-zinc-200 h-9 text-sm bg-zinc-50"
+                    value="Enterprise Pro"
+                    readOnly
+                />
+            </div>
+        </div>
+    );
 
     return (
         <div className="space-y-6 text-[#1A1A1A]">
             <div className="flex items-center justify-between">
                 <div className="flex flex-col gap-1">
-                    <h1 className="text-[22px] font-bold tracking-tight">License Management</h1>
-                    <p className="text-[13px] text-zinc-500">Manage user quotas, assign seats, and monitor license utilization across business units.</p>
+                    <h1 className="text-xl font-semibold text-gray-900">License Management</h1>
+                    <p className="text-xs text-gray-600">Manage user quotas, assign seats, and monitor license utilization across business units.</p>
                 </div>
                 <div className="flex gap-3">
-                    <Button variant="outline" className="rounded-none border-zinc-200 font-black text-[11px] h-10 gap-2 uppercase tracking-tight">
+                    <Button
+                        variant="outline"
+                        className="rounded-none border-zinc-200 font-medium text-xs h-9 gap-2"
+                        onClick={handleExport}
+                    >
                         <Download size={14} /> Export List
                     </Button>
-                    <Button className="rounded-none bg-blue-600 hover:bg-blue-700 font-black text-[11px] h-10 gap-2 shadow-xl shadow-blue-100 uppercase tracking-tight px-6">
+                    <Button
+                        className="rounded-none bg-primary hover:bg-primary/90 font-medium text-xs h-9 gap-2 shadow-md shadow-primary/20 px-5"
+                        onClick={openCreateModal}
+                    >
                         <Plus size={14} /> Assign New License
                     </Button>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {summary.map((item, idx) => (
-                    <div
+                    <SmallCard
                         key={idx}
-                        className={`p-6 rounded-none shadow-xl transition-all duration-300 ${item.isHighlight
-                            ? 'bg-gradient-to-br from-blue-700 to-indigo-800 text-white shadow-blue-200 border-none'
-                            : 'bg-white border border-zinc-200 text-zinc-900 shadow-zinc-100'
+                        className={`border transition-all duration-300 transform hover:-translate-y-1 ${item.isHighlight
+                            ? "bg-gradient-to-r from-primary/70 to-primary text-white shadow-lg hover:shadow-2xl"
+                            : "bg-white shadow-lg hover:shadow-2xl"
                             }`}
                     >
-                        <p className={`text-sm mb-3 ${item.isHighlight ? 'text-white opacity-80' : 'text-gray-600'}`}>
-                            {item.label}
-                        </p>
-                        <div className="flex items-baseline gap-2">
-                            <span className={`text-2xl font-bold leading-none ${item.isHighlight ? 'text-white' : 'text-gray-900'}`}>
-                                {item.value}
-                            </span>
-                        </div>
-                        <p className={`text-xs mt-3 ${item.isHighlight ? 'text-white opacity-80' : item.color}`}>
-                            {item.sub}
-                        </p>
-                    </div>
+                        <SmallCardContent className="p-4">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className={`text-xs ${item.isHighlight ? "text-white opacity-80" : "text-gray-600"}`}>
+                                        {item.label}
+                                    </p>
+                                    <p className={`text-xl font-semibold mt-1 ${item.isHighlight ? "text-white" : "text-gray-900"}`}>
+                                        {item.value}
+                                    </p>
+                                    <p className={`text-[10px] mt-1 ${item.isHighlight ? "text-white opacity-80" : item.color}`}>
+                                        {item.sub}
+                                    </p>
+                                </div>
+                                <UserCheck className={`w-5 h-5 ${item.isHighlight ? "text-white" : "text-primary"}`} />
+                            </div>
+                        </SmallCardContent>
+                    </SmallCard>
                 ))}
             </div>
 
-            <div className="bg-white border border-zinc-200 rounded-none shadow-2xl shadow-zinc-200/50 overflow-hidden">
-                <div className="p-5 border-b border-zinc-100 flex flex-col md:flex-row gap-4 justify-between items-center bg-zinc-50/50">
+            <div className="bg-white border border-zinc-200 rounded-none shadow-lg overflow-hidden">
+                <div className="p-4 border-b border-zinc-100 flex flex-col md:flex-row gap-4 justify-between items-center bg-zinc-50/50">
                     <div className="relative w-full md:w-96">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" size={16} />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={16} />
                         <Input
                             placeholder="Search by name, email or role..."
-                            className="pl-11 rounded-none border-zinc-200 h-11 text-[13px] font-medium focus:ring-blue-600 bg-white"
+                            className="pl-10 rounded-none border-zinc-200 h-10 text-xs font-medium focus:ring-primary bg-white"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
                     </div>
                     <div className="flex gap-2 w-full md:w-auto">
-                        <Button variant="outline" className="rounded-none border-zinc-200 text-[11px] h-11 gap-2 flex-1 md:flex-none font-black uppercase tracking-tight bg-white">
-                            <Filter size={14} /> Filter Roles
+                        <Button
+                            variant="outline"
+                            className="rounded-none border-zinc-200 text-xs h-9 gap-2 flex-1 md:flex-none font-medium bg-white"
+                            onClick={cycleRoleFilter}
+                        >
+                            <Filter size={14} /> {activeRoleFilter === "All" ? "Filter Roles" : activeRoleFilter}
                         </Button>
-                        <Button variant="outline" className="rounded-none border-zinc-200 text-[11px] h-11 gap-2 flex-1 md:flex-none font-black uppercase tracking-tight bg-white">
-                            <ShieldAlert size={14} /> Status: All
+                        <Button
+                            variant="outline"
+                            className="rounded-none border-zinc-200 text-xs h-9 gap-2 flex-1 md:flex-none font-medium bg-white"
+                            onClick={cycleStatusFilter}
+                        >
+                            <ShieldAlert size={14} /> Status: {activeStatusFilter}
                         </Button>
                     </div>
                 </div>
@@ -117,88 +327,162 @@ export default function LicensesPage() {
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-zinc-100/50 border-b border-zinc-100">
-                                <th className="px-6 py-5 text-[10px] font-black text-zinc-400 uppercase tracking-[2px]">Core Identity</th>
-                                <th className="px-6 py-5 text-[10px] font-black text-zinc-400 uppercase tracking-[2px]">license Tier</th>
-                                <th className="px-6 py-5 text-[10px] font-black text-zinc-400 uppercase tracking-[2px]">Assigned Date</th>
-                                <th className="px-6 py-5 text-[10px] font-black text-zinc-400 uppercase tracking-[2px]">Utilization</th>
-                                <th className="px-6 py-5 text-[10px] font-black text-zinc-400 uppercase tracking-[2px] text-right">Actions</th>
+                                <th className="px-6 py-3 text-[11px] font-medium text-gray-500">Identity</th>
+                                <th className="px-6 py-3 text-[11px] font-medium text-gray-500">License Tier</th>
+                                <th className="px-6 py-3 text-[11px] font-medium text-gray-500">Assigned Date</th>
+                                <th className="px-6 py-3 text-[11px] font-medium text-gray-500">Status</th>
+                                <th className="px-6 py-3 text-[11px] font-medium text-gray-500 text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-zinc-100">
-                            {licenseUsers.map((user) => (
-                                <tr key={user.id} className="hover:bg-blue-50/30 transition-colors group">
-                                    <td className="px-6 py-4">
+                            {filteredUsers.map((user) => (
+                                <tr key={user.id} className="hover:bg-primary/5 transition-colors group">
+                                    <td className="px-6 py-3">
                                         <div className="flex flex-col">
-                                            <span className="text-[14px] font-black text-zinc-900 leading-tight">{user.name}</span>
-                                            <span className="text-[12px] text-zinc-500 font-medium">{user.email}</span>
+                                            <span className="text-sm font-semibold text-gray-900 leading-tight">{user.name}</span>
+                                            <span className="text-xs text-gray-500 font-medium">{user.email}</span>
                                             <div className="flex items-center gap-1.5 mt-1">
-                                                <span className="h-1 w-1 bg-blue-600 rounded-none rotate-45" />
-                                                <span className="text-[10px] text-blue-600 font-black uppercase tracking-wider">{user.role}</span>
+                                                <span className="h-1.5 w-1.5 bg-primary rounded-none" />
+                                                <span className="text-[10px] text-primary font-medium">{user.role}</span>
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4">
-                                        <Badge className="bg-zinc-900 text-white border-none rounded-none px-2 py-0.5 text-[9px] font-black uppercase tracking-[1px]">
+                                    <td className="px-6 py-3">
+                                        <Badge className="bg-zinc-900 text-white border-none rounded-none px-2 py-0.5 text-[10px] font-medium">
                                             {user.plan}
                                         </Badge>
                                     </td>
-                                    <td className="px-6 py-4 text-[13px] text-zinc-600 font-black font-mono">
+                                    <td className="px-6 py-3 text-xs text-gray-600 font-medium">
                                         {user.assignedDate}
                                     </td>
-                                    <td className="px-6 py-4">
+                                    <td className="px-6 py-3">
                                         <div className="flex items-center gap-2">
                                             {user.status === "Active" ? (
                                                 <div className="flex items-center gap-2 px-2 py-1 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-none">
-                                                    <CheckCircle2 size={12} className="stroke-[3px]" />
-                                                    <span className="text-[10px] font-black uppercase tracking-widest">{user.status}</span>
+                                                    <CheckCircle2 size={12} />
+                                                    <span className="text-[10px] font-medium">{user.status}</span>
                                                 </div>
                                             ) : user.status === "Pending" ? (
                                                 <div className="flex items-center gap-2 px-2 py-1 bg-amber-50 text-amber-600 border border-amber-100 rounded-none">
-                                                    <Clock size={12} className="stroke-[3px]" />
-                                                    <span className="text-[10px] font-black uppercase tracking-widest">{user.status}</span>
+                                                    <Clock size={12} />
+                                                    <span className="text-[10px] font-medium">{user.status}</span>
                                                 </div>
                                             ) : (
                                                 <div className="flex items-center gap-2 px-2 py-1 bg-rose-50 text-rose-600 border border-rose-100 rounded-none">
-                                                    <XCircle size={12} className="stroke-[3px]" />
-                                                    <span className="text-[10px] font-black uppercase tracking-widest">{user.status}</span>
+                                                    <XCircle size={12} />
+                                                    <span className="text-[10px] font-medium">{user.status}</span>
                                                 </div>
                                             )}
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4 text-right">
+                                    <td className="px-6 py-3 text-right">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" className="h-9 w-9 p-0 rounded-none hover:bg-zinc-100 text-zinc-400 hover:text-zinc-900 border border-transparent hover:border-zinc-200">
-                                                    <MoreVertical size={18} />
+                                                <Button variant="ghost" className="h-8 w-8 p-0 rounded-none hover:bg-zinc-100 text-zinc-400 hover:text-zinc-900">
+                                                    <MoreVertical size={16} />
                                                 </Button>
                                             </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end" className="rounded-none border-zinc-200 shadow-2xl p-2 min-w-[160px]">
-                                                <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-2">Governance</DropdownMenuLabel>
-                                                <DropdownMenuItem className="text-[12px] font-black uppercase tracking-tight p-2 focus:bg-blue-600 focus:text-white" onClick={() => toggleUserStatus(user.id)}>
-                                                    {user.status === "Suspended" ? "Restore License" : "Cease Access"}
+                                            <DropdownMenuContent align="end" className="rounded-none border-zinc-200 shadow-lg p-2 min-w-[160px]">
+                                                <DropdownMenuLabel className="text-[10px] font-medium text-gray-400 mb-1">Actions</DropdownMenuLabel>
+                                                <DropdownMenuItem
+                                                    className="text-xs font-medium p-2 rounded-md cursor-pointer"
+                                                    onClick={() => toggleUserStatus(user.id)}
+                                                >
+                                                    {user.status === "Suspended" ? "Restore License" : "Suspend Access"}
                                                 </DropdownMenuItem>
-                                                <DropdownMenuItem className="text-[12px] font-black uppercase tracking-tight p-2 focus:bg-blue-600 focus:text-white">Relocate Node</DropdownMenuItem>
-                                                <DropdownMenuSeparator className="my-2" />
-                                                <DropdownMenuItem className="text-[12px] font-black uppercase tracking-tight p-2 text-rose-600 focus:bg-rose-600 focus:text-white flex items-center gap-2">
-                                                    <UserMinus size={14} /> Purge Records
+                                                <DropdownMenuItem
+                                                    className="text-xs font-medium p-2 rounded-md cursor-pointer"
+                                                    onClick={() => openEditModal(user)}
+                                                >
+                                                    Reassign
+                                                </DropdownMenuItem>
+                                                <DropdownMenuSeparator className="my-1" />
+                                                <DropdownMenuItem
+                                                    className="text-xs font-medium p-2 text-rose-600 rounded-md cursor-pointer flex items-center gap-2"
+                                                    onClick={() => removeUser(user.id)}
+                                                >
+                                                    <UserMinus size={14} /> Remove License
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </td>
                                 </tr>
                             ))}
+                            {filteredUsers.length === 0 && (
+                                <tr>
+                                    <td colSpan={5} className="px-6 py-10 text-center text-xs text-gray-400 font-medium">
+                                        No licenses found matching your criteria.
+                                    </td>
+                                </tr>
+                            )}
                         </tbody>
                     </table>
                 </div>
 
                 <div className="p-4 border-t border-zinc-100 bg-zinc-50/50 flex items-center justify-between">
-                    <p className="text-[11px] font-bold text-zinc-500">DISPLAYING <span className="text-zinc-900 font-black">1-5</span> OF <span className="text-zinc-900 font-black tracking-widest">84 RECORDS</span></p>
+                    <p className="text-[11px] font-medium text-gray-500">
+                        Showing <span className="text-gray-900 font-semibold">{filteredUsers.length}</span> of <span className="text-gray-900 font-semibold">{licenseUsers.length} records</span>
+                    </p>
                     <div className="flex gap-2">
-                        <Button variant="outline" className="rounded-none border-zinc-200 font-black text-[10px] h-9 px-6 uppercase tracking-widest bg-white" disabled>Backward</Button>
-                        <Button variant="outline" className="rounded-none border-zinc-200 font-black text-[10px] h-9 px-6 uppercase tracking-widest bg-white">Forward <ChevronRight size={14} className="ml-1" /></Button>
+                        <Button
+                            variant="outline"
+                            className="rounded-none border-zinc-200 font-medium text-[10px] h-8 px-4 bg-white"
+                            onClick={() => showWarning("All records are displayed on this page")}
+                        >
+                            Previous
+                        </Button>
+                        <Button
+                            variant="outline"
+                            className="rounded-none border-zinc-200 font-medium text-[10px] h-8 px-4 bg-white"
+                            onClick={() => showWarning("All records are displayed on this page")}
+                        >
+                            Next
+                        </Button>
                     </div>
                 </div>
             </div>
+
+            {/* Assign New License Modal */}
+            <Dialog open={showCreateModal} onOpenChange={(open) => { if (!open) setShowCreateModal(false); }}>
+                <DialogContent className="max-w-md rounded-none p-0 overflow-hidden shadow-2xl border-none">
+                    <div className="bg-gradient-to-r from-primary/80 to-primary px-5 py-4 text-white">
+                        <h2 className="text-base font-semibold flex items-center gap-2">
+                            <Plus size={16} /> Assign New License
+                        </h2>
+                        <p className="text-xs opacity-80 mt-1">Add a new user to your Enterprise Pro plan.</p>
+                    </div>
+                    {renderFormFields()}
+                    <DialogFooter className="px-5 py-3 bg-zinc-50 border-t border-zinc-100 gap-3 sm:justify-end">
+                        <Button variant="ghost" onClick={() => setShowCreateModal(false)} className="rounded-none text-sm text-gray-600 h-9">
+                            Cancel
+                        </Button>
+                        <Button onClick={handleCreate} className="bg-primary hover:bg-primary/90 rounded-none text-sm px-6 h-9 shadow-md shadow-primary/20">
+                            Assign License
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Reassign License Modal */}
+            <Dialog open={showEditModal} onOpenChange={(open) => { if (!open) { setShowEditModal(false); setEditingUser(null); } }}>
+                <DialogContent className="max-w-md rounded-none p-0 overflow-hidden shadow-2xl border-none">
+                    <div className="bg-gradient-to-r from-primary/80 to-primary px-5 py-4 text-white">
+                        <h2 className="text-base font-semibold flex items-center gap-2">
+                            <UserCheck size={16} /> Reassign License
+                        </h2>
+                        <p className="text-xs opacity-80 mt-1">Update the license assignment details.</p>
+                    </div>
+                    {renderFormFields()}
+                    <DialogFooter className="px-5 py-3 bg-zinc-50 border-t border-zinc-100 gap-3 sm:justify-end">
+                        <Button variant="ghost" onClick={() => { setShowEditModal(false); setEditingUser(null); }} className="rounded-none text-sm text-gray-600 h-9">
+                            Cancel
+                        </Button>
+                        <Button onClick={handleEdit} className="bg-primary hover:bg-primary/90 rounded-none text-sm px-6 h-9 shadow-md shadow-primary/20">
+                            Save Changes
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

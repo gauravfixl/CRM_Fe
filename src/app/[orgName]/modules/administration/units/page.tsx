@@ -5,162 +5,347 @@ import {
     Network,
     Plus,
     Search,
-    MoreVertical,
     Users,
     Shield,
     Building,
-    ChevronRight,
-    Info,
-    ShieldAlert
+    Pencil,
+    Trash2,
+    ShieldCheck,
+    X
 } from "lucide-react"
-import { CustomButton } from "@/components/custom/CustomButton"
-import SubHeader from "@/components/custom/SubHeader"
+import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
+import { Label } from "@/components/ui/label"
+import { Card, CardContent } from "@/components/ui/card"
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+    DialogClose
+} from "@/components/ui/dialog"
+import { toast } from "sonner"
 
 export default function AdministrativeUnitsPage() {
     const [searchQuery, setSearchQuery] = useState("")
-
-    const units = [
+    const [units, setUnits] = useState([
         { id: "au1", name: "Engineering Unit", focus: "Technical Infrastructure", members: 42, admins: 3, status: "Active" },
         { id: "au2", name: "FinOps Global", focus: "Financial Operations", members: 12, admins: 2, status: "Active" },
         { id: "au3", name: "Human Capital", focus: "HR & Recruitment", members: 8, admins: 1, status: "Review Required" },
-    ]
+    ])
+
+    const [createOpen, setCreateOpen] = useState(false)
+    const [editOpen, setEditOpen] = useState(false)
+    const [deleteOpen, setDeleteOpen] = useState(false)
+    const [selectedUnit, setSelectedUnit] = useState<typeof units[0] | null>(null)
+    const [formName, setFormName] = useState("")
+    const [formFocus, setFormFocus] = useState("")
+
+    const totalMembers = units.reduce((s, u) => s + u.members, 0)
+    const totalAdmins = units.reduce((s, u) => s + u.admins, 0)
+
+    const filteredUnits = units.filter(
+        (u) =>
+            u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            u.focus.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+
+    const handleCreate = () => {
+        if (!formName.trim()) return
+        const newUnit = {
+            id: `au${Date.now()}`,
+            name: formName,
+            focus: formFocus || "General",
+            members: 0,
+            admins: 0,
+            status: "Active",
+        }
+        setUnits([...units, newUnit])
+        setFormName("")
+        setFormFocus("")
+        setCreateOpen(false)
+        toast.success(`Unit "${newUnit.name}" created successfully`)
+    }
+
+    const handleEdit = () => {
+        if (!selectedUnit || !formName.trim()) return
+        setUnits(units.map((u) => u.id === selectedUnit.id ? { ...u, name: formName, focus: formFocus } : u))
+        setEditOpen(false)
+        toast.success(`Unit "${formName}" updated successfully`)
+    }
+
+    const handleDelete = () => {
+        if (!selectedUnit) return
+        setUnits(units.filter((u) => u.id !== selectedUnit.id))
+        setDeleteOpen(false)
+        toast.success(`Unit "${selectedUnit.name}" deleted`)
+    }
+
+    const openEdit = (unit: typeof units[0]) => {
+        setSelectedUnit(unit)
+        setFormName(unit.name)
+        setFormFocus(unit.focus)
+        setEditOpen(true)
+    }
+
+    const openDelete = (unit: typeof units[0]) => {
+        setSelectedUnit(unit)
+        setDeleteOpen(true)
+    }
 
     return (
-        <div className="relative min-h-screen bg-[#F8F9FC] dark:bg-zinc-950">
-            <SubHeader
-                title="Administrative Units"
-                breadcrumbItems={[
-                    { label: "Identity & Access", href: "#" },
-                    { label: "Governance", href: "#" },
-                    { label: "Units", href: "#" }
-                ]}
-                rightControls={
-                    <CustomButton className="bg-zinc-900 text-white hover:bg-zinc-800 rounded-none h-10 px-6 font-bold shadow-xl">
-                        <Plus className="w-4 h-4 mr-2" /> Create Admin Unit
-                    </CustomButton>
-                }
-            />
+        <div className="font-outfit relative min-h-screen bg-[#F8F9FC]">
+            {/* Header */}
+            <div className="px-4 md:px-8 pt-6 pb-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                    <div className="flex items-center gap-1.5 mb-1">
+                        <span className="text-xs font-medium text-gray-400">Identity & Access</span>
+                        <span className="text-xs text-gray-300">/</span>
+                        <span className="text-xs font-medium text-gray-400">Governance</span>
+                        <span className="text-xs text-gray-300">/</span>
+                        <span className="text-xs font-semibold text-gray-900">Units</span>
+                    </div>
+                    <h1 className="text-xl font-semibold text-gray-900 tracking-tight">Administrative Units</h1>
+                </div>
+                <Button
+                    onClick={() => { setFormName(""); setFormFocus(""); setCreateOpen(true) }}
+                    className="rounded-xl font-semibold text-xs h-10 px-6"
+                >
+                    <Plus className="w-4 h-4 mr-2" /> Create Admin Unit
+                </Button>
+            </div>
 
-            <div className="p-4 md:p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-
-                {/* Unit HUD */}
-                <div className="bg-zinc-900 text-white p-8 rounded-none flex flex-col md:flex-row items-center justify-between gap-8 relative overflow-hidden shadow-2xl">
-                    <div className="absolute top-0 right-0 p-8 opacity-5">
-                        <Network className="h-64 w-64" />
-                    </div>
-                    <div className="relative z-10 space-y-4 max-w-2xl">
-                        <Badge className="bg-blue-600 text-white border-0 rounded-none px-3 py-1 font-black tracking-widest text-[10px]">DELEGATED ADMINISTRATION</Badge>
-                        <h2 className="text-4xl font-black tracking-tighter text-white uppercase italic">Scoped Governance</h2>
-                        <p className="text-zinc-300 font-medium leading-relaxed italic opacity-90">
-                            Administrative Units allow you to subdivide your organization into specific groups for management.
-                            Assign "Helpdesk Administrators" for specific departments without giving them global directory access.
-                        </p>
-                        <div className="flex items-center gap-6 pt-2">
-                            <div className="flex flex-col">
-                                <span className="text-3xl font-black text-white">{units.length}</span>
-                                <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Active Units</span>
+            <div className="p-4 md:px-8 space-y-6">
+                {/* Stat Cards */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <Card className="rounded-xl bg-gradient-to-r from-primary/70 to-primary text-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 border-0">
+                        <CardContent className="p-5">
+                            <div className="flex items-center justify-between mb-2">
+                                <Network className="w-5 h-5 text-white/80" />
                             </div>
-                            <Separator orientation="vertical" className="h-10 bg-zinc-800" />
-                            <div className="flex flex-col">
-                                <span className="text-3xl font-black text-white italic">6</span>
-                                <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Local Admins</span>
+                            <p className="text-xl font-semibold">{units.length}</p>
+                            <p className="text-xs text-white/80">Total Units</p>
+                            <p className="text-[10px] text-white/60 mt-0.5">Active containers</p>
+                        </CardContent>
+                    </Card>
+                    <Card className="rounded-xl border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                        <CardContent className="p-5">
+                            <div className="flex items-center justify-between mb-2">
+                                <Users className="w-5 h-5 text-blue-500" />
                             </div>
-                        </div>
-                    </div>
-                    <div className="shrink-0 relative z-10 border border-zinc-800 p-8 bg-black/20 backdrop-blur-md rounded-none">
-                        <div className="flex flex-col items-center gap-2">
-                            <ShieldAlert className="w-8 h-8 text-orange-500" />
-                            <span className="text-xs font-bold text-zinc-300">Security Score</span>
-                            <span className="text-4xl font-black text-emerald-500 italic uppercase">92%</span>
-                        </div>
-                    </div>
+                            <p className="text-xl font-semibold text-gray-900">{totalMembers}</p>
+                            <p className="text-xs text-gray-600">Total Members</p>
+                            <p className="text-[10px] text-gray-400 mt-0.5">Across all units</p>
+                        </CardContent>
+                    </Card>
+                    <Card className="rounded-xl border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                        <CardContent className="p-5">
+                            <div className="flex items-center justify-between mb-2">
+                                <Shield className="w-5 h-5 text-indigo-500" />
+                            </div>
+                            <p className="text-xl font-semibold text-gray-900">{totalAdmins}</p>
+                            <p className="text-xs text-gray-600">Total Admins</p>
+                            <p className="text-[10px] text-gray-400 mt-0.5">Delegated administrators</p>
+                        </CardContent>
+                    </Card>
+                    <Card className="rounded-xl border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                        <CardContent className="p-5">
+                            <div className="flex items-center justify-between mb-2">
+                                <ShieldCheck className="w-5 h-5 text-emerald-500" />
+                            </div>
+                            <p className="text-xl font-semibold text-gray-900">92%</p>
+                            <p className="text-xs text-gray-600">Security Score</p>
+                            <p className="text-[10px] text-gray-400 mt-0.5">Above baseline</p>
+                        </CardContent>
+                    </Card>
                 </div>
 
-                {/* Command Bar */}
-                <div className="flex items-center gap-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-2 rounded-none shadow-sm">
+                {/* Search Bar */}
+                <div className="flex items-center gap-4 bg-white border border-zinc-200 p-2 rounded-xl shadow-sm">
                     <div className="relative flex-1">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
                         <Input
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Search scoped units by name or focus..."
-                            className="pl-11 border-none focus-visible:ring-0 rounded-none h-12 bg-transparent"
+                            placeholder="Search units by name or focus..."
+                            className="pl-11 border-none focus-visible:ring-0 rounded-lg h-10 bg-transparent"
                         />
                     </div>
                 </div>
 
                 {/* Unit Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {units.map((unit) => (
-                        <Card key={unit.id} className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-none shadow-sm hover:shadow-xl transition-all group overflow-hidden border-t-4 border-t-zinc-900">
-                            <CardHeader className="flex flex-row items-center justify-between pb-2">
-                                <div className="h-12 w-12 bg-zinc-50 dark:bg-zinc-800 flex items-center justify-center rounded-none border border-zinc-100 dark:border-zinc-700">
-                                    <Building className="w-6 h-6 text-zinc-400" />
+                    {filteredUnits.map((unit) => (
+                        <Card key={unit.id} className="bg-white rounded-xl shadow-sm hover:shadow-xl transition-all group overflow-hidden border">
+                            <CardContent className="p-6 space-y-5">
+                                <div className="flex items-start justify-between">
+                                    <div className="h-11 w-11 bg-zinc-50 flex items-center justify-center rounded-lg border border-zinc-100">
+                                        <Building className="w-5 h-5 text-zinc-400" />
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-400 hover:text-blue-600" onClick={() => openEdit(unit)}>
+                                            <Pencil className="w-3.5 h-3.5" />
+                                        </Button>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-400 hover:text-red-600" onClick={() => openDelete(unit)}>
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                        </Button>
+                                    </div>
                                 </div>
-                                <CustomButton variant="ghost" size="icon" className="text-zinc-400">
-                                    <MoreVertical className="w-4 h-4" />
-                                </CustomButton>
-                            </CardHeader>
-                            <CardContent className="space-y-6">
                                 <div>
-                                    <h4 className="text-xl font-black tracking-tight text-zinc-900 dark:text-white">{unit.name}</h4>
-                                    <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mt-1">{unit.focus}</p>
+                                    <h4 className="text-base font-semibold tracking-tight text-gray-900">{unit.name}</h4>
+                                    <p className="text-xs font-medium text-gray-400 mt-1">{unit.focus}</p>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="bg-zinc-50 dark:bg-zinc-900/50 p-4 rounded-none border border-zinc-100 dark:border-zinc-800">
-                                        <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest block mb-1">Members</span>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="bg-zinc-50 p-3 rounded-lg border border-zinc-100">
+                                        <span className="text-[10px] font-medium text-gray-400 block mb-1">Members</span>
                                         <div className="flex items-center gap-2">
                                             <Users className="w-4 h-4 text-blue-500" />
-                                            <span className="text-xl font-black">{unit.members}</span>
+                                            <span className="text-base font-semibold">{unit.members}</span>
                                         </div>
                                     </div>
-                                    <div className="bg-zinc-50 dark:bg-zinc-900/50 p-4 rounded-none border border-zinc-100 dark:border-zinc-800">
-                                        <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest block mb-1">Admins</span>
+                                    <div className="bg-zinc-50 p-3 rounded-lg border border-zinc-100">
+                                        <span className="text-[10px] font-medium text-gray-400 block mb-1">Admins</span>
                                         <div className="flex items-center gap-2">
                                             <Shield className="w-4 h-4 text-indigo-500" />
-                                            <span className="text-xl font-black">{unit.admins}</span>
+                                            <span className="text-base font-semibold">{unit.admins}</span>
                                         </div>
                                     </div>
                                 </div>
 
                                 <div className="flex items-center justify-between pt-2">
-                                    <Badge className={`rounded-none border-0 text-[10px] font-black uppercase tracking-widest ${unit.status === 'Active' ? 'bg-emerald-50 text-emerald-600' : 'bg-orange-50 text-orange-600'
-                                        }`}>
+                                    <Badge className={`rounded-full border-0 text-[10px] font-semibold ${unit.status === "Active" ? "bg-emerald-50 text-emerald-600" : "bg-orange-50 text-orange-600"}`}>
                                         {unit.status}
                                     </Badge>
-                                    <CustomButton variant="ghost" className="text-[10px] font-black uppercase tracking-tighter group-hover:text-indigo-600">
-                                        Manage Unit <ChevronRight className="ml-1 w-3 h-3 transition-transform group-hover:translate-x-1" />
-                                    </CustomButton>
+                                    <Button
+                                        variant="ghost"
+                                        className="text-xs font-semibold text-gray-500 hover:text-indigo-600 h-8 px-2"
+                                        onClick={() => toast.info(`Managing ${unit.name}`)}
+                                    >
+                                        Manage Unit
+                                    </Button>
                                 </div>
                             </CardContent>
                         </Card>
                     ))}
 
-                    {/* Add New Unit Placeholder */}
-                    <div className="border-2 border-dashed border-zinc-200 dark:border-zinc-800 flex flex-col items-center justify-center p-12 text-center space-y-4 hover:border-indigo-500/50 transition-colors cursor-pointer group">
-                        <div className="h-16 w-16 rounded-full bg-zinc-50 dark:bg-zinc-900 flex items-center justify-center group-hover:bg-indigo-50 transition-colors">
-                            <Plus className="w-8 h-8 text-zinc-300 group-hover:text-indigo-400" />
+                    {/* Add Placeholder */}
+                    <div
+                        className="border-2 border-dashed border-zinc-200 flex flex-col items-center justify-center p-12 text-center space-y-4 hover:border-indigo-400 transition-colors cursor-pointer group rounded-xl"
+                        onClick={() => { setFormName(""); setFormFocus(""); setCreateOpen(true) }}
+                    >
+                        <div className="h-14 w-14 rounded-full bg-zinc-50 flex items-center justify-center group-hover:bg-indigo-50 transition-colors">
+                            <Plus className="w-7 h-7 text-zinc-300 group-hover:text-indigo-400" />
                         </div>
                         <div>
-                            <h5 className="font-bold text-zinc-400 group-hover:text-zinc-600">Define Scope</h5>
+                            <h5 className="font-semibold text-zinc-400 group-hover:text-zinc-600 text-sm">Define Scope</h5>
                             <p className="text-xs text-zinc-400">Create a new container for delegated admins</p>
                         </div>
                     </div>
                 </div>
 
-                {/* Global Security Insight */}
-                <div className="p-6 bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-none flex items-center gap-4">
-                    <Info className="w-5 h-5 text-blue-600" />
-                    <p className="text-xs font-bold text-blue-700 uppercase tracking-wider">
+                {/* Info Banner */}
+                <div className="p-5 bg-blue-50 border border-blue-100 rounded-xl flex items-center gap-4">
+                    <ShieldCheck className="w-5 h-5 text-blue-600 shrink-0" />
+                    <p className="text-xs font-medium text-blue-700">
                         Note: Administrative Units do not affect standard user licensing. They are purely for permission scoping.
                     </p>
                 </div>
             </div>
+
+            {/* Create Dialog */}
+            <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+                <DialogContent className="rounded-xl">
+                    <DialogHeader>
+                        <DialogTitle className="text-lg font-semibold">Create Administrative Unit</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 py-2">
+                        <div className="space-y-2">
+                            <Label className="text-xs font-semibold text-gray-600">Unit Name</Label>
+                            <Input
+                                value={formName}
+                                onChange={(e) => setFormName(e.target.value)}
+                                placeholder="e.g. Marketing Unit"
+                                className="rounded-lg"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label className="text-xs font-semibold text-gray-600">Focus Area</Label>
+                            <Input
+                                value={formFocus}
+                                onChange={(e) => setFormFocus(e.target.value)}
+                                placeholder="e.g. Digital Marketing"
+                                className="rounded-lg"
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter className="gap-2">
+                        <DialogClose asChild>
+                            <Button variant="outline" className="rounded-xl font-semibold text-xs h-10">Cancel</Button>
+                        </DialogClose>
+                        <Button onClick={handleCreate} className="rounded-xl font-semibold text-xs h-10">
+                            <Plus className="w-4 h-4 mr-2" /> Create Unit
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Edit Dialog */}
+            <Dialog open={editOpen} onOpenChange={setEditOpen}>
+                <DialogContent className="rounded-xl">
+                    <DialogHeader>
+                        <DialogTitle className="text-lg font-semibold">Edit Administrative Unit</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 py-2">
+                        <div className="space-y-2">
+                            <Label className="text-xs font-semibold text-gray-600">Unit Name</Label>
+                            <Input
+                                value={formName}
+                                onChange={(e) => setFormName(e.target.value)}
+                                className="rounded-lg"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label className="text-xs font-semibold text-gray-600">Focus Area</Label>
+                            <Input
+                                value={formFocus}
+                                onChange={(e) => setFormFocus(e.target.value)}
+                                className="rounded-lg"
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter className="gap-2">
+                        <DialogClose asChild>
+                            <Button variant="outline" className="rounded-xl font-semibold text-xs h-10">Cancel</Button>
+                        </DialogClose>
+                        <Button onClick={handleEdit} className="rounded-xl font-semibold text-xs h-10">
+                            Save Changes
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Delete Dialog */}
+            <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+                <DialogContent className="rounded-xl">
+                    <DialogHeader>
+                        <DialogTitle className="text-lg font-semibold">Delete Unit</DialogTitle>
+                    </DialogHeader>
+                    <p className="text-sm text-gray-600 py-2">
+                        Are you sure you want to delete <span className="font-semibold">{selectedUnit?.name}</span>? This action cannot be undone.
+                    </p>
+                    <DialogFooter className="gap-2">
+                        <DialogClose asChild>
+                            <Button variant="outline" className="rounded-xl font-semibold text-xs h-10">Cancel</Button>
+                        </DialogClose>
+                        <Button variant="destructive" onClick={handleDelete} className="rounded-xl font-semibold text-xs h-10">
+                            <Trash2 className="w-4 h-4 mr-2" /> Delete Unit
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }
