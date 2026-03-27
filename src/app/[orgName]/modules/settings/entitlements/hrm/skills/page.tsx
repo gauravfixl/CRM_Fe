@@ -1,18 +1,17 @@
 "use client"
 
-import React, { useState } from "react"
-import { useParams } from "next/navigation"
+import { useState } from "react"
 import {
     Award,
     Search,
     Plus,
     MoreHorizontal,
     Star,
-    Tag
+    Tag,
+    Heart,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
 import {
     Table,
     TableBody,
@@ -27,12 +26,11 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { SmallCard, SmallCardContent, SmallCardHeader } from "@/shared/components/custom/SmallCard"
+import { SmallCard, SmallCardContent } from "@/components/custom/SmallCard"
 import { toast } from "sonner"
 import {
     Dialog,
     DialogContent,
-    DialogDescription,
     DialogFooter,
     DialogHeader,
     DialogTitle,
@@ -47,127 +45,199 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 
+interface Skill {
+    id: string
+    name: string
+    category: string
+    endorsements: number
+}
+
+const CATEGORIES = ["Technical", "Soft Skill", "Marketing", "Finance", "Language"]
+
 export default function SkillsPage() {
-    const params = useParams()
-    const [isLoading, setIsLoading] = useState(false)
     const [searchQuery, setSearchQuery] = useState("")
     const [isCreateOpen, setIsCreateOpen] = useState(false)
-    const [newItem, setNewItem] = useState({ name: "", category: "technical" })
+    const [isEditOpen, setIsEditOpen] = useState(false)
+    const [isLoading, setIsLoading] = useState(false)
+    const [newItem, setNewItem] = useState({ name: "", category: "" })
+    const [editItem, setEditItem] = useState<Skill | null>(null)
 
-    // Mock Data
-    const [skills, setSkills] = useState([
-        { id: "1", name: "ReactJS", category: "Technical", endorsed: 12 },
-        { id: "2", name: "Project Management", category: "Soft Skill", endorsed: 8 },
-        { id: "3", name: "SEO Optimization", category: "Marketing", endorsed: 5 },
-        { id: "4", name: "Financial Auditing", category: "Finance", endorsed: 3 },
+    const [skills, setSkills] = useState<Skill[]>([
+        { id: "1", name: "ReactJS", category: "Technical", endorsements: 12 },
+        { id: "2", name: "Project Management", category: "Soft Skill", endorsements: 8 },
+        { id: "3", name: "SEO Optimization", category: "Marketing", endorsements: 5 },
+        { id: "4", name: "Financial Auditing", category: "Finance", endorsements: 3 },
     ])
 
-    const handleAction = (msg: string) => {
+    const technicalSkills = skills.filter((s) => s.category === "Technical").length
+    const softSkills = skills.filter((s) => s.category === "Soft Skill").length
+    const totalEndorsements = skills.reduce((sum, s) => sum + s.endorsements, 0)
+
+    const filtered = skills.filter(
+        (s) =>
+            s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            s.category.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+
+    const createSkill = () => {
+        if (!newItem.name || !newItem.category) return toast.error("Please fill all fields")
         setIsLoading(true)
         setTimeout(() => {
+            setSkills([
+                ...skills,
+                {
+                    id: Date.now().toString(),
+                    name: newItem.name,
+                    category: newItem.category,
+                    endorsements: 0,
+                },
+            ])
+            setIsCreateOpen(false)
+            setNewItem({ name: "", category: "" })
             setIsLoading(false)
-            toast.success(msg)
+            toast.success("Skill added")
         }, 800)
     }
 
-    const createSkill = () => {
-        if (!newItem.name) return toast.error("Please enter skill name")
+    const updateSkill = () => {
+        if (!editItem || !editItem.name || !editItem.category) return toast.error("Please fill all fields")
         setIsLoading(true)
         setTimeout(() => {
-            setSkills([...skills, {
-                id: Date.now().toString(),
-                name: newItem.name,
-                category: newItem.category,
-                endorsed: 0
-            }])
-            setIsCreateOpen(false)
-            setNewItem({ name: "", category: "technical" })
+            setSkills(skills.map((s) => (s.id === editItem.id ? editItem : s)))
+            setIsEditOpen(false)
+            setEditItem(null)
             setIsLoading(false)
-            toast.success("Skill Added to Library")
-        }, 1000)
+            toast.success("Skill updated")
+        }, 800)
+    }
+
+    const deleteSkill = (id: string) => {
+        setSkills(skills.filter((s) => s.id !== id))
+        toast.success("Skill deleted")
+    }
+
+    const openEdit = (s: Skill) => {
+        setEditItem({ ...s })
+        setIsEditOpen(true)
     }
 
     return (
-        <div className="flex flex-col gap-6 p-6 min-h-screen bg-[#fafafa]">
-            {/* PAGE HEADER */}
+        <div className="font-outfit flex flex-col gap-6 p-6 min-h-screen bg-[#fafafa]">
+            {/* Breadcrumb */}
             <div className="flex flex-col gap-1">
-                <div className="flex items-center gap-2 text-[10px] font-medium text-zinc-400">
-                    <span>HR GOVERNANCE</span>
+                <div className="flex items-center gap-2 text-xs font-medium text-gray-400">
+                    <span>Hr governance</span>
                     <span>/</span>
-                    <span className="text-zinc-900 font-semibold">SKILLS</span>
+                    <span className="text-gray-900 font-semibold">Skills</span>
                 </div>
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mt-2">
                     <div>
-                        <h1 className="text-xl font-bold text-zinc-900 tracking-tight">Skills Matrix</h1>
-                        <p className="text-xs text-zinc-500 font-medium">Competency database for employee profiles.</p>
+                        <h1 className="text-xl font-semibold text-gray-900 tracking-tight">Skills Library</h1>
+                        <p className="text-xs text-gray-500 font-medium">Competency database for employee profiles.</p>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-                            <DialogTrigger asChild>
-                                <Button className="h-8 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium px-3 shadow-sm active:scale-95">
-                                    <Plus className="w-3.5 h-3.5 mr-2" />
-                                    New Skill
-                                </Button>
-                            </DialogTrigger>
-                            <DialogContent className="sm:max-w-[425px]">
-                                <DialogHeader>
-                                    <DialogTitle>Add Skill</DialogTitle>
-                                    <DialogDescription>
-                                        Add a new competency to the organization library.
-                                    </DialogDescription>
-                                </DialogHeader>
-                                <div className="grid gap-4 py-4">
-                                    <div className="grid gap-2">
-                                        <Label>Skill Name</Label>
-                                        <Input value={newItem.name} onChange={(e) => setNewItem({ ...newItem, name: e.target.value })} placeholder="e.g. Public Speaking" />
-                                    </div>
-                                    <div className="grid gap-2">
-                                        <Label>Category</Label>
-                                        <Select value={newItem.category} onValueChange={(v) => setNewItem({ ...newItem, category: v })}>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Select level" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="Technical">Technical</SelectItem>
-                                                <SelectItem value="Soft Skill">Soft Skill</SelectItem>
-                                                <SelectItem value="Language">Language</SelectItem>
-                                                <SelectItem value="Marketing">Marketing</SelectItem>
-                                                <SelectItem value="Finance">Finance</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
+                    <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+                        <DialogTrigger asChild>
+                            <Button className="rounded-xl bg-blue-600 hover:bg-blue-700 font-semibold text-xs h-10 gap-2 shadow-lg px-5">
+                                <Plus className="w-4 h-4" />
+                                New skill
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-md rounded-xl p-0 overflow-hidden">
+                            <DialogHeader className="bg-gradient-to-r from-blue-600 to-blue-700 px-5 py-4">
+                                <DialogTitle className="text-white font-semibold">Add skill</DialogTitle>
+                            </DialogHeader>
+                            <div className="grid gap-4 px-5 py-4">
+                                <div className="grid gap-2">
+                                    <Label className="text-xs font-semibold">Skill name</Label>
+                                    <Input className="h-9 rounded-lg" value={newItem.name} onChange={(e) => setNewItem({ ...newItem, name: e.target.value })} placeholder="e.g. Public Speaking" />
                                 </div>
-                                <DialogFooter>
-                                    <Button onClick={createSkill} disabled={isLoading} className="bg-blue-600 hover:bg-blue-700">{isLoading ? "Creating..." : "Add Skill"}</Button>
-                                </DialogFooter>
-                            </DialogContent>
-                        </Dialog>
-                    </div>
+                                <div className="grid gap-2">
+                                    <Label className="text-xs font-semibold">Category</Label>
+                                    <Select value={newItem.category} onValueChange={(v) => setNewItem({ ...newItem, category: v })}>
+                                        <SelectTrigger className="h-9 rounded-lg">
+                                            <SelectValue placeholder="Select category" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {CATEGORIES.map((c) => (
+                                                <SelectItem key={c} value={c}>{c}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+                            <DialogFooter className="px-5 pb-4">
+                                <Button onClick={createSkill} disabled={isLoading} className="rounded-lg bg-blue-600 hover:bg-blue-700 font-semibold text-xs">
+                                    {isLoading ? "Creating..." : "Add skill"}
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
                 </div>
             </div>
 
-            {/* STATS CARDS */}
+            {/* Stats cards */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <SmallCard className="bg-gradient-to-br from-blue-500 to-blue-700 border-t border-white/20 border-none text-white shadow-[0_8px_30px_rgb(59,130,246,0.3)] hover:shadow-[0_20px_40px_rgba(37,99,235,0.4)] hover:-translate-y-1 transform transition-all duration-300">
-                    <SmallCardHeader className="flex flex-row items-center justify-between pb-1 px-4 pt-4">
-                        <p className="text-[11px] text-white font-medium uppercase tracking-wider">Total Skills</p>
-                        <Award className="w-4 h-4 text-white" />
-                    </SmallCardHeader>
-                    <SmallCardContent className="px-4 pb-4">
-                        <p className="text-2xl font-bold text-white drop-shadow-md">{skills.length}</p>
-                        <p className="text-[10px] text-white">In library</p>
+                <SmallCard className="rounded-xl border bg-gradient-to-r from-primary/70 to-primary text-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                    <SmallCardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-xs text-white/80">Total skills</p>
+                                <p className="text-xl font-semibold">{skills.length}</p>
+                                <p className="text-[10px] text-white/80">In library</p>
+                            </div>
+                            <Award className="w-5 h-5 text-white/80" />
+                        </div>
+                    </SmallCardContent>
+                </SmallCard>
+
+                <SmallCard className="rounded-xl border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                    <SmallCardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-xs text-gray-600">Technical skills</p>
+                                <p className="text-xl font-semibold text-gray-900">{technicalSkills}</p>
+                                <p className="text-[10px] text-gray-500">Hard skills</p>
+                            </div>
+                            <Tag className="w-5 h-5 text-gray-400" />
+                        </div>
+                    </SmallCardContent>
+                </SmallCard>
+
+                <SmallCard className="rounded-xl border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                    <SmallCardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-xs text-gray-600">Soft skills</p>
+                                <p className="text-xl font-semibold text-gray-900">{softSkills}</p>
+                                <p className="text-[10px] text-gray-500">Interpersonal</p>
+                            </div>
+                            <Heart className="w-5 h-5 text-gray-400" />
+                        </div>
+                    </SmallCardContent>
+                </SmallCard>
+
+                <SmallCard className="rounded-xl border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                    <SmallCardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-xs text-gray-600">Total endorsements</p>
+                                <p className="text-xl font-semibold text-gray-900">{totalEndorsements}</p>
+                                <p className="text-[10px] text-gray-500">Across all skills</p>
+                            </div>
+                            <Star className="w-5 h-5 text-gray-400" />
+                        </div>
                     </SmallCardContent>
                 </SmallCard>
             </div>
 
-            {/* TABLE */}
-            <div className="bg-white rounded-lg border border-zinc-200 shadow-sm overflow-hidden flex flex-col">
-                <div className="p-4 border-b border-zinc-100 flex items-center justify-between bg-zinc-50/20">
-                    <div className="relative w-full md:w-80 group">
-                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-400" />
+            {/* Table */}
+            <div className="bg-white rounded-xl border shadow-sm overflow-hidden flex flex-col">
+                <div className="p-4 border-b flex items-center justify-between">
+                    <div className="relative w-full md:w-80">
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
                         <Input
                             placeholder="Search skills..."
-                            className="pl-9 h-9 bg-white border-zinc-200 rounded-md text-xs font-medium focus:ring-1 focus:ring-blue-100"
+                            className="pl-9 h-9 rounded-lg text-xs font-medium"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
@@ -175,44 +245,42 @@ export default function SkillsPage() {
                 </div>
 
                 <Table>
-                    <TableHeader className="bg-zinc-50/50">
+                    <TableHeader>
                         <TableRow>
-                            <TableHead className="py-3 px-4 font-semibold text-[11px] text-zinc-500 uppercase">Skill Name</TableHead>
-                            <TableHead className="py-3 font-semibold text-[11px] text-zinc-500 uppercase">Category</TableHead>
-                            <TableHead className="py-3 font-semibold text-[11px] text-zinc-500 uppercase text-center">Endorsements</TableHead>
-                            <TableHead className="py-3 text-right pr-4 font-semibold text-[11px] text-zinc-500 uppercase">Actions</TableHead>
+                            <TableHead className="py-3 px-4 text-xs font-semibold text-gray-500">Skill name</TableHead>
+                            <TableHead className="py-3 text-xs font-semibold text-gray-500">Category</TableHead>
+                            <TableHead className="py-3 text-xs font-semibold text-gray-500 text-center">Endorsements</TableHead>
+                            <TableHead className="py-3 text-right pr-4 text-xs font-semibold text-gray-500">Actions</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {skills.map((s) => (
-                            <TableRow key={s.id} className="hover:bg-zinc-50/50 transition-colors">
+                        {filtered.map((s) => (
+                            <TableRow key={s.id} className="hover:bg-gray-50 transition-colors">
                                 <TableCell className="py-3 px-4">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-lg bg-zinc-50 flex items-center justify-center border border-zinc-100 shadow-sm">
-                                            <Tag className="w-4 h-4 text-zinc-500" />
+                                        <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 border border-blue-100">
+                                            <Tag className="w-4 h-4" />
                                         </div>
-                                        <span className="text-xs font-bold text-zinc-900">{s.name}</span>
+                                        <span className="text-sm font-semibold text-gray-900">{s.name}</span>
                                     </div>
                                 </TableCell>
-                                <TableCell className="py-3">
-                                    <Badge variant="secondary" className="text-xs font-normal text-zinc-600 bg-zinc-100">{s.category}</Badge>
-                                </TableCell>
+                                <TableCell className="py-3 text-sm text-gray-600">{s.category}</TableCell>
                                 <TableCell className="py-3 text-center">
-                                    <div className="flex items-center justify-center gap-1 text-xs text-amber-500 font-bold">
-                                        <Star className="w-3.5 h-3.5 fill-amber-500" />
-                                        {s.endorsed}
+                                    <div className="flex items-center justify-center gap-1 text-sm text-gray-600">
+                                        <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+                                        {s.endorsements}
                                     </div>
                                 </TableCell>
                                 <TableCell className="py-3 text-right pr-4">
                                     <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" className="h-7 w-7 p-0 hover:bg-zinc-100 rounded-md">
-                                                <MoreHorizontal className="h-4 w-4 text-zinc-400" />
+                                            <Button variant="ghost" className="h-7 w-7 p-0 hover:bg-gray-100 rounded-lg">
+                                                <MoreHorizontal className="h-4 w-4 text-gray-400" />
                                             </Button>
                                         </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end" className="w-48 shadow-xl border-zinc-100">
-                                            <DropdownMenuItem onClick={() => handleAction("Editing skill...")}>Edit</DropdownMenuItem>
-                                            <DropdownMenuItem className="text-rose-600" onClick={() => handleAction("Deleting skill...")}>Delete</DropdownMenuItem>
+                                        <DropdownMenuContent align="end" className="w-48 rounded-lg">
+                                            <DropdownMenuItem onClick={() => openEdit(s)}>Edit</DropdownMenuItem>
+                                            <DropdownMenuItem className="text-rose-600" onClick={() => deleteSkill(s.id)}>Delete</DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
                                 </TableCell>
@@ -221,6 +289,47 @@ export default function SkillsPage() {
                     </TableBody>
                 </Table>
             </div>
+
+            {/* Edit dialog */}
+            <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+                <DialogContent className="max-w-md rounded-xl p-0 overflow-hidden">
+                    <DialogHeader className="bg-gradient-to-r from-blue-600 to-blue-700 px-5 py-4">
+                        <DialogTitle className="text-white font-semibold">Edit skill</DialogTitle>
+                    </DialogHeader>
+                    {editItem && (
+                        <>
+                            <div className="grid gap-4 px-5 py-4">
+                                <div className="grid gap-2">
+                                    <Label className="text-xs font-semibold">Skill name</Label>
+                                    <Input className="h-9 rounded-lg" value={editItem.name} onChange={(e) => setEditItem({ ...editItem, name: e.target.value })} />
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label className="text-xs font-semibold">Category</Label>
+                                    <Select value={editItem.category} onValueChange={(v) => setEditItem({ ...editItem, category: v })}>
+                                        <SelectTrigger className="h-9 rounded-lg">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {CATEGORIES.map((c) => (
+                                                <SelectItem key={c} value={c}>{c}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label className="text-xs font-semibold">Endorsements</Label>
+                                    <Input className="h-9 rounded-lg" type="number" value={editItem.endorsements} onChange={(e) => setEditItem({ ...editItem, endorsements: parseInt(e.target.value) || 0 })} />
+                                </div>
+                            </div>
+                            <DialogFooter className="px-5 pb-4">
+                                <Button onClick={updateSkill} disabled={isLoading} className="rounded-lg bg-blue-600 hover:bg-blue-700 font-semibold text-xs">
+                                    {isLoading ? "Saving..." : "Save changes"}
+                                </Button>
+                            </DialogFooter>
+                        </>
+                    )}
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }

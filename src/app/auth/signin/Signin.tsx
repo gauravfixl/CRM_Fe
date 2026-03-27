@@ -74,13 +74,20 @@ export default function SignInPage() {
             const decodedToken: any = jwtDecode(response.data?.orgToken);
             console.log("Decoded Org Token:", decodedToken);
             const orgIdFromToken = decodedToken?.orgId || decodedToken?.organizationId || decodedToken?.id;
+            // orgName is NOT in the JWT token - get it from the response data
+            const orgName = userData?.orgName || "";
             const userRole = decodedToken?.role;
-            const newPermissionsArray = decodedToken?.permissions;
+            const newPermissionsArray = decodedToken?.permissions || [];
             localStorage.setItem("orgToken", response.data?.orgToken);
             localStorage.setItem("orgID", orgIdFromToken);
-            localStorage.setItem("orgName", decodedToken?.orgName || "");
+            localStorage.setItem("orgName", orgName);
             useAuthStore.getState().setUserRole(userRole);
             useAuthStore.getState().setPermissions(newPermissionsArray);
+            useAuthStore.getState().setSingleOrganization({
+              orgId: orgIdFromToken,
+              orgName: orgName,
+              orgActive: true,
+            });
 
             if (userRole === "SupportAgent") {
               try {
@@ -89,7 +96,7 @@ export default function SignInPage() {
                 console.error("SupportAgent login failed:", err);
               }
             }
-            router.push(`/${orgIdFromToken || "null"}/dashboard`);
+            router.push(`/${orgName || orgIdFromToken || "null"}/dashboard`);
           } else {
             router.push(`/${userData?.orgName || "null"}/dashboard`);
           }

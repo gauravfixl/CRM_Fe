@@ -141,7 +141,7 @@ export default function RuleTemplatesPage() {
                     </div>
                 </div>
                 <div className="flex gap-2">
-                    <Button variant="outline" className="h-10 rounded-xl text-[11px] font-semibold border-zinc-200 dark:border-zinc-800">
+                    <Button variant="outline" className="h-10 rounded-xl text-[11px] font-semibold border-zinc-200 dark:border-zinc-800" onClick={() => toast.info("Template library coming soon. Check back later.")}>
                         <FileText className="w-4 h-4 mr-1.5" /> Browse Library
                     </Button>
                     <Button onClick={() => setShowCreateModal(true)} className="h-10 rounded-xl text-[11px] font-semibold bg-blue-600 hover:bg-blue-700">
@@ -296,7 +296,7 @@ export default function RuleTemplatesPage() {
                                                 <DropdownMenuItem onClick={() => duplicateTemplate(template)} className="text-xs p-2 flex items-center gap-2 focus:bg-blue-600 focus:text-white cursor-pointer rounded-lg">
                                                     <Copy size={14} /> Duplicate
                                                 </DropdownMenuItem>
-                                                <DropdownMenuItem className="text-xs p-2 flex items-center gap-2 focus:bg-blue-600 focus:text-white cursor-pointer rounded-lg">
+                                                <DropdownMenuItem onClick={() => { toast.promise(new Promise(res => setTimeout(res, 1500)), { loading: "Deploying " + template.name + "...", success: template.name + " deployed successfully!", error: "Deployment failed." }); toggleStatus(template.id); }} className="text-xs p-2 flex items-center gap-2 focus:bg-blue-600 focus:text-white cursor-pointer rounded-lg">
                                                     <Play size={14} /> Deploy
                                                 </DropdownMenuItem>
                                                 <DropdownMenuSeparator className="my-1" />

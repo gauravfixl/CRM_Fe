@@ -30,51 +30,51 @@ export default function TaxConfigPage() {
     };
 
     return (
-        <div className="space-y-6 text-[#1A1A1A]">
+        <div className="space-y-4 text-[12.5px]">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div className="flex flex-col gap-1">
-                    <h1 className="text-[22px] font-bold tracking-tight">Tax Configuration (Global/Firm)</h1>
-                    <p className="text-sm text-gray-600">Manage tax rules and rates for different jurisdictions.</p>
+                    <h1 className="text-sm font-semibold tracking-tight">Tax Configuration (Global/Firm)</h1>
+                    <p className="text-xs text-slate-500">Manage tax rules and rates for different jurisdictions.</p>
                 </div>
-                <Button onClick={() => setShowCreateModal(true)} className="rounded-none bg-blue-600 hover:bg-blue-700 font-black text-sm h-11 gap-2 shadow-xl shadow-blue-100 px-6">
+                <Button onClick={() => setShowCreateModal(true)} className="rounded-lg bg-blue-600 hover:bg-blue-700 font-medium text-xs h-8 gap-2 shadow-sm px-4">
                     <Plus size={16} /> Add Tax Rule
                 </Button>
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="bg-gradient-to-br from-blue-700 to-indigo-800 p-6 rounded-none shadow-xl shadow-blue-200 text-white transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl">
-                    <p className="text-white text-sm opacity-80">Total Tax Rules</p>
-                    <h2 className="text-white text-2xl font-bold">{taxConfigs.length}</h2>
-                    <p className="text-white text-xs mt-1 opacity-80">Configured</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="bg-gradient-to-r from-primary/70 to-primary p-4 rounded-xl shadow-sm text-white transition-all duration-300 hover:-translate-y-1">
+                    <p className="text-xs text-white opacity-80">Total Tax Rules</p>
+                    <h2 className="text-xl font-semibold text-white">{taxConfigs.length}</h2>
+                    <p className="text-[10px] text-white mt-1 opacity-80">Configured</p>
                 </div>
-                <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
-                    <p className="text-gray-600 text-sm">Active Rules</p>
-                    <h3 className="text-2xl font-bold text-gray-900">{taxConfigs.filter(t => t.status === "Active").length}</h3>
-                    <p className="text-green-600 text-xs mt-1">Currently applied</p>
+                <div className="bg-white border border-zinc-200 p-4 rounded-xl shadow-sm transition-all duration-300 hover:-translate-y-1">
+                    <p className="text-xs text-slate-500">Active Rules</p>
+                    <h3 className="text-xl font-semibold text-gray-900">{taxConfigs.filter(t => t.status === "Active").length}</h3>
+                    <p className="text-[10px] text-green-600 mt-1">Currently applied</p>
                 </div>
-                <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
-                    <p className="text-gray-600 text-sm">Global Scope</p>
-                    <h3 className="text-2xl font-bold text-gray-900">{taxConfigs.filter(t => t.scope === "Global").length}</h3>
-                    <p className="text-blue-600 text-xs mt-1">Organization-wide</p>
+                <div className="bg-white border border-zinc-200 p-4 rounded-xl shadow-sm transition-all duration-300 hover:-translate-y-1">
+                    <p className="text-xs text-slate-500">Global Scope</p>
+                    <h3 className="text-xl font-semibold text-gray-900">{taxConfigs.filter(t => t.scope === "Global").length}</h3>
+                    <p className="text-[10px] text-blue-600 mt-1">Organization-wide</p>
                 </div>
-                <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
-                    <p className="text-gray-600 text-sm">Firm Scope</p>
-                    <h3 className="text-2xl font-bold text-gray-900">{taxConfigs.filter(t => t.scope === "Firm").length}</h3>
-                    <p className="text-purple-600 text-xs mt-1">Firm-specific</p>
+                <div className="bg-white border border-zinc-200 p-4 rounded-xl shadow-sm transition-all duration-300 hover:-translate-y-1">
+                    <p className="text-xs text-slate-500">Firm Scope</p>
+                    <h3 className="text-xl font-semibold text-gray-900">{taxConfigs.filter(t => t.scope === "Firm").length}</h3>
+                    <p className="text-[10px] text-purple-600 mt-1">Firm-specific</p>
                 </div>
             </div>
 
             {/* Tax Configs List */}
-            <div className="bg-white border border-zinc-200 rounded-none shadow-xl overflow-hidden">
-                <div className="p-5 border-b border-zinc-100 flex flex-col md:flex-row gap-4 justify-between items-center bg-zinc-50/50">
+            <div className="bg-white border border-zinc-200 rounded-xl shadow-sm overflow-hidden">
+                <div className="p-4 border-b border-zinc-100 flex flex-col md:flex-row gap-4 justify-between items-center bg-zinc-50/50">
                     <div className="relative w-full md:w-96">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" size={16} />
-                        <Input placeholder="Search tax rules..." className="pl-11 rounded-none border-zinc-200 h-10 text-sm bg-white" />
+                        <Input placeholder="Search tax rules..." className="pl-11 rounded-lg border-zinc-200 h-9 text-xs bg-white" />
                     </div>
                     <div className="flex gap-2 w-full md:w-auto">
-                        <Button variant="outline" className="rounded-none border-zinc-200 h-10 text-sm gap-2 bg-white flex-1 md:flex-none">
+                        <Button variant="outline" className="rounded-lg border-zinc-200 h-8 text-xs font-medium gap-2 bg-white flex-1 md:flex-none">
                             <Filter size={14} /> Filter
                         </Button>
                     </div>
@@ -84,56 +84,56 @@ export default function TaxConfigPage() {
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-zinc-100/50 border-b border-zinc-100">
-                                <th className="px-6 py-4 text-xs font-bold text-gray-600">Tax Name</th>
-                                <th className="px-6 py-4 text-xs font-bold text-gray-600">Type</th>
-                                <th className="px-6 py-4 text-xs font-bold text-gray-600">Rate</th>
-                                <th className="px-6 py-4 text-xs font-bold text-gray-600">Scope</th>
-                                <th className="px-6 py-4 text-xs font-bold text-gray-600">Regions</th>
-                                <th className="px-6 py-4 text-xs font-bold text-gray-600">Status</th>
-                                <th className="px-6 py-4 text-xs font-bold text-gray-600 text-right">Actions</th>
+                                <th className="px-5 py-3 text-[10px] font-medium text-slate-500">Tax Name</th>
+                                <th className="px-5 py-3 text-[10px] font-medium text-slate-500">Type</th>
+                                <th className="px-5 py-3 text-[10px] font-medium text-slate-500">Rate</th>
+                                <th className="px-5 py-3 text-[10px] font-medium text-slate-500">Scope</th>
+                                <th className="px-5 py-3 text-[10px] font-medium text-slate-500">Regions</th>
+                                <th className="px-5 py-3 text-[10px] font-medium text-slate-500">Status</th>
+                                <th className="px-5 py-3 text-[10px] font-medium text-slate-500 text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-zinc-100">
                             {taxConfigs.map((config) => (
                                 <tr key={config.id} className="hover:bg-blue-50/30 transition-colors group">
-                                    <td className="px-6 py-4">
+                                    <td className="px-5 py-3">
                                         <div className="flex items-center gap-3">
-                                            <div className="p-2 bg-green-50 text-green-600 rounded-none border border-green-100 group-hover:bg-green-600 group-hover:text-white transition-all">
-                                                <Calculator size={18} />
+                                            <div className="p-2 bg-green-50 text-green-600 rounded-lg border border-green-100 group-hover:bg-green-600 group-hover:text-white transition-all">
+                                                <Calculator size={16} />
                                             </div>
-                                            <span className="text-sm font-bold text-gray-900">{config.name}</span>
+                                            <span className="text-xs font-medium text-gray-900">{config.name}</span>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4">
-                                        <Badge className="bg-blue-50 text-blue-700 border-blue-200 rounded-none text-[10px] font-bold px-2 py-0.5">
+                                    <td className="px-5 py-3">
+                                        <Badge className="bg-blue-50 text-blue-700 border-blue-200 rounded-md text-[10px] font-medium px-2 py-0.5">
                                             {config.type}
                                         </Badge>
                                     </td>
-                                    <td className="px-6 py-4"><span className="text-sm font-bold text-gray-900">{config.rate}</span></td>
-                                    <td className="px-6 py-4">
-                                        <Badge className={`${config.scope === "Global" ? "bg-indigo-600" : "bg-purple-600"} text-white border-none rounded-none text-[10px] font-bold px-2 py-0.5 flex items-center gap-1 w-fit`}>
+                                    <td className="px-5 py-3"><span className="text-xs font-medium text-gray-900">{config.rate}</span></td>
+                                    <td className="px-5 py-3">
+                                        <Badge className={`${config.scope === "Global" ? "bg-indigo-600" : "bg-purple-600"} text-white border-none rounded-md text-[10px] font-medium px-2 py-0.5 flex items-center gap-1 w-fit`}>
                                             {config.scope === "Global" ? <Globe size={10} /> : <Building2 size={10} />} {config.scope}
                                         </Badge>
                                     </td>
-                                    <td className="px-6 py-4"><span className="text-sm text-gray-700">{config.regions}</span></td>
-                                    <td className="px-6 py-4">
+                                    <td className="px-5 py-3"><span className="text-xs text-gray-700">{config.regions}</span></td>
+                                    <td className="px-5 py-3">
                                         <div className="flex items-center gap-2">
                                             <Switch checked={config.status === "Active"} onCheckedChange={() => toggleStatus(config.id)} className="data-[state=checked]:bg-green-600" />
-                                            <Badge className={`${config.status === "Active" ? "bg-green-600" : "bg-zinc-400"} text-white border-none rounded-none text-[10px] font-bold px-2 py-0.5`}>{config.status}</Badge>
+                                            <Badge className={`${config.status === "Active" ? "bg-green-600" : "bg-zinc-400"} text-white border-none rounded-md text-[10px] font-medium px-2 py-0.5`}>{config.status}</Badge>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4 text-right">
+                                    <td className="px-5 py-3 text-right">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" className="h-8 w-8 p-0 rounded-none hover:bg-zinc-100"><MoreVertical size={16} /></Button>
+                                                <Button variant="ghost" className="h-8 w-8 p-0 rounded-lg hover:bg-zinc-100"><MoreVertical size={16} /></Button>
                                             </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end" className="rounded-none border-zinc-200 shadow-xl p-2 min-w-[180px]">
-                                                <DropdownMenuLabel className="text-xs font-bold text-gray-600">Actions</DropdownMenuLabel>
-                                                <DropdownMenuItem className="text-sm p-2 flex items-center gap-2 focus:bg-blue-600 focus:text-white cursor-pointer">
+                                            <DropdownMenuContent align="end" className="rounded-xl border-zinc-200 shadow-lg p-2 min-w-[180px]">
+                                                <DropdownMenuLabel className="text-[10px] font-medium text-slate-500">Actions</DropdownMenuLabel>
+                                                <DropdownMenuItem className="text-xs p-2 flex items-center gap-2 focus:bg-blue-600 focus:text-white cursor-pointer">
                                                     <Edit size={14} /> Edit Rule
                                                 </DropdownMenuItem>
                                                 <DropdownMenuSeparator className="my-2" />
-                                                <DropdownMenuItem onClick={() => deleteConfig(config.id)} className="text-sm p-2 text-red-600 focus:bg-red-600 focus:text-white flex items-center gap-2 cursor-pointer">
+                                                <DropdownMenuItem onClick={() => deleteConfig(config.id)} className="text-xs p-2 text-red-600 focus:bg-red-600 focus:text-white flex items-center gap-2 cursor-pointer">
                                                     <Trash2 size={14} /> Delete
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>
@@ -145,9 +145,9 @@ export default function TaxConfigPage() {
                     </table>
                 </div>
 
-                <div className="p-5 bg-zinc-50 border-t border-zinc-100 flex items-center justify-between">
-                    <p className="text-sm text-gray-600">Showing {taxConfigs.length} tax rules</p>
-                    <Button variant="link" className="text-blue-600 text-sm flex items-center gap-1 group">
+                <div className="p-4 bg-zinc-50 border-t border-zinc-100 flex items-center justify-between">
+                    <p className="text-xs text-slate-500">Showing {taxConfigs.length} tax rules</p>
+                    <Button variant="link" className="text-blue-600 text-xs flex items-center gap-1 group">
                         View Tax Reports <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
                     </Button>
                 </div>
@@ -155,45 +155,45 @@ export default function TaxConfigPage() {
 
             {/* Create Modal */}
             <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
-                <DialogContent className="max-w-2xl rounded-none p-0 overflow-hidden shadow-2xl border-none">
-                    <div className="bg-gradient-to-r from-green-700 to-emerald-800 p-8 text-white relative">
+                <DialogContent className="max-w-lg rounded-xl p-0 overflow-hidden shadow-lg border-none">
+                    <div className="bg-gradient-to-r from-green-700 to-emerald-800 p-5 text-white relative">
                         <div className="absolute top-0 right-0 p-4 opacity-10"><Calculator size={80} /></div>
-                        <h2 className="text-2xl font-bold flex items-center gap-3"><Plus size={24} /> Add Tax Rule</h2>
-                        <p className="text-sm opacity-80 mt-2">Configure tax rates for different jurisdictions.</p>
+                        <h2 className="text-sm font-semibold flex items-center gap-3"><Plus size={18} /> Add Tax Rule</h2>
+                        <p className="text-xs opacity-80 mt-1">Configure tax rates for different jurisdictions.</p>
                     </div>
-                    <div className="p-8 space-y-6 bg-white">
-                        <div className="space-y-3">
-                            <Label className="text-xs font-bold text-gray-600">Tax Name</Label>
-                            <Input placeholder="e.g., US Sales Tax" className="rounded-none border-zinc-200 h-12 text-sm" />
+                    <div className="p-5 space-y-4 bg-white">
+                        <div className="space-y-2">
+                            <Label className="text-xs font-medium text-slate-500">Tax Name</Label>
+                            <Input placeholder="e.g., US Sales Tax" className="rounded-lg border-zinc-200 h-9 text-xs" />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-3">
-                                <Label className="text-xs font-bold text-gray-600">Tax Type</Label>
-                                <Select><SelectTrigger className="rounded-none border-zinc-200 h-12"><SelectValue placeholder="Select type" /></SelectTrigger><SelectContent className="rounded-none"><SelectItem value="sales">Sales Tax</SelectItem><SelectItem value="vat">VAT</SelectItem><SelectItem value="gst">GST</SelectItem><SelectItem value="hst">HST</SelectItem></SelectContent></Select>
+                            <div className="space-y-2">
+                                <Label className="text-xs font-medium text-slate-500">Tax Type</Label>
+                                <Select><SelectTrigger className="rounded-lg border-zinc-200 h-9 text-xs"><SelectValue placeholder="Select type" /></SelectTrigger><SelectContent className="rounded-lg"><SelectItem value="sales">Sales Tax</SelectItem><SelectItem value="vat">VAT</SelectItem><SelectItem value="gst">GST</SelectItem><SelectItem value="hst">HST</SelectItem></SelectContent></Select>
                             </div>
-                            <div className="space-y-3">
-                                <Label className="text-xs font-bold text-gray-600">Tax Rate (%)</Label>
-                                <Input type="number" placeholder="e.g., 8.5" className="rounded-none border-zinc-200 h-12 text-sm" />
+                            <div className="space-y-2">
+                                <Label className="text-xs font-medium text-slate-500">Tax Rate (%)</Label>
+                                <Input type="number" placeholder="e.g., 8.5" className="rounded-lg border-zinc-200 h-9 text-xs" />
                             </div>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-3">
-                                <Label className="text-xs font-bold text-gray-600">Scope</Label>
-                                <Select><SelectTrigger className="rounded-none border-zinc-200 h-12"><SelectValue placeholder="Select scope" /></SelectTrigger><SelectContent className="rounded-none"><SelectItem value="global">Global (Organization-wide)</SelectItem><SelectItem value="firm">Firm (Specific firm)</SelectItem></SelectContent></Select>
+                            <div className="space-y-2">
+                                <Label className="text-xs font-medium text-slate-500">Scope</Label>
+                                <Select><SelectTrigger className="rounded-lg border-zinc-200 h-9 text-xs"><SelectValue placeholder="Select scope" /></SelectTrigger><SelectContent className="rounded-lg"><SelectItem value="global">Global (Organization-wide)</SelectItem><SelectItem value="firm">Firm (Specific firm)</SelectItem></SelectContent></Select>
                             </div>
-                            <div className="space-y-3">
-                                <Label className="text-xs font-bold text-gray-600">Regions</Label>
-                                <Input placeholder="e.g., US, EU" className="rounded-none border-zinc-200 h-12 text-sm" />
+                            <div className="space-y-2">
+                                <Label className="text-xs font-medium text-slate-500">Regions</Label>
+                                <Input placeholder="e.g., US, EU" className="rounded-lg border-zinc-200 h-9 text-xs" />
                             </div>
                         </div>
-                        <div className="space-y-3">
-                            <Label className="text-xs font-bold text-gray-600">Description (Optional)</Label>
-                            <Textarea placeholder="Additional details about this tax rule..." className="rounded-none border-zinc-200 min-h-[80px] text-sm" />
+                        <div className="space-y-2">
+                            <Label className="text-xs font-medium text-slate-500">Description (Optional)</Label>
+                            <Textarea placeholder="Additional details about this tax rule..." className="rounded-lg border-zinc-200 min-h-[80px] text-xs" />
                         </div>
                     </div>
-                    <DialogFooter className="p-8 bg-zinc-50 border-t border-zinc-100 gap-4 sm:justify-end">
-                        <Button variant="ghost" onClick={() => setShowCreateModal(false)} className="rounded-none text-sm text-gray-600">Cancel</Button>
-                        <Button className="bg-green-600 hover:bg-green-700 rounded-none text-sm px-10 h-12 shadow-xl shadow-green-100">Create Tax Rule</Button>
+                    <DialogFooter className="p-5 bg-zinc-50 border-t border-zinc-100 gap-4 sm:justify-end">
+                        <Button variant="ghost" onClick={() => setShowCreateModal(false)} className="rounded-lg text-xs text-slate-500">Cancel</Button>
+                        <Button className="bg-green-600 hover:bg-green-700 rounded-lg text-xs font-medium px-4 h-8 shadow-sm">Create Tax Rule</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

@@ -20,7 +20,7 @@ import { Badge } from "@/components/ui/badge";
 
 export default function OrgOverviewPage() {
     return (
-        <div className="flex flex-col h-full w-full bg-slate-50/50 p-6 space-y-6 overflow-y-auto">
+        <div className="flex flex-col h-full w-full bg-slate-50/50 p-6 space-y-8 overflow-y-auto font-sans">
             {/* WELCOME HEADER */}
             {/* WELCOME HEADER */}
             <div className="bg-blue-600 text-white p-8 rounded-none shadow-lg relative overflow-hidden">
@@ -44,53 +44,53 @@ export default function OrgOverviewPage() {
             </div>
 
             {/* QUICK STATS */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <SmallCard className="shadow-sm border-slate-200">
-                    <SmallCardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-medium text-slate-500">Total Users</CardTitle>
-                        <Users className="w-4 h-4 text-blue-600" />
-                    </SmallCardHeader>
-                    <SmallCardContent>
-                        <div className="text-2xl font-bold text-slate-900">2,543</div>
-                        <p className="text-xs text-emerald-600 mt-1 flex items-center font-bold">
-                            <ArrowUpRight className="w-3 h-3 mr-1" /> +12.5%
-                        </p>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <SmallCard className="border bg-gradient-to-r from-primary/70 to-primary text-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                    <SmallCardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-white text-xs opacity-80">Total Users</p>
+                                <p className="text-white text-xl font-semibold mt-1">2,543</p>
+                                <p className="text-white text-[10px] mt-1">+12.5% growth</p>
+                            </div>
+                            <Users className="w-5 h-5 text-white" />
+                        </div>
                     </SmallCardContent>
                 </SmallCard>
-                <SmallCard className="shadow-sm border-slate-200">
-                    <SmallCardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-medium text-slate-500">Active Firms</CardTitle>
-                        <Building2 className="w-4 h-4 text-indigo-600" />
-                    </SmallCardHeader>
-                    <SmallCardContent>
-                        <div className="text-2xl font-bold text-slate-900">12</div>
-                        <p className="text-xs text-slate-400 mt-1 flex items-center">
-                            Across 3 regions
-                        </p>
+                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                    <SmallCardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-gray-600 text-xs">Active Firms</p>
+                                <p className="text-xl font-semibold text-gray-900 mt-1">12</p>
+                                <p className="text-gray-600 text-[10px] mt-1">Across 3 regions</p>
+                            </div>
+                            <Building2 className="w-5 h-5 text-primary" />
+                        </div>
                     </SmallCardContent>
                 </SmallCard>
-                <SmallCard className="shadow-sm border-slate-200">
-                    <SmallCardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-medium text-slate-500">System Uptime</CardTitle>
-                        <Activity className="w-4 h-4 text-emerald-600" />
-                    </SmallCardHeader>
-                    <SmallCardContent>
-                        <div className="text-2xl font-bold text-slate-900">99.99%</div>
-                        <p className="text-xs text-emerald-600 mt-1 flex items-center font-bold">
-                            Healthy
-                        </p>
+                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                    <SmallCardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-gray-600 text-xs">System Uptime</p>
+                                <p className="text-xl font-semibold text-gray-900 mt-1">99.99%</p>
+                                <p className="text-green-600 text-[10px] mt-1">Healthy</p>
+                            </div>
+                            <Activity className="w-5 h-5 text-primary" />
+                        </div>
                     </SmallCardContent>
                 </SmallCard>
-                <SmallCard className="shadow-sm border-slate-200">
-                    <SmallCardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-medium text-slate-500">Monthly Spend</CardTitle>
-                        <CreditCard className="w-4 h-4 text-amber-600" />
-                    </SmallCardHeader>
-                    <SmallCardContent>
-                        <div className="text-2xl font-bold text-slate-900">$1,389</div>
-                        <p className="text-xs text-slate-400 mt-1 flex items-center">
-                            Next bill: Feb 01
-                        </p>
+                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                    <SmallCardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-gray-600 text-xs">Monthly Spend</p>
+                                <p className="text-xl font-semibold text-gray-900 mt-1">$1,389</p>
+                                <p className="text-gray-600 text-[10px] mt-1">Next bill: Feb 01</p>
+                            </div>
+                            <CreditCard className="w-5 h-5 text-primary" />
+                        </div>
                     </SmallCardContent>
                 </SmallCard>
             </div>

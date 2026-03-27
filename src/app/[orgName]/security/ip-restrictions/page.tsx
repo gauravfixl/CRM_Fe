@@ -2,227 +2,368 @@
 
 import React, { useState } from "react";
 import {
-    Globe,
-    Plus,
-    Trash2,
-    ShieldCheck,
-    ShieldAlert,
-    Search,
-    Filter,
-    MapPin,
-    Clock,
-    ArrowRight,
-    ChevronRight,
-    Database
+  Globe,
+  Plus,
+  Pencil,
+  Trash2,
+  ShieldCheck,
+  ShieldBan,
+  Search,
+  Clock,
+  BarChart3,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/shared/components/ui/switch";
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-    DialogFooter,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
 } from "@/shared/components/ui/dialog";
 import { Label } from "@/shared/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/shared/components/ui/select";
+import { showSuccess, showWarning } from "@/utils/toast";
+
+interface IpRule {
+  id: string;
+  range: string;
+  label: string;
+  type: "Whitelist" | "Blacklist";
+  status: "Active" | "Blocked";
+  addedOn: string;
+}
+
+const initialData: IpRule[] = [
+  { id: "1", range: "115.124.98.0/24", label: "Mumbai HQ - Primary VPN", type: "Whitelist", status: "Active", addedOn: "Oct 12, 2024" },
+  { id: "2", range: "203.0.113.42", label: "AWS Production", type: "Whitelist", status: "Active", addedOn: "Nov 01, 2024" },
+  { id: "3", range: "45.12.8.201", label: "Brute force suspect", type: "Blacklist", status: "Blocked", addedOn: "Feb 10, 2025" },
+  { id: "4", range: "10.0.0.0/8", label: "Internal network", type: "Whitelist", status: "Active", addedOn: "Jan 05, 2025" },
+];
 
 export default function IPRestrictionsPage() {
-    const [showAddIPModal, setShowAddIPModal] = useState(false);
-    const [ipList, setIpList] = useState([
-        { id: "1", range: "115.124.98.0/24", label: "Mumbai HQ - Primary VPN", type: "Whitelist", status: "Active", addedOn: "Oct 12, 2024" },
-        { id: "2", range: "203.0.113.42", label: "AWS Production Bridge", type: "Whitelist", status: "Active", addedOn: "Nov 01, 2024" },
-        { id: "3", range: "45.12.8.201", label: "Brute Force Suspect", type: "Blacklist", status: "Blocked", addedOn: "Feb 10, 2025" },
-    ]);
+  const [ipList, setIpList] = useState<IpRule[]>(initialData);
+  const [showModal, setShowModal] = useState(false);
+  const [editingRule, setEditingRule] = useState<IpRule | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterType, setFilterType] = useState<"All" | "Whitelist" | "Blacklist">("All");
 
-    const removeIP = (id: string) => {
-        setIpList(prev => prev.filter(ip => ip.id !== id));
-    };
+  // Form state
+  const [formRange, setFormRange] = useState("");
+  const [formLabel, setFormLabel] = useState("");
+  const [formType, setFormType] = useState<"Whitelist" | "Blacklist">("Whitelist");
 
-    return (
-        <div className="space-y-8 text-[#1A1A1A]">
-            {/* Header Section */}
-            <div className="flex items-center justify-between">
-                <div className="flex flex-col gap-1">
-                    <h1 className="text-[24px] font-black tracking-tight uppercase">IP Network Governance</h1>
-                    <p className="text-[13px] text-zinc-500 font-medium tracking-tight">Configure ingress boundary protocols through Whitelisting and Blacklisting node vectors.</p>
-                </div>
-                <Button
-                    onClick={() => setShowAddIPModal(true)}
-                    className="rounded-none bg-blue-600 hover:bg-blue-700 font-black text-[12px] h-10 gap-2 shadow-xl shadow-blue-100 uppercase tracking-widest px-8 transition-all hover:-translate-y-1"
-                >
-                    <Plus size={14} /> Add Network Boundary
-                </Button>
-            </div>
+  const openAddModal = () => {
+    setEditingRule(null);
+    setFormRange("");
+    setFormLabel("");
+    setFormType("Whitelist");
+    setShowModal(true);
+  };
 
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+  const openEditModal = (rule: IpRule) => {
+    setEditingRule(rule);
+    setFormRange(rule.range);
+    setFormLabel(rule.label);
+    setFormType(rule.type);
+    setShowModal(true);
+  };
 
-                {/* Logic Controls - Right Sidebar style but on top/left for focus */}
-                <div className="lg:col-span-1 space-y-6">
-                    <div className="bg-gradient-to-br from-blue-700 via-blue-600 to-indigo-800 p-8 rounded-none shadow-2xl shadow-blue-200/50 text-white space-y-8 transition-all duration-300 hover:shadow-blue-300/50 relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-                        <div className="space-y-2 relative z-10">
-                            <p className="text-[10px] font-black uppercase tracking-[3pt] text-blue-100/70">Boundary Logic</p>
-                            <h3 className="text-[22px] font-black tracking-tighter leading-none">Strict IP Gating</h3>
-                        </div>
-                        <div className="space-y-6 relative z-10">
-                            <div className="flex items-center justify-between">
-                                <span className="text-[11px] font-black uppercase tracking-widest text-blue-100">Restrict to Whitelist</span>
-                                <Switch defaultChecked className="data-[state=checked]:bg-white data-[state=unchecked]:bg-blue-400" />
-                            </div>
-                            <p className="text-[11px] text-blue-100/70 font-medium leading-relaxed italic">When enabled, only connections originating from defined whitelist ranges will be authorized for session creation.</p>
-                            <div className="pt-4 flex flex-col gap-3">
-                                <div className="p-3 bg-white/10 border border-white/20 backdrop-blur-md">
-                                    <p className="text-[9px] font-black text-blue-200 uppercase tracking-widest">Global Node Status</p>
-                                    <p className="text-[13px] font-black text-white flex items-center gap-2 mt-1">
-                                        <ShieldCheck size={14} className="text-emerald-400" /> CLOUD DEPLOYED
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+  const handleSave = () => {
+    if (!formRange.trim() || !formLabel.trim()) {
+      showWarning("Please fill in all fields");
+      return;
+    }
 
-                    <div className="bg-white border border-zinc-200 p-8 rounded-none shadow-xl shadow-zinc-100 transition-all duration-300 hover:shadow-2xl space-y-6">
-                        <div className="flex items-center gap-3 text-zinc-900 border-b border-zinc-100 pb-4">
-                            <Database size={20} className="text-blue-600 font-black" />
-                            <h4 className="font-black text-[13px] uppercase tracking-[1.5pt]">Access Analytics</h4>
-                        </div>
-                        <div className="space-y-4">
-                            <div className="space-y-1">
-                                <div className="flex justify-between text-[10px] font-black uppercase text-zinc-400 tracking-wider">
-                                    <span>Denied Connections</span>
-                                    <span className="text-rose-600">↑ 12.4%</span>
-                                </div>
-                                <p className="text-[24px] font-black text-zinc-900 leading-none">8,402</p>
-                                <p className="text-[9px] text-zinc-400 font-bold uppercase">Last 24 Hours</p>
-                            </div>
-                            <div className="pt-4">
-                                <Button variant="link" className="p-0 h-auto text-blue-600 font-black text-[11px] uppercase tracking-widest flex items-center gap-2">
-                                    View Raw Traffic Logs <ArrowRight size={14} />
-                                </Button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+    if (editingRule) {
+      setIpList((prev) =>
+        prev.map((ip) =>
+          ip.id === editingRule.id
+            ? { ...ip, range: formRange, label: formLabel, type: formType, status: formType === "Blacklist" ? "Blocked" : ip.status }
+            : ip
+        )
+      );
+      showSuccess("IP rule updated successfully");
+    } else {
+      const newRule: IpRule = {
+        id: Date.now().toString(),
+        range: formRange,
+        label: formLabel,
+        type: formType,
+        status: formType === "Blacklist" ? "Blocked" : "Active",
+        addedOn: new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }),
+      };
+      setIpList((prev) => [...prev, newRule]);
+      showSuccess("IP rule added successfully");
+    }
 
-                {/* IP List Table */}
-                <div className="lg:col-span-3 space-y-6">
-                    <div className="bg-white border border-zinc-200 rounded-none shadow-xl shadow-zinc-100 overflow-hidden transition-all duration-300 hover:shadow-2xl">
-                        <div className="p-5 border-b border-zinc-100 bg-zinc-50/50 flex flex-col md:flex-row gap-4 justify-between items-center">
-                            <div className="relative w-full md:w-96">
-                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" size={16} />
-                                <Input placeholder="Search IP ranges or labels..." className="pl-11 rounded-none border-zinc-200 h-10 text-[13px] font-medium bg-white" />
-                            </div>
-                            <Button variant="outline" className="rounded-none border-zinc-200 h-10 font-black text-[11px] uppercase tracking-widest gap-2 bg-white">
-                                <Filter size={14} /> All Filters
-                            </Button>
-                        </div>
+    setShowModal(false);
+  };
 
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left border-collapse">
-                                <thead>
-                                    <tr className="bg-zinc-100/50 border-b border-zinc-100">
-                                        <th className="px-6 py-5 text-[10px] font-black text-zinc-400 uppercase tracking-[2pt]">Network Boundary Range</th>
-                                        <th className="px-6 py-5 text-[10px] font-black text-zinc-400 uppercase tracking-[2pt]">Descriptor Node</th>
-                                        <th className="px-6 py-5 text-[10px] font-black text-zinc-400 uppercase tracking-[2pt]">Vector Type</th>
-                                        <th className="px-6 py-5 text-[10px] font-black text-zinc-400 uppercase tracking-[2pt]">Operational Status</th>
-                                        <th className="px-6 py-5 text-[10px] font-black text-zinc-400 uppercase tracking-[2pt] text-right">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-zinc-100">
-                                    {ipList.map((ip) => (
-                                        <tr key={ip.id} className="hover:bg-blue-50/30 transition-colors group">
-                                            <td className="px-6 py-5">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="text-blue-600/30 group-hover:text-blue-600 transition-colors">
-                                                        <Globe size={18} />
-                                                    </div>
-                                                    <span className="text-[14px] font-black text-zinc-900 font-mono tracking-tighter uppercase">{ip.range}</span>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-5">
-                                                <div className="flex flex-col">
-                                                    <span className="text-[13px] font-black text-zinc-900 tracking-tight uppercase leading-none">{ip.label}</span>
-                                                    <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-tight mt-1 flex items-center gap-1">
-                                                        <Clock size={10} /> Added: {ip.addedOn}
-                                                    </span>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-5">
-                                                <Badge className={`${ip.type === 'Whitelist' ? 'bg-emerald-600' : 'bg-rose-600'} text-white border-none rounded-none text-[9px] font-black uppercase tracking-widest px-2 py-0.5`}>
-                                                    {ip.type}
-                                                </Badge>
-                                            </td>
-                                            <td className="px-6 py-5">
-                                                <div className="flex items-center gap-2">
-                                                    <div className={`w-1.5 h-1.5 rounded-none rotate-45 ${ip.status === 'Active' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]'}`} />
-                                                    <span className="text-[11px] font-black uppercase text-zinc-900 tracking-widest">{ip.status}</span>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-5 text-right">
-                                                <Button
-                                                    variant="ghost"
-                                                    onClick={() => removeIP(ip.id)}
-                                                    className="h-9 w-9 p-0 rounded-none hover:bg-rose-50 text-zinc-400 hover:text-rose-600 border border-transparent hover:border-rose-100 transition-all"
-                                                >
-                                                    <Trash2 size={16} />
-                                                </Button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
+  const handleRemove = (rule: IpRule) => {
+    const confirmed = window.confirm(`Are you sure you want to remove "${rule.label}"?`);
+    if (confirmed) {
+      setIpList((prev) => prev.filter((ip) => ip.id !== rule.id));
+      showSuccess("IP rule removed successfully");
+    }
+  };
 
-                        <div className="p-6 bg-zinc-50 border-t border-zinc-100 text-[11px] text-zinc-500 font-medium flex items-center gap-3 uppercase tracking-tight">
-                            <ShieldAlert className="text-amber-500" size={16} />
-                            <span>Organization Admin access is currently <span className="text-blue-600 font-black underline underline-offset-4 decoration-blue-200">EXEMPT</span> from IP restrictions to prevent lockout.</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Add IP Modal */}
-            <Dialog open={showAddIPModal} onOpenChange={setShowAddIPModal}>
-                <DialogContent className="max-w-md rounded-none p-0 overflow-hidden shadow-2xl border-none">
-                    <div className="bg-gradient-to-r from-blue-700 to-indigo-800 p-8 text-white relative">
-                        <div className="absolute top-0 right-0 p-4 opacity-10">
-                            <Globe size={80} />
-                        </div>
-                        <h2 className="text-2xl font-black uppercase tracking-tight flex items-center gap-3">
-                            <Plus size={24} className="text-blue-300" /> DEFINE BOUNDARY
-                        </h2>
-                        <p className="text-[11px] text-blue-100 font-bold uppercase tracking-[1.5pt] mt-2 opacity-80">Provision new access vector to the network matrix.</p>
-                    </div>
-                    <div className="p-8 space-y-6 bg-white">
-                        <div className="space-y-3">
-                            <Label className="text-[10px] font-black uppercase tracking-[2pt] text-zinc-400">IP ADDRESS / CIDR RANGE</Label>
-                            <div className="relative">
-                                <Input placeholder="e.g., 192.168.1.0/24" className="pl-12 rounded-none border-zinc-200 h-12 text-[15px] font-black focus:ring-blue-600 bg-zinc-50/50" />
-                                <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-300" size={20} />
-                            </div>
-                        </div>
-                        <div className="space-y-3">
-                            <Label className="text-[10px] font-black uppercase tracking-[2pt] text-zinc-400">DESCRIPTOR LABEL</Label>
-                            <Input placeholder="e.g., Corporate VPN - HQ" className="rounded-none border-zinc-200 h-12 text-[14px] font-black uppercase tracking-tight" />
-                        </div>
-                        <div className="grid grid-cols-2 gap-6 pt-4">
-                            <button className="flex items-center justify-center gap-3 p-4 border border-emerald-100 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-all font-black text-[11px] uppercase tracking-widest">
-                                <ShieldCheck size={18} /> WHITELIST
-                            </button>
-                            <button className="flex items-center justify-center gap-3 p-4 border border-rose-100 bg-rose-50 text-rose-700 hover:bg-rose-100 transition-all font-black text-[11px] uppercase tracking-widest">
-                                <ShieldAlert size={18} /> BLACKLIST
-                            </button>
-                        </div>
-                    </div>
-                    <DialogFooter className="p-8 bg-zinc-50 border-t border-zinc-100 gap-4 sm:justify-end">
-                        <Button variant="ghost" onClick={() => setShowAddIPModal(false)} className="rounded-none font-black text-[11px] uppercase tracking-widest text-zinc-400">CANCEL</Button>
-                        <Button className="bg-blue-600 hover:bg-blue-700 rounded-none font-black text-[11px] px-10 h-12 uppercase tracking-widest shadow-xl shadow-blue-100 underline underline-offset-4 decoration-blue-400">PROVISION BOUNDARY</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-        </div>
+  const handleToggleStatus = (id: string) => {
+    setIpList((prev) =>
+      prev.map((ip) => {
+        if (ip.id !== id) return ip;
+        const newStatus = ip.status === "Active" ? "Blocked" : "Active";
+        return { ...ip, status: newStatus };
+      })
     );
+  };
+
+  const filtered = ipList.filter((ip) => {
+    const matchesSearch =
+      ip.range.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      ip.label.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesType = filterType === "All" || ip.type === filterType;
+    return matchesSearch && matchesType;
+  });
+
+  const totalRules = ipList.length;
+  const whitelisted = ipList.filter((ip) => ip.type === "Whitelist").length;
+  const blacklisted = ipList.filter((ip) => ip.type === "Blacklist").length;
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-semibold text-gray-900">Ip restrictions</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Manage whitelisted and blacklisted IP addresses to control access to your organization.
+          </p>
+        </div>
+        <Button
+          onClick={openAddModal}
+          className="rounded-none bg-primary hover:bg-primary/90 text-sm h-9 gap-2 px-4"
+        >
+          <Plus size={15} /> Add ip rule
+        </Button>
+      </div>
+
+      {/* Stats cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-primary rounded-none p-4 text-white">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium text-white/80">Total rules</p>
+            <Globe size={18} className="text-white/60" />
+          </div>
+          <p className="text-2xl font-semibold mt-2">{totalRules}</p>
+        </div>
+
+        <div className="bg-white border border-gray-200 rounded-none p-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium text-gray-500">Whitelisted</p>
+            <ShieldCheck size={18} className="text-green-500" />
+          </div>
+          <p className="text-2xl font-semibold text-green-600 mt-2">{whitelisted}</p>
+        </div>
+
+        <div className="bg-white border border-gray-200 rounded-none p-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium text-gray-500">Blacklisted</p>
+            <ShieldBan size={18} className="text-red-500" />
+          </div>
+          <p className="text-2xl font-semibold text-red-600 mt-2">{blacklisted}</p>
+        </div>
+
+        <div className="bg-white border border-gray-200 rounded-none p-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium text-gray-500">Last blocked</p>
+            <Clock size={18} className="text-gray-400" />
+          </div>
+          <p className="text-2xl font-semibold text-gray-900 mt-2">2 hours ago</p>
+        </div>
+      </div>
+
+      {/* Search and filter bar */}
+      <div className="bg-white border border-gray-200 rounded-none">
+        <div className="p-4 border-b border-gray-100 flex flex-col sm:flex-row gap-3 items-center justify-between">
+          <div className="relative w-full sm:w-80">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={15} />
+            <Input
+              placeholder="Search by ip or label..."
+              value={searchQuery}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
+              className="pl-9 rounded-none border-gray-200 h-9 text-sm"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            {(["All", "Whitelist", "Blacklist"] as const).map((type) => (
+              <Button
+                key={type}
+                variant={filterType === type ? "default" : "outline"}
+                size="sm"
+                onClick={() => setFilterType(type)}
+                className={`rounded-none h-9 text-sm ${
+                  filterType === type
+                    ? "bg-primary hover:bg-primary/90"
+                    : "border-gray-200"
+                }`}
+              >
+                {type}
+              </Button>
+            ))}
+          </div>
+        </div>
+
+        {/* Table */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="border-b border-gray-100 bg-gray-50">
+                <th className="px-5 py-3 text-xs font-medium text-gray-500">Ip range</th>
+                <th className="px-5 py-3 text-xs font-medium text-gray-500">Label</th>
+                <th className="px-5 py-3 text-xs font-medium text-gray-500">Type</th>
+                <th className="px-5 py-3 text-xs font-medium text-gray-500">Status</th>
+                <th className="px-5 py-3 text-xs font-medium text-gray-500">Added on</th>
+                <th className="px-5 py-3 text-xs font-medium text-gray-500 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {filtered.map((ip) => (
+                <tr key={ip.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-5 py-3">
+                    <span className="text-sm font-mono text-gray-900">{ip.range}</span>
+                  </td>
+                  <td className="px-5 py-3">
+                    <span className="text-sm text-gray-700">{ip.label}</span>
+                  </td>
+                  <td className="px-5 py-3">
+                    <Badge
+                      className={`rounded-none text-xs font-medium px-2 py-0.5 border-none ${
+                        ip.type === "Whitelist"
+                          ? "bg-green-100 text-green-700"
+                          : "bg-red-100 text-red-700"
+                      }`}
+                    >
+                      {ip.type}
+                    </Badge>
+                  </td>
+                  <td className="px-5 py-3">
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={ip.status === "Active"}
+                        onCheckedChange={() => handleToggleStatus(ip.id)}
+                      />
+                      <span className="text-sm text-gray-600">
+                        {ip.status === "Active" ? "Active" : "Blocked"}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="px-5 py-3">
+                    <span className="text-sm text-gray-500">{ip.addedOn}</span>
+                  </td>
+                  <td className="px-5 py-3 text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => openEditModal(ip)}
+                        className="rounded-none h-8 w-8 p-0 text-gray-400 hover:text-primary hover:bg-primary/5"
+                      >
+                        <Pencil size={15} />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleRemove(ip)}
+                        className="rounded-none h-8 w-8 p-0 text-gray-400 hover:text-red-600 hover:bg-red-50"
+                      >
+                        <Trash2 size={15} />
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {filtered.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="px-5 py-10 text-center text-sm text-gray-400">
+                    No ip rules found.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Add / Edit Modal */}
+      <Dialog open={showModal} onOpenChange={setShowModal}>
+        <DialogContent className="max-w-md rounded-none p-0 border border-gray-200">
+          <DialogHeader className="px-5 py-4 border-b border-gray-100">
+            <DialogTitle className="text-base font-semibold text-gray-900">
+              {editingRule ? "Edit ip rule" : "Add ip rule"}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="p-5 space-y-4">
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium text-gray-700">Ip range</Label>
+              <Input
+                placeholder="e.g., 192.168.1.0/24"
+                value={formRange}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormRange(e.target.value)}
+                className="rounded-none border-gray-200 h-9 text-sm"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium text-gray-700">Label</Label>
+              <Input
+                placeholder="e.g., Office network"
+                value={formLabel}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormLabel(e.target.value)}
+                className="rounded-none border-gray-200 h-9 text-sm"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium text-gray-700">Type</Label>
+              <Select value={formType} onValueChange={(val: string) => setFormType(val as "Whitelist" | "Blacklist")}>
+                <SelectTrigger className="rounded-none border-gray-200 h-9 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="rounded-none">
+                  <SelectItem value="Whitelist">Whitelist</SelectItem>
+                  <SelectItem value="Blacklist">Blacklist</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <DialogFooter className="px-5 py-4 border-t border-gray-100 gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowModal(false)}
+              className="rounded-none h-9 text-sm border-gray-200"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSave}
+              className="rounded-none h-9 text-sm bg-primary hover:bg-primary/90"
+            >
+              {editingRule ? "Save changes" : "Add rule"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
 }

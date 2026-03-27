@@ -61,11 +61,11 @@ export default function LeadScoringRulesPage() {
     }
 
     const scoringRules = [
-        { id: "1", attribute: "Job Title", condition: "Contains 'Director' or 'VP'", impact: "+25", status: "ACTIVE" },
-        { id: "2", attribute: "Company Size", condition: "> 500 Employees", impact: "+20", status: "ACTIVE" },
-        { id: "3", attribute: "Source", condition: "Equals 'Referral'", impact: "+35", status: "ACTIVE" },
-        { id: "4", attribute: "Email Domain", condition: "Equals '@gmail.com' or '@yahoo.com'", impact: "-15", status: "ACTIVE" },
-        { id: "5", attribute: "Web Intent", condition: "Price Page Visit > 3 times", impact: "+15", status: "ACTIVE" },
+        { id: "1", attribute: "Job Title", condition: "Contains 'Director' or 'VP'", impact: "+25", status: "Active" },
+        { id: "2", attribute: "Company Size", condition: "> 500 Employees", impact: "+20", status: "Active" },
+        { id: "3", attribute: "Source", condition: "Equals 'Referral'", impact: "+35", status: "Active" },
+        { id: "4", attribute: "Email Domain", condition: "Equals '@gmail.com' or '@yahoo.com'", impact: "-15", status: "Active" },
+        { id: "5", attribute: "Web Intent", condition: "Price Page Visit > 3 times", impact: "+15", status: "Active" },
     ]
 
     return (
@@ -78,24 +78,24 @@ export default function LeadScoringRulesPage() {
                     </div>
                     <div>
                         <div className="flex items-center gap-2 mb-1">
-                            <h1 className="text-xl font-black text-zinc-900 tracking-tight uppercase italic">Lead Scoring Model</h1>
-                            <Badge className="bg-zinc-100 text-zinc-500 hover:bg-zinc-100 border-none text-[9px] font-bold uppercase tracking-widest">Predictive Logic</Badge>
+                            <h1 className="text-xl font-semibold text-gray-900">Lead Scoring Model</h1>
+                            <Badge className="bg-zinc-100 text-zinc-500 hover:bg-zinc-100 border-none text-[9px] font-medium">Predictive Logic</Badge>
                         </div>
-                        <p className="text-xs text-zinc-500 font-medium tracking-tight">Define how lead quality is calculated based on firmographic and behavioral data.</p>
+                        <p className="text-xs text-gray-600 font-medium">Define how lead quality is calculated based on firmographic and behavioral data.</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
                     <Button
                         variant="outline"
                         onClick={() => handleAction("Score preview generated for 2,847 leads")}
-                        className="h-10 border-zinc-200 text-xs font-black uppercase tracking-widest px-6 rounded-xl shadow-sm bg-white hover:bg-zinc-50 transition-all"
+                        className="h-10 border-zinc-200 text-xs font-medium px-6 rounded-xl shadow-sm bg-white hover:bg-zinc-50 transition-all"
                     >
                         <Zap className="w-4 h-4 mr-2 text-amber-500 fill-amber-500" />
                         Dry Run Score
                     </Button>
                     <Button
                         onClick={() => handleAction("New scoring rule creation started")}
-                        className="h-10 bg-blue-600 hover:bg-blue-700 text-white text-xs font-black uppercase tracking-widest px-6 rounded-xl shadow-lg shadow-blue-200 active:scale-95 transition-all"
+                        className="h-10 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium px-6 rounded-xl shadow-lg shadow-blue-200 active:scale-95 transition-all"
                     >
                         <Plus className="w-4 h-4 mr-2" />
                         Add Scoring Rule
@@ -103,49 +103,57 @@ export default function LeadScoringRulesPage() {
                 </div>
             </div>
 
-            {/* THRESHOLD INSIGHTS - PREMIUM 3D STYLE */}
+            {/* THRESHOLD INSIGHTS */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <SmallCard className="bg-gradient-to-br from-blue-600 to-blue-800 border-none text-white shadow-[0_8px_30px_rgb(59,130,246,0.3)] hover:shadow-[0_20px_40px_rgba(37,99,235,0.4)] hover:-translate-y-1 transform transition-all duration-300 border-t border-white/20">
-                    <SmallCardHeader className="flex flex-row items-center justify-between pb-1 px-4 pt-4">
-                        <p className="text-[11px] text-white font-medium uppercase tracking-wider">Hot Threshold</p>
-                        <Flame className="w-4 h-4 text-white animate-pulse" />
-                    </SmallCardHeader>
-                    <SmallCardContent className="px-4 pb-4">
-                        <p className="text-2xl font-black text-white drop-shadow-md">Score &gt; 80</p>
-                        <p className="text-[10px] text-white">Priority Sales Routing</p>
+                <SmallCard className="border bg-gradient-to-r from-primary/70 to-primary text-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                    <SmallCardContent className="p-4">
+                        <div className="flex flex-row items-center justify-between">
+                            <div>
+                                <p className="text-white text-xs opacity-80">Hot Threshold</p>
+                                <p className="text-white text-xl font-semibold">Score &gt; 80</p>
+                                <p className="text-[10px] text-white opacity-80">Priority Sales Routing</p>
+                            </div>
+                            <Flame className="w-4 h-4 text-white animate-pulse" />
+                        </div>
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="bg-white border-t border-white shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.1)] hover:-translate-y-1 transform transition-all duration-300">
-                    <SmallCardHeader className="flex flex-row items-center justify-between pb-1 px-4 pt-4">
-                        <p className="text-[11px] text-zinc-500 font-medium uppercase tracking-tight">Warm Threshold</p>
-                        <Zap className="w-4 h-4 text-amber-400" />
-                    </SmallCardHeader>
-                    <SmallCardContent className="px-4 pb-4">
-                        <p className="text-2xl font-bold text-zinc-900">Score 40-79</p>
-                        <p className="text-[10px] text-zinc-400 font-medium italic">Nurturing Queue</p>
+                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                    <SmallCardContent className="p-4">
+                        <div className="flex flex-row items-center justify-between">
+                            <div>
+                                <p className="text-xs text-gray-600">Warm Threshold</p>
+                                <p className="text-xl font-semibold text-gray-900">Score 40-79</p>
+                                <p className="text-[10px] text-gray-500">Nurturing Queue</p>
+                            </div>
+                            <Zap className="w-4 h-4 text-amber-400" />
+                        </div>
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="bg-white border-t border-white shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:shadow-[0_20_40_rgba(0,0,0,0.1)] hover:-translate-y-1 transform transition-all duration-300">
-                    <SmallCardHeader className="flex flex-row items-center justify-between pb-1 px-4 pt-4">
-                        <p className="text-[11px] text-zinc-500 font-medium uppercase tracking-tight">Cold Threshold</p>
-                        <Snowflake className="w-4 h-4 text-blue-300" />
-                    </SmallCardHeader>
-                    <SmallCardContent className="px-4 pb-4">
-                        <p className="text-2xl font-bold text-zinc-900">Score &lt; 40</p>
-                        <p className="text-[10px] text-zinc-400 font-medium italic">Low Impact Area</p>
+                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                    <SmallCardContent className="p-4">
+                        <div className="flex flex-row items-center justify-between">
+                            <div>
+                                <p className="text-xs text-gray-600">Cold Threshold</p>
+                                <p className="text-xl font-semibold text-gray-900">Score &lt; 40</p>
+                                <p className="text-[10px] text-gray-500">Low Impact Area</p>
+                            </div>
+                            <Snowflake className="w-4 h-4 text-blue-300" />
+                        </div>
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="bg-white border-t border-white shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.1)] hover:-translate-y-1 transform transition-all duration-300">
-                    <SmallCardHeader className="flex flex-row items-center justify-between pb-1 px-4 pt-4">
-                        <p className="text-[11px] text-zinc-500 font-medium uppercase tracking-tight">Model Accuracy</p>
-                        <Target className="w-4 h-4 text-emerald-400" />
-                    </SmallCardHeader>
-                    <SmallCardContent className="px-4 pb-4">
-                        <p className="text-2xl font-bold text-emerald-600">88.4%</p>
-                        <p className="text-[10px] text-zinc-400 font-medium italic">Based on Won leads</p>
+                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                    <SmallCardContent className="p-4">
+                        <div className="flex flex-row items-center justify-between">
+                            <div>
+                                <p className="text-xs text-gray-600">Model Accuracy</p>
+                                <p className="text-xl font-semibold text-emerald-600">88.4%</p>
+                                <p className="text-[10px] text-gray-500">Based on Won leads</p>
+                            </div>
+                            <Target className="w-4 h-4 text-emerald-400" />
+                        </div>
                     </SmallCardContent>
                 </SmallCard>
             </div>
@@ -167,11 +175,11 @@ export default function LeadScoringRulesPage() {
                 <Table>
                     <TableHeader className="bg-zinc-50/50">
                         <TableRow className="hover:bg-transparent border-b-zinc-100">
-                            <TableHead className="py-4 px-6 font-black text-[10px] text-zinc-400 uppercase tracking-widest">Lead Attribute</TableHead>
-                            <TableHead className="py-4 font-black text-[10px] text-zinc-400 uppercase tracking-widest">Condition</TableHead>
-                            <TableHead className="py-4 font-black text-[10px] text-zinc-400 uppercase tracking-widest text-center">Score Impact</TableHead>
-                            <TableHead className="py-4 font-black text-[10px] text-zinc-400 uppercase tracking-widest">Status</TableHead>
-                            <TableHead className="py-4 text-right pr-6 font-black text-[10px] text-zinc-400 uppercase tracking-widest">Actions</TableHead>
+                            <TableHead className="py-4 px-6 text-[11px] font-medium text-gray-500">Lead Attribute</TableHead>
+                            <TableHead className="py-4 text-[11px] font-medium text-gray-500">Condition</TableHead>
+                            <TableHead className="py-4 text-[11px] font-medium text-gray-500 text-center">Score Impact</TableHead>
+                            <TableHead className="py-4 text-[11px] font-medium text-gray-500">Status</TableHead>
+                            <TableHead className="py-4 text-right pr-6 text-[11px] font-medium text-gray-500">Actions</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -182,28 +190,28 @@ export default function LeadScoringRulesPage() {
                                         <div className="w-8 h-8 rounded-lg bg-zinc-50 border border-zinc-100 flex items-center justify-center text-zinc-400 group-hover:bg-white group-hover:text-blue-600 transition-all shadow-sm">
                                             <Activity className="w-4 h-4" />
                                         </div>
-                                        <span className="text-xs font-black text-zinc-900 uppercase tracking-tight italic group-hover:text-blue-600 transition-colors">{rule.attribute}</span>
+                                        <span className="text-xs font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">{rule.attribute}</span>
                                     </div>
                                 </TableCell>
                                 <TableCell className="py-4">
-                                    <Badge variant="outline" className="text-[10px] font-bold border-zinc-100 text-zinc-500 bg-white px-3 py-1 rounded shadow-none">
+                                    <Badge variant="outline" className="text-[10px] font-medium border-zinc-100 text-zinc-500 bg-white px-3 py-1 rounded shadow-none">
                                         {rule.condition}
                                     </Badge>
                                 </TableCell>
                                 <TableCell className="py-4 text-center">
                                     <div className="flex items-center justify-center gap-2">
-                                        <span className={`text-sm font-black ${rule.impact.startsWith('+') ? 'text-emerald-600' : 'text-rose-600'}`}>{rule.impact}</span>
+                                        <span className={`text-sm font-semibold ${rule.impact.startsWith('+') ? 'text-emerald-600' : 'text-rose-600'}`}>{rule.impact}</span>
                                         {rule.impact.startsWith('+') ? <TrendingUp className="w-3.5 h-3.5 text-emerald-500" /> : <TrendingDown className="w-3.5 h-3.5 text-rose-500" />}
                                     </div>
                                 </TableCell>
                                 <TableCell className="py-4">
-                                    <Badge className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${rule.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-50 shadow-none' : 'bg-zinc-100 text-zinc-400 hover:bg-zinc-100'}`}>
+                                    <Badge className={`text-[9px] font-medium px-2 py-0.5 rounded-full ${rule.status === 'Active' ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-50 shadow-none' : 'bg-zinc-100 text-zinc-400 hover:bg-zinc-100'}`}>
                                         {rule.status}
                                     </Badge>
                                 </TableCell>
                                 <TableCell className="py-4 text-right pr-6">
                                     <div className="flex items-center justify-end gap-2">
-                                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-all">
+                                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-all" onClick={() => handleAction("Scoring rule editor opened")}>
                                             <Edit3 className="w-3.5 h-3.5" />
                                         </Button>
                                         <DropdownMenu>
@@ -213,17 +221,17 @@ export default function LeadScoringRulesPage() {
                                                 </Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end" className="w-56 shadow-xl border-zinc-100 p-2">
-                                                <DropdownMenuLabel className="text-[10px] font-black uppercase text-zinc-400 px-2 py-1.5">Rule Strategy</DropdownMenuLabel>
-                                                <DropdownMenuItem className="text-xs font-bold gap-2 focus:bg-blue-50 focus:text-blue-600 rounded-md cursor-pointer">
+                                                <DropdownMenuLabel className="text-[10px] font-medium text-zinc-400 px-2 py-1.5">Rule Strategy</DropdownMenuLabel>
+                                                <DropdownMenuItem className="text-xs font-medium gap-2 focus:bg-blue-50 focus:text-blue-600 rounded-md cursor-pointer" onClick={() => handleAction("Impact preview generated")}>
                                                     <Zap className="w-3.5 h-3.5" />
                                                     Preview Impact
                                                 </DropdownMenuItem>
-                                                <DropdownMenuItem className="text-xs font-bold gap-2 focus:bg-blue-50 focus:text-blue-600 rounded-md cursor-pointer">
+                                                <DropdownMenuItem className="text-xs font-medium gap-2 focus:bg-blue-50 focus:text-blue-600 rounded-md cursor-pointer" onClick={() => handleAction("Scoring rule cloned")}>
                                                     <RefreshCcw className="w-3.5 h-3.5" />
                                                     Clone Logic
                                                 </DropdownMenuItem>
                                                 <DropdownMenuSeparator className="bg-zinc-50" />
-                                                <DropdownMenuItem className="text-xs font-bold gap-2 text-rose-600 focus:bg-rose-50 focus:text-rose-600 rounded-md cursor-pointer">
+                                                <DropdownMenuItem className="text-xs font-medium gap-2 text-rose-600 focus:bg-rose-50 focus:text-rose-600 rounded-md cursor-pointer" onClick={() => handleAction("Scoring rule removed")}>
                                                     <Trash2 className="w-3.5 h-3.5" />
                                                     Remove Rule
                                                 </DropdownMenuItem>
@@ -236,44 +244,44 @@ export default function LeadScoringRulesPage() {
                     </TableBody>
                 </Table>
                 <div className="px-6 py-4 border-t border-zinc-100 flex items-center justify-between bg-zinc-50/10">
-                    <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest italic flex items-center gap-2">
+                    <p className="text-[10px] text-zinc-400 font-medium flex items-center gap-2">
                         <Info className="w-3.5 h-3.5" />
                         Max score is capped at 100 per lead profile. Negative scores are allowed.
                     </p>
                     <div className="flex gap-2">
-                        <Button variant="ghost" size="sm" className="h-8 text-[10px] font-black uppercase tracking-widest transition-colors" disabled>Prev</Button>
-                        <Button variant="ghost" size="sm" className="h-8 text-[10px] font-black uppercase tracking-widest text-blue-600 hover:text-blue-700 transition-colors">Next</Button>
+                        <Button variant="ghost" size="sm" className="h-8 text-[10px] font-medium transition-colors" disabled>Prev</Button>
+                        <Button variant="ghost" size="sm" className="h-8 text-[10px] font-medium text-blue-600 hover:text-blue-700 transition-colors" onClick={() => toast.info("Loading next page...")}>Next</Button>
                     </div>
                 </div>
             </div>
 
-            {/* PREDICTIVE INSIGHTS - 3D GLASS STYLE */}
+            {/* PREDICTIVE INSIGHTS */}
             <div className="bg-white rounded-xl border border-zinc-200 p-8 shadow-sm">
                 <div className="flex items-center justify-between mb-8 border-b border-zinc-100 pb-6">
                     <div>
-                        <h3 className="text-sm font-black text-zinc-900 uppercase tracking-widest italic flex items-center gap-2">
+                        <h3 className="text-base font-medium text-gray-900 flex items-center gap-2">
                             <Lightbulb className="w-5 h-5 text-amber-500" />
                             Scoring Accuracy & Quality
                         </h3>
                         <p className="text-[11px] text-zinc-400 font-medium">Model performance based on historical conversion data.</p>
                     </div>
-                    <Badge className="bg-emerald-50 text-emerald-600 border-none font-black text-[9px] uppercase px-4 py-1 tracking-widest">Optimized</Badge>
+                    <Badge className="bg-emerald-50 text-emerald-600 border-none font-medium text-[9px] px-4 py-1">Optimized</Badge>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                     <div className="space-y-6">
                         <div className="flex justify-between items-end">
-                            <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Score/Quality Correlation</span>
-                            <span className="text-lg font-black text-zinc-900">High</span>
+                            <span className="text-[10px] font-medium text-zinc-400">Score/Quality Correlation</span>
+                            <span className="text-lg font-semibold text-gray-900">High</span>
                         </div>
                         <div className="space-y-4">
-                            <div className="flex justify-between text-[11px] font-bold text-zinc-500">
+                            <div className="flex justify-between text-[11px] font-medium text-zinc-500">
                                 <span>80+ Score Leads</span>
                                 <span>74% Win Rate</span>
                             </div>
                             <Progress value={74} className="h-1.5 bg-zinc-100 [&>div]:bg-blue-600 shadow-inner" />
 
-                            <div className="flex justify-between text-[11px] font-bold text-zinc-500">
+                            <div className="flex justify-between text-[11px] font-medium text-zinc-500">
                                 <span>40-79 Score Leads</span>
                                 <span>32% Win Rate</span>
                             </div>
@@ -284,15 +292,15 @@ export default function LeadScoringRulesPage() {
                         <div className="flex items-center gap-4 mb-4">
                             <Thermometer className="w-8 h-8 text-rose-500" />
                             <div>
-                                <h4 className="text-sm font-black text-zinc-900 tracking-tight uppercase">Hot Leads Active</h4>
+                                <h4 className="text-base font-medium text-gray-900">Hot Leads Active</h4>
                                 <p className="text-[11px] text-zinc-400 font-medium mt-0.5">Requiring immediate response.</p>
                             </div>
                         </div>
                         <div className="flex items-baseline gap-2">
-                            <span className="text-4xl font-black text-rose-600">84</span>
-                            <span className="text-xs font-bold text-zinc-300 uppercase tracking-widest">Profiles</span>
+                            <span className="text-4xl font-semibold text-rose-600">84</span>
+                            <span className="text-xs font-medium text-zinc-300">Profiles</span>
                         </div>
-                        <Button className="w-full mt-6 bg-zinc-900 hover:bg-black text-white text-[10px] font-black uppercase tracking-widest py-6 rounded-xl shadow-lg active:scale-95 transition-all">
+                        <Button className="w-full mt-6 bg-zinc-900 hover:bg-black text-white text-[10px] font-medium py-6 rounded-xl shadow-lg active:scale-95 transition-all" onClick={() => handleAction("Loading high priority leads...")}>
                             Review High Priority Leads
                         </Button>
                     </div>

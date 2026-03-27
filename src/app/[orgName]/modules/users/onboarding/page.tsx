@@ -2,22 +2,22 @@
 
 import { useState } from "react"
 import {
-    Users,
-    CheckCircle2,
-    Circle,
     Clock,
     Search,
-    ChevronRight,
-    ShieldCheck,
-    UserCheck,
-    Zap,
-    Building2,
-    ArrowUpRight
+    MoreVertical,
+    AlertTriangle,
+    TrendingUp,
 } from "lucide-react"
 import { CustomButton } from "@/components/custom/CustomButton"
 import SubHeader from "@/components/custom/SubHeader"
 import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
+import { showSuccess, showWarning } from "@/utils/toast"
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 export default function OnboardingStatusPage() {
     const [searchQuery, setSearchQuery] = useState("")
@@ -27,177 +27,174 @@ export default function OnboardingStatusPage() {
             id: "orb1",
             name: "Marcus Aurelius",
             email: "marcus@rome.inc",
+            currentStep: "Org training",
             progress: 75,
-            steps: [
-                { name: "Account Creation", status: "complete" },
-                { name: "Profile Setup", status: "complete" },
-                { name: "MFA Enrollment", status: "complete" },
-                { name: "Org Training", status: "pending" }
-            ]
+            status: "In progress",
+            started: "Mar 20, 2026",
         },
         {
             id: "orb2",
             name: "Seneca Young",
             email: "s.young@stoic.io",
+            currentStep: "Profile setup",
             progress: 25,
-            steps: [
-                { name: "Account Creation", status: "complete" },
-                { name: "Profile Setup", status: "pending" },
-                { name: "MFA Enrollment", status: "pending" },
-                { name: "Org Training", status: "pending" }
-            ]
-        }
+            status: "Stalled",
+            started: "Mar 15, 2026",
+        },
     ]
+
+    const filteredUsers = onboardingUsers.filter(
+        (u) =>
+            u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            u.email.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+
+    const stalledCount = onboardingUsers.filter((u) => u.status === "Stalled").length
 
     return (
         <div className="relative min-h-screen bg-[#F8F9FC] dark:bg-zinc-950">
             <SubHeader
-                title="Onboarding Status"
+                title="Onboarding status"
                 breadcrumbItems={[
-                    { label: "Identity & Access", href: "#" },
+                    { label: "Identity & access", href: "#" },
                     { label: "Users", href: "#" },
-                    { label: "Onboarding", href: "#" }
+                    { label: "Onboarding", href: "#" },
                 ]}
                 rightControls={
-                    <CustomButton size="sm" className="bg-blue-600 font-bold text-white shadow-lg shadow-blue-500/20">
-                        Send Reminders
+                    <CustomButton
+                        className="bg-primary text-white text-xs rounded-none font-semibold"
+                        onClick={() => showSuccess("Reminders sent to all pending users")}
+                    >
+                        Send reminders
                     </CustomButton>
                 }
             />
 
-            <div className="p-4 md:p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <div className="p-4 md:p-8 space-y-6">
+                {/* Description */}
+                <p className="text-xs text-gray-600">
+                    Track and manage new user onboarding progress across all active pipelines.
+                </p>
 
-                {/* Progress Overview */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm flex items-center justify-between">
-                        <div>
-                            <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest leading-none mb-1">In Pipeline</p>
-                            <h3 className="text-3xl font-black text-blue-600 tracking-tight">{onboardingUsers.length}</h3>
-                        </div>
-                        <div className="h-12 w-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
-                            <Clock className="w-6 h-6" />
-                        </div>
+                {/* Stats */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="bg-primary text-white rounded-none p-5">
+                        <p className="text-xs">In pipeline</p>
+                        <p className="text-xl font-semibold">{onboardingUsers.length}</p>
+                        <p className="text-[10px] opacity-80">Active onboarding users</p>
                     </div>
-                    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm flex items-center justify-between">
-                        <div>
-                            <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest leading-none mb-1">Avg. Setup Time</p>
-                            <h3 className="text-3xl font-black text-emerald-600 tracking-tight">4.2 <span className="text-xs">hrs</span></h3>
-                        </div>
-                        <div className="h-12 w-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                            <Zap className="w-6 h-6" />
-                        </div>
+                    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-none p-5">
+                        <p className="text-xs text-gray-600">Avg setup time</p>
+                        <p className="text-xl font-semibold text-gray-900 dark:text-zinc-100">2.4 days</p>
+                        <p className="text-[10px] text-gray-500">Across all users</p>
                     </div>
-                    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm flex items-center justify-between">
-                        <div>
-                            <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest leading-none mb-1">Stalled Setups</p>
-                            <h3 className="text-3xl font-black text-red-600 tracking-tight">1</h3>
-                        </div>
-                        <div className="h-12 w-12 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center">
-                            <Circle className="w-6 h-6" />
-                        </div>
+                    <div className="bg-white dark:bg-zinc-900 border border-amber-200 dark:border-amber-800 rounded-none p-5">
+                        <p className="text-xs text-amber-600">Stalled</p>
+                        <p className="text-xl font-semibold text-amber-600">{stalledCount}</p>
+                        <p className="text-[10px] text-amber-400">Needs follow-up</p>
                     </div>
                 </div>
 
-                {/* User Onboarding Cards */}
-                <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                        <h4 className="text-xs font-black text-zinc-400 uppercase tracking-[0.2em]">Active Onboarding Lifecycles</h4>
-                        <div className="relative w-64">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
-                            <input
-                                type="text"
-                                placeholder="Filter by name..."
-                                className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl pl-9 pr-4 py-1.5 text-xs focus:ring-1 focus:ring-blue-500/20"
-                            />
-                        </div>
-                    </div>
+                {/* Search */}
+                <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-none text-sm placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-primary"
+                        placeholder="Search users by name or email..."
+                    />
+                </div>
 
-                    {onboardingUsers.map((u) => (
-                        <div key={u.id} className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm hover:border-blue-500/30 transition-all group">
-                            <div className="flex flex-col lg:flex-row lg:items-center gap-8">
-                                {/* User Profile */}
-                                <div className="w-64 shrink-0">
-                                    <div className="flex items-center gap-4">
-                                        <div className="h-12 w-12 rounded-2xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-blue-600 font-black text-sm border border-zinc-200 group-hover:scale-110 transition-transform">
-                                            {u.name.charAt(0)}
-                                        </div>
-                                        <div>
-                                            <h5 className="font-extrabold text-sm text-zinc-900 dark:text-zinc-100 tracking-tight">{u.name}</h5>
-                                            <p className="text-[11px] font-medium text-zinc-500 overflow-hidden text-ellipsis w-40">{u.email}</p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Progress Stepper */}
-                                <div className="flex-1">
-                                    <div className="flex items-center justify-between mb-2">
-                                        <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Completion Progress</p>
-                                        <span className="text-xs font-black text-blue-600">{u.progress}%</span>
-                                    </div>
-                                    <div className="h-2 w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden mb-6 border dark:border-zinc-800 shadow-inner">
-                                        <div className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-1000" style={{ width: `${u.progress}%` }}></div>
-                                    </div>
-
-                                    <div className="flex flex-wrap items-center gap-6">
-                                        {u.steps.map((step, idx) => (
-                                            <div key={idx} className="flex items-center gap-2">
-                                                {step.status === 'complete' ? (
-                                                    <div className="h-5 w-5 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center border border-emerald-200">
-                                                        <CheckCircle2 className="w-3 h-3" />
-                                                    </div>
-                                                ) : (
-                                                    <div className="h-5 w-5 rounded-full bg-zinc-100 text-zinc-300 flex items-center justify-center border border-zinc-200">
-                                                        <div className="h-1.5 w-1.5 rounded-full bg-zinc-300 animate-pulse" />
-                                                    </div>
-                                                )}
-                                                <span className={`text-[11px] font-bold tracking-tight ${step.status === 'complete' ? 'text-zinc-600' : 'text-zinc-400'}`}>
-                                                    {step.name}
+                {/* Table */}
+                <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-none overflow-hidden">
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900">
+                                    <th className="p-4 text-xs font-semibold text-gray-600">Name</th>
+                                    <th className="p-4 text-xs font-semibold text-gray-600">Current step</th>
+                                    <th className="p-4 text-xs font-semibold text-gray-600">Progress</th>
+                                    <th className="p-4 text-xs font-semibold text-gray-600">Status</th>
+                                    <th className="p-4 text-xs font-semibold text-gray-600">Started</th>
+                                    <th className="p-4 text-xs font-semibold text-gray-600 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
+                                {filteredUsers.map((user) => (
+                                    <tr key={user.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
+                                        <td className="p-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="h-9 w-9 rounded-none bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-gray-600 font-semibold text-xs">
+                                                    {user.name.charAt(0)}
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-semibold text-gray-900 dark:text-zinc-100">{user.name}</p>
+                                                    <p className="text-xs text-gray-500">{user.email}</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="p-4">
+                                            <span className="text-xs text-gray-700 dark:text-zinc-300">{user.currentStep}</span>
+                                        </td>
+                                        <td className="p-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="flex-1 h-2 bg-zinc-100 dark:bg-zinc-800 rounded-none overflow-hidden min-w-[80px]">
+                                                    <div
+                                                        className="h-full bg-primary transition-all"
+                                                        style={{ width: `${user.progress}%` }}
+                                                    />
+                                                </div>
+                                                <span className="text-xs font-semibold text-gray-700 dark:text-zinc-300 whitespace-nowrap">
+                                                    {user.progress}%
                                                 </span>
                                             </div>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {/* Action */}
-                                <div className="shrink-0 flex items-center gap-2">
-                                    <CustomButton variant="outline" size="sm" className="rounded-xl font-bold text-xs h-10 px-4 border-zinc-200">
-                                        View Logs
-                                    </CustomButton>
-                                    <CustomButton variant="ghost" size="icon" className="h-10 w-10 text-zinc-400">
-                                        <ChevronRight className="w-5 h-5" />
-                                    </CustomButton>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-
-                {/* Global Onboarding Config */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="bg-gradient-to-br from-indigo-600 to-blue-700 rounded-[2.5rem] p-8 text-white shadow-2xl shadow-blue-500/20 relative overflow-hidden group">
-                        <Building2 className="absolute -bottom-8 -right-8 h-40 w-40 opacity-10 group-hover:scale-110 transition-transform" />
-                        <h4 className="text-xl font-black mb-2 tracking-tight">Onboarding Workflows</h4>
-                        <p className="text-blue-100 text-sm mb-6 leading-relaxed max-w-sm">Design custom onboarding journeys with automated welcome emails and role-specific training modules.</p>
-                        <CustomButton className="bg-white text-blue-700 hover:bg-blue-50 font-black rounded-xl text-xs h-10 px-6 border-0">
-                            Configure Journey <ArrowUpRight className="ml-2 w-4 h-4" />
-                        </CustomButton>
-                    </div>
-                    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[2.5rem] p-8 shadow-sm flex flex-col justify-between">
-                        <div className="space-y-4">
-                            <div className="h-12 w-12 rounded-2xl bg-orange-50 text-orange-600 flex items-center justify-center">
-                                <ShieldCheck className="w-6 h-6" />
-                            </div>
-                            <h4 className="text-lg font-black tracking-tight text-zinc-900 dark:text-zinc-100">Identity Governance</h4>
-                            <p className="text-zinc-500 text-sm leading-relaxed">Ensure all new users meet the baseline security requirements before granting access to sensitive production environments.</p>
-                        </div>
-                        <div className="flex items-center gap-4 mt-8">
-                            <div className="flex -space-x-3">
-                                <div className="h-10 w-10 rounded-full border-4 border-white dark:border-zinc-900 bg-blue-100" />
-                                <div className="h-10 w-10 rounded-full border-4 border-white dark:border-zinc-900 bg-emerald-100" />
-                                <div className="h-10 w-10 rounded-full border-4 border-white dark:border-zinc-900 bg-orange-100 flex items-center justify-center text-[10px] font-bold text-orange-600">+12</div>
-                            </div>
-                            <span className="text-xs font-bold text-zinc-400 italic">verified this week</span>
-                        </div>
+                                        </td>
+                                        <td className="p-4">
+                                            <Badge
+                                                className={`rounded-none text-xs font-medium border-0 ${
+                                                    user.status === "In progress"
+                                                        ? "bg-blue-50 text-blue-700"
+                                                        : "bg-amber-50 text-amber-700"
+                                                }`}
+                                            >
+                                                {user.status === "Stalled" && <AlertTriangle className="w-3 h-3 mr-1" />}
+                                                {user.status === "In progress" && <TrendingUp className="w-3 h-3 mr-1" />}
+                                                {user.status}
+                                            </Badge>
+                                        </td>
+                                        <td className="p-4">
+                                            <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                                                <Clock className="w-3.5 h-3.5" />
+                                                {user.started}
+                                            </div>
+                                        </td>
+                                        <td className="p-4 text-right">
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <button className="p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-none transition-colors">
+                                                        <MoreVertical className="w-4 h-4 text-gray-400" />
+                                                    </button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end" className="rounded-none">
+                                                    <DropdownMenuItem
+                                                        onClick={() => showSuccess(`Viewing details for ${user.name}`)}
+                                                    >
+                                                        View details
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem
+                                                        onClick={() => showSuccess(`Reminder sent to ${user.name}`)}
+                                                    >
+                                                        Send reminder
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>

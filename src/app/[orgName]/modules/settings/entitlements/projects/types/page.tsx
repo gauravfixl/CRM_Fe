@@ -29,7 +29,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { SmallCard, SmallCardContent, SmallCardHeader } from "@/shared/components/custom/SmallCard"
+import { SmallCard, SmallCardContent } from "@/components/custom/SmallCard"
 import { toast } from "sonner"
 import {
     Dialog,
@@ -47,23 +47,17 @@ export default function ProjectTypesPage() {
     const [isLoading, setIsLoading] = useState(false)
     const [searchQuery, setSearchQuery] = useState("")
     const [isCreateOpen, setIsCreateOpen] = useState(false)
+    const [isEditOpen, setIsEditOpen] = useState(false)
+    const [editItem, setEditItem] = useState<{ id: string; name: string; key: string; workflow: string } | null>(null)
     const [newItem, setNewItem] = useState({ name: "", key: "", workflow: "Standard" })
 
     // Mock Data
     const [types, setTypes] = useState([
-        { id: "1", name: "Software Development", key: "SW", workflow: "Agile Scrum", projects: 12, status: "ACTIVE" },
-        { id: "2", name: "Marketing Campaign", key: "MKT", workflow: "Kanban", projects: 5, status: "ACTIVE" },
-        { id: "3", name: "General Task", key: "GEN", workflow: "Simple Todo", projects: 8, status: "ACTIVE" },
-        { id: "4", name: "Client Onboarding", key: "ONB", workflow: "Stage Gate", projects: 3, status: "INACTIVE" },
+        { id: "1", name: "Software Development", key: "SW", workflow: "Agile Scrum", projects: 12, status: "Active" },
+        { id: "2", name: "Marketing Campaign", key: "MKT", workflow: "Kanban", projects: 5, status: "Active" },
+        { id: "3", name: "General Task", key: "GEN", workflow: "Simple Todo", projects: 8, status: "Active" },
+        { id: "4", name: "Client Onboarding", key: "ONB", workflow: "Stage Gate", projects: 3, status: "Inactive" },
     ])
-
-    const handleAction = (msg: string) => {
-        setIsLoading(true)
-        setTimeout(() => {
-            setIsLoading(false)
-            toast.success(msg)
-        }, 800)
-    }
 
     const createType = () => {
         if (!newItem.name || !newItem.key) return toast.error("Please fill all fields")
@@ -75,56 +69,84 @@ export default function ProjectTypesPage() {
                 key: newItem.key.toUpperCase(),
                 workflow: newItem.workflow,
                 projects: 0,
-                status: "ACTIVE"
+                status: "Active"
             }])
             setIsCreateOpen(false)
             setNewItem({ name: "", key: "", workflow: "Standard" })
             setIsLoading(false)
-            toast.success("Project Type Created")
+            toast.success("Project type created")
         }, 1000)
     }
 
+    const openEdit = (t: typeof types[0]) => {
+        setEditItem({ id: t.id, name: t.name, key: t.key, workflow: t.workflow })
+        setIsEditOpen(true)
+    }
+
+    const saveEdit = () => {
+        if (!editItem || !editItem.name || !editItem.key) return toast.error("Please fill all fields")
+        setIsLoading(true)
+        setTimeout(() => {
+            setTypes(types.map(t => t.id === editItem.id ? { ...t, name: editItem.name, key: editItem.key.toUpperCase(), workflow: editItem.workflow } : t))
+            setIsEditOpen(false)
+            setEditItem(null)
+            setIsLoading(false)
+            toast.success("Project type updated")
+        }, 800)
+    }
+
+    const deleteType = (id: string) => {
+        setTypes(types.filter(t => t.id !== id))
+        toast.success("Project type deleted")
+    }
+
+    const filteredTypes = types.filter(t =>
+        t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        t.key.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+
     return (
-        <div className="flex flex-col gap-6 p-6 min-h-screen bg-[#fafafa]">
-            {/* PAGE HEADER */}
+        <div className="font-outfit flex flex-col gap-6 p-6 min-h-screen bg-[#fafafa]">
+            {/* Page header */}
             <div className="flex flex-col gap-1">
-                <div className="flex items-center gap-2 text-[10px] font-medium text-zinc-400">
-                    <span>PROJECT GOVERNANCE</span>
+                <div className="flex items-center gap-2 text-xs font-medium text-gray-400">
+                    <span>Project governance</span>
                     <span>/</span>
-                    <span className="text-zinc-900 font-semibold">PROJECT TYPES</span>
+                    <span className="text-gray-900 font-semibold">Project types</span>
                 </div>
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mt-2">
                     <div>
-                        <h1 className="text-xl font-bold text-zinc-900 tracking-tight">Project Schemas</h1>
-                        <p className="text-xs text-zinc-500 font-medium">Define project categories and their default behaviors.</p>
+                        <h1 className="text-xl font-semibold text-gray-900 tracking-tight">Project Schemas</h1>
+                        <p className="text-xs text-gray-500 font-medium">Define project categories and their default behaviors.</p>
                     </div>
                     <div className="flex items-center gap-2">
                         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
                             <DialogTrigger asChild>
-                                <Button className="h-8 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium px-3 shadow-sm active:scale-95">
-                                    <Plus className="w-3.5 h-3.5 mr-2" />
-                                    New Type
+                                <Button className="rounded-xl bg-blue-600 hover:bg-blue-700 font-semibold text-xs h-10 gap-2 shadow-lg px-5 text-white">
+                                    <Plus className="w-4 h-4" />
+                                    New type
                                 </Button>
                             </DialogTrigger>
-                            <DialogContent className="sm:max-w-[425px]">
-                                <DialogHeader>
-                                    <DialogTitle>Create Project Type</DialogTitle>
-                                    <DialogDescription>
+                            <DialogContent className="max-w-md rounded-xl">
+                                <DialogHeader className="bg-gradient-to-r from-blue-600 to-blue-700 px-5 py-4 rounded-t-xl -m-6 mb-0">
+                                    <DialogTitle className="text-white font-semibold">Create Project Type</DialogTitle>
+                                    <DialogDescription className="text-blue-100">
                                         Define a new project template for your organization.
                                     </DialogDescription>
                                 </DialogHeader>
-                                <div className="grid gap-4 py-4">
+                                <div className="grid gap-4 py-4 px-1">
                                     <div className="grid gap-2">
-                                        <Label>Type Name</Label>
-                                        <Input value={newItem.name} onChange={(e) => setNewItem({ ...newItem, name: e.target.value })} placeholder="e.g. Website Redesign" />
+                                        <Label className="text-xs font-semibold">Type name</Label>
+                                        <Input className="h-9 rounded-lg" value={newItem.name} onChange={(e) => setNewItem({ ...newItem, name: e.target.value })} placeholder="e.g. Website Redesign" />
                                     </div>
                                     <div className="grid gap-2">
-                                        <Label>Key Prefix</Label>
-                                        <Input value={newItem.key} onChange={(e) => setNewItem({ ...newItem, key: e.target.value })} placeholder="e.g. WEB" maxLength={3} />
+                                        <Label className="text-xs font-semibold">Key prefix</Label>
+                                        <Input className="h-9 rounded-lg" value={newItem.key} onChange={(e) => setNewItem({ ...newItem, key: e.target.value })} placeholder="e.g. WEB" maxLength={3} />
                                     </div>
                                 </div>
                                 <DialogFooter>
-                                    <Button onClick={createType} disabled={isLoading}>{isLoading ? "Creating..." : "Create Type"}</Button>
+                                    <Button variant="outline" onClick={() => setIsCreateOpen(false)} className="h-9 rounded-lg text-xs">Cancel</Button>
+                                    <Button onClick={createType} disabled={isLoading} className="h-9 rounded-lg text-xs bg-blue-600 hover:bg-blue-700 text-white font-semibold">{isLoading ? "Creating..." : "Create type"}</Button>
                                 </DialogFooter>
                             </DialogContent>
                         </Dialog>
@@ -132,61 +154,61 @@ export default function ProjectTypesPage() {
                 </div>
             </div>
 
-            {/* STATS CARDS */}
+            {/* Stat cards */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <SmallCard className="bg-gradient-to-br from-blue-500 to-blue-700 border-t border-white/20 border-none text-white shadow-[0_8px_30px_rgb(59,130,246,0.3)] hover:shadow-[0_20px_40px_rgba(37,99,235,0.4)] hover:-translate-y-1 transform transition-all duration-300">
-                    <SmallCardHeader className="flex flex-row items-center justify-between pb-1 px-4 pt-4">
-                        <p className="text-[11px] text-white font-medium uppercase tracking-wider">Active Types</p>
-                        <FolderKanban className="w-4 h-4 text-white" />
-                    </SmallCardHeader>
-                    <SmallCardContent className="px-4 pb-4">
-                        <p className="text-2xl font-bold text-white drop-shadow-md">{types.filter(t => t.status === 'ACTIVE').length}</p>
-                        <p className="text-[10px] text-white">Project definitions</p>
+                <SmallCard className="border bg-gradient-to-r from-primary/70 to-primary text-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 rounded-xl">
+                    <SmallCardContent className="flex flex-col gap-1 px-4 py-4">
+                        <div className="flex items-center justify-between">
+                            <p className="text-xs text-white/80">Active types</p>
+                            <FolderKanban className="w-4 h-4 text-white/80" />
+                        </div>
+                        <p className="text-xl font-semibold text-white">{types.filter(t => t.status === "Active").length}</p>
+                        <p className="text-[10px] text-white/70">Project definitions</p>
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="bg-white border-t border-white shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.1)] hover:-translate-y-1 transform transition-all duration-300">
-                    <SmallCardHeader className="flex flex-row items-center justify-between pb-1 px-4 pt-4">
-                        <p className="text-[11px] text-zinc-500 font-medium tracking-tight">Total Projects</p>
-                        <LayoutDashboard className="w-4 h-4 text-zinc-300" />
-                    </SmallCardHeader>
-                    <SmallCardContent className="px-4 pb-4">
-                        <p className="text-2xl font-bold text-zinc-900">28</p>
-                        <p className="text-[10px] text-zinc-400">Using these types</p>
+                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 rounded-xl">
+                    <SmallCardContent className="flex flex-col gap-1 px-4 py-4">
+                        <div className="flex items-center justify-between">
+                            <p className="text-xs text-gray-600">Total projects</p>
+                            <LayoutDashboard className="w-4 h-4 text-gray-400" />
+                        </div>
+                        <p className="text-xl font-semibold text-gray-900">{types.reduce((sum, t) => sum + t.projects, 0)}</p>
+                        <p className="text-[10px] text-gray-400">Using these types</p>
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="bg-white border-t border-white shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.1)] hover:-translate-y-1 transform transition-all duration-300">
-                    <SmallCardHeader className="flex flex-row items-center justify-between pb-1 px-4 pt-4">
-                        <p className="text-[11px] text-zinc-500 font-medium tracking-tight">Workflows</p>
-                        <Layers className="w-4 h-4 text-zinc-300" />
-                    </SmallCardHeader>
-                    <SmallCardContent className="px-4 pb-4">
-                        <p className="text-2xl font-bold text-zinc-900">4</p>
-                        <p className="text-[10px] text-zinc-400">Unique process flows</p>
+                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 rounded-xl">
+                    <SmallCardContent className="flex flex-col gap-1 px-4 py-4">
+                        <div className="flex items-center justify-between">
+                            <p className="text-xs text-gray-600">Workflows</p>
+                            <Layers className="w-4 h-4 text-gray-400" />
+                        </div>
+                        <p className="text-xl font-semibold text-gray-900">{new Set(types.map(t => t.workflow)).size}</p>
+                        <p className="text-[10px] text-gray-400">Unique process flows</p>
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="bg-white border-t border-white shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.1)] hover:-translate-y-1 transform transition-all duration-300">
-                    <SmallCardHeader className="flex flex-row items-center justify-between pb-1 px-4 pt-4">
-                        <p className="text-[11px] text-zinc-500 font-medium tracking-tight">Completion Rate</p>
-                        <CheckCircle2 className="w-4 h-4 text-zinc-300" />
-                    </SmallCardHeader>
-                    <SmallCardContent className="px-4 pb-4">
-                        <p className="text-2xl font-bold text-zinc-900">92%</p>
-                        <p className="text-[10px] text-zinc-400">Avg across types</p>
+                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 rounded-xl">
+                    <SmallCardContent className="flex flex-col gap-1 px-4 py-4">
+                        <div className="flex items-center justify-between">
+                            <p className="text-xs text-gray-600">Completion rate</p>
+                            <CheckCircle2 className="w-4 h-4 text-gray-400" />
+                        </div>
+                        <p className="text-xl font-semibold text-gray-900">92%</p>
+                        <p className="text-[10px] text-gray-400">Avg across types</p>
                     </SmallCardContent>
                 </SmallCard>
             </div>
 
-            {/* TABLE */}
-            <div className="bg-white rounded-lg border border-zinc-200 shadow-sm overflow-hidden flex flex-col">
-                <div className="p-4 border-b border-zinc-100 flex items-center justify-between bg-zinc-50/20">
-                    <div className="relative w-full md:w-80 group">
-                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-400" />
+            {/* Table */}
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col">
+                <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+                    <div className="relative w-full md:w-80">
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
                         <Input
                             placeholder="Search types..."
-                            className="pl-9 h-9 bg-white border-zinc-200 rounded-md text-xs font-medium focus:ring-1 focus:ring-blue-100"
+                            className="pl-9 h-9 bg-white border-gray-200 rounded-lg text-xs font-medium focus:ring-1 focus:ring-blue-100"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
@@ -194,48 +216,47 @@ export default function ProjectTypesPage() {
                 </div>
 
                 <Table>
-                    <TableHeader className="bg-zinc-50/50">
+                    <TableHeader className="bg-gray-50/50">
                         <TableRow>
-                            <TableHead className="py-3 px-4 font-semibold text-[11px] text-zinc-500 uppercase">Type Name</TableHead>
-                            <TableHead className="py-3 font-semibold text-[11px] text-zinc-500 uppercase">Key Prefix</TableHead>
-                            <TableHead className="py-3 font-semibold text-[11px] text-zinc-500 uppercase">Default Workflow</TableHead>
-                            <TableHead className="py-3 font-semibold text-[11px] text-zinc-500 uppercase text-center">Active Projects</TableHead>
-                            <TableHead className="py-3 font-semibold text-[11px] text-zinc-500 uppercase text-center">Status</TableHead>
-                            <TableHead className="py-3 text-right pr-4 font-semibold text-[11px] text-zinc-500 uppercase">Actions</TableHead>
+                            <TableHead className="py-3 px-4 text-xs font-semibold text-gray-500">Type name</TableHead>
+                            <TableHead className="py-3 text-xs font-semibold text-gray-500">Key prefix</TableHead>
+                            <TableHead className="py-3 text-xs font-semibold text-gray-500">Default workflow</TableHead>
+                            <TableHead className="py-3 text-xs font-semibold text-gray-500 text-center">Active projects</TableHead>
+                            <TableHead className="py-3 text-xs font-semibold text-gray-500 text-center">Status</TableHead>
+                            <TableHead className="py-3 text-right pr-4 text-xs font-semibold text-gray-500">Actions</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {types.map((t) => (
-                            <TableRow key={t.id} className="hover:bg-zinc-50/50 transition-colors">
+                        {filteredTypes.map((t) => (
+                            <TableRow key={t.id} className="hover:bg-gray-50/50 transition-colors">
                                 <TableCell className="py-3 px-4">
                                     <div className="flex items-center gap-3">
                                         <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 border border-blue-100">
                                             <FolderKanban className="w-4 h-4" />
                                         </div>
-                                        <span className="text-xs font-bold text-zinc-900">{t.name}</span>
+                                        <span className="text-sm font-semibold text-gray-900">{t.name}</span>
                                     </div>
                                 </TableCell>
-                                <TableCell className="py-3 font-mono text-xs text-zinc-500">{t.key}</TableCell>
-                                <TableCell className="py-3 text-xs text-zinc-600">{t.workflow}</TableCell>
+                                <TableCell className="py-3 font-mono text-sm text-gray-600">{t.key}</TableCell>
+                                <TableCell className="py-3 text-sm text-gray-600">{t.workflow}</TableCell>
                                 <TableCell className="py-3 text-center">
-                                    <Badge variant="secondary" className="bg-zinc-100 text-zinc-600 border-zinc-200">{t.projects}</Badge>
+                                    <Badge variant="secondary" className="rounded-full bg-gray-100 text-gray-600 border-gray-200">{t.projects}</Badge>
                                 </TableCell>
                                 <TableCell className="py-3 text-center">
-                                    <Badge className={`text-[9px] uppercase font-bold border-none px-2 py-0.5 ${t.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-600' : 'bg-zinc-100 text-zinc-500'
-                                        }`}>
+                                    <Badge className={`text-[10px] font-semibold rounded-full border-none px-2 py-0.5 ${t.status === "Active" ? "bg-emerald-50 text-emerald-600" : "bg-gray-100 text-gray-500"}`}>
                                         {t.status}
                                     </Badge>
                                 </TableCell>
                                 <TableCell className="py-3 text-right pr-4">
                                     <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" className="h-7 w-7 p-0 hover:bg-zinc-100 rounded-md">
-                                                <MoreHorizontal className="h-4 w-4 text-zinc-400" />
+                                            <Button variant="ghost" className="h-7 w-7 p-0 hover:bg-gray-100 rounded-lg">
+                                                <MoreHorizontal className="h-4 w-4 text-gray-400" />
                                             </Button>
                                         </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end" className="w-48 shadow-xl border-zinc-100">
-                                            <DropdownMenuItem onClick={() => handleAction("Editing type...")}>Edit Type</DropdownMenuItem>
-                                            <DropdownMenuItem className="text-rose-600" onClick={() => handleAction("Deleting type...")}>Delete</DropdownMenuItem>
+                                        <DropdownMenuContent align="end" className="w-48 shadow-xl border-gray-100 rounded-lg">
+                                            <DropdownMenuItem onClick={() => openEdit(t)}>Edit type</DropdownMenuItem>
+                                            <DropdownMenuItem className="text-rose-600" onClick={() => deleteType(t.id)}>Delete</DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
                                 </TableCell>
@@ -244,6 +265,32 @@ export default function ProjectTypesPage() {
                     </TableBody>
                 </Table>
             </div>
+
+            {/* Edit dialog */}
+            <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+                <DialogContent className="max-w-md rounded-xl">
+                    <DialogHeader className="bg-gradient-to-r from-blue-600 to-blue-700 px-5 py-4 rounded-t-xl -m-6 mb-0">
+                        <DialogTitle className="text-white font-semibold">Edit Project Type</DialogTitle>
+                        <DialogDescription className="text-blue-100">
+                            Update this project type configuration.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4 px-1">
+                        <div className="grid gap-2">
+                            <Label className="text-xs font-semibold">Type name</Label>
+                            <Input className="h-9 rounded-lg" value={editItem?.name ?? ""} onChange={(e) => setEditItem(editItem ? { ...editItem, name: e.target.value } : null)} placeholder="e.g. Website Redesign" />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label className="text-xs font-semibold">Key prefix</Label>
+                            <Input className="h-9 rounded-lg" value={editItem?.key ?? ""} onChange={(e) => setEditItem(editItem ? { ...editItem, key: e.target.value } : null)} placeholder="e.g. WEB" maxLength={3} />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsEditOpen(false)} className="h-9 rounded-lg text-xs">Cancel</Button>
+                        <Button onClick={saveEdit} disabled={isLoading} className="h-9 rounded-lg text-xs bg-blue-600 hover:bg-blue-700 text-white font-semibold">{isLoading ? "Saving..." : "Save changes"}</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }

@@ -6,13 +6,28 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/shared/components/ui/switch";
+import { toast } from "sonner";
+import { useParams, useRouter } from "next/navigation";
 
 export default function PermissionsPage() {
+    const params = useParams();
+    const router = useRouter();
+    const [searchQuery, setSearchQuery] = useState("");
     const [permissions, setPermissions] = useState([
         { id: "1", role: "Admin", createWorkflow: true, editWorkflow: true, deleteWorkflow: true, viewLogs: true },
         { id: "2", role: "Manager", createWorkflow: true, editWorkflow: true, deleteWorkflow: false, viewLogs: true },
         { id: "3", role: "User", createWorkflow: false, editWorkflow: false, deleteWorkflow: false, viewLogs: false },
     ]);
+
+    const togglePermission = (id: string, field: string) => {
+        setPermissions(prev => prev.map(p => p.id === id ? { ...p, [field]: !p[field as keyof typeof p] } : p));
+        const role = permissions.find(p => p.id === id)?.role;
+        toast.success(`${role} permission updated`);
+    };
+
+    const filteredPermissions = permissions.filter(p =>
+        p.role.toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
     return (
         <div className="space-y-6 text-[#1A1A1A]">
@@ -50,7 +65,7 @@ export default function PermissionsPage() {
                 <div className="p-5 border-b border-zinc-100 bg-zinc-50/50">
                     <div className="relative w-full md:w-96">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" size={16} />
-                        <Input placeholder="Search roles..." className="pl-11 rounded-none border-zinc-200 h-10 text-sm bg-white" />
+                        <Input placeholder="Search roles..." className="pl-11 rounded-none border-zinc-200 h-10 text-sm bg-white" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
                     </div>
                 </div>
                 <div className="overflow-x-auto">
@@ -65,7 +80,7 @@ export default function PermissionsPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-zinc-100">
-                            {permissions.map((perm) => (
+                            {filteredPermissions.map((perm) => (
                                 <tr key={perm.id} className="hover:bg-blue-50/30 transition-colors group">
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-3">
@@ -75,10 +90,10 @@ export default function PermissionsPage() {
                                             <span className="text-sm font-bold text-gray-900">{perm.role}</span>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4"><Switch checked={perm.createWorkflow} className="data-[state=checked]:bg-green-600" /></td>
-                                    <td className="px-6 py-4"><Switch checked={perm.editWorkflow} className="data-[state=checked]:bg-green-600" /></td>
-                                    <td className="px-6 py-4"><Switch checked={perm.deleteWorkflow} className="data-[state=checked]:bg-green-600" /></td>
-                                    <td className="px-6 py-4"><Switch checked={perm.viewLogs} className="data-[state=checked]:bg-green-600" /></td>
+                                    <td className="px-6 py-4"><Switch checked={perm.createWorkflow} onCheckedChange={() => togglePermission(perm.id, "createWorkflow")} className="data-[state=checked]:bg-green-600" /></td>
+                                    <td className="px-6 py-4"><Switch checked={perm.editWorkflow} onCheckedChange={() => togglePermission(perm.id, "editWorkflow")} className="data-[state=checked]:bg-green-600" /></td>
+                                    <td className="px-6 py-4"><Switch checked={perm.deleteWorkflow} onCheckedChange={() => togglePermission(perm.id, "deleteWorkflow")} className="data-[state=checked]:bg-green-600" /></td>
+                                    <td className="px-6 py-4"><Switch checked={perm.viewLogs} onCheckedChange={() => togglePermission(perm.id, "viewLogs")} className="data-[state=checked]:bg-green-600" /></td>
                                 </tr>
                             ))}
                         </tbody>

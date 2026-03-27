@@ -105,6 +105,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { userById } from "@/hooks/userHooks"
 import { useLoaderStore } from "@/lib/loaderStore"
+import { useRoleAccess } from "@/shared/hooks/use-role-access"
 
 // Microsoft Entra-style icon colors
 const ICON_COLORS: Record<string, { bg: string; icon: string }> = {
@@ -424,25 +425,25 @@ const accountingGovernanceMenuData = [
   {
     group: "FINANCIAL STANDARDS",
     items: [
-      { title: "Tax Config (Global/Firm)", url: "/modules/settings/entitlements/accounting/taxes", icon: Calculator },
-      { title: "Invoice & Draft Flow", url: "/modules/settings/entitlements/accounting/invoices", icon: Receipt },
-      { title: "Currency & FX Rules", url: "/modules/settings/entitlements/accounting/currencies", icon: DollarSign },
+      { title: "Tax Config (Global/Firm)", url: "/modules/settings/entitlements/accounting/tax-config", icon: Calculator },
+      { title: "Invoice & Draft Flow", url: "/modules/settings/entitlements/accounting/invoice-flow", icon: Receipt },
+      { title: "Currency & FX Rules", url: "/modules/settings/entitlements/accounting/currency-fx", icon: DollarSign },
     ]
   },
   {
     group: "COMPLIANCE & TERMS",
     items: [
-      { title: "Overpayment Policies", url: "/modules/settings/entitlements/accounting/overpayment", icon: Banknote },
-      { title: "Payment Terms", url: "/modules/settings/entitlements/accounting/terms", icon: CreditCard },
-      { title: "Trash & Cancelled Invoices", url: "/modules/settings/entitlements/accounting/trash", icon: Trash2 },
+      { title: "Overpayment Policies", url: "/modules/settings/entitlements/accounting/overpayment-policies", icon: Banknote },
+      { title: "Payment Terms", url: "/modules/settings/entitlements/accounting/payment-terms", icon: CreditCard },
+      { title: "Trash & Cancelled Invoices", url: "/modules/settings/entitlements/accounting/trash-invoices", icon: Trash2 },
     ]
   },
   {
     group: "GOVERNANCE REPORTS",
     items: [
-      { title: "Client Tax Breakdown", url: "/modules/settings/entitlements/accounting/reports/client-tax", icon: ListTree },
-      { title: "Invoice Tax Breakdown", url: "/modules/settings/entitlements/accounting/reports/invoice-tax", icon: PieChart },
-      { title: "Audit & Permissions", url: "/modules/settings/entitlements/accounting/permissions", icon: ShieldCheck },
+      { title: "Client Tax Breakdown", url: "/modules/settings/entitlements/accounting/client-tax-breakdown", icon: ListTree },
+      { title: "Invoice Tax Breakdown", url: "/modules/settings/entitlements/accounting/invoice-tax-breakdown", icon: PieChart },
+      { title: "Audit & Permissions", url: "/modules/settings/entitlements/accounting/audit-permissions", icon: ShieldCheck },
     ]
   }
 ];
@@ -524,16 +525,16 @@ const pipelineGovernanceMenuData = [
   {
     group: "PIPELINE GOVERNANCE",
     items: [
-      { title: "Custom Stages", url: "/modules/settings/entitlements/pipeline/stages", icon: LayoutDashboard },
-      { title: "Probability Rules", url: "/modules/settings/entitlements/pipeline/probability", icon: Target },
-      { title: "Process Automation", url: "/modules/settings/entitlements/pipeline/automation", icon: Workflow },
+      { title: "Custom Stages", url: "/modules/settings/entitlements/pipeline/custom-stages", icon: LayoutDashboard },
+      { title: "Probability Rules", url: "/modules/settings/entitlements/pipeline/probability-rules", icon: Target },
+      { title: "Process Automation", url: "/modules/settings/entitlements/pipeline/process-automation", icon: Workflow },
     ]
   },
   {
     group: "ALERTS & MONITORING",
     items: [
-      { title: "Stagnation Alerts", url: "/modules/settings/entitlements/pipeline/alerts", icon: Bell },
-      { title: "Visibility Rules", url: "/modules/settings/entitlements/pipeline/visibility", icon: Lock },
+      { title: "Stagnation Alerts", url: "/modules/settings/entitlements/pipeline/stagnation-alerts", icon: Bell },
+      { title: "Visibility Rules", url: "/modules/settings/entitlements/pipeline/visibility-rules", icon: Lock },
     ]
   }
 ];
@@ -984,15 +985,18 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
 
 
 
+  const { filterSidebarGroups, accessSummary } = useRoleAccess();
+
   const isAdmin = useMemo(() => {
-    // TEMPORARY: Forcing Admin view for development
-    return true;
-    // return currentUser?.role === "ADMIN" || currentUser?.role === "SUB_ADMIN";
-  }, [currentUser]);
+    if (currentUser?.role === "ADMIN" || currentUser?.role === "SUB_ADMIN") return true;
+    return accessSummary.isAdmin;
+  }, [currentUser, accessSummary.isAdmin]);
 
   const activeSidebarData = useMemo(() => {
-    return isAdmin ? adminSidebarGroupsData : sidebarGroupsData;
-  }, [isAdmin]);
+    const baseData = isAdmin ? adminSidebarGroupsData : sidebarGroupsData;
+    // Filter sidebar groups and items based on user's permissions
+    return filterSidebarGroups(baseData as any) as typeof baseData;
+  }, [isAdmin, filterSidebarGroups]);
 
   const currentOrg = useMemo(() => {
     return (params.orgName && params.orgName !== "null")
