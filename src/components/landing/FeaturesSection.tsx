@@ -1,11 +1,12 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { useRef, useState, useEffect } from "react"
 import { motion, useInView, AnimatePresence } from "framer-motion"
 import { Target, Building2, BarChart3, Users, Shield, Zap, ArrowRight, CheckCircle, X, TrendingUp, Clock, Star } from "lucide-react"
 
 const features = [
     {
+        id: "lead-management",
         icon: Target,
         title: "Lead Management",
         description: "Track, score, and convert leads with intelligent pipelines. Assign, follow-up, and never miss an opportunity.",
@@ -30,6 +31,7 @@ const features = [
         ],
     },
     {
+        id: "multi-org",
         icon: Building2,
         title: "Multi-Org Control",
         description: "Manage multiple organizations, departments, and workspaces from a single unified admin command center.",
@@ -54,6 +56,7 @@ const features = [
         ],
     },
     {
+        id: "analytics",
         icon: BarChart3,
         title: "Analytics & Reports",
         description: "Real-time dashboards with revenue metrics, pipeline analytics, cohort analysis, and AI-powered insights.",
@@ -78,6 +81,7 @@ const features = [
         ],
     },
     {
+        id: "collaboration",
         icon: Users,
         title: "Team Collaboration",
         description: "Create roles, assign permissions, manage workspaces, and align your entire team around shared goals.",
@@ -102,6 +106,7 @@ const features = [
         ],
     },
     {
+        id: "security",
         icon: Shield,
         title: "Enterprise Security",
         description: "SOC2 compliant with MFA, audit logs, RBAC, and full compliance reporting built-in from day one.",
@@ -126,6 +131,7 @@ const features = [
         ],
     },
     {
+        id: "automation",
         icon: Zap,
         title: "Workflow Automation",
         description: "Automate repetitive tasks, trigger notifications, set approval chains, and save hours every week.",
@@ -165,13 +171,31 @@ const cardVariants = {
     }),
 }
 
-export default function FeaturesSection() {
+export default function FeaturesSection({ isPage = false }: { isPage?: boolean }) {
     const ref = useRef<HTMLDivElement>(null)
     const inView = useInView(ref, { once: true, margin: "-80px" })
     const [expandedIndex, setExpandedIndex] = useState<number | null>(null)
 
+    // Hash-based feature auto-expansion
+    useEffect(() => {
+        const handleHashChange = () => {
+            const hash = window.location.hash.replace("#", "")
+            if (hash) {
+                const idx = features.findIndex((f) => f.id === hash)
+                if (idx !== -1) setExpandedIndex(idx)
+            }
+        }
+        handleHashChange()
+        window.addEventListener("hashchange", handleHashChange)
+        window.addEventListener("popstate", handleHashChange)
+        return () => {
+            window.removeEventListener("hashchange", handleHashChange)
+            window.removeEventListener("popstate", handleHashChange)
+        }
+    }, [])
+
     return (
-        <section id="features" className="py-28 bg-white dark:bg-slate-950 relative overflow-hidden transition-colors duration-500 border-b border-slate-200/60 dark:border-white/5" ref={ref}>
+        <section id="features" className={`${isPage ? "pt-10 pb-28" : "py-28"} bg-white dark:bg-slate-950 relative overflow-hidden transition-colors duration-500 border-b border-slate-200/60 dark:border-white/5`} ref={ref}>
             {/* Animated gradient mesh background */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
                 <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/10 dark:bg-blue-500/5 rounded-full mix-blend-multiply dark:mix-blend-lighten filter blur-3xl animate-blob" />
