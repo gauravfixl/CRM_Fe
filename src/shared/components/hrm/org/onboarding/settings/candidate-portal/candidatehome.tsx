@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import EditCandidatePortal from "./EditCandidatePortal"
+import EditCandidatePortal from "./editcandidateportal"
 
 export default function CandidatePortalHome() {
   const [isEditing, setIsEditing] = useState(false)
