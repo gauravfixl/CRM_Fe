@@ -19,16 +19,16 @@ const navLinks = [
     },
     {
         label: "Modules",
-        href: "#modules",
+        href: "/modules",
         dropdown: [
-            { label: "CRM", desc: "Clients, Leads, Deals", href: "#modules" },
-            { label: "Project Management", desc: "Tasks & Milestones", href: "#modules" },
-            { label: "HR & Payroll", desc: "Leave & Attendance", href: "#modules" },
-            { label: "Finance", desc: "Invoices & Expenses", href: "#modules" },
+            { label: "CRM", desc: "Clients, Leads, Deals", href: "/modules#crm" },
+            { label: "Project Management", desc: "Tasks & Milestones", href: "/modules#pm" },
+            { label: "HR & Payroll", desc: "Leave & Attendance", href: "/modules#hr" },
+            { label: "Finance", desc: "Invoices & Expenses", href: "/modules#finance" },
         ],
     },
-    { label: "Pricing", href: "#pricing" },
-    { label: "Testimonials", href: "#testimonials" },
+    { label: "Pricing", href: "/pricing" },
+    { label: "Testimonials", href: "/testimonials" },
 ]
 
 export default function Navbar({ solid = false }: { solid?: boolean }) {
@@ -46,12 +46,14 @@ export default function Navbar({ solid = false }: { solid?: boolean }) {
     const handleNavClick = (href: string) => {
         setMobileOpen(false)
         setActiveDropdown(null)
-        if (href.startsWith("#")) {
+        if (href.startsWith("/")) {
+            window.location.href = href
+            return
+        } else if (href.startsWith("#")) {
             const el = document.querySelector(href)
             if (el) {
                 el.scrollIntoView({ behavior: "smooth" })
             } else {
-                // If on another page, navigate to home first then hash
                 window.location.href = "/" + href
             }
         }
@@ -96,7 +98,7 @@ export default function Navbar({ solid = false }: { solid?: boolean }) {
                                     onMouseLeave={() => setActiveDropdown(null)}
                                 >
                                     <button
-                                        onClick={() => !link.dropdown && handleNavClick(link.href)}
+                                        onClick={() => handleNavClick(link.href)}
                                         className="flex items-center gap-1 px-3.5 py-1.5 text-[13px] font-medium text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-full hover:bg-white dark:hover:bg-white/10 hover:shadow-sm transition-all duration-200"
                                     >
                                         {link.label}
