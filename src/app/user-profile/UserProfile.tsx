@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, ChangeEvent, FormEvent } from "react";
 import { useAuthStore } from "@/lib/useAuthStore";
 import { axiosInstance } from "@/lib/axios";
+import { useRouter } from "next/navigation";
 import {
   User,
   Mail,
@@ -17,9 +18,11 @@ import {
   Globe,
   ImagePlus,
   Loader2,
+  ArrowLeft,
 } from "lucide-react";
 
 export default function ProfilePage() {
+  const router = useRouter();
   const { user, updateUser, singleOrg } = useAuthStore();
   const [localUser, setLocalUser] = useState(user || {});
   const [editingSection, setEditingSection] = useState<string | null>(null);
@@ -127,9 +130,17 @@ export default function ProfilePage() {
       <div className="max-w-[1400px] mx-auto px-8 py-10">
 
         {/* Page Header */}
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">My Profile</h1>
-          <p className="text-sm text-slate-500 mt-1">Manage your personal information and preferences</p>
+        <div className="mb-8 flex items-center gap-4">
+          <button
+            onClick={() => router.back()}
+            className="w-10 h-10 rounded-xl bg-white border border-slate-200 shadow-sm flex items-center justify-center hover:bg-slate-50 hover:border-slate-300 transition-colors cursor-pointer"
+          >
+            <ArrowLeft className="w-5 h-5 text-slate-600" />
+          </button>
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">My Profile</h1>
+            <p className="text-sm text-slate-500 mt-1">Manage your personal information and preferences</p>
+          </div>
         </div>
 
         {/* Profile Hero Card */}

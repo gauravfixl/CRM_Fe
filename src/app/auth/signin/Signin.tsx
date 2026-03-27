@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Eye, EyeOff, Building2 } from "lucide-react"
+import { Eye, EyeOff, Building2, ArrowLeft } from "lucide-react"
 import { useAuthStore } from "@/lib/useAuthStore"
 import { showError, showSuccess } from "@/utils/toast"
 import { signInUser, pwlessLogin, otpLogin } from "@/hooks/authHooks"
@@ -112,7 +112,13 @@ export default function SignInPage() {
   const { loginLogoUrl, primaryColor, orgName } = useBrandingStore()
 
   return (
-    <div className="signin-page min-h-screen flex items-center justify-center bg-[#1e293b] p-4">
+    <div className="signin-page min-h-screen flex items-center justify-center bg-[#1e293b] p-4 relative">
+      <button
+        onClick={() => router.push("/")}
+        className="absolute top-6 left-6 w-10 h-10 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center hover:bg-white/20 transition-colors cursor-pointer"
+      >
+        <ArrowLeft className="w-5 h-5 text-white" />
+      </button>
       <div className="signin-container w-full max-w-md">
         <Card className="signin-card shadow-2xl border-0">
           <CardHeader className="signin-header space-y-4 text-center">
