@@ -118,6 +118,24 @@ export default function FeaturesPage() {
     const [selectedId, setSelectedId] = useState<string | null>(null)
     const selectedFeature = featuresData.find(f => f.id === selectedId)
 
+    // Hash-based feature auto-selection
+    useEffect(() => {
+        const handleHashChange = () => {
+            const hash = window.location.hash.replace("#", "")
+            if (hash) {
+                const feature = featuresData.find((f) => f.id === hash)
+                if (feature) setSelectedId(feature.id)
+            }
+        }
+        handleHashChange()
+        window.addEventListener("hashchange", handleHashChange)
+        window.addEventListener("popstate", handleHashChange)
+        return () => {
+            window.removeEventListener("hashchange", handleHashChange)
+            window.removeEventListener("popstate", handleHashChange)
+        }
+    }, [])
+
     useEffect(() => {
         window.scrollTo(0, 0)
     }, [selectedId])

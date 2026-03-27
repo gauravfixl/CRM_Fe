@@ -9,12 +9,12 @@ import { ThemeToggle } from "./ThemeToggle"
 const navLinks = [
     {
         label: "Features",
-        href: "#features",
+        href: "/features",
         dropdown: [
-            { label: "Lead Management", desc: "Track & convert leads", href: "#features" },
-            { label: "Analytics & Reports", desc: "Real-time insights", href: "#features" },
-            { label: "Enterprise Security", desc: "SOC2, MFA, RBAC", href: "#features" },
-            { label: "Workflow Automation", desc: "No-code automations", href: "#features" },
+            { label: "Lead Management", desc: "Track & convert leads", href: "/features#lead-management" },
+            { label: "Analytics & Reports", desc: "Real-time insights", href: "/features#analytics" },
+            { label: "Enterprise Security", desc: "SOC2, MFA, RBAC", href: "/features#security" },
+            { label: "Workflow Automation", desc: "No-code automations", href: "/features#automation" },
         ],
     },
     {
