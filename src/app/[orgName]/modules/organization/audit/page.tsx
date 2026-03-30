@@ -1,6 +1,7 @@
 "use client"
 
-import React from "react"
+import React, { useEffect, useMemo, useState } from "react"
+import { axiosInstance } from "@/lib/axios"
 import {
     FileText,
     Search,
@@ -27,13 +28,78 @@ import {
 } from "@/components/ui/table"
 
 export default function OrgAuditPage() {
-    const auditLogs = [
-        { id: 1, action: "Login Success", module: "AUTH", user: "admin@fixl.io", ip: "192.168.1.1", status: "Success", time: "2 mins ago", detail: "Successful login from Chrome Window" },
-        { id: 2, action: "Create Firm", module: "FIRM", user: "jane.smith@fixl.io", ip: "10.0.0.45", status: "Success", time: "45 mins ago", detail: "New business unit 'Dubai Office' created" },
-        { id: 3, action: "Update Billing", module: "COMMERCIAL", user: "admin@fixl.io", ip: "192.168.1.1", status: "Warning", time: "2 hours ago", detail: "Changed post-paid limit from $1000 to $5000" },
-        { id: 4, action: "Delete User", module: "SECURITY", user: "admin@fixl.io", ip: "192.168.1.1", status: "Critical", time: "Yesterday", detail: "Permanently removed user 'test_temp_user'" },
-        { id: 5, action: "Policy Change", module: "GOVERNANCE", user: "jane.smith@fixl.io", ip: "10.0.0.45", status: "Success", time: "2 days ago", detail: "Enforced MFA Policy across organization" },
-    ]
+    type AuditRow = {
+        id: string;
+        action: string;
+        module: string;
+        user: string;
+        ip: string;
+        status: "Success" | "Warning" | "Critical";
+        time: string;
+        detail: string;
+        createdAtMs: number;
+    }
+
+    const MODULES_TO_FETCH = useMemo(() => ["organization", "firm", "lead", "invoice", "client", "tax", "user"], [])
+    const [auditLogs, setAuditLogs] = useState<AuditRow[]>([])
+
+    const formatTimeAgo = (date: Date) => {
+        const diffMs = Date.now() - date.getTime()
+        const diffMins = Math.floor(diffMs / 60000)
+        if (diffMins < 1) return "Just now"
+        if (diffMins < 60) return `${diffMins} mins ago`
+        const diffHours = Math.floor(diffMins / 60)
+        if (diffHours < 24) return `${diffHours}h ago`
+        const diffDays = Math.floor(diffHours / 24)
+        return `${diffDays}d ago`
+    }
+
+    const mapActivityToAuditRow = (act: any): AuditRow => {
+        const createdAt = act?.createdAt ? new Date(act.createdAt) : null
+        const activity = (act?.activity || "view").toString()
+        const status: AuditRow["status"] =
+            activity === "delete" || activity === "cancel" ? "Warning" : activity === "restore" ? "Success" : "Success"
+
+        return {
+            id: act?._id?.toString() || `${Date.now()}-${Math.random()}`,
+            action: activity.toUpperCase(),
+            module: (act?.module || "unknown").toString().toUpperCase(),
+            user: act?.userId ? act.userId.toString() : "System",
+            ip: "N/A",
+            status,
+            time: createdAt ? formatTimeAgo(createdAt) : "—",
+            detail: act?.activityDesc || act?.activity || "No details available",
+            createdAtMs: createdAt ? createdAt.getTime() : 0,
+        }
+    }
+
+    useEffect(() => {
+        const fetchActivities = async () => {
+            try {
+                const results = await Promise.allSettled(
+                    MODULES_TO_FETCH.map((mod) =>
+                        axiosInstance.get(`/activities/module/${mod}?page=1&limit=10`)
+                    )
+                )
+
+                const rows: AuditRow[] = []
+                for (const r of results) {
+                    if (r.status !== "fulfilled") continue
+                    const activities = r.value?.data?.data ?? []
+                    for (const act of activities) rows.push(mapActivityToAuditRow(act))
+                }
+
+                // newest first
+                rows.sort((a, b) => b.createdAtMs - a.createdAtMs)
+                setAuditLogs(rows.slice(0, 30))
+            } catch (e) {
+                // keep empty
+                setAuditLogs([])
+            }
+        }
+
+        fetchActivities()
+    }, [MODULES_TO_FETCH])
 
     return (
         <div className="flex flex-col h-full w-full bg-slate-50/50 p-6 space-y-6 overflow-y-auto">

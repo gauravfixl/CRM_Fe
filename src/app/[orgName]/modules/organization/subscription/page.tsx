@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useEffect, useState } from "react"
 import { useRouter, useParams } from "next/navigation"
 import {
     CreditCard,
@@ -32,6 +32,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
+import { axiosInstance } from "@/lib/axios"
 
 const availablePlans = [
     { name: "Starter", price: "$499.00", features: ["5 Business Units", "25 Users", "50GB Storage", "500k Api Calls"] },
@@ -51,9 +52,37 @@ export default function OrgSubscriptionPage() {
     const [cvvError, setCvvError] = useState("")
     const [selectedPlan, setSelectedPlan] = useState("Ultimate Scale")
 
+    const [currentBilling, setCurrentBilling] = useState<any>(null)
+    const [billingHistories, setBillingHistories] = useState<any[]>([])
+
     // Payment form state
     const [paymentForm, setPaymentForm] = useState({ name: "", number: "", expiry: "", cvc: "" })
     const [paymentErrors, setPaymentErrors] = useState<Record<string, string>>({})
+
+    useEffect(() => {
+        const fetchBilling = async () => {
+            try {
+                const [planRes, historyRes] = await Promise.allSettled([
+                    axiosInstance.get("/OrgBilling/current-plan"),
+                    axiosInstance.get("/OrgBilling/history"),
+                ])
+
+                const planValue: any = planRes.status === "fulfilled" ? planRes.value?.data?.currentPlan : null
+                const historyValue: any[] =
+                    historyRes.status === "fulfilled" ? historyRes.value?.data?.billingHistories ?? [] : []
+
+                setCurrentBilling(planValue)
+                setBillingHistories(historyValue)
+
+                const planName = planValue?.planSnapshot?.name
+                if (planName) setSelectedPlan(planName)
+            } catch {
+                // keep existing mock UI while backend fails
+            }
+        }
+
+        fetchBilling()
+    }, [])
 
     const usageMetrics = [
         { label: "Active Firms", current: 3, limit: 10, variant: "blue" },
@@ -62,11 +91,32 @@ export default function OrgSubscriptionPage() {
         { label: "Api Monthly Calls", current: 1.2, limit: 5.0, variant: "amber", unit: "M" },
     ]
 
-    const recentInvoices = [
-        { id: "#Inv-2026-001", date: "Jan 24, 2026", amount: "$1,499.00", status: "Paid", method: "Visa •••• 4242" },
-        { id: "#Inv-2025-012", date: "Dec 24, 2025", amount: "$1,499.00", status: "Paid", method: "Visa •••• 4242" },
-        { id: "#Inv-2025-011", date: "Nov 24, 2025", amount: "$1,499.00", status: "Paid", method: "Visa •••• 4242" },
-    ]
+    const recentInvoices = (() => {
+        if (billingHistories.length) {
+            return billingHistories.slice(0, 3).map((h: any, idx: number) => {
+                const createdAt = h?.createdAt ? new Date(h.createdAt) : null
+                const planName = h?.planSnapshot?.name ?? "Plan"
+                const price = h?.planSnapshot?.price
+                const amount =
+                    typeof price === "number" ? `$${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "$—"
+
+                return {
+                    id: `#${planName}-${idx + 1}`,
+                    date: createdAt ? createdAt.toLocaleDateString(undefined, { month: "short", day: "2-digit", year: "numeric" }) : "—",
+                    amount,
+                    status: h?.paymentStatus === "active" ? "Paid" : h?.paymentStatus === "trialing" ? "Trial" : "Updated",
+                    method: "Billing on file",
+                }
+            })
+        }
+
+        // fallback
+        return [
+            { id: "#Inv-2026-001", date: "Jan 24, 2026", amount: "$1,499.00", status: "Paid", method: "Visa •••• 4242" },
+            { id: "#Inv-2025-012", date: "Dec 24, 2025", amount: "$1,499.00", status: "Paid", method: "Visa •••• 4242" },
+            { id: "#Inv-2025-011", date: "Nov 24, 2025", amount: "$1,499.00", status: "Paid", method: "Visa •••• 4242" },
+        ]
+    })()
 
     const handleUpgrade = () => {
         if (!cvv || cvv.length < 3) {
@@ -209,14 +259,31 @@ export default function OrgSubscriptionPage() {
                             </div>
                             <Badge className="bg-blue-400 text-[10px] text-zinc-950 font-medium hover:bg-blue-400 border-none">Active Plan</Badge>
                         </div>
-                        <CardTitle className="text-xl font-semibold tracking-tight">Enterprise Scale Plus</CardTitle>
-                        <CardDescription className="text-indigo-200 text-xs">Auto-renewing on Oct 24, 2026</CardDescription>
+                        <CardTitle className="text-xl font-semibold tracking-tight">
+                            {currentBilling?.planSnapshot?.name ?? "Enterprise Scale Plus"}
+                        </CardTitle>
+                        <CardDescription className="text-indigo-200 text-xs">
+                            {currentBilling?.nextPaymentDate
+                                ? `Auto-renewing on ${new Date(currentBilling.nextPaymentDate).toLocaleDateString(undefined, {
+                                      month: "short",
+                                      day: "2-digit",
+                                      year: "numeric",
+                                  })}`
+                                : "Auto-renewing on Oct 24, 2026"}
+                        </CardDescription>
                     </CardHeader>
                     <CardContent className="pt-4 p-5">
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             <div className="space-y-0.5">
                                 <p className="text-[10px] font-medium text-indigo-300">Monthly Price</p>
-                                <p className="text-sm font-semibold text-white">$1,499.00</p>
+                                <p className="text-sm font-semibold text-white">
+                                    {typeof currentBilling?.planSnapshot?.price === "number"
+                                        ? `$${currentBilling.planSnapshot.price.toLocaleString(undefined, {
+                                              minimumFractionDigits: 2,
+                                              maximumFractionDigits: 2,
+                                          })}`
+                                        : "$1,499.00"}
+                                </p>
                             </div>
                             <div className="space-y-0.5">
                                 <p className="text-[10px] font-medium text-indigo-300">Payment Method</p>

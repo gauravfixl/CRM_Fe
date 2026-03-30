@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
     Users,
     Building2,
@@ -18,7 +18,47 @@ import { Separator } from "@/components/ui/separator";
 
 import { Badge } from "@/components/ui/badge";
 
+import { axiosInstance } from "@/lib/axios";
+import { getOrgDetails } from "@/hooks/orgHooks";
+import { getAllFirms } from "@/hooks/firmHooks";
+
 export default function OrgOverviewPage() {
+    const [org, setOrg] = useState<any>(null);
+    const [totalUsers, setTotalUsers] = useState<number | null>(null);
+    const [activeFirms, setActiveFirms] = useState<number | null>(null);
+
+    useEffect(() => {
+        const load = async () => {
+            try {
+                const orgRes = await getOrgDetails();
+                setOrg(orgRes?.data?.organization ?? null);
+            } catch (e) {
+                // ignore, keep placeholders
+            }
+
+            try {
+                // backend returns pagination.total for org users
+                const usersRes = await axiosInstance.get(
+                    "/organization/users/all?page=1&limit=1"
+                );
+                setTotalUsers(usersRes?.data?.pagination?.total ?? null);
+            } catch (e) {
+                setTotalUsers(null);
+            }
+
+            try {
+                const firmsRes = await getAllFirms();
+                const firms = firmsRes?.data?.data ?? [];
+                const active = Array.isArray(firms) ? firms.filter((f: any) => !f.isDeleted).length : 0;
+                setActiveFirms(active);
+            } catch (e) {
+                setActiveFirms(null);
+            }
+        };
+
+        load();
+    }, []);
+
     return (
         <div className="flex flex-col h-full w-full bg-slate-50/50 p-6 space-y-8 overflow-y-auto font-sans">
             {/* WELCOME HEADER */}
@@ -28,7 +68,7 @@ export default function OrgOverviewPage() {
                     <Building2 className="w-64 h-64" />
                 </div>
                 <div className="relative z-10 space-y-4">
-                    <h1 className="text-3xl font-black tracking-tight">Acme Corporation</h1>
+                    <h1 className="text-3xl font-black tracking-tight">{org?.name ?? "Acme Corporation"}</h1>
                     <div className="flex items-center gap-4 text-blue-100 text-sm font-medium">
                         <span className="flex items-center gap-2 px-3 py-1 bg-white/10 rounded-full">
                             <Globe className="w-4 h-4" /> US-East
@@ -50,7 +90,9 @@ export default function OrgOverviewPage() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-white text-xs opacity-80">Total Users</p>
-                                <p className="text-white text-xl font-semibold mt-1">2,543</p>
+                                <p className="text-white text-xl font-semibold mt-1">
+                                    {totalUsers !== null ? totalUsers.toLocaleString() : "—"}
+                                </p>
                                 <p className="text-white text-[10px] mt-1">+12.5% growth</p>
                             </div>
                             <Users className="w-5 h-5 text-white" />
@@ -62,7 +104,9 @@ export default function OrgOverviewPage() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-gray-600 text-xs">Active Firms</p>
-                                <p className="text-xl font-semibold text-gray-900 mt-1">12</p>
+                                <p className="text-xl font-semibold text-gray-900 mt-1">
+                                    {activeFirms !== null ? activeFirms : "—"}
+                                </p>
                                 <p className="text-gray-600 text-[10px] mt-1">Across 3 regions</p>
                             </div>
                             <Building2 className="w-5 h-5 text-primary" />

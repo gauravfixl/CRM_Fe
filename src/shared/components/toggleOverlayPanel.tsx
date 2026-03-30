@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { useState, useEffect, useMemo } from "react"
-import { useRouter, useParams } from "next/navigation"
+import { useParams } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -16,13 +16,22 @@ import {
   FileText,
   DollarSign,
   SquarePlus,
-  LayoutDashboard
+  LayoutDashboard,
+  Building2,
+  Check
 } from "lucide-react"
 import { getAllOrg, switchOrganization } from "@/hooks/orgHooks"
+import { getFirmList } from "@/hooks/firmHooks"
 import { useModule } from "@/app/context/ModuleContext"
 import { useAuthStore } from "@/lib/useAuthStore"
 import { showSuccess, showError } from "@/utils/toast"
 import { jwtDecode } from "jwt-decode"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 // STATIC DATA OUTSIDE COMPONENT
 const DEFAULT_MODULES = ["dashboard", "lead", "hrms"]
@@ -41,18 +50,44 @@ const MODULES_MAP: Record<string, { label: string; url: string; icon: React.Reac
   hrms: { label: "HRM Dashboard", url: "/hrmcubicle", icon: <LayoutDashboard size={18} /> },
 }
 
+// Color constants for org and firm avatars
+const ORG_COLORS = {
+  bg: "bg-indigo-600",
+  bgSelected: "bg-indigo-700",
+  ring: "ring-indigo-400",
+  hoverBg: "hover:bg-indigo-700",
+} as const
+
+const FIRM_COLORS = {
+  bg: "bg-emerald-600",
+  bgSelected: "bg-emerald-700",
+  ring: "ring-emerald-400",
+  hoverBg: "hover:bg-emerald-700",
+} as const
+
 
 export default function ToggleOverlayPanel() {
   const { setSelectedModule } = useModule()
+  const { currentFirm, setCurrentFirm } = useAuthStore()
   const [organizations, setOrganizations] = useState<any[]>([])
   const [open, setOpen] = useState(false)
   const [selectedOrg, setSelectedOrg] = useState<string | null>(null)
   const [OrgTokenData, setOrgTokenData] = useState<any>(null)
+  const [firms, setFirms] = useState<any[]>([])
+  const [firmsLoading, setFirmsLoading] = useState(false)
   const params = useParams() as { orgName?: string }
   const [orgNameFromStorage, setOrgNameFromStorage] = useState("")
 
   useEffect(() => {
     setOrgNameFromStorage(localStorage.getItem("orgName") || "")
+    // Hydrate currentFirm from localStorage if not already set
+    if (!currentFirm) {
+      const storedFirmId = localStorage.getItem("firmId")
+      const storedFirmName = localStorage.getItem("firmName")
+      if (storedFirmId && storedFirmName) {
+        setCurrentFirm({ firmId: storedFirmId, firmName: storedFirmName })
+      }
+    }
   }, [])
 
   const currentOrg = (params.orgName && params.orgName !== "null")
@@ -87,6 +122,24 @@ export default function ToggleOverlayPanel() {
     }
   }, [])
 
+  // Fetch firms for the current organization
+  useEffect(() => {
+    const fetchFirms = async () => {
+      setFirmsLoading(true)
+      try {
+        const res = await getFirmList()
+        const firmData = res?.data?.firms || res?.data?.data || []
+        setFirms(firmData)
+      } catch (err) {
+        console.error("Error fetching firms:", err)
+        setFirms([])
+      } finally {
+        setFirmsLoading(false)
+      }
+    }
+    fetchFirms()
+  }, [selectedOrg])
+
   useEffect(() => {
     if (!selectedOrg && organizations.length > 0) {
       setSelectedOrg(organizations[0].orgName)
@@ -106,6 +159,10 @@ export default function ToggleOverlayPanel() {
       localStorage.setItem("orgToken", res?.token)
       localStorage.setItem("orgID", org.orgId)
       localStorage.setItem("orgName", org.orgName)
+      // Clear firm selection when switching org
+      setCurrentFirm(null)
+      localStorage.removeItem("firmId")
+      localStorage.removeItem("firmName")
       showSuccess(`Switched to ${org.orgName}`)
       window.location.reload()
     } catch (err) {
@@ -113,9 +170,30 @@ export default function ToggleOverlayPanel() {
     }
   }
 
-  const getInitials = (orgName?: string) => {
-    if (!orgName) return ""
-    return orgName.slice(0, 2).toUpperCase()
+  const handleSwitchFirm = (firm: any) => {
+    const firmId = firm._id
+    const firmName = firm.FirmName
+
+    // If clicking the already selected firm, deselect it
+    if (currentFirm?.firmId === firmId) {
+      setCurrentFirm(null)
+      localStorage.removeItem("firmId")
+      localStorage.removeItem("firmName")
+      showSuccess(`Deselected firm: ${firmName}`)
+      setOpen(false)
+      return
+    }
+
+    setCurrentFirm({ firmId, firmName })
+    localStorage.setItem("firmId", firmId)
+    localStorage.setItem("firmName", firmName)
+    showSuccess(`Switched to firm: ${firmName}`)
+    setOpen(false)
+  }
+
+  const getInitials = (name?: string) => {
+    if (!name) return ""
+    return name.slice(0, 2).toUpperCase()
   }
 
   return (
@@ -127,28 +205,107 @@ export default function ToggleOverlayPanel() {
       </PopoverTrigger>
       <PopoverContent className="w-[600px] p-0">
         <div className="flex h-[400px]">
-          {/* Left Avatars - REVERTED TO ORIGINAL UI */}
-          <div className="w-[60px] bg-muted flex flex-col items-center gap-2 py-4 overflow-y-auto">
-            {organizations.map((org, index) => {
-              const initials = getInitials(org.orgName)
-              const isSelected = selectedOrg === org.orgName
-              return (
-                <div
-                  key={index}
-                  className={`text-xs font-bold rounded-full h-8 w-8 flex items-center justify-center truncate cursor-pointer ${isSelected ? "bg-primary text-white shadow-lg" : "bg-primary text-white"
-                    }`}
-                  title={org.orgName}
-                  onClick={() => handleSwitchOrg(org)}
-                >
-                  {initials}
-                </div>
-              )
-            })}
-          </div>
+          {/* Left Panel - Organizations & Firms */}
+          <TooltipProvider delayDuration={200}>
+            <ScrollArea className="w-[68px] bg-muted border-r">
+              <div className="flex flex-col items-center gap-1 py-3 px-1">
+                {organizations.map((org, index) => {
+                  const isSelectedOrg = selectedOrg === org.orgName
+                  return (
+                    <React.Fragment key={org.orgId || index}>
+                      {/* Organization Avatar */}
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div
+                            className={`relative text-[11px] font-bold rounded-full h-9 w-9 flex items-center justify-center cursor-pointer transition-all duration-200 text-white shrink-0
+                              ${isSelectedOrg
+                                ? `${ORG_COLORS.bgSelected} ring-2 ${ORG_COLORS.ring} shadow-md`
+                                : `${ORG_COLORS.bg} ${ORG_COLORS.hoverBg} opacity-80 hover:opacity-100`
+                              }`}
+                            onClick={() => handleSwitchOrg(org)}
+                          >
+                            {getInitials(org.orgName)}
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent side="right" sideOffset={8}>
+                          <p className="font-medium">{org.orgName}</p>
+                          <p className="text-xs text-muted-foreground">Organization</p>
+                        </TooltipContent>
+                      </Tooltip>
 
-          {/* Right Scrollable Section - REVERTED TO ORIGINAL UI */}
+                      {/* Firms under this org (only show for selected/current org) */}
+                      {isSelectedOrg && firms.length > 0 && (
+                        <>
+                          {/* Separator between org and its firms */}
+                          <div className="w-7 my-0.5 border-t border-muted-foreground/25" />
+
+                          {firms.map((firm) => {
+                            const isSelectedFirm = currentFirm?.firmId === firm._id
+                            return (
+                              <Tooltip key={firm._id}>
+                                <TooltipTrigger asChild>
+                                  <div
+                                    className={`relative text-[10px] font-bold rounded-md h-8 w-8 flex items-center justify-center cursor-pointer transition-all duration-200 text-white shrink-0
+                                      ${isSelectedFirm
+                                        ? `${FIRM_COLORS.bgSelected} ring-2 ${FIRM_COLORS.ring} shadow-md`
+                                        : `${FIRM_COLORS.bg} ${FIRM_COLORS.hoverBg} opacity-75 hover:opacity-100`
+                                      }`}
+                                    onClick={() => handleSwitchFirm(firm)}
+                                  >
+                                    {getInitials(firm.FirmName)}
+                                    {isSelectedFirm && (
+                                      <div className="absolute -bottom-0.5 -right-0.5 bg-white rounded-full p-[1px]">
+                                        <Check size={10} className="text-emerald-600" />
+                                      </div>
+                                    )}
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent side="right" sideOffset={8}>
+                                  <p className="font-medium">{firm.FirmName}</p>
+                                  <p className="text-xs text-muted-foreground">Firm</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            )
+                          })}
+                        </>
+                      )}
+
+                      {/* Firms loading state */}
+                      {isSelectedOrg && firmsLoading && (
+                        <>
+                          <div className="w-7 my-0.5 border-t border-muted-foreground/25" />
+                          <div className="h-8 w-8 rounded-md bg-muted-foreground/20 animate-pulse shrink-0" />
+                        </>
+                      )}
+
+                      {/* Separator between different orgs */}
+                      {index < organizations.length - 1 && (
+                        <div className="w-9 my-1 border-t border-muted-foreground/15" />
+                      )}
+                    </React.Fragment>
+                  )
+                })}
+              </div>
+            </ScrollArea>
+          </TooltipProvider>
+
+          {/* Right Scrollable Section - Modules */}
           <ScrollArea className="flex-1 h-full">
             <div className="p-2">
+              {/* Current context indicator */}
+              {currentFirm && (
+                <div className="mx-2 mb-2 px-3 py-2 rounded-md bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800">
+                  <div className="flex items-center gap-2">
+                    <Building2 size={14} className="text-emerald-600 shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-xs text-emerald-700 dark:text-emerald-400 font-medium truncate">
+                        Active Firm: {currentFirm.firmName}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {menuItems.map((item, index) => (
                 <Link
                   key={index}

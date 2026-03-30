@@ -157,16 +157,16 @@ export default function ServiceAccountsPage() {
 
                 {/* Metrics Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-none p-4 shadow-sm flex items-center justify-between group hover:border-primary/30 transition-all cursor-pointer" onClick={() => toast.info("Viewing all service accounts")}>
+                    <div className="bg-gradient-to-br from-primary to-primary/80 rounded-none p-5 shadow-sm flex items-center justify-between group transition-all cursor-pointer text-white" onClick={() => toast.info("Viewing all service accounts")}>
                         <div className="space-y-0.5">
-                            <p className="text-[10px] font-semibold text-zinc-400 tracking-wide leading-none">Total accounts</p>
-                            <p className="text-lg font-bold text-zinc-900 dark:text-zinc-100">{accounts.length}</p>
+                            <p className="text-[10px] font-semibold text-white/80 tracking-wide leading-none">Total accounts</p>
+                            <p className="text-lg font-bold text-white">{accounts.length}</p>
                         </div>
-                        <div className="h-10 w-10 rounded-none bg-primary/10 dark:bg-primary/20 flex items-center justify-center text-primary">
+                        <div className="h-10 w-10 rounded-none bg-white/15 flex items-center justify-center text-white/60">
                             <Database className="w-5 h-5" />
                         </div>
                     </div>
-                    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-none p-4 shadow-sm flex items-center justify-between group hover:border-emerald-500/30 transition-all cursor-pointer" onClick={() => toast.info("14 keys rotated in the last 7 days")}>
+                    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-none p-5 shadow-sm flex items-center justify-between group hover:border-emerald-500/30 transition-all cursor-pointer" onClick={() => toast.info("14 keys rotated in the last 7 days")}>
                         <div className="space-y-0.5">
                             <p className="text-[10px] font-semibold text-zinc-400 tracking-wide leading-none">Active keys</p>
                             <p className="text-lg font-bold text-zinc-900 dark:text-zinc-100">14</p>
@@ -175,7 +175,7 @@ export default function ServiceAccountsPage() {
                             <Key className="w-5 h-5" />
                         </div>
                     </div>
-                    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-none p-4 shadow-sm flex items-center justify-between group hover:border-primary/30 transition-all cursor-pointer" onClick={() => toast.info("Global policy is set to Enforce")}>
+                    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-none p-5 shadow-sm flex items-center justify-between group hover:border-primary/30 transition-all cursor-pointer" onClick={() => toast.info("Global policy is set to Enforce")}>
                         <div className="space-y-0.5">
                             <p className="text-[10px] font-semibold text-zinc-400 tracking-wide leading-none">Access policy</p>
                             <p className="text-sm font-bold text-primary">Enforced</p>
@@ -184,7 +184,7 @@ export default function ServiceAccountsPage() {
                             <Shield className="w-5 h-5" />
                         </div>
                     </div>
-                    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-none p-4 shadow-sm flex items-center justify-between group hover:border-red-500/30 transition-all cursor-pointer" onClick={() => toast.warning("1 account has an expired key")}>
+                    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-none p-5 shadow-sm flex items-center justify-between group hover:border-red-500/30 transition-all cursor-pointer" onClick={() => toast.warning("1 account has an expired key")}>
                         <div className="space-y-0.5">
                             <p className="text-[10px] font-semibold text-zinc-400 tracking-wide leading-none">Expired keys</p>
                             <p className="text-lg font-bold text-red-600">01</p>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
     Building2,
     Camera,
@@ -21,16 +21,73 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
 
-export default function OrgProfilePage() {
-    const [orgName, setOrgName] = useState("Acme Corp");
-    const [description, setDescription] = useState("Leading provider of roadrunner catching equipment.");
+import { axiosInstance } from "@/lib/axios";
+import { getOrgDetails } from "@/hooks/orgHooks";
 
-    const handleSave = () => {
-        toast.promise(new Promise(res => setTimeout(res, 1000)), {
-            loading: "Updating organization profile...",
-            success: "Profile updated successfully.",
-            error: "Failed to update profile."
-        });
+export default function OrgProfilePage() {
+    const [orgName, setOrgName] = useState("");
+    const [description, setDescription] = useState("");
+
+    const [contactEmail, setContactEmail] = useState("");
+    const [contactPhone, setContactPhone] = useState("");
+    const [contactName, setContactName] = useState("");
+
+    const [streetAddress, setStreetAddress] = useState("");
+    const [city, setCity] = useState("");
+    const [stateName, setStateName] = useState("");
+    const [zip, setZip] = useState("");
+    const [country, setCountry] = useState("");
+
+    const builtAddress = useMemo(() => {
+        const parts = [streetAddress, city, stateName, zip]
+            .map((p) => (p || "").trim())
+            .filter(Boolean);
+        return parts.join(", ");
+    }, [streetAddress, city, stateName, zip]);
+
+    useEffect(() => {
+        const load = async () => {
+            try {
+                const res = await getOrgDetails();
+                const o = res?.data?.organization;
+                if (!o) return;
+
+                setOrgName(o.name ?? "");
+                setContactEmail(o.contactEmail ?? "");
+                setContactPhone(o.contactPhone ?? "");
+                setContactName(o.contactName ?? "");
+
+                // backend: address, orgCity, orgState, orgCountry
+                setStreetAddress(o.address ?? "");
+                setCity(o.orgCity ?? "");
+                setStateName(o.orgState ?? "");
+                setCountry(o.orgCountry ?? "");
+
+                // frontend page uses description locally; backend doesn't expose it in this controller response
+                setDescription("");
+            } catch {
+                // keep empty defaults
+            }
+        };
+
+        load();
+    }, []);
+
+    const handleSave = async () => {
+        try {
+            await axiosInstance.patch("/organization/update/details", {
+                name: orgName,
+                contactEmail,
+                contactPhone,
+                contactName,
+                address: builtAddress || streetAddress,
+                orgCountry: country,
+            });
+
+            toast.success("Profile updated successfully.");
+        } catch (e: any) {
+            toast.error(e?.response?.data?.message || "Failed to update profile.");
+        }
     };
 
     return (
@@ -111,14 +168,24 @@ export default function OrgProfilePage() {
                             <Label className="text-xs font-bold uppercase tracking-widest text-slate-500">Public Email</Label>
                             <div className="relative">
                                 <Mail className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-                                <Input className="pl-10 rounded-none font-medium" placeholder="contact@acme.com" />
+                                <Input
+                                    className="pl-10 rounded-none font-medium"
+                                    placeholder="contact@acme.com"
+                                    value={contactEmail}
+                                    onChange={(e) => setContactEmail(e.target.value)}
+                                />
                             </div>
                         </div>
                         <div className="space-y-2">
                             <Label className="text-xs font-bold uppercase tracking-widest text-slate-500">Phone Number</Label>
                             <div className="relative">
                                 <Phone className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-                                <Input className="pl-10 rounded-none font-medium" placeholder="+1 (555) 000-0000" />
+                                <Input
+                                    className="pl-10 rounded-none font-medium"
+                                    placeholder="+1 (555) 000-0000"
+                                    value={contactPhone}
+                                    onChange={(e) => setContactPhone(e.target.value)}
+                                />
                             </div>
                         </div>
                         <div className="space-y-2 md:col-span-2">
@@ -133,12 +200,27 @@ export default function OrgProfilePage() {
 
                         <div className="space-y-2 md:col-span-2">
                             <Label className="text-xs font-bold uppercase tracking-widest text-slate-500">Headquarters Address</Label>
-                            <Input className="rounded-none font-medium mb-2" placeholder="Street Address" />
+                            <Input
+                                className="rounded-none font-medium mb-2"
+                                placeholder="Street Address"
+                                value={streetAddress}
+                                onChange={(e) => setStreetAddress(e.target.value)}
+                            />
                             <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-                                <Input className="rounded-none font-medium" placeholder="City" />
-                                <Input className="rounded-none font-medium" placeholder="State / Province" />
-                                <Input className="rounded-none font-medium" placeholder="Zip / Postal" />
-                                <Input className="rounded-none font-medium" placeholder="Country" />
+                                <Input className="rounded-none font-medium" placeholder="City" value={city} onChange={(e) => setCity(e.target.value)} />
+                                <Input
+                                    className="rounded-none font-medium"
+                                    placeholder="State / Province"
+                                    value={stateName}
+                                    onChange={(e) => setStateName(e.target.value)}
+                                />
+                                <Input className="rounded-none font-medium" placeholder="Zip / Postal" value={zip} onChange={(e) => setZip(e.target.value)} />
+                                <Input
+                                    className="rounded-none font-medium"
+                                    placeholder="Country"
+                                    value={country}
+                                    onChange={(e) => setCountry(e.target.value)}
+                                />
                             </div>
                         </div>
                     </CardContent>
