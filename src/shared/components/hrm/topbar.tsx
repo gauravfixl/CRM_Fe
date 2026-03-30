@@ -335,7 +335,7 @@ export function AppHeader({ setSidebarOpen }: { setSidebarOpen?: React.Dispatch<
             </SheetContent>
           </Sheet> */}
 
-          <ThemeToggle />
+          {/* <ThemeToggle /> */}
 
           {/* Notifications */}
           <DropdownMenu>
