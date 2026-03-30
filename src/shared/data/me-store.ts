@@ -1,5 +1,39 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import {
+    createLeaveRequest,
+    getActiveLeaveTypes,
+    getLeaveBalance,
+    getMyAttendance,
+    getMyLeaveRequests,
+    punch,
+    rejectLeaveRequest,
+    requestRegularization
+} from "@/modules/hrm/hooks/hrmHooks";
+
+const formatISODate = (value: any) => {
+    const d = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(d.getTime())) return "";
+    return d.toISOString().split("T")[0];
+};
+
+const formatTime = (value: any) => {
+    const d = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(d.getTime())) return "";
+    return d.toLocaleTimeString("en-US", { hour12: true, hour: "2-digit", minute: "2-digit" });
+};
+
+const minutesToDuration = (minutes: number) => {
+    const safe = Math.max(0, Number(minutes) || 0);
+    const h = Math.floor(safe / 60);
+    const m = safe % 60;
+    return `${h}h ${m}m`;
+};
+
+const minutesToHoursLabel = (minutes: number) => {
+    const safe = Math.max(0, Number(minutes) || 0);
+    return `${(safe / 60).toFixed(1)}h`;
+};
 
 export interface MeState {
     user: {
@@ -130,17 +164,25 @@ export interface MeState {
     // Actions
     updateUser: (data: Partial<MeState['user']>) => void;
     updateBankDetails: (data: Partial<MeState['bankDetails']>) => void;
-    checkIn: () => void;
-    checkOut: () => void;
-    addLeaveRequest: (request: Omit<MeState['leave']['requests'][0], 'id' | 'appliedOn' | 'status'>) => void;
-    cancelLeaveRequest: (id: string) => void;
+    loadMyAttendance: () => Promise<void>;
+    loadMyLeave: () => Promise<void>;
+    checkIn: () => Promise<void>;
+    checkOut: () => Promise<void>;
+    requestAttendanceRegularization: (data: {
+        attendanceDate: string;
+        requestedIn?: string;
+        requestedOut?: string;
+        reason: string;
+    }) => Promise<void>;
+    addLeaveRequest: (request: Omit<MeState['leave']['requests'][0], 'id' | 'appliedOn' | 'status'>) => Promise<void>;
+    cancelLeaveRequest: (id: string) => Promise<void>;
     addPersonalGoal: (goal: Omit<MeState['performance']['goals'][0], 'id'>) => void;
     updatePerformanceScore: (score: string, ratingDesc: string) => void;
 }
 
 export const useMeStore = create<MeState>()(
     persist(
-        (set) => ({
+        (set, get) => ({
             user: {
                 name: "Abhinav Singh",
                 empId: "FXL-HR-2026-001",
@@ -240,137 +282,151 @@ export const useMeStore = create<MeState>()(
 
             updateUser: (data) => set((state) => ({ user: { ...state.user, ...data } })),
             updateBankDetails: (data) => set((state) => ({ bankDetails: { ...state.bankDetails, ...data } })),
-            checkIn: () => set((state) => {
-                const now = new Date();
-                const checkInTime = now.toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit' });
-                const todayDate = now.toISOString().split('T')[0]; // YYYY-MM-DD format
+            loadMyAttendance: async () => {
+                const response = await getMyAttendance();
+                const records = response?.data?.data ?? [];
 
-                // Check if there's already a log for today
-                const existingLogIndex = state.attendance.logs.findIndex(log => log.date === todayDate);
+                const mappedLogs = records.map((doc: any) => {
+                    const date = formatISODate(doc.date);
+                    const firstIn = doc.firstIn ? formatTime(doc.firstIn) : "";
+                    const lastOut = doc.lastOut ? formatTime(doc.lastOut) : "";
+                    const workMinutes = Number(doc.workMinutes ?? 0);
 
-                let updatedLogs = [...state.attendance.logs];
+                    let status: MeState["attendance"]["logs"][number]["status"] = "Absent";
+                    if (doc.status === "Present") {
+                        status = Number(doc.lateMinutes) > 0 ? "Late" : "On-Time";
+                    } else if (doc.status === "HalfDay") {
+                        status = "Half Day";
+                    } else if (doc.status === "Absent") {
+                        status = "Absent";
+                    } else if (doc.status === "Leave" || doc.status === "Holiday" || doc.status === "Weekend") {
+                        status = "Absent";
+                    }
 
-                if (existingLogIndex >= 0) {
-                    // Update existing log
-                    updatedLogs[existingLogIndex] = {
-                        ...updatedLogs[existingLogIndex],
-                        checkIn: checkInTime,
+                    return {
+                        id: String(doc._id ?? ""),
+                        date,
+                        checkIn: firstIn || "",
+                        checkOut: lastOut || "",
+                        duration: minutesToDuration(workMinutes),
+                        status,
+                        totalHours: minutesToHoursLabel(workMinutes),
                     };
-                } else {
-                    // Create new log for today
-                    const newLog = {
-                        id: `log-${Date.now()}`,
-                        date: todayDate,
-                        checkIn: checkInTime,
-                        checkOut: '',
-                        duration: '',
-                        status: 'Present' as const,
-                        totalHours: ''
-                    };
-                    updatedLogs = [newLog, ...updatedLogs];
-                }
+                });
 
-                return {
+                const today = new Date().toISOString().split("T")[0];
+                const todayLog = mappedLogs.find((l) => l.date === today);
+                const isCheckedIn = Boolean(todayLog?.checkIn) && !(todayLog?.checkOut);
+
+                set((state) => ({
                     attendance: {
                         ...state.attendance,
-                        isCheckedIn: true,
-                        checkInTime: checkInTime,
-                        logs: updatedLogs
+                        isCheckedIn,
+                        checkInTime: isCheckedIn ? todayLog?.checkIn ?? null : null,
+                        logs: mappedLogs,
+                    },
+                }));
+            },
+            loadMyLeave: async () => {
+                const [balanceRes, requestsRes] = await Promise.all([
+                    getLeaveBalance(),
+                    getMyLeaveRequests(),
+                ]);
+
+                const balances = balanceRes?.data?.data ?? [];
+                const mappedBalances = balances.map((b: any) => ({
+                    type: b?.leaveTypeId?.name ?? "Leave",
+                    total: Number(b.totalAllocated ?? 0),
+                    consumed: Number(b.used ?? 0),
+                    color: "#E5E7EB",
+                    icon: "",
+                }));
+
+                const requests = requestsRes?.data?.data ?? [];
+                const mappedRequests = requests.map((r: any) => {
+                    const start = r.startDate ? new Date(r.startDate) : null;
+                    const end = r.endDate ? new Date(r.endDate) : null;
+                    let days = 1;
+                    if (start && end) {
+                        days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
                     }
+                    if (r.isHalfDay) days = 0.5;
+
+                    return {
+                        id: String(r._id ?? ""),
+                        type: r.leaveType ?? "Leave",
+                        startDate: r.startDate ? new Date(r.startDate).toISOString().split("T")[0] : "",
+                        endDate: r.endDate ? new Date(r.endDate).toISOString().split("T")[0] : "",
+                        days: Number(days),
+                        reason: r.reason ?? "",
+                        status: r.status ?? "Pending",
+                        appliedOn: r.createdAt ? new Date(r.createdAt).toISOString().split("T")[0] : "",
+                    } as MeState["leave"]["requests"][number];
+                });
+
+                set((state) => ({
+                    leave: {
+                        ...state.leave,
+                        balances: mappedBalances,
+                        requests: mappedRequests,
+                    },
+                }));
+            },
+            checkIn: async () => {
+                await punch({ punchType: "IN", source: "web" });
+                await get().loadMyAttendance();
+            },
+            checkOut: async () => {
+                await punch({ punchType: "OUT", source: "web" });
+                await get().loadMyAttendance();
+            },
+            requestAttendanceRegularization: async ({ attendanceDate, requestedIn, requestedOut, reason }) => {
+                const buildDate = (time?: string) => {
+                    if (!time) return undefined;
+                    const [hh, mm] = time.split(":");
+                    if (!hh || !mm) return undefined;
+                    const iso = `${attendanceDate}T${hh}:${mm}:00`;
+                    const d = new Date(iso);
+                    return Number.isNaN(d.getTime()) ? undefined : d;
                 };
-            }),
-            checkOut: () => set((state) => {
-                const now = new Date();
-                const checkOutTime = now.toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit' });
-                const todayDate = now.toISOString().split('T')[0];
 
-                // Find today's log
-                const todayLogIndex = state.attendance.logs.findIndex(log => log.date === todayDate);
-
-                if (todayLogIndex >= 0 && state.attendance.checkInTime) {
-                    const todayLog = state.attendance.logs[todayLogIndex];
-
-                    // Calculate duration
-                    const checkInParts = state.attendance.checkInTime.match(/(\d+):(\d+)\s*(AM|PM)/i);
-                    const checkOutParts = checkOutTime.match(/(\d+):(\d+)\s*(AM|PM)/i);
-
-                    if (checkInParts && checkOutParts) {
-                        let checkInHour = parseInt(checkInParts[1]);
-                        const checkInMin = parseInt(checkInParts[2]);
-                        const checkInPeriod = checkInParts[3].toUpperCase();
-
-                        let checkOutHour = parseInt(checkOutParts[1]);
-                        const checkOutMin = parseInt(checkOutParts[2]);
-                        const checkOutPeriod = checkOutParts[3].toUpperCase();
-
-                        // Convert to 24-hour format
-                        if (checkInPeriod === 'PM' && checkInHour !== 12) checkInHour += 12;
-                        if (checkInPeriod === 'AM' && checkInHour === 12) checkInHour = 0;
-                        if (checkOutPeriod === 'PM' && checkOutHour !== 12) checkOutHour += 12;
-                        if (checkOutPeriod === 'AM' && checkOutHour === 12) checkOutHour = 0;
-
-                        const checkInDate = new Date(now);
-                        checkInDate.setHours(checkInHour, checkInMin, 0);
-
-                        const checkOutDate = new Date(now);
-                        checkOutDate.setHours(checkOutHour, checkOutMin, 0);
-
-                        const diffMs = checkOutDate.getTime() - checkInDate.getTime();
-                        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-                        const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-
-                        const duration = `${diffHours}h ${diffMins}m`;
-                        const totalHours = `${(diffHours + diffMins / 60).toFixed(1)}h`;
-
-                        // Determine status based on check-in time
-                        let status: 'On-Time' | 'Late' | 'Present' = 'On-Time';
-                        if (checkInHour > 9 || (checkInHour === 9 && checkInMin > 15)) {
-                            status = 'Late';
-                        }
-
-                        const updatedLogs = [...state.attendance.logs];
-                        updatedLogs[todayLogIndex] = {
-                            ...todayLog,
-                            checkOut: checkOutTime,
-                            duration,
-                            totalHours,
-                            status
-                        };
-
-                        return {
-                            attendance: {
-                                ...state.attendance,
-                                isCheckedIn: false,
-                                checkInTime: null,
-                                logs: updatedLogs
-                            }
-                        };
-                    }
-                }
-
-                return {
-                    attendance: {
-                        ...state.attendance,
-                        isCheckedIn: false,
-                        checkInTime: null
-                    }
+                const payload: Parameters<typeof requestRegularization>[0] = {
+                    attendanceDate,
+                    reason,
+                    requestedIn: buildDate(requestedIn),
+                    requestedOut: buildDate(requestedOut),
                 };
-            }),
-            addLeaveRequest: (req) => set((state) => ({
-                leave: {
-                    ...state.leave,
-                    requests: [
-                        { ...req, id: `LR-${Math.floor(Math.random() * 1000)}`, appliedOn: new Date().toISOString().split('T')[0], status: 'Pending' },
-                        ...state.leave.requests
-                    ]
+
+                await requestRegularization(payload);
+                await get().loadMyAttendance();
+            },
+            addLeaveRequest: async (req) => {
+                // Map UI leave name → backend leaveTypeId
+                const leaveTypesRes = await getActiveLeaveTypes();
+                const leaveTypes = leaveTypesRes?.data?.data ?? [];
+                const match = leaveTypes.find(
+                    (t: any) => String(t?.name ?? "").toLowerCase() === String(req.type ?? "").toLowerCase()
+                );
+
+                if (!match?._id) {
+                    throw new Error(`Leave type not found: ${req.type}`);
                 }
-            })),
-            cancelLeaveRequest: (id) => set((state) => ({
-                leave: {
-                    ...state.leave,
-                    requests: state.leave.requests.map(r => r.id === id ? { ...r, status: 'Cancelled' } : r)
-                }
-            })),
+
+                await createLeaveRequest({
+                    leaveType: String(match._id),
+                    startDate: req.startDate,
+                    endDate: req.endDate,
+                    isHalfDay: false,
+                    reason: req.reason,
+                });
+
+                await get().loadMyLeave();
+            },
+            cancelLeaveRequest: async (id: string) => {
+                // Backend supports approve/reject; "Cancelled" isn't a first-class state.
+                await rejectLeaveRequest(id, "Cancelled by employee");
+                await get().loadMyLeave();
+            },
             addPersonalGoal: (goal) => set((state) => ({
                 performance: {
                     ...state.performance,

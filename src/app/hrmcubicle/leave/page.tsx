@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Calendar,
@@ -53,7 +53,7 @@ import { useMeStore } from "@/shared/data/me-store";
 
 const MyLeavePage = () => {
   const { toast } = useToast();
-  const { leave, addLeaveRequest, cancelLeaveRequest } = useMeStore();
+  const { leave, addLeaveRequest, cancelLeaveRequest, loadMyLeave } = useMeStore();
   const [isApplyOpen, setIsApplyOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'All' | 'Pending' | 'Approved' | 'Rejected'>('All');
   const [leaveForm, setLeaveForm] = useState({
@@ -62,6 +62,14 @@ const MyLeavePage = () => {
     endDate: '',
     reason: ''
   });
+
+  useEffect(() => {
+    loadMyLeave().catch((err) => {
+      console.error("Failed to load leave:", err);
+      toast({ title: "Load Failed", description: "Could not fetch leave from server.", variant: "destructive" });
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleApply = () => {
     if (!leaveForm.startDate || !leaveForm.endDate || !leaveForm.reason) {
@@ -83,22 +91,34 @@ const MyLeavePage = () => {
 
     const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
 
-    addLeaveRequest({
-      type: leaveForm.type,
-      startDate: leaveForm.startDate,
-      endDate: leaveForm.endDate,
-      days,
-      reason: leaveForm.reason
-    });
+    (async () => {
+      try {
+        await addLeaveRequest({
+          type: leaveForm.type,
+          startDate: leaveForm.startDate,
+          endDate: leaveForm.endDate,
+          days,
+          reason: leaveForm.reason
+        });
 
-    setIsApplyOpen(false);
-    setLeaveForm({ type: 'Casual Leave', startDate: '', endDate: '', reason: '' });
-    toast({ title: "Application Submitted", description: `Applied for ${days} days of ${leaveForm.type}.` });
+        setIsApplyOpen(false);
+        setLeaveForm({ type: 'Casual Leave', startDate: '', endDate: '', reason: '' });
+        toast({ title: "Application Submitted", description: `Applied for ${days} days of ${leaveForm.type}.` });
+      } catch (e) {
+        toast({ title: "Submission Failed", description: "Server rejected the leave request.", variant: "destructive" });
+      }
+    })();
   };
 
   const handleCancel = (id: string) => {
-    cancelLeaveRequest(id);
-    toast({ title: "Leave Cancelled", description: "Your request has been cancelled." });
+    (async () => {
+      try {
+        await cancelLeaveRequest(id);
+        toast({ title: "Leave Cancelled", description: "Your request has been cancelled." });
+      } catch (e) {
+        toast({ title: "Cancel Failed", description: "Could not cancel leave request.", variant: "destructive" });
+      }
+    })();
   };
 
   const getStatusBadge = (status: string) => {

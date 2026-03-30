@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -16,6 +16,7 @@ import { ErrorMessage } from "@/components/custom/ErrorMessage"
 import { jwtDecode } from "jwt-decode"
 import { supportAgentLogin } from "@/hooks/supportHooks"
 import { useBrandingStore } from "../../../lib/useBrandingStore"
+import { setAuthCookie } from "@/lib/auth-cookies"
 
 export default function SignInPage() {
   const [showPassword, setShowPassword] = useState(false)
@@ -28,6 +29,8 @@ export default function SignInPage() {
   const [otpSent, setOtpSent] = useState(false)
   const [errors, setErrors] = useState<{ email?: string; password?: string; otp?: string }>({})
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const redirectTo = searchParams.get("redirect")
   const login = useAuthStore((state) => state.login)
 
   const validate = () => {
@@ -60,8 +63,11 @@ export default function SignInPage() {
           const userData = response.data?.user;
           login(userData);
           showSuccess("Logged in successfully!");
+          if (response.data?.orgToken) {
+            setAuthCookie(response.data.orgToken);
+          }
           const decodedToken: any = jwtDecode(response.data?.orgToken);
-          router.push(`/${decodedToken?.orgName || "null"}/dashboard`);
+          router.push(redirectTo || `/${decodedToken?.orgName || "null"}/dashboard`);
         }
       } else {
         const response = await signInUser({ email, password });
@@ -81,6 +87,7 @@ export default function SignInPage() {
             localStorage.setItem("orgToken", response.data?.orgToken);
             localStorage.setItem("orgID", orgIdFromToken);
             localStorage.setItem("orgName", orgName);
+            setAuthCookie(response.data.orgToken);
             useAuthStore.getState().setUserRole(userRole);
             useAuthStore.getState().setPermissions(newPermissionsArray);
             useAuthStore.getState().setSingleOrganization({
@@ -96,9 +103,9 @@ export default function SignInPage() {
                 console.error("SupportAgent login failed:", err);
               }
             }
-            router.push(`/${orgName || orgIdFromToken || "null"}/dashboard`);
+            router.push(redirectTo || `/${orgName || orgIdFromToken || "null"}/dashboard`);
           } else {
-            router.push(`/${userData?.orgName || "null"}/dashboard`);
+            router.push(redirectTo || `/${userData?.orgName || "null"}/dashboard`);
           }
         }
       }

@@ -267,6 +267,82 @@ export const getEmployeeAttendance = async (employeeId: string) => {
     }
 };
 
+// Raw time log (punch) APIs
+export const punch = async (data: {
+    punchType: "IN" | "OUT";
+    source?: string;
+    deviceId?: string;
+}) => {
+    try {
+        const response = await axios.post("/hrm/attendance/punch", data);
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error punching attendance:", err);
+            showError(err?.response?.data?.message || "Failed to record punch");
+        }
+        throw err;
+    }
+};
+
+export const getTodayPunches = async () => {
+    try {
+        const response = await axios.get("/hrm/attendance/punches/today");
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error fetching today punches:", err);
+            showError("Failed to fetch today punches");
+        }
+        throw err;
+    }
+};
+
+// Attendance regularization APIs (employee self-service)
+export const requestRegularization = async (data: {
+    attendanceDate: string; // YYYY-MM-DD
+    requestedIn?: Date | string;
+    requestedOut?: Date | string;
+    reason: string;
+}) => {
+    try {
+        const response = await axios.post("/attendance/regularization/request", data);
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error requesting regularization:", err);
+            showError(err?.response?.data?.message || "Failed to request regularization");
+        }
+        throw err;
+    }
+};
+
+export const approveRegularization = async (id: string) => {
+    try {
+        const response = await axios.post(`/attendance/regularization/approve/${id}`);
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error approving regularization:", err);
+            showError(err?.response?.data?.message || "Failed to approve regularization");
+        }
+        throw err;
+    }
+};
+
+export const rejectRegularization = async (id: string, remarks: string) => {
+    try {
+        const response = await axios.post(`/attendance/regularization/reject/${id}`, { remarks });
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error rejecting regularization:", err);
+            showError(err?.response?.data?.message || "Failed to reject regularization");
+        }
+        throw err;
+    }
+};
+
 // ==================== LEAVE APIs ====================
 
 export const getMyLeaveRequests = async () => {
@@ -363,6 +439,53 @@ export const disableLeaveType = async (id: string) => {
         if (err?.response?.status !== 401) {
             console.error("Error disabling leave type:", err);
             showError(err?.response?.data?.message || "Failed to disable leave type");
+        }
+        throw err;
+    }
+};
+
+// Leave request APIs (employee self-service + HR approval)
+export const createLeaveRequest = async (data: {
+    leaveType: string; // leaveTypeId
+    startDate: string; // YYYY-MM-DD
+    endDate: string; // YYYY-MM-DD
+    isHalfDay?: boolean;
+    halfDaySession?: "FIRST_HALF" | "SECOND_HALF" | null;
+    reason: string;
+}) => {
+    try {
+        const response = await axios.post("/leave/request/", data);
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error creating leave request:", err);
+            showError(err?.response?.data?.message || "Failed to create leave request");
+        }
+        throw err;
+    }
+};
+
+export const approveLeaveRequest = async (id: string) => {
+    try {
+        const response = await axios.post(`/leave/request/approve/${id}`);
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error approving leave request:", err);
+            showError(err?.response?.data?.message || "Failed to approve leave request");
+        }
+        throw err;
+    }
+};
+
+export const rejectLeaveRequest = async (id: string, reason: string) => {
+    try {
+        const response = await axios.post(`/leave/request/reject/${id}`, { reason });
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error rejecting leave request:", err);
+            showError(err?.response?.data?.message || "Failed to reject leave request");
         }
         throw err;
     }

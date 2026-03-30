@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import {
@@ -44,7 +44,7 @@ import { Textarea } from "@/shared/components/ui/textarea";
 const MyAttendancePage = () => {
     const router = useRouter();
     const { toast } = useToast();
-    const { attendance, checkIn, checkOut } = useMeStore();
+    const { attendance, checkIn, checkOut, loadMyAttendance, requestAttendanceRegularization } = useMeStore();
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
     const [isRegularizeOpen, setIsRegularizeOpen] = useState(false);
@@ -57,6 +57,14 @@ const MyAttendancePage = () => {
 
     const currentMonth = selectedDate.getMonth();
     const currentYear = selectedDate.getFullYear();
+
+    useEffect(() => {
+        loadMyAttendance().catch((err) => {
+            console.error("Failed to load attendance:", err);
+            toast({ title: "Load Failed", description: "Could not fetch attendance from server.", variant: "destructive" });
+        });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     // Filter logs for selected month
     const myLogs = attendance.logs.filter(log => {
@@ -161,13 +169,25 @@ const MyAttendancePage = () => {
     };
 
     const handleCheckInAction = () => {
-        checkIn();
-        toast({ title: "Checked In", description: `You checked in at ${new Date().toLocaleTimeString()}`, variant: "default" });
+        (async () => {
+            try {
+                await checkIn();
+                toast({ title: "Checked In", description: `You checked in at ${new Date().toLocaleTimeString()}`, variant: "default" });
+            } catch (e) {
+                toast({ title: "Check-in Failed", description: "Server rejected the punch. Try again.", variant: "destructive" });
+            }
+        })();
     };
 
     const handleCheckOutAction = () => {
-        checkOut();
-        toast({ title: "Checked Out", description: "Successfully checked out for the day.", variant: "default" });
+        (async () => {
+            try {
+                await checkOut();
+                toast({ title: "Checked Out", description: "Successfully checked out for the day.", variant: "default" });
+            } catch (e) {
+                toast({ title: "Check-out Failed", description: "Server rejected the punch. Try again.", variant: "destructive" });
+            }
+        })();
     };
 
     const handleRegularizeRequest = (dateStr?: string) => {
@@ -185,9 +205,21 @@ const MyAttendancePage = () => {
             toast({ title: "Error", description: "Date, Check-in and Reason are required", variant: "destructive" });
             return;
         }
-        setIsRegularizeOpen(false);
-        setRegularizeForm({ date: new Date().toISOString().split('T')[0], checkIn: '', checkOut: '', reason: '' });
-        toast({ title: "Request Submitted", description: "Regularization request sent to your manager." });
+        (async () => {
+            try {
+                await requestAttendanceRegularization({
+                    attendanceDate: regularizeForm.date,
+                    requestedIn: regularizeForm.checkIn,
+                    requestedOut: regularizeForm.checkOut || undefined,
+                    reason: regularizeForm.reason
+                });
+                setIsRegularizeOpen(false);
+                setRegularizeForm({ date: new Date().toISOString().split('T')[0], checkIn: '', checkOut: '', reason: '' });
+                toast({ title: "Request Submitted", description: "Regularization request sent to HR." });
+            } catch (e) {
+                toast({ title: "Request Failed", description: "Could not submit regularization. Try again.", variant: "destructive" });
+            }
+        })();
     };
 
     const goToPreviousMonth = () => {
