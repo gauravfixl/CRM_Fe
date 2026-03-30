@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
     Users,
     Search,
@@ -26,21 +26,54 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 
-const usersData = [
-    { id: "u1", name: "Esther Howard", email: "esther@acme.com", role: "Org Owner", status: "Active", lastActive: "Just now", avatar: "EH" },
-    { id: "u2", name: "Cody Fisher", email: "cody@acme.com", role: "Admin", status: "Active", lastActive: "2h ago", avatar: "CF" },
-    { id: "u3", name: "Brooklyn Simmons", email: "brooklyn@acme.com", role: "Editor", status: "Active", lastActive: "1d ago", avatar: "BS" },
-    { id: "u4", name: "Cameron Williamson", email: "cameron@acme.com", role: "Viewer", status: "Inactive", lastActive: "5d ago", avatar: "CW" },
-    { id: "u5", name: "Jenny Wilson", email: "jenny@acme.com", role: "Viewer", status: "Invited", lastActive: "-", avatar: "JW" },
-];
+import { axiosInstance } from "@/lib/axios";
+
+type OrgUser = {
+    memberId: string;
+    name: string;
+    email: string;
+    role: string;
+    orgActive: boolean;
+    joinedAt?: string;
+};
 
 export default function UsersListPage() {
     const [searchQuery, setSearchQuery] = useState("");
+    const [loading, setLoading] = useState(false);
+    const [users, setUsers] = useState<OrgUser[]>([]);
 
     const handleInvite = () => {
         // Redirect to invites page or show modal
         toast.info("Redirecting to invite flow...");
     };
+
+    useEffect(() => {
+        const fetchOrgUsers = async () => {
+            setLoading(true);
+            try {
+                const res = await axiosInstance.get("/organization/users/all?page=1&limit=50");
+                const apiUsers = res?.data?.users ?? [];
+                setUsers(apiUsers);
+            } catch (e: any) {
+                toast.error(e?.response?.data?.message || "Failed to load organization users.");
+                setUsers([]);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchOrgUsers();
+    }, []);
+
+    const filtered = users.filter((u) => {
+        if (!searchQuery.trim()) return true;
+        const q = searchQuery.toLowerCase();
+        return (
+            (u.name || "").toLowerCase().includes(q) ||
+            (u.email || "").toLowerCase().includes(q) ||
+            (u.role || "").toLowerCase().includes(q)
+        );
+    });
 
     return (
         <div className="flex flex-col h-full w-full bg-slate-50/50 p-6 space-y-6 overflow-y-auto">
@@ -98,12 +131,14 @@ export default function UsersListPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 text-sm">
-                            {usersData.map((user) => (
-                                <tr key={user.id} className="group hover:bg-slate-50 transition-colors">
+                            {filtered.map((user) => (
+                                <tr key={user.memberId} className="group hover:bg-slate-50 transition-colors">
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-3">
                                             <Avatar className="h-9 w-9 rounded-full border border-slate-200">
-                                                <AvatarFallback className="font-bold bg-slate-100 text-slate-500">{user.avatar}</AvatarFallback>
+                                                <AvatarFallback className="font-bold bg-slate-100 text-slate-500">
+                                                    {(user.name?.[0] || "?").toUpperCase()}
+                                                </AvatarFallback>
                                             </Avatar>
                                             <div>
                                                 <p className="font-bold text-slate-900">{user.name}</p>
@@ -118,15 +153,17 @@ export default function UsersListPage() {
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <Badge variant="outline" className={`rounded-none border-none font-bold uppercase tracking-wider text-[10px] ${user.status === 'Active' ? 'bg-emerald-50 text-emerald-600' :
-                                                user.status === 'Inactive' ? 'bg-slate-100 text-slate-500' :
-                                                    'bg-blue-50 text-blue-600'
-                                            }`}>
-                                            {user.status}
+                                        <Badge
+                                            variant="outline"
+                                            className={`rounded-none border-none font-bold uppercase tracking-wider text-[10px] ${
+                                                user.orgActive ? "bg-emerald-50 text-emerald-600" : "bg-slate-100 text-slate-500"
+                                            }`}
+                                        >
+                                            {user.orgActive ? "Active" : "Inactive"}
                                         </Badge>
                                     </td>
                                     <td className="px-6 py-4 text-slate-500 font-mono text-xs">
-                                        {user.lastActive}
+                                        {user.joinedAt ? new Date(user.joinedAt).toLocaleDateString() : "—"}
                                     </td>
                                     <td className="px-6 py-4 text-right">
                                         <DropdownMenu>
@@ -157,6 +194,7 @@ export default function UsersListPage() {
                     </table>
                 </CardContent>
             </Card>
+            {loading ? <p className="text-xs text-slate-500 mt-2">Loading...</p> : null}
         </div>
     );
 }

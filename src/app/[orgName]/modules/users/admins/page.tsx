@@ -154,10 +154,10 @@ export default function AdministratorsPage() {
 
                 {/* Stats */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="bg-primary/5 border border-primary/20 rounded-none p-4">
-                        <p className="text-xs text-gray-600">Total admins</p>
-                        <p className="text-xl font-semibold text-primary mt-1">{totalAdmins}</p>
-                        <p className="text-[10px] text-gray-500 mt-0.5">All administrators</p>
+                    <div className="bg-gradient-to-br from-primary to-primary/80 rounded-none p-4 text-white">
+                        <p className="text-xs text-white/80">Total admins</p>
+                        <p className="text-xl font-semibold text-white mt-1">{totalAdmins}</p>
+                        <p className="text-[10px] text-white/60 mt-0.5">All administrators</p>
                     </div>
                     <div className="bg-white border border-gray-200 rounded-none p-4">
                         <p className="text-xs text-gray-600">Super admins</p>

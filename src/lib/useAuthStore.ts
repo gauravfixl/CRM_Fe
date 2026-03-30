@@ -33,6 +33,11 @@ export interface Organization {
   orgActive?: boolean;
 }
 
+export interface FirmInfo {
+  firmId: string;
+  firmName: string;
+}
+
 interface AuthState {
   user: User | null;
   organizations: Organization[];
@@ -40,6 +45,7 @@ interface AuthState {
   singleOrg: Organization | null;
   userRole: string | null;
   permissions: Permission[]; // add permissions
+  currentFirm: FirmInfo | null;
 
   login: (userData: User) => void;
   logout: () => void;
@@ -50,6 +56,7 @@ interface AuthState {
   setSingleOrganization: (org: Organization) => void;
   setUserRole: (role: string | null) => void;
   setPermissions: (permissions: Permission[]) => void; // new setter
+  setCurrentFirm: (firm: FirmInfo | null) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -61,6 +68,7 @@ export const useAuthStore = create<AuthState>()(
       singleOrg: null,
       userRole: null,
       permissions: [],
+      currentFirm: null,
 
       login: (userData) =>
         set({
@@ -76,6 +84,7 @@ export const useAuthStore = create<AuthState>()(
           singleOrg: null,
           userRole: null,
           permissions: [],
+          currentFirm: null,
         }),
 
       updateUser: (updatedData) =>
@@ -108,6 +117,7 @@ export const useAuthStore = create<AuthState>()(
       setSingleOrganization: (org) => set({ singleOrg: org }),
       setUserRole: (role) => set({ userRole: role }),
       setPermissions: (permissions) => set({ permissions }), // setter for permissions
+      setCurrentFirm: (firm) => set({ currentFirm: firm }),
     }),
     {
       name: 'auth-storage',

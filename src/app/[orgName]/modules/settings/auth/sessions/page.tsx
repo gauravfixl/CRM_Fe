@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import {
     History,
     Trash2,
@@ -28,23 +28,115 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { toast } from "sonner"
 
+import { axiosInstance } from "@/lib/axios"
+
 export default function SessionManagementPage() {
-    const [loading, setLoading] = useState(false)
+    const [loading, setLoading] = useState(false) // revoke button loading
+    const [isFetching, setIsFetching] = useState(true)
     const [searchQuery, setSearchQuery] = useState("")
 
-    const sessions = [
-        { id: "s1", user: "Michael Chen", email: "michael@fixl.com", device: "Browser (MacBook Pro)", location: "London, UK", ip: "192.168.1.1", status: "Active", loginTime: "12 mins ago", risk: "Low" },
-        { id: "s2", user: "Sarah Jenkins", email: "sarah.j@fixl.com", device: "iPhone 15 Pro", location: "New York, USA", ip: "172.16.0.45", status: "Active", loginTime: "2 hours ago", risk: "Medium" },
-        { id: "s3", user: "John Doe", email: "john.d@fixl.com", device: "Browser (Windows)", location: "Berlin, DE", ip: "10.0.0.8", status: "Idle", loginTime: "5 hours ago", risk: "Low" },
-        { id: "s4", user: "Unknown Identity", email: "audit-test@fixl.com", device: "CLI (Linux)", location: "Mumbai, IN", ip: "45.1.22.9", status: "Suspicious", loginTime: "1 hour ago", risk: "High" },
-    ]
+    type SessionRow = {
+        id: string
+        user: string
+        email: string
+        device: string
+        location: string
+        ip: string
+        status: "Active" | "Inactive"
+        risk: "Low" | "Medium" | "High"
+    }
 
-    const handleRevokeAll = () => {
+    const [sessionsRaw, setSessionsRaw] = useState<any[]>([])
+    const [sessions, setSessions] = useState<SessionRow[]>([])
+
+    useEffect(() => {
+        const fetchSessions = async () => {
+            setIsFetching(true)
+            try {
+                const res = await axiosInstance.get("/session/all")
+                const list = res?.data?.sessions ?? []
+                setSessionsRaw(list)
+
+                const mapped: SessionRow[] = list.map((s: any) => {
+                    const email = s?.user?.email ?? "unknown@local"
+                    const status: SessionRow["status"] = s?.isActive ? "Active" : "Inactive"
+                    const risk: SessionRow["risk"] = s?.isActive ? "Low" : "Medium"
+                    return {
+                        id: s?._id?.toString() ?? `${Date.now()}-${Math.random()}`,
+                        user: email,
+                        email,
+                        device: s?.deviceType ?? "Unknown device",
+                        location: s?.location ?? "N/A",
+                        ip: s?.ip ?? "N/A",
+                        status,
+                        risk,
+                    }
+                })
+
+                setSessions(mapped)
+            } catch (e: any) {
+                toast.error(e?.response?.data?.message || "Failed to fetch sessions.")
+                setSessions([])
+            } finally {
+                setIsFetching(false)
+            }
+        }
+
+        fetchSessions()
+    }, [])
+
+    const handleRevokeAll = async () => {
+        // OTP-based delete flow: send OTP -> user enters OTP -> delete sessions
         setLoading(true)
-        setTimeout(() => {
+        try {
+            const send = await axiosInstance.post("/session/send-otp")
+            toast.success(send?.data?.message || "OTP sent. Please enter OTP to revoke sessions.")
+
+            const otp = window.prompt("Enter OTP (sent to your email) to revoke sessions:")
+            if (!otp) {
+                toast.error("OTP required to revoke sessions.")
+                return
+            }
+
+            const targets = sessionsRaw.filter((s) => s?.isActive)
+            if (!targets.length) {
+                toast.info("No active sessions found to revoke.")
+                return
+            }
+
+            for (const s of targets) {
+                await axiosInstance.delete("/session/delete", {
+                    data: { sessionId: s?._id, otp },
+                })
+            }
+
+            toast.success("Active sessions revoked successfully.")
+            // refresh list
+            const res = await axiosInstance.get("/session/all")
+            const list = res?.data?.sessions ?? []
+            setSessionsRaw(list)
+            setSessions(
+                list.map((s: any) => {
+                    const email = s?.user?.email ?? "unknown@local"
+                    const status: SessionRow["status"] = s?.isActive ? "Active" : "Inactive"
+                    const risk: SessionRow["risk"] = s?.isActive ? "Low" : "Medium"
+                    return {
+                        id: s?._id?.toString() ?? `${Date.now()}-${Math.random()}`,
+                        user: email,
+                        email,
+                        device: s?.deviceType ?? "Unknown device",
+                        location: s?.location ?? "N/A",
+                        ip: s?.ip ?? "N/A",
+                        status,
+                        risk,
+                    }
+                })
+            )
+        } catch (e: any) {
+            toast.error(e?.response?.data?.message || "Failed to revoke sessions.")
+        } finally {
             setLoading(false)
-            toast.success("All non-critical sessions invalidated")
-        }, 1500)
+        }
     }
 
     return (
@@ -181,7 +273,7 @@ export default function SessionManagementPage() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody className="divide-y divide-zinc-50 dark:divide-zinc-800/50">
-                                {sessions.map((s) => (
+                                {(isFetching ? [] : sessions).map((s) => (
                                     <TableRow key={s.id} className="hover:bg-zinc-50/30 dark:hover:bg-zinc-800/10 transition-all group">
                                         <TableCell className="p-5">
                                             <div className="flex items-center gap-3">
@@ -196,7 +288,11 @@ export default function SessionManagementPage() {
                                         </TableCell>
                                         <TableCell className="p-5">
                                             <div className="flex items-center gap-2">
-                                                {s.device.includes('Browser') ? <Laptop className="w-4 h-4 text-zinc-300" /> : <Smartphone className="w-4 h-4 text-zinc-300" />}
+                                                {s.device.includes("Browser") ? (
+                                                    <Laptop className="w-4 h-4 text-zinc-300" />
+                                                ) : (
+                                                    <Smartphone className="w-4 h-4 text-zinc-300" />
+                                                )}
                                                 <span className="text-xs font-bold text-zinc-600 dark:text-zinc-300">{s.device}</span>
                                             </div>
                                         </TableCell>

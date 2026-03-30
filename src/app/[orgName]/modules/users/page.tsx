@@ -246,7 +246,7 @@ export default function AllUsersPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-white/80">Total users</p>
-                <p className="text-xl font-semibold mt-1">{stats.total}</p>
+                <p className="text-xl font-semibold mt-1 text-white">{stats.total}</p>
                 <p className="text-[10px] text-white/60 mt-1">All registered users</p>
               </div>
               <Users className="w-8 h-8 text-white/30" />
