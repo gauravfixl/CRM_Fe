@@ -35,10 +35,10 @@ export default function PasswordPolicyPage() {
                 ]}
                 rightControls={
                     <div className="flex gap-2">
-                        <CustomButton variant="outline" className="rounded-xl h-10 px-4 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 font-bold" onClick={() => toast.info("Testing password strength logic")}>
+                        <CustomButton variant="outline" className="rounded-xl h-10 px-4 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 font-semibold" onClick={() => toast.info("Testing password strength logic")}>
                             Policy tester
                         </CustomButton>
-                        <CustomButton className="bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 hover:opacity-90 rounded-xl h-10 px-6 font-bold text-xs tracking-widest shadow-xl border-0" onClick={() => toast.success("Password policies published to directory")}>
+                        <CustomButton className="bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 hover:opacity-90 rounded-xl h-10 px-6 font-semibold text-xs tracking-wide shadow-xl border-0" onClick={() => toast.success("Password policies published to directory")}>
                             Publish changes
                         </CustomButton>
                     </div>
@@ -52,34 +52,34 @@ export default function PasswordPolicyPage() {
                         <Lock className="absolute -bottom-10 -right-10 h-64 w-64 text-white opacity-10 group-hover:scale-110 transition-transform pointer-events-none" />
                         <div className="relative z-10 space-y-4">
                             <div className="flex items-center gap-2">
-                                <Badge className="bg-white/10 text-zinc-400 border-zinc-800 rounded-full px-3 py-0.5 font-bold tracking-widest text-[10px] uppercase">Compliance standard</Badge>
-                                <Badge className="bg-emerald-500 text-white border-0 rounded-full px-3 py-0.5 font-bold tracking-widest text-[10px] uppercase">NIST compliant</Badge>
+                                <Badge className="bg-white/10 text-zinc-400 border-zinc-800 rounded-full px-3 py-0.5 font-semibold tracking-wide text-xs">Compliance Standard</Badge>
+                                <Badge className="bg-emerald-500 text-white border-0 rounded-full px-3 py-0.5 font-semibold tracking-wide text-xs">NIST Compliant</Badge>
                             </div>
-                            <h2 className="text-3xl font-bold tracking-tight text-white italic">Credential hygiene</h2>
+                            <h2 className="text-3xl font-semibold tracking-tight text-white italic">Credential hygiene</h2>
                             <p className="text-zinc-400 font-medium leading-relaxed text-sm max-w-md">
                                 Define the strength and lifecycle of organization passwords. While MFA is critical, strong base credentials remain the first line of defense.
                             </p>
                             <div className="flex items-center gap-10 pt-2">
                                 <div className="flex flex-col">
                                     <span className="text-2xl font-semibold text-white">24</span>
-                                    <span className="text-[10px] font-bold text-zinc-500 tracking-widest mt-1 uppercase">History depth</span>
+                                    <span className="text-xs font-semibold text-zinc-500 tracking-wide mt-1">History Depth</span>
                                 </div>
                                 <div className="h-10 w-px bg-zinc-800"></div>
                                 <div className="flex flex-col">
                                     <span className="text-2xl font-semibold text-emerald-400 leading-none">Healthy</span>
-                                    <span className="text-[10px] font-bold text-zinc-500 tracking-widest mt-1 uppercase">Entropy status</span>
+                                    <span className="text-xs font-semibold text-zinc-500 tracking-wide mt-1">Entropy Status</span>
                                 </div>
                             </div>
                         </div>
                     </SmallCard>
 
                     <SmallCard className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 shadow-sm flex flex-col justify-center p-6 space-y-4 rounded-3xl">
-                        <div className="h-10 w-10 bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 flex items-center justify-center rounded-xl font-bold">
+                        <div className="h-10 w-10 bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 flex items-center justify-center rounded-xl font-semibold">
                             <RefreshCw className="w-5 h-5" />
                         </div>
                         <div className="flex items-center justify-between w-full">
                             <div>
-                                <span className="text-[10px] font-bold text-zinc-400 tracking-widest uppercase block mb-1">Rotation policy</span>
+                                <span className="text-xs font-semibold text-zinc-400 tracking-wide block mb-1">Rotation Policy</span>
                                 <div className="text-xl font-semibold text-zinc-900 dark:text-white leading-none">90-day expiry</div>
                             </div>
                             <Switch checked={complex} onCheckedChange={setComplex} className="data-[state=checked]:bg-zinc-900 dark:data-[state=checked]:bg-zinc-100" />
@@ -88,8 +88,8 @@ export default function PasswordPolicyPage() {
 
                     <SmallCard className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 shadow-sm p-6 space-y-6 rounded-3xl">
                         <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-bold text-zinc-400 tracking-widest uppercase">Min. length</span>
-                            <span className="text-lg font-bold text-indigo-600">{minLength[0]} characters</span>
+                            <span className="text-xs font-semibold text-zinc-400 tracking-wide">Min. Length</span>
+                            <span className="text-lg font-semibold text-indigo-600">{minLength[0]} characters</span>
                         </div>
                         <Slider
                             value={minLength}
@@ -131,17 +131,17 @@ export default function PasswordPolicyPage() {
 
                             <CardContent className="space-y-6">
                                 <div>
-                                    <h3 className="text-xl font-bold text-zinc-900 dark:text-white tracking-tight leading-tight">{rule.name}</h3>
+                                    <h3 className="text-xl font-semibold text-zinc-900 dark:text-white tracking-tight leading-tight">{rule.name}</h3>
                                     <p className="text-xs text-zinc-400 font-medium mt-1">{rule.type}</p>
                                     <p className="text-xs text-zinc-500 mt-4 leading-relaxed line-clamp-2">{rule.description}</p>
                                 </div>
 
                                 <div className="flex items-center gap-4">
-                                    <Badge className={`rounded-full border-0 text-[10px] font-bold tracking-widest py-1 px-3 uppercase ${rule.status === 'Enforced' ? 'bg-emerald-50 text-emerald-600' : 'bg-zinc-100 text-zinc-500'
+                                    <Badge className={`rounded-full border-0 text-xs font-semibold tracking-wide py-1 px-3 ${rule.status === 'Enforced' ? 'bg-emerald-50 text-emerald-600' : 'bg-zinc-100 text-zinc-500'
                                         }`}>
                                         {rule.status}
                                     </Badge>
-                                    <Badge className={`rounded-full border-0 text-[10px] font-bold tracking-widest px-3 py-1 uppercase ${rule.severity === 'Critical' ? 'bg-red-50 text-red-600' :
+                                    <Badge className={`rounded-full border-0 text-xs font-semibold tracking-wide px-3 py-1 ${rule.severity === 'Critical' ? 'bg-red-50 text-red-600' :
                                         rule.severity === 'High' ? 'bg-orange-50 text-orange-600' : 'bg-blue-50 text-blue-600'
                                         }`}>
                                         {rule.severity} importance
@@ -155,7 +155,7 @@ export default function PasswordPolicyPage() {
                                         <History className="h-5 w-5 text-zinc-300" />
                                         <Terminal className="h-5 w-5 text-zinc-300" />
                                     </div>
-                                    <CustomButton variant="ghost" className="h-10 text-[10px] text-zinc-500 font-bold tracking-widest uppercase hover:text-zinc-900 dark:hover:text-white group-hover:translate-x-1 transition-transform" onClick={() => toast.info(`Modifying logic for ${rule.name}`)}>
+                                    <CustomButton variant="ghost" className="h-10 text-xs text-zinc-500 font-semibold tracking-wide hover:text-zinc-900 dark:hover:text-white group-hover:translate-x-1 transition-transform" onClick={() => toast.info(`Modifying logic for ${rule.name}`)}>
                                         Edit rule <ChevronRight className="w-4 h-4 ml-1" />
                                     </CustomButton>
                                 </div>
@@ -168,7 +168,7 @@ export default function PasswordPolicyPage() {
                             <Plus className="w-10 h-10 text-zinc-200 group-hover:text-zinc-950 dark:group-hover:text-white" />
                         </div>
                         <div className="space-y-1">
-                            <h4 className="text-lg font-bold text-zinc-400 tracking-widest uppercase">Add directive</h4>
+                            <h4 className="text-lg font-semibold text-zinc-400 tracking-wide">Add Directive</h4>
                             <p className="text-xs text-zinc-400 font-medium">Create a new complexity rule</p>
                         </div>
                     </div>

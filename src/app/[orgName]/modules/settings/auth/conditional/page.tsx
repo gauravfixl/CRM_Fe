@@ -37,7 +37,7 @@ export default function ConditionalAccessPage() {
                         <CustomButton variant="outline" className="rounded-xl h-10 px-4 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 font-bold" onClick={() => toast.info("Simulating policy outcomes")}>
                             Policy simulator
                         </CustomButton>
-                        <CustomButton className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl h-10 px-6 font-bold text-xs tracking-widest shadow-xl border-0 uppercase" onClick={() => toast.success("Conditional policies updated")}>
+                        <CustomButton className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl h-10 px-6 font-semibold text-xs tracking-wide shadow-xl border-0" onClick={() => toast.success("Conditional policies updated")}>
                             New policy
                         </CustomButton>
                     </div>
@@ -51,8 +51,8 @@ export default function ConditionalAccessPage() {
                         <Lock className="absolute -bottom-10 -right-10 h-64 w-64 text-white opacity-10 group-hover:scale-110 transition-transform pointer-events-none" />
                         <div className="relative z-10 space-y-4">
                             <div className="flex items-center gap-2">
-                                <Badge className="bg-white/20 text-white border-0 rounded-full px-3 py-0.5 font-bold tracking-widest text-[10px] uppercase">Smart defense</Badge>
-                                <Badge className="bg-emerald-400 text-white border-0 rounded-full px-3 py-0.5 font-bold tracking-widest text-[10px] uppercase">Real-time eval</Badge>
+                                <Badge className="bg-white/20 text-white border-0 rounded-full px-3 py-0.5 font-semibold tracking-wide text-xs">Smart Defense</Badge>
+                                <Badge className="bg-emerald-400 text-white border-0 rounded-full px-3 py-0.5 font-semibold tracking-wide text-xs">Real-Time Eval</Badge>
                             </div>
                             <h2 className="text-3xl font-bold tracking-tight text-white italic">Intelligent gating</h2>
                             <p className="text-emerald-100/80 font-medium leading-relaxed text-sm max-w-md">
@@ -61,12 +61,12 @@ export default function ConditionalAccessPage() {
                             <div className="flex items-center gap-10 pt-2">
                                 <div className="flex flex-col">
                                     <span className="text-2xl font-semibold text-white">12</span>
-                                    <span className="text-[10px] font-bold text-emerald-200 tracking-widest mt-1 uppercase">Active rules</span>
+                                    <span className="text-xs font-semibold text-emerald-200 tracking-wide mt-1">Active Rules</span>
                                 </div>
                                 <div className="h-10 w-px bg-white/20"></div>
                                 <div className="flex flex-col">
                                     <span className="text-2xl font-semibold text-emerald-300 leading-none italic">0.2 ms</span>
-                                    <span className="text-[10px] font-bold text-emerald-200 tracking-widest mt-1 uppercase">Latancy overhead</span>
+                                    <span className="text-xs font-semibold text-emerald-200 tracking-wide mt-1">Latency Overhead</span>
                                 </div>
                             </div>
                         </div>
@@ -78,7 +78,7 @@ export default function ConditionalAccessPage() {
                         </div>
                         <div className="flex items-center justify-between w-full">
                             <div>
-                                <span className="text-[10px] font-bold text-zinc-400 tracking-widest uppercase block mb-1">Risk protection</span>
+                                <span className="text-xs font-semibold text-zinc-400 tracking-wide block mb-1">Risk Protection</span>
                                 <div className="text-xl font-semibold text-zinc-900 dark:text-white leading-none italic">Block legacy auth</div>
                             </div>
                             <Switch checked={globalBlock} onCheckedChange={setGlobalBlock} className="data-[state=checked]:bg-emerald-600" />
@@ -90,7 +90,7 @@ export default function ConditionalAccessPage() {
                             <UserCheck className="w-5 h-5" />
                         </div>
                         <div className="text-left">
-                            <span className="text-[10px] font-bold text-zinc-400 tracking-widest uppercase block mb-1">Trust level</span>
+                            <span className="text-xs font-semibold text-zinc-400 tracking-wide block mb-1">Trust Level</span>
                             <div className="text-xl font-semibold text-emerald-600 leading-none italic">High assurance</div>
                         </div>
                     </SmallCard>
@@ -125,7 +125,7 @@ export default function ConditionalAccessPage() {
                                         </CustomButton>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end" className="rounded-xl p-2 min-w-[160px] shadow-2xl border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900">
-                                        <DropdownMenuLabel className="text-[10px] font-bold tracking-widest uppercase py-2 px-3 text-zinc-400">Policy management</DropdownMenuLabel>
+                                        <DropdownMenuLabel className="text-xs font-semibold tracking-wide py-2 px-3 text-zinc-400">Policy Management</DropdownMenuLabel>
                                         <DropdownMenuItem className="text-xs font-semibold py-3 flex items-center gap-3 cursor-pointer rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800" onClick={() => toast.info(`Editing ${policy.name}`)}><Edit3 className="w-4 h-4 text-zinc-400" /> Edit rules</DropdownMenuItem>
                                         <DropdownMenuItem className="text-xs font-semibold py-3 flex items-center gap-3 cursor-pointer rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800" onClick={() => toast.info(`Viewing analytics for ${policy.name}`)}><Activity className="w-4 h-4 text-zinc-400" /> Evaluation logs</DropdownMenuItem>
                                         <DropdownMenuSeparator className="bg-zinc-50 dark:bg-zinc-800 my-1" />
@@ -137,16 +137,16 @@ export default function ConditionalAccessPage() {
                             <CardContent className="space-y-6 text-left">
                                 <div>
                                     <h3 className="text-xl font-bold text-zinc-900 dark:text-white tracking-tight leading-tight">{policy.name}</h3>
-                                    <p className="text-xs text-zinc-400 font-medium mt-1 uppercase tracking-widest">{policy.type}</p>
+                                    <p className="text-xs text-zinc-400 font-medium mt-1 tracking-wide">{policy.type}</p>
                                     <p className="text-xs text-zinc-500 mt-4 leading-relaxed line-clamp-2 italic">{policy.description}</p>
                                 </div>
 
                                 <div className="flex items-center gap-4">
-                                    <Badge className={`rounded-full border-0 text-[10px] font-bold tracking-widest py-1 px-3 uppercase ${policy.status === 'Active' ? 'bg-emerald-50 text-emerald-600' : 'bg-zinc-100 text-zinc-500'
+                                    <Badge className={`rounded-full border-0 text-xs font-semibold tracking-wide py-1 px-3 ${policy.status === 'Active' ? 'bg-emerald-50 text-emerald-600' : 'bg-zinc-100 text-zinc-500'
                                         }`}>
                                         {policy.status === 'Active' ? 'On' : 'Off'}
                                     </Badge>
-                                    <Badge className={`rounded-full border-0 text-[10px] font-bold tracking-widest px-3 py-1 uppercase ${policy.severity === 'Critical' ? 'bg-red-50 text-red-600' :
+                                    <Badge className={`rounded-full border-0 text-xs font-semibold tracking-wide px-3 py-1 ${policy.severity === 'Critical' ? 'bg-red-50 text-red-600' :
                                         policy.severity === 'High' ? 'bg-orange-50 text-orange-600' : 'bg-blue-50 text-blue-600'
                                         }`}>
                                         {policy.severity} risk
@@ -160,8 +160,8 @@ export default function ConditionalAccessPage() {
                                         <Globe className="h-5 w-5 text-zinc-300" />
                                         <MapPin className="h-5 w-5 text-zinc-300" />
                                     </div>
-                                    <CustomButton variant="ghost" className="h-10 text-[10px] text-zinc-500 font-bold tracking-widest uppercase hover:text-emerald-600 group-hover:translate-x-1 transition-transform" onClick={() => toast.info(`Managing rules for ${policy.name}`)}>
-                                        Manage logic <ChevronRight className="w-4 h-4 ml-1" />
+                                    <CustomButton variant="ghost" className="h-10 text-xs text-zinc-500 font-semibold tracking-wide hover:text-emerald-600 group-hover:translate-x-1 transition-transform" onClick={() => toast.info(`Managing rules for ${policy.name}`)}>
+                                        Manage Logic <ChevronRight className="w-4 h-4 ml-1" />
                                     </CustomButton>
                                 </div>
                             </CardContent>
@@ -173,7 +173,7 @@ export default function ConditionalAccessPage() {
                             <Plus className="w-10 h-10 text-zinc-200 group-hover:text-emerald-500" />
                         </div>
                         <div className="space-y-1">
-                            <h4 className="text-lg font-bold text-zinc-400 tracking-widest uppercase">New policy</h4>
+                            <h4 className="text-lg font-semibold text-zinc-400 tracking-wide">New Policy</h4>
                             <p className="text-xs text-zinc-400 font-medium italic">Create a new conditional gate</p>
                         </div>
                     </div>

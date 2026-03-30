@@ -36,7 +36,7 @@ export default function LoginRestrictionsPage() {
                         <CustomButton variant="outline" className="rounded-xl h-10 px-4 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 font-bold" onClick={() => toast.info("Viewing restriction audit logs")}>
                             Restriction logs
                         </CustomButton>
-                        <CustomButton className="bg-red-600 hover:bg-red-700 text-white rounded-xl h-10 px-6 font-bold text-xs tracking-widest shadow-xl border-0" onClick={() => toast.success("Restriction policies updated")}>
+                        <CustomButton className="bg-red-600 hover:bg-red-700 text-white rounded-xl h-10 px-6 font-semibold text-xs tracking-wide shadow-xl border-0" onClick={() => toast.success("Restriction policies updated")}>
                             Add restriction
                         </CustomButton>
                     </div>
@@ -50,8 +50,8 @@ export default function LoginRestrictionsPage() {
                         <Ban className="absolute -bottom-10 -right-10 h-64 w-64 text-white opacity-10 group-hover:scale-110 transition-transform pointer-events-none" />
                         <div className="relative z-10 space-y-4">
                             <div className="flex items-center gap-2">
-                                <Badge className="bg-white/20 text-white border-0 rounded-full px-3 py-0.5 font-bold tracking-widest text-[10px] uppercase">Gated entry</Badge>
-                                <Badge className="bg-red-400 text-white border-0 rounded-full px-3 py-0.5 font-bold tracking-widest text-[10px] uppercase">Strict mode</Badge>
+                                <Badge className="bg-white/20 text-white border-0 rounded-full px-3 py-0.5 font-semibold tracking-wide text-xs">Gated Entry</Badge>
+                                <Badge className="bg-red-400 text-white border-0 rounded-full px-3 py-0.5 font-semibold tracking-wide text-xs">Strict Mode</Badge>
                             </div>
                             <h2 className="text-3xl font-bold tracking-tight text-white italic">Access boundaries</h2>
                             <p className="text-red-100/80 font-medium leading-relaxed text-sm max-w-md">
@@ -60,12 +60,12 @@ export default function LoginRestrictionsPage() {
                             <div className="flex items-center gap-10 pt-2">
                                 <div className="flex flex-col">
                                     <span className="text-2xl font-semibold text-white">4</span>
-                                    <span className="text-[10px] font-bold text-red-200 tracking-widest mt-1 uppercase">Active gates</span>
+                                    <span className="text-xs font-semibold text-red-200 tracking-wide mt-1">Active Gates</span>
                                 </div>
                                 <div className="h-10 w-px bg-white/20"></div>
                                 <div className="flex flex-col">
                                     <span className="text-2xl font-semibold text-emerald-400 leading-none">99.9%</span>
-                                    <span className="text-[10px] font-bold text-red-200 tracking-widest mt-1 uppercase">Block accuracy</span>
+                                    <span className="text-xs font-semibold text-red-200 tracking-wide mt-1">Block Accuracy</span>
                                 </div>
                             </div>
                         </div>
@@ -77,7 +77,7 @@ export default function LoginRestrictionsPage() {
                         </div>
                         <div className="flex items-center justify-between w-full">
                             <div>
-                                <span className="text-[10px] font-bold text-zinc-400 tracking-widest uppercase block mb-1">Global lockout</span>
+                                <span className="text-xs font-semibold text-zinc-400 tracking-wide block mb-1">Global Lockout</span>
                                 <div className="text-xl font-semibold text-zinc-900 dark:text-white leading-none">Smart lockout</div>
                             </div>
                             <Switch checked={active} onCheckedChange={setActive} className="data-[state=checked]:bg-red-600" />
@@ -89,7 +89,7 @@ export default function LoginRestrictionsPage() {
                             <Cpu className="w-5 h-5" />
                         </div>
                         <div>
-                            <span className="text-[10px] font-bold text-zinc-400 tracking-widest uppercase block mb-1">Engine status</span>
+                            <span className="text-xs font-semibold text-zinc-400 tracking-wide block mb-1">Engine Status</span>
                             <div className="text-xl font-semibold text-emerald-600 leading-none">Operational</div>
                         </div>
                     </SmallCard>
@@ -130,11 +130,11 @@ export default function LoginRestrictionsPage() {
                                 </div>
 
                                 <div className="flex items-center gap-4">
-                                    <Badge className={`rounded-full border-0 text-[10px] font-bold tracking-widest py-1 px-3 uppercase ${res.status === 'Active' ? 'bg-red-50 text-red-600' : 'bg-zinc-100 text-zinc-500'
+                                    <Badge className={`rounded-full border-0 text-xs font-semibold tracking-wide py-1 px-3 ${res.status === 'Active' ? 'bg-red-50 text-red-600' : 'bg-zinc-100 text-zinc-500'
                                         }`}>
                                         {res.status}
                                     </Badge>
-                                    <Badge className={`rounded-full border-0 text-[10px] font-bold tracking-widest px-3 py-1 uppercase ${res.severity === 'Critical' ? 'bg-red-50 text-red-600' :
+                                    <Badge className={`rounded-full border-0 text-xs font-semibold tracking-wide px-3 py-1 ${res.severity === 'Critical' ? 'bg-red-50 text-red-600' :
                                         res.severity === 'High' ? 'bg-orange-50 text-orange-600' : 'bg-blue-50 text-blue-600'
                                         }`}>
                                         {res.severity} priority
@@ -148,8 +148,8 @@ export default function LoginRestrictionsPage() {
                                         <Globe className="h-5 w-5 text-zinc-300" />
                                         <Clock className="h-5 w-5 text-zinc-300" />
                                     </div>
-                                    <CustomButton variant="ghost" className="h-10 text-[10px] text-zinc-500 font-bold tracking-widest uppercase hover:text-red-600 group-hover:translate-x-1 transition-transform" onClick={() => toast.info(`Defining bounds for ${res.name}`)}>
-                                        Edit boundary <ChevronRight className="w-4 h-4 ml-1" />
+                                    <CustomButton variant="ghost" className="h-10 text-xs text-zinc-500 font-semibold tracking-wide hover:text-red-600 group-hover:translate-x-1 transition-transform" onClick={() => toast.info(`Defining bounds for ${res.name}`)}>
+                                        Edit Boundary <ChevronRight className="w-4 h-4 ml-1" />
                                     </CustomButton>
                                 </div>
                             </CardContent>
@@ -161,7 +161,7 @@ export default function LoginRestrictionsPage() {
                             <Plus className="w-10 h-10 text-zinc-200 group-hover:text-red-500" />
                         </div>
                         <div className="space-y-1">
-                            <h4 className="text-lg font-bold text-zinc-400 tracking-widest uppercase">New boundary</h4>
+                            <h4 className="text-lg font-semibold text-zinc-400 tracking-wide">New Boundary</h4>
                             <p className="text-xs text-zinc-400 font-medium">Create a new login gate</p>
                         </div>
                     </div>
