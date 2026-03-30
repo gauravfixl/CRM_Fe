@@ -1,11 +1,12 @@
 "use client";
 
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ShieldX, LogIn, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
-export default function UnauthorizedPage() {
+function UnauthorizedContent() {
   const searchParams = useSearchParams();
   const reason = searchParams.get("reason");
   const attemptedPath = searchParams.get("path");
@@ -78,5 +79,13 @@ export default function UnauthorizedPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function UnauthorizedPage() {
+  return (
+    <Suspense>
+      <UnauthorizedContent />
+    </Suspense>
   );
 }
