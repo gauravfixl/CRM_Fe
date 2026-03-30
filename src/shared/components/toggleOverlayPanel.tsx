@@ -7,23 +7,15 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Separator } from "@/components/ui/separator"
 import {
   Home,
-  Building,
   Users,
   Cog,
   Target,
   FolderKanban,
-  MessageSquareText,
-  BarChart2,
-  BookOpen,
-  Blocks,
-  MoreHorizontal,
   FileText,
   DollarSign,
   SquarePlus,
-  UserCog,
   LayoutDashboard
 } from "lucide-react"
 import { getAllOrg, switchOrganization } from "@/hooks/orgHooks"
@@ -33,44 +25,22 @@ import { showSuccess, showError } from "@/utils/toast"
 import { jwtDecode } from "jwt-decode"
 
 // STATIC DATA OUTSIDE COMPONENT
-const DEFAULT_MODULES = ["dashboard", "organization", "lead", "hrms"]
+const DEFAULT_MODULES = ["dashboard", "lead", "hrms"]
 
 const MODULES_MAP: Record<string, { label: string; url: string; icon: React.ReactNode }> = {
   dashboard: { label: "Dashboard", url: "/dashboard", icon: <Home size={18} /> },
-  lead: { label: "Lead Management", url: "/modules/crm/leads", icon: <Users size={18} /> },
+  lead: { label: "Lead Management", url: "/lead-management", icon: <Users size={18} /> },
   invoice: { label: "Invoices", url: "/modules/invoice/all", icon: <FileText size={18} /> },
   project: { label: "Project Management", url: "/projectmanagement", icon: <FolderKanban size={18} /> },
-  organization: { label: "Organization Management", url: "/modules/organization/all-org", icon: <Building size={18} /> },
+
   firm: { label: "Firm Management", url: "/modules/firm-management/firms", icon: <Target size={18} /> },
-  client: { label: "Client Management", url: "/modules/crm/clients", icon: <Target size={18} /> },
+  client: { label: "Client Management", url: "/client-management", icon: <Target size={18} /> },
   administration: { label: "Administration", url: "/modules/administration", icon: <Cog size={18} /> },
   tax: { label: "Tax", url: "/modules/taxes", icon: <Cog size={18} /> },
   accounting: { label: "Accounting", url: "/modules/accounting", icon: <DollarSign size={18} /> },
   hrms: { label: "HRM Dashboard", url: "/hrmcubicle", icon: <LayoutDashboard size={18} /> },
 }
 
-const RECOMMENDED_ITEMS = [
-  {
-    icon: <MessageSquareText className="text-yellow-500" size={20} />,
-    title: "Work requests",
-    description: "Create one place to manage requests",
-  },
-  {
-    icon: <BarChart2 className="text-purple-500" size={20} />,
-    title: "Product roadmap",
-    description: "Align everyone with custom roadmaps",
-  },
-  {
-    icon: <BookOpen className="text-sky-500" size={20} />,
-    title: "Confluence",
-    description: "Document collaboration",
-  },
-  {
-    icon: <Blocks className="text-neutral-800" size={20} />,
-    title: "More Cubicle apps",
-    description: "",
-  },
-]
 
 export default function ToggleOverlayPanel() {
   const { setSelectedModule } = useModule()
@@ -91,7 +61,7 @@ export default function ToggleOverlayPanel() {
 
   const prefixUrl = React.useCallback((url: string) => {
     if (!currentOrg) return url;
-    if (url.startsWith("/hrmcubicle") || url.startsWith("/projectmanagement")) return url;
+    if (url.startsWith("/hrmcubicle") || url.startsWith("/projectmanagement") || url.startsWith("/lead-management") || url.startsWith("/client-management")) return url;
     const cleanPath = url.startsWith("/") ? url : `/${url}`;
     return `/${currentOrg}${cleanPath}`;
   }, [currentOrg]);
@@ -196,32 +166,6 @@ export default function ToggleOverlayPanel() {
               ))}
             </div>
 
-            <Separator />
-
-            <div className="p-4">
-              <h4 className="text-xs font-semibold text-muted-foreground mb-2">
-                Recommended for your team
-              </h4>
-              <div className="space-y-2">
-                {RECOMMENDED_ITEMS.map((item, index) => (
-                  <div
-                    key={index}
-                    className="border rounded-md p-3 bg-muted/50 flex gap-3 items-start"
-                  >
-                    <div className="mt-1">{item.icon}</div>
-                    <div className="flex-1">
-                      <div className="text-sm font-semibold">{item.title}</div>
-                      {item.description && (
-                        <p className="text-xs text-muted-foreground">{item.description}</p>
-                      )}
-                    </div>
-                    <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </div>
           </ScrollArea>
         </div>
       </PopoverContent>
