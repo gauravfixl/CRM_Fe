@@ -36,7 +36,7 @@ export default function MFASetupPage() {
                         <CustomButton variant="outline" className="rounded-xl h-10 px-4 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 font-bold" onClick={() => toast.info("Downloading recovery codes")}>
                             Recovery codes
                         </CustomButton>
-                        <CustomButton className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl h-10 px-6 font-bold text-xs tracking-widest shadow-xl border-0" onClick={() => toast.success("MFA configuration preserved")}>
+                        <CustomButton className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl h-10 px-6 font-semibold text-xs tracking-wide shadow-xl border-0" onClick={() => toast.success("MFA configuration preserved")}>
                             Save settings
                         </CustomButton>
                     </div>
@@ -50,8 +50,8 @@ export default function MFASetupPage() {
 
                         <div className="relative z-10 space-y-4">
                             <div className="flex items-center gap-2">
-                                <Badge className="bg-white/20 text-white border-0 rounded-full px-3 py-0.5 font-bold tracking-widest text-[10px] uppercase">Identity shield</Badge>
-                                <Badge className="bg-emerald-500 text-white border-0 rounded-full px-3 py-0.5 font-bold tracking-widest text-[10px] uppercase">Enforced</Badge>
+                                <Badge className="bg-white/20 text-white border-0 rounded-full px-3 py-0.5 font-semibold tracking-wide text-xs">Identity Shield</Badge>
+                                <Badge className="bg-emerald-500 text-white border-0 rounded-full px-3 py-0.5 font-semibold tracking-wide text-xs">Enforced</Badge>
                             </div>
                             <h2 className="text-3xl font-bold tracking-tight text-white italic">Multi-factor security</h2>
                             <p className="text-indigo-100/80 font-medium leading-relaxed text-sm max-w-md">
@@ -60,12 +60,12 @@ export default function MFASetupPage() {
                             <div className="flex items-center gap-10 pt-2">
                                 <div className="flex flex-col">
                                     <span className="text-2xl font-semibold text-white">98%</span>
-                                    <span className="text-[10px] font-bold text-indigo-200 tracking-widest mt-1 uppercase">Adoption rate</span>
+                                    <span className="text-xs font-semibold text-indigo-200 tracking-wide mt-1">Adoption Rate</span>
                                 </div>
                                 <div className="h-10 w-px bg-white/20"></div>
                                 <div className="flex flex-col">
                                     <span className="text-2xl font-semibold text-emerald-400 leading-none">Healthy</span>
-                                    <span className="text-[10px] font-bold text-indigo-200 tracking-widest mt-1 uppercase">Policy status</span>
+                                    <span className="text-xs font-semibold text-indigo-200 tracking-wide mt-1">Policy Status</span>
                                 </div>
                             </div>
                         </div>
@@ -77,7 +77,7 @@ export default function MFASetupPage() {
                         </div>
                         <div className="flex items-center justify-between w-full">
                             <div>
-                                <span className="text-[10px] font-bold text-zinc-400 tracking-widest uppercase block mb-1">Global enforcement</span>
+                                <span className="text-xs font-semibold text-zinc-400 tracking-wide block mb-1">Global Enforcement</span>
                                 <div className="text-xl font-semibold text-zinc-900 dark:text-white leading-none">Always require MFA</div>
                             </div>
                             <Switch checked={enforced} onCheckedChange={setEnforced} className="data-[state=checked]:bg-indigo-600" />
@@ -89,7 +89,7 @@ export default function MFASetupPage() {
                             <LogOut className="w-5 h-5" />
                         </div>
                         <div>
-                            <span className="text-[10px] font-bold text-zinc-400 tracking-widest uppercase block mb-1">Session timeout</span>
+                            <span className="text-xs font-semibold text-zinc-400 tracking-wide block mb-1">Session Timeout</span>
                             <div className="text-xl font-semibold text-zinc-900 dark:text-white leading-none">8 hours sliding</div>
                         </div>
                     </SmallCard>
@@ -126,19 +126,19 @@ export default function MFASetupPage() {
                                 <div>
                                     <div className="flex items-center gap-2 mb-1">
                                         <h3 className="text-xl font-bold text-zinc-900 dark:text-white tracking-tight leading-tight">{method.name}</h3>
-                                        {method.hardware && <Badge className="bg-amber-100 text-amber-700 border-0 text-[8px] font-bold uppercase rounded-md px-1">Hardware</Badge>}
+                                        {method.hardware && <Badge className="bg-amber-100 text-amber-700 border-0 text-[8px] font-semibold rounded-md px-1">Hardware</Badge>}
                                     </div>
                                     <p className="text-xs text-zinc-400 font-medium">{method.type}</p>
                                 </div>
 
                                 <div className="flex items-center gap-4">
-                                    <Badge className={`rounded-full border-0 text-[10px] font-bold tracking-widest py-1 px-3 uppercase ${method.status === 'Recommended' ? 'bg-emerald-50 text-emerald-600' :
+                                    <Badge className={`rounded-full border-0 text-xs font-semibold tracking-wide py-1 px-3 ${method.status === 'Recommended' ? 'bg-emerald-50 text-emerald-600' :
                                         method.status === 'Strongest' ? 'bg-indigo-50 text-indigo-600' : 'bg-zinc-100 text-zinc-500'
                                         }`}>
                                         {method.status}
                                     </Badge>
-                                    <div className="text-[10px] font-bold text-zinc-500 tracking-widest uppercase">
-                                        {method.popularity} usage
+                                    <div className="text-xs font-semibold text-zinc-500 tracking-wide">
+                                        {method.popularity} Usage
                                     </div>
                                 </div>
 
@@ -150,8 +150,8 @@ export default function MFASetupPage() {
                                         <Smartphone className="h-5 w-5 text-zinc-300" />
                                         <Mail className="h-5 w-5 text-zinc-300" />
                                     </div>
-                                    <CustomButton variant="ghost" className="h-10 text-[10px] text-zinc-500 font-bold tracking-widest uppercase hover:text-indigo-600 group-hover:translate-x-1 transition-transform" onClick={() => toast.info(`Configuring ${method.name}`)}>
-                                        Configure factor <ChevronRight className="w-4 h-4 ml-1" />
+                                    <CustomButton variant="ghost" className="h-10 text-xs text-zinc-500 font-semibold tracking-wide hover:text-indigo-600 group-hover:translate-x-1 transition-transform" onClick={() => toast.info(`Configuring ${method.name}`)}>
+                                        Configure Factor <ChevronRight className="w-4 h-4 ml-1" />
                                     </CustomButton>
                                 </div>
                             </CardContent>
@@ -163,7 +163,7 @@ export default function MFASetupPage() {
                             <Plus className="w-10 h-10 text-zinc-200 group-hover:text-indigo-500" />
                         </div>
                         <div className="space-y-1">
-                            <h4 className="text-lg font-bold text-zinc-400 tracking-widest uppercase">Add new factor</h4>
+                            <h4 className="text-lg font-bold text-zinc-400 tracking-wide">Add New Factor</h4>
                             <p className="text-xs text-zinc-400 font-medium">Provision another verification method</p>
                         </div>
                     </div>

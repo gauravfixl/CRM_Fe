@@ -36,7 +36,7 @@ export default function PasswordlessSecurityPage() {
                         <CustomButton variant="outline" className="rounded-xl h-10 px-4 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 font-bold" onClick={() => toast.info("Opening FIDO2 registration guide")}>
                             Setup guide
                         </CustomButton>
-                        <CustomButton className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white rounded-xl h-10 px-6 font-bold text-xs tracking-widest shadow-xl border-0" onClick={() => toast.success("Passwordless policies published")}>
+                        <CustomButton className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white rounded-xl h-10 px-6 font-semibold text-xs tracking-wide shadow-xl border-0" onClick={() => toast.success("Passwordless policies published")}>
                             Enable globally
                         </CustomButton>
                     </div>
@@ -50,8 +50,8 @@ export default function PasswordlessSecurityPage() {
                         <Fingerprint className="absolute -bottom-10 -right-10 h-64 w-64 text-white opacity-10 group-hover:scale-110 transition-transform pointer-events-none" />
                         <div className="relative z-10 space-y-4">
                             <div className="flex items-center gap-2">
-                                <Badge className="bg-white/20 text-white border-0 rounded-full px-3 py-0.5 font-bold tracking-widest text-[10px] uppercase">Zero trust</Badge>
-                                <Badge className="bg-violet-400 text-white border-0 rounded-full px-3 py-0.5 font-bold tracking-widest text-[10px] uppercase">Phishing resistant</Badge>
+                                <Badge className="bg-white/20 text-white border-0 rounded-full px-3 py-0.5 font-semibold tracking-wide text-xs">Zero Trust</Badge>
+                                <Badge className="bg-violet-400 text-white border-0 rounded-full px-3 py-0.5 font-semibold tracking-wide text-xs">Phishing Resistant</Badge>
                             </div>
                             <h2 className="text-3xl font-bold tracking-tight text-white italic">Beyond passwords</h2>
                             <p className="text-indigo-100/80 font-medium leading-relaxed text-sm max-w-md">
@@ -60,12 +60,12 @@ export default function PasswordlessSecurityPage() {
                             <div className="flex items-center gap-10 pt-2">
                                 <div className="flex flex-col">
                                     <span className="text-2xl font-semibold text-white">45%</span>
-                                    <span className="text-[10px] font-bold text-indigo-200 tracking-widest mt-1 uppercase">User migration</span>
+                                    <span className="text-xs font-semibold text-indigo-200 tracking-wide mt-1">User Migration</span>
                                 </div>
                                 <div className="h-10 w-px bg-white/20"></div>
                                 <div className="flex flex-col">
                                     <span className="text-2xl font-semibold text-emerald-400 leading-none">Optimized</span>
-                                    <span className="text-[10px] font-bold text-indigo-200 tracking-widest mt-1 uppercase">Attack resistance</span>
+                                    <span className="text-xs font-semibold text-indigo-200 tracking-wide mt-1">Attack Resistance</span>
                                 </div>
                             </div>
                         </div>
@@ -77,7 +77,7 @@ export default function PasswordlessSecurityPage() {
                         </div>
                         <div className="flex items-center justify-between w-full">
                             <div>
-                                <span className="text-[10px] font-bold text-zinc-400 tracking-widest uppercase block mb-1">Experimental mode</span>
+                                <span className="text-xs font-semibold text-zinc-400 tracking-wide block mb-1">Experimental Mode</span>
                                 <div className="text-xl font-semibold text-zinc-900 dark:text-white leading-none">Allow passkeys</div>
                             </div>
                             <Switch checked={isExperimental} onCheckedChange={setIsExperimental} className="data-[state=checked]:bg-violet-600" />
@@ -89,7 +89,7 @@ export default function PasswordlessSecurityPage() {
                             <Lock className="w-5 h-5" />
                         </div>
                         <div>
-                            <span className="text-[10px] font-bold text-zinc-400 tracking-widest uppercase block mb-1">Security level</span>
+                            <span className="text-xs font-semibold text-zinc-400 tracking-wide block mb-1">Security Level</span>
                             <div className="text-xl font-semibold text-emerald-600 leading-none">Strict FIDO2</div>
                         </div>
                     </SmallCard>
@@ -130,11 +130,11 @@ export default function PasswordlessSecurityPage() {
                                 </div>
 
                                 <div className="flex items-center gap-4">
-                                    <Badge className={`rounded-full border-0 text-[10px] font-bold tracking-widest py-1 px-3 uppercase ${tech.status === 'Active' ? 'bg-emerald-50 text-emerald-600' : 'bg-zinc-100 text-zinc-500'
+                                    <Badge className={`rounded-full border-0 text-xs font-semibold tracking-wide py-1 px-3 ${tech.status === 'Active' ? 'bg-emerald-50 text-emerald-600' : 'bg-zinc-100 text-zinc-500'
                                         }`}>
                                         {tech.status}
                                     </Badge>
-                                    <Badge className="bg-violet-50 text-violet-600 border-0 rounded-full text-[10px] font-bold px-3 py-1 uppercase">{tech.security} security</Badge>
+                                    <Badge className="bg-violet-50 text-violet-600 border-0 rounded-full text-xs font-semibold px-3 py-1">{tech.security} Security</Badge>
                                 </div>
 
                                 <Separator className="bg-zinc-50 dark:bg-zinc-800/50" />
@@ -144,8 +144,8 @@ export default function PasswordlessSecurityPage() {
                                         <Laptop className="h-5 w-5 text-zinc-300" />
                                         <Smartphone className="h-5 w-5 text-zinc-300" />
                                     </div>
-                                    <CustomButton variant="ghost" className="h-10 text-[10px] text-zinc-500 font-bold tracking-widest uppercase hover:text-violet-600 group-hover:translate-x-1 transition-transform" onClick={() => toast.info(`Opening registration settings for ${tech.name}`)}>
-                                        Policy control <ChevronRight className="w-4 h-4 ml-1" />
+                                    <CustomButton variant="ghost" className="h-10 text-xs text-zinc-500 font-semibold tracking-wide hover:text-violet-600 group-hover:translate-x-1 transition-transform" onClick={() => toast.info(`Opening registration settings for ${tech.name}`)}>
+                                        Policy Control <ChevronRight className="w-4 h-4 ml-1" />
                                     </CustomButton>
                                 </div>
                             </CardContent>
@@ -157,7 +157,7 @@ export default function PasswordlessSecurityPage() {
                             <Plus className="w-10 h-10 text-zinc-200 group-hover:text-violet-500" />
                         </div>
                         <div className="space-y-1">
-                            <h4 className="text-lg font-bold text-zinc-400 tracking-widest uppercase">New tech</h4>
+                            <h4 className="text-lg font-bold text-zinc-400 tracking-wide">New Tech</h4>
                             <p className="text-xs text-zinc-400 font-medium">Add FIDO2 or WebAuthn identity</p>
                         </div>
                     </div>
