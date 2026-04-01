@@ -1,6 +1,7 @@
 "use client"
 
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   DollarSign,
@@ -51,8 +52,21 @@ import { ScrollArea } from "@/shared/components/ui/scroll-area";
 
 import { useMeStore } from "@/shared/data/me-store";
 
+const downloadCSV = (filename: string, csvContent: string) => {
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+};
+
 const MyFinancesPage = () => {
   const { toast } = useToast();
+  const router = useRouter();
   const { finances, updateUser } = useMeStore();
   const [isClaimOpen, setIsClaimOpen] = useState(false);
   const [expenseFilter, setExpenseFilter] = useState<'All' | 'Pending' | 'Approved'>('All');
@@ -122,7 +136,11 @@ const MyFinancesPage = () => {
             variant="outline"
             size="sm"
             className="h-10 rounded-lg border-slate-100 font-bold text-xs gap-2 px-4 shadow-sm hover:bg-slate-50"
-            onClick={() => toast({ title: "Tax Report", description: "Downloading your tax report for FY 2025-26..." })}
+            onClick={() => {
+              const csv = "Category,Amount,Section\nGross Salary," + finances.salary.ytd + ",Income\nTax Deducted," + finances.salary.deductions + ",TDS\nTax Saved," + finances.salary.taxSaved + ",80C\nNet Take Home," + finances.salary.takeHome + ",Net\n";
+              downloadCSV("tax-report-fy-2025-26.csv", csv);
+              toast({ title: "Tax Report Downloaded", description: "Your FY 2025-26 tax report CSV has been saved." });
+            }}
           >
             <Download size={14} className="text-slate-400" /> Tax year 2025-26
           </Button>
@@ -238,13 +256,17 @@ const MyFinancesPage = () => {
                       <Button
                         variant="outline"
                         className="h-11 rounded-xl bg-white/60 border-indigo-100 text-slate-700 px-6 font-bold text-xs capitalize hover:bg-white"
-                        onClick={() => toast({ title: "Ledger Access", description: "Opening your full financial ledger..." })}
+                        onClick={() => router.push("/hrmcubicle/my-finances/summary")}
                       >
                         Full ledger
                       </Button>
                       <Button
                         className="h-11 bg-indigo-500 text-white px-8 rounded-xl font-bold text-xs capitalize shadow-xl shadow-indigo-100 hover:bg-indigo-600 border-none tracking-wide"
-                        onClick={() => toast({ title: "Generating Report", description: "Your JV report is being generated for download." })}
+                        onClick={() => {
+                          const csv = "Date,Description,Debit,Credit,Balance\n2026-01-31,Salary Credit,0," + finances.salary.takeHome + "," + finances.salary.takeHome + "\n2026-01-31,TDS Deduction," + finances.salary.deductions + ",0,0\n2026-01-31,PF Contribution,1800,0,0\n";
+                          downloadCSV("jv-report.csv", csv);
+                          toast({ title: "JV Report Downloaded", description: "Your Journal Voucher report CSV has been saved." });
+                        }}
                       >
                         Download JV
                       </Button>
@@ -414,7 +436,7 @@ const MyFinancesPage = () => {
                   </div>
                   <Button
                     className="w-full h-12 bg-indigo-500 text-white rounded-2xl font-bold capitalize text-[11px] tracking-wide shadow-xl shadow-indigo-100 mt-4 border-none hover:bg-indigo-600"
-                    onClick={() => toast({ title: "Vault Access", description: "Navigating to your document vault..." })}
+                    onClick={() => router.push("/hrmcubicle/me/documents")}
                   >
                     Browse all records
                   </Button>
@@ -432,7 +454,7 @@ const MyFinancesPage = () => {
                   </div>
                   <Button
                     className="w-full h-11 bg-white text-slate-900 font-bold text-[11px] capitalize tracking-wide rounded-xl hover:bg-slate-50 shadow-lg border-none"
-                    onClick={() => toast({ title: "Tax Declaration", description: "Opening your tax declaration portal..." })}
+                    onClick={() => router.push("/hrmcubicle/payroll/tax-declarations")}
                   >
                     Review declaration
                   </Button>

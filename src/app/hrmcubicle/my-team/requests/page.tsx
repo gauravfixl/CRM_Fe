@@ -207,7 +207,10 @@ const TeamRequestsPage = () => {
                                                                 <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl border-none text-slate-300 hover:text-slate-600"><MoreVertical className="h-4 w-4" /></Button>
                                                             </DropdownMenuTrigger>
                                                             <DropdownMenuContent align="end" className="rounded-xl p-1 w-44 shadow-xl border-none bg-white">
-                                                                <DropdownMenuItem className="p-2.5 rounded-lg font-bold text-[10px] tracking-widest text-slate-600 cursor-pointer focus:bg-indigo-50" onClick={() => toast({ title: "Forwarded", description: `Request ${req.id} has been forwarded to HR.` })}>
+                                                                <DropdownMenuItem className="p-2.5 rounded-lg font-bold text-[10px] tracking-widest text-slate-600 cursor-pointer focus:bg-indigo-50" onClick={() => {
+                                                                    setRequests(requests.map(r => r.id === req.id ? { ...r, priority: "High" } : r));
+                                                                    toast({ title: "Forwarded to HR", description: `Request ${req.id} from ${req.requester} has been escalated and forwarded to the HR department for further review.` });
+                                                                }}>
                                                                     <Inbox className="h-3.5 w-3.5 mr-2.5" /> Forward
                                                                 </DropdownMenuItem>
                                                                 <DropdownMenuItem className="p-2.5 rounded-lg font-bold text-[10px] tracking-widest text-slate-600 cursor-pointer focus:bg-rose-50 focus:text-rose-600" onClick={() => toast({ title: "Prioritized", description: `Request ${req.id} marked as critically urgent.` })}>

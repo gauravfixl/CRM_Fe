@@ -1472,7 +1472,7 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
     // Organization Granular Drill-down
     if (pathname?.includes("/modules/organization/overview")) return "OrgOverview";
     if (pathname?.includes("/modules/firm-management/firms/deleted") || pathname?.includes("/modules/organization/trash")) return "OrgRecycleBin";
-    if (pathname?.includes("/modules/firm-management/firms") || pathname?.includes("/modules/organization/firms") || pathname.includes("/modules/organization/create")) return "OrgFirms";
+    if (pathname?.includes("/modules/firm-management/firms") || pathname?.includes("/modules/organization/firms") || pathname.includes("/modules/organization/create") || pathname?.includes("/modules/organization/onboarding") || pathname?.includes("/modules/organization/admins") || pathname?.includes("/modules/organization/access")) return "OrgFirms";
     if (pathname?.includes("/modules/organization/branding")) return "OrgBranding";
     if (pathname?.includes("/modules/organization/subscription")) return "OrgSubscription";
     if (pathname?.includes("/modules/organization/settings")) return "OrgSettings";

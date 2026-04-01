@@ -331,7 +331,7 @@ const TeamMembersPage = () => {
                                             <AvatarFallback>{selectedMember.avatar}</AvatarFallback>
                                         </Avatar>
                                         <div className="flex gap-2 pb-1">
-                                            <Button className="rounded-xl h-9 bg-indigo-600 hover:bg-indigo-700 text-white px-5 font-bold text-[9px] tracking-widest shadow-md border-none" onClick={() => toast({ title: "Connecting", description: `Redirecting to chat with ${selectedMember.name}...` })}>Contact</Button>
+                                            <Button className="rounded-xl h-9 bg-indigo-600 hover:bg-indigo-700 text-white px-5 font-bold text-[9px] tracking-widest shadow-md border-none" onClick={() => { window.location.href = `mailto:${selectedMember.email}`; }}>Contact</Button>
                                         </div>
                                     </div>
 
@@ -367,7 +367,7 @@ const TeamMembersPage = () => {
                                                 ) : (
                                                     <div className="text-center py-10 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
                                                         <p className="text-xs font-bold text-slate-400 tracking-widest leading-none">No Personal Documents Uploaded</p>
-                                                        <Button variant="link" className="text-indigo-600 text-[10px] font-bold mt-2" onClick={() => toast({ title: "Upload Request", description: "Request for documents sent to employee." })}>Send Upload Request</Button>
+                                                        <Button variant="link" className="text-indigo-600 text-[10px] font-bold mt-2" onClick={() => toast({ title: "Upload Request Sent", description: `A document upload request has been created and sent to ${selectedMember.name} at ${selectedMember.email}.` })}>Send Upload Request</Button>
                                                     </div>
                                                 )}
                                             </div>

@@ -5,9 +5,9 @@ import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { CustomButton } from "@/components/custom/CustomButton"
 import { useLoaderStore } from "@/lib/loaderStore"
-import { getWorkspaceById, getWorkspaceAnalytics, type Workspace, type WorkspaceAnalytics } from "@/modules/project-management/workspace/hooks/workspaceHooks"
+import { getWorkspaceById, getWorkspaceAnalytics, getWorkspaceMembers, type Workspace, type WorkspaceAnalytics, type WorkspaceMember } from "@/modules/project-management/workspace/hooks/workspaceHooks"
 import { getAllProjectsByWorkspace, type Project } from "@/modules/project-management/project/hooks/projectHooks"
-import { FolderKanban, Users, Clock, CheckCircle2, Settings, Plus, AlertCircle, Loader2 } from "lucide-react"
+import { FolderKanban, Users, Clock, CheckCircle2, Settings, Plus, AlertCircle, Loader2, BarChart3, TrendingUp } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ProjectCreationDialog } from "@/shared/components/project-creation-dialog"
 import { Badge } from "@/components/ui/badge"
@@ -20,6 +20,7 @@ export default function WorkspaceDetailsPage() {
     const [workspace, setWorkspace] = useState<Workspace | null>(null)
     const [analytics, setAnalytics] = useState<WorkspaceAnalytics | null>(null)
     const [projects, setProjects] = useState<Project[]>([])
+    const [members, setMembers] = useState<WorkspaceMember[]>([])
     const [isProjectDialogOpen, setIsProjectDialogOpen] = useState(false)
     const [activeTab, setActiveTab] = useState("projects")
     const [isLoading, setIsLoading] = useState(true)
@@ -40,11 +41,12 @@ export default function WorkspaceDetailsPage() {
             }
             setWorkspace(wsData)
 
-            // Step 2: Try fetching optional data (Analytics & Projects)
+            // Step 2: Try fetching optional data (Analytics, Projects & Members)
             try {
-                const [analyticsRes, projectsRes] = await Promise.allSettled([
+                const [analyticsRes, projectsRes, membersRes] = await Promise.allSettled([
                     getWorkspaceAnalytics(params.workspaceId),
-                    getAllProjectsByWorkspace(params.workspaceId)
+                    getAllProjectsByWorkspace(params.workspaceId),
+                    getWorkspaceMembers(params.workspaceId)
                 ])
 
                 if (analyticsRes.status === 'fulfilled') {
@@ -56,6 +58,11 @@ export default function WorkspaceDetailsPage() {
                     const projectRaw = projectsRes.value.data?.projects || projectsRes.value.data?.data || projectsRes.value.data
                     const projectsList = Array.isArray(projectRaw) ? projectRaw : projectRaw?.projects || []
                     setProjects(Array.isArray(projectsList) ? projectsList : [])
+                }
+
+                if (membersRes.status === 'fulfilled') {
+                    const membersRaw = membersRes.value.data?.data?.members || membersRes.value.data?.members || membersRes.value.data?.data || []
+                    setMembers(Array.isArray(membersRaw) ? membersRaw : [])
                 }
             } catch (secondaryErr) {
                 console.warn("Secondary data fetch failed:", secondaryErr)
@@ -236,10 +243,154 @@ export default function WorkspaceDetailsPage() {
                         )}
                     </TabsContent>
 
-                    <TabsContent value="overview">
-                        <div className="p-20 text-center text-zinc-400 bg-white dark:bg-zinc-950 rounded-[2.5rem] border border-zinc-100 dark:border-zinc-800 shadow-sm font-bold italic text-lg">
-                            Activity stream and workspace summary coming soon.
+                    <TabsContent value="overview" className="mt-0 outline-none animate-in fade-in slide-in-from-bottom-2 duration-500">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div className="bg-white dark:bg-zinc-950 rounded-3xl border border-zinc-200 dark:border-zinc-800 p-8 shadow-sm">
+                                <h3 className="text-lg font-black text-zinc-900 dark:text-zinc-100 mb-4">Workspace Details</h3>
+                                <div className="space-y-4">
+                                    <div>
+                                        <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Name</span>
+                                        <p className="text-sm font-bold text-zinc-700 dark:text-zinc-300">{workspace.name}</p>
+                                    </div>
+                                    <div>
+                                        <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Description</span>
+                                        <p className="text-sm font-bold text-zinc-700 dark:text-zinc-300">{workspace.description || "No description"}</p>
+                                    </div>
+                                    <div>
+                                        <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Created By</span>
+                                        <p className="text-sm font-bold text-zinc-700 dark:text-zinc-300">{workspace.createdBy?.fullName || workspace.createdBy?.email || "N/A"}</p>
+                                    </div>
+                                    <div>
+                                        <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Created At</span>
+                                        <p className="text-sm font-bold text-zinc-700 dark:text-zinc-300">{workspace.createdAt ? new Date(workspace.createdAt).toLocaleDateString() : "N/A"}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="bg-white dark:bg-zinc-950 rounded-3xl border border-zinc-200 dark:border-zinc-800 p-8 shadow-sm">
+                                <h3 className="text-lg font-black text-zinc-900 dark:text-zinc-100 mb-4">Quick Stats</h3>
+                                <div className="space-y-4">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-sm text-zinc-500 font-bold">Total Projects</span>
+                                        <span className="text-lg font-black text-blue-600">{projects.length}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-sm text-zinc-500 font-bold">Total Members</span>
+                                        <span className="text-lg font-black text-orange-600">{analytics?.totalMembers || members.length}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-sm text-zinc-500 font-bold">Active Tasks</span>
+                                        <span className="text-lg font-black text-green-600">{analytics?.activeTasks || 0}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-sm text-zinc-500 font-bold">Completed Tasks</span>
+                                        <span className="text-lg font-black text-purple-600">{analytics?.completedTasks || 0}</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
+                    </TabsContent>
+
+                    <TabsContent value="members" className="mt-0 outline-none animate-in fade-in slide-in-from-bottom-2 duration-500">
+                        {members.length > 0 ? (
+                            <div className="bg-white dark:bg-zinc-950 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
+                                <div className="p-6 border-b border-zinc-100 dark:border-zinc-800">
+                                    <h3 className="text-lg font-black text-zinc-900 dark:text-zinc-100">Workspace Members ({members.length})</h3>
+                                </div>
+                                <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
+                                    {members.map((member) => (
+                                        <div key={member._id} className="flex items-center justify-between p-5 hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors">
+                                            <div className="flex items-center gap-4">
+                                                <Avatar className="h-10 w-10 border-2 border-white dark:border-zinc-950 shadow-md">
+                                                    <AvatarFallback className="text-xs bg-blue-600 text-white font-black uppercase">
+                                                        {member.userId?.fullName?.[0] || member.userId?.email?.[0] || "U"}
+                                                    </AvatarFallback>
+                                                </Avatar>
+                                                <div>
+                                                    <p className="text-sm font-black text-zinc-900 dark:text-zinc-100">{member.userId?.fullName || "N/A"}</p>
+                                                    <p className="text-xs text-zinc-500 font-medium">{member.userId?.email}</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                                <Badge variant="secondary" className="text-[10px] font-bold uppercase">
+                                                    {member.role?.name || "Member"}
+                                                </Badge>
+                                                <Badge variant="outline" className={`text-[10px] font-bold ${member.status === 'active' ? 'text-green-600 border-green-200' : 'text-zinc-400'}`}>
+                                                    {member.status || "active"}
+                                                </Badge>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="flex flex-col items-center justify-center py-32 bg-white dark:bg-zinc-950 rounded-[2.5rem] border-2 border-dashed border-zinc-200 dark:border-zinc-800 shadow-inner">
+                                <div className="h-24 w-24 bg-zinc-50 dark:bg-zinc-900 rounded-full flex items-center justify-center mb-6 shadow-md">
+                                    <Users className="h-10 w-10 text-zinc-300" />
+                                </div>
+                                <h3 className="text-2xl font-black text-zinc-900 dark:text-zinc-100">No Members</h3>
+                                <p className="text-zinc-500 max-w-sm text-center mt-3 font-semibold leading-relaxed">
+                                    No members found in this workspace yet. Add members from workspace settings.
+                                </p>
+                            </div>
+                        )}
+                    </TabsContent>
+
+                    <TabsContent value="analytics" className="mt-0 outline-none animate-in fade-in slide-in-from-bottom-2 duration-500">
+                        {analytics ? (
+                            <div className="space-y-8">
+                                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                                    <div className="bg-white dark:bg-zinc-950 p-6 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
+                                        <p className="text-zinc-400 text-[10px] font-black uppercase tracking-widest mb-1">Total Projects</p>
+                                        <p className="text-3xl font-black text-blue-600">{analytics.totalProjects}</p>
+                                    </div>
+                                    <div className="bg-white dark:bg-zinc-950 p-6 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
+                                        <p className="text-zinc-400 text-[10px] font-black uppercase tracking-widest mb-1">Total Teams</p>
+                                        <p className="text-3xl font-black text-orange-600">{analytics.totalTeams}</p>
+                                    </div>
+                                    <div className="bg-white dark:bg-zinc-950 p-6 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
+                                        <p className="text-zinc-400 text-[10px] font-black uppercase tracking-widest mb-1">Completion Rate</p>
+                                        <p className="text-3xl font-black text-green-600">
+                                            {analytics.activeTasks + analytics.completedTasks > 0
+                                                ? Math.round((analytics.completedTasks / (analytics.activeTasks + analytics.completedTasks)) * 100)
+                                                : 0}%
+                                        </p>
+                                    </div>
+                                    <div className="bg-white dark:bg-zinc-950 p-6 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
+                                        <p className="text-zinc-400 text-[10px] font-black uppercase tracking-widest mb-1">Total Tasks</p>
+                                        <p className="text-3xl font-black text-purple-600">{analytics.activeTasks + analytics.completedTasks}</p>
+                                    </div>
+                                </div>
+
+                                {analytics.workloadPerMember && analytics.workloadPerMember.length > 0 && (
+                                    <div className="bg-white dark:bg-zinc-950 rounded-3xl border border-zinc-200 dark:border-zinc-800 p-8 shadow-sm">
+                                        <h3 className="text-lg font-black text-zinc-900 dark:text-zinc-100 mb-6">Workload Distribution</h3>
+                                        <div className="space-y-4">
+                                            {analytics.workloadPerMember.map((m, i) => {
+                                                const total = analytics.activeTasks + analytics.completedTasks
+                                                const pct = total > 0 ? Math.round((m.taskCount / total) * 100) : 0
+                                                return (
+                                                    <div key={i} className="flex items-center gap-4">
+                                                        <span className="text-sm font-bold text-zinc-700 dark:text-zinc-300 w-40 truncate">{m.member}</span>
+                                                        <div className="flex-1 h-2 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                                                            <div className="h-full bg-blue-500 rounded-full" style={{ width: `${pct}%` }} />
+                                                        </div>
+                                                        <span className="text-xs font-black text-zinc-500 w-16 text-right">{m.taskCount} tasks</span>
+                                                    </div>
+                                                )
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <div className="flex flex-col items-center justify-center py-32 bg-white dark:bg-zinc-950 rounded-[2.5rem] border-2 border-dashed border-zinc-200 dark:border-zinc-800 shadow-inner">
+                                <BarChart3 className="h-10 w-10 text-zinc-300 mb-4" />
+                                <h3 className="text-2xl font-black text-zinc-900 dark:text-zinc-100">No Analytics Data</h3>
+                                <p className="text-zinc-500 max-w-sm text-center mt-3 font-semibold">
+                                    Analytics data will appear once you create projects and tasks.
+                                </p>
+                            </div>
+                        )}
                     </TabsContent>
                 </Tabs>
             </div>

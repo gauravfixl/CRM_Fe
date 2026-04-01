@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
     Tabs,
@@ -62,15 +62,56 @@ import {
 } from "@/shared/components/ui/table";
 import { useToast } from "@/shared/components/ui/use-toast";
 import { useHireStore, type Offer } from "@/shared/data/hire-store";
+import {
+    createOffer as createOfferApi,
+    deleteOffer as deleteOfferApi,
+    getAllOffers,
+    updateOffer as updateOfferApi,
+    updateOfferStatus as updateOfferStatusApi,
+} from "@/modules/hrm/hooks/hrmHooks";
 import { Card } from "@/shared/components/ui/card";
 
 const OfferLettersPage = () => {
-    const { offers, addOffer, updateOffer, deleteOffer, submitOfferForApproval } = useHireStore();
+    const { offers: storeOffers } = useHireStore();
+    const [offers, setOffers] = useState<Offer[]>(storeOffers);
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [activeTab, setActiveTab] = useState("all");
     const [editingId, setEditingId] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
     const { toast } = useToast();
+
+    useEffect(() => {
+        const loadOffers = async () => {
+            try {
+                const res = await getAllOffers();
+                const data = res?.data?.offers || [];
+                if (!Array.isArray(data) || !data.length) return;
+                setOffers((prev) =>
+                    data.map((o: any) => ({
+                        ...prev[0],
+                        id: o?._id,
+                        candidateId: o?.candidate?._id || "",
+                        jobId: o?.jobPosting?._id || "",
+                        candidateName: `${o?.candidate?.firstName || ""} ${o?.candidate?.lastName || ""}`.trim() || "Unknown",
+                        role: o?.position?.title || o?.offerDetails?.jobTitle || "Role",
+                        department: o?.jobPosting?.department || "General",
+                        ctc: `₹ ${o?.offerDetails?.baseSalary || 0}`,
+                        salaryBreakdown: [],
+                        totalCtc: o?.offerDetails?.baseSalary || 0,
+                        joiningDate: o?.acceptedDate ? new Date(o.acceptedDate).toLocaleDateString() : "",
+                        expiryDate: "",
+                        templateId: "standard_ft",
+                        approvalStatus: o?.status || "Draft",
+                        history: [],
+                        createdAt: o?.createdAt || new Date().toISOString(),
+                    }))
+                );
+            } catch {
+                setOffers(storeOffers);
+            }
+        };
+        loadOffers();
+    }, [storeOffers]);
 
     // Enhanced Form
     const [offerForm, setOfferForm] = useState({
@@ -141,15 +182,31 @@ const OfferLettersPage = () => {
             ]
         };
 
-        if (editingId) {
-            updateOffer(editingId, offerData);
-            toast({ title: "Offer Updated", description: "Offer details updated." });
-        } else {
-            addOffer(offerData);
-            toast({ title: "Draft Created", description: "Offer letter draft created successfully." });
-        }
-        setIsCreateOpen(false);
-        resetForm();
+        (async () => {
+            try {
+                if (editingId) {
+                    await updateOfferApi(editingId, offerData);
+                    setOffers((prev) => prev.map((o) => (o.id === editingId ? { ...o, ...offerData } : o)));
+                    toast({ title: "Offer Updated", description: "Offer details updated." });
+                } else {
+                    await createOfferApi({
+                        candidate: offerData.candidateId,
+                        jobPosting: offerData.jobId,
+                        offerDate: new Date().toISOString(),
+                        offerDetails: {
+                            baseSalary: offerData.totalCtc,
+                            jobTitle: offerData.role,
+                            location: "Remote",
+                        },
+                    });
+                    toast({ title: "Draft Created", description: "Offer letter draft created successfully." });
+                }
+                setIsCreateOpen(false);
+                resetForm();
+            } catch {
+                toast({ title: "Save failed", description: "Could not save offer", variant: "destructive" });
+            }
+        })();
     };
 
     const handleEdit = (offer: Offer) => {
@@ -171,14 +228,28 @@ const OfferLettersPage = () => {
     };
 
     const handleSubmitApproval = (id: string) => {
-        submitOfferForApproval(id);
-        toast({ title: "Submitted", description: "Offer submitted for management approval.", className: "bg-emerald-50 text-emerald-800 border-emerald-200" });
+        (async () => {
+            try {
+                await updateOfferStatusApi(id, "Pending");
+                setOffers((prev) => prev.map((o) => (o.id === id ? { ...o, approvalStatus: "Pending Approval" } : o)));
+                toast({ title: "Submitted", description: "Offer submitted for management approval.", className: "bg-emerald-50 text-emerald-800 border-emerald-200" });
+            } catch {
+                toast({ title: "Submit failed", description: "Could not submit approval request", variant: "destructive" });
+            }
+        })();
     };
 
     const handleDelete = (id: string) => {
         if (confirm("Delete this offer letter?")) {
-            deleteOffer(id);
-            toast({ title: "Deleted", description: "Offer removed.", variant: "destructive" });
+            (async () => {
+                try {
+                    await deleteOfferApi(id);
+                    setOffers((prev) => prev.filter((o) => o.id !== id));
+                    toast({ title: "Deleted", description: "Offer removed.", variant: "destructive" });
+                } catch {
+                    toast({ title: "Delete failed", description: "Could not delete offer", variant: "destructive" });
+                }
+            })();
         }
     };
 
@@ -315,7 +386,17 @@ const OfferLettersPage = () => {
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent align="end" className="w-56 rounded-2xl shadow-xl border-none p-1 font-bold">
                                                         <DropdownMenuItem onClick={() => handleEdit(offer)} className="rounded-xl h-10">Edit Details</DropdownMenuItem>
-                                                        <DropdownMenuItem className="rounded-xl h-10">Preview & Download</DropdownMenuItem> {/* Mock */}
+                                                        <DropdownMenuItem className="rounded-xl h-10" onClick={() => {
+                                                            const content = `OFFER LETTER\n\nCandidate: ${offer.candidateName}\nRole: ${offer.role}\nDepartment: ${offer.department}\nCTC: ${offer.ctc}\nJoining Date: ${offer.joiningDate || 'TBD'}\nExpiry: ${offer.expiryDate || 'N/A'}\nStatus: ${offer.approvalStatus || offer.status}\n\n--- Salary Breakdown ---\n${(offer.salaryBreakdown || []).map((s: any) => `${s.component}: ₹${s.amount?.toLocaleString() || 0}`).join('\n')}\n\nThis is an auto-generated offer letter preview.`;
+                                                            const blob = new Blob([content], { type: 'text/plain' });
+                                                            const url = URL.createObjectURL(blob);
+                                                            const a = document.createElement('a');
+                                                            a.href = url;
+                                                            a.download = `offer_${offer.candidateName.replace(/\s+/g, '_')}.txt`;
+                                                            a.click();
+                                                            URL.revokeObjectURL(url);
+                                                            toast({ title: "Downloaded", description: `Offer letter for ${offer.candidateName} downloaded.` });
+                                                        }}>Preview & Download</DropdownMenuItem>
                                                         <DropdownMenuSeparator className="bg-slate-50" />
                                                         {(offer.approvalStatus === 'Draft' || offer.status === 'Draft') && (
                                                             <DropdownMenuItem onClick={() => handleSubmitApproval(offer.id)} className="rounded-xl h-10 text-indigo-600 bg-indigo-50/50 mb-1">

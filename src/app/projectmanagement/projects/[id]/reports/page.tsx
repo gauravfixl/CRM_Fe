@@ -1,6 +1,6 @@
 "use client"
 
-import React from "react"
+import React, { useEffect } from "react"
 import { useParams } from "next/navigation"
 import {
     BarChart3,
@@ -27,11 +27,16 @@ export default function ReportsPage() {
     const projectId = id as string
     const projectName = id === "p1" ? "Website Redesign" : "Project"
 
-    const { getIssuesByProject } = useIssueStore()
+    const { getIssuesByProject, loadIssuesByProject } = useIssueStore()
     const { getSprints } = useSprintStore()
 
     const issues = getIssuesByProject(projectId)
     const sprints = getSprints({ projectId })
+
+    useEffect(() => {
+        void loadIssuesByProject(projectId).catch((e) => console.error("Failed to load issues:", e))
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [projectId])
 
     // Metrics Calculation
     const totalIssues = issues.length

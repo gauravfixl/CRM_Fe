@@ -29,6 +29,8 @@ import {
 export default function PMGlobalSettingsPage() {
     const params = useParams()
     const [isLoading, setIsLoading] = useState(false)
+    const [sprintLength, setSprintLength] = useState(2)
+    const [capacityPerDay, setCapacityPerDay] = useState(6)
     const [settings, setSettings] = useState({
         notifications: true,
         autoArchive: false,
@@ -36,12 +38,33 @@ export default function PMGlobalSettingsPage() {
         allowGuestAccess: false
     })
 
-    const handleAction = (msg: string) => {
+    // Load settings from localStorage on mount
+    React.useEffect(() => {
+        try {
+            const saved = localStorage.getItem("pm_global_settings")
+            if (saved) {
+                const parsed = JSON.parse(saved)
+                if (parsed.settings) setSettings(parsed.settings)
+                if (parsed.sprintLength) setSprintLength(parsed.sprintLength)
+                if (parsed.capacityPerDay) setCapacityPerDay(parsed.capacityPerDay)
+            }
+        } catch { /* ignore */ }
+    }, [])
+
+    const handleSave = () => {
         setIsLoading(true)
-        setTimeout(() => {
+        try {
+            localStorage.setItem("pm_global_settings", JSON.stringify({
+                settings,
+                sprintLength,
+                capacityPerDay
+            }))
+            toast.success("Settings saved successfully!")
+        } catch {
+            toast.error("Failed to save settings")
+        } finally {
             setIsLoading(false)
-            toast.success(msg)
-        }, 800)
+        }
     }
 
     return (
@@ -61,7 +84,7 @@ export default function PMGlobalSettingsPage() {
                     <div className="flex items-center gap-2">
                         <Button
                             className="h-8 rounded-md bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-medium px-3 shadow-sm active:scale-95"
-                            onClick={() => handleAction("Settings Saved")}
+                            onClick={handleSave}
                             disabled={isLoading}
                         >
                             <Save className="w-3.5 h-3.5 mr-2" />
@@ -152,11 +175,11 @@ export default function PMGlobalSettingsPage() {
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label className="text-[10px] uppercase font-bold text-zinc-500">Sprint Length (Weeks)</Label>
-                                <Input type="number" defaultValue={2} className="h-8 text-xs" />
+                                <Input type="number" value={sprintLength} onChange={(e) => setSprintLength(Number(e.target.value))} className="h-8 text-xs" />
                             </div>
                             <div className="space-y-2">
                                 <Label className="text-[10px] uppercase font-bold text-zinc-500">Capacity / Day (Hours)</Label>
-                                <Input type="number" defaultValue={6} className="h-8 text-xs" />
+                                <Input type="number" value={capacityPerDay} onChange={(e) => setCapacityPerDay(Number(e.target.value))} className="h-8 text-xs" />
                             </div>
                         </div>
                     </CardContent>

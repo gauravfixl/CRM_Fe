@@ -167,7 +167,22 @@ const LifecycleActionsPage = () => {
                         >
                             <LayoutGrid size={18} className="mr-2" /> System Reset
                         </Button>
-                        <Button className="bg-[#CB9DF0] hover:bg-[#b580e0] text-white rounded-2xl font-black h-14 px-10 shadow-2xl shadow-purple-200">
+                        <Button className="bg-[#CB9DF0] hover:bg-[#b580e0] text-white rounded-2xl font-black h-14 px-10 shadow-2xl shadow-purple-200"
+                            onClick={() => {
+                                const headers = "Employee,Role,Department,Status,Performance";
+                                const rows = employees.map(e => `${e.name},${e.role},${e.department},${e.status},${e.performance}%`).join("\n");
+                                const summary = `\n\nSummary\nTotal Active,${stats.totalActive}\nPromotions This Quarter,${stats.promotions}\nTransfers Done,${stats.transfers}\nProbationers,${stats.probationers}`;
+                                const csv = `Lifecycle Actions Report\nGenerated: ${new Date().toLocaleDateString()}\n\n${headers}\n${rows}${summary}`;
+                                const blob = new Blob([csv], { type: 'text/csv' });
+                                const url = URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = 'lifecycle_actions_report.csv';
+                                a.click();
+                                URL.revokeObjectURL(url);
+                                toast({ title: "Report Generated", description: "Lifecycle actions report CSV has been downloaded." });
+                            }}
+                        >
                             <Target size={18} className="mr-2" /> Generate Report
                         </Button>
                     </div>

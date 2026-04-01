@@ -18,6 +18,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { useWorkspaceStore } from "@/shared/data/workspace-store"
+import { createWorkspace } from "@/modules/project-management/workspace/hooks/workspaceHooks"
+import { showError, showSuccess } from "@/utils/toast"
 
 export default function CreateWorkspacePage() {
     const router = useRouter()
@@ -28,6 +30,7 @@ export default function CreateWorkspacePage() {
     const [purpose, setPurpose] = useState("Product Management")
     const [setupProgress, setSetupProgress] = useState(0)
     const { addWorkspace } = useWorkspaceStore()
+    const [isSubmitting, setIsSubmitting] = useState(false)
 
     const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const val = e.target.value
@@ -191,19 +194,35 @@ export default function CreateWorkspacePage() {
 
                             {setupProgress === setupSteps.length && (
                                 <Button
+                                    disabled={isSubmitting}
                                     onClick={() => {
-                                        const newWorkspaceId = `ws-${Date.now()}`
-                                        addWorkspace({
-                                            id: newWorkspaceId,
-                                            name: workspaceName,
-                                            slug: slug,
-                                            icon: '🚀',
-                                            createdAt: new Date().toISOString(),
-                                            description: `Workspace for ${workspaceName}`,
-                                            industry: industry,
-                                            purpose: purpose
-                                        })
-                                        router.push('/projectmanagement')
+                                        (async () => {
+                                            try {
+                                                setIsSubmitting(true)
+                                                const res = await createWorkspace({
+                                                    name: workspaceName,
+                                                    description: `Workspace for ${workspaceName}`,
+                                                })
+
+                                                const backendWs = res?.data?.workspace ?? res?.data
+                                                addWorkspace({
+                                                    id: String(backendWs?._id ?? `ws-${Date.now()}`),
+                                                    name: workspaceName,
+                                                    slug: slug,
+                                                    icon: "🚀",
+                                                    createdAt: new Date().toISOString().slice(0, 10),
+                                                    description: `Workspace for ${workspaceName}`,
+                                                    industry: industry,
+                                                    purpose: purpose
+                                                })
+                                                showSuccess("Workspace created successfully!")
+                                                router.push('/projectmanagement')
+                                            } catch (err) {
+                                                showError("Workspace creation failed.")
+                                            } finally {
+                                                setIsSubmitting(false)
+                                            }
+                                        })()
                                     }}
                                     className="w-full bg-slate-900 hover:bg-black text-white font-bold h-14 rounded-2xl text-[16px] shadow-2xl shadow-slate-200"
                                 >

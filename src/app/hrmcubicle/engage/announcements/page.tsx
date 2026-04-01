@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 import { Card, CardContent } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
@@ -57,6 +57,23 @@ const AnnouncementsPage = () => {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [selectedAnn, setSelectedAnn] = useState<Announcement | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
+    const [reactions, setReactions] = useState<Record<string, { heart: boolean; smile: boolean; heartCount: number; smileCount: number }>>({});
+
+    const toggleReaction = useCallback((annId: string, type: "heart" | "smile") => {
+        setReactions(prev => {
+            const current = prev[annId] || { heart: false, smile: false, heartCount: 0, smileCount: 0 };
+            const isActive = current[type];
+            const countKey = type === "heart" ? "heartCount" : "smileCount";
+            return {
+                ...prev,
+                [annId]: {
+                    ...current,
+                    [type]: !isActive,
+                    [countKey]: isActive ? current[countKey] - 1 : current[countKey] + 1,
+                },
+            };
+        });
+    }, []);
 
     const [formData, setFormData] = useState<any>({
         title: "",
@@ -294,11 +311,27 @@ const AnnouncementsPage = () => {
                                                     </div>
                                                 </div>
                                                 <div className="flex gap-1">
-                                                    <Button variant="ghost" size="sm" className="h-8 px-2.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50">
-                                                        <Heart size={14} />
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className={`h-8 px-2.5 rounded-lg ${reactions[ann.id]?.heart ? 'text-rose-500 bg-rose-50' : 'text-slate-400 hover:text-rose-500 hover:bg-rose-50'}`}
+                                                        onClick={() => toggleReaction(ann.id, "heart")}
+                                                    >
+                                                        <Heart size={14} className={reactions[ann.id]?.heart ? 'fill-rose-500' : ''} />
+                                                        {(reactions[ann.id]?.heartCount || 0) > 0 && (
+                                                            <span className="ml-1 text-[10px] font-bold">{reactions[ann.id].heartCount}</span>
+                                                        )}
                                                     </Button>
-                                                    <Button variant="ghost" size="sm" className="h-8 px-2.5 rounded-lg text-slate-400 hover:text-amber-500 hover:bg-amber-50">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className={`h-8 px-2.5 rounded-lg ${reactions[ann.id]?.smile ? 'text-amber-500 bg-amber-50' : 'text-slate-400 hover:text-amber-500 hover:bg-amber-50'}`}
+                                                        onClick={() => toggleReaction(ann.id, "smile")}
+                                                    >
                                                         <Smile size={14} />
+                                                        {(reactions[ann.id]?.smileCount || 0) > 0 && (
+                                                            <span className="ml-1 text-[10px] font-bold">{reactions[ann.id].smileCount}</span>
+                                                        )}
                                                     </Button>
                                                 </div>
                                             </div>

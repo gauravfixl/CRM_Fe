@@ -24,11 +24,20 @@ import { useLifecycleStore, HistoryLog } from "@/shared/data/lifecycle-store";
 import { Input } from "@/shared/components/ui/input";
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from "@/shared/components/ui/dialog";
 
 const HistoryPage = () => {
     const { employees, history } = useLifecycleStore();
     const [searchTerm, setSearchTerm] = useState("");
     const [filterType, setFilterType] = useState<"All" | "growth" | "exit" | "neutral">("All");
+
+    const [detailEvent, setDetailEvent] = useState<HistoryLog | null>(null);
 
     // Default to first employee
     const [selectedEmpId, setSelectedEmpId] = useState<string>(employees[0]?.id || "");
@@ -221,7 +230,8 @@ const HistoryPage = () => {
                                                     <p className="text-slate-500 font-bold text-lg leading-relaxed opacity-80">{event.description}</p>
 
                                                     <div className="flex gap-4 mt-6">
-                                                        <div className="h-10 w-10 rounded-xl bg-white flex items-center justify-center text-slate-300 border border-slate-100 shadow-sm hover:text-[#CB9DF0] transition-colors cursor-pointer">
+                                                        <div className="h-10 w-10 rounded-xl bg-white flex items-center justify-center text-slate-300 border border-slate-100 shadow-sm hover:text-[#CB9DF0] transition-colors cursor-pointer"
+                                                            onClick={() => setDetailEvent(event)}>
                                                             <MoreHorizontal size={18} />
                                                         </div>
                                                         <div className="h-10 px-4 rounded-xl bg-white flex items-center justify-center text-slate-400 font-black text-[10px] uppercase border border-slate-100 shadow-sm">
@@ -242,6 +252,35 @@ const HistoryPage = () => {
                         )}
                     </div>
                 </div>
+
+                {/* Event Detail Dialog */}
+                <Dialog open={!!detailEvent} onOpenChange={(open) => { if (!open) setDetailEvent(null); }}>
+                    <DialogContent className="bg-white rounded-[2.5rem] border-none p-0 max-w-xl shadow-[0_50px_100px_-30px_rgba(0,0,0,0.2)] outline-none overflow-hidden">
+                        <div className="p-10">
+                            <DialogHeader className="mb-6">
+                                <DialogTitle className="text-2xl font-black text-slate-900 tracking-tight italic">Event Details</DialogTitle>
+                                <DialogDescription className="text-slate-400 font-bold text-base mt-0.5 italic">Full information for this lifecycle event.</DialogDescription>
+                            </DialogHeader>
+                            {detailEvent && (
+                                <div className="space-y-6">
+                                    <div className={`p-6 rounded-2xl border ${getColorForType(detailEvent.type)}`}>
+                                        <div className="flex items-center gap-4 mb-4">
+                                            {getIconForType(detailEvent.type)}
+                                            <h4 className="text-xl font-black text-slate-900 italic tracking-tight">{detailEvent.title}</h4>
+                                        </div>
+                                        <p className="text-slate-500 font-bold text-base leading-relaxed">{detailEvent.description}</p>
+                                    </div>
+                                    <div className="space-y-3 bg-slate-50 rounded-2xl p-6">
+                                        <div className="flex justify-between"><span className="font-bold text-slate-400 text-sm">Date</span><span className="font-black text-slate-900 text-sm">{detailEvent.date}</span></div>
+                                        <div className="flex justify-between"><span className="font-bold text-slate-400 text-sm">Employee</span><span className="font-bold text-slate-700 text-sm">{detailEvent.employeeName}</span></div>
+                                        <div className="flex justify-between"><span className="font-bold text-slate-400 text-sm">Event Type</span><Badge className={`px-3 py-1 rounded-lg font-black text-xs italic border-none ${detailEvent.type === 'growth' ? 'bg-emerald-100 text-emerald-700' : detailEvent.type === 'exit' ? 'bg-rose-100 text-rose-700' : 'bg-purple-100 text-purple-700'}`}>{detailEvent.type}</Badge></div>
+                                        <div className="flex justify-between"><span className="font-bold text-slate-400 text-sm">Reference</span><span className="font-bold text-slate-500 text-sm">{detailEvent.id}</span></div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </DialogContent>
+                </Dialog>
             </div>
         </div>
     );

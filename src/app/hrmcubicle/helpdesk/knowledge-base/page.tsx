@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
     BookOpen,
     Plus,
@@ -44,6 +45,7 @@ import { useToast } from "@/shared/components/ui/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
 
 const KnowledgeBasePage = () => {
+    const router = useRouter();
     const { articles, addArticle, updateArticle, deleteArticle } = useHelpdeskStore();
     const { toast } = useToast();
 
@@ -220,7 +222,7 @@ const KnowledgeBasePage = () => {
                                     <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Ticket Reduction</span>
                                 </div>
                                 <p className="text-[11px] font-medium text-slate-300 leading-relaxed italic">Your "Leave Policy" article resolved 48 tickets automatically this week.</p>
-                                <Button variant="link" className="text-indigo-400 p-0 h-auto text-[10px] font-bold uppercase tracking-widest flex items-center mx-auto gap-2">Explore Analytics <ArrowUpRight size={12} /></Button>
+                                <Button variant="link" className="text-indigo-400 p-0 h-auto text-[10px] font-bold uppercase tracking-widest flex items-center mx-auto gap-2" onClick={() => router.push("/hrmcubicle/helpdesk/reports")}>Explore Analytics <ArrowUpRight size={12} /></Button>
                             </div>
                             <Sparkles size={80} className="absolute -right-6 -bottom-6 text-white/10 group-hover:scale-125 transition-transform" />
                         </div>
@@ -313,7 +315,9 @@ const KnowledgeBasePage = () => {
                         <div className="space-y-2">
                             <div className="flex justify-between items-center px-1">
                                 <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Document Content (Markdown Supported)</Label>
-                                <button className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest flex items-center gap-1"><Sparkles size={12} /> AI Enrich</button>
+                                <button className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest flex items-center gap-1" onClick={() => {
+                                    toast({ title: "AI Processing", description: "Analyzing content and enriching with relevant keywords and structure..." });
+                                }}><Sparkles size={12} /> AI Enrich</button>
                             </div>
                             <Textarea
                                 placeholder="Type your knowledge content here. Be detailed and use bullet points for clarity."

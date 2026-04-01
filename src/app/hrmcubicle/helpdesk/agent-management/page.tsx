@@ -51,6 +51,8 @@ const AgentManagementPage = () => {
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
     const [selectedAgent, setSelectedAgent] = useState<HelpdeskAgent | null>(null);
     const [isDetailSheetOpen, setIsDetailSheetOpen] = useState(false);
+    const [isAddQueueDialogOpen, setIsAddQueueDialogOpen] = useState(false);
+    const [newQueueName, setNewQueueName] = useState("");
 
     // Form State
     const [formData, setFormData] = useState<Partial<HelpdeskAgent>>({
@@ -450,7 +452,7 @@ const AgentManagementPage = () => {
                                     {selectedAgent?.assignedQueues.map(q => (
                                         <Badge key={q} className="bg-white border-slate-200 text-slate-600 font-bold text-[10px] h-8 px-4 rounded-xl shadow-sm uppercase tracking-wider">{q} Desk</Badge>
                                     ))}
-                                    <Button variant="ghost" className="h-8 w-8 rounded-xl border-2 border-dashed border-slate-200 text-slate-300">+</Button>
+                                    <Button variant="ghost" className="h-8 w-8 rounded-xl border-2 border-dashed border-slate-200 text-slate-300" onClick={(e) => { e.stopPropagation(); setIsAddQueueDialogOpen(true); }}>+</Button>
                                 </div>
                             </div>
 
@@ -492,6 +494,52 @@ const AgentManagementPage = () => {
                     </ScrollArea>
                 </SheetContent>
             </Sheet>
+
+            {/* Add Queue Dialog */}
+            <Dialog open={isAddQueueDialogOpen} onOpenChange={setIsAddQueueDialogOpen}>
+                <DialogContent className="max-w-md p-0 overflow-hidden border-none rounded-3xl shadow-3xl bg-white outline-none">
+                    <div className="bg-slate-50 border-b border-slate-200 px-8 py-6 flex items-center gap-4">
+                        <div className="h-10 w-10 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-indigo-600 shadow-sm">
+                            <Plus size={20} />
+                        </div>
+                        <div>
+                            <DialogTitle className="text-lg font-bold text-slate-900 tracking-tight leading-none uppercase">Add Queue</DialogTitle>
+                            <DialogDescription className="text-xs font-semibold text-slate-400 mt-1 uppercase tracking-widest">Assign a new support queue to this agent</DialogDescription>
+                        </div>
+                    </div>
+                    <div className="p-8 space-y-6">
+                        <div className="space-y-2">
+                            <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">Queue Name</Label>
+                            <Select value={newQueueName} onValueChange={setNewQueueName}>
+                                <SelectTrigger className="h-12 border-slate-200 rounded-xl font-bold shadow-sm"><SelectValue placeholder="Select a queue" /></SelectTrigger>
+                                <SelectContent className="rounded-xl border-slate-100">
+                                    {categories.filter(c => !selectedAgent?.assignedQueues.includes(c)).map(cat => (
+                                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                    <div className="p-8 bg-slate-50 border-t border-slate-200 flex items-center justify-between shrink-0">
+                        <Button variant="ghost" onClick={() => { setIsAddQueueDialogOpen(false); setNewQueueName(""); }} className="h-12 px-8 font-bold text-slate-400 text-xs uppercase tracking-widest">Cancel</Button>
+                        <Button onClick={() => {
+                            if (!newQueueName) {
+                                toast({ title: "Select a Queue", description: "Please choose a queue to assign.", variant: "destructive" });
+                                return;
+                            }
+                            if (selectedAgent) {
+                                updateAgent(selectedAgent.id, { assignedQueues: [...selectedAgent.assignedQueues, newQueueName] });
+                                setSelectedAgent({ ...selectedAgent, assignedQueues: [...selectedAgent.assignedQueues, newQueueName] });
+                                toast({ title: "Queue Added", description: `${newQueueName} queue assigned to ${selectedAgent.name}.` });
+                            }
+                            setIsAddQueueDialogOpen(false);
+                            setNewQueueName("");
+                        }} className="bg-slate-900 hover:bg-slate-800 text-white rounded-xl h-12 px-10 font-bold text-xs uppercase tracking-widest shadow-xl shadow-slate-200 gap-2">
+                            <CheckCircle2 size={16} /> Assign Queue
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 };

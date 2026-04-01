@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
     Ticket,
     Plus,
@@ -40,10 +40,12 @@ import { Separator } from "@/shared/components/ui/separator";
 import { useHelpdeskStore, type Ticket as TicketType } from "@/shared/data/helpdesk-store";
 import { useToast } from "@/shared/components/ui/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
+import { axiosInstance } from "@/lib/axios";
 
 const MyTicketsPage = () => {
     const { tickets, addTicket, deleteTicket } = useHelpdeskStore();
     const { toast } = useToast();
+    const [apiTickets, setApiTickets] = useState<TicketType[]>([]);
 
     // Filters & UI State
     const [activeTab, setActiveTab] = useState<"All" | "Open" | "Resolved" | "Closed">("All");
@@ -52,6 +54,9 @@ const MyTicketsPage = () => {
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
     const [selectedTicket, setSelectedTicket] = useState<TicketType | null>(null);
     const [isDetailSheetOpen, setIsDetailSheetOpen] = useState(false);
+    const [replyMessage, setReplyMessage] = useState("");
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const attachFileInputRef = useRef<HTMLInputElement>(null);
 
     // Form State
     const [formData, setFormData] = useState<Partial<TicketType>>({
@@ -62,26 +67,133 @@ const MyTicketsPage = () => {
         requestedBy: { id: "HR-ADM-01", name: "HR Admin (You)", department: "HR Admin" }
     });
 
+    useEffect(() => {
+        const statusMap: Record<string, TicketType["status"]> = {
+            open: "Open",
+            in_progress: "In Progress",
+            on_hold: "Pending Employee",
+            resolved: "Resolved",
+            closed: "Closed",
+            cancelled: "Closed",
+        };
+        const priorityMap: Record<string, TicketType["priority"]> = {
+            low: "Low",
+            medium: "Medium",
+            high: "High",
+            urgent: "Urgent",
+        };
+        const loadMyTickets = async () => {
+            try {
+                const res = await axiosInstance.get("/platform/ticket/");
+                const list = Array.isArray(res?.data) ? res.data : [];
+                const mapped = list.map((t: any) => ({
+                    id: t?._id,
+                    subject: t?.title || "Untitled",
+                    description: t?.description || "",
+                    category: t?.module || "General",
+                    subCategory: t?.type || "General",
+                    priority: priorityMap[t?.priority] || "Medium",
+                    status: statusMap[t?.status] || "Open",
+                    requestedBy: {
+                        id: t?.requester?._id || "ME",
+                        name: t?.requester?.firstName ? `${t.requester.firstName} ${t.requester.lastName || ""}`.trim() : "HR Admin",
+                        department: "HR",
+                    },
+                    assignedTo: t?.assignee ? {
+                        id: t.assignee?._id || "",
+                        name: t.assignee?.firstName ? `${t.assignee.firstName} ${t.assignee.lastName || ""}`.trim() : "Assigned Agent",
+                    } : undefined,
+                    createdAt: t?.createdAt || new Date().toISOString(),
+                    updatedAt: t?.updatedAt || t?.createdAt || new Date().toISOString(),
+                    slaDeadline: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+                    slaStatus: "Healthy" as const,
+                    attachments: [],
+                    history: [],
+                    responses: [],
+                }));
+                setApiTickets(mapped);
+            } catch {
+                setApiTickets([]);
+            }
+        };
+        loadMyTickets();
+    }, []);
+
     const handleCreateTicket = () => {
         if (!formData.subject || (!formData as any).content) {
             toast({ title: "Incomplete Details", description: "Subject and description are mandatory.", variant: "destructive" });
             return;
         }
-        addTicket({
-            ...formData,
-            description: (formData as any).content,
-            subCategory: "General",
-            status: "Open",
-            slaDeadline: new Date(Date.now() + 86400000).toISOString(), // +24h
-            slaStatus: "Healthy",
-            attachments: []
-        } as any);
-        toast({ title: "Ticket Raised", description: "You will receive updates on resolution." });
-        setIsCreateDialogOpen(false);
-        setFormData({ subject: "", category: "HR Ops", priority: "Medium", requestedBy: { id: "HR-ADM-01", name: "HR Admin (You)", department: "HR Admin" } } as any);
+        (async () => {
+            try {
+                const moduleMap: Record<string, string> = {
+                    "IT Support": "other",
+                    Payroll: "invoice",
+                    Facility: "firm",
+                    "HR Ops": "user",
+                };
+                const typeMap: Record<string, string> = {
+                    "IT Support": "incident",
+                    Payroll: "question",
+                    Facility: "task",
+                    "HR Ops": "task",
+                };
+                const priorityMap: Record<string, string> = {
+                    Low: "low",
+                    Medium: "medium",
+                    High: "high",
+                    Urgent: "urgent",
+                };
+
+                await axiosInstance.post("/platform/ticket/create", {
+                    module: moduleMap[formData.category || "HR Ops"] || "other",
+                    title: formData.subject,
+                    description: (formData as any).content,
+                    type: typeMap[formData.category || "HR Ops"] || "task",
+                    priority: priorityMap[(formData.priority as string) || "Medium"] || "medium",
+                    status: "open",
+                    tags: [],
+                });
+                toast({ title: "Ticket Raised", description: "You will receive updates on resolution." });
+                setIsCreateDialogOpen(false);
+                setFormData({ subject: "", category: "HR Ops", priority: "Medium", requestedBy: { id: "HR-ADM-01", name: "HR Admin (You)", department: "HR Admin" } } as any);
+                const res = await axiosInstance.get("/platform/ticket/");
+                const list = Array.isArray(res?.data) ? res.data : [];
+                setApiTickets((prev) => list.map((t: any) => ({
+                    ...(prev[0] || tickets[0]),
+                    id: t?._id,
+                    subject: t?.title || "Untitled",
+                    description: t?.description || "",
+                    category: t?.module || "General",
+                    subCategory: t?.type || "General",
+                    priority: "Medium",
+                    status: "Open",
+                    requestedBy: { id: t?.requester?._id || "ME", name: "HR Admin", department: "HR" },
+                    createdAt: t?.createdAt || new Date().toISOString(),
+                    updatedAt: t?.updatedAt || t?.createdAt || new Date().toISOString(),
+                    slaDeadline: new Date(Date.now() + 86400000).toISOString(),
+                    slaStatus: "Healthy",
+                    attachments: [],
+                    history: [],
+                    responses: [],
+                })));
+            } catch {
+                addTicket({
+                    ...formData,
+                    description: (formData as any).content,
+                    subCategory: "General",
+                    status: "Open",
+                    slaDeadline: new Date(Date.now() + 86400000).toISOString(),
+                    slaStatus: "Healthy",
+                    attachments: []
+                } as any);
+                toast({ title: "Ticket Raised (Local)", description: "Saved in local queue due to API error.", variant: "destructive" });
+            }
+        })();
     };
 
-    const myRaisedTickets = tickets.filter(t => t.requestedBy.id === "HR-ADM-01" || t.requestedBy.name.includes("HR Admin"));
+    const sourceTickets = apiTickets.length ? apiTickets : tickets;
+    const myRaisedTickets = sourceTickets.filter(t => t.requestedBy.id === "HR-ADM-01" || t.requestedBy.name.includes("HR Admin") || t.requestedBy.id === "ME");
     const filteredTickets = myRaisedTickets.filter(t => {
         const matchesTab = activeTab === "All" || t.status === activeTab;
         const matchesSearch = t.subject.toLowerCase().includes(searchQuery.toLowerCase()) || t.id.toLowerCase().includes(searchQuery.toLowerCase());
@@ -181,7 +293,26 @@ const MyTicketsPage = () => {
                                                     </div>
                                                     <h3 className="text-[14px] font-bold text-slate-800 leading-tight group-hover:text-indigo-600 transition-colors uppercase mt-1.5">{ticket.subject}</h3>
                                                 </div>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 group-hover:text-slate-600"><MoreHorizontal size={14} /></Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-8 w-8 text-slate-300 group-hover:text-slate-600"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        (async () => {
+                                                            try {
+                                                                await axiosInstance.delete(`/platform/ticket/${ticket.id}/delete`);
+                                                                setApiTickets((prev) => prev.filter((t) => t.id !== ticket.id));
+                                                                toast({ title: "Ticket Deleted", description: "Ticket removed successfully." });
+                                                            } catch {
+                                                                deleteTicket(ticket.id);
+                                                                toast({ title: "Ticket Deleted (Local)", description: "Local fallback delete executed." });
+                                                            }
+                                                        })();
+                                                    }}
+                                                >
+                                                    <Trash2 size={14} />
+                                                </Button>
                                             </div>
 
                                             <p className="text-[12px] font-medium text-slate-500 line-clamp-2 leading-relaxed">{ticket.description}</p>
@@ -286,7 +417,14 @@ const MyTicketsPage = () => {
                                 <span className="text-[11px] font-bold text-slate-700 block">Attach Evidence</span>
                                 <span className="text-[10px] font-semibold text-slate-400">Screenshots or Log files (Max 5MB)</span>
                             </div>
-                            <Button variant="ghost" className="h-8 text-[10px] font-bold text-indigo-600 uppercase border border-indigo-100 px-3 bg-white">Browse</Button>
+                            <Button variant="ghost" className="h-8 text-[10px] font-bold text-indigo-600 uppercase border border-indigo-100 px-3 bg-white" onClick={() => fileInputRef.current?.click()}>Browse</Button>
+                            <input type="file" ref={fileInputRef} className="hidden" accept=".png,.jpg,.jpeg,.pdf,.log,.txt" onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                    toast({ title: "File Attached", description: `${file.name} has been attached to the ticket.` });
+                                }
+                                e.target.value = "";
+                            }} />
                         </div>
                     </div>
 
@@ -387,12 +525,31 @@ const MyTicketsPage = () => {
                                     <Textarea
                                         placeholder="Type your follow-up message..."
                                         className="h-24 border-slate-200 rounded-xl p-4 font-medium text-xs leading-relaxed focus-visible:ring-indigo-600"
+                                        value={replyMessage}
+                                        onChange={(e) => setReplyMessage(e.target.value)}
                                     />
                                     <div className="flex justify-between items-center">
-                                        <Button variant="ghost" className="h-9 text-[10px] font-bold text-slate-400 uppercase gap-2">
+                                        <Button variant="ghost" className="h-9 text-[10px] font-bold text-slate-400 uppercase gap-2" onClick={() => attachFileInputRef.current?.click()}>
                                             <Paperclip size={14} /> Attach Files
                                         </Button>
-                                        <Button className="h-9 px-6 bg-slate-900 hover:bg-slate-800 text-white font-bold text-[10px] uppercase tracking-widest gap-2">
+                                        <input type="file" ref={attachFileInputRef} className="hidden" accept=".png,.jpg,.jpeg,.pdf,.log,.txt" onChange={(e) => {
+                                            const file = e.target.files?.[0];
+                                            if (file) {
+                                                toast({ title: "File Attached", description: `${file.name} attached to this thread.` });
+                                            }
+                                            e.target.value = "";
+                                        }} />
+                                        <Button
+                                            className="h-9 px-6 bg-slate-900 hover:bg-slate-800 text-white font-bold text-[10px] uppercase tracking-widest gap-2"
+                                            onClick={() => {
+                                                if (!replyMessage.trim()) {
+                                                    toast({ title: "Empty Message", description: "Please type a message before sending.", variant: "destructive" });
+                                                    return;
+                                                }
+                                                toast({ title: "Update Sent", description: "Your follow-up message has been submitted to the thread." });
+                                                setReplyMessage("");
+                                            }}
+                                        >
                                             <Send size={14} /> Send Update
                                         </Button>
                                     </div>

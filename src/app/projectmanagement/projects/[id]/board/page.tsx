@@ -71,12 +71,13 @@ import { usePermissions } from "@/shared/hooks/use-permissions"
 import { useWorkflowStore } from "@/shared/data/workflow-store"
 import { useSprintEpicStore } from "@/shared/data/sprint-epic-store"
 import { useProjectMemberStore } from "@/shared/data/project-member-store"
+import { axiosInstance as axios } from "@/lib/axios"
 
 export default function ProjectBoard() {
     const { id } = useParams()
     const projectId = id as string
 
-    const { getIssuesByProject, addIssue, updateIssueStatus, deleteIssue } = useIssueStore()
+    const { getIssuesByProject, addIssue, updateIssueStatus, deleteIssue, loadIssuesByProject } = useIssueStore()
     const { getProjectById } = useProjectStore()
     const { getSprintsByProject, getEpicsByProject, getActiveSprint } = useSprintEpicStore()
 
@@ -103,8 +104,45 @@ export default function ProjectBoard() {
     const [columnError, setColumnError] = useState<string | null>(null)
 
     const permissions = usePermissions({ projectId })
-    const { getConfig, canTransition, addColumn, moveColumn, deleteColumn, updateColumn } = useWorkflowStore()
+    const { getConfig, setConfig, canTransition, addColumn, moveColumn, deleteColumn, updateColumn } = useWorkflowStore()
     const boardConfig = getConfig(projectId)
+
+    useEffect(() => {
+        // Load backend tasks -> issues so the board renders real data.
+        // This is intentionally non-blocking; UI shows existing store content until ready.
+        void loadIssuesByProject(projectId).catch((e) => console.error("Failed to load issues:", e))
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [projectId])
+
+    useEffect(() => {
+        // Sync workflow column structure from backend board columns (keys are what matters).
+        void (async () => {
+            try {
+                const boardRes = await axios.get(`/board/${projectId}/all`)
+                const firstBoard = boardRes?.data?.boards?.[0]
+                if (!firstBoard) return
+
+                const columns = (firstBoard.columns ?? []).map((c: any, idx: number) => ({
+                    id: String(c._id ?? `col-${idx}`),
+                    name: String(c.name ?? String(c.key ?? `Column ${idx + 1}`)),
+                    key: String(c.key ?? "").toUpperCase(),
+                    color: "#64748b",
+                    order: typeof c.order === "number" ? c.order : idx,
+                    limit: undefined
+                }))
+
+                setConfig(projectId, {
+                    boardId: String(firstBoard._id),
+                    projectId,
+                    columns,
+                    transitions: []
+                })
+            } catch (e) {
+                console.error("Failed to sync workflow columns:", e)
+            }
+        })()
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [projectId])
 
     const handleAddColumn = () => {
         const trimmedName = newColumnName.trim()

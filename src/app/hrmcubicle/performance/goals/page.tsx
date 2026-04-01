@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     Target,
@@ -30,6 +30,7 @@ import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { useToast } from "@/shared/components/ui/use-toast";
 import { usePerformanceStore, type Goal } from "@/shared/data/performance-store";
+import { createGoal as createGoalApi, deleteGoal as deleteGoalApi, getAllGoals, updateGoal as updateGoalApi } from "@/modules/hrm/hooks/hrmHooks";
 import {
     Dialog,
     DialogContent,
@@ -50,6 +51,7 @@ import { Textarea } from "@/shared/components/ui/textarea";
 const GoalsPage = () => {
     const { toast } = useToast();
     const { goals, addGoal, updateGoal, deleteGoal, approveGoal } = usePerformanceStore();
+    const [apiGoals, setApiGoals] = useState<Goal[] | null>(null);
 
     const [searchQuery, setSearchQuery] = useState("");
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -68,22 +70,93 @@ const GoalsPage = () => {
         weightage: 20
     });
 
+    useEffect(() => {
+        (async () => {
+            try {
+                const res = await getAllGoals();
+                const rows = res?.data?.goals ?? res?.data?.data ?? [];
+                const mapped: Goal[] = rows.map((g: any) => ({
+                    id: String(g._id ?? g.id),
+                    title: g.goal ?? g.title ?? "Untitled Goal",
+                    progress: Number(g.progress ?? 0),
+                    status: (g.status ?? "On Track") as Goal["status"],
+                    dueDate: g.targetDate ? new Date(g.targetDate).toISOString().split("T")[0] : "",
+                    description: g.description ?? "",
+                    priority: (g.priority ?? "Medium") as Goal["priority"],
+                    category: (g.category ?? "Operations") as Goal["category"],
+                    alignment: (g.alignment ?? "Department") as Goal["alignment"],
+                    weightage: Number(g.weightage ?? 20)
+                }));
+                setApiGoals(mapped);
+            } catch (err) {
+                console.error("Goals API load failed:", err);
+            }
+        })();
+    }, []);
+
     const handleSave = () => {
         if (!formData.title || !formData.dueDate) {
             toast({ title: "Validation Error", description: "Title and Due Date are mandatory", variant: "destructive" });
             return;
         }
 
-        if (activeGoal) {
-            updateGoal(activeGoal.id, formData);
-            toast({ title: "Objective Updated", description: "Goal progress and details updated successfully." });
-        } else {
-            addGoal(formData);
-            toast({ title: "Goal Created", description: "Goal is now in 'Draft' and awaiting approval." });
-        }
-        setIsDialogOpen(false);
-        setActiveGoal(null);
-        setFormData({ title: "", progress: 0, status: "Draft", dueDate: "", description: "", priority: "Medium", category: "Technical", alignment: "Individual", weightage: 20 });
+        (async () => {
+            try {
+                if (activeGoal) {
+                    if (activeGoal.id.length >= 20) {
+                        await updateGoalApi(activeGoal.id, {
+                            goal: formData.title,
+                            targetDate: formData.dueDate,
+                            status: formData.status,
+                            progress: formData.progress,
+                            description: formData.description,
+                            priority: formData.priority,
+                            category: formData.category,
+                            alignment: formData.alignment,
+                            weightage: formData.weightage
+                        });
+                    } else {
+                        updateGoal(activeGoal.id, formData);
+                    }
+                    setApiGoals((prev) => prev ? prev.map((g) => g.id === activeGoal.id ? { ...g, ...formData } : g) : prev);
+                    toast({ title: "Objective Updated", description: "Goal progress and details updated successfully." });
+                } else {
+                    const employeeId = typeof window !== "undefined" ? localStorage.getItem("hrm_employee_id") : null;
+                    if (employeeId) {
+                        const res = await createGoalApi({
+                            employee: employeeId,
+                            goal: formData.title,
+                            targetDate: formData.dueDate,
+                            keyPerformanceIndicators: formData.description ? [formData.description] : []
+                        });
+                        const created = res?.data?.goal;
+                        if (created?._id) {
+                            const mapped: Goal = {
+                                id: String(created._id),
+                                title: created.goal ?? formData.title,
+                                progress: Number(created.progress ?? 0),
+                                status: (created.status ?? "Draft") as Goal["status"],
+                                dueDate: created.targetDate ? new Date(created.targetDate).toISOString().split("T")[0] : formData.dueDate,
+                                description: formData.description,
+                                priority: formData.priority,
+                                category: formData.category,
+                                alignment: formData.alignment,
+                                weightage: formData.weightage
+                            };
+                            setApiGoals((prev) => [mapped, ...(prev ?? [])]);
+                        }
+                    } else {
+                        addGoal(formData);
+                    }
+                    toast({ title: "Goal Created", description: "Goal has been saved." });
+                }
+                setIsDialogOpen(false);
+                setActiveGoal(null);
+                setFormData({ title: "", progress: 0, status: "Draft", dueDate: "", description: "", priority: "Medium", category: "Technical", alignment: "Individual", weightage: 20 });
+            } catch (err) {
+                toast({ title: "Save Failed", description: "Could not save goal to backend.", variant: "destructive" });
+            }
+        })();
     };
 
     const getStatusStyles = (status: Goal['status']) => {
@@ -99,7 +172,8 @@ const GoalsPage = () => {
         return styles[status];
     };
 
-    const filteredGoals = goals.filter(g => {
+    const goalSource = apiGoals ?? goals;
+    const filteredGoals = goalSource.filter(g => {
         const matchesSearch = g.title.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesCat = filterCategory === 'All' || g.category === filterCategory;
         return matchesSearch && matchesCat;
@@ -134,7 +208,7 @@ const GoalsPage = () => {
                     <Card className="rounded-3xl bg-indigo-50 border border-indigo-100 p-7 shadow-sm text-start group hover:shadow-md transition-all">
                         <div className="space-y-1">
                             <p className="text-[10px] font-bold text-indigo-400 tracking-widest leading-none">Total Weightage</p>
-                            <h3 className="text-4xl font-bold tracking-tight text-indigo-700">{goals.reduce((acc, g) => acc + (g.weightage || 0), 0)}%</h3>
+                            <h3 className="text-4xl font-bold tracking-tight text-indigo-700">{goalSource.reduce((acc, g) => acc + (g.weightage || 0), 0)}%</h3>
                             <p className="text-[9px] font-bold text-indigo-300 tracking-tight">Across All Active Goals</p>
                         </div>
                     </Card>
@@ -142,7 +216,7 @@ const GoalsPage = () => {
                     <Card className="rounded-3xl bg-amber-50 border border-amber-100 p-7 flex flex-col justify-between text-start shadow-sm group hover:shadow-md transition-all">
                         <div className="space-y-1">
                             <p className="text-[10px] font-bold text-amber-500 tracking-widest">Awaiting Approval</p>
-                            <h3 className="text-4xl font-bold text-amber-700 tracking-tight">{goals.filter(g => g.status === 'Draft' || g.status === 'Awaiting Approval').length}</h3>
+                            <h3 className="text-4xl font-bold text-amber-700 tracking-tight">{goalSource.filter(g => g.status === 'Draft' || g.status === 'Awaiting Approval').length}</h3>
                             <p className="text-[9px] font-bold text-amber-500/60">Action Required</p>
                         </div>
                     </Card>
@@ -150,7 +224,7 @@ const GoalsPage = () => {
                     <Card className="rounded-3xl bg-blue-50 border border-blue-100 p-7 flex flex-col justify-between text-start shadow-sm group hover:shadow-md transition-all">
                         <div className="space-y-1">
                             <p className="text-[10px] font-bold text-blue-500 tracking-widest">Alignment (Company)</p>
-                            <h3 className="text-4xl font-bold text-blue-700 tracking-tight">{goals.filter(g => g.alignment === 'Company').length}</h3>
+                            <h3 className="text-4xl font-bold text-blue-700 tracking-tight">{goalSource.filter(g => g.alignment === 'Company').length}</h3>
                             <p className="text-[9px] font-bold text-blue-500/60">Strategic Focus</p>
                         </div>
                     </Card>
@@ -158,7 +232,7 @@ const GoalsPage = () => {
                     <Card className="rounded-3xl bg-emerald-50 border border-emerald-100 p-7 flex flex-col justify-between text-start shadow-sm group hover:shadow-md transition-all">
                         <div className="space-y-1">
                             <p className="text-[10px] font-bold text-emerald-500 tracking-widest">Active Velocity</p>
-                            <h3 className="text-4xl font-bold text-emerald-700 tracking-tight">{goals.filter(g => g.status === 'On Track').length}</h3>
+                            <h3 className="text-4xl font-bold text-emerald-700 tracking-tight">{goalSource.filter(g => g.status === 'On Track').length}</h3>
                             <p className="text-[9px] font-bold text-emerald-500/60">Execution Rate</p>
                         </div>
                     </Card>
@@ -241,7 +315,10 @@ const GoalsPage = () => {
                                                     {(goal.status === 'Draft' || goal.status === 'Awaiting Approval') && (
                                                         <Button
                                                             className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl h-9 px-4 font-bold text-[10px] tracking-widest gap-2 transition-all border-none shadow-md shadow-emerald-100"
-                                                            onClick={() => approveGoal(goal.id)}
+                                                            onClick={() => {
+                                                                approveGoal(goal.id);
+                                                                setApiGoals((prev) => prev ? prev.map((g) => g.id === goal.id ? { ...g, status: "On Track" } : g) : prev);
+                                                            }}
                                                         >
                                                             <CheckCircle2 size={12} /> Approve Goal
                                                         </Button>
@@ -256,7 +333,18 @@ const GoalsPage = () => {
                                                     <Button
                                                         variant="ghost"
                                                         className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl h-9 px-4 font-bold text-[10px] tracking-widest gap-2 transition-all"
-                                                        onClick={() => { deleteGoal(goal.id); toast({ title: "Goal Removed", description: "Objective purged from the directory." }); }}
+                                                        onClick={() => {
+                                                            (async () => {
+                                                                try {
+                                                                    if (goal.id.length >= 20) await deleteGoalApi(goal.id);
+                                                                    else deleteGoal(goal.id);
+                                                                    setApiGoals((prev) => prev ? prev.filter((g) => g.id !== goal.id) : prev);
+                                                                    toast({ title: "Goal Removed", description: "Objective purged from the directory." });
+                                                                } catch {
+                                                                    toast({ title: "Delete Failed", description: "Could not delete goal from backend.", variant: "destructive" });
+                                                                }
+                                                            })();
+                                                        }}
                                                     >
                                                         <Trash2 size={12} /> Delete
                                                     </Button>

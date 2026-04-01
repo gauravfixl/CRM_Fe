@@ -231,7 +231,17 @@ const ShiftAllowancePage = () => {
                                     <CardTitle className="text-3xl font-bold text-slate-900 tracking-tight">Employee Eligibility Ledger</CardTitle>
                                     <CardDescription className="text-lg font-bold text-slate-400 mt-2">Active personnel qualified for shift-based financial incentives.</CardDescription>
                                 </div>
-                                <Button className="bg-[#10b981] hover:bg-[#059669] h-16 px-10 rounded-2xl font-bold shadow-2xl shadow-emerald-100 text-white transition-all hover:scale-105" onClick={() => toast({ title: "Sync Triggered", description: "Ledger is being reconciled with shift rosters." })}>
+                                <Button className="bg-[#10b981] hover:bg-[#059669] h-16 px-10 rounded-2xl font-bold shadow-2xl shadow-emerald-100 text-white transition-all hover:scale-105" onClick={() => {
+                                    // Re-validate all employees against current shift rules
+                                    setEmployees(prev => prev.map(emp => {
+                                        const matchingRule = rules.find(r => r.shiftName === emp.shift);
+                                        if (matchingRule) {
+                                            return { ...emp, rate: matchingRule.amount, status: "Verified" };
+                                        }
+                                        return { ...emp, status: "Pending" };
+                                    }));
+                                    toast({ title: "Sync Complete", description: `Reconciled ${employees.length} employees with ${rules.length} active shift rules. Rates and statuses updated.` });
+                                }}>
                                     <UserCheck className="mr-3 h-5 w-5" /> Sync rosters
                                 </Button>
                             </CardHeader>

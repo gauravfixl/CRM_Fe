@@ -70,6 +70,9 @@ const AcknowledgementsPage = () => {
     const [statusFilter, setStatusFilter] = useState("all");
     const [isRequestOpen, setIsRequestOpen] = useState(false);
     const [selectedAckIds, setSelectedAckIds] = useState<string[]>([]);
+    const [refreshKey, setRefreshKey] = useState(0);
+    const [historyAck, setHistoryAck] = useState<Acknowledgement | null>(null);
+    const [remindersSent, setRemindersSent] = useState(false);
 
     const [newRequest, setNewRequest] = useState({
         documentId: "",
@@ -142,8 +145,17 @@ const AcknowledgementsPage = () => {
                         <p className="text-slate-500 font-semibold text-sm mt-1">Track document compliance and employee signatures across the organization.</p>
                     </div>
                     <div className="flex items-center gap-3">
-                        <Button variant="outline" className="h-11 border-slate-200 rounded-xl font-bold text-[10px] tracking-wide px-6 hover:bg-slate-50 transition-all" onClick={() => toast.success("Dispatching sequence of automated follow-ups")}>
-                            <Mail className="w-4 h-4 mr-2" /> Send Reminders
+                        <Button variant="outline" className={`h-11 border-slate-200 rounded-xl font-bold text-[10px] tracking-wide px-6 hover:bg-slate-50 transition-all ${remindersSent ? 'bg-emerald-50 border-emerald-200 text-emerald-600' : ''}`} onClick={() => {
+                            const pendingCount = acknowledgements.filter(a => a.status === "Pending").length;
+                            if (pendingCount === 0) {
+                                toast.info("No pending acknowledgements to remind");
+                                return;
+                            }
+                            setRemindersSent(true);
+                            toast.success(`Reminders sent to ${pendingCount} pending employee(s)`);
+                            setTimeout(() => setRemindersSent(false), 3000);
+                        }}>
+                            <Mail className="w-4 h-4 mr-2" /> {remindersSent ? "Reminders Sent" : "Send Reminders"}
                         </Button>
                         <Dialog open={isRequestOpen} onOpenChange={setIsRequestOpen}>
                             <DialogTrigger asChild>
@@ -321,14 +333,29 @@ const AcknowledgementsPage = () => {
                                         <SelectItem value="Signed" className="rounded-lg h-10 text-emerald-500">Signed</SelectItem>
                                     </SelectContent>
                                 </Select>
-                                <Button variant="outline" className="h-12 border-slate-200 rounded-xl font-bold text-[10px] tracking-wide px-6 hover:bg-slate-50 transition-all" onClick={() => toast.success("Generating compliance audit report (.XLSX)")}>
+                                <Button variant="outline" className="h-12 border-slate-200 rounded-xl font-bold text-[10px] tracking-wide px-6 hover:bg-slate-50 transition-all" onClick={() => {
+                                    const csvHeader = "Employee Name,Employee ID,Document Title,Status,Due Date,Sent On,Resolved On\n";
+                                    const csvRows = filteredAcks.map(ack =>
+                                        `"${ack.employeeName}","${ack.employeeId}","${ack.documentTitle}","${ack.status}","${ack.dueDate || '-'}","${ack.notifiedAt || '-'}","${ack.signedAt || '-'}"`
+                                    ).join("\n");
+                                    const blob = new Blob([csvHeader + csvRows], { type: "text/csv;charset=utf-8;" });
+                                    const url = URL.createObjectURL(blob);
+                                    const link = document.createElement("a");
+                                    link.href = url;
+                                    link.download = `acknowledgements_report_${new Date().toISOString().split("T")[0]}.csv`;
+                                    document.body.appendChild(link);
+                                    link.click();
+                                    document.body.removeChild(link);
+                                    URL.revokeObjectURL(url);
+                                    toast.success("Report exported as CSV");
+                                }}>
                                     <Download size={16} className="mr-2" /> Export Report
                                 </Button>
                             </div>
                         </div>
                     </CardHeader>
                     <CardContent className="p-0">
-                        <div className="overflow-x-auto">
+                        <div className="overflow-x-auto" key={refreshKey}>
                             <Table>
                                 <TableHeader>
                                     <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 border-none">
@@ -405,10 +432,15 @@ const AcknowledgementsPage = () => {
                                                 </TableCell>
                                                 <TableCell className="px-8 py-6 text-right">
                                                     <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all">
-                                                        <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:text-indigo-600 hover:bg-white hover:shadow-sm rounded-xl transition-all border-none" onClick={() => toast.success(`Viewing event log for ${ack.employeeName}`)}>
+                                                        <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:text-indigo-600 hover:bg-white hover:shadow-sm rounded-xl transition-all border-none" onClick={() => setHistoryAck(ack)}>
                                                             <History size={16} />
                                                         </Button>
-                                                        <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:text-indigo-600 hover:bg-white hover:shadow-sm rounded-xl transition-all border-none" onClick={() => toast.success("Synchronizing compliance status")}>
+                                                        <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:text-indigo-600 hover:bg-white hover:shadow-sm rounded-xl transition-all border-none" onClick={() => {
+                                                            setRefreshKey(prev => prev + 1);
+                                                            setSearchQuery("");
+                                                            setStatusFilter("all");
+                                                            toast.success(`Compliance status refreshed for ${ack.employeeName}`);
+                                                        }}>
                                                             <RefreshCw size={16} />
                                                         </Button>
                                                         <DropdownMenu>
@@ -454,6 +486,45 @@ const AcknowledgementsPage = () => {
                     </CardContent>
                 </Card>
             </main>
+
+            {/* History Dialog */}
+            <Dialog open={!!historyAck} onOpenChange={(open) => !open && setHistoryAck(null)}>
+                <DialogContent className="max-w-lg bg-white rounded-[2rem] border border-slate-200 p-8 shadow-3xl font-sans" style={{ zoom: "80%" }}>
+                    <DialogHeader className="text-start">
+                        <div className="h-12 w-12 bg-indigo-50 rounded-2xl flex items-center justify-center mb-3 border border-indigo-100">
+                            <History size={22} className="text-indigo-600" />
+                        </div>
+                        <DialogTitle className="text-2xl font-black tracking-tight text-slate-900">Acknowledgement History</DialogTitle>
+                        <DialogDescription className="font-bold text-slate-400 text-[11px] tracking-wide mt-2">
+                            Event log for {historyAck?.employeeName}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-6 space-y-4 text-start">
+                        <div className="space-y-4">
+                            {[
+                                { event: "Request Created", date: historyAck?.notifiedAt || "N/A", detail: `Document: ${historyAck?.documentTitle}` },
+                                { event: "Notification Sent", date: historyAck?.notifiedAt || "N/A", detail: "Email dispatched to employee" },
+                                ...(historyAck?.status === "Viewed" || historyAck?.status === "Signed" ? [{ event: "Document Viewed", date: historyAck?.signedAt || "Recently", detail: "Employee opened the document" }] : []),
+                                ...(historyAck?.status === "Signed" ? [{ event: "Document Signed", date: historyAck?.signedAt || "N/A", detail: "E-signature confirmed" }] : []),
+                            ].map((entry, idx) => (
+                                <div key={idx} className="flex gap-4 group">
+                                    <div className="w-0.5 bg-slate-100 group-hover:bg-indigo-300 transition-colors relative">
+                                        <div className="absolute top-0 -left-[3px] h-2 w-2 rounded-full bg-slate-200 group-hover:bg-indigo-500 transition-colors" />
+                                    </div>
+                                    <div className="min-w-0 pb-4">
+                                        <p className="text-xs font-bold text-slate-900 tracking-tight">{entry.event}</p>
+                                        <p className="text-[9px] text-slate-400 font-bold tracking-tighter">{entry.date}</p>
+                                        <p className="text-[10px] text-slate-500 font-medium mt-0.5">{entry.detail}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="ghost" className="h-12 rounded-xl font-bold text-[10px] tracking-wide transition-all px-6" onClick={() => setHistoryAck(null)}>Close</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 };

@@ -1,6 +1,7 @@
 "use client"
 
-import React, { useState, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
@@ -15,7 +16,18 @@ import { useToast } from "@/shared/components/ui/use-toast";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/shared/components/ui/dropdown-menu";
 import { motion, AnimatePresence } from "framer-motion";
 
+import {
+    approveLeaveRequest,
+    createLeaveRequest,
+    getActiveLeaveTypes,
+    getAllEmployees,
+    getLeaveBalance,
+    getPendingLeaveRequests,
+    rejectLeaveRequest,
+} from "@/modules/hrm/hooks/hrmHooks";
+
 const LeavePage = () => {
+    const router = useRouter();
     const { toast } = useToast();
     const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
     const [isDetailsOpen, setIsDetailsOpen] = useState(false);
@@ -23,17 +35,20 @@ const LeavePage = () => {
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState("All");
 
-    // Dynamic Lists
-    const [leaveRequests, setLeaveRequests] = useState([
-        { id: "LV-001", employee: "Rajesh Kumar", dept: "Engineering", type: "Casual Leave", from: "2024-01-22", to: "2024-01-23", days: 2, status: "Pending", reason: "Family Function", appliedOn: "2024-01-15" },
-        { id: "LV-002", employee: "Priya Sharma", dept: "Product", type: "Sick Leave", from: "2024-01-20", to: "2024-01-20", days: 1, status: "Approved", reason: "Viral Fever", appliedOn: "2024-01-18" },
-        { id: "LV-003", employee: "Vikram Singh", dept: "Engineering", type: "Casual Leave", from: "2024-01-25", to: "2024-01-26", days: 2, status: "Pending", reason: "Personal work", appliedOn: "2024-01-20" }
-    ]);
+    // Backend-backed data
+    const [leaveRequests, setLeaveRequests] = useState<any[]>([]);
+    const [employees, setEmployees] = useState<any[]>([]);
+    const [leaveTypes, setLeaveTypes] = useState<any[]>([]);
 
     const [balances, setBalances] = useState({ casual: 8, sick: 10, earned: 15 });
 
     // New Request State
-    const [newLeave, setNewLeave] = useState({ type: "Casual Leave", from: "", to: "", reason: "" });
+    const [newLeave, setNewLeave] = useState<{ leaveTypeId: string; from: string; to: string; reason: string }>({
+        leaveTypeId: "",
+        from: "",
+        to: "",
+        reason: "",
+    });
     const [editingId, setEditingId] = useState<string | null>(null);
 
     // Computed: Check for overlaps in the same department
@@ -46,17 +61,126 @@ const LeavePage = () => {
         );
     }, [newLeave.from, leaveRequests]);
 
-    // Handle Approval
-    const handleAction = (id: string, newStatus: "Approved" | "Rejected") => {
-        setLeaveRequests(prev => prev.map(req =>
-            req.id === id ? { ...req, status: newStatus } : req
-        ));
+    const fetchLeaveData = async () => {
+        try {
+            const [employeesRes, leaveTypesRes, pendingRes, balanceRes] = await Promise.all([
+                getAllEmployees(),
+                getActiveLeaveTypes(),
+                getPendingLeaveRequests(),
+                getLeaveBalance().catch(() => null),
+            ]);
 
-        if (newStatus === "Approved") {
-            const req = leaveRequests.find(r => r.id === id);
-            toast({ title: "Request Approved", description: `Leave for ${req?.employee} has been confirmed.` });
-        } else {
-            toast({ title: "Request Rejected", description: "The leave request has been denied.", variant: "destructive" });
+            const employeesRows = employeesRes?.data?.employees ?? [];
+            const leaveTypesRows = leaveTypesRes?.data?.data ?? [];
+            const pendingRows = pendingRes?.data?.data ?? [];
+            const balancesRows = balanceRes?.data?.data ?? [];
+
+            setEmployees(employeesRows);
+            setLeaveTypes(leaveTypesRows);
+
+            setNewLeave((prev) => {
+                if (prev.leaveTypeId) return prev;
+                const firstId = leaveTypesRows?.[0]?._id ? String(leaveTypesRows[0]._id) : "";
+                return { ...prev, leaveTypeId: firstId };
+            });
+
+            const mapped = pendingRows.map((r: any) => {
+                const emp = employeesRows.find((e: any) => String(e.id) === String(r.employeeId)) ?? null;
+                const lt = leaveTypesRows.find((t: any) => String(t._id) === String(r.leaveType)) ?? null;
+
+                const fromDate = r.startDate ? new Date(r.startDate) : null;
+                const toDate = r.endDate ? new Date(r.endDate) : null;
+
+                const isHalf = Boolean(r.isHalfDay);
+                const days =
+                    isHalf
+                        ? 0.5
+                        : fromDate && toDate
+                            ? Math.max(
+                                1,
+                                Math.round(
+                                    (toDate.getTime() - fromDate.getTime()) / (1000 * 60 * 60 * 24)
+                                ) + 1
+                            )
+                            : 1;
+
+                return {
+                    id: String(r._id ?? r.id),
+                    employee: emp?.name ?? "Employee",
+                    dept: emp?.department ?? "Unknown",
+                    type: lt?.name ?? "Leave",
+                    from: fromDate ? fromDate.toISOString().split("T")[0] : "",
+                    to: toDate ? toDate.toISOString().split("T")[0] : "",
+                    days,
+                    status: r.status ?? "Pending",
+                    reason: r.reason ?? "",
+                    appliedOn: r.createdAt ? new Date(r.createdAt).toISOString().split("T")[0] : "",
+                };
+            });
+
+            setLeaveRequests(mapped);
+
+            const byNeedle = (needle: string) => {
+                const match = (balancesRows ?? []).find((b: any) =>
+                    String(b?.leaveTypeId?.name ?? "").toLowerCase().includes(needle)
+                );
+                return Number(match?.remaining ?? 0);
+            };
+
+            const casual = byNeedle("casual");
+            const sick = byNeedle("sick");
+            const earned = byNeedle("earned");
+            const paid = (balancesRows ?? [])
+                .map((b: any) => ({ name: String(b?.leaveTypeId?.name ?? ""), remaining: Number(b?.remaining ?? 0) }))
+                .filter((x: any) => x.remaining > 0);
+
+            const f0 = casual || paid?.[0]?.remaining || 0;
+            const f1 = sick || paid?.[1]?.remaining || 0;
+            const f2 = earned || paid?.[2]?.remaining || 0;
+
+            setBalances({
+                casual: f0,
+                sick: f1,
+                earned: f2,
+            });
+        } catch (err) {
+            console.error("Leave data fetch failed:", err);
+            setLeaveRequests([]);
+            toast({ title: "Load Failed", description: "Could not load leave data.", variant: "destructive" });
+        }
+    };
+
+    useEffect(() => {
+        fetchLeaveData();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // Handle Approval
+    const handleAction = async (id: string, newStatus: "Approved" | "Rejected") => {
+        try {
+            if (newStatus === "Approved") {
+                await approveLeaveRequest(id);
+                toast({ title: "Request Approved", description: "Leave request approved successfully." });
+            } else {
+                const reason =
+                    window.prompt("Rejection reason (min 3 chars):", "Rejected by HR admin")?.trim() ||
+                    "Rejected by HR admin";
+                if (reason.length < 3) {
+                    toast({
+                        title: "Invalid reason",
+                        description: "Rejection reason must be at least 3 characters.",
+                        variant: "destructive"
+                    });
+                    return;
+                }
+                await rejectLeaveRequest(id, reason);
+                toast({ title: "Request Rejected", description: "Leave request rejected successfully.", variant: "destructive" });
+            }
+
+            await fetchLeaveData();
+        } catch (err) {
+            console.error("Leave action failed:", err);
+            toast({ title: "Action Failed", description: "Could not process leave request.", variant: "destructive" });
         }
     };
 
@@ -77,49 +201,55 @@ const LeavePage = () => {
         toast({ title: "Export Success", description: "Leave report has been downloaded." });
     };
 
-    const handleApply = () => {
-        if (!newLeave.from || !newLeave.to || !newLeave.reason) {
+    const handleApply = async () => {
+        if (!newLeave.leaveTypeId || !newLeave.from || !newLeave.to || !newLeave.reason) {
             toast({ title: "Incomplete Data", description: "Please provide all necessary details.", variant: "destructive" });
             return;
         }
 
         if (editingId) {
-            setLeaveRequests(prev => prev.map(req =>
-                req.id === editingId
-                    ? { ...req, ...newLeave, employee: req.employee, dept: req.dept, status: "Pending" }
-                    : req
-            ));
-            toast({ title: "Request Updated", description: "Leave details have been modified." });
-            setEditingId(null);
-        } else {
-            const request = {
-                id: `LV-00${leaveRequests.length + 1}`,
-                employee: "Self (Admin)",
-                dept: "Engineering",
-                type: newLeave.type,
-                from: newLeave.from,
-                to: newLeave.to,
-                days: 1, // Simplified day calculation logic can be added here
-                status: "Pending",
-                reason: newLeave.reason,
-                appliedOn: new Date().toISOString().split('T')[0]
-            };
-            setLeaveRequests([request, ...leaveRequests]);
-            toast({ title: "Success", description: "Your leave application is pending review." });
+            toast({
+                title: "Edit not supported",
+                description: "Backend supports create + approve/reject, not update leave requests.",
+                variant: "destructive"
+            });
+            return;
         }
-        setIsApplyModalOpen(false);
-        setNewLeave({ type: "Casual Leave", from: "", to: "", reason: "" });
+
+        try {
+            await createLeaveRequest({
+                leaveType: newLeave.leaveTypeId,
+                startDate: newLeave.from,
+                endDate: newLeave.to,
+                reason: newLeave.reason,
+                isHalfDay: false,
+                halfDaySession: null,
+            });
+            toast({ title: "Success", description: "Your leave application is pending review." });
+            setIsApplyModalOpen(false);
+            setEditingId(null);
+            setNewLeave(prev => ({ ...prev, from: "", to: "", reason: "" }));
+            await fetchLeaveData();
+        } catch (err) {
+            console.error("Failed to create leave request:", err);
+            toast({ title: "Submit Failed", description: "Could not submit leave request.", variant: "destructive" });
+        }
     };
 
     const handleEdit = (req: any) => {
-        setNewLeave({ type: req.type, from: req.from, to: req.to, reason: req.reason });
-        setEditingId(req.id);
-        setIsApplyModalOpen(true);
+        toast({
+            title: "Edit not supported",
+            description: "Leave requests cannot be edited via backend in this module.",
+            variant: "destructive"
+        });
     };
 
     const handleDelete = (id: string) => {
-        setLeaveRequests(prev => prev.filter(r => r.id !== id));
-        toast({ title: "Request Deleted", description: "The leave request has been removed.", variant: "destructive" });
+        toast({
+            title: "Cancel not supported",
+            description: "Backend doesn't expose leave-request delete/withdraw here.",
+            variant: "destructive"
+        });
     };
 
     const openDetails = (req: any) => {
@@ -155,6 +285,9 @@ const LeavePage = () => {
                     </div>
 
                     <div className="flex gap-4">
+                        <Button variant="outline" className="h-14 px-8 rounded-2xl border-slate-200 font-bold hover:bg-slate-50 shadow-sm" onClick={() => router.push("/hrmcubicle/timeattend/reports")}>
+                            <FileText size={20} className="mr-2" /> View Report
+                        </Button>
                         <Button variant="outline" className="h-14 px-8 rounded-2xl border-slate-200 font-bold hover:bg-slate-50 shadow-sm" onClick={handleExport}>
                             <Download size={20} className="mr-2" /> Export CSV
                         </Button>
@@ -173,14 +306,20 @@ const LeavePage = () => {
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 py-8 font-sans">
                                     <div className="grid gap-3">
                                         <Label className="font-bold ml-2 text-slate-600">Leave category</Label>
-                                        <Select value={newLeave.type} onValueChange={(v) => setNewLeave({ ...newLeave, type: v })}>
+                                        <Select value={newLeave.leaveTypeId} onValueChange={(v) => setNewLeave({ ...newLeave, leaveTypeId: v })}>
                                             <SelectTrigger className="h-16 rounded-2xl bg-white border-2 border-slate-300 px-6 font-bold text-xl">
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent className="rounded-2xl border-none shadow-2xl p-2 font-bold">
-                                                <SelectItem value="Casual Leave" className="rounded-xl p-3">Casual leave</SelectItem>
-                                                <SelectItem value="Sick Leave" className="rounded-xl p-3">Sick leave</SelectItem>
-                                                <SelectItem value="Earned Leave" className="rounded-xl p-3">Earned leave</SelectItem>
+                                                {leaveTypes.length === 0 ? (
+                                                    <SelectItem value="" className="rounded-xl p-3">Loading...</SelectItem>
+                                                ) : (
+                                                    leaveTypes.map((lt: any) => (
+                                                        <SelectItem key={String(lt._id)} value={String(lt._id)} className="rounded-xl p-3">
+                                                            {lt.name}
+                                                        </SelectItem>
+                                                    ))
+                                                )}
                                             </SelectContent>
                                         </Select>
                                     </div>
@@ -218,7 +357,17 @@ const LeavePage = () => {
                                     </div>
                                 </div>
                                 <DialogFooter className="mt-4 flex gap-4">
-                                    <Button variant="ghost" className="rounded-2xl font-bold text-slate-400 h-16 flex-1 text-lg" onClick={() => { setIsApplyModalOpen(false); setEditingId(null); setNewLeave({ type: "Casual Leave", from: "", to: "", reason: "" }); }}>Cancel</Button>
+                                    <Button
+                                        variant="ghost"
+                                        className="rounded-2xl font-bold text-slate-400 h-16 flex-1 text-lg"
+                                        onClick={() => {
+                                            setIsApplyModalOpen(false);
+                                            setEditingId(null);
+                                            setNewLeave(prev => ({ ...prev, from: "", to: "", reason: "" }));
+                                        }}
+                                    >
+                                        Cancel
+                                    </Button>
                                     <Button className="bg-[#6366f1] h-16 rounded-2xl font-bold text-white shadow-xl shadow-indigo-100 flex-1 text-lg" onClick={handleApply}>{editingId ? "Update Request" : "Submit Request"}</Button>
                                 </DialogFooter>
                             </DialogContent>

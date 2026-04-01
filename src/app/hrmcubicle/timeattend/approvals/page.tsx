@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import { CheckCircle2, XCircle, Clock, AlertTriangle, Search, Filter, ArrowUpDown, MoreHorizontal, Check, Download, Trash2, ShieldAlert, History, User } from "lucide-react";
 import { Card } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
@@ -27,12 +28,15 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 
 const AttendanceApprovalsPage = () => {
+    const router = useRouter();
     const { logs, approveRegularization, rejectRegularization, approveBulkRegularization, rejectBulkRegularization } = useAttendanceStore();
     const { toast } = useToast();
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [isAuditOpen, setIsAuditOpen] = useState(false);
     const [selectedLog, setSelectedLog] = useState<any>(null);
+    const [isFlagDialogOpen, setIsFlagDialogOpen] = useState(false);
+    const [flagTarget, setFlagTarget] = useState<string>("");
 
     // Filter logs with Pending Regularization and search term
     const pendingRequests = logs.filter(l =>
@@ -251,10 +255,10 @@ const AttendanceApprovalsPage = () => {
                                                 <DropdownMenuItem className="rounded-xl p-3 cursor-pointer" onClick={() => openAuditTrail(req)}>
                                                     <History size={16} className="mr-2" /> View full audit trail
                                                 </DropdownMenuItem>
-                                                <DropdownMenuItem className="rounded-xl p-3 cursor-pointer hover:bg-slate-50" onClick={() => toast({ title: "Profile Access", description: `Redirecting to ${req.empName}'s personnel file...` })}>
+                                                <DropdownMenuItem className="rounded-xl p-3 cursor-pointer hover:bg-slate-50" onClick={() => router.push(`/hrmcubicle/employee/${req.empId || req.id}`)}>
                                                     <User size={16} className="mr-2" /> View detailed profile
                                                 </DropdownMenuItem>
-                                                <DropdownMenuItem className="rounded-xl p-3 cursor-pointer text-rose-500" onClick={() => flagRequest(req.empName)}>
+                                                <DropdownMenuItem className="rounded-xl p-3 cursor-pointer text-rose-500" onClick={() => { setFlagTarget(req.empName); setIsFlagDialogOpen(true); }}>
                                                     <ShieldAlert size={16} className="mr-2" /> Flag for investigation
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>
@@ -314,6 +318,47 @@ const AttendanceApprovalsPage = () => {
                         <DialogFooter>
                             <Button className="w-full h-14 bg-slate-900 text-white rounded-2xl font-bold text-lg" onClick={() => setIsAuditOpen(false)}>
                                 Close trail
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* Flag Confirmation Dialog */}
+                <Dialog open={isFlagDialogOpen} onOpenChange={setIsFlagDialogOpen}>
+                    <DialogContent className="max-w-md rounded-[2.5rem] border-none p-10 bg-white">
+                        <DialogHeader>
+                            <DialogTitle className="text-2xl font-bold flex items-center gap-3">
+                                <ShieldAlert className="text-rose-500" /> Flag for Investigation
+                            </DialogTitle>
+                            <DialogDescription className="font-bold text-slate-400">
+                                Are you sure you want to flag {flagTarget}&apos;s request for administrative investigation?
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        <div className="py-6">
+                            <div className="p-4 bg-rose-50 rounded-2xl border border-rose-100">
+                                <p className="text-sm font-bold text-rose-700">This action will:</p>
+                                <ul className="mt-2 space-y-1 text-xs font-bold text-rose-600">
+                                    <li>- Notify the HR investigation team</li>
+                                    <li>- Place a hold on the correction request</li>
+                                    <li>- Create an audit trail entry</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <DialogFooter className="flex gap-3">
+                            <Button variant="ghost" className="flex-1 h-12 rounded-2xl font-bold" onClick={() => setIsFlagDialogOpen(false)}>
+                                Cancel
+                            </Button>
+                            <Button className="flex-[2] bg-rose-500 hover:bg-rose-600 text-white h-12 rounded-2xl font-bold shadow-lg shadow-rose-100 border-none" onClick={() => {
+                                setIsFlagDialogOpen(false);
+                                toast({
+                                    title: "Investigation Flag Raised",
+                                    description: `${flagTarget}'s request has been flagged. HR investigation team has been notified.`,
+                                    variant: "destructive"
+                                });
+                            }}>
+                                Confirm Flag
                             </Button>
                         </DialogFooter>
                     </DialogContent>

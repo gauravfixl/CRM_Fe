@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useEffect, useState } from "react"
 import { useParams } from "next/navigation"
 import { Plus, Filter, Maximize2, Search, Layout, Clock, ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -13,10 +13,15 @@ import { differenceInDays, addDays, format, startOfWeek, isSameWeek, isValid, pa
 export default function TimelinePage() {
     const { id } = useParams()
     const projectId = id as string
-    const { getIssuesByProject } = useIssueStore()
+    const { getIssuesByProject, loadIssuesByProject } = useIssueStore()
 
     const issues = getIssuesByProject(projectId)
     const [viewMode, setViewMode] = useState<"DAYS" | "WEEKS" | "MONTHS">("WEEKS")
+
+    useEffect(() => {
+        void loadIssuesByProject(projectId).catch((e) => console.error("Failed to load issues:", e))
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [projectId])
 
     // 1. Calculate Timeline Range
     const dates = issues.flatMap(i => [

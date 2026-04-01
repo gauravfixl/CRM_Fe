@@ -128,8 +128,26 @@ const HiringReportsPage = () => {
     }, []);
 
     const generateReport = () => {
-        // Mock export
-        alert("Generating PDF Report... Download will start shortly.");
+        const headers = "Metric,Value";
+        const rows = [
+            `Total Hired,${totalHired}`,
+            `Active Openings,${activeOpenings}`,
+            `Offer Acceptance Rate,${offerAcceptanceRate}%`,
+            `Cost per Hire,${costPerHire}`,
+            `Total Candidates,${candidates.length}`,
+            `Total Offers,${offers.length}`,
+            `Time Range,${timeRange.replace('_', ' ')}`,
+        ];
+        const funnelSection = "\n\nFunnel Stage,Count\n" + funnelData.map(d => `${d.label},${d.value}`).join("\n");
+        const sourceSection = "\n\nSource Channel,Count\n" + sourceData.map(d => `${d.label},${d.value}`).join("\n");
+        const csv = `Recruitment Analytics Report\nGenerated: ${new Date().toLocaleDateString()}\n\n${headers}\n${rows.join("\n")}${funnelSection}${sourceSection}`;
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'recruitment_analytics_report.csv';
+        a.click();
+        URL.revokeObjectURL(url);
     };
 
     return (
@@ -216,7 +234,16 @@ const HiringReportsPage = () => {
                             <h3 className="text-lg font-bold text-slate-900">Conversion Funnel</h3>
                             <p className="text-slate-400 font-bold text-[10px] mt-0.5">Candidate progression through stages</p>
                         </div>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg"><ArrowUpRight className="h-4 w-4 text-slate-300" /></Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => {
+                            const csv = "Stage,Count,Conversion\n" + funnelData.map((d, i) => `${d.label},${d.value},${i > 0 && funnelData[i-1].value > 0 ? Math.round((d.value / funnelData[i-1].value) * 100) + '%' : '-'}`).join("\n");
+                            const blob = new Blob([csv], { type: 'text/csv' });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = 'conversion_funnel_report.csv';
+                            a.click();
+                            URL.revokeObjectURL(url);
+                        }}><ArrowUpRight className="h-4 w-4 text-slate-300" /></Button>
                     </div>
                     <FunnelChart data={funnelData} />
                 </Card>
@@ -263,7 +290,18 @@ const HiringReportsPage = () => {
                             <Activity className="h-3 w-3 text-slate-400" />
                             <h3 className="font-bold text-slate-900 text-[11px]">Recent Hiring Activities</h3>
                         </div>
-                        <Button variant="link" className="text-indigo-600 font-bold text-[9px] h-auto p-0">View Full Log</Button>
+                        <Button variant="link" className="text-indigo-600 font-bold text-[9px] h-auto p-0" onClick={() => {
+                            const logText = recentActivities.length > 0
+                                ? recentActivities.map(a => `[${a.time}] ${a.type}: ${a.title} — ${a.subtitle}`).join('\n')
+                                : 'No recent activities found.';
+                            const blob = new Blob([`HIRING ACTIVITY LOG\n${'='.repeat(40)}\n\n${logText}`], { type: 'text/plain' });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = 'hiring_activity_log.txt';
+                            a.click();
+                            URL.revokeObjectURL(url);
+                        }}>View Full Log</Button>
                     </div>
                     <div className="space-y-1">
                         {recentActivities.length > 0 ? (

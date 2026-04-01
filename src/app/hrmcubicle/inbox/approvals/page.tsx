@@ -48,6 +48,8 @@ const ApprovalsPage = () => {
 
     const [selectedApproval, setSelectedApproval] = useState<ApprovalItem | null>(null);
     const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
+    const [isAuditDialogOpen, setIsAuditDialogOpen] = useState(false);
+    const [auditApproval, setAuditApproval] = useState<ApprovalItem | null>(null);
     const [rejectionReason, setRejectionReason] = useState("");
 
     const [filterCategory, setFilterCategory] = useState<ApprovalCategory | 'All'>('All');
@@ -323,7 +325,7 @@ const ApprovalsPage = () => {
                                                                         </Button>
                                                                     </>
                                                                 ) : (
-                                                                    <Button variant="ghost" className="h-10 text-slate-400 font-bold text-xs gap-2">
+                                                                    <Button variant="ghost" className="h-10 text-slate-400 font-bold text-xs gap-2" onClick={() => { setAuditApproval(approval); setIsAuditDialogOpen(true); }}>
                                                                         View Audit Trail <ArrowRight size={14} />
                                                                     </Button>
                                                                 )}
@@ -363,6 +365,74 @@ const ApprovalsPage = () => {
                     <DialogFooter className="gap-3">
                         <Button variant="outline" className="rounded-xl h-12 font-bold px-8" onClick={() => setIsRejectDialogOpen(false)}>Cancel</Button>
                         <Button className="flex-1 bg-rose-600 hover:bg-rose-700 text-white rounded-xl h-12 font-bold shadow-lg shadow-rose-100" onClick={handleReject}>Reject Forever</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+            {/* Audit Trail Dialog */}
+            <Dialog open={isAuditDialogOpen} onOpenChange={setIsAuditDialogOpen}>
+                <DialogContent className="bg-white rounded-3xl border-none p-10 max-w-md shadow-2xl">
+                    <DialogHeader className="space-y-4">
+                        <div className="h-12 w-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 mb-2">
+                            <ShieldCheck size={28} />
+                        </div>
+                        <DialogTitle className="text-2xl font-bold tracking-tight text-slate-900">Audit Trail</DialogTitle>
+                        <DialogDescription className="text-slate-500 font-medium">Complete approval history for this request.</DialogDescription>
+                    </DialogHeader>
+                    {auditApproval && (
+                        <div className="py-6 space-y-4">
+                            <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                <p className="text-xs font-bold text-slate-700">{auditApproval.details.title}</p>
+                                <p className="text-[10px] text-slate-400 font-medium mt-1">Requested by {auditApproval.requestedBy.name} ({auditApproval.requestedBy.id})</p>
+                            </div>
+                            <div className="space-y-3">
+                                <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                    <div className="h-8 w-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center"><FileText size={14} /></div>
+                                    <div className="flex-1">
+                                        <p className="text-xs font-bold text-slate-700">Request Submitted</p>
+                                        <p className="text-[10px] text-slate-400">{new Date(auditApproval.submittedAt).toLocaleString()}</p>
+                                    </div>
+                                </div>
+                                {auditApproval.status === 'Approved' && (
+                                    <div className="flex items-center gap-3 p-3 bg-emerald-50 rounded-xl border border-emerald-100">
+                                        <div className="h-8 w-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center"><CheckCircle2 size={14} /></div>
+                                        <div className="flex-1">
+                                            <p className="text-xs font-bold text-emerald-700">Approved by {auditApproval.approvedBy || 'HR Admin'}</p>
+                                            <p className="text-[10px] text-emerald-500">{auditApproval.processedAt ? new Date(auditApproval.processedAt).toLocaleString() : 'Recently'}</p>
+                                        </div>
+                                    </div>
+                                )}
+                                {auditApproval.status === 'Rejected' && (
+                                    <div className="flex items-center gap-3 p-3 bg-rose-50 rounded-xl border border-rose-100">
+                                        <div className="h-8 w-8 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center"><XCircle size={14} /></div>
+                                        <div className="flex-1">
+                                            <p className="text-xs font-bold text-rose-700">Rejected</p>
+                                            <p className="text-[10px] text-rose-500">{auditApproval.rejectionReason || 'No reason provided'}</p>
+                                        </div>
+                                    </div>
+                                )}
+                                {auditApproval.status === 'Delegated' && (
+                                    <div className="flex items-center gap-3 p-3 bg-indigo-50 rounded-xl border border-indigo-100">
+                                        <div className="h-8 w-8 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center"><Forward size={14} /></div>
+                                        <div className="flex-1">
+                                            <p className="text-xs font-bold text-indigo-700">Delegated to {auditApproval.delegatedTo}</p>
+                                            <p className="text-[10px] text-indigo-500">Awaiting review</p>
+                                        </div>
+                                    </div>
+                                )}
+                                {auditApproval.status === 'Escalated' && (
+                                    <div className="flex items-center gap-3 p-3 bg-purple-50 rounded-xl border border-purple-100">
+                                        <div className="h-8 w-8 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center"><TrendingUp size={14} /></div>
+                                        <div className="flex-1">
+                                            <p className="text-xs font-bold text-purple-700">Escalated to {auditApproval.escalatedTo}</p>
+                                            <p className="text-[10px] text-purple-500">Under higher review</p>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                    <DialogFooter>
+                        <Button variant="outline" className="rounded-xl h-12 font-bold px-8" onClick={() => setIsAuditDialogOpen(false)}>Close</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

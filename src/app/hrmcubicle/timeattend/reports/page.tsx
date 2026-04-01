@@ -18,6 +18,8 @@ const TimeAttendReportsPage = () => {
     const [activeTab, setActiveTab] = useState("attendance");
     const [searchTerm, setSearchTerm] = useState("");
     const [isCustomReportOpen, setIsCustomReportOpen] = useState(false);
+    const [isReportDetailOpen, setIsReportDetailOpen] = useState(false);
+    const [selectedReport, setSelectedReport] = useState<any>(null);
     const { toast } = useToast();
 
     // Mock Data for Charts (Simple visual representation)
@@ -85,13 +87,36 @@ const TimeAttendReportsPage = () => {
             title: "Processing Request",
             description: `Generating fresh data for ${report.name}...`,
         });
-        setTimeout(() => {
-            toast({
-                title: "Report Ready",
-                description: "Data updated successfully.",
-                className: "bg-indigo-50 border-indigo-100 text-indigo-800"
-            });
-        }, 1500);
+
+        const headers = ["Report ID", "Name", "Type", "Frequency", "Generated On", "Data Points", "Status"];
+        const row = [report.id, report.name, report.type, report.frequency, new Date().toLocaleDateString(), "120", "Generated"];
+
+        const csvContent = [
+            headers.join(","),
+            row.join(","),
+            // Add some mock detail rows
+            ["", "Department", "Metric", "Value", "Trend", "", ""].join(","),
+            ["", "Engineering", "Attendance Rate", "94%", "+2%", "", ""].join(","),
+            ["", "Sales", "Attendance Rate", "88%", "-1%", "", ""].join(","),
+            ["", "Operations", "Attendance Rate", "91%", "+3%", "", ""].join(","),
+            ["", "HR", "Attendance Rate", "97%", "+1%", "", ""].join(","),
+        ].join("\n");
+
+        const blob = new Blob([csvContent], { type: "text/csv" });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `${report.name.replace(/\s+/g, "_")}_${new Date().toISOString().split("T")[0]}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+
+        toast({
+            title: "Report Generated & Downloaded",
+            description: `${report.name} has been refreshed and saved.`,
+            className: "bg-indigo-50 border-indigo-100 text-indigo-800"
+        });
     };
 
     const handleExportAll = () => {
@@ -203,7 +228,10 @@ const TimeAttendReportsPage = () => {
                                 <h3 className="text-2xl font-bold text-slate-900">Departmental Consurency</h3>
                                 <p className="text-slate-400 font-bold text-sm mt-1">Real-time shift adherence by department</p>
                             </div>
-                            <Button variant="ghost" className="text-indigo-500 font-bold bg-indigo-50 hover:bg-indigo-100 rounded-xl" onClick={() => toast({ title: "View Report", description: "Redirecting to detailed Department view..." })}>View Report</Button>
+                            <Button variant="ghost" className="text-indigo-500 font-bold bg-indigo-50 hover:bg-indigo-100 rounded-xl" onClick={() => {
+                                setSelectedReport({ id: "DEPT-VIEW", name: "Departmental Concurrency Report", type: "Analytical", frequency: "Real-time", lastGenerated: new Date().toLocaleDateString(), details: deptData });
+                                setIsReportDetailOpen(true);
+                            }}>View Report</Button>
                         </div>
 
                         {/* CSS Chart Bar Representation */}
@@ -324,6 +352,50 @@ const TimeAttendReportsPage = () => {
                     </Tabs>
                 </div>
             </div>
+
+            {/* Report Detail Dialog */}
+            <Dialog open={isReportDetailOpen} onOpenChange={setIsReportDetailOpen}>
+                <DialogContent className="sm:max-w-[550px] rounded-3xl p-8 bg-white border-none shadow-2xl">
+                    <DialogHeader>
+                        <DialogTitle className="text-2xl font-bold text-slate-900">{selectedReport?.name}</DialogTitle>
+                        <DialogDescription className="font-semibold text-slate-500">
+                            {selectedReport?.type} report &bull; {selectedReport?.frequency}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4 space-y-4">
+                        <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                            <div className="flex justify-between text-sm mb-2">
+                                <span className="font-semibold text-slate-500">Report ID</span>
+                                <span className="font-bold text-slate-900">{selectedReport?.id}</span>
+                            </div>
+                            <div className="flex justify-between text-sm mb-2">
+                                <span className="font-semibold text-slate-500">Last Generated</span>
+                                <span className="font-bold text-slate-900">{selectedReport?.lastGenerated}</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                                <span className="font-semibold text-slate-500">Classification</span>
+                                <span className="font-bold text-slate-900">{selectedReport?.type}</span>
+                            </div>
+                        </div>
+                        {selectedReport?.details && (
+                            <div className="space-y-3">
+                                <p className="text-sm font-bold text-slate-700">Department Breakdown</p>
+                                {selectedReport.details.map((dept: any) => (
+                                    <div key={dept.name} className="flex justify-between items-center p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                        <span className="font-bold text-slate-700">{dept.name}</span>
+                                        <span className="font-bold text-indigo-600">{dept.value}%</span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                    <DialogFooter>
+                        <Button className="w-full h-12 rounded-xl bg-[#6366f1] hover:bg-[#5558e6] font-bold text-lg shadow-lg shadow-indigo-200" onClick={() => setIsReportDetailOpen(false)}>
+                            Close
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
             {/* Custom Report Dialog */}
             <Dialog open={isCustomReportOpen} onOpenChange={setIsCustomReportOpen}>

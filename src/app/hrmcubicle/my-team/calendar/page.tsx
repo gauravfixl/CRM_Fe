@@ -55,6 +55,8 @@ const TeamCalendarPage = () => {
     const [newEventTitle, setNewEventTitle] = useState("");
     const [newEventDate, setNewEventDate] = useState("2026-01-20");
     const [newEventType, setNewEventType] = useState<'meeting' | 'birthday' | 'anniversary' | 'holiday' | 'leave'>("meeting");
+    const [currentMonth, setCurrentMonth] = useState(0); // 0 = January 2026
+    const [currentYear, setCurrentYear] = useState(2026);
 
     useEffect(() => {
         setMounted(true);
@@ -62,14 +64,40 @@ const TeamCalendarPage = () => {
 
     if (!mounted) return null;
 
+    const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+    const handlePrevMonth = () => {
+        if (currentMonth === 0) {
+            setCurrentMonth(11);
+            setCurrentYear(currentYear - 1);
+        } else {
+            setCurrentMonth(currentMonth - 1);
+        }
+    };
+
+    const handleNextMonth = () => {
+        if (currentMonth === 11) {
+            setCurrentMonth(0);
+            setCurrentYear(currentYear + 1);
+        } else {
+            setCurrentMonth(currentMonth + 1);
+        }
+    };
+
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+    const firstDayOfWeek = (new Date(currentYear, currentMonth, 1).getDay() + 6) % 7; // Monday=0
+
     const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-    const dates = Array.from({ length: 31 }, (_, i) => i + 1);
+    const dates = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
     const getEventForDate = (date: number) => {
-        // Simple day matching for January 2026
-        const dateStr = `2026-01-${String(date).padStart(2, '0')}`;
+        const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(date).padStart(2, '0')}`;
         return calendarEvents.filter(e => e.date === dateStr);
     };
+
+    const todayDate = new Date();
+    const isCurrentMonth = todayDate.getFullYear() === currentYear && todayDate.getMonth() === currentMonth;
+    const todayDay = isCurrentMonth ? todayDate.getDate() : -1;
 
     const handleAddEvent = () => {
         if (!newEventTitle) return;
@@ -123,9 +151,9 @@ const TeamCalendarPage = () => {
                     <Card className="xl:col-span-8 border-none shadow-xl overflow-hidden bg-white/80 backdrop-blur-md rounded-[2rem] border border-white/50">
                         <CardHeader className="p-6 pb-2 flex flex-row items-center justify-between">
                             <div className="flex items-center gap-4">
-                                <Button variant="outline" size="icon" className="h-8 w-8 rounded-lg border-slate-100 hover:bg-slate-50 border-none shadow-sm" onClick={() => toast({ title: "Navigating", description: "Moving to December 2025." })}><ChevronLeft className="h-4 w-4" /></Button>
-                                <h2 className="text-lg font-bold text-slate-900 tracking-tight">January 2026</h2>
-                                <Button variant="outline" size="icon" className="h-8 w-8 rounded-lg border-slate-100 hover:bg-slate-50 border-none shadow-sm" onClick={() => toast({ title: "Navigating", description: "Moving to February 2026." })}><ChevronRight className="h-4 w-4" /></Button>
+                                <Button variant="outline" size="icon" className="h-8 w-8 rounded-lg border-slate-100 hover:bg-slate-50 border-none shadow-sm" onClick={handlePrevMonth}><ChevronLeft className="h-4 w-4" /></Button>
+                                <h2 className="text-lg font-bold text-slate-900 tracking-tight">{monthNames[currentMonth]} {currentYear}</h2>
+                                <Button variant="outline" size="icon" className="h-8 w-8 rounded-lg border-slate-100 hover:bg-slate-50 border-none shadow-sm" onClick={handleNextMonth}><ChevronRight className="h-4 w-4" /></Button>
                             </div>
                             <div className="flex bg-slate-100/50 p-1 rounded-xl">
                                 {["Day", "Week", "Month"].map(m => (
@@ -148,12 +176,16 @@ const TeamCalendarPage = () => {
                                         {d}
                                     </div>
                                 ))}
+                                {Array.from({ length: firstDayOfWeek }).map((_, i) => (
+                                    <div key={`empty-${i}`} className="min-h-[110px] p-2 border-r border-b border-indigo-50/50" />
+                                ))}
                                 {dates.map((d, i) => {
                                     const events = getEventForDate(d);
+                                    const cellIndex = firstDayOfWeek + i;
                                     return (
-                                        <div key={d} className={`min-h-[110px] p-2 border-r border-b border-indigo-50/50 hover:bg-indigo-50 transition-all duration-300 cursor-pointer group ${i % 7 === 6 ? 'border-r-0' : ''}`}>
+                                        <div key={d} className={`min-h-[110px] p-2 border-r border-b border-indigo-50/50 hover:bg-indigo-50 transition-all duration-300 cursor-pointer group ${cellIndex % 7 === 6 ? 'border-r-0' : ''}`}>
                                             <div className="flex justify-between items-start mb-2">
-                                                <span className={`text-[11px] font-extrabold ${d === 19 ? 'h-6 w-6 bg-indigo-600 text-white flex items-center justify-center rounded-lg shadow-lg' : 'text-slate-400 group-hover:text-indigo-600'}`}>{d}</span>
+                                                <span className={`text-[11px] font-extrabold ${d === todayDay ? 'h-6 w-6 bg-indigo-600 text-white flex items-center justify-center rounded-lg shadow-lg' : 'text-slate-400 group-hover:text-indigo-600'}`}>{d}</span>
                                                 {events.length > 0 && <div className="h-2 w-2 rounded-full bg-indigo-400 shadow-[0_0_8px_rgba(129,140,248,0.6)]" />}
                                             </div>
                                             <div className="space-y-1">
@@ -208,7 +240,29 @@ const TeamCalendarPage = () => {
 
                                 <Button
                                     className="w-full h-10 bg-indigo-600 text-white hover:bg-indigo-700 rounded-xl font-bold text-[10px] tracking-widest shadow-md border-none transition-all"
-                                    onClick={() => toast({ title: "Calendar Synced", description: "Your external calendar has been updated." })}
+                                    onClick={() => {
+                                        let icsContent = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//HRM Team Calendar//EN\r\nCALSCALE:GREGORIAN\r\n";
+                                        calendarEvents.forEach(ev => {
+                                            const dateFormatted = ev.date.replace(/-/g, "");
+                                            icsContent += "BEGIN:VEVENT\r\n";
+                                            icsContent += `DTSTART;VALUE=DATE:${dateFormatted}\r\n`;
+                                            icsContent += `DTEND;VALUE=DATE:${dateFormatted}\r\n`;
+                                            icsContent += `SUMMARY:${ev.title}\r\n`;
+                                            icsContent += `DESCRIPTION:${ev.type}\r\n`;
+                                            icsContent += "END:VEVENT\r\n";
+                                        });
+                                        icsContent += "END:VCALENDAR\r\n";
+                                        const blob = new Blob([icsContent], { type: "text/calendar;charset=utf-8" });
+                                        const url = URL.createObjectURL(blob);
+                                        const link = document.createElement("a");
+                                        link.href = url;
+                                        link.download = "Team_Calendar.ics";
+                                        document.body.appendChild(link);
+                                        link.click();
+                                        document.body.removeChild(link);
+                                        URL.revokeObjectURL(url);
+                                        toast({ title: "Calendar Exported", description: "ICS file downloaded. Import it into your calendar app." });
+                                    }}
                                 >
                                     Sync Calendar
                                 </Button>
@@ -240,7 +294,7 @@ const TeamCalendarPage = () => {
                                             variant="outline"
                                             size="sm"
                                             className="rounded-full font-bold text-[8px] h-6 px-3 border-slate-100 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-100 transition-all"
-                                            onClick={() => toast({ title: "Wish Sent!", description: `Your greeting has been sent to ${c.name}.` })}
+                                            onClick={() => toast({ title: `${c.event} Wish Sent!`, description: `A personalized ${c.event.toLowerCase()} greeting has been delivered to ${c.name} via email and team chat.` })}
                                         >
                                             Wish
                                         </Button>
