@@ -29,11 +29,32 @@ import { Progress } from "@/shared/components/ui/progress";
 import { useToast } from "@/shared/components/ui/use-toast";
 import { useOrganisationStore } from "@/shared/data/organisation-store";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 const OrganisationDashboard = () => {
     const { toast } = useToast();
+    const router = useRouter();
     const { employees, departments, designations, locations, getMetrics } = useOrganisationStore();
     const metrics = getMetrics();
+
+    const handleExportOrgReport = () => {
+        const headers = ["Name", "Employee ID", "Department", "Designation", "Location", "Status", "Join Date"];
+        const rows = employees.map(emp => {
+            const dept = departments.find(d => d.id === emp.departmentId);
+            const desig = designations.find(d => d.id === emp.designationId);
+            const loc = locations.find(l => l.id === emp.locationId);
+            return [emp.name, emp.employeeId, dept?.name || "", desig?.title || "", loc?.name || "", emp.status, emp.joinDate];
+        });
+        const csvContent = [headers.join(","), ...rows.map(r => r.map(v => `"${v}"`).join(","))].join("\n");
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `org_report_${new Date().toISOString().split('T')[0]}.csv`;
+        link.click();
+        URL.revokeObjectURL(url);
+        toast({ title: "Report Exported", description: "Organisation report has been downloaded as CSV." });
+    };
 
     const quickStats = [
         {
@@ -161,7 +182,7 @@ const OrganisationDashboard = () => {
                         <Button
                             size="sm"
                             className="bg-indigo-600 hover:bg-slate-900 text-white rounded-xl h-9 px-5 font-bold shadow-xl shadow-indigo-100 transition-all gap-2 text-[10px]"
-                            onClick={() => toast({ title: "Generating Report", description: "The organizational summary is being compiled." })}
+                            onClick={handleExportOrgReport}
                         >
                             <BarChart3 size={14} /> Export Org Report
                         </Button>
@@ -329,7 +350,7 @@ const OrganisationDashboard = () => {
 
                                 <Button
                                     className="w-full bg-indigo-600 text-white hover:bg-slate-900 rounded-2xl h-11 font-bold text-xs shadow-xl shadow-indigo-100 transition-all font-medium"
-                                    onClick={() => toast({ title: "Opening Analytics", description: "Redirecting to detailed workforce insights." })}
+                                    onClick={() => router.push("/hrmcubicle/organization/employees")}
                                 >
                                     Detailed Analytics
                                 </Button>

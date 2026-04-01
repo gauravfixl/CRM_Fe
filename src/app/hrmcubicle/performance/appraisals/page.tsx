@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     Star,
@@ -31,6 +31,7 @@ import { Badge } from "@/shared/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/shared/components/ui/avatar";
 import { useToast } from "@/shared/components/ui/use-toast";
 import { usePerformanceStore, type Appraisal } from "@/shared/data/performance-store";
+import { createAppraisal as createAppraisalApi, getAllAppraisals, updateAppraisal as updateAppraisalApi } from "@/modules/hrm/hooks/hrmHooks";
 import {
     Tabs,
     TabsContent,
@@ -52,7 +53,39 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 const PerformanceAppraisalsPage = () => {
     const { toast } = useToast();
-    const { appraisals, addAppraisal, updateAppraisal } = usePerformanceStore();
+    const { appraisals: storeAppraisals, addAppraisal, updateAppraisal } = usePerformanceStore();
+    const [appraisals, setAppraisals] = useState<Appraisal[]>(storeAppraisals);
+    useEffect(() => {
+        const loadAppraisals = async () => {
+            try {
+                const res = await getAllAppraisals();
+                const data = res?.data?.data || [];
+                if (!data.length) return;
+                setAppraisals(
+                    data.map((a: any) => ({
+                        id: a.id,
+                        employeeName: a?.employee?.email || "Employee",
+                        employeeId: a?.employee?.employeeId || "-",
+                        employeeAvatar: (a?.employee?.email || "E").charAt(0).toUpperCase(),
+                        cycle: a?.period || "Appraisal",
+                        status: "HR Review",
+                        overallRating: a?.rating,
+                        competencies: (a?.criteria || []).map((c: any) => ({
+                            name: c?.label || "Criteria",
+                            rating: c?.score || 0,
+                            feedback: c?.comments || "",
+                        })),
+                        proposedIncrement: "",
+                        proposedPromotion: "",
+                        lastUpdated: new Date().toISOString().slice(0, 10),
+                    }))
+                );
+            } catch {
+                setAppraisals(storeAppraisals);
+            }
+        };
+        loadAppraisals();
+    }, [storeAppraisals]);
 
     const [activeTab, setActiveTab] = useState("all");
     const [searchQuery, setSearchQuery] = useState("");
@@ -79,20 +112,51 @@ const PerformanceAppraisalsPage = () => {
             toast({ title: "Error", description: "Identity fields are required", variant: "destructive" });
             return;
         }
-        addAppraisal({
-            ...formData,
-            employeeAvatar: formData.employeeName.charAt(0)
-        });
-        toast({ title: "Cycle Initialized", description: `Framework deployed for ${formData.employeeName}.` });
-        setIsLaunchOpen(false);
-        setFormData({ employeeName: "", employeeId: "", employeeAvatar: "", cycle: "Annual Appraisal 2026" });
+        (async () => {
+            try {
+                const employeeId = localStorage.getItem("employeeId");
+                if (employeeId) {
+                    await createAppraisalApi({
+                        employee: employeeId,
+                        period: formData.cycle,
+                        rating: 3,
+                        comments: "",
+                    });
+                } else {
+                    addAppraisal({
+                        ...formData,
+                        employeeAvatar: formData.employeeName.charAt(0)
+                    });
+                }
+                toast({ title: "Cycle Initialized", description: `Framework deployed for ${formData.employeeName}.` });
+                setIsLaunchOpen(false);
+                setFormData({ employeeName: "", employeeId: "", employeeAvatar: "", cycle: "Annual Appraisal 2026" });
+            } catch {
+                toast({ title: "Create failed", description: "Could not initialize appraisal", variant: "destructive" });
+            }
+        })();
     };
 
     const handleUpdateReview = () => {
         if (activeAppraisal) {
-            updateAppraisal(activeAppraisal.id, reviewData);
-            toast({ title: "Audit Updated", description: "Mapping and notes saved successfully." });
-            setIsReviewOpen(false);
+            (async () => {
+                try {
+                    if (/^[a-fA-F0-9]{24}$/.test(activeAppraisal.id)) {
+                        await updateAppraisalApi(activeAppraisal.id, {
+                            comments: reviewData.hrNotes,
+                            status: reviewData.status,
+                            recommendation: reviewData.proposedPromotion,
+                        });
+                    } else {
+                        updateAppraisal(activeAppraisal.id, reviewData);
+                    }
+                    setAppraisals((prev) => prev.map((a) => (a.id === activeAppraisal.id ? { ...a, ...reviewData } : a)));
+                    toast({ title: "Audit Updated", description: "Mapping and notes saved successfully." });
+                    setIsReviewOpen(false);
+                } catch {
+                    toast({ title: "Update failed", description: "Could not update appraisal", variant: "destructive" });
+                }
+            })();
         }
     };
 

@@ -9,7 +9,7 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  productionBrowserSourceMaps: true,
+  productionBrowserSourceMaps: false,
   experimental: {
     optimizePackageImports: [
       "lucide-react",
@@ -17,6 +17,8 @@ const nextConfig = {
       "framer-motion",
       "recharts",
       "date-fns",
+      "react-icons",
+      "@fluentui/react-icons",
     ],
   },
 }

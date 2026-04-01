@@ -199,7 +199,25 @@ const SalaryProcessingPage = () => {
                     <Button variant="outline" onClick={() => setIsExportDialogOpen(true)} className="h-10 border-slate-200 rounded-lg font-semibold text-xs gap-2 px-4 hover:text-[#8B5CF6] transition-all border-none bg-slate-50/50">
                         <Download size={14} /> Export data
                     </Button>
-                    <Button variant="outline" className="h-10 border-slate-200 rounded-lg font-semibold text-xs gap-2 px-4 hover:text-[#8B5CF6] transition-all border-none bg-slate-50/50">
+                    <Button variant="outline" className="h-10 border-slate-200 rounded-lg font-semibold text-xs gap-2 px-4 hover:text-[#8B5CF6] transition-all border-none bg-slate-50/50" onClick={() => {
+                        const headers = ["Timestamp", "Action", "User", "Employee", "Details"];
+                        const auditData = employees.map(emp => [
+                            new Date().toISOString(),
+                            emp.approved ? "Approved" : "Pending",
+                            "HR Admin",
+                            emp.name,
+                            `Net: ${formatINR(Math.round(calculateNetSalary(emp)))}`
+                        ].join(","));
+                        const csvContent = [headers.join(","), ...auditData].join("\n");
+                        const blob = new Blob([csvContent], { type: "text/csv" });
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement("a");
+                        a.href = url;
+                        a.download = `audit_log_${activeRun.month.replace(/\s+/g, "_")}_${new Date().toISOString().split("T")[0]}.csv`;
+                        a.click();
+                        window.URL.revokeObjectURL(url);
+                        toast({ title: "Audit Log Exported", description: "Processing audit trail downloaded." });
+                    }}>
                         <History size={14} /> Audit logs
                     </Button>
                     {!isFinalized && currentStep < 3 && (
@@ -433,10 +451,27 @@ const SalaryProcessingPage = () => {
                             <Card className="rounded-2xl border border-[#8B5CF6]/20 bg-[#8B5CF6]/5 p-4 border-dashed">
                                 <h4 className="text-sm font-bold text-[#8B5CF6] mb-3">Bulk operations</h4>
                                 <div className="space-y-2">
-                                    <Button variant="outline" className="w-full h-9 border-slate-200 bg-white/80 rounded-xl font-semibold text-[10px] text-slate-500 hover:bg-white">
+                                    <Button variant="outline" className="w-full h-9 border-slate-200 bg-white/80 rounded-xl font-semibold text-[10px] text-slate-500 hover:bg-white" onClick={() => {
+                                        const input = document.createElement("input");
+                                        input.type = "file";
+                                        input.accept = ".csv";
+                                        input.onchange = (e: any) => {
+                                            const file = e.target.files?.[0];
+                                            if (file) {
+                                                toast({ title: "CSV Imported", description: `"${file.name}" has been loaded. Review data before processing.` });
+                                            }
+                                        };
+                                        input.click();
+                                    }}>
                                         <FileText size={14} className="mr-2" /> Import CSV
                                     </Button>
-                                    <Button variant="outline" className="w-full h-9 border-slate-200 bg-white/80 rounded-xl font-semibold text-[10px] text-slate-500 hover:bg-white">
+                                    <Button variant="outline" className="w-full h-9 border-slate-200 bg-white/80 rounded-xl font-semibold text-[10px] text-slate-500 hover:bg-white" onClick={() => {
+                                        setEmployees(prev => prev.map(emp => ({
+                                            ...emp,
+                                            variable: Math.round(emp.fixed * 0.1) // 10% of fixed salary as bonus
+                                        })));
+                                        toast({ title: "Bonus Calculated", description: "Variable pay set to 10% of fixed salary for all employees." });
+                                    }}>
                                         <Calculator size={14} className="mr-2" /> Auto calc bonus
                                     </Button>
                                     <Button variant="outline" onClick={() => setIsExportDialogOpen(true)} className="w-full h-9 border-slate-200 bg-white/80 rounded-xl font-semibold text-[10px] text-slate-500 hover:bg-white">

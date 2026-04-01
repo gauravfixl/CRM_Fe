@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from "react"
 import { Activity, Users, Eye, Clock, Search, Download } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Button } from "@/shared/components/ui/button"
 import { Input } from "@/shared/components/ui/input"
 import { Badge } from "@/shared/components/ui/badge"
 import {
@@ -13,7 +13,7 @@ import {
     TableHeader,
     TableRow,
 } from "@/shared/components/ui/table"
-import { showSuccess } from "@/utils/toast"
+import { showSuccess } from "@/shared/utils/toast"
 
 interface ActivityLog {
     id: string

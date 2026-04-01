@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { axiosInstance as axios } from '@/lib/axios'
 
 export type IssueStatus = "TODO" | "IN_PROGRESS" | "IN_REVIEW" | "DONE" | "BACKLOG" | "TESTING" | "REPORTED" | "TRIAGE" | "REPRODUCED" | "FIXING" | "VERIFIED" | "IDEAS" | "BRIEFING" | "DRAFTING" | "REVIEW" | "PUBLISHED" | "PLANNING" | "BLOCKED" | "COMPLETED"
 export type IssuePriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT"
@@ -44,6 +45,10 @@ export interface Issue {
 
 interface IssueStore {
     issues: Issue[]
+
+    // Backend sync
+    setIssues: (issues: Issue[]) => void
+    loadIssuesByProject: (projectId: string, opts?: { boardId?: string }) => Promise<void>
 
     // Basic CRUD
     addIssue: (issue: Issue) => void
@@ -134,6 +139,100 @@ export const useIssueStore = create<IssueStore>()(
     persist(
         (set, get) => ({
             issues: INITIAL_ISSUES,
+            setIssues: (nextIssues) => set(() => ({ issues: nextIssues })),
+            loadIssuesByProject: async (projectId, opts) => {
+                const state = get()
+                // If we already have issues for this project and a reload isn't forced, keep UX fast.
+                if (state.issues.length > 0 && state.issues.some(i => i.projectId === projectId) && !opts?.boardId) {
+                    return
+                }
+
+                // 1) Find a boardId for this project
+                let boardId = opts?.boardId
+                if (!boardId) {
+                    const boardRes = await axios.get(`/board/${projectId}/all`)
+                    const boards = boardRes?.data?.boards ?? []
+                    boardId = boards?.[0]?._id ? String(boards[0]._id) : undefined
+                }
+
+                if (!boardId) {
+                    set(() => ({ issues: [] }))
+                    return
+                }
+
+                // 2) Fetch tasks for that board
+                const tasksRes = await axios.get(`/task/${projectId}/all`, {
+                    params: { boardId }
+                })
+
+                const backendTasks = tasksRes?.data?.tasks ?? []
+
+                const toIssueStatus = (status: any): IssueStatus => {
+                    const upper = String(status ?? "").toUpperCase()
+                    // backend stores column keys (snake_case). UI uses same keys in uppercase.
+                    return upper as IssueStatus
+                }
+
+                const toIssuePriority = (priority: any): Issue['priority'] => {
+                    const p = String(priority ?? "").toUpperCase()
+                    if (p === 'CRITICAL') return 'URGENT'
+                    if (p === 'LOW') return 'LOW'
+                    if (p === 'MEDIUM') return 'MEDIUM'
+                    if (p === 'HIGH') return 'HIGH'
+                    // fallback
+                    return 'MEDIUM'
+                }
+
+                const toIssueType = (taskType: any, isSub: boolean): Issue['type'] => {
+                    if (isSub) return 'SUBTASK'
+                    const t = String(taskType ?? '').toLowerCase()
+                    if (t === 'bug') return 'BUG'
+                    if (t === 'story') return 'STORY'
+                    if (t === 'epic') return 'EPIC'
+                    if (t === 'task') return 'TASK'
+                    return 'TASK'
+                }
+
+                const mapped: Issue[] = backendTasks.map((t: any) => {
+                    const assigneeObj = t?.assigneeId ?? null
+                    const assigneeEmail = assigneeObj?.email ? String(assigneeObj.email) : ''
+                    const assigneeName = assigneeObj?.firstName ? String(assigneeObj.firstName) : ''
+                    const assigneeAvatar = assigneeObj?.avatar ? String(assigneeObj.avatar) : ''
+
+                    const parentExists = Boolean(t?.parentId)
+                    const issueType = toIssueType(t?.type, parentExists)
+
+                    return {
+                        id: String(t?._id ?? t?.taskCode ?? `task-${Date.now()}`),
+                        projectId: String(t?.projectId ?? projectId),
+                        boardId: t?.boardId ? String(t.boardId) : undefined,
+                        title: String(t?.name ?? ''),
+                        description: String(t?.description ?? ''),
+                        status: toIssueStatus(t?.status),
+                        priority: toIssuePriority(t?.priority),
+                        type: issueType,
+                        assigneeId: assigneeEmail,
+                        assignee: assigneeEmail
+                            ? { name: assigneeName || assigneeEmail, avatar: assigneeAvatar || '' }
+                            : undefined,
+                        reporterId: '',
+                        createdAt: t?.createdAt ? new Date(t.createdAt).toISOString() : new Date().toISOString(),
+                        updatedAt: t?.updatedAt ? new Date(t.updatedAt).toISOString() : undefined,
+                        sprintId: t?.sprintId ? String(t.sprintId) : undefined,
+                        epicId: t?.epicId ? String(t.epicId) : undefined,
+                        parentId: parentExists ? (t?.parentId?._id ? String(t.parentId._id) : String(t.parentId)) : undefined,
+                        storyPoints: t?.storyPoints ?? undefined,
+                        dueDate: t?.dueDate ? new Date(t.dueDate).toISOString() : undefined,
+                        startDate: t?.startDate ? new Date(t.startDate).toISOString() : undefined,
+                        teamId: t?.assignedTeamId ? String(t.assignedTeamId) : undefined,
+                        columnOrder: typeof t?.columnOrder === 'number' ? t.columnOrder : 0,
+                        labels: Array.isArray(t?.labels) ? t.labels : undefined,
+                        history: []
+                    }
+                })
+
+                set(() => ({ issues: mapped }))
+            },
 
             addIssue: (issue) => set((state) => ({
                 issues: [issue, ...state.issues]

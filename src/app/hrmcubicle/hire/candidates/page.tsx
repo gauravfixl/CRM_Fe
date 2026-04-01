@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/shared/components/ui/button";
 import {
@@ -63,18 +63,103 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui
 import { useToast } from "@/shared/components/ui/use-toast";
 import { Avatar, AvatarFallback } from "@/shared/components/ui/avatar";
 import { useHireStore, type Candidate } from "@/shared/data/hire-store";
+import {
+    createCandidate as createCandidateApi,
+    deleteCandidate as deleteCandidateApi,
+    getAllCandidates,
+    getAllJobs,
+    updateCandidate as updateCandidateApi,
+    updateCandidateStatus,
+} from "@/modules/hrm/hooks/hrmHooks";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card } from "@/shared/components/ui/card";
 import { Textarea } from "@/shared/components/ui/textarea";
 
 const CandidatesPage = () => {
-    const { candidates, jobs, addCandidate, updateCandidate, deleteCandidate, moveCandidateStage, addCandidateNote } = useHireStore();
+    const { candidates: storeCandidates, jobs: storeJobs } = useHireStore();
+    const [candidates, setCandidates] = useState<Candidate[]>([]);
+    const [jobs, setJobs] = useState(storeJobs);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [viewMode, setViewMode] = useState<"kanban" | "table">("kanban");
     const [searchQuery, setSearchQuery] = useState("");
     const [statusFilter, setStatusFilter] = useState<string>("all");
     const [editingCandidate, setEditingCandidate] = useState<Candidate | null>(null);
     const { toast } = useToast();
+    useEffect(() => {
+        const loadData = async () => {
+            try {
+                const [candidateRes, jobsRes] = await Promise.all([getAllCandidates(), getAllJobs()]);
+                const candidateData = candidateRes?.data?.candidates || [];
+                const jobsData = jobsRes?.data?.jobs || jobsRes?.data?.data || [];
+
+                const mappedCandidates: Candidate[] = candidateData.map((c: any) => {
+                    const fullName = c?.name || "";
+                    const parts = fullName.split(" ");
+                    const firstName = parts[0] || "Unknown";
+                    const lastName = parts.slice(1).join(" ") || "";
+                    const stageMap: Record<string, Candidate["stage"]> = {
+                        Applied: "New",
+                        Screening: "Screening",
+                        Interview_Scheduled: "Interview",
+                        Interview_Completed: "Interview",
+                        Offered: "Offer",
+                        Hired: "Hired",
+                        Rejected: "Rejected",
+                    };
+                    return {
+                        id: c?._id,
+                        jobId: "",
+                        firstName,
+                        lastName,
+                        email: c?.email || "",
+                        phone: c?.phone || "",
+                        location: "Remote",
+                        source: "LinkedIn",
+                        resumeUrl: "",
+                        parsedSkills: [],
+                        tags: [],
+                        stage: stageMap[c?.status] || "New",
+                        stageEnteredDate: c?.lastUpdated || new Date().toISOString(),
+                        rating: 0,
+                        communicationLog: [],
+                        notes: [],
+                        appliedDate: c?.lastUpdated ? new Date(c.lastUpdated).toLocaleDateString() : "-",
+                    };
+                });
+
+                setCandidates(mappedCandidates.length ? mappedCandidates : storeCandidates);
+                if (Array.isArray(jobsData) && jobsData.length) {
+                    setJobs((prev) =>
+                        jobsData.map((j: any) => ({
+                            ...prev[0],
+                            id: j._id,
+                            title: j.title || "Untitled",
+                            department: j.department?.name || j.department || "General",
+                            location: j.location || "-",
+                            type: j.employmentType || "Full-time",
+                            experience: "-",
+                            salaryRange: "-",
+                            description: j.description || "",
+                            skills: j.tags || [],
+                            hiringManagerId: "",
+                            recruiters: [],
+                            workflowStatus: j.status === "Open" ? "Active" : "Draft",
+                            approvalChain: [],
+                            applicantsCount: 0,
+                            postedDate: j.createdAt ? new Date(j.createdAt).toLocaleDateString() : "-",
+                            views: 0,
+                            logs: [],
+                        }))
+                    );
+                }
+            } catch {
+                setCandidates(storeCandidates);
+                setJobs(storeJobs);
+            }
+        };
+        loadData();
+    }, [storeCandidates, storeJobs]);
+
     const router = useRouter();
 
     // Form Stats
@@ -134,36 +219,61 @@ const CandidatesPage = () => {
 
         const tags = formData.tagsInput.split(",").map(t => t.trim()).filter(Boolean);
 
-        if (editingCandidate) {
-            updateCandidate(editingCandidate.id, {
-                firstName: formData.firstName,
-                lastName: formData.lastName,
-                email: formData.email,
-                phone: formData.phone,
-                jobId: formData.jobId,
-                source: formData.source,
-                resumeUrl: formData.resumeUrl,
-                tags
-            });
-            if (formData.notes) addCandidateNote(editingCandidate.id, formData.notes);
-            toast({ title: "Profile Updated", description: "Candidate details updated successfully." });
-        } else {
-            addCandidate({
-                firstName: formData.firstName,
-                lastName: formData.lastName,
-                email: formData.email,
-                phone: formData.phone,
-                location: "Remote", // Default
-                jobId: formData.jobId,
-                source: formData.source,
-                resumeUrl: formData.resumeUrl,
-                tags
-            });
-            // Note is handled separately if needed, or we can add logic to add note immediately (store update needed for atomic add)
-            toast({ title: "Candidate Added", description: `${formData.firstName} has been added to the pipeline.` });
-        }
-        setIsDialogOpen(false);
-        resetForm();
+        (async () => {
+            try {
+                if (editingCandidate) {
+                    await updateCandidateApi(editingCandidate.id, {
+                        firstName: formData.firstName,
+                        lastName: formData.lastName,
+                        email: formData.email,
+                        phoneNumber: formData.phone,
+                    });
+                    setCandidates((prev) =>
+                        prev.map((c) =>
+                            c.id === editingCandidate.id
+                                ? { ...c, firstName: formData.firstName, lastName: formData.lastName, email: formData.email, phone: formData.phone, tags }
+                                : c
+                        )
+                    );
+                    toast({ title: "Profile Updated", description: "Candidate details updated successfully." });
+                } else {
+                    await createCandidateApi({
+                        firstName: formData.firstName,
+                        lastName: formData.lastName,
+                        email: formData.email,
+                        phoneNumber: formData.phone,
+                        jobApplication: formData.jobId,
+                        source: formData.source,
+                        status: "Applied",
+                    });
+                    toast({ title: "Candidate Added", description: `${formData.firstName} has been added to the pipeline.` });
+                    const refreshed = await getAllCandidates();
+                    const refreshedCandidates = refreshed?.data?.candidates || [];
+                    setCandidates((prev) =>
+                        refreshedCandidates.length
+                            ? refreshedCandidates.map((c: any) => {
+                                const fullName = c?.name || "";
+                                const p = fullName.split(" ");
+                                return {
+                                    ...prev[0],
+                                    id: c?._id,
+                                    firstName: p[0] || "Unknown",
+                                    lastName: p.slice(1).join(" "),
+                                    email: c?.email || "",
+                                    phone: c?.phone || "",
+                                    stage: "New",
+                                    appliedDate: c?.lastUpdated ? new Date(c.lastUpdated).toLocaleDateString() : "-",
+                                } as Candidate;
+                            })
+                            : prev
+                    );
+                }
+                setIsDialogOpen(false);
+                resetForm();
+            } catch {
+                toast({ title: "Save failed", description: "Could not save candidate", variant: "destructive" });
+            }
+        })();
     };
 
     const openEdit = (c: Candidate) => {
@@ -183,14 +293,36 @@ const CandidatesPage = () => {
     };
 
     const handleStageMove = (id: string, stage: string) => {
-        moveCandidateStage(id, stage as any);
-        toast({ title: "Stage Updated", description: `Candidate moved to ${stage}` });
+        const backendStatusMap: Record<string, string> = {
+            New: "Applied",
+            Screening: "Screening",
+            Interview: "Interview_Scheduled",
+            Offer: "Offered",
+            Hired: "Hired",
+            Rejected: "Rejected",
+        };
+        (async () => {
+            try {
+                await updateCandidateStatus(id, backendStatusMap[stage] || "Applied");
+                setCandidates((prev) => prev.map((c) => (c.id === id ? { ...c, stage: stage as Candidate["stage"] } : c)));
+                toast({ title: "Stage Updated", description: `Candidate moved to ${stage}` });
+            } catch {
+                toast({ title: "Update failed", description: "Could not update candidate stage", variant: "destructive" });
+            }
+        })();
     };
 
     const handleDeleteCandidate = (id: string, name: string) => {
         if (confirm(`Are you sure you want to delete ${name}?`)) {
-            deleteCandidate(id);
-            toast({ title: "Candidate Deleted", description: "The profile has been removed.", variant: "destructive" });
+            (async () => {
+                try {
+                    await deleteCandidateApi(id);
+                    setCandidates((prev) => prev.filter((c) => c.id !== id));
+                    toast({ title: "Candidate Deleted", description: "The profile has been removed.", variant: "destructive" });
+                } catch {
+                    toast({ title: "Delete failed", description: "Could not delete candidate", variant: "destructive" });
+                }
+            })();
         }
     };
 

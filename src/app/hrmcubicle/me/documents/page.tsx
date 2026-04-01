@@ -75,6 +75,7 @@ const MyDocumentsPage = () => {
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
     const [isComplianceOpen, setIsComplianceOpen] = useState(false);
     const [selectedDoc, setSelectedDoc] = useState<any>(null);
+    const [isDocUnlocked, setIsDocUnlocked] = useState(false);
 
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [uploadProgress, setUploadProgress] = useState(0);
@@ -433,7 +434,7 @@ const MyDocumentsPage = () => {
                 </DialogContent>
             </Dialog>
 
-            <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+            <Dialog open={isPreviewOpen} onOpenChange={(val) => { setIsPreviewOpen(val); if (!val) setIsDocUnlocked(false); }}>
                 <DialogContent className="bg-white border-slate-100 p-0 max-w-4xl overflow-hidden rounded-[2rem] h-[80vh] flex flex-col shadow-2xl font-sans" style={{ zoom: "80%" }}>
                     <div className="flex items-center justify-between p-6 border-b border-slate-100 sticky top-0 bg-white z-10">
                         <div className="flex items-center gap-4">
@@ -445,18 +446,70 @@ const MyDocumentsPage = () => {
                                 <p className="text-[10px] font-bold text-slate-400">Secure Viewer • {selectedDoc?.size}</p>
                             </div>
                         </div>
-                        <Button className="rounded-xl h-10 bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 gap-2" onClick={() => toast({ title: "Authorized", description: "Loading document data..." })}>
-                            Unlock Content <Lock size={14} />
-                        </Button>
+                        {!isDocUnlocked ? (
+                            <Button className="rounded-xl h-10 bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 gap-2" onClick={() => setIsDocUnlocked(true)}>
+                                Unlock Content <Lock size={14} />
+                            </Button>
+                        ) : (
+                            <Badge className="bg-emerald-50 text-emerald-600 border-none font-bold text-[10px] px-4 py-2">
+                                <CheckCircle2 size={14} className="mr-1.5" /> Unlocked
+                            </Badge>
+                        )}
                     </div>
                     <div className="flex-1 bg-slate-50/50 flex items-center justify-center p-12">
-                        <div className="w-full max-w-xl aspect-[1/1.4] bg-white rounded-2xl shadow-lg border border-slate-200 flex flex-col items-center justify-center text-center p-10 space-y-4">
-                            <div className="h-20 w-20 bg-indigo-50 rounded-full flex items-center justify-center">
-                                <ShieldCheck size={40} className="text-indigo-200" />
+                        {!isDocUnlocked ? (
+                            <div className="w-full max-w-xl aspect-[1/1.4] bg-white rounded-2xl shadow-lg border border-slate-200 flex flex-col items-center justify-center text-center p-10 space-y-4">
+                                <div className="h-20 w-20 bg-indigo-50 rounded-full flex items-center justify-center">
+                                    <ShieldCheck size={40} className="text-indigo-200" />
+                                </div>
+                                <h4 className="text-lg font-bold text-slate-900">Protected Preview</h4>
+                                <p className="text-xs text-slate-500 leading-relaxed">This record is end-to-end encrypted. Click 'Unlock' or download to view the full details.</p>
                             </div>
-                            <h4 className="text-lg font-bold text-slate-900">Protected Preview</h4>
-                            <p className="text-xs text-slate-500 leading-relaxed">This record is end-to-end encrypted. Click 'Unlock' or download to view the full details.</p>
-                        </div>
+                        ) : (
+                            <div className="w-full max-w-xl bg-white rounded-2xl shadow-lg border border-slate-200 p-10 space-y-6 overflow-y-auto max-h-full">
+                                <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
+                                    <div className="h-10 w-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600">
+                                        <CheckCircle2 size={20} />
+                                    </div>
+                                    <div>
+                                        <h4 className="text-sm font-bold text-slate-900">Document Decrypted</h4>
+                                        <p className="text-[10px] text-slate-400 font-bold">Verified and authenticated</p>
+                                    </div>
+                                </div>
+                                <div className="space-y-4">
+                                    <h3 className="text-lg font-bold text-slate-900 tracking-tight">{selectedDoc?.name}</h3>
+                                    <div className="grid grid-cols-2 gap-4 text-xs">
+                                        <div className="p-3 bg-slate-50 rounded-xl">
+                                            <span className="text-[9px] font-bold text-slate-400 uppercase block mb-1">Category</span>
+                                            <span className="font-bold text-slate-700">{selectedDoc?.cat}</span>
+                                        </div>
+                                        <div className="p-3 bg-slate-50 rounded-xl">
+                                            <span className="text-[9px] font-bold text-slate-400 uppercase block mb-1">File Size</span>
+                                            <span className="font-bold text-slate-700">{selectedDoc?.size}</span>
+                                        </div>
+                                        <div className="p-3 bg-slate-50 rounded-xl">
+                                            <span className="text-[9px] font-bold text-slate-400 uppercase block mb-1">Upload Date</span>
+                                            <span className="font-bold text-slate-700">{selectedDoc?.date}</span>
+                                        </div>
+                                        <div className="p-3 bg-slate-50 rounded-xl">
+                                            <span className="text-[9px] font-bold text-slate-400 uppercase block mb-1">Format</span>
+                                            <span className="font-bold text-slate-700 uppercase">{selectedDoc?.type}</span>
+                                        </div>
+                                    </div>
+                                    {selectedDoc?.expiry && (
+                                        <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-100">
+                                            <span className="text-[9px] font-bold text-emerald-500 uppercase block mb-1">Validity</span>
+                                            <span className="text-sm font-bold text-emerald-700">{selectedDoc.expiry.label} — Expires {selectedDoc.expiry.date}</span>
+                                        </div>
+                                    )}
+                                    <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100 text-center">
+                                        <FileText size={48} className="text-slate-200 mx-auto mb-3" />
+                                        <p className="text-xs font-bold text-slate-500">Full document content rendered here.</p>
+                                        <p className="text-[10px] text-slate-400 mt-1">For security, download the original file for complete access.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </DialogContent>
             </Dialog>

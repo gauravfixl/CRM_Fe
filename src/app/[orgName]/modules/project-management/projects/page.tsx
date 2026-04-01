@@ -1,86 +1,94 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { MoreHorizontal, Plus, Search, Calendar, Users } from 'lucide-react'
+import { MoreHorizontal, Search, Calendar, Users, Loader2, FolderKanban } from 'lucide-react'
+import {
+  getMyWorkspaces,
+  type Workspace,
+} from "@/modules/project-management/workspace/hooks/workspaceHooks"
+import {
+  getAllProjectsByWorkspace,
+  type Project,
+} from "@/modules/project-management/project/hooks/projectHooks"
 
-const projects = [
-  {
-    id: 1,
-    name: "Website Redesign",
-    description: "Complete overhaul of company website",
-    status: "In Progress",
-    progress: 65,
-    dueDate: "2024-02-15",
-    team: ["JD", "SM", "AB"],
-    priority: "High",
-  },
-  {
-    id: 2,
-    name: "Mobile App Development",
-    description: "iOS and Android app for customer portal",
-    status: "Planning",
-    progress: 25,
-    dueDate: "2024-03-30",
-    team: ["MK", "LJ", "RW"],
-    priority: "Medium",
-  },
-  {
-    id: 3,
-    name: "Database Migration",
-    description: "Migrate legacy database to cloud infrastructure",
-    status: "Completed",
-    progress: 100,
-    dueDate: "2024-01-20",
-    team: ["TH", "NK"],
-    priority: "High",
-  },
-]
-
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case "Completed":
-      return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
-    case "In Progress":
-      return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
-    case "Planning":
-      return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
-    default:
-      return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"
-  }
+interface ProjectWithWorkspace extends Project {
+  workspaceName?: string
+  workspaceId?: string
 }
 
-const getPriorityColor = (priority: string) => {
-  switch (priority) {
-    case "High":
-      return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
-    case "Medium":
-      return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
-    case "Low":
-      return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
-    default:
-      return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"
-  }
+const getStatusColor = (isArchived: boolean) => {
+  if (isArchived) return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"
+  return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
 }
 
 export default function ProjectsPage() {
+  const params = useParams() as { orgName?: string }
+  const router = useRouter()
   const [searchTerm, setSearchTerm] = useState("")
+  const [projects, setProjects] = useState<ProjectWithWorkspace[]>([])
+  const [workspaces, setWorkspaces] = useState<Workspace[]>([])
+  const [isFetching, setIsFetching] = useState(true)
+
+  const orgName = params.orgName || localStorage.getItem("orgName") || ""
+
+  useEffect(() => {
+    fetchAllProjects()
+  }, [])
+
+  const fetchAllProjects = async () => {
+    setIsFetching(true)
+    try {
+      const wsRes = await getMyWorkspaces()
+      const wsList: Workspace[] = wsRes?.data?.data?.workspaces || wsRes?.data?.workspaces || wsRes?.data?.data || wsRes?.data || []
+      const workspacesArr = Array.isArray(wsList) ? wsList : []
+      setWorkspaces(workspacesArr)
+
+      const projectPromises = workspacesArr.map(async (ws) => {
+        try {
+          const res = await getAllProjectsByWorkspace(ws._id)
+          const projectsData: Project[] = res?.data?.data?.projects || res?.data?.projects || res?.data?.data || []
+          return (Array.isArray(projectsData) ? projectsData : []).map((p) => ({
+            ...p,
+            workspaceName: ws.name,
+            workspaceId: ws._id,
+          }))
+        } catch {
+          return []
+        }
+      })
+
+      const results = await Promise.all(projectPromises)
+      setProjects(results.flat())
+    } catch (err: any) {
+      if (err?.response?.status !== 401) {
+        console.error("Failed to fetch projects:", err)
+      }
+    } finally {
+      setIsFetching(false)
+    }
+  }
 
   const filteredProjects = projects.filter(project =>
-    project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    project.description.toLowerCase().includes(searchTerm.toLowerCase())
+    project.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    project.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    project.workspaceName?.toLowerCase().includes(searchTerm.toLowerCase())
   )
+
+  const totalProjects = projects.length
+  const activeProjects = projects.filter(p => !p.isArchived).length
+  const archivedProjects = projects.filter(p => p.isArchived).length
 
   return (
     <div className="space-y-4">
@@ -91,54 +99,52 @@ export default function ProjectsPage() {
             Manage and track your project portfolio
           </p>
         </div>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          New Project
-        </Button>
       </div>
 
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Projects</CardTitle>
+            <FolderKanban className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">24</div>
+            <div className="text-2xl font-bold">{totalProjects}</div>
             <p className="text-xs text-muted-foreground">
-              +3 from last month
+              Across {workspaces.length} workspaces
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">In Progress</CardTitle>
+            <CardTitle className="text-sm font-medium">Active</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">12</div>
+            <div className="text-2xl font-bold text-green-600">{activeProjects}</div>
             <p className="text-xs text-muted-foreground">
-              +2 from last week
+              Currently active
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Completed</CardTitle>
+            <CardTitle className="text-sm font-medium">Archived</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">8</div>
+            <div className="text-2xl font-bold text-gray-500">{archivedProjects}</div>
             <p className="text-xs text-muted-foreground">
-              +1 from last week
+              Archived projects
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Team Members</CardTitle>
+            <CardTitle className="text-sm font-medium">Workspaces</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">32</div>
+            <div className="text-2xl font-bold">{workspaces.length}</div>
             <p className="text-xs text-muted-foreground">
-              +4 from last month
+              Total workspaces
             </p>
           </CardContent>
         </Card>
@@ -156,71 +162,86 @@ export default function ProjectsPage() {
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {filteredProjects.map((project) => (
-          <Card key={project.id} className="hover:shadow-md transition-shadow">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <Badge className={getStatusColor(project.status)}>
-                  {project.status}
-                </Badge>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="h-8 w-8 p-0">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem>View details</DropdownMenuItem>
-                    <DropdownMenuItem>Edit project</DropdownMenuItem>
-                    <DropdownMenuItem>Assign team</DropdownMenuItem>
-                    <DropdownMenuItem className="text-red-600">
-                      Archive project
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-              <CardTitle className="text-lg">{project.name}</CardTitle>
-              <CardDescription>{project.description}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span>Progress</span>
-                  <span>{project.progress}%</span>
+      {isFetching ? (
+        <div className="flex items-center justify-center py-16">
+          <Loader2 className="w-6 h-6 animate-spin text-blue-500 mr-2" />
+          <span className="text-sm text-muted-foreground">Loading projects...</span>
+        </div>
+      ) : filteredProjects.length === 0 ? (
+        <div className="text-center py-16 text-muted-foreground">
+          {searchTerm ? "No projects match your search." : "No projects found. Create a project from a workspace to get started."}
+        </div>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {filteredProjects.map((project) => (
+            <Card
+              key={project._id}
+              className="hover:shadow-md transition-shadow cursor-pointer"
+              onClick={() => {
+                if (project.workspaceId) {
+                  router.push(`/${orgName}/modules/workspaces/${project.workspaceId}/projects/${project._id}/board`)
+                }
+              }}
+            >
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <Badge className={getStatusColor(project.isArchived)}>
+                    {project.isArchived ? "Archived" : "Active"}
+                  </Badge>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" className="h-8 w-8 p-0" onClick={(e) => e.stopPropagation()}>
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={(e) => {
+                        e.stopPropagation()
+                        if (project.workspaceId) router.push(`/${orgName}/modules/workspaces/${project.workspaceId}/projects/${project._id}`)
+                      }}>View details</DropdownMenuItem>
+                      <DropdownMenuItem onClick={(e) => {
+                        e.stopPropagation()
+                        if (project.workspaceId) router.push(`/${orgName}/modules/workspaces/${project.workspaceId}/projects/${project._id}/board`)
+                      }}>Open Board</DropdownMenuItem>
+                      <DropdownMenuItem onClick={(e) => {
+                        e.stopPropagation()
+                        if (project.workspaceId) router.push(`/${orgName}/modules/workspaces/${project.workspaceId}/projects/${project._id}/settings`)
+                      }}>Settings</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
-                <Progress value={project.progress} className="h-2" />
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">
-                    {project.dueDate}
-                  </span>
+                <CardTitle className="text-lg">{project.name}</CardTitle>
+                <CardDescription>{project.description || "No description"}</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">
+                      {project.createdAt ? new Date(project.createdAt).toLocaleDateString() : "N/A"}
+                    </span>
+                  </div>
+                  <Badge variant="outline" className="text-xs">
+                    {project.visibility || "public"}
+                  </Badge>
                 </div>
-                <Badge className={getPriorityColor(project.priority)}>
-                  {project.priority}
-                </Badge>
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Users className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">Team</span>
+
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <FolderKanban className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">{project.workspaceName}</span>
+                  </div>
+                  <Avatar className="h-6 w-6 border-2 border-background">
+                    <AvatarFallback className="text-xs">
+                      {project.createdBy?.fullName?.[0] || project.createdBy?.email?.[0] || "U"}
+                    </AvatarFallback>
+                  </Avatar>
                 </div>
-                <div className="flex -space-x-2">
-                  {project.team.map((member, index) => (
-                    <Avatar key={index} className="h-6 w-6 border-2 border-background">
-                      <AvatarFallback className="text-xs">{member}</AvatarFallback>
-                    </Avatar>
-                  ))}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

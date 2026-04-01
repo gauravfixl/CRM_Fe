@@ -181,7 +181,34 @@ const SettlementPage = () => {
                                             >
                                                 <ShieldCheck size={24} /> {isPaid ? 'Payment Finalized' : 'Approve & process payout'}
                                             </Button>
-                                            <Button variant="outline" className="flex-1 h-16 border-slate-200 text-slate-500 font-black rounded-2xl text-lg hover:bg-slate-50 flex items-center gap-3">
+                                            <Button variant="outline" className="flex-1 h-16 border-slate-200 text-slate-500 font-black rounded-2xl text-lg hover:bg-slate-50 flex items-center gap-3"
+                                                onClick={() => {
+                                                    if (!selectedEmp) return;
+                                                    const lines = [
+                                                        `FULL & FINAL SETTLEMENT SUMMARY`,
+                                                        `${'='.repeat(40)}`,
+                                                        `Employee: ${selectedEmp.name}`,
+                                                        `ID: ${selectedEmp.id}`,
+                                                        `Department: ${selectedEmp.department}`,
+                                                        `Role: ${selectedEmp.role}`,
+                                                        `Status: ${isPaid ? 'Paid' : 'Draft'}`,
+                                                        ``,
+                                                        `--- Breakdown ---`,
+                                                        ...calculationItems.map(item => `${item.label}: ${item.type === 'debit' ? '-' : '+'}₹${item.amount.toLocaleString()} (${item.desc})`),
+                                                        ``,
+                                                        `NET PAYABLE: ₹${netAmount.toLocaleString()}`,
+                                                        `Generated: ${new Date().toLocaleDateString()}`
+                                                    ];
+                                                    const blob = new Blob([lines.join('\n')], { type: 'text/plain' });
+                                                    const url = URL.createObjectURL(blob);
+                                                    const a = document.createElement('a');
+                                                    a.href = url;
+                                                    a.download = `settlement_summary_${selectedEmp.name.replace(/\s+/g, '_')}.txt`;
+                                                    a.click();
+                                                    URL.revokeObjectURL(url);
+                                                    toast({ title: "Downloaded", description: "Settlement summary has been downloaded." });
+                                                }}
+                                            >
                                                 <Printer size={24} /> Download summary
                                             </Button>
                                         </div>
@@ -189,7 +216,34 @@ const SettlementPage = () => {
                                 </Card>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                    <Card className="border border-slate-100 shadow-xl rounded-[2rem] bg-teal-50/50 p-8 flex items-center gap-6 cursor-pointer hover:bg-teal-50 transition-all group" onClick={() => toast({ title: "Generating Docs", description: "Experience certificate is being prepared." })}>
+                                    <Card className="border border-slate-100 shadow-xl rounded-[2rem] bg-teal-50/50 p-8 flex items-center gap-6 cursor-pointer hover:bg-teal-50 transition-all group" onClick={() => {
+                                        if (!selectedEmp) return;
+                                        const letter = [
+                                            `RELIEVING LETTER`,
+                                            `${'='.repeat(40)}`,
+                                            `Date: ${new Date().toLocaleDateString()}`,
+                                            ``,
+                                            `To Whom It May Concern,`,
+                                            ``,
+                                            `This is to certify that ${selectedEmp.name} was employed with our organization as ${selectedEmp.role} in the ${selectedEmp.department} department.`,
+                                            ``,
+                                            `${selectedEmp.name} has been relieved from duties effective ${selectedEmp.lwd || new Date().toLocaleDateString()}.`,
+                                            ``,
+                                            `During their tenure, they conducted themselves with professionalism and integrity.`,
+                                            `We wish them all the best in their future endeavors.`,
+                                            ``,
+                                            `Regards,`,
+                                            `Human Resources Department`
+                                        ];
+                                        const blob = new Blob([letter.join('\n')], { type: 'text/plain' });
+                                        const url = URL.createObjectURL(blob);
+                                        const a = document.createElement('a');
+                                        a.href = url;
+                                        a.download = `relieving_letter_${selectedEmp.name.replace(/\s+/g, '_')}.txt`;
+                                        a.click();
+                                        URL.revokeObjectURL(url);
+                                        toast({ title: "Downloaded", description: "Relieving letter has been downloaded." });
+                                    }}>
                                         <div className="h-16 w-16 bg-white rounded-2xl flex items-center justify-center text-teal-600 shadow-xl shadow-teal-100 group-hover:scale-110 transition-transform">
                                             <Receipt size={32} />
                                         </div>
@@ -200,7 +254,36 @@ const SettlementPage = () => {
                                         <ArrowRight className="ml-auto text-teal-200 group-hover:text-teal-500 transition-colors" size={24} />
                                     </Card>
 
-                                    <Card className="border border-slate-100 shadow-xl rounded-[2rem] bg-purple-50/50 p-8 flex items-center gap-6 cursor-pointer hover:bg-purple-50 transition-all group" onClick={() => toast({ title: "Generating Docs", description: "Final pay slip is being prepared." })}>
+                                    <Card className="border border-slate-100 shadow-xl rounded-[2rem] bg-purple-50/50 p-8 flex items-center gap-6 cursor-pointer hover:bg-purple-50 transition-all group" onClick={() => {
+                                        if (!selectedEmp) return;
+                                        const slip = [
+                                            `FINAL PAY SLIP`,
+                                            `${'='.repeat(40)}`,
+                                            `Employee: ${selectedEmp.name}`,
+                                            `ID: ${selectedEmp.id}`,
+                                            `Department: ${selectedEmp.department}`,
+                                            `Role: ${selectedEmp.role}`,
+                                            `Period: Final Settlement`,
+                                            ``,
+                                            `--- Earnings ---`,
+                                            ...calculationItems.filter(i => i.type === 'credit').map(i => `${i.label}: ₹${i.amount.toLocaleString()}`),
+                                            ``,
+                                            `--- Deductions ---`,
+                                            ...calculationItems.filter(i => i.type === 'debit').map(i => `${i.label}: ₹${i.amount.toLocaleString()}`),
+                                            ``,
+                                            `NET PAYABLE: ₹${netAmount.toLocaleString()}`,
+                                            `Status: ${isPaid ? 'Paid' : 'Pending'}`,
+                                            `Generated: ${new Date().toLocaleDateString()}`
+                                        ];
+                                        const blob = new Blob([slip.join('\n')], { type: 'text/plain' });
+                                        const url = URL.createObjectURL(blob);
+                                        const a = document.createElement('a');
+                                        a.href = url;
+                                        a.download = `final_payslip_${selectedEmp.name.replace(/\s+/g, '_')}.txt`;
+                                        a.click();
+                                        URL.revokeObjectURL(url);
+                                        toast({ title: "Downloaded", description: "Final pay slip has been downloaded." });
+                                    }}>
                                         <div className="h-16 w-16 bg-white rounded-2xl flex items-center justify-center text-purple-600 shadow-xl shadow-purple-100 group-hover:scale-110 transition-transform">
                                             <Banknote size={32} />
                                         </div>

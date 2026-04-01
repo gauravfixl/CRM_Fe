@@ -58,6 +58,9 @@ const ProbationManagementPage = () => {
     const [filterDept, setFilterDept] = useState("All");
     const [filterActive, setFilterActive] = useState<"All" | "Critical" | "Top">("All");
 
+    // Archive Dialog State
+    const [isArchiveOpen, setIsArchiveOpen] = useState(false);
+
     // Extension Dialog State
     const [isExtendOpen, setIsExtendOpen] = useState(false);
     const [extensionEmpId, setExtensionEmpId] = useState<string | null>(null);
@@ -416,7 +419,7 @@ const ProbationManagementPage = () => {
                             <Button
                                 variant="ghost"
                                 className="text-[#CB9DF0] font-bold text-sm"
-                                onClick={() => toast({ title: "Archive View", description: "This feature will be available in the next system update." })}
+                                onClick={() => setIsArchiveOpen(true)}
                             >
                                 View full archive
                             </Button>
@@ -459,6 +462,40 @@ const ProbationManagementPage = () => {
                         </div>
                     </Card>
                 </div>
+
+                {/* Archive Dialog */}
+                <Dialog open={isArchiveOpen} onOpenChange={setIsArchiveOpen}>
+                    <DialogContent className="bg-white rounded-[2.5rem] border-none p-0 max-w-3xl shadow-[0_50px_100px_-30px_rgba(0,0,0,0.2)] outline-none overflow-hidden">
+                        <div className="p-10">
+                            <DialogHeader className="mb-6">
+                                <DialogTitle className="text-2xl font-black text-slate-900 tracking-tight italic">Probation Lifecycle Archive</DialogTitle>
+                                <DialogDescription className="text-slate-400 font-bold text-base mt-0.5 italic">Complete history of all probation-related events.</DialogDescription>
+                            </DialogHeader>
+                            <div className="max-h-[60vh] overflow-y-auto no-scrollbar space-y-4">
+                                {history.filter((h: HistoryLog) => h.title.toLowerCase().includes('probation')).length === 0 ? (
+                                    <div className="py-16 text-center text-slate-300 font-bold italic border-2 border-dashed border-slate-50 rounded-2xl">
+                                        No probation lifecycle events recorded.
+                                    </div>
+                                ) : history.filter((h: HistoryLog) => h.title.toLowerCase().includes('probation')).map((log: HistoryLog) => (
+                                    <div key={log.id} className="p-6 rounded-2xl bg-slate-50/50 border border-slate-100">
+                                        <div className="flex justify-between items-start mb-2">
+                                            <p className="text-[10px] font-black text-slate-300 tracking-[0.2em] uppercase">{log.date}</p>
+                                            <Badge className={`h-2 w-2 rounded-full p-0 min-w-0 ${log.type === 'growth' ? 'bg-[#CB9DF0]' : 'bg-slate-300'}`} />
+                                        </div>
+                                        <h4 className="font-black text-slate-900 text-lg mb-1">{log.title}</h4>
+                                        <p className="text-slate-400 font-bold text-xs leading-relaxed">{log.description}</p>
+                                        <div className="mt-3 flex items-center gap-2">
+                                            <div className="h-6 w-6 rounded-full bg-white border border-slate-100 flex items-center justify-center text-[10px] font-black text-slate-300 uppercase">
+                                                {log.employeeName[0]}
+                                            </div>
+                                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-tighter">{log.employeeName}</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </DialogContent>
+                </Dialog>
 
                 {/* Extension Dialog */}
                 <Dialog open={isExtendOpen} onOpenChange={setIsExtendOpen}>

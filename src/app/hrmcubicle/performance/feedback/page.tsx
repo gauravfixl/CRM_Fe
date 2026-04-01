@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     MessageSquare,
@@ -29,6 +29,7 @@ import { Badge } from "@/shared/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/shared/components/ui/avatar";
 import { useToast } from "@/shared/components/ui/use-toast";
 import { usePerformanceStore, type Feedback } from "@/shared/data/performance-store";
+import { createFeedback as createFeedbackApi, getAllFeedback } from "@/modules/hrm/hooks/hrmHooks";
 import {
     Dialog,
     DialogContent,
@@ -51,7 +52,34 @@ import {
 
 const ContinuousFeedbackPage = () => {
     const { toast } = useToast();
-    const { feedbacks, addFeedback, moderateFeedback } = usePerformanceStore();
+    const { feedbacks: storeFeedbacks, addFeedback, moderateFeedback } = usePerformanceStore();
+    const [feedbacks, setFeedbacks] = useState<Feedback[]>(storeFeedbacks);
+    useEffect(() => {
+        const loadFeedback = async () => {
+            try {
+                const res = await getAllFeedback();
+                const items = res?.data?.feedbacks || [];
+                if (!items.length) return;
+                setFeedbacks(
+                    items.map((f: any) => ({
+                        id: f.id,
+                        from: { name: f?.feedbackFrom?.email || "Manager", avatar: "M", role: "Manager" },
+                        to: { name: f?.employee?.email || "Employee", avatar: "E" },
+                        message: f?.comments || "",
+                        category: f?.feedbackType === "Improvement" ? "Improvement" : f?.feedbackType === "General" ? "General" : "Appreciation",
+                        timestamp: f?.createdAt || new Date().toISOString(),
+                        isPublic: true,
+                        isAnonymous: false,
+                        moderationStatus: "Approved",
+                    }))
+                );
+            } catch {
+                setFeedbacks(storeFeedbacks);
+            }
+        };
+        loadFeedback();
+    }, [storeFeedbacks]);
+
 
     const [searchQuery, setSearchQuery] = useState("");
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -71,20 +99,36 @@ const ContinuousFeedbackPage = () => {
             toast({ title: "Validation Error", description: "Recipient and message are required", variant: "destructive" });
             return;
         }
-        addFeedback({
-            ...formData,
-            to: { ...formData.to, avatar: formData.to.name.charAt(0) }
-        });
-        toast({ title: "Feedback Dispatched", description: "Recognition has been queued for moderation/post." });
-        setIsDialogOpen(false);
-        setFormData({
-            to: { name: "", avatar: "" },
-            message: "",
-            category: "Appreciation",
-            isPublic: true,
-            isAnonymous: false,
-            from: { name: "HR Admin", avatar: "HA", role: "Administrator" }
-        });
+        (async () => {
+            try {
+                const employeeId = localStorage.getItem("employeeId");
+                if (!employeeId) {
+                    addFeedback({
+                        ...formData,
+                        to: { ...formData.to, avatar: formData.to.name.charAt(0) }
+                    });
+                } else {
+                    await createFeedbackApi({
+                        employee: employeeId,
+                        feedbackType: formData.category,
+                        comments: formData.message,
+                        rating: 4,
+                    });
+                }
+                toast({ title: "Feedback Dispatched", description: "Recognition has been queued for moderation/post." });
+                setIsDialogOpen(false);
+                setFormData({
+                    to: { name: "", avatar: "" },
+                    message: "",
+                    category: "Appreciation",
+                    isPublic: true,
+                    isAnonymous: false,
+                    from: { name: "HR Admin", avatar: "HA", role: "Administrator" }
+                });
+            } catch {
+                toast({ title: "Send failed", description: "Could not submit feedback", variant: "destructive" });
+            }
+        })();
     };
 
     const getCategoryStyles = (cat: Feedback['category']) => {
@@ -226,7 +270,7 @@ const ContinuousFeedbackPage = () => {
                                                         <DropdownMenuContent align="end" className="rounded-xl border-none shadow-2xl p-1.5 w-48 font-bold">
                                                             <DropdownMenuItem className="rounded-lg h-10 text-[10px] tracking-wide" onClick={() => moderateFeedback(fb.id, 'Approved')}>Approve for Wall</DropdownMenuItem>
                                                             <DropdownMenuItem className="rounded-lg h-10 text-[10px] tracking-wide" onClick={() => moderateFeedback(fb.id, 'Hidden')}>Hide Feedback</DropdownMenuItem>
-                                                            <DropdownMenuItem className="rounded-lg h-10 text-[10px] tracking-wide text-rose-600 focus:bg-rose-50">Flag Inappropriate</DropdownMenuItem>
+                                                            <DropdownMenuItem className="rounded-lg h-10 text-[10px] tracking-wide text-rose-600 focus:bg-rose-50" onClick={() => { moderateFeedback(fb.id, 'Flagged' as any); toast({ title: "Feedback Flagged", description: `Feedback from ${fb.from.name} has been flagged as inappropriate and hidden from the culture wall.` }); }}>Flag Inappropriate</DropdownMenuItem>
                                                         </DropdownMenuContent>
                                                     </DropdownMenu>
                                                 </div>

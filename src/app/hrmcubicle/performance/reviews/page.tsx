@@ -78,6 +78,10 @@ const ReviewsPage = () => {
         actionItems: []
     });
 
+    const [newActionItem, setNewActionItem] = useState("");
+    const [isAddingAction, setIsAddingAction] = useState(false);
+    const [detailNotes, setDetailNotes] = useState("");
+
     const handleAddReview = () => {
         if (!formData.reviewerName || !formData.revieweeName || !formData.dueDate) {
             toast({ title: "Error", description: "Reviewer, Reviewee and Date are required", variant: "destructive" });
@@ -265,6 +269,7 @@ const ReviewsPage = () => {
                                                                 className="bg-slate-50 hover:bg-white text-slate-600 rounded-xl h-10 px-5 border-none font-bold text-[10px] uppercase tracking-widest gap-2 shadow-sm flex-1 lg:flex-none"
                                                                 onClick={() => {
                                                                     setActiveReview(review);
+                                                                    setDetailNotes(review.notes || "");
                                                                     setIsDetailOpen(true);
                                                                 }}
                                                             >
@@ -312,6 +317,7 @@ const ReviewsPage = () => {
                                 className="rounded-2xl bg-slate-50 border-slate-100 min-h-[120px] p-5 font-semibold text-sm focus:bg-white transition-all shadow-inner"
                                 placeholder="Summary of discussion points..."
                                 defaultValue={activeReview?.notes}
+                                onChange={(e) => setDetailNotes(e.target.value)}
                             />
                         </div>
 
@@ -327,14 +333,61 @@ const ReviewsPage = () => {
                                     </div>
                                 ))}
                             </div>
-                            <Button variant="ghost" className="text-indigo-600 font-bold text-[10px] uppercase tracking-widest gap-2 hover:bg-indigo-50 px-4 h-9 rounded-xl border-none"><Plus size={14} /> Add Action Item</Button>
+                            {isAddingAction ? (
+                                <div className="flex items-center gap-2">
+                                    <Input
+                                        className="rounded-xl h-9 bg-slate-50 border-slate-100 font-bold px-4 text-sm flex-1"
+                                        placeholder="Enter action item..."
+                                        value={newActionItem}
+                                        onChange={(e) => setNewActionItem(e.target.value)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' && newActionItem.trim() && activeReview) {
+                                                const updatedItems = [...(activeReview.actionItems || []), newActionItem.trim()];
+                                                updateReview(activeReview.id, { actionItems: updatedItems });
+                                                setActiveReview({ ...activeReview, actionItems: updatedItems });
+                                                setNewActionItem("");
+                                                setIsAddingAction(false);
+                                                toast({ title: "Action Item Added", description: "New action item tracked." });
+                                            }
+                                        }}
+                                        autoFocus
+                                    />
+                                    <Button
+                                        className="bg-indigo-600 text-white rounded-xl h-9 px-4 font-bold text-[10px] tracking-widest border-none"
+                                        onClick={() => {
+                                            if (newActionItem.trim() && activeReview) {
+                                                const updatedItems = [...(activeReview.actionItems || []), newActionItem.trim()];
+                                                updateReview(activeReview.id, { actionItems: updatedItems });
+                                                setActiveReview({ ...activeReview, actionItems: updatedItems });
+                                                setNewActionItem("");
+                                                setIsAddingAction(false);
+                                                toast({ title: "Action Item Added", description: "New action item tracked." });
+                                            }
+                                        }}
+                                    >
+                                        Save
+                                    </Button>
+                                    <Button variant="ghost" className="h-9 px-3 rounded-xl text-slate-400" onClick={() => { setIsAddingAction(false); setNewActionItem(""); }}>Cancel</Button>
+                                </div>
+                            ) : (
+                                <Button variant="ghost" className="text-indigo-600 font-bold text-[10px] uppercase tracking-widest gap-2 hover:bg-indigo-50 px-4 h-9 rounded-xl border-none" onClick={() => setIsAddingAction(true)}><Plus size={14} /> Add Action Item</Button>
+                            )}
                         </div>
                     </div>
 
                     <DialogFooter className="gap-2 pt-6 border-t border-slate-50 sm:justify-start">
                         <Button
                             className="flex-1 bg-slate-900 hover:bg-slate-800 text-white rounded-xl h-12 font-bold text-[11px] uppercase tracking-widest shadow-xl transition-all border-none"
-                            onClick={() => setIsDetailOpen(false)}
+                            onClick={() => {
+                                if (activeReview) {
+                                    const updates: Partial<Review> = {};
+                                    if (detailNotes) updates.notes = detailNotes;
+                                    updates.status = "Completed";
+                                    handleUpdateReview(activeReview.id, updates);
+                                }
+                                setIsDetailOpen(false);
+                                setDetailNotes("");
+                            }}
                         >
                             Update Live Status
                         </Button>

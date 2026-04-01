@@ -300,10 +300,18 @@ const TeamDocumentsPage = () => {
                                                             <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg border-none"><MoreHorizontal size={14} className="text-slate-300" /></Button>
                                                         </DropdownMenuTrigger>
                                                         <DropdownMenuContent align="end" className="rounded-xl p-1.5 border-none shadow-xl bg-white min-w-[160px]">
-                                                            <DropdownMenuItem className="p-2.5 rounded-lg font-bold text-[10px] tracking-widest text-slate-600 cursor-pointer focus:bg-indigo-50" onClick={() => toast({ title: "Sharing", description: "Generating shareable link..." })}>
+                                                            <DropdownMenuItem className="p-2.5 rounded-lg font-bold text-[10px] tracking-widest text-slate-600 cursor-pointer focus:bg-indigo-50" onClick={() => {
+                                                                const shareableLink = `${window.location.origin}/hrmcubicle/my-team/documents/shared/${doc.id}`;
+                                                                navigator.clipboard.writeText(shareableLink).then(() => {
+                                                                    toast({ title: "Link Copied", description: `Shareable link for "${doc.name}" has been copied to your clipboard.` });
+                                                                });
+                                                            }}>
                                                                 <Share2 className="h-3.5 w-3.5 mr-2.5" /> Share Access
                                                             </DropdownMenuItem>
-                                                            <DropdownMenuItem className="p-2.5 rounded-lg font-bold text-[10px] tracking-widest text-rose-600 cursor-pointer focus:bg-rose-50" onClick={() => toast({ title: "Archived", description: "File moved to vault history." })}>
+                                                            <DropdownMenuItem className="p-2.5 rounded-lg font-bold text-[10px] tracking-widest text-rose-600 cursor-pointer focus:bg-rose-50" onClick={() => {
+                                                                setDocuments(prev => prev.filter(d => d.id !== doc.id));
+                                                                toast({ title: "Archived", description: `"${doc.name}" has been moved to vault history.` });
+                                                            }}>
                                                                 <History className="h-3.5 w-3.5 mr-2.5" /> Archive
                                                             </DropdownMenuItem>
                                                         </DropdownMenuContent>
@@ -488,7 +496,7 @@ const TeamDocumentsPage = () => {
                                                 <p className="text-2xl font-black text-slate-800 tracking-tighter mb-2">Drop New Asset Here</p>
                                                 <p className="text-[11px] font-bold text-slate-400 tracking-[0.15em] uppercase">Supports PDF, DOCX, ZIP, MEDIA</p>
                                             </div>
-                                            <Button variant="outline" className="h-12 rounded-2xl px-8 border-2 border-slate-200 font-bold text-xs uppercase tracking-widest hover:border-indigo-300 hover:text-indigo-600 transition-all">Select manually</Button>
+                                            <Button variant="outline" className="h-12 rounded-2xl px-8 border-2 border-slate-200 font-bold text-xs uppercase tracking-widest hover:border-indigo-300 hover:text-indigo-600 transition-all" onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}>Select manually</Button>
                                         </motion.div>
                                     )}
                                 </AnimatePresence>

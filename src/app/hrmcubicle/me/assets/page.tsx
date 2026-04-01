@@ -1,6 +1,7 @@
 "use client"
 
 import React from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     Laptop,
@@ -41,12 +42,15 @@ import { useMeStore } from "@/shared/data/me-store";
 
 const MyAssetsPage = () => {
     const { toast } = useToast();
+    const router = useRouter();
     const { assets: storeAssets } = useMeStore();
 
     const [isRequestOpen, setIsRequestOpen] = React.useState(false);
     const [isPoliciesOpen, setIsPoliciesOpen] = React.useState(false);
     const [isReportOpen, setIsReportOpen] = React.useState(false);
     const [isReturnOpen, setIsReturnOpen] = React.useState(false);
+    const [isVerifyOpen, setIsVerifyOpen] = React.useState(false);
+    const [isTrackingOpen, setIsTrackingOpen] = React.useState(false);
     const [selectedAsset, setSelectedAsset] = React.useState<any>(null);
 
     const [requestForm, setRequestForm] = React.useState({
@@ -198,9 +202,9 @@ const MyAssetsPage = () => {
                                     ))}
                                 </div>
 
-                                <Button 
+                                <Button
                                     className="w-full h-9 bg-white hover:bg-slate-900 text-slate-900 hover:text-white rounded-xl font-bold text-[9px] transition-all border border-slate-100 shadow-sm capitalize"
-                                    onClick={() => toast({ title: "Audit Logged", description: "Your hardware self-audit has been recorded for Q1 2026." })}
+                                    onClick={() => setIsVerifyOpen(true)}
                                 >
                                     Verify Hardware Now
                                 </Button>
@@ -281,7 +285,7 @@ const MyAssetsPage = () => {
                                 <div className="pt-2">
                                     <Button
                                         className="w-full h-10 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-[10px] tracking-tight shadow-lg shadow-indigo-200 transition-all active:scale-95 group/btn border-none capitalize"
-                                        onClick={() => toast({ title: "Triage Initiated", description: "Our IT support team has been notified. They will contact you shortly." })}
+                                        onClick={() => router.push("/hrmcubicle/helpdesk/my-tickets")}
                                     >
                                         Raise Ticket <MousePointer2 size={14} className="ml-2 group-hover/btn:translate-x-1 transition-transform" />
                                     </Button>
@@ -322,7 +326,7 @@ const MyAssetsPage = () => {
                                     <Button
                                         variant="ghost"
                                         className="w-full h-8 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-400 hover:text-slate-600 font-bold text-[9px] border-none capitalize mt-1"
-                                        onClick={() => toast({ title: "Timeline Updated", description: "Fetching tracking data..." })}
+                                        onClick={() => setIsTrackingOpen(true)}
                                     >
                                         Track Shipments
                                     </Button>
@@ -445,6 +449,84 @@ const MyAssetsPage = () => {
                             setIsReportOpen(false);
                             toast({ title: "Incident Logged", description: "IT Support ticket has been raised." });
                         }}>Report Incident</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Hardware Verification Dialog */}
+            <Dialog open={isVerifyOpen} onOpenChange={setIsVerifyOpen}>
+                <DialogContent className="bg-white rounded-2xl border-none p-8 max-w-lg">
+                    <DialogHeader className="space-y-3">
+                        <div className="h-12 w-12 bg-amber-50 rounded-xl flex items-center justify-center text-amber-600">
+                            <ShieldCheck size={24} />
+                        </div>
+                        <DialogTitle className="text-2xl font-bold tracking-tight">Hardware Verification</DialogTitle>
+                        <DialogDescription className="font-medium text-slate-500">Confirm the condition of your assigned hardware for Q1 2026 audit.</DialogDescription>
+                    </DialogHeader>
+                    <div className="py-6 space-y-4">
+                        {assets.map((asset, i) => (
+                            <div key={i} className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-100">
+                                <div className="flex items-center gap-3">
+                                    <div className="h-10 w-10 rounded-lg bg-white flex items-center justify-center shadow-sm border border-slate-50">
+                                        {asset.icon}
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-bold text-slate-900 leading-none">{asset.name}</p>
+                                        <p className="text-[10px] text-slate-400 font-bold capitalize tracking-tight mt-1">Serial: {asset.serial}</p>
+                                    </div>
+                                </div>
+                                <Badge className="bg-emerald-50 text-emerald-600 border-none font-bold text-[8px] px-2">Working</Badge>
+                            </div>
+                        ))}
+                        <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-100 flex items-start gap-3">
+                            <CheckCircle2 size={16} className="text-emerald-500 shrink-0 mt-0.5" />
+                            <p className="text-[11px] font-medium text-emerald-700 leading-relaxed">
+                                All hardware appears to be in good condition. Confirm to complete the audit.
+                            </p>
+                        </div>
+                    </div>
+                    <DialogFooter className="gap-3">
+                        <Button variant="ghost" className="rounded-xl h-12 font-bold px-8 text-slate-500 capitalize" onClick={() => setIsVerifyOpen(false)}>Cancel</Button>
+                        <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl h-12 font-bold shadow-lg shadow-emerald-100" onClick={() => {
+                            setIsVerifyOpen(false);
+                            toast({ title: "Audit Logged", description: "Your hardware self-audit has been recorded for Q1 2026." });
+                        }}>Confirm Verification</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Tracking Dialog */}
+            <Dialog open={isTrackingOpen} onOpenChange={setIsTrackingOpen}>
+                <DialogContent className="bg-white rounded-2xl border-none p-8 max-w-lg">
+                    <DialogHeader className="space-y-3">
+                        <div className="h-12 w-12 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
+                            <Clock size={24} />
+                        </div>
+                        <DialogTitle className="text-2xl font-bold tracking-tight">Shipment Tracking</DialogTitle>
+                        <DialogDescription className="font-medium text-slate-500">Live status of your pending asset deliveries.</DialogDescription>
+                    </DialogHeader>
+                    <div className="py-6 space-y-4">
+                        {[
+                            { item: "Logitech MX Master 3S", status: "In Transit", date: "Exp. 29 Jan", carrier: "BlueDart", tracking: "BD9283746512" },
+                            { item: "Vercel Hoodie (Welcome Kit)", status: "Approved", date: "Exp. 30 Jan", carrier: "DTDC", tracking: "DT8273649102" }
+                        ].map((shipment, i) => (
+                            <div key={i} className="p-4 bg-slate-50 rounded-xl border border-slate-100 space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <h5 className="text-sm font-bold text-slate-900">{shipment.item}</h5>
+                                    <Badge className={`border-none font-bold text-[8px] px-2 ${shipment.status === 'In Transit' ? 'bg-indigo-50 text-indigo-600' : 'bg-emerald-50 text-emerald-600'}`}>{shipment.status}</Badge>
+                                </div>
+                                <div className="flex items-center justify-between text-[10px] font-bold text-slate-400">
+                                    <span>Carrier: {shipment.carrier}</span>
+                                    <span>ID: {shipment.tracking}</span>
+                                </div>
+                                <div className="flex items-center justify-between text-[10px] font-bold text-slate-500">
+                                    <span>{shipment.date}</span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    <DialogFooter>
+                        <Button className="w-full bg-slate-900 text-white rounded-xl h-12 font-bold capitalize" onClick={() => setIsTrackingOpen(false)}>Close</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

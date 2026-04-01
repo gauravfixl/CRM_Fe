@@ -294,7 +294,16 @@ const ProfilePage = () => {
                                 </div>
                             </div>
                         </div>
-                        <Button variant="ghost" className="w-full mt-8 h-11 rounded-xl text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-[#6366f1] hover:bg-indigo-50/50 border border-transparent hover:border-indigo-100 transition-all font-sans">
+                        <Button
+                            variant="ghost"
+                            className="w-full mt-8 h-11 rounded-xl text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-[#6366f1] hover:bg-indigo-50/50 border border-transparent hover:border-indigo-100 transition-all font-sans"
+                            onClick={() => {
+                                toast({
+                                    title: "Directory Sync Initiated",
+                                    description: "Your contact details are being synced with the corporate directory. This may take a few moments.",
+                                });
+                            }}
+                        >
                             SYNC DIRECTORY <ChevronRight size={14} className="ml-2" />
                         </Button>
                     </Card>

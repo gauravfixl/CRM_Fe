@@ -61,11 +61,23 @@ import {
 } from "@/shared/components/ui/table";
 import { useToast } from "@/shared/components/ui/use-toast";
 import { useHireStore, type Interview } from "@/shared/data/hire-store";
+import {
+    createInterview as createInterviewApi,
+    deleteInterview as deleteInterviewApi,
+    getAllCandidates,
+    getAllInterviews,
+    getAllJobs,
+    submitInterviewFeedback,
+    updateInterviewStatus as updateInterviewStatusApi,
+} from "@/modules/hrm/hooks/hrmHooks";
 import { Textarea } from "@/shared/components/ui/textarea"; // Assuming Textarea component exists
 import { Card } from "@/shared/components/ui/card";
 
 const InterviewsPage = () => {
-    const { interviews, candidates, jobs, scheduleInterview, updateInterview, deleteInterview, submitFeedback } = useHireStore();
+    const { interviews: storeInterviews, candidates: storeCandidates, jobs: storeJobs } = useHireStore();
+    const [interviews, setInterviews] = useState<Interview[]>(storeInterviews);
+    const [candidates, setCandidates] = useState(storeCandidates);
+    const [jobs, setJobs] = useState(storeJobs);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
     const [activeTab, setActiveTab] = useState("all");
@@ -97,6 +109,73 @@ const InterviewsPage = () => {
         comments: "",
         decision: "Hire"
     });
+
+    useEffect(() => {
+        const loadData = async () => {
+            try {
+                const [interviewRes, candidateRes, jobsRes] = await Promise.all([
+                    getAllInterviews(),
+                    getAllCandidates(),
+                    getAllJobs(),
+                ]);
+                const interviewsData = interviewRes?.data?.interviews || [];
+                const candidatesData = candidateRes?.data?.candidates || [];
+                const jobsData = jobsRes?.data?.jobs || jobsRes?.data?.data || [];
+
+                setCandidates((prev) =>
+                    candidatesData.length
+                        ? candidatesData.map((c: any) => {
+                            const fullName = c?.name || "";
+                            const parts = fullName.split(" ");
+                            return {
+                                ...prev[0],
+                                id: c?._id,
+                                firstName: parts[0] || "Unknown",
+                                lastName: parts.slice(1).join(" "),
+                                email: c?.email || "",
+                                phone: c?.phone || "",
+                                jobId: "",
+                            };
+                        })
+                        : prev
+                );
+                if (jobsData.length) {
+                    setJobs((prev) =>
+                        jobsData.map((j: any) => ({
+                            ...prev[0],
+                            id: j?._id,
+                            title: j?.title || "Untitled",
+                            department: j?.department?.name || j?.department || "General",
+                        }))
+                    );
+                }
+                if (interviewsData.length) {
+                    setInterviews(
+                        interviewsData.map((i: any) => ({
+                            id: i?._id,
+                            candidateId: i?.candidate?._id || "",
+                            jobId: i?.jobPosting?._id || "",
+                            title: i?.interviewType || "Interview",
+                            interviewers: i?.panel?.map((p: any) => `${p?.firstName || ""} ${p?.lastName || ""}`.trim()).filter(Boolean) || [],
+                            date: i?.scheduledDate ? new Date(i.scheduledDate).toISOString().slice(0, 10) : "",
+                            time: i?.scheduledDate ? new Date(i.scheduledDate).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "",
+                            duration: "1 hour",
+                            mode: i?.interviewType || "Video",
+                            meetingLink: "",
+                            location: "",
+                            status: i?.status || "Scheduled",
+                            scorecards: [],
+                        }))
+                    );
+                }
+            } catch {
+                setInterviews(storeInterviews);
+                setCandidates(storeCandidates);
+                setJobs(storeJobs);
+            }
+        };
+        loadData();
+    }, [storeCandidates, storeInterviews, storeJobs]);
 
     useEffect(() => {
         const candidateParam = searchParams.get('candidate');
@@ -136,17 +215,31 @@ const InterviewsPage = () => {
             location: formData.mode === 'In-person' ? formData.location : undefined,
         };
 
-        if (editingInterviewId) {
-            updateInterview(editingInterviewId, interviewData);
-            toast({ title: "Interview Updated", description: "Schedule has been modified successfully." });
-        } else {
-            scheduleInterview(interviewData as any);
-            toast({ title: "Interview Scheduled", description: `Meeting set with ${candidate.firstName}.` });
-        }
+        (async () => {
+            try {
+                if (editingInterviewId) {
+                    await updateInterviewStatusApi(editingInterviewId, "Scheduled");
+                    setInterviews((prev) => prev.map((i) => (i.id === editingInterviewId ? { ...i, ...interviewData } : i)));
+                    toast({ title: "Interview Updated", description: "Schedule has been modified successfully." });
+                } else {
+                    await createInterviewApi({
+                        candidate: candidate.id,
+                        jobPosting: candidate.jobId,
+                        interviewer: localStorage.getItem("employeeId") || "",
+                        scheduledDate: new Date(`${formData.date}T${formData.time || "09:00"}`).toISOString(),
+                        interviewType: formData.mode,
+                        followUp: formData.title,
+                    });
+                    toast({ title: "Interview Scheduled", description: `Meeting set with ${candidate.firstName}.` });
+                }
 
-        setIsDialogOpen(false);
-        setEditingInterviewId(null);
-        resetForm();
+                setIsDialogOpen(false);
+                setEditingInterviewId(null);
+                resetForm();
+            } catch {
+                toast({ title: "Save failed", description: "Could not save interview", variant: "destructive" });
+            }
+        })();
     };
 
     const handleReschedule = (interview: Interview) => {
@@ -169,21 +262,21 @@ const InterviewsPage = () => {
 
         const overallScore = Math.round((feedbackData.technicalScore + feedbackData.communicationScore + feedbackData.cultureScore) / 3);
 
-        submitFeedback(selectedInterviewId, {
-            interviewerId: "CURRENT_USER", // Mock ID
-            skillsRating: [
-                { skill: "Technical", score: feedbackData.technicalScore },
-                { skill: "Communication", score: feedbackData.communicationScore },
-                { skill: "Culture Fit", score: feedbackData.cultureScore }
-            ],
-            overallScore,
-            feedback: feedbackData.comments,
-            submittedAt: new Date().toISOString()
-        });
-
-        toast({ title: "Feedback Submitted", description: "Scorecard has been recorded." });
-        setIsFeedbackOpen(false);
-        setFeedbackData({ technicalScore: 0, communicationScore: 0, cultureScore: 0, comments: "", decision: "Hire" });
+        (async () => {
+            try {
+                await submitInterviewFeedback(selectedInterviewId, {
+                    interviewerId: localStorage.getItem("employeeId") || "",
+                    comments: feedbackData.comments || `Overall score: ${overallScore}`,
+                    rating: Math.max(1, Math.min(5, overallScore)),
+                });
+                setInterviews((prev) => prev.map((i) => (i.id === selectedInterviewId ? { ...i, status: "Completed" } : i)));
+                toast({ title: "Feedback Submitted", description: "Scorecard has been recorded." });
+                setIsFeedbackOpen(false);
+                setFeedbackData({ technicalScore: 0, communicationScore: 0, cultureScore: 0, comments: "", decision: "Hire" });
+            } catch {
+                toast({ title: "Submit failed", description: "Could not submit feedback", variant: "destructive" });
+            }
+        })();
     };
 
     const openFeedback = (id: string) => {
@@ -316,7 +409,18 @@ const InterviewsPage = () => {
                                                             )}
                                                             <DropdownMenuItem onClick={() => handleReschedule(interview)} className="rounded-xl h-10">Reschedule</DropdownMenuItem>
                                                             <DropdownMenuSeparator className="bg-slate-50" />
-                                                            <DropdownMenuItem onClick={() => { if (confirm("Delete this interview?")) deleteInterview(interview.id); }} className="rounded-xl h-10 text-red-600 focus:bg-red-50 focus:text-red-700">Delete</DropdownMenuItem>
+                                                            <DropdownMenuItem onClick={() => {
+                                                                if (confirm("Delete this interview?")) {
+                                                                    (async () => {
+                                                                        try {
+                                                                            await deleteInterviewApi(interview.id);
+                                                                            setInterviews((prev) => prev.filter((i) => i.id !== interview.id));
+                                                                        } catch {
+                                                                            toast({ title: "Delete failed", description: "Could not delete interview", variant: "destructive" });
+                                                                        }
+                                                                    })();
+                                                                }
+                                                            }} className="rounded-xl h-10 text-red-600 focus:bg-red-50 focus:text-red-700">Delete</DropdownMenuItem>
                                                         </DropdownMenuContent>
                                                     </DropdownMenu>
                                                 </TableCell>

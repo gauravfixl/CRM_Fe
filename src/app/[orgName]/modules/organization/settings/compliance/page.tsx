@@ -17,7 +17,8 @@ import {
     Scale,
     Gavel,
     Eye,
-    ArrowRight
+    ArrowRight,
+    FileText
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
@@ -125,8 +126,8 @@ export default function CompliancePage() {
                                         </div>
                                         <div className="flex flex-col items-end gap-1.5">
                                             <Badge className={`text-[9px] font-black uppercase tracking-widest rounded-md ${std.status === 'Verified' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
-                                                    std.status === 'Active' ? 'bg-blue-50 text-blue-700 border-blue-100' :
-                                                        'bg-amber-50 text-amber-700 border-amber-100'
+                                                std.status === 'Active' ? 'bg-blue-50 text-blue-700 border-blue-100' :
+                                                    'bg-amber-50 text-amber-700 border-amber-100'
                                                 }`} variant="outline">
                                                 {std.status}
                                             </Badge>

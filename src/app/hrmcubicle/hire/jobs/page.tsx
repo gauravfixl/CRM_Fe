@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
     Tabs,
@@ -66,6 +66,7 @@ import { useHireStore, type Job } from "@/shared/data/hire-store";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card } from "@/shared/components/ui/card";
 import { Textarea } from "@/shared/components/ui/textarea";
+import { closeJobPosting, createJobPosting, getAllJobs, getAllPositions, updateJobPosting } from "@/modules/hrm/hooks/hrmHooks";
 
 const JOB_TEMPLATES = [
     {
@@ -103,13 +104,53 @@ const JOB_TEMPLATES = [
 ];
 
 const JobOpeningsPage = () => {
-    const { jobs, addJob, updateJob, deleteJob, submitJobForApproval } = useHireStore();
+    const { jobs: fallbackJobs } = useHireStore();
+    const [jobs, setJobs] = useState<Job[]>(fallbackJobs);
+    const [positions, setPositions] = useState<any[]>([]);
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [activeTab, setActiveTab] = useState("all");
     const [searchTerm, setSearchTerm] = useState("");
     const [editingId, setEditingId] = useState<string | null>(null);
     const { toast } = useToast();
     const router = useRouter();
+
+    useEffect(() => {
+        (async () => {
+            try {
+                const [jobsRes, posRes] = await Promise.allSettled([getAllJobs(), getAllPositions()]);
+                if (jobsRes.status === "fulfilled") {
+                    const apiJobs = jobsRes.value?.data?.jobs ?? jobsRes.value?.data?.data ?? [];
+                    const mapped: Job[] = apiJobs.map((j: any) => ({
+                        id: String(j._id ?? j.id),
+                        title: j.title ?? "Untitled Role",
+                        department: j.department?.name ?? j.department ?? "General",
+                        location: j.location ?? "Remote",
+                        type: j.employmentType ?? "Full-time",
+                        experience: "N/A",
+                        salaryRange: "Not specified",
+                        description: j.description ?? "",
+                        skills: Array.isArray(j.tags) ? j.tags : [],
+                        hiringManagerId: String(j.createdBy?._id ?? j.createdBy ?? "N/A"),
+                        recruiters: [],
+                        workflowStatus: j.status === "Closed" ? "Closed" : "Active",
+                        approvalChain: [],
+                        applicantsCount: 0,
+                        postedDate: j.postedDate ? new Date(j.postedDate).toISOString().split("T")[0] : new Date().toISOString().split("T")[0],
+                        views: 0,
+                        logs: []
+                    }));
+                    setJobs(mapped);
+                }
+                if (posRes.status === "fulfilled") {
+                    setPositions(posRes.value?.data?.data ?? posRes.value?.data?.positions ?? []);
+                }
+            } catch (err) {
+                console.error("Failed to load recruitment data:", err);
+                toast({ title: "Load Failed", description: "Using local data fallback for jobs.", variant: "destructive" });
+            }
+        })();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     // Enhanced Form State
     const [formData, setFormData] = useState({
@@ -147,36 +188,74 @@ const JobOpeningsPage = () => {
 
         const skills = formData.skillsInput.split(",").map(s => s.trim()).filter(Boolean);
 
-        if (editingId) {
-            updateJob(editingId, {
-                title: formData.title,
-                department: formData.department,
-                location: formData.location,
-                type: formData.type as any,
-                experience: formData.experience,
-                salaryRange: formData.salaryRange,
-                description: formData.description,
-                skills,
-                hiringManagerId: formData.hiringManagerId
-            });
-            toast({ title: "Job Updated", description: "Job requisition updated successfully." });
-        } else {
-            addJob({
-                title: formData.title,
-                department: formData.department,
-                location: formData.location,
-                type: formData.type as any,
-                experience: formData.experience,
-                salaryRange: formData.salaryRange,
-                description: formData.description,
-                skills,
-                hiringManagerId: formData.hiringManagerId,
-                recruiters: ["EMP-REC-1"]
-            });
-            toast({ title: "Job Drafted", description: "New job requisition drafted. Submit for approval to activate." });
-        }
-        setIsCreateOpen(false);
-        resetForm();
+        (async () => {
+            try {
+                if (editingId) {
+                    await updateJobPosting(editingId, {
+                        title: formData.title,
+                        description: formData.description,
+                        department: formData.department,
+                        location: formData.location,
+                        employmentType: formData.type,
+                        tags: skills,
+                    });
+                    setJobs((prev) => prev.map((j) => j.id === editingId ? {
+                        ...j,
+                        title: formData.title,
+                        department: formData.department,
+                        location: formData.location,
+                        type: formData.type as any,
+                        description: formData.description,
+                        skills
+                    } : j));
+                    toast({ title: "Job Updated", description: "Job requisition updated successfully." });
+                } else {
+                    const positionForDept = positions.find((p: any) =>
+                        (p.department === formData.department) || (p.department?.name === formData.department)
+                    ) || positions[0];
+                    if (!positionForDept?._id) {
+                        toast({ title: "Position Missing", description: "No backend position found. Create position first.", variant: "destructive" });
+                        return;
+                    }
+                    const res = await createJobPosting({
+                        title: formData.title,
+                        description: formData.description,
+                        department: formData.department,
+                        position: String(positionForDept._id),
+                        location: formData.location,
+                        employmentType: formData.type,
+                        tags: skills
+                    });
+                    const created = res?.data?.job;
+                    if (created?._id) {
+                        setJobs((prev) => [{
+                            id: String(created._id),
+                            title: created.title ?? formData.title,
+                            department: created.department ?? formData.department,
+                            location: created.location ?? formData.location,
+                            type: (created.employmentType ?? formData.type) as any,
+                            experience: formData.experience,
+                            salaryRange: formData.salaryRange,
+                            description: created.description ?? formData.description,
+                            skills: Array.isArray(created.tags) ? created.tags : skills,
+                            hiringManagerId: String(created.createdBy ?? "N/A"),
+                            recruiters: [],
+                            workflowStatus: "Active",
+                            approvalChain: [],
+                            applicantsCount: 0,
+                            postedDate: new Date().toISOString().split("T")[0],
+                            views: 0,
+                            logs: []
+                        }, ...prev]);
+                    }
+                    toast({ title: "Job Created", description: "New job posted successfully." });
+                }
+                setIsCreateOpen(false);
+                resetForm();
+            } catch (err) {
+                toast({ title: "Save Failed", description: "Could not persist job to backend.", variant: "destructive" });
+            }
+        })();
     };
 
     const handleEditClick = (job: Job) => {
@@ -197,16 +276,24 @@ const JobOpeningsPage = () => {
 
     const handleDeleteJob = (id: string) => {
         if (confirm("Permanently delete this requisition?")) {
-            deleteJob(id);
-            toast({ title: "Requisition Deleted", description: "The job has been removed.", variant: "destructive" });
+            (async () => {
+                try {
+                    // No hard-delete route exposed; close posting instead.
+                    await closeJobPosting(id);
+                    setJobs((prev) => prev.map((j) => j.id === id ? { ...j, workflowStatus: "Closed" } : j));
+                    toast({ title: "Requisition Closed", description: "Job has been closed on backend." });
+                } catch (err) {
+                    toast({ title: "Close Failed", description: "Could not close job posting.", variant: "destructive" });
+                }
+            })();
         }
     };
 
     const handleSubmitForApproval = (id: string) => {
-        submitJobForApproval(id);
+        setJobs((prev) => prev.map((j) => j.id === id ? { ...j, workflowStatus: "Pending Approval" } : j));
         toast({
             title: "Submitted for Approval",
-            description: "Hiring managers have been notified.",
+            description: "Backend approval workflow endpoint is not available; marked locally.",
             variant: "default",
             className: "bg-emerald-50 border-emerald-200 text-emerald-800"
         });

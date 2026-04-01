@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
     Inbox,
     Search,
@@ -49,9 +49,11 @@ import { Dialog, DialogContent, DialogTitle } from "@/shared/components/ui/dialo
 import { useHelpdeskStore, type Ticket } from "@/shared/data/helpdesk-store";
 import { useToast } from "@/shared/components/ui/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
+import { axiosInstance } from "@/lib/axios";
 
 const SupportQueuePage = () => {
-    const { tickets, agents, updateTicket, addResponse } = useHelpdeskStore();
+    const { tickets: fallbackTickets, agents, addResponse } = useHelpdeskStore();
+    const [tickets, setTickets] = useState<Ticket[]>(fallbackTickets);
     const { toast } = useToast();
 
     // UI States
@@ -65,6 +67,61 @@ const SupportQueuePage = () => {
     // Response State
     const [replyContent, setReplyContent] = useState("");
     const [isInternal, setIsInternal] = useState(false);
+
+    useEffect(() => {
+        (async () => {
+            try {
+                const res = await axiosInstance.get("/platform/ticket/all");
+                const rows = res?.data?.tickets ?? [];
+                const mapped: Ticket[] = rows.map((t: any) => {
+                    const statusMap: Record<string, Ticket["status"]> = {
+                        open: "Open",
+                        in_progress: "In Progress",
+                        on_hold: "Pending Employee",
+                        resolved: "Resolved",
+                        closed: "Closed",
+                        cancelled: "Closed"
+                    };
+                    const priMap: Record<string, Ticket["priority"]> = {
+                        low: "Low",
+                        medium: "Medium",
+                        high: "High",
+                        urgent: "Urgent"
+                    };
+                    const createdAt = t.createdAt ?? new Date().toISOString();
+                    const sla = new Date(createdAt);
+                    sla.setHours(sla.getHours() + 24);
+                    return {
+                        id: String(t._id ?? t.id),
+                        subject: t.title ?? "Untitled Ticket",
+                        description: t.description ?? "",
+                        category: t.module ?? "General",
+                        subCategory: t.type ?? "General",
+                        priority: priMap[String(t.priority ?? "").toLowerCase()] ?? "Medium",
+                        status: statusMap[String(t.status ?? "").toLowerCase()] ?? "Open",
+                        requestedBy: {
+                            id: String(t.requester?._id ?? t.requester ?? "N/A"),
+                            name: t.requester?.firstName ? `${t.requester.firstName} ${t.requester.lastName ?? ""}`.trim() : "Employee",
+                            department: "Unknown"
+                        },
+                        assignedTo: t.assignee ? { id: String(t.assignee), name: "Assigned Agent" } : undefined,
+                        createdAt,
+                        updatedAt: t.updatedAt ?? createdAt,
+                        slaDeadline: sla.toISOString(),
+                        slaStatus: "Healthy",
+                        attachments: [],
+                        history: [],
+                        responses: []
+                    };
+                });
+                setTickets(mapped);
+            } catch (err) {
+                console.error("Failed to load tickets:", err);
+                toast({ title: "Load Failed", description: "Using local ticket data fallback.", variant: "destructive" });
+            }
+        })();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     // Filtering Logic
     const filteredTickets = useMemo(() => {
@@ -88,17 +145,41 @@ const SupportQueuePage = () => {
     const handleAssign = (ticketId: string, agentId: string) => {
         const agent = agents.find(a => a.id === agentId);
         if (agent) {
-            updateTicket(ticketId, {
-                assignedTo: { id: agent.id, name: agent.name },
-                status: "In Progress"
-            });
-            toast({ title: "Agent Assigned", description: `${agent.name} is now handling this ticket.` });
+            (async () => {
+                try {
+                    await axiosInstance.patch(`/platform/ticket/${ticketId}/assign`, { assignedTo: agent.id });
+                    setTickets((prev) => prev.map((t) => t.id === ticketId ? {
+                        ...t,
+                        assignedTo: { id: agent.id, name: agent.name },
+                        status: "In Progress"
+                    } : t));
+                    toast({ title: "Agent Assigned", description: `${agent.name} is now handling this ticket.` });
+                } catch {
+                    toast({ title: "Assign Failed", description: "Could not assign ticket on backend.", variant: "destructive" });
+                }
+            })();
         }
     };
 
     const handleStatusUpdate = (ticketId: string, status: Ticket["status"]) => {
-        updateTicket(ticketId, { status });
-        toast({ title: "Status Updated", description: `Ticket is now marked as ${status}.` });
+        const statusMap: Record<Ticket["status"], string> = {
+            "Open": "open",
+            "In Progress": "in_progress",
+            "Pending Employee": "on_hold",
+            "Escalated": "in_progress",
+            "Resolved": "resolved",
+            "Closed": "closed",
+            "Reopened": "open",
+        };
+        (async () => {
+            try {
+                await axiosInstance.post(`/platform/ticket/update/${ticketId}`, { status: statusMap[status] });
+                setTickets((prev) => prev.map((t) => t.id === ticketId ? { ...t, status } : t));
+                toast({ title: "Status Updated", description: `Ticket is now marked as ${status}.` });
+            } catch {
+                toast({ title: "Update Failed", description: "Could not update status on backend.", variant: "destructive" });
+            }
+        })();
     };
 
     const handleSendReply = () => {

@@ -458,3 +458,33 @@
     @apply px-4 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors;
   } */
 }
+
+/* Gradient animation for overview cards */
+@keyframes gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* Gradient shift animation for product demo tabs */
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
+}

@@ -1,6 +1,7 @@
 "use client"
 
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
     DollarSign,
     Users,
@@ -19,10 +20,22 @@ import { Button } from "@/shared/components/ui/button";
 import { Badge } from "@/shared/components/ui/badge";
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
 import { usePayrollStore } from "@/shared/data/payroll-store";
+import { useToast } from "@/shared/components/ui/use-toast";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/shared/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
 const PayrollDashboard = () => {
+    const router = useRouter();
+    const { toast } = useToast();
     const { payRuns, claims, declarations } = usePayrollStore();
+    const [isExceptionsOpen, setIsExceptionsOpen] = useState(false);
 
     // Active run is the one in Draft or Processing, else the latest one
     const activeRun = useMemo(() =>
@@ -70,10 +83,24 @@ const PayrollDashboard = () => {
                     </div>
                 </div>
                 <div className="flex items-center gap-3">
-                    <Button variant="outline" className="h-10 border-slate-200 rounded-lg font-bold text-xs gap-2 px-4 shadow-sm hover:bg-slate-50 text-slate-600">
+                    <Button variant="outline" className="h-10 border-slate-200 rounded-lg font-bold text-xs gap-2 px-4 shadow-sm hover:bg-slate-50 text-slate-600" onClick={() => {
+                        const headers = ["Department", "Budget", "Actual", "Variance", "Variance %"];
+                        const csvContent = [
+                            headers.join(","),
+                            ...departmentData.map(d => [d.name, d.cost, d.cost, "0", "0%"].join(","))
+                        ].join("\n");
+                        const blob = new Blob([csvContent], { type: "text/csv" });
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement("a");
+                        a.href = url;
+                        a.download = `variance_report_${new Date().toISOString().split("T")[0]}.csv`;
+                        a.click();
+                        window.URL.revokeObjectURL(url);
+                        toast({ title: "Variance Report Downloaded", description: "Department-wise variance report saved." });
+                    }}>
                         <Download size={14} /> Variance Report
                     </Button>
-                    <Button className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-lg h-10 px-6 font-bold text-xs shadow-lg shadow-[#8B5CF6]/20 border-none">
+                    <Button className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-lg h-10 px-6 font-bold text-xs shadow-lg shadow-[#8B5CF6]/20 border-none" onClick={() => router.push("/hrmcubicle/payroll/processing")}>
                         Run Payroll <ChevronRight size={14} className="ml-1" />
                     </Button>
                 </div>
@@ -139,8 +166,8 @@ const PayrollDashboard = () => {
                                         </div>
 
                                         <div className="flex items-center gap-3 pt-1 text-start">
-                                            <Button className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-xl h-10 px-6 font-bold text-xs shadow-lg shadow-[#8B5CF6]/20 border-none transition-all">Preview Payrun</Button>
-                                            <Button variant="outline" className="h-10 border-slate-200 rounded-xl px-6 font-bold text-xs hover:bg-slate-50 text-slate-600">Flag Exceptions</Button>
+                                            <Button className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-xl h-10 px-6 font-bold text-xs shadow-lg shadow-[#8B5CF6]/20 border-none transition-all" onClick={() => router.push("/hrmcubicle/payroll/processing")}>Preview Payrun</Button>
+                                            <Button variant="outline" className="h-10 border-slate-200 rounded-xl px-6 font-bold text-xs hover:bg-slate-50 text-slate-600" onClick={() => setIsExceptionsOpen(true)}>Flag Exceptions</Button>
                                         </div>
                                     </div>
 
@@ -219,7 +246,7 @@ const PayrollDashboard = () => {
                                     <p className="text-[10px] font-medium text-white/70">
                                         {stats.pendingClaims} pending claims require approval before disbursement.
                                     </p>
-                                    <Button className="w-full mt-1.5 h-9 bg-white text-slate-900 font-bold text-[10px] uppercase tracking-widest hover:bg-white/90 shadow-md border-none flex items-center justify-between px-4 rounded-xl">
+                                    <Button className="w-full mt-1.5 h-9 bg-white text-slate-900 font-bold text-[10px] uppercase tracking-widest hover:bg-white/90 shadow-md border-none flex items-center justify-between px-4 rounded-xl" onClick={() => router.push("/hrmcubicle/payroll/reimbursements")}>
                                         Resolve Now <ChevronRight size={12} />
                                     </Button>
                                 </div>
@@ -229,6 +256,40 @@ const PayrollDashboard = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Exceptions Dialog */}
+            <Dialog open={isExceptionsOpen} onOpenChange={setIsExceptionsOpen}>
+                <DialogContent className="bg-white rounded-3xl border-none p-8 max-w-lg shadow-2xl">
+                    <DialogHeader>
+                        <DialogTitle className="text-xl font-bold text-slate-900">Payroll Exceptions</DialogTitle>
+                        <DialogDescription className="text-sm font-medium text-slate-500">
+                            {stats.pendingClaims} pending claims need resolution before disbursement.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4 space-y-3">
+                        <div className="p-4 bg-amber-50 rounded-xl border border-amber-100 flex items-start gap-3">
+                            <AlertCircle size={18} className="text-amber-500 shrink-0 mt-0.5" />
+                            <div>
+                                <p className="text-sm font-bold text-amber-900">Pending Reimbursement Claims</p>
+                                <p className="text-xs font-medium text-amber-700 mt-1">{stats.pendingClaims} claims require approval before the payroll cycle can be finalized.</p>
+                            </div>
+                        </div>
+                        <div className="p-4 bg-rose-50 rounded-xl border border-rose-100 flex items-start gap-3">
+                            <AlertCircle size={18} className="text-rose-500 shrink-0 mt-0.5" />
+                            <div>
+                                <p className="text-sm font-bold text-rose-900">Document Verification</p>
+                                <p className="text-xs font-medium text-rose-700 mt-1">{declarations.length - stats.verifiedDocs} tax declarations pending verification.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <DialogFooter className="flex gap-3">
+                        <Button variant="ghost" onClick={() => setIsExceptionsOpen(false)} className="flex-1 h-10 rounded-xl font-bold">Dismiss</Button>
+                        <Button className="flex-[2] bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-xl h-10 font-bold shadow-lg shadow-[#8B5CF6]/20 border-none" onClick={() => { setIsExceptionsOpen(false); router.push("/hrmcubicle/payroll/reimbursements"); }}>
+                            Resolve Claims
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 };

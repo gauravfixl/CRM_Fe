@@ -1,6 +1,7 @@
 import dynamic from 'next/dynamic'
 
-// Dynamically import your client-only component
-const createOrg = dynamic(() => import('./CreateOrg'), { ssr: false })
+const CreateOrg = dynamic(() => import('./CreateOrg'), { ssr: false })
 
-export default createOrg
+export default function Page() {
+  return <CreateOrg />
+}

@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     BarChart3,
@@ -59,6 +60,7 @@ const reportHistory = [
 
 const TeamReportsPage = () => {
     const { toast } = useToast();
+    const router = useRouter();
     const [mounted, setMounted] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [exportProgress, setExportProgress] = useState(0);
@@ -337,7 +339,7 @@ const TeamReportsPage = () => {
                             <h3 className="text-xl font-black text-slate-800 tracking-tight leading-none">Download Center</h3>
                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">Generate on-demand compliance files</p>
                         </div>
-                        <Button variant="ghost" className="text-[10px] font-black text-indigo-600 uppercase tracking-widest hover:bg-white">View Vault History</Button>
+                        <Button variant="ghost" className="text-[10px] font-black text-indigo-600 uppercase tracking-widest hover:bg-white" onClick={() => router.push("/hrmcubicle/my-team/documents")}>View Vault History</Button>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -363,7 +365,20 @@ const TeamReportsPage = () => {
                                             variant="ghost"
                                             size="icon"
                                             className="h-10 w-10 bg-white rounded-xl shadow-sm text-slate-400 hover:text-indigo-600 hover:shadow-md transition-all border border-slate-100"
-                                            onClick={() => toast({ title: "Generating Asset", description: `${doc.title} is being synchronized...` })}
+                                            onClick={() => {
+                                                const csvContent = `Report: ${doc.title}\nType: ${doc.type}\nGenerated: ${new Date().toLocaleDateString()}\n\n${doc.desc}\n\nDay,Present,Late,Tasks\n` +
+                                                    chartData.map(d => `${d.name},${d.present},${d.late},${d.tasks}`).join("\n");
+                                                const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+                                                const url = URL.createObjectURL(blob);
+                                                const link = document.createElement("a");
+                                                link.href = url;
+                                                link.download = `${doc.title.replace(/\s+/g, "_")}_Report.csv`;
+                                                document.body.appendChild(link);
+                                                link.click();
+                                                document.body.removeChild(link);
+                                                URL.revokeObjectURL(url);
+                                                toast({ title: "Report Downloaded", description: `${doc.title} has been exported as CSV.` });
+                                            }}
                                         >
                                             <Download size={16} />
                                         </Button>

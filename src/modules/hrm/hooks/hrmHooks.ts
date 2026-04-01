@@ -182,6 +182,57 @@ export const getJobById = async (jobId: string) => {
     }
 };
 
+export const createJobPosting = async (data: {
+    title: string;
+    description: string;
+    department: string;
+    position: string;
+    location: string;
+    employmentType: string;
+    qualifications?: string[];
+    responsibilities?: string[];
+    tags?: string[];
+    closingDate?: string;
+    openingCount?: number;
+}) => {
+    try {
+        const response = await axios.post("/recruitment/jobs/", data);
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error creating job posting:", err);
+            showError(err?.response?.data?.error || "Failed to create job posting");
+        }
+        throw err;
+    }
+};
+
+export const updateJobPosting = async (jobId: string, data: Record<string, any>) => {
+    try {
+        const response = await axios.patch(`/recruitment/jobs/update/${jobId}`, data);
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error updating job posting:", err);
+            showError(err?.response?.data?.error || "Failed to update job posting");
+        }
+        throw err;
+    }
+};
+
+export const closeJobPosting = async (jobId: string) => {
+    try {
+        const response = await axios.patch(`/recruitment/jobs/${jobId}`);
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error closing job posting:", err);
+            showError(err?.response?.data?.error || "Failed to close job posting");
+        }
+        throw err;
+    }
+};
+
 // ==================== RECRUITMENT - CANDIDATE APIs ====================
 
 export const getAllCandidates = async () => {
@@ -209,6 +260,66 @@ export const getCandidatesList = async () => {
     }
 };
 
+export const createCandidate = async (data: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    phoneNumber?: string;
+    jobApplication: string;
+    source?: string;
+    status?: string;
+}) => {
+    try {
+        const response = await axios.post("/recruitment/candidates/", data);
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error creating candidate:", err);
+            showError(err?.response?.data?.message || "Failed to create candidate");
+        }
+        throw err;
+    }
+};
+
+export const updateCandidate = async (candidateId: string, data: Record<string, any>) => {
+    try {
+        const response = await axios.patch(`/recruitment/candidates/${candidateId}`, data);
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error updating candidate:", err);
+            showError(err?.response?.data?.message || "Failed to update candidate");
+        }
+        throw err;
+    }
+};
+
+export const updateCandidateStatus = async (candidateId: string, status: string) => {
+    try {
+        const response = await axios.patch(`/recruitment/candidates/update-status/${candidateId}`, { status });
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error updating candidate status:", err);
+            showError(err?.response?.data?.message || "Failed to update candidate status");
+        }
+        throw err;
+    }
+};
+
+export const deleteCandidate = async (candidateId: string) => {
+    try {
+        const response = await axios.delete(`/recruitment/candidates/${candidateId}`);
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error deleting candidate:", err);
+            showError(err?.response?.data?.message || "Failed to delete candidate");
+        }
+        throw err;
+    }
+};
+
 // ==================== RECRUITMENT - INTERVIEW APIs ====================
 
 export const getAllInterviews = async () => {
@@ -224,6 +335,70 @@ export const getAllInterviews = async () => {
     }
 };
 
+export const createInterview = async (data: {
+    candidate: string;
+    jobPosting: string;
+    interviewer: string;
+    scheduledDate: string;
+    interviewType: "Phone" | "Video" | "In-person";
+    panel?: string[];
+    followUp?: string;
+}) => {
+    try {
+        const response = await axios.post("/recruitment/interviews/", data);
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error creating interview:", err);
+            showError(err?.response?.data?.message || "Failed to create interview");
+        }
+        throw err;
+    }
+};
+
+export const updateInterviewStatus = async (interviewId: string, status: "Scheduled" | "Completed" | "Cancelled") => {
+    try {
+        const response = await axios.patch(`/recruitment/interviews/${interviewId}/status`, { status });
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error updating interview status:", err);
+            showError(err?.response?.data?.message || "Failed to update interview status");
+        }
+        throw err;
+    }
+};
+
+export const submitInterviewFeedback = async (interviewId: string, data: {
+    interviewerId: string;
+    comments: string;
+    rating: number;
+}) => {
+    try {
+        const response = await axios.patch(`/recruitment/interviews/${interviewId}/feedback`, data);
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error submitting interview feedback:", err);
+            showError(err?.response?.data?.message || "Failed to submit interview feedback");
+        }
+        throw err;
+    }
+};
+
+export const deleteInterview = async (interviewId: string) => {
+    try {
+        const response = await axios.delete(`/recruitment/interviews/${interviewId}`);
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error deleting interview:", err);
+            showError(err?.response?.data?.message || "Failed to delete interview");
+        }
+        throw err;
+    }
+};
+
 // ==================== RECRUITMENT - OFFER APIs ====================
 
 export const getAllOffers = async () => {
@@ -234,6 +409,71 @@ export const getAllOffers = async () => {
         if (err?.response?.status !== 401) {
             console.error("Error fetching offers:", err);
             showError("Failed to fetch offers");
+        }
+        throw err;
+    }
+};
+
+export const createOffer = async (data: {
+    candidate: string;
+    jobPosting: string;
+    offerDate: string;
+    offerDetails: {
+        baseSalary: number;
+        bonus?: number;
+        currency?: string;
+        payFrequency?: string;
+        benefits?: string[];
+        jobTitle?: string;
+        location?: string;
+    };
+}) => {
+    try {
+        const response = await axios.post("/recruitment/Offers/", data);
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error creating offer:", err);
+            showError(err?.response?.data?.message || "Failed to create offer");
+        }
+        throw err;
+    }
+};
+
+export const updateOffer = async (offerId: string, data: Record<string, any>) => {
+    try {
+        const response = await axios.patch(`/recruitment/Offers/update/${offerId}`, data);
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error updating offer:", err);
+            showError(err?.response?.data?.message || "Failed to update offer");
+        }
+        throw err;
+    }
+};
+
+export const updateOfferStatus = async (offerId: string, status: string, acceptedDate?: string) => {
+    try {
+        const response = await axios.patch(`/recruitment/Offers/${offerId}`, { status, acceptedDate });
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error updating offer status:", err);
+            showError(err?.response?.data?.message || "Failed to update offer status");
+        }
+        throw err;
+    }
+};
+
+export const deleteOffer = async (offerId: string) => {
+    try {
+        const response = await axios.delete(`/recruitment/Offers/${offerId}`);
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error deleting offer:", err);
+            showError(err?.response?.data?.message || "Failed to delete offer");
         }
         throw err;
     }
@@ -552,6 +792,38 @@ export const getAllAppraisals = async () => {
     }
 };
 
+export const createAppraisal = async (data: {
+    employee: string;
+    period: string;
+    rating: number;
+    comments?: string;
+    recommendation?: string;
+}) => {
+    try {
+        const response = await axios.post("/performance/appraisal/", data);
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error creating appraisal:", err);
+            showError(err?.response?.data?.message || "Failed to create appraisal");
+        }
+        throw err;
+    }
+};
+
+export const updateAppraisal = async (appraisalId: string, data: Record<string, any>) => {
+    try {
+        const response = await axios.put(`/performance/appraisal/${appraisalId}`, data);
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error updating appraisal:", err);
+            showError(err?.response?.data?.message || "Failed to update appraisal");
+        }
+        throw err;
+    }
+};
+
 export const getAllGoals = async () => {
     try {
         const response = await axios.get("/performance/goals/all");
@@ -560,6 +832,50 @@ export const getAllGoals = async () => {
         if (err?.response?.status !== 401) {
             console.error("Error fetching goals:", err);
             showError("Failed to fetch goals");
+        }
+        throw err;
+    }
+};
+
+export const createGoal = async (data: {
+    employee: string;
+    goal: string;
+    keyPerformanceIndicators?: string[];
+    targetDate: string;
+}) => {
+    try {
+        const response = await axios.post("/performance/goals/", data);
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error creating goal:", err);
+            showError(err?.response?.data?.message || "Failed to create goal");
+        }
+        throw err;
+    }
+};
+
+export const updateGoal = async (goalId: string, data: Record<string, any>) => {
+    try {
+        const response = await axios.patch(`/performance/goals/${goalId}`, data);
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error updating goal:", err);
+            showError(err?.response?.data?.message || "Failed to update goal");
+        }
+        throw err;
+    }
+};
+
+export const deleteGoal = async (goalId: string) => {
+    try {
+        const response = await axios.delete(`/performance/goals/${goalId}`);
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error deleting goal:", err);
+            showError(err?.response?.data?.message || "Failed to delete goal");
         }
         throw err;
     }
@@ -591,6 +907,24 @@ export const getAllFeedback = async () => {
     }
 };
 
+export const createFeedback = async (data: {
+    employee: string;
+    feedbackType: string;
+    rating?: number;
+    comments: string;
+}) => {
+    try {
+        const response = await axios.post("/performance/feedback/", data);
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error creating feedback:", err);
+            showError(err?.response?.data?.message || "Failed to create feedback");
+        }
+        throw err;
+    }
+};
+
 // ==================== HOLIDAY APIs ====================
 
 export const getAllHolidays = async () => {
@@ -600,6 +934,19 @@ export const getAllHolidays = async () => {
     } catch (err: any) {
         if (err?.response?.status !== 401) {
             console.error("Error fetching holidays:", err);
+            showError("Failed to fetch holidays");
+        }
+        throw err;
+    }
+};
+
+export const getHolidaysByYear = async (year: number | string) => {
+    try {
+        const response = await axios.get("/attendance/holidays/", { params: { year } });
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error fetching holidays by year:", err);
             showError("Failed to fetch holidays");
         }
         throw err;
