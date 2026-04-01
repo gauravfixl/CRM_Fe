@@ -1,6 +1,7 @@
 import dynamic from 'next/dynamic'
 
-// Dynamically import your client-only component
-const forgotPass = dynamic(() => import('./ForgotPass'), { ssr: false })
+const ForgotPass = dynamic(() => import('./ForgotPass'), { ssr: false })
 
-export default forgotPass
+export default function Page() {
+  return <ForgotPass />
+}

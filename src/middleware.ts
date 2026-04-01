@@ -13,7 +13,67 @@ const PUBLIC_ROUTES = [
   "/modules",
   "/testimonials",
   "/landingpage1",
+  "/landingpage2",
+  "/landingpage2/pricing",
+  "/explore",
+  "/features",
+  "/about",
+  "/guided-tour",
+  "/unauthorized",
+  "/resources",
+  "/support",
+  "/pricing-overview",
+  "/marketplace",
+  "/products/enterprise",
+  "/products/startups",
+  "/products/agencies",
+  "/products/healthcare",
+  "/products/education",
+  "/products/real-estate",
+  "/products/retail",
+  "/products/manufacturing",
+  "/products/legal",
+  "/products/non-profit",
+  "/products/logistics",
+  "/products/it-saas",
+  "/products/consulting-firms",
+  "/news",
+  "/integrations",
+  "/api-docs",
+  "/system-status",
+  "/blog",
+  "/customer-stories",
+  "/help-center",
+  "/webinars",
+  "/community",
+  "/careers",
+  "/contact",
+  "/privacy-policy",
+  "/terms-of-service",
 ];
+
+/**
+ * Decode a JWT payload without verifying signature.
+ * Returns null if the token is malformed.
+ */
+function decodeJwtPayload(token: string): Record<string, unknown> | null {
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+    return JSON.parse(Buffer.from(parts[1], "base64").toString("utf-8"));
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Check if a JWT token is expired based on its `exp` claim.
+ */
+function isTokenExpired(payload: Record<string, unknown>): boolean {
+  const exp = payload.exp;
+  if (typeof exp !== "number") return false; // no exp claim → not expired
+  return Date.now() >= exp * 1000;
+}
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -32,29 +92,40 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Session is stored in localStorage (orgToken, auth-storage) and enforced in client layouts.
-  // The API may set httpOnly cookies on the API host; those are not sent to this Next.js origin
-  // when the frontend runs on another port, and the backend uses _fxl_1A2B3C / _fxl_9X8Y7Z,
-  // not "token". Redirecting here when "token" is missing broke post-login navigation.
+  // --- Authentication enforcement ---
+  // The orgToken cookie is set by the client on login and cleared on logout.
+  // This is the primary server-side auth gate for all protected routes.
+  const orgToken = request.cookies.get("orgToken")?.value;
+
+  if (!orgToken) {
+    // No auth token → show unauthorized error page
+    const unauthorizedUrl = new URL("/unauthorized", request.url);
+    unauthorizedUrl.searchParams.set("path", pathname);
+    return NextResponse.redirect(unauthorizedUrl);
+  }
+
+  // Validate token structure and expiration
+  const payload = decodeJwtPayload(orgToken);
+  if (!payload || isTokenExpired(payload)) {
+    const unauthorizedUrl = new URL("/unauthorized", request.url);
+    unauthorizedUrl.searchParams.set("path", pathname);
+    unauthorizedUrl.searchParams.set(
+      "reason",
+      !payload ? "invalid_session" : "session_expired"
+    );
+    const response = NextResponse.redirect(unauthorizedUrl);
+    response.cookies.delete("orgToken");
+    return response;
+  }
+
+  // --- Legacy "token" cookie cleanup ---
   const legacyToken = request.cookies.get("token")?.value;
   if (legacyToken) {
-    try {
-      const parts = legacyToken.split(".");
-      if (parts.length === 3) {
-        const payload = JSON.parse(
-          Buffer.from(parts[1], "base64").toString("utf-8")
-        );
-        if (payload.exp && Date.now() >= payload.exp * 1000) {
-          const signinUrl = new URL("/auth/signin", request.url);
-          signinUrl.searchParams.set("redirect", pathname);
-          signinUrl.searchParams.set("reason", "session_expired");
-          const response = NextResponse.redirect(signinUrl);
-          response.cookies.delete("token");
-          return response;
-        }
-      }
-    } catch {
-      // ignore invalid legacy token shape
+    const legacyPayload = decodeJwtPayload(legacyToken);
+    if (legacyPayload && isTokenExpired(legacyPayload)) {
+      const resp = NextResponse.next();
+      resp.cookies.delete("token");
+      return resp;
     }
   }
 

@@ -8,8 +8,19 @@ import { FlatCard, FlatCardContent, FlatCardDescription, FlatCardHeader, FlatCar
 import { SmallCard, SmallCardContent, SmallCardHeader, SmallCardTitle } from "@/components/custom/SmallCard"
 import SubHeader from "@/components/custom/SubHeader"
 import { useLoaderStore } from "@/lib/loaderStore"
-import { getTeamById, getTeamMembers, type Team, type TeamMember } from "@/modules/project-management/team/hooks/teamHooks"
-import { ArrowLeft, Users, Settings } from "lucide-react"
+import { getTeamById, getTeamMembers, addTeamMember, getAssignableMembersForTeam, removeTeamMember, type Team, type TeamMember } from "@/modules/project-management/team/hooks/teamHooks"
+import { ArrowLeft, Users, Settings, Plus, Trash2 } from "lucide-react"
+import {
+  CustomDialog,
+  CustomDialogContent,
+  CustomDialogDescription,
+  CustomDialogFooter,
+  CustomDialogHeader,
+  CustomDialogTitle
+} from "@/components/custom/CustomDialog"
+import { CustomInput } from "@/components/custom/CustomInput"
+import { CustomSelect, CustomSelectItem } from "@/components/custom/CustomSelect"
+import { showSuccess, showError } from "@/utils/toast"
 import {
   CustomTable,
   CustomTableBody,
@@ -22,6 +33,9 @@ import {
 export default function TeamDetailsPage() {
   const [team, setTeam] = useState<Team | null>(null)
   const [members, setMembers] = useState<TeamMember[]>([])
+  const [isAddMemberOpen, setIsAddMemberOpen] = useState(false)
+  const [assignableMembers, setAssignableMembers] = useState<any[]>([])
+  const [selectedMemberId, setSelectedMemberId] = useState("")
 
   const { showLoader, hideLoader } = useLoaderStore()
   const params = useParams() as { orgName?: string; workspaceId: string; projectId: string; teamId: string }
@@ -41,16 +55,52 @@ export default function TeamDetailsPage() {
   const fetchTeamData = async () => {
     try {
       showLoader()
-      const [teamRes, membersRes] = await Promise.all([
+      const [teamRes, membersRes, assignableRes] = await Promise.allSettled([
         getTeamById(params.teamId),
-        getTeamMembers(params.teamId, params.projectId)
+        getTeamMembers(params.teamId, params.projectId),
+        getAssignableMembersForTeam(params.projectId, params.teamId)
       ])
-      setTeam(teamRes?.data?.data)
-      setMembers(membersRes?.data?.data || [])
+      if (teamRes.status === 'fulfilled') setTeam(teamRes.value?.data?.data)
+      if (membersRes.status === 'fulfilled') setMembers(membersRes.value?.data?.data || [])
+      if (assignableRes.status === 'fulfilled') {
+        const assignable = assignableRes.value?.data?.data?.members || assignableRes.value?.data?.members || assignableRes.value?.data?.data || []
+        setAssignableMembers(Array.isArray(assignable) ? assignable : [])
+      }
     } catch (err: any) {
       if (err?.response?.status !== 401) {
         console.error("Failed to fetch team:", err)
       }
+    } finally {
+      hideLoader()
+    }
+  }
+
+  const handleAddMember = async () => {
+    if (!selectedMemberId) { showError("Please select a member"); return }
+    try {
+      showLoader()
+      await addTeamMember(params.teamId, {
+        projectId: params.projectId,
+        memberId: selectedMemberId,
+        role: "member"
+      })
+      setIsAddMemberOpen(false)
+      setSelectedMemberId("")
+      fetchTeamData()
+    } catch (err: any) {
+      showError(err?.response?.data?.message || "Failed to add member")
+    } finally {
+      hideLoader()
+    }
+  }
+
+  const handleRemoveMember = async (memberId: string) => {
+    try {
+      showLoader()
+      await removeTeamMember(params.teamId, memberId, params.projectId)
+      fetchTeamData()
+    } catch (err: any) {
+      showError(err?.response?.data?.message || "Failed to remove member")
     } finally {
       hideLoader()
     }
@@ -146,7 +196,9 @@ export default function TeamDetailsPage() {
                 <FlatCardTitle>Team Members</FlatCardTitle>
                 <FlatCardDescription>All members in this team</FlatCardDescription>
               </div>
-              <CustomButton size="sm">Add Member</CustomButton>
+              <CustomButton size="sm" onClick={() => setIsAddMemberOpen(true)}>
+                <Plus className="w-4 h-4 mr-1" /> Add Member
+              </CustomButton>
             </div>
           </FlatCardHeader>
           <FlatCardContent>
@@ -158,6 +210,7 @@ export default function TeamDetailsPage() {
                     <CustomTableHead>Email</CustomTableHead>
                     <CustomTableHead>Role</CustomTableHead>
                     <CustomTableHead>Joined At</CustomTableHead>
+                    <CustomTableHead>Actions</CustomTableHead>
                   </CustomTableRow>
                 </CustomTableHeader>
                 <CustomTableBody>
@@ -171,6 +224,16 @@ export default function TeamDetailsPage() {
                       <CustomTableCell>
                         {new Date(member.joinedAt).toLocaleDateString()}
                       </CustomTableCell>
+                      <CustomTableCell>
+                        <CustomButton
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-600 hover:text-red-700 h-8 w-8 p-0"
+                          onClick={() => handleRemoveMember(member._id)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </CustomButton>
+                      </CustomTableCell>
                     </CustomTableRow>
                   ))}
                 </CustomTableBody>
@@ -183,6 +246,47 @@ export default function TeamDetailsPage() {
             )}
           </FlatCardContent>
         </FlatCard>
+
+        {/* Add Member Dialog */}
+        <CustomDialog open={isAddMemberOpen} onOpenChange={setIsAddMemberOpen}>
+          <CustomDialogContent>
+            <CustomDialogHeader>
+              <CustomDialogTitle>Add Team Member</CustomDialogTitle>
+              <CustomDialogDescription>
+                {assignableMembers.length > 0
+                  ? "Select a project member to add to this team."
+                  : "Enter the member ID to add to this team."}
+              </CustomDialogDescription>
+            </CustomDialogHeader>
+            <div className="space-y-4 py-4">
+              {assignableMembers.length > 0 ? (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Select Member</label>
+                  <CustomSelect value={selectedMemberId} onValueChange={setSelectedMemberId}>
+                    {assignableMembers.map((m: any) => (
+                      <CustomSelectItem key={m.mId || m._id} value={m.mId || m._id}>
+                        {m.email || m.fullName || m.mId}
+                      </CustomSelectItem>
+                    ))}
+                  </CustomSelect>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Member ID</label>
+                  <CustomInput
+                    placeholder="Enter project member ID"
+                    value={selectedMemberId}
+                    onChange={(e) => setSelectedMemberId(e.target.value)}
+                  />
+                </div>
+              )}
+            </div>
+            <CustomDialogFooter>
+              <CustomButton variant="outline" onClick={() => { setIsAddMemberOpen(false); setSelectedMemberId("") }}>Cancel</CustomButton>
+              <CustomButton onClick={handleAddMember}>Add Member</CustomButton>
+            </CustomDialogFooter>
+          </CustomDialogContent>
+        </CustomDialog>
       </div>
     </>
   )

@@ -31,6 +31,7 @@ import { Switch } from "@/components/ui/switch"
 import { useAuthStore } from "@/lib/useAuthStore"
 import { useBrandingStore } from "../../lib/useBrandingStore"
 import { logoutUser } from "@/hooks/authHooks"
+import { clearAuthCookie } from "@/lib/auth-cookies"
 
 // Helper function to get first two letters of email (uppercase)
 const getEmailInitials = (email?: string) => {
@@ -150,7 +151,8 @@ export function AppHeader({ setSidebarOpen }: { setSidebarOpen?: React.Dispatch<
     } catch {
       // Even if API fails, clear client state and redirect
     }
-    // Always reset Zustand store + clear storage + redirect
+    // Always reset Zustand store + clear storage + cookie + redirect
+    clearAuthCookie();
     useAuthStore.getState().logout();
     localStorage.removeItem("auth-storage");
     localStorage.removeItem("orgToken");

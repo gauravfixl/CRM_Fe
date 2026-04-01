@@ -25,6 +25,24 @@ const AUTH_ROUTES = [
   '/acceptInvite'
 ] as const
 
+/**
+ * Public routes that don't require authentication
+ */
+const PUBLIC_ROUTES = [
+  '/products/enterprise',
+  '/products/startups',
+  '/products/agencies',
+  '/products/healthcare',
+  '/products/education',
+  '/products/real-estate',
+  '/products/retail',
+  '/products/manufacturing',
+  '/products/legal',
+  '/products/non-profit',
+  '/products/logistics',
+  '/products/it-saas',
+] as const
+
 type AppLayoutProps = {
   children: ReactNode
   leftPanel?: ReactNode
@@ -50,6 +68,7 @@ export function AppLayout({ children, leftPanel: propLeftPanel, rightPanel: prop
   const [hydrated, setHydrated] = useState(false)
 
   const isAuthRoute = AUTH_ROUTES.includes(pathname as typeof AUTH_ROUTES[number])
+  const isPublicRoute = PUBLIC_ROUTES.includes(pathname as typeof PUBLIC_ROUTES[number])
 
   // Wait for Zustand to hydrate from localStorage before checking auth
   useEffect(() => {
@@ -68,10 +87,10 @@ export function AppLayout({ children, leftPanel: propLeftPanel, rightPanel: prop
 
   // Redirect unauthenticated users to signin (only after hydration completes)
   useEffect(() => {
-    if (hydrated && !isAuthRoute && !isAuthenticated) {
+    if (hydrated && !isAuthRoute && !isPublicRoute && !isAuthenticated) {
       router.replace('/auth/signin')
     }
-  }, [hydrated, isAuthenticated, isAuthRoute, pathname, router])
+  }, [hydrated, isAuthenticated, isAuthRoute, isPublicRoute, pathname, router])
 
   // Auto-fetch user permissions from backend on app load
   usePermissionLoader()
@@ -104,6 +123,11 @@ export function AppLayout({ children, leftPanel: propLeftPanel, rightPanel: prop
   }, [pathname, showLoader, hideLoader])
 
   if (isAuthRoute) {
+    return <>{children}</>
+  }
+
+  // Allow public routes without authentication
+  if (isPublicRoute) {
     return <>{children}</>
   }
 

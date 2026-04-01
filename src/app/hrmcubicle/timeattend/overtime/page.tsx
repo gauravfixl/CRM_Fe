@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     Clock,
@@ -43,6 +44,7 @@ import {
 } from "@/shared/components/ui/dialog";
 
 const OvertimeAdminPage = () => {
+    const router = useRouter();
     const { toast } = useToast();
     const { requests, approveRequest, bulkApprove, rejectRequest } = useOvertimeStore();
 
@@ -97,7 +99,29 @@ const OvertimeAdminPage = () => {
     };
 
     const handleExport = () => {
-        toast({ title: "Generating Export", description: "OT logs are being compiled into a CSV format..." });
+        const headers = ["Request ID", "Employee", "Date", "Hours", "Reason", "Priority", "Status", "Estimated Payout"];
+        const csvContent = [
+            headers.join(","),
+            ...requests.map(r => [
+                r.id,
+                r.empName,
+                r.date,
+                r.hours,
+                `"${r.reason}"`,
+                r.priority,
+                r.status,
+                r.estimatedPayout
+            ].join(","))
+        ].join("\n");
+
+        const blob = new Blob([csvContent], { type: "text/csv" });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `ot_report_${new Date().toISOString().split("T")[0]}.csv`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+        toast({ title: "Export Complete", description: "OT report has been downloaded as CSV." });
     };
 
     return (
@@ -115,6 +139,9 @@ const OvertimeAdminPage = () => {
                     </div>
 
                     <div className="flex gap-3">
+                        <Button variant="outline" className="rounded-xl font-bold border-slate-200 text-slate-500 h-14 px-8 hover:bg-slate-50 transition-all" onClick={() => router.push("/hrmcubicle/timeattend/reports")}>
+                            <ArrowRight size={18} className="mr-2" /> View Report
+                        </Button>
                         <Button variant="outline" className="rounded-xl font-bold border-slate-200 text-slate-500 h-14 px-8 hover:bg-slate-50 transition-all" onClick={handleExport}>
                             <Download size={18} className="mr-2" /> Export OT report
                         </Button>

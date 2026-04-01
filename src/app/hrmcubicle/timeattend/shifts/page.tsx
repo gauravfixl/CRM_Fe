@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     Calendar,
@@ -43,14 +43,13 @@ import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
 import { Switch } from "@/shared/components/ui/switch";
+import { axiosInstance } from "@/lib/axios";
+import { getHolidaysByYear } from "@/modules/hrm/hooks/hrmHooks";
 
 const ShiftsAdminPage = () => {
     const { toast } = useToast();
     const {
         shifts,
-        holidays,
-        addHoliday,
-        removeHoliday,
         createShift,
         updateShift,
         deleteShift,
@@ -62,6 +61,7 @@ const ShiftsAdminPage = () => {
     } = useAttendanceSettingsStore();
 
     const [activeTab, setActiveTab] = useState("shifts");
+    const [backendHolidays, setBackendHolidays] = useState<Holiday[]>([]);
 
     // Dialog States
     const [isHolidayOpen, setIsHolidayOpen] = useState(false);
@@ -87,12 +87,52 @@ const ShiftsAdminPage = () => {
     const [selectedStaff, setSelectedStaff] = useState<any>(null);
     const [targetShiftId, setTargetShiftId] = useState("");
 
-    const handleHolidaySubmit = () => {
+    const refreshBackendHolidays = async (year: number) => {
+        try {
+            const response = await getHolidaysByYear(year);
+            const holidaysFromBackend = response?.data?.data ?? [];
+
+            const mapped: Holiday[] = holidaysFromBackend.map((h: any) => ({
+                id: String(h._id || h.id),
+                name: h.name,
+                // Backend returns `date` as Date; normalize into YYYY-MM-DD for the UI store model.
+                date: new Date(h.date).toISOString().slice(0, 10),
+                type: h.type === "Optional" ? "Optional" : "National", // UI supports Regional, backend does not.
+            }));
+
+            setBackendHolidays(mapped);
+        } catch (err) {
+            // Errors are already handled inside hooks, but keep a safe toast fallback.
+            toast({ title: "Holidays Load Failed", description: "Could not fetch holidays from backend.", variant: "destructive" });
+        }
+    };
+
+    useEffect(() => {
+        // The UI is hardcoded for 2026, so load backend holidays only for that year.
+        refreshBackendHolidays(2026);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    const handleHolidaySubmit = async () => {
         if (!newHoliday.name || !newHoliday.date) return;
-        addHoliday(newHoliday);
-        setIsHolidayOpen(false);
-        setNewHoliday({ name: "", date: "", type: "National" });
-        toast({ title: "Holiday Added", description: "The new holiday has been saved to the calendar." });
+        try {
+            const backendType = newHoliday.type === "Optional" ? "Optional" : "National"; // backend has only National/Optional
+            await axiosInstance.post("/attendance/holidays/", {
+                name: newHoliday.name,
+                date: newHoliday.date,
+                type: backendType,
+                isPaid: true,
+                isMandatory: true,
+                locationId: null,
+            });
+
+            await refreshBackendHolidays(2026);
+            setIsHolidayOpen(false);
+            setNewHoliday({ name: "", date: "", type: "National" });
+            toast({ title: "Holiday Added", description: "Saved to backend holiday calendar." });
+        } catch (err: any) {
+            toast({ title: "Holiday Add Failed", description: err?.response?.data?.message || "Request failed.", variant: "destructive" });
+        }
     };
 
     const handleShiftSubmit = () => {
@@ -304,9 +344,9 @@ const ShiftsAdminPage = () => {
                                         </Button>
                                     </div>
                                     <div className="divide-y divide-slate-50 max-h-[600px] overflow-y-auto no-scrollbar">
-                                        {holidays.length === 0 ? (
+                                        {backendHolidays.length === 0 ? (
                                             <div className="p-20 text-center text-slate-300 font-bold italic">No holidays configured for 2026.</div>
-                                        ) : holidays.map(h => (
+                                        ) : backendHolidays.map(h => (
                                             <div key={h.id} className="p-8 flex justify-between items-center group hover:bg-slate-50/50 transition-colors">
                                                 <div className="flex items-center gap-6">
                                                     <div className="h-16 w-16 bg-white shadow-xl rounded-[1.5rem] flex flex-col items-center justify-center border border-slate-100 group-hover:scale-105 transition-transform duration-300">
@@ -323,8 +363,15 @@ const ShiftsAdminPage = () => {
                                                     size="icon"
                                                     className="h-12 w-12 rounded-xl text-slate-200 hover:text-rose-500 hover:bg-rose-50 transition-all"
                                                     onClick={() => {
-                                                        removeHoliday(h.id);
-                                                        toast({ title: "Holiday Removed", description: `${h.name} has been deleted.`, variant: "destructive" });
+                                                        (async () => {
+                                                            try {
+                                                                await axiosInstance.delete(`/attendance/holidays/${h.id}`);
+                                                                await refreshBackendHolidays(2026);
+                                                                toast({ title: "Holiday Removed", description: `${h.name} has been deleted.`, variant: "destructive" });
+                                                            } catch (err: any) {
+                                                                toast({ title: "Holiday Remove Failed", description: err?.response?.data?.message || "Request failed.", variant: "destructive" });
+                                                            }
+                                                        })();
                                                     }}
                                                 >
                                                     <XCircle size={20} />

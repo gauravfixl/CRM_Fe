@@ -1,6 +1,6 @@
 "use client"
 
-import React from "react"
+import React, { useEffect } from "react"
 import { List } from "lucide-react"
 
 import { useParams } from "next/navigation"
@@ -39,7 +39,7 @@ const STATUS_COLORS: Record<string, string> = {
 export default function ListPage() {
     const { id } = useParams()
     const projectId = id as string
-    const { getIssuesByProject, deleteIssue } = useIssueStore()
+    const { getIssuesByProject, deleteIssue, loadIssuesByProject } = useIssueStore()
     const [search, setSearch] = React.useState("")
     const [sortConfig, setSortConfig] = React.useState<{ key: string, direction: 'asc' | 'desc' } | null>(null)
 
@@ -47,6 +47,11 @@ export default function ListPage() {
         i.title.toLowerCase().includes(search.toLowerCase()) ||
         i.status.toLowerCase().includes(search.toLowerCase())
     )
+
+    useEffect(() => {
+        void loadIssuesByProject(projectId).catch((e) => console.error("Failed to load issues:", e))
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [projectId])
 
     const sortedIssues = React.useMemo(() => {
         if (!sortConfig) return issues

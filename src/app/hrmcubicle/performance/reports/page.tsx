@@ -222,7 +222,23 @@ const ReportsPage = () => {
                                     </div>
                                 ))}
                             </div>
-                            <Button variant="link" className="text-indigo-600 font-bold text-[10px] p-0 h-auto hover:no-underline hover:text-slate-900 tracking-widest">Download Detailed Log</Button>
+                            <Button variant="link" className="text-indigo-600 font-bold text-[10px] p-0 h-auto hover:no-underline hover:text-slate-900 tracking-widest" onClick={() => {
+                                const csvHeader = "Message,Date,Department\n";
+                                const csvRows = [
+                                    { msg: "Annual Report 2025 generated", date: "2h ago", dep: "System" },
+                                    { msg: "Sales Q4 stats uploaded", date: "5h ago", dep: "Sales" },
+                                    { msg: "Audit trail cleanup", date: "1d ago", dep: "Admin" },
+                                ].map(log => `"${log.msg}","${log.date}","${log.dep}"`).join("\n");
+                                const blob = new Blob([csvHeader + csvRows], { type: "text/csv;charset=utf-8;" });
+                                const url = URL.createObjectURL(blob);
+                                const link = document.createElement("a");
+                                link.href = url;
+                                link.download = `performance_audit_log_${new Date().toISOString().split("T")[0]}.csv`;
+                                document.body.appendChild(link);
+                                link.click();
+                                document.body.removeChild(link);
+                                URL.revokeObjectURL(url);
+                            }}>Download Detailed Log</Button>
                         </Card>
                     </div>
                 </div>

@@ -40,11 +40,16 @@ export default function BacklogPage() {
 
     const { getProjectById } = useProjectStore()
     const { getSprints, createSprint, deleteSprint } = useSprintStore()
-    const { getIssuesByProject, updateIssue, addIssue } = useIssueStore()
+    const { getIssuesByProject, updateIssue, addIssue, loadIssuesByProject } = useIssueStore()
 
     const project = getProjectById(projectId)
     const sprints = getSprints({ projectId })
     const allTasks = getIssuesByProject(projectId)
+
+    useEffect(() => {
+        void loadIssuesByProject(projectId).catch((e) => console.error("Failed to load issues:", e))
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [projectId])
 
     const [expandedSprints, setExpandedSprints] = useState<Set<string>>(new Set())
     const [createSprintOpen, setCreateSprintOpen] = useState(false)

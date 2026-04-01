@@ -29,6 +29,7 @@ export interface Project {
 interface ProjectStore {
     projects: Project[]
     addProject: (project: Project) => void
+    setProjects: (projects: Project[]) => void
     createProject: (project: Partial<Project> & { name: string, workspaceId: string }) => void
     updateProject: (id: string, updates: Partial<Project>) => void
     toggleStar: (id: string) => void
@@ -79,6 +80,9 @@ export const useProjectStore = create<ProjectStore>()(
             projects: INITIAL_PROJECTS,
             addProject: (project) => set((state) => ({
                 projects: [project, ...state.projects]
+            })),
+            setProjects: (nextProjects) => set(() => ({
+                projects: nextProjects
             })),
             createProject: (projectData) => set((state) => {
                 const newProject: Project = {

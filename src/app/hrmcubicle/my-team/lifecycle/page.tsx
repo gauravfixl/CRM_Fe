@@ -282,7 +282,11 @@ const TeamLifecyclePage = () => {
                                             </div>
 
                                             <div className="grid grid-cols-2 gap-4">
-                                                <div className="p-4 bg-slate-50/50 rounded-2xl border border-slate-100/50 group-hover:bg-indigo-50/30 transition-all cursor-pointer" onClick={() => toast({ title: "Mentor Contact", description: `Notifying ${j.mentor} for a quick synced...` })}>
+                                                <div className="p-4 bg-slate-50/50 rounded-2xl border border-slate-100/50 group-hover:bg-indigo-50/30 transition-all cursor-pointer" onClick={() => {
+                                                    const mentorEmail = `${j.mentor.toLowerCase().replace(/\s+/g, '.')}@company.com`;
+                                                    window.location.href = `mailto:${mentorEmail}?subject=Mentor%20Support%20-%20${encodeURIComponent(j.name)}%20Onboarding&body=Hi%20${encodeURIComponent(j.mentor)},%0A%0AReaching%20out%20regarding%20${encodeURIComponent(j.name)}'s%20onboarding%20progress.`;
+                                                    toast({ title: "Opening Email Client", description: `Composing email to ${j.mentor} regarding ${j.name}'s onboarding.` });
+                                                }}>
                                                     <p className="text-[8px] font-bold text-slate-400 tracking-widest mb-1.5">Mentor Support</p>
                                                     <div className="flex items-center gap-2">
                                                         <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />

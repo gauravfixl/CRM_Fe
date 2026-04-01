@@ -71,6 +71,9 @@ const TemplatesPage = () => {
     });
 
     const [currentPlaceholder, setCurrentPlaceholder] = useState("");
+    const [isBold, setIsBold] = useState(false);
+    const [isItalic, setIsItalic] = useState(false);
+    const [isAiDialogOpen, setIsAiDialogOpen] = useState(false);
 
     const filteredTemplates = letterTemplates.filter(template => {
         const matchesSearch = template.name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -169,13 +172,13 @@ const TemplatesPage = () => {
                                             <div className="flex items-center justify-between mb-1 ml-1">
                                                 <label className="text-[10px] font-bold tracking-wide text-slate-400">Template Content</label>
                                                 <div className="flex gap-2">
-                                                    <Button variant="outline" size="sm" className="h-7 w-7 rounded-lg text-[10px] font-black p-0 border-slate-200 shadow-sm">B</Button>
-                                                    <Button variant="outline" size="sm" className="h-7 w-7 rounded-lg text-[10px] font-black p-0 border-slate-200 shadow-sm italic">I</Button>
+                                                    <Button variant="outline" size="sm" className={`h-7 w-7 rounded-lg text-[10px] font-black p-0 border-slate-200 shadow-sm ${isBold ? 'bg-indigo-100 border-indigo-300 text-indigo-700' : ''}`} onClick={() => setIsBold(!isBold)}>B</Button>
+                                                    <Button variant="outline" size="sm" className={`h-7 w-7 rounded-lg text-[10px] font-black p-0 border-slate-200 shadow-sm italic ${isItalic ? 'bg-indigo-100 border-indigo-300 text-indigo-700' : ''}`} onClick={() => setIsItalic(!isItalic)}>I</Button>
                                                 </div>
                                             </div>
                                             <Textarea
                                                 placeholder="Use {{placeholder_name}} for dynamic data..."
-                                                className="min-h-[400px] font-mono text-sm bg-slate-50 border-slate-200 rounded-[2rem] p-8 focus:bg-white focus:ring-4 focus:ring-indigo-50 transition-all custom-scrollbar overflow-y-auto"
+                                                className={`min-h-[400px] font-mono text-sm bg-slate-50 border-slate-200 rounded-[2rem] p-8 focus:bg-white focus:ring-4 focus:ring-indigo-50 transition-all custom-scrollbar overflow-y-auto ${isBold ? 'font-bold' : ''} ${isItalic ? 'italic' : ''}`}
                                                 value={newTemplate.content}
                                                 onChange={(e) => setNewTemplate({ ...newTemplate, content: e.target.value })}
                                             />
@@ -303,7 +306,7 @@ const TemplatesPage = () => {
                             </div>
                             <h4 className="font-bold text-lg leading-tight mb-2 tracking-tight text-indigo-900">AI Assistant</h4>
                             <p className="text-[10px] font-medium text-indigo-600/60 leading-relaxed mb-6 tracking-wide">Draft legal documents in seconds with advanced LLM integration.</p>
-                            <Button className="w-full bg-white hover:bg-indigo-600 hover:text-white text-indigo-600 border border-indigo-100 h-10 rounded-xl font-bold text-[9px] tracking-wide shadow-sm transition-all active:scale-95">Try AI Generator</Button>
+                            <Button className="w-full bg-white hover:bg-indigo-600 hover:text-white text-indigo-600 border border-indigo-100 h-10 rounded-xl font-bold text-[9px] tracking-wide shadow-sm transition-all active:scale-95" onClick={() => setIsAiDialogOpen(true)}>Try AI Generator</Button>
                         </div>
                     </Card>
                 </div>
@@ -418,6 +421,30 @@ const TemplatesPage = () => {
                         </div>
                     )}
                 </div>
+
+                {/* AI Enrich Dialog */}
+                <Dialog open={isAiDialogOpen} onOpenChange={setIsAiDialogOpen}>
+                    <DialogContent className="max-w-md bg-white rounded-[2rem] border border-slate-200 p-8 shadow-3xl font-sans" style={{ zoom: "80%" }}>
+                        <DialogHeader className="text-start">
+                            <div className="h-12 w-12 bg-amber-50 rounded-2xl flex items-center justify-center mb-3 border border-amber-100">
+                                <Sparkles size={22} className="text-amber-500" />
+                            </div>
+                            <DialogTitle className="text-2xl font-black tracking-tight text-slate-900">AI Document Enrichment</DialogTitle>
+                            <DialogDescription className="font-bold text-slate-400 text-[11px] tracking-wide mt-2">
+                                Advanced LLM-powered document generation is currently in development. This feature will allow you to auto-generate professional letter templates, suggest legal clauses, and enrich content with compliance-ready language.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="py-6">
+                            <div className="p-6 bg-indigo-50/50 rounded-2xl border border-indigo-100 text-start space-y-2">
+                                <p className="text-[10px] font-bold text-indigo-700 tracking-wide">Coming Soon</p>
+                                <p className="text-[10px] font-medium text-indigo-500/70 leading-relaxed">AI-assisted drafting, clause suggestions, and automated template generation will be available in the next release.</p>
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <Button className="bg-indigo-600 hover:bg-slate-900 text-white rounded-xl h-12 px-8 font-bold text-[10px] tracking-wide border-none" onClick={() => setIsAiDialogOpen(false)}>Got It</Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
 
                 {/* Edit Template Dialog */}
                 <Dialog open={!!editingTemplate} onOpenChange={(open) => !open && setEditingTemplate(null)}>

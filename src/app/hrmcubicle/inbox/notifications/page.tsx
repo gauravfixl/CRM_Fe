@@ -50,6 +50,24 @@ const NotificationsPage = () => {
     const [filterCategory, setFilterCategory] = useState<NotificationCategory | 'All'>('All');
     const [unreadOnly, setUnreadOnly] = useState(false);
 
+    const defaultPrefs = [
+        { inApp: true, email: true },
+        { inApp: true, email: true },
+        { inApp: true, email: true },
+        { inApp: true, email: false },
+        { inApp: true, email: false },
+    ];
+    const [preferences, setPreferences] = useState(defaultPrefs);
+
+    const handleUpdatePreferences = () => {
+        toast({ title: "Preferences Saved", description: "Your notification preferences have been updated successfully." });
+    };
+
+    const handleRevertPreferences = () => {
+        setPreferences([...defaultPrefs]);
+        toast({ title: "Preferences Reverted", description: "Notification preferences have been reset to defaults." });
+    };
+
     const unreadCount = notifications.filter(n => !n.isRead).length;
     const filteredNotifications = notifications.filter(n => {
         const matchesCategory = filterCategory === 'All' || n.category === filterCategory;
@@ -256,11 +274,11 @@ const NotificationsPage = () => {
                                         <div className="flex items-center gap-8">
                                             <div className="flex flex-col items-center gap-1.5">
                                                 <Label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">In-App</Label>
-                                                <Switch defaultChecked />
+                                                <Switch checked={preferences[i].inApp} onCheckedChange={(checked) => { const updated = [...preferences]; updated[i] = { ...updated[i], inApp: checked }; setPreferences(updated); }} />
                                             </div>
                                             <div className="flex flex-col items-center gap-1.5">
                                                 <Label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Email</Label>
-                                                <Switch defaultChecked={i < 3} />
+                                                <Switch checked={preferences[i].email} onCheckedChange={(checked) => { const updated = [...preferences]; updated[i] = { ...updated[i], email: checked }; setPreferences(updated); }} />
                                             </div>
                                         </div>
                                     </div>
@@ -269,8 +287,8 @@ const NotificationsPage = () => {
                         </div>
 
                         <div className="pt-6 flex justify-end gap-3">
-                            <Button variant="outline" className="rounded-2xl h-12 px-8 font-bold border-slate-200">Revert Changes</Button>
-                            <Button className="rounded-2xl h-12 px-10 font-bold bg-slate-900 text-white shadow-xl shadow-slate-100" onClick={() => toast({ title: "Preferences Saved" })}>Update Settings</Button>
+                            <Button variant="outline" className="rounded-2xl h-12 px-8 font-bold border-slate-200" onClick={handleRevertPreferences}>Revert Changes</Button>
+                            <Button className="rounded-2xl h-12 px-10 font-bold bg-slate-900 text-white shadow-xl shadow-slate-100" onClick={handleUpdatePreferences}>Update Settings</Button>
                         </div>
                     </div>
                 )}

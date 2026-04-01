@@ -44,6 +44,7 @@ const ExitManagementPage = () => {
     // UI State
     const [searchTerm, setSearchTerm] = useState("");
     const [filterActive, setFilterActive] = useState<"All" | "Notice" | "Exited">("All");
+    const [detailEmp, setDetailEmp] = useState<LifecycleEmployee | null>(null);
 
     // Initiation State
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -276,7 +277,7 @@ const ExitManagementPage = () => {
                                                 }`}>
                                                 {emp.status}
                                             </Badge>
-                                            <Button variant="ghost" className="h-12 w-12 rounded-xl text-slate-300 hover:text-[#CB9DF0] hover:bg-purple-50">
+                                            <Button variant="ghost" className="h-12 w-12 rounded-xl text-slate-300 hover:text-[#CB9DF0] hover:bg-purple-50" onClick={() => setDetailEmp(emp)}>
                                                 <ArrowRight size={24} />
                                             </Button>
                                         </div>
@@ -286,6 +287,38 @@ const ExitManagementPage = () => {
                         ))}
                     </div>
                 </Card>
+
+                {/* Detail Dialog */}
+                <Dialog open={!!detailEmp} onOpenChange={(open) => { if (!open) setDetailEmp(null); }}>
+                    <DialogContent className="bg-white rounded-[2.5rem] border-none p-0 max-w-xl shadow-[0_50px_100px_-30px_rgba(0,0,0,0.2)] outline-none overflow-hidden">
+                        <div className="p-10">
+                            <DialogHeader className="mb-6">
+                                <DialogTitle className="text-2xl font-black text-slate-900 tracking-tight italic">Separation Details</DialogTitle>
+                                <DialogDescription className="text-slate-400 font-bold text-base mt-0.5 italic">Full offboarding information for {detailEmp?.name}.</DialogDescription>
+                            </DialogHeader>
+                            {detailEmp && (
+                                <div className="space-y-6">
+                                    <div className="flex items-center gap-6">
+                                        <Avatar className="h-16 w-16 rounded-2xl bg-white shadow-xl flex items-center justify-center text-[#CB9DF0] font-black text-2xl border border-slate-50">
+                                            <AvatarFallback>{detailEmp.avatar}</AvatarFallback>
+                                        </Avatar>
+                                        <div>
+                                            <h4 className="text-2xl font-black text-slate-900 tracking-tight">{detailEmp.name}</h4>
+                                            <p className="text-sm font-bold text-slate-400 capitalize">{detailEmp.role} — {detailEmp.department}</p>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-4 bg-slate-50 rounded-2xl p-6">
+                                        <div className="flex justify-between"><span className="font-bold text-slate-400 text-sm">Status</span><Badge className={`px-4 py-1.5 rounded-lg font-black italic shadow-sm border-none ${detailEmp.status === 'Notice Period' ? 'bg-purple-100 text-purple-700' : 'bg-slate-200 text-slate-500'}`}>{detailEmp.status}</Badge></div>
+                                        <div className="flex justify-between"><span className="font-bold text-slate-400 text-sm">Exit Reason</span><span className="font-bold text-slate-700 text-sm text-right max-w-[60%]">{detailEmp.exitReason || 'N/A'}</span></div>
+                                        <div className="flex justify-between"><span className="font-bold text-slate-400 text-sm">Last Working Day</span><span className="font-black text-slate-900 text-sm">{detailEmp.lwd || 'N/A'}</span></div>
+                                        <div className="flex justify-between"><span className="font-bold text-slate-400 text-sm">Join Date</span><span className="font-bold text-slate-700 text-sm">{detailEmp.joinDate}</span></div>
+                                        <div className="flex justify-between"><span className="font-bold text-slate-400 text-sm">Department</span><span className="font-bold text-[#CB9DF0] text-sm italic">{detailEmp.department}</span></div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </DialogContent>
+                </Dialog>
             </div>
         </div>
     );

@@ -18,10 +18,14 @@ import { useProjectTemplateStore } from "@/shared/data/project-template-store"
 import { useCommentStore } from "@/shared/data/comment-store"
 import { useAuditLogsStore } from "@/shared/data/audit-logs-store"
 import { useSprintStore } from "@/shared/data/sprint-store"
+import { getMyWorkspaces } from "@/modules/project-management/workspace/hooks/workspaceHooks"
+import { getAllProjectsByWorkspace } from "@/modules/project-management/project/hooks/projectHooks"
 
 export default function ProjectManagementLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname()
     const [isNavigating, setIsNavigating] = useState(false)
+    const [didHydrateFromBackend, setDidHydrateFromBackend] = useState(false)
+    const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId)
 
     // Hydrate stores on mount
     useEffect(() => {
@@ -35,6 +39,121 @@ export default function ProjectManagementLayout({ children }: { children: React.
         useAuditLogsStore.persist.rehydrate()
         useSprintStore.persist.rehydrate()
     }, [])
+
+    // Backend-backed seed for sidebar + project listing
+    useEffect(() => {
+        const hydrateFromBackend = async () => {
+            const { setWorkspaces, setActiveWorkspace } = useWorkspaceStore.getState()
+            const { setProjects } = useProjectStore.getState()
+
+            try {
+                const wsRes = await getMyWorkspaces()
+                const backendWorkspaces = wsRes?.data?.workspaces ?? []
+
+                const mappedWorkspaces = backendWorkspaces.map((w: any) => ({
+                    id: String(w._id),
+                    name: w.name,
+                    slug: w.slug ? String(w.slug) : String(w._id),
+                    icon: "🚀",
+                    createdAt: new Date().toISOString().slice(0, 10),
+                    description: w.description ?? "",
+                }))
+
+                if (mappedWorkspaces.length > 0) {
+                    setWorkspaces(mappedWorkspaces)
+                    const firstId = mappedWorkspaces[0].id
+                    setActiveWorkspace(firstId)
+
+                    const projRes = await getAllProjectsByWorkspace(firstId, { page: 1, limit: 100 })
+                    const backendProjects = projRes?.data?.projects ?? []
+
+                    const mappedProjects = backendProjects.map((p: any) => ({
+                        id: String(p._id),
+                        workspaceId: firstId,
+                        name: p.name,
+                        key: String(p.name ?? "PRJ")
+                            .replace(/[^a-zA-Z0-9 ]/g, "")
+                            .split(" ")
+                            .filter(Boolean)
+                            .slice(0, 2)
+                            .join("")
+                            .substring(0, 3)
+                            .toUpperCase(),
+                        status: p.isArchived ? "Closing" : "Active",
+                        priority: p.priority ?? undefined,
+                        leadId: "",
+                        memberIds: [],
+                        members: 0,
+                        due: "",
+                        category: "General",
+                        icon: "🚀",
+                        type: "team" as const,
+                        methodology: p.type === "scrum" ? "scrum" : "kanban",
+                        starred: false,
+                        description: p.description ?? "",
+                        boardId: p.boardId ? String(p.boardId) : undefined,
+                    }))
+
+                    setProjects(mappedProjects)
+                }
+            } catch (err) {
+                // Non-blocking: keep existing mock data if backend is unreachable.
+                console.error("ProjectManagement backend hydrate failed:", err)
+            } finally {
+                setDidHydrateFromBackend(true)
+            }
+        }
+
+        hydrateFromBackend()
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+
+    // When user switches workspace from sidebar, refetch that workspace's projects from backend.
+    useEffect(() => {
+        if (!didHydrateFromBackend) return
+        if (!activeWorkspaceId) return
+
+        const syncProjects = async () => {
+            const { setProjects } = useProjectStore.getState()
+            try {
+                const projRes = await getAllProjectsByWorkspace(activeWorkspaceId, { page: 1, limit: 100 })
+                const backendProjects = projRes?.data?.projects ?? []
+
+                const mappedProjects = backendProjects.map((p: any) => ({
+                    id: String(p._id),
+                    workspaceId: activeWorkspaceId,
+                    name: p.name,
+                    key: String(p.name ?? "PRJ")
+                        .replace(/[^a-zA-Z0-9 ]/g, "")
+                        .split(" ")
+                        .filter(Boolean)
+                        .slice(0, 2)
+                        .join("")
+                        .substring(0, 3)
+                        .toUpperCase(),
+                    status: p.isArchived ? "Closing" : "Active",
+                    priority: p.priority ?? undefined,
+                    leadId: "",
+                    memberIds: [],
+                    members: 0,
+                    due: "",
+                    category: "General",
+                    icon: "🚀",
+                    type: "team" as const,
+                    methodology: p.type === "scrum" ? "scrum" : "kanban",
+                    starred: false,
+                    description: p.description ?? "",
+                    boardId: p.boardId ? String(p.boardId) : undefined,
+                }))
+
+                setProjects(mappedProjects)
+            } catch (err) {
+                console.error("Project sync on workspace switch failed:", err)
+            }
+        }
+
+        void syncProjects()
+    }, [didHydrateFromBackend, activeWorkspaceId])
 
     useEffect(() => {
         setIsNavigating(true)

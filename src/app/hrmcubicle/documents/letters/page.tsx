@@ -67,6 +67,7 @@ const LettersPage = () => {
     const [statusFilter, setStatusFilter] = useState("all");
     const [isIssueDialogOpen, setIsIssueDialogOpen] = useState(false);
     const [selectedLetterIds, setSelectedLetterIds] = useState<string[]>([]);
+    const [previewLetter, setPreviewLetter] = useState<IssuedLetter | null>(null);
 
     const [newLetter, setNewLetter] = useState({
         employeeId: "",
@@ -294,7 +295,13 @@ const LettersPage = () => {
                                         <SelectItem value="Signed" className="rounded-lg h-10 text-emerald-500">Signed</SelectItem>
                                     </SelectContent>
                                 </Select>
-                                <Button variant="outline" className="h-12 border-slate-200 rounded-xl font-bold text-[10px] tracking-wide px-6 hover:bg-slate-50 transition-all" onClick={() => toast.success("Preparing PDF manifest for bulk print")}>
+                                <Button variant="outline" className="h-12 border-slate-200 rounded-xl font-bold text-[10px] tracking-wide px-6 hover:bg-slate-50 transition-all" onClick={() => {
+                                    if (selectedLetterIds.length === 0) {
+                                        toast.info("Please select letters to print");
+                                        return;
+                                    }
+                                    window.print();
+                                }}>
                                     <Printer size={16} className="mr-2" /> Bulk Print
                                 </Button>
                             </div>
@@ -367,10 +374,22 @@ const LettersPage = () => {
                                                 </TableCell>
                                                 <TableCell className="px-8 py-6 text-right">
                                                     <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all">
-                                                        <Button variant="ghost" size="icon" title="Preview" className="h-9 w-9 text-slate-400 hover:text-indigo-600 hover:bg-white hover:shadow-sm rounded-xl transition-all border-none" onClick={() => toast.success(`Viewing preview for ${letter.employeeName}`)}>
+                                                        <Button variant="ghost" size="icon" title="Preview" className="h-9 w-9 text-slate-400 hover:text-indigo-600 hover:bg-white hover:shadow-sm rounded-xl transition-all border-none" onClick={() => setPreviewLetter(letter)}>
                                                             <Eye size={16} />
                                                         </Button>
-                                                        <Button variant="ghost" size="icon" title="Download" className="h-9 w-9 text-slate-400 hover:text-indigo-600 hover:bg-white hover:shadow-sm rounded-xl transition-all border-none" onClick={() => toast.success("Downloading document to local vault")}>
+                                                        <Button variant="ghost" size="icon" title="Download" className="h-9 w-9 text-slate-400 hover:text-indigo-600 hover:bg-white hover:shadow-sm rounded-xl transition-all border-none" onClick={() => {
+                                                            const content = `${letter.letterType}\n\nEmployee: ${letter.employeeName}\nEmployee ID: ${letter.employeeId}\nIssued By: ${letter.issuedBy}\nIssued Date: ${letter.issuedDate}\nStatus: ${letter.status}\n\nThis is an official ${letter.letterType} issued to ${letter.employeeName}.`;
+                                                            const blob = new Blob([content], { type: "text/plain;charset=utf-8;" });
+                                                            const url = URL.createObjectURL(blob);
+                                                            const link = document.createElement("a");
+                                                            link.href = url;
+                                                            link.download = `${letter.letterType.replace(/\s+/g, "_")}_${letter.employeeName.replace(/\s+/g, "_")}.txt`;
+                                                            document.body.appendChild(link);
+                                                            link.click();
+                                                            document.body.removeChild(link);
+                                                            URL.revokeObjectURL(url);
+                                                            toast.success(`Downloaded letter for ${letter.employeeName}`);
+                                                        }}>
                                                             <Download size={16} />
                                                         </Button>
                                                         {letter.status === 'Draft' && (
@@ -421,6 +440,50 @@ const LettersPage = () => {
                     </CardContent>
                 </Card>
             </main>
+
+            {/* Letter Preview Dialog */}
+            <Dialog open={!!previewLetter} onOpenChange={(open) => !open && setPreviewLetter(null)}>
+                <DialogContent className="max-w-2xl bg-white rounded-[2.5rem] border border-slate-200 p-10 shadow-3xl font-sans" style={{ zoom: "80%" }}>
+                    <DialogHeader>
+                        <DialogTitle className="text-2xl font-black tracking-tight text-slate-900">{previewLetter?.letterType}</DialogTitle>
+                        <DialogDescription className="font-bold text-slate-400 text-[11px] tracking-tight mt-2">
+                            Document Preview
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-6 space-y-6 text-start">
+                        <div className="p-8 bg-slate-50 rounded-2xl border border-slate-100 space-y-4">
+                            <div className="flex justify-between items-center">
+                                <span className="text-[10px] font-bold text-slate-400 tracking-wide">Employee</span>
+                                <span className="text-sm font-bold text-slate-900">{previewLetter?.employeeName}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                                <span className="text-[10px] font-bold text-slate-400 tracking-wide">Employee ID</span>
+                                <span className="text-sm font-bold text-slate-900">{previewLetter?.employeeId}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                                <span className="text-[10px] font-bold text-slate-400 tracking-wide">Issued By</span>
+                                <span className="text-sm font-bold text-slate-900">{previewLetter?.issuedBy}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                                <span className="text-[10px] font-bold text-slate-400 tracking-wide">Issued Date</span>
+                                <span className="text-sm font-bold text-slate-900">{previewLetter?.issuedDate}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                                <span className="text-[10px] font-bold text-slate-400 tracking-wide">Status</span>
+                                {previewLetter && getStatusBadge(previewLetter.status)}
+                            </div>
+                            <div className="border-t border-slate-200 pt-4 mt-4">
+                                <p className="text-sm text-slate-700 font-semibold leading-relaxed">
+                                    This is an official <span className="font-bold">{previewLetter?.letterType}</span> issued to <span className="font-bold">{previewLetter?.employeeName}</span> ({previewLetter?.employeeId}) by {previewLetter?.issuedBy} on {previewLetter?.issuedDate}.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <DialogFooter className="gap-3">
+                        <Button variant="ghost" onClick={() => setPreviewLetter(null)} className="h-12 rounded-xl font-bold text-[10px] tracking-wide transition-all px-6">Close</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 };

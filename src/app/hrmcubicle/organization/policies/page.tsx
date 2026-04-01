@@ -58,6 +58,8 @@ const PolicyCenterPage = () => {
     const [categoryFilter, setCategoryFilter] = useState<string>("All");
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+    const [isComplianceDialogOpen, setIsComplianceDialogOpen] = useState(false);
     const [selectedPolicy, setSelectedPolicy] = useState<Policy | null>(null);
 
     const [formData, setFormData] = useState<Partial<Policy>>({
@@ -189,7 +191,10 @@ const PolicyCenterPage = () => {
                             <p className="text-slate-500 text-[11px] font-bold leading-relaxed italic">
                                 All policies are encrypted and follow standard compliance protocols.
                             </p>
-                            <Button className="w-full bg-indigo-600 hover:bg-slate-900 text-white h-11 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all shadow-lg shadow-indigo-100 border-none">
+                            <Button
+                                className="w-full bg-indigo-600 hover:bg-slate-900 text-white h-11 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all shadow-lg shadow-indigo-100 border-none"
+                                onClick={() => setIsComplianceDialogOpen(true)}
+                            >
                                 View Compliance Logs
                             </Button>
                         </div>
@@ -243,7 +248,7 @@ const PolicyCenterPage = () => {
                                                             </Button>
                                                         </DropdownMenuTrigger>
                                                         <DropdownMenuContent align="end" className="rounded-2xl border-none shadow-2xl p-2 w-48 font-bold">
-                                                            <DropdownMenuItem className="rounded-xl h-11 gap-2">
+                                                            <DropdownMenuItem className="rounded-xl h-11 gap-2" onClick={() => { setSelectedPolicy(policy); setIsViewDialogOpen(true); }}>
                                                                 <Eye size={16} /> View Document
                                                             </DropdownMenuItem>
                                                             <DropdownMenuItem
@@ -256,7 +261,10 @@ const PolicyCenterPage = () => {
                                                             >
                                                                 <Edit size={16} /> Edit Details
                                                             </DropdownMenuItem>
-                                                            <DropdownMenuItem className="rounded-xl h-11 gap-2">
+                                                            <DropdownMenuItem className="rounded-xl h-11 gap-2" onClick={() => {
+                                                                navigator.clipboard.writeText(`${window.location.origin}/hrmcubicle/organization/policies?id=${policy.id}`);
+                                                                toast({ title: "Link Copied", description: `Shareable link for "${policy.title}" copied to clipboard.` });
+                                                            }}>
                                                                 <Share2 size={16} /> Share Internal
                                                             </DropdownMenuItem>
                                                             <DropdownMenuItem
@@ -304,7 +312,17 @@ const PolicyCenterPage = () => {
                                                     <FileText size={14} className="text-slate-400" />
                                                     <span className="text-[10px] font-bold text-slate-500">{policy.fileSize || "1.2 MB"} • PDF</span>
                                                 </div>
-                                                <Button size="sm" className="h-8 rounded-lg bg-indigo-600 hover:bg-slate-900 text-white font-bold text-[10px] gap-2">
+                                                <Button size="sm" className="h-8 rounded-lg bg-indigo-600 hover:bg-slate-900 text-white font-bold text-[10px] gap-2" onClick={() => {
+                                                    const content = `POLICY DOCUMENT\n\nTitle: ${policy.title}\nCategory: ${policy.category}\nVersion: ${policy.version}\nEffective Date: ${policy.effectiveDate}\nLast Updated: ${policy.lastUpdated}\n\nThis document contains the official policy guidelines for ${policy.title.toLowerCase()}.`;
+                                                    const blob = new Blob([content], { type: "text/plain" });
+                                                    const url = URL.createObjectURL(blob);
+                                                    const link = document.createElement("a");
+                                                    link.href = url;
+                                                    link.download = `${policy.title.replace(/\s+/g, '_')}_v${policy.version}.txt`;
+                                                    link.click();
+                                                    URL.revokeObjectURL(url);
+                                                    toast({ title: "Downloaded", description: `${policy.title} document downloaded.` });
+                                                }}>
                                                     <Download size={14} /> Download
                                                 </Button>
                                             </div>
@@ -471,6 +489,99 @@ const PolicyCenterPage = () => {
                         </Button>
                         <Button variant="outline" className="h-10 px-6 rounded-lg font-bold border-slate-300 text-slate-600 text-xs" onClick={() => setIsEditDialogOpen(false)}>
                             Cancel
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+            {/* View Document Dialog */}
+            <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+                <DialogContent className="bg-white rounded-[2.5rem] border border-slate-300 p-8 max-w-lg shadow-3xl">
+                    <DialogHeader className="space-y-2">
+                        <div className="h-11 w-11 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600 mb-1 shadow-inner">
+                            <Eye size={24} />
+                        </div>
+                        <DialogTitle className="text-2xl font-bold tracking-tight text-slate-900">{selectedPolicy?.title}</DialogTitle>
+                        <DialogDescription className="text-slate-500 font-medium text-xs">
+                            Policy document preview
+                        </DialogDescription>
+                    </DialogHeader>
+                    {selectedPolicy && (
+                        <div className="py-6 space-y-5">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1">
+                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Category</p>
+                                    <p className="text-sm font-bold text-slate-700">{selectedPolicy.category}</p>
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Version</p>
+                                    <p className="text-sm font-bold text-slate-700">v{selectedPolicy.version}</p>
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Effective Date</p>
+                                    <p className="text-sm font-bold text-slate-700">{new Date(selectedPolicy.effectiveDate).toLocaleDateString()}</p>
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Last Updated</p>
+                                    <p className="text-sm font-bold text-slate-700">{new Date(selectedPolicy.lastUpdated).toLocaleDateString()}</p>
+                                </div>
+                            </div>
+                            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-3">
+                                <p className="text-xs font-bold text-slate-700">Document Content</p>
+                                <p className="text-[11px] text-slate-500 leading-relaxed italic">
+                                    This document outlines the official guidelines regarding {selectedPolicy.title.toLowerCase()} applicable to all business units and employees.
+                                    All employees are required to comply with the provisions stated herein effective from {new Date(selectedPolicy.effectiveDate).toLocaleDateString()}.
+                                </p>
+                            </div>
+                            <div className="flex items-center gap-2 text-[10px] text-slate-400 font-bold">
+                                <FileText size={14} /> {selectedPolicy.fileSize || "1.2 MB"} • PDF Format
+                            </div>
+                        </div>
+                    )}
+                    <DialogFooter className="gap-2 pt-6 border-t border-slate-200 sm:justify-end">
+                        <Button variant="outline" className="h-10 px-6 rounded-lg font-bold border-slate-300 text-slate-600 text-xs" onClick={() => setIsViewDialogOpen(false)}>
+                            Close
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Compliance Logs Dialog */}
+            <Dialog open={isComplianceDialogOpen} onOpenChange={setIsComplianceDialogOpen}>
+                <DialogContent className="bg-white rounded-[2.5rem] border border-slate-300 p-8 max-w-lg shadow-3xl">
+                    <DialogHeader className="space-y-2">
+                        <div className="h-11 w-11 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 mb-1 shadow-inner">
+                            <Shield size={24} />
+                        </div>
+                        <DialogTitle className="text-2xl font-bold tracking-tight text-slate-900">Compliance Logs</DialogTitle>
+                        <DialogDescription className="text-slate-500 font-medium text-xs">
+                            Audit trail of policy compliance and encryption events.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-6 space-y-4">
+                        {[
+                            { action: "Policy vault encrypted", timestamp: "2026-03-31 09:00", status: "Secure" },
+                            { action: "Annual compliance audit passed", timestamp: "2026-03-15 14:30", status: "Verified" },
+                            { action: "Data protection review completed", timestamp: "2026-03-01 10:15", status: "Compliant" },
+                            { action: "Access permissions updated", timestamp: "2026-02-20 16:45", status: "Updated" },
+                            { action: "Policy backup created", timestamp: "2026-02-10 08:00", status: "Archived" },
+                        ].map((log, i) => (
+                            <div key={i} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                <div className="flex items-center gap-3">
+                                    <div className="h-8 w-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                                        <Shield size={14} />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-bold text-slate-700">{log.action}</p>
+                                        <p className="text-[10px] text-slate-400 font-medium">{log.timestamp}</p>
+                                    </div>
+                                </div>
+                                <Badge className="bg-emerald-50 text-emerald-700 border-none font-bold text-[8px] h-5 px-2 rounded-lg">{log.status}</Badge>
+                            </div>
+                        ))}
+                    </div>
+                    <DialogFooter className="gap-2 pt-6 border-t border-slate-200 sm:justify-end">
+                        <Button variant="outline" className="h-10 px-6 rounded-lg font-bold border-slate-300 text-slate-600 text-xs" onClick={() => setIsComplianceDialogOpen(false)}>
+                            Close
                         </Button>
                     </DialogFooter>
                 </DialogContent>

@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   Clock,
@@ -36,6 +37,7 @@ import { Label } from "@/shared/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
 
 const TimeAttendDashboard = () => {
+  const router = useRouter();
   const { toast } = useToast();
   const { logs, clockIn, clockOut } = useAttendanceStore();
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -287,7 +289,7 @@ const TimeAttendDashboard = () => {
               <span>Pending</span>
               <span className="text-amber-300">43.5 hrs</span>
             </div>
-            <Button className="w-full bg-white text-indigo-900 font-black hover:bg-indigo-50 mt-2 rounded-xl">Manage OT Requests</Button>
+            <Button className="w-full bg-white text-indigo-900 font-black hover:bg-indigo-50 mt-2 rounded-xl" onClick={() => router.push("/hrmcubicle/timeattend/overtime")}>Manage OT Requests</Button>
           </div>
         </Card>
       </div>

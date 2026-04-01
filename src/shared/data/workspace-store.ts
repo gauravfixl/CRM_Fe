@@ -16,6 +16,7 @@ interface WorkspaceStore {
     workspaces: Workspace[]
     activeWorkspaceId: string | null
     addWorkspace: (workspace: Workspace) => void
+    setWorkspaces: (workspaces: Workspace[]) => void
     setActiveWorkspace: (id: string) => void
     getActiveWorkspace: () => Workspace | undefined
     getWorkspaceById: (id: string) => Workspace | undefined
@@ -54,6 +55,10 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
             addWorkspace: (workspace) => set((state) => ({
                 workspaces: [workspace, ...state.workspaces],
                 activeWorkspaceId: workspace.id // Auto-switch to new workspace
+            })),
+            setWorkspaces: (nextWorkspaces) => set(() => ({
+                workspaces: nextWorkspaces,
+                activeWorkspaceId: nextWorkspaces[0]?.id ?? null,
             })),
 
             setActiveWorkspace: (id) => set({ activeWorkspaceId: id }),

@@ -90,7 +90,23 @@ const TeamPerformancePage = () => {
                     <p className="text-slate-500 font-medium text-xs mt-2">Evaluate achievements and drive growth through performance management.</p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <Button variant="outline" className="rounded-xl h-10 border-slate-200 font-bold bg-white text-xs px-5 border-none shadow-sm" onClick={() => toast({ title: "Report Generation", description: "Your team progress report is being compiled and will be available shortly." })}>
+                    <Button variant="outline" className="rounded-xl h-10 border-slate-200 font-bold bg-white text-xs px-5 border-none shadow-sm" onClick={() => {
+                        const csvHeader = "Name,Designation,Rating,Goals Completed,Total Goals,Completion %\n";
+                        const csvRows = performanceData.map((p: any) =>
+                            `"${p.name}","${p.designation}","${p.rating}","${p.goalsCompleted}","${p.totalGoals}","${Math.round((p.goalsCompleted / p.totalGoals) * 100)}%"`
+                        ).join("\n");
+                        const csvContent = csvHeader + csvRows;
+                        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+                        const url = URL.createObjectURL(blob);
+                        const link = document.createElement("a");
+                        link.href = url;
+                        link.download = "Team_Performance_Report.csv";
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        URL.revokeObjectURL(url);
+                        toast({ title: "Report Downloaded", description: "Team performance report has been exported as CSV." });
+                    }}>
                         <TrendingUp className="mr-2 h-4 w-4 text-indigo-500" /> Progress Reports
                     </Button>
                 </div>

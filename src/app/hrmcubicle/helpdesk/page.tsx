@@ -1,6 +1,7 @@
 "use client"
 
 import React from "react";
+import { useRouter } from "next/navigation";
 import {
     LayoutDashboard,
     ArrowUpRight,
@@ -25,6 +26,7 @@ import { useHelpdeskStore } from "@/shared/data/helpdesk-store";
 import { motion } from "framer-motion";
 
 const HelpdeskDashboard = () => {
+    const router = useRouter();
     const { tickets, agents } = useHelpdeskStore();
 
     const stats = {
@@ -218,7 +220,7 @@ const HelpdeskDashboard = () => {
                                 <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
                                     <History size={14} className="text-indigo-500" /> Real-time Feed
                                 </h3>
-                                <button className="text-[10px] font-bold text-indigo-600 uppercase">View All</button>
+                                <button className="text-[10px] font-bold text-indigo-600 uppercase" onClick={() => router.push("/hrmcubicle/helpdesk/my-tickets")}>View All</button>
                             </div>
 
                             <div className="space-y-3">
@@ -252,7 +254,7 @@ const HelpdeskDashboard = () => {
                                         <h4 className="text-sm font-bold mb-1">Critical Escalations</h4>
                                         <p className="text-[11px] text-slate-400 leading-relaxed font-medium">3 tickets have bypassed local resolution and require admin override.</p>
                                     </div>
-                                    <Button variant="outline" className="w-full bg-white/5 border-white/10 hover:bg-white/10 text-white font-bold text-[10px] uppercase tracking-widest h-9">
+                                    <Button variant="outline" className="w-full bg-white/5 border-white/10 hover:bg-white/10 text-white font-bold text-[10px] uppercase tracking-widest h-9" onClick={() => router.push("/hrmcubicle/helpdesk/support-queue")}>
                                         Intervene Now
                                     </Button>
                                 </div>

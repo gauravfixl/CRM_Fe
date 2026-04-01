@@ -53,10 +53,12 @@ export default function ProjectSummaryPage() {
         useIssueStore.persist.rehydrate()
         useProjectStore.persist.rehydrate()
         useSprintStore.persist.rehydrate()
+
+        void loadIssuesByProject(projectId).catch((e) => console.error("Failed to load issues:", e))
     }, [])
 
     // Store Hooks
-    const { getIssuesByProject } = useIssueStore()
+    const { getIssuesByProject, loadIssuesByProject } = useIssueStore()
     const { getProjectById } = useProjectStore()
     const { getSprints } = useSprintStore()
 

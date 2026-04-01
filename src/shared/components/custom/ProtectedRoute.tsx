@@ -30,6 +30,9 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   // Don't block dashboard - everyone can see it
   if (pathname?.endsWith("/dashboard")) return <>{children}</>;
 
+  // Don't block public product pages
+  if (pathname?.startsWith("/products/")) return <>{children}</>;
+
   // Check page-level permission
   if (!canAccessPage(pathname || "")) {
     return (

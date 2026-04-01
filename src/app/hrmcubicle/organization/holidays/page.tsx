@@ -144,6 +144,25 @@ const HolidayCalendarPage = () => {
                         <Button
                             variant="outline"
                             className="h-10 px-6 rounded-xl font-bold border-slate-200 gap-2 text-xs"
+                            onClick={() => {
+                                const headers = ["Holiday Name", "Date", "Day", "Type", "Locations"];
+                                const rows = filteredHolidays.map(h => [
+                                    h.name,
+                                    h.date,
+                                    new Date(h.date).toLocaleString('default', { weekday: 'long' }),
+                                    h.type,
+                                    h.locationIds.includes('All') ? 'Global' : h.locationIds.join(', ')
+                                ]);
+                                const csvContent = [headers.join(","), ...rows.map(r => r.map(v => `"${v}"`).join(","))].join("\n");
+                                const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+                                const url = URL.createObjectURL(blob);
+                                const link = document.createElement("a");
+                                link.href = url;
+                                link.download = `holidays_${yearFilter}.csv`;
+                                link.click();
+                                URL.revokeObjectURL(url);
+                                toast({ title: "Exported", description: `Holiday list for ${yearFilter} downloaded.` });
+                            }}
                         >
                             <Download size={16} /> Export PDF
                         </Button>
