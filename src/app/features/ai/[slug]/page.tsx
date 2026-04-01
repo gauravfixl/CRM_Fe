@@ -281,6 +281,16 @@ export default function AIFeaturePage() {
     <div className="min-h-screen bg-white" style={{ fontFamily: "'Segoe UI', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif" }}>
       <LP2Navbar />
 
+      {/* Back to home - fixed top left */}
+      <div className="fixed top-20 left-6 z-40">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-1.5 bg-white/90 backdrop-blur-sm border border-[#E5E7EB] text-[#505050] text-sm font-medium hover:text-[#0067B8] hover:border-[#0067B8]/30 transition-all px-3.5 py-2 rounded-xl shadow-sm"
+        >
+          <ArrowLeft size={15} /> Back to home
+        </Link>
+      </div>
+
       {/* Hero */}
       <section className="relative overflow-hidden pt-24 pb-16">
         <div
@@ -293,13 +303,6 @@ export default function AIFeaturePage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <Link
-              href="/"
-              className="inline-flex items-center gap-1.5 text-[#505050] text-sm hover:text-[#0067B8] transition-colors mb-8"
-            >
-              <ArrowLeft size={15} /> Back to home
-            </Link>
-
             <div className="flex items-center gap-4 mb-6">
               <div
                 className="w-14 h-14 rounded-2xl flex items-center justify-center"
