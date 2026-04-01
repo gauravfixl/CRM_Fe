@@ -276,30 +276,6 @@ export default function ResourcesPage() {
                     </div>
                 </section>
 
-                {/* Newsletter CTA */}
-                <section className="relative z-10 max-w-7xl mx-auto px-4 lg:px-8">
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6, delay: 0.5 }}
-                        className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg p-8 text-white text-center"
-                    >
-                        <h3 className="text-2xl font-bold mb-4">Stay up to date</h3>
-                        <p className="mb-6 text-blue-100 max-w-lg mx-auto">
-                            Subscribe to our newsletter for the latest product updates, tips, and industry insights delivered to your inbox.
-                        </p>
-                        <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
-                            <input
-                                type="email"
-                                placeholder="Enter your email"
-                                className="flex-1 px-4 py-3 rounded-lg text-[#1A1A1A] text-sm placeholder:text-[#6B6B6B] focus:outline-none focus:ring-2 focus:ring-white/50"
-                            />
-                            <button className="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors duration-300 whitespace-nowrap">
-                                Subscribe
-                            </button>
-                        </div>
-                    </motion.div>
-                </section>
             </div>
 
             <LP2CTA />
