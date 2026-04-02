@@ -7,6 +7,7 @@ import { AppHeader } from "@/components/app-header"
 import { LeadSidebar } from "@/shared/components/lead-management/sidebar"
 import { SessionProvider } from "next-auth/react"
 import { SidebarProvider } from "@/shared/components/ui/sidebar"
+import { DashboardAccessGate } from "@/shared/components/custom/DashboardAccessGate"
 import { motion, AnimatePresence } from "framer-motion"
 import Loader from "@/shared/components/custom/Loader"
 
@@ -23,6 +24,7 @@ export default function LeadManagementLayout({ children }: { children: React.Rea
     }, [pathname])
 
     return (
+        <DashboardAccessGate dashboardPath="/lead-management" dashboardName="Lead Management">
         <SidebarProvider style={{ "--sidebar-width": "16rem" } as React.CSSProperties}>
             <div className="flex flex-col min-h-screen w-full bg-[#f8fafc] text-foreground font-outfit relative transition-all duration-300">
                 {/* 🚀 Global Top Loader */}
@@ -65,5 +67,6 @@ export default function LeadManagementLayout({ children }: { children: React.Rea
                 </div>
             </div>
         </SidebarProvider>
+        </DashboardAccessGate>
     )
 }
