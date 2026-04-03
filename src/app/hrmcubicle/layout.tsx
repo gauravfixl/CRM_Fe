@@ -7,6 +7,7 @@ import { AppHeader } from "@/components/app-header"
 import { Sidebar } from "@/shared/components/hrm/sidebar"
 import { SessionProvider } from "next-auth/react"
 import { SidebarProvider } from "@/shared/components/ui/sidebar"
+import { DashboardAccessGate } from "@/shared/components/custom/DashboardAccessGate"
 import { motion, AnimatePresence } from "framer-motion"
 import Loader from "@/shared/components/custom/Loader"
 
@@ -18,11 +19,12 @@ export default function HRMLayout({ children }: { children: React.ReactNode }) {
         setIsNavigating(true)
         const timer = setTimeout(() => {
             setIsNavigating(false)
-        }, 500)
+        }, 150)
         return () => clearTimeout(timer)
     }, [pathname])
 
     return (
+        <DashboardAccessGate dashboardPath="/hrmcubicle" dashboardName="HRM / Workforce">
         <SidebarProvider style={{ "--sidebar-width": "15rem" } as React.CSSProperties}>
             <div className="flex flex-col min-h-screen w-full bg-[#f8fafc] text-foreground font-sans text-[13px] relative transition-all duration-300">
                 {/* 🚀 Global Top Loader */}
@@ -65,5 +67,6 @@ export default function HRMLayout({ children }: { children: React.ReactNode }) {
                 </div>
             </div>
         </SidebarProvider>
+        </DashboardAccessGate>
     )
 }

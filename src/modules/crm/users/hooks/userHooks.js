@@ -9,6 +9,7 @@
 
 import { axiosInstance as axios } from "@/lib/axios";
 import { useState, useEffect } from "react";
+import { setAuthCookie } from "@/lib/auth-cookies";
 
 /**
  * Adds a user to the organization.
@@ -223,10 +224,13 @@ export const useTokenRefresher = (enabled) => {
     if (!enabled) return;
 
     const refreshToken = async () => {
-      // console.log("Calling refresh API...");
       try {
-        await axios.post("/auth/refresh", {}, { withCredentials: true });
-        // console.log("Token refreshed");
+        const res = await axios.post("/auth/refresh", {}, { withCredentials: true });
+        // Update orgToken in localStorage and client cookie after refresh
+        if (res.data?.orgToken) {
+          localStorage.setItem("orgToken", res.data.orgToken);
+          setAuthCookie(res.data.orgToken);
+        }
       } catch (err) {
         console.error("Error refreshing token:", err);
       }

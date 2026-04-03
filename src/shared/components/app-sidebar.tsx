@@ -363,6 +363,12 @@ const leadGovernanceMenuData = [
       { title: "Lead Permissions", url: "/modules/settings/entitlements/leads/permissions", icon: Lock },
       { title: "Data Retention", url: "/modules/settings/entitlements/leads/retention", icon: Clock },
     ]
+  },
+  {
+    group: "SIDEBAR ACCESS",
+    items: [
+      { title: "Sidebar Visibility Config", url: "/modules/settings/entitlements/leads/sidebar-access", icon: Shield },
+    ]
   }
 ];
 
@@ -390,6 +396,12 @@ const clientGovernanceMenuData = [
       { title: "Archival Rules", url: "/modules/settings/entitlements/clients/archival", icon: FolderKanban },
       { title: "Data Retention & Privacy", url: "/modules/settings/entitlements/clients/privacy", icon: Shield },
     ]
+  },
+  {
+    group: "SIDEBAR ACCESS",
+    items: [
+      { title: "Sidebar Visibility Config", url: "/modules/settings/entitlements/clients/sidebar-access", icon: Shield },
+    ]
   }
 ];
 
@@ -416,6 +428,12 @@ const projectGovernanceMenuData = [
     items: [
       { title: "Issue Permissions", url: "/modules/settings/entitlements/projects/permissions", icon: Lock },
       { title: "Archival Rules", url: "/modules/settings/entitlements/projects/archival", icon: Clock },
+    ]
+  },
+  {
+    group: "SIDEBAR ACCESS",
+    items: [
+      { title: "Sidebar Visibility Config", url: "/modules/settings/entitlements/projects/sidebar-access", icon: Shield },
     ]
   }
 ];
@@ -464,6 +482,30 @@ const hrmGovernanceMenuData = [
       { title: "Working Hours", url: "/modules/settings/entitlements/hrm/hours", icon: Clock },
       { title: "Leave Policies", url: "/modules/settings/entitlements/hrm/leaves", icon: Calendar },
       { title: "Attendance Rules", url: "/modules/settings/entitlements/hrm/attendance", icon: CalendarClock },
+      { title: "Holiday Calendar", url: "/modules/settings/entitlements/hrm/holidays", icon: Calendar },
+    ]
+  },
+  {
+    group: "PAYROLL CONFIG",
+    items: [
+      { title: "Salary Components", url: "/modules/settings/entitlements/hrm/salary-components", icon: Banknote },
+      { title: "Statutory Compliance", url: "/modules/settings/entitlements/hrm/statutory-settings", icon: Shield },
+      { title: "Expense Policies", url: "/modules/settings/entitlements/hrm/expense-policies", icon: Receipt },
+    ]
+  },
+  {
+    group: "HIRING & PERFORMANCE",
+    items: [
+      { title: "Hiring Pipeline", url: "/modules/settings/entitlements/hrm/hiring-pipeline", icon: Target },
+      { title: "Appraisal Config", url: "/modules/settings/entitlements/hrm/appraisal-config", icon: Award },
+    ]
+  },
+  {
+    group: "ROLES & ACCESS",
+    items: [
+      { title: "Role Management", url: "/modules/settings/entitlements/hrm/role-management", icon: ShieldCheck },
+      { title: "Permission Matrix", url: "/modules/settings/entitlements/hrm/permission-matrix", icon: Key },
+      { title: "Approval Chains", url: "/modules/settings/entitlements/hrm/approval-chains", icon: Workflow },
     ]
   },
   {
@@ -471,6 +513,12 @@ const hrmGovernanceMenuData = [
     items: [
       { title: "HR Permissions", url: "/modules/settings/entitlements/hrm/permissions", icon: Lock },
       { title: "Employee Data Retention", url: "/modules/settings/entitlements/hrm/retention", icon: Shield },
+    ]
+  },
+  {
+    group: "SIDEBAR ACCESS",
+    items: [
+      { title: "Sidebar Visibility Config", url: "/modules/settings/entitlements/hrm/sidebar-access", icon: Shield },
     ]
   }
 ];
@@ -557,18 +605,10 @@ const organizationMenuData = [
     ]
   },
   {
-    group: "COMMERCIAL",
-    items: [
-      { title: "Subscription & Billing", url: "/modules/organization/subscription", icon: CreditCard },
-      { title: "Usage & Limits", url: "/modules/organization/usage", icon: BarChart3 },
-    ]
-  },
-  {
     group: "GOVERNANCE",
     items: [
       { title: "Org Settings", url: "/modules/organization/settings", icon: Settings },
       { title: "Org Policies", url: "/modules/organization/policies", icon: FileText },
-      { title: "Audit & Activity", url: "/modules/organization/audit", icon: History },
     ]
   }
 ];
@@ -596,10 +636,8 @@ const adminSidebarGroupsData = [
         ]
       },
       { title: "Branding & Theme", icon: Palette, url: "/modules/organization/branding" },
-      { title: "Subscription & Billing", icon: CreditCard, url: "/modules/organization/subscription" },
       { title: "Org Settings", icon: Settings, url: "/modules/organization/settings" },
       { title: "Org Admins", icon: ShieldCheck, url: "/modules/organization/users" },
-      { title: "Audit Log", icon: History, url: "/modules/organization/audit" },
     ]
   },
   {
@@ -701,10 +739,14 @@ const adminSidebarGroupsData = [
     title: "BILLING & SUBSCRIPTION",
     icon: CreditCard,
     items: [
+      { title: "Current Plan", icon: CreditCard, url: "/modules/organization/subscription" },
       { title: "Plan & Usage", icon: BarChart3, url: "/modules/billing/plan" },
+      { title: "Usage & Limits", icon: BarChart3, url: "/modules/billing/usage" },
+      { title: "Modules & Add-ons", icon: Package, url: "/modules/billing/addons" },
       { title: "Licenses", icon: UserCheck, url: "/modules/billing/licenses" },
       { title: "Invoices", icon: Receipt, url: "/modules/billing/invoices" },
-      { title: "Payments", icon: CreditCard, url: "/modules/billing/payments" },
+      { title: "Payment Methods", icon: CreditCard, url: "/modules/billing/payments" },
+      { title: "Billing History", icon: History, url: "/modules/billing/history" },
       { title: "Billing Details", icon: FileText, url: "/modules/billing/settings" },
       { title: "Upgrade / Downgrade", icon: ArrowUpCircle, url: "/modules/billing/upgrade" },
     ]
@@ -1322,32 +1364,7 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
     }));
   }, [currentOrg]);
 
-  // 5. Subscription Menu
-  const finalOrgSubscriptionMenu = useMemo(() => {
-    return [
-      {
-        group: "PLAN DETAILS",
-        items: [
-          { title: "Current Plan", url: `/modules/organization/subscription`, icon: CreditCard },
-          { title: "Usage & Limits", url: `/modules/organization/subscription/usage`, icon: BarChart3 },
-          { title: "Modules & Add-ons", url: `/modules/organization/subscription/addons`, icon: Package },
-        ]
-      },
-      {
-        group: "BILLING",
-        items: [
-          { title: "Invoices", url: `/modules/organization/subscription/invoices`, icon: Receipt },
-          { title: "Payment Methods", url: `/modules/organization/subscription/payment`, icon: CreditCard },
-          { title: "Billing History", url: `/modules/organization/subscription/history`, icon: History },
-        ]
-      }
-    ].map(group => ({
-      ...group,
-      items: group.items.map(item => ({ ...item, url: currentOrg ? `/${currentOrg}${item.url}` : item.url }))
-    }));
-  }, [currentOrg]);
-
-  // 6. Organization Settings Menu
+  // 5. Organization Settings Menu
   const finalOrgSettingsMenu = useMemo(() => {
     return [
       {
@@ -1419,29 +1436,6 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
     }));
   }, [currentOrg]);
 
-  // 9. Audit Menu
-  const finalOrgAuditMenu = useMemo(() => {
-    return [
-      {
-        group: "LOGS",
-        items: [
-          { title: "Org Audit Logs", url: `/modules/organization/audit`, icon: FileText },
-          { title: "Admin Actions", url: `/modules/organization/audit/admin`, icon: Shield },
-          { title: "Firm Events", url: `/modules/organization/audit/firms`, icon: Building2 },
-        ]
-      },
-      {
-        group: "TOOLS",
-        items: [
-          { title: "Export Logs", url: `/modules/organization/audit/export`, icon: Download },
-        ]
-      }
-    ].map(group => ({
-      ...group,
-      items: group.items.map(item => ({ ...item, url: currentOrg ? `/${currentOrg}${item.url}` : item.url }))
-    }));
-  }, [currentOrg]);
-
   // Determine Active Module based on Path AND Active Category
   const activeModule = useMemo(() => {
     // If we are in CALENDAR category, return specialized module name
@@ -1474,11 +1468,9 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
     if (pathname?.includes("/modules/firm-management/firms/deleted") || pathname?.includes("/modules/organization/trash")) return "OrgRecycleBin";
     if (pathname?.includes("/modules/firm-management/firms") || pathname?.includes("/modules/organization/firms") || pathname.includes("/modules/organization/create") || pathname?.includes("/modules/organization/onboarding") || pathname?.includes("/modules/organization/admins") || pathname?.includes("/modules/organization/access")) return "OrgFirms";
     if (pathname?.includes("/modules/organization/branding")) return "OrgBranding";
-    if (pathname?.includes("/modules/organization/subscription")) return "OrgSubscription";
     if (pathname?.includes("/modules/organization/settings")) return "OrgSettings";
     if (pathname?.includes("/modules/organization/users")) return "OrgUsers";
     if (pathname?.includes("/modules/organization/policies")) return "OrgPolicies";
-    if (pathname?.includes("/modules/organization/audit")) return "OrgAudit";
     // Fallback if just clicked organization but not a specific page yet (unlikely if strictly routed)
     if (activeCategory === "ORGANIZATION") return "OrgOverview";
 
@@ -1544,12 +1536,9 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
       case "OrgFirms": return finalOrgFirmsMenu;
       case "OrgRecycleBin": return finalOrgRecycleBinMenu;
       case "OrgBranding": return finalOrgBrandingMenu;
-      case "OrgSubscription": return finalOrgSubscriptionMenu;
       case "OrgSettings": return finalOrgSettingsMenu;
       case "OrgUsers": return finalOrgUsersMenu;
       case "OrgPolicies": return finalOrgPoliciesMenu;
-      case "OrgAudit": return finalOrgAuditMenu;
-
       default: return []; // Dashboard or others with no sub-sidebar
     }
   }, [activeModule, activeCategory, finalLeadsMenu, finalDealsMenu, finalPipelineMenu, finalCampaignsMenu, finalClientsMenu, finalUsersAdminMenu, finalGroupsAdminMenu, finalRolesAdminMenu, finalAuthAdminMenu, finalLeadGovMenu, finalClientGovMenu, finalProjectGovMenu, finalAccountingGovMenu, finalHrmGovMenu, finalAutomationGovMenu]);
@@ -1754,12 +1743,10 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
                                                   activeModule === "OrgFirms" ? "Business Units" :
                                                     activeModule === "OrgRecycleBin" ? "Firm Recycle Bin" :
                                                       activeModule === "OrgBranding" ? "Branding & Theme" :
-                                                        activeModule === "OrgSubscription" ? "Subscription" :
-                                                          activeModule === "OrgSettings" ? "Organization Settings" :
-                                                            activeModule === "OrgUsers" ? "Org Admins" :
-                                                              activeModule === "OrgPolicies" ? "Org Policies" :
-                                                                activeModule === "OrgAudit" ? "Audit & Activity" :
-                                                                  activeModule ? activeModule.toUpperCase() : activeCategory}
+                                                        activeModule === "OrgSettings" ? "Organization Settings" :
+                                                          activeModule === "OrgUsers" ? "Org Admins" :
+                                                            activeModule === "OrgPolicies" ? "Org Policies" :
+                                                              activeModule ? activeModule.toUpperCase() : activeCategory}
               </h3>
             )}
             <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setIsSubCollapsed(!isSubCollapsed)}>

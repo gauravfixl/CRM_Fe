@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import {
     ShieldCheck,
     Search,
@@ -37,6 +37,21 @@ import {
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "sonner"
+import { axiosInstance } from "@/lib/axios"
+
+const roleMap: Record<string, string> = {
+    ADMIN: "Super Admin",
+    SUB_ADMIN: "Org Admin",
+    MANAGER: "Compliance Officer",
+    BILLING: "Billing Admin",
+}
+
+const roleReverseMap: Record<string, string> = {
+    "Super Admin": "ADMIN",
+    "Org Admin": "SUB_ADMIN",
+    "Compliance Officer": "MANAGER",
+    "Billing Admin": "BILLING",
+}
 
 const initialAdmins = [
     { id: "ADM-001", name: "Robert Fox", email: "robert@foxsolutions.com", role: "Super Admin", status: "Active", lastActive: "2 mins ago" },
@@ -49,6 +64,47 @@ export default function FirmAdminsPage() {
     const [admins, setAdmins] = useState(initialAdmins)
     const [searchQuery, setSearchQuery] = useState("")
     const [isInviteOpen, setIsInviteOpen] = useState(false)
+    const [loading, setLoading] = useState(true)
+
+    const fetchAdmins = async () => {
+        try {
+            setLoading(true)
+            const [usersRes, invitesRes] = await Promise.all([
+                axiosInstance.get("/organization/users/all?page=1&limit=100"),
+                axiosInstance.get("/organization/all/Invite").catch(() => ({ data: [] })),
+            ])
+
+            const activeAdmins = (usersRes.data?.users || []).map((user: any) => ({
+                id: user.memberId,
+                name: user.name || "—",
+                email: user.email,
+                role: roleMap[user.role] || user.role,
+                status: "Active",
+                lastActive: "—",
+            }))
+
+            const pendingInvites = (Array.isArray(invitesRes.data) ? invitesRes.data : invitesRes.data?.invites || []).map((invite: any) => ({
+                id: invite._id || invite.id || `INV-${invite.email}`,
+                name: invite.name || invite.email?.split("@")[0] || "—",
+                email: invite.email,
+                role: roleMap[invite.role] || invite.role || "Org Admin",
+                status: "Pending",
+                lastActive: "Never",
+            }))
+
+            setAdmins([...activeAdmins, ...pendingInvites])
+        } catch (error) {
+            console.error("Failed to fetch admins:", error)
+            toast.error("Failed to load admins. Showing cached data.")
+            setAdmins(initialAdmins)
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    useEffect(() => {
+        fetchAdmins()
+    }, [])
 
     const filteredAdmins = admins.filter(admin =>
         admin.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -64,24 +120,20 @@ export default function FirmAdminsPage() {
 
         if (!name || !email) return toast.error("All fields are required")
 
-        const newAdmin = {
-            id: `ADM-00${admins.length + 1}`,
-            name,
-            email,
-            role,
-            status: "Pending",
-            lastActive: "Never"
-        }
+        const apiRole = roleReverseMap[role] || "SUB_ADMIN"
 
-        toast.promise(new Promise(res => setTimeout(res, 1500)), {
-            loading: "Sending encryption keys and invite link...",
-            success: () => {
-                setAdmins([newAdmin, ...admins])
-                setIsInviteOpen(false)
-                return `Invitation transmitted to ${email}`
-            },
-            error: "Failed to send invitation."
-        })
+        toast.promise(
+            axiosInstance.post("/organization/createInvite", { email, role: apiRole }),
+            {
+                loading: "Sending encryption keys and invite link...",
+                success: () => {
+                    setIsInviteOpen(false)
+                    fetchAdmins()
+                    return `Invitation transmitted to ${email}`
+                },
+                error: "Failed to send invitation."
+            }
+        )
     }
 
     return (

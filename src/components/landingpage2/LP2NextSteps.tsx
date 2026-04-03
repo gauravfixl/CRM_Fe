@@ -158,51 +158,24 @@ export default function LP2NextSteps() {
             </div>
 
             {/* Right illustration */}
-            <div className="relative hidden min-h-[320px] items-center justify-center md:flex overflow-hidden"
-              style={{ background: "linear-gradient(135deg, #E3F2FD 0%, #C5CAE9 50%, #E8EAF6 100%)" }}
-            >
-              {/* Animated floating icons */}
-              <div className="relative flex items-center gap-8">
-                <motion.div
-                  className="flex h-20 w-20 items-center justify-center rounded-2xl bg-white/70 shadow-xl backdrop-blur-sm border border-white/50"
-                  animate={{ y: [0, -10, 0] }}
-                  transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                >
-                  <Users className="h-9 w-9 text-[#0067B8]" />
-                </motion.div>
-                <div className="flex flex-col gap-5">
-                  <motion.div
-                    className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/60 shadow-lg backdrop-blur-sm border border-white/50"
-                    animate={{ y: [0, -8, 0] }}
-                    transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-                  >
-                    <Briefcase className="h-7 w-7 text-[#5C2D91]" />
-                  </motion.div>
-                  <motion.div
-                    className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/60 shadow-lg backdrop-blur-sm border border-white/50"
-                    animate={{ y: [0, -12, 0] }}
-                    transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-                  >
-                    <BarChart3 className="h-7 w-7 text-[#107C10]" />
-                  </motion.div>
-                </div>
-              </div>
+            <div className="relative hidden min-h-[320px] items-center justify-center md:flex overflow-hidden">
+              <img
+                src="https://images.unsplash.com/photo-1551434678-e076c223a692?w=800&h=600&fit=crop&q=80"
+                alt="Team collaborating on CubicleERP platform"
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-br from-[#0067B8]/60 via-[#5C2D91]/40 to-[#0067B8]/50" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
 
-              {/* Floating particles */}
-              {[
-                { size: "w-3 h-3", top: "top-8", left: "left-10", delay: 0, dur: 6 },
-                { size: "w-2 h-2", top: "bottom-16", left: "left-20", delay: 1, dur: 5 },
-                { size: "w-4 h-4", top: "top-14", left: "right-12", delay: 0.5, dur: 7 },
-                { size: "w-2.5 h-2.5", top: "bottom-10", left: "right-24", delay: 2, dur: 4 },
-                { size: "w-2 h-2", top: "top-1/2", left: "left-8", delay: 1.5, dur: 5.5 },
-              ].map((dot, i) => (
-                <motion.div
-                  key={i}
-                  className={`absolute ${dot.size} ${dot.top} ${dot.left} rounded-full bg-white/50`}
-                  animate={{ y: [0, -15, 0], opacity: [0.4, 0.8, 0.4] }}
-                  transition={{ duration: dot.dur, repeat: Infinity, ease: "easeInOut", delay: dot.delay }}
-                />
-              ))}
+              {/* Overlay content */}
+              <div className="relative z-10 text-center px-8">
+                <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm border border-white/30 rounded-full px-4 py-2 mb-4">
+                  <Sparkles size={14} className="text-white" />
+                  <span className="text-white text-[12px] font-semibold">No credit card required</span>
+                </div>
+                <p className="text-white/90 text-lg font-bold">Start building in minutes</p>
+                <p className="text-white/60 text-[13px] mt-1">Setup takes less than 5 minutes</p>
+              </div>
 
               {/* Connecting lines */}
               <motion.div
@@ -234,7 +207,7 @@ export default function LP2NextSteps() {
                   delay: i * 0.12,
                 }}
                 whileHover={{ y: -5, boxShadow: `0 12px 30px ${card.color}15` }}
-                className="rounded-2xl bg-white border-2 p-8 group cursor-pointer transition-all duration-300 relative overflow-hidden"
+                className="rounded-2xl bg-white border-2 p-6 group cursor-pointer transition-all duration-300 relative overflow-hidden min-h-[200px] flex flex-col"
                 style={{ borderColor: card.color + "20" }}
               >
                 {/* Hover glow */}
@@ -248,29 +221,29 @@ export default function LP2NextSteps() {
                   style={{ backgroundColor: card.color }}
                 />
 
-                <div className="relative">
+                <div className="relative flex-1 flex flex-col">
                   <motion.div
-                    className="flex h-14 w-14 items-center justify-center rounded-xl"
+                    className="flex h-12 w-12 items-center justify-center rounded-xl"
                     style={{ backgroundColor: card.bg }}
                     whileHover={{ scale: 1.1, rotate: 5 }}
                     transition={{ type: "spring", stiffness: 300 }}
                   >
-                    <Icon className="h-6 w-6" style={{ color: card.color }} />
+                    <Icon className="h-5 w-5" style={{ color: card.color }} />
                   </motion.div>
 
-                  <h4 className="mt-5 text-lg font-bold text-[#1A1A1A] group-hover:text-[#0067B8] transition-colors">
+                  <h4 className="mt-4 text-[17px] font-bold text-[#1A1A1A] group-hover:text-[#0067B8] transition-colors">
                     {card.title}
                   </h4>
-                  <p className="mt-2 text-[14px] text-[#505050] leading-relaxed">{card.desc}</p>
+                  <p className="mt-2 text-[13px] text-[#505050] leading-relaxed flex-1">{card.desc}</p>
 
                   <Link href={card.href}>
                     <motion.span
-                      className="mt-5 inline-flex items-center gap-1.5 text-[14px] font-semibold group/link"
+                      className="mt-4 inline-flex items-center gap-1.5 text-[13px] font-semibold group/link"
                       style={{ color: card.color }}
                       whileHover={{ x: 4 }}
                     >
                       {card.cta}
-                      <ArrowRight className="h-4 w-4 transition-transform group-hover/link:translate-x-1" />
+                      <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover/link:translate-x-1" />
                     </motion.span>
                   </Link>
                 </div>

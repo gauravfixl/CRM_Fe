@@ -24,6 +24,7 @@ import {
     CollapsibleContent,
     CollapsibleTrigger,
 } from "@/shared/components/ui/collapsible"
+import { useRoleAccess } from "@/shared/hooks/use-role-access"
 
 interface NavItem {
     title: string;
@@ -187,13 +188,19 @@ const clientNavigation: NavItem[] = [
 
 function ClientSidebarComponent({ ...props }: React.ComponentProps<typeof ShadcnSidebar>) {
     const pathname = usePathname()
+    const { filterModuleSidebar } = useRoleAccess()
+
+    // Filter navigation based on OrgAdmin role permissions
+    const filteredNavigation = useMemo(() => {
+        return filterModuleSidebar(clientNavigation, "client")
+    }, [filterModuleSidebar])
 
     const navWithActive = useMemo(() => {
-        return clientNavigation.map(item => ({
+        return filteredNavigation.map(item => ({
             ...item,
             isActive: pathname === item.url || (item.items && item.items.length > 0 && item.items.some(sub => pathname === sub.url))
         }));
-    }, [pathname]);
+    }, [pathname, filteredNavigation]);
 
     return (
         <ShadcnSidebar collapsible="icon" className="!top-[70px] !bottom-0 !h-auto border-r bg-white" {...props}>
