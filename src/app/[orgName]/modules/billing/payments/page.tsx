@@ -126,23 +126,55 @@ export default function PaymentsPage() {
         return <CreditCard size={16} className="text-gray-400" />;
     };
 
+    const primaryMethod = paymentMethods.find((m) => m.isPrimary);
+
     return (
-        <div className="space-y-6">
+        <div className="flex flex-col min-h-screen bg-transparent">
             {/* Header */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-xl font-semibold text-gray-900">Payment Methods</h1>
-                    <p className="text-xs text-gray-600 mt-1">
-                        Manage your saved payment methods and billing preferences.
-                    </p>
+            <div className="p-6 pb-0">
+                <div className="flex items-center justify-between mb-1">
+                    <div>
+                        <h1 className="text-2xl font-bold tracking-tight text-zinc-900">Payment Methods</h1>
+                        <p className="text-sm text-zinc-500 mt-1">
+                            Manage your saved payment methods and billing preferences.
+                        </p>
+                    </div>
+                    <Button
+                        onClick={() => setShowAddCardModal(true)}
+                        className="rounded-none bg-primary hover:bg-primary/90 text-xs font-medium h-8 gap-1.5 px-4"
+                    >
+                        <Plus size={14} />
+                        Add Payment Method
+                    </Button>
                 </div>
-                <Button
-                    onClick={() => setShowAddCardModal(true)}
-                    className="rounded-none bg-primary hover:bg-primary/90 text-xs font-medium h-9 gap-1.5 px-4"
-                >
-                    <Plus size={14} />
-                    Add Payment Method
-                </Button>
+            </div>
+
+            <div className="flex-1 p-6 space-y-6">
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="bg-gradient-to-br from-primary/80 to-primary p-6 rounded-none shadow-xl shadow-primary/20 text-white">
+                    <p className="text-white text-xs opacity-80">Saved Methods</p>
+                    <p className="text-white text-xl font-semibold mt-1">{paymentMethods.length}</p>
+                    <p className="text-white text-[10px] mt-1 opacity-70">Payment methods on file</p>
+                </div>
+
+                <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
+                    <p className="text-zinc-500 text-xs">Primary Method</p>
+                    <p className="text-xl font-semibold text-zinc-900 mt-1">{primaryMethod ? `${primaryMethod.type} ${primaryMethod.last4}` : "None"}</p>
+                    <p className="text-primary text-[10px] mt-1">Default for billing</p>
+                </div>
+
+                <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
+                    <p className="text-zinc-500 text-xs">Next Charge</p>
+                    <p className="text-xl font-semibold text-zinc-900 mt-1">$499.00</p>
+                    <p className="text-zinc-400 text-[10px] mt-1">May 01, 2026</p>
+                </div>
+
+                <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
+                    <p className="text-zinc-500 text-xs">Security</p>
+                    <p className="text-xl font-semibold text-zinc-900 mt-1">PCI-DSS</p>
+                    <p className="text-emerald-600 text-[10px] mt-1">Fully compliant</p>
+                </div>
             </div>
 
             {/* Payment cards list */}
@@ -295,6 +327,7 @@ export default function PaymentsPage() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+            </div>
         </div>
     );
 }

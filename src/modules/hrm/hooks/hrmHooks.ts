@@ -953,6 +953,45 @@ export const getHolidaysByYear = async (year: number | string) => {
     }
 };
 
+export const createHoliday = async (data: { name: string; date: string; type: "National" | "Optional"; isPaid?: boolean; isMandatory?: boolean }) => {
+    try {
+        const response = await axios.post("/attendance/holidays/", data);
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error creating holiday:", err);
+            showError("Failed to create holiday");
+        }
+        throw err;
+    }
+};
+
+export const updateHoliday = async (holidayId: string, data: { name?: string; type?: string; isPaid?: boolean; isMandatory?: boolean; isActive?: boolean }) => {
+    try {
+        const response = await axios.patch(`/attendance/holidays/${holidayId}`, data);
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error updating holiday:", err);
+            showError("Failed to update holiday");
+        }
+        throw err;
+    }
+};
+
+export const deleteHoliday = async (holidayId: string) => {
+    try {
+        const response = await axios.delete(`/attendance/holidays/${holidayId}`);
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error deleting holiday:", err);
+            showError("Failed to delete holiday");
+        }
+        throw err;
+    }
+};
+
 // ==================== SHIFT APIs ====================
 
 export const getAllShifts = async () => {

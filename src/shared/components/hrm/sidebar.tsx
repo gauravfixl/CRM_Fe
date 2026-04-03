@@ -41,6 +41,7 @@ import {
     CollapsibleTrigger,
 } from "@/components/ui/collapsible"
 import { ChevronRight } from "lucide-react"
+import { useRoleAccess } from "@/shared/hooks/use-role-access"
 
 // Exact Keka-style Navigation Data based on Document Analysis
 // using Colorful Icons (Emojis) to match the "colorful" requirement
@@ -161,6 +162,10 @@ const hrmNavigation = [
             { title: "Interviews", url: "/hrmcubicle/hire/interviews", icon: <span className="text-lg">🤝</span> },
             { title: "Offer Letters", url: "/hrmcubicle/hire/offers", icon: <span className="text-lg">✉️</span> },
             { title: "Hiring Reports", url: "/hrmcubicle/hire/reports", icon: <span className="text-lg">📑</span> },
+            { title: "Career Page", url: "/hrmcubicle/hire/career-page", icon: <span className="text-lg">🌐</span> },
+            { title: "Referrals", url: "/hrmcubicle/hire/referrals", icon: <span className="text-lg">🤝</span> },
+            { title: "Resume Parser", url: "/hrmcubicle/hire/resume-parser", icon: <span className="text-lg">📄</span> },
+            { title: "Scorecards", url: "/hrmcubicle/hire/scorecards", icon: <span className="text-lg">📋</span> },
         ]
     },
     {
@@ -194,6 +199,11 @@ const hrmNavigation = [
             { title: "Approvals", url: "/hrmcubicle/timeattend/approvals", icon: <span className="text-lg">✔️</span> },
             { title: "Reports", url: "/hrmcubicle/timeattend/reports", icon: <span className="text-lg">📊</span> },
             { title: "Settings", url: "/hrmcubicle/timeattend/settings", icon: <span className="text-lg">⚙️</span> },
+            { title: "Geo-fencing", url: "/hrmcubicle/timeattend/geofencing", icon: <span className="text-lg">📍</span> },
+            { title: "Biometric", url: "/hrmcubicle/timeattend/biometric", icon: <span className="text-lg">🔐</span> },
+            { title: "Comp-Off", url: "/hrmcubicle/timeattend/comp-off", icon: <span className="text-lg">🔄</span> },
+            { title: "Optional Holidays", url: "/hrmcubicle/timeattend/optional-holidays", icon: <span className="text-lg">🎌</span> },
+            { title: "Sandwich Rules", url: "/hrmcubicle/timeattend/sandwich-rules", icon: <span className="text-lg">🥪</span> },
         ]
     },
     {
@@ -209,6 +219,11 @@ const hrmNavigation = [
             { title: "Proof Submission", url: "/hrmcubicle/payroll/proof-submission", icon: <span className="text-lg">📤</span> },
             { title: "Payroll Reports", url: "/hrmcubicle/payroll/payroll-reports", icon: <span className="text-lg">📊</span> },
             { title: "Payroll Settings", url: "/hrmcubicle/payroll/payroll-settings", icon: <span className="text-lg">⚙️</span> },
+            { title: "Salary Structure", url: "/hrmcubicle/payroll/salary-structure", icon: <span className="text-lg">🏗️</span> },
+            { title: "Statutory Compliance", url: "/hrmcubicle/payroll/statutory", icon: <span className="text-lg">🏛️</span> },
+            { title: "Loans & Advances", url: "/hrmcubicle/payroll/loans", icon: <span className="text-lg">🏦</span> },
+            { title: "Salary Revision", url: "/hrmcubicle/payroll/salary-revision", icon: <span className="text-lg">📊</span> },
+            { title: "Multi-Entity", url: "/hrmcubicle/payroll/multi-entity", icon: <span className="text-lg">🏢</span> },
         ]
     },
     {
@@ -221,6 +236,9 @@ const hrmNavigation = [
             { title: "Reviews", url: "/hrmcubicle/performance/reviews", icon: <span className="text-lg">⭐</span> },
             { title: "Feedback", url: "/hrmcubicle/performance/feedback", icon: <span className="text-lg">💬</span> },
             { title: "Performance Reports", url: "/hrmcubicle/performance/reports", icon: <span className="text-lg">📈</span> },
+            { title: "Calibration", url: "/hrmcubicle/performance/calibration", icon: <span className="text-lg">📐</span> },
+            { title: "PIP Tracking", url: "/hrmcubicle/performance/pip", icon: <span className="text-lg">📉</span> },
+            { title: "Compensation Review", url: "/hrmcubicle/performance/compensation", icon: <span className="text-lg">💵</span> },
         ]
     },
     {
@@ -233,6 +251,8 @@ const hrmNavigation = [
             { title: "Letters", url: "/hrmcubicle/documents/letters", icon: <span className="text-lg">✉️</span> },
             { title: "Templates", url: "/hrmcubicle/documents/templates", icon: <span className="text-lg">📝</span> },
             { title: "Acknowledgements", url: "/hrmcubicle/documents/acknowledgements", icon: <span className="text-lg">✅</span> },
+            { title: "E-Signatures", url: "/hrmcubicle/documents/e-signatures", icon: <span className="text-lg">✍️</span> },
+            { title: "Bulk Letters", url: "/hrmcubicle/documents/bulk-letters", icon: <span className="text-lg">📮</span> },
         ]
     },
     {
@@ -245,6 +265,8 @@ const hrmNavigation = [
             { title: "Employee Feedback", url: "/hrmcubicle/engage/feedback", icon: <span className="text-lg">💭</span> },
             { title: "Rewards & Recognition", url: "/hrmcubicle/engage/rewards", icon: <span className="text-lg">🏆</span> },
             { title: "Events", url: "/hrmcubicle/engage/events", icon: <span className="text-lg">🎉</span> },
+            { title: "Celebrations", url: "/hrmcubicle/engage/celebrations", icon: <span className="text-lg">🎂</span> },
+            { title: "Social Feed", url: "/hrmcubicle/engage/social-feed", icon: <span className="text-lg">💬</span> },
         ]
     },
     {
@@ -262,6 +284,36 @@ const hrmNavigation = [
         ]
     },
     {
+        title: "Expenses",
+        url: "#",
+        icon: <span className="text-xl">💳</span>,
+        items: [
+            { title: "Dashboard", url: "/hrmcubicle/expenses", icon: <span className="text-lg">📊</span> },
+            { title: "My Claims", url: "/hrmcubicle/expenses/claims", icon: <span className="text-lg">🧾</span> },
+            { title: "Travel", url: "/hrmcubicle/expenses/travel", icon: <span className="text-lg">✈️</span> },
+            { title: "Approvals", url: "/hrmcubicle/expenses/approvals", icon: <span className="text-lg">✅</span> },
+            { title: "Reports", url: "/hrmcubicle/expenses/reports", icon: <span className="text-lg">📑</span> },
+            { title: "Settings", url: "/hrmcubicle/expenses/settings", icon: <span className="text-lg">⚙️</span> },
+        ]
+    },
+    {
+        title: "Timesheets",
+        url: "/hrmcubicle/timesheets",
+        icon: <span className="text-xl">⏰</span>,
+        items: []
+    },
+    {
+        title: "Reports Hub",
+        url: "#",
+        icon: <span className="text-xl">📊</span>,
+        items: [
+            { title: "Dashboard", url: "/hrmcubicle/reports", icon: <span className="text-lg">📈</span> },
+            { title: "Report Builder", url: "/hrmcubicle/reports/builder", icon: <span className="text-lg">🔧</span> },
+            { title: "Scheduled", url: "/hrmcubicle/reports/scheduled", icon: <span className="text-lg">📅</span> },
+            { title: "Templates", url: "/hrmcubicle/reports/templates", icon: <span className="text-lg">📋</span> },
+        ]
+    },
+    {
         title: "Admin",
         url: "#",
         icon: <span className="text-xl">⚙️</span>,
@@ -273,20 +325,28 @@ const hrmNavigation = [
             { title: "Payroll Settings", url: "/hrmcubicle/admin/payroll", icon: <span className="text-lg">💰</span> },
             { title: "Integrations", url: "/hrmcubicle/admin/integrations", icon: <span className="text-lg">🔌</span> },
             { title: "Audit Logs", url: "/hrmcubicle/admin/audit", icon: <span className="text-lg">📝</span> },
+            { title: "Delegation", url: "/hrmcubicle/admin/delegation", icon: <span className="text-lg">🔀</span> },
+            { title: "Escalation Rules", url: "/hrmcubicle/admin/escalation", icon: <span className="text-lg">⬆️</span> },
         ]
     },
 ]
 
 function SidebarComponent({ ...props }: React.ComponentProps<typeof ShadcnSidebar>) {
     const pathname = usePathname()
+    const { filterModuleSidebar } = useRoleAccess()
+
+    // Filter navigation based on OrgAdmin role permissions
+    const filteredNavigation = useMemo(() => {
+        return filterModuleSidebar(hrmNavigation, "hrm")
+    }, [filterModuleSidebar])
 
     // Precalculate active states to avoid multiple scans during render
     const navWithActive = useMemo(() => {
-        return hrmNavigation.map(item => ({
+        return filteredNavigation.map(item => ({
             ...item,
             isActive: pathname === item.url || (item.items.length > 0 && item.items.some(sub => pathname === sub.url))
         }));
-    }, [pathname]);
+    }, [pathname, filteredNavigation]);
 
     return (
         <ShadcnSidebar collapsible="icon" className="top-[63px] h-[calc(100vh-63px)] border-r bg-white" {...props}>

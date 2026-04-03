@@ -139,11 +139,13 @@ export function ProjectCreationDialog({ workspaceId: propWorkspaceId, open, onOp
     if (hasError) return
 
     setIsLoading(true)
+    const methodology = selectedTemplate === "scrum" ? "scrum" : "kanban"
     const formData = {
       name: projectName,
       templateId: selectedTemplate,
       description: projectDescription,
       visibility,
+      methodology,
     }
 
     try {
