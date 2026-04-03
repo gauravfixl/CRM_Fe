@@ -83,6 +83,13 @@ export function ProjectBoard({ projectId, project, teams, tasks, setTasks }: Pro
     fetchBoard()
   }, [projectId, boardId])
 
+  // SYNC GAP NOTE: This board fetches tasks exclusively from the API via getTasksByColumn(boardId).
+  // The backlog page (useIssueStore) uses an "API first, then store" pattern. If the API call
+  // succeeds on the backlog side, the task will exist in the API and appear here on next fetch.
+  // If the backlog's API call fails, the issue won't be added to the store either (as of the
+  // data sync fix), so there should be no orphaned store-only issues. If a future fallback
+  // path adds store-only issues, a merge step should be added here to reconcile
+  // useIssueStore issues with the API response (converting Issue -> Task format).
   useEffect(() => {
     if (!boardId) return
     const fetchTasks = async () => {

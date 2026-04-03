@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useCallback, useEffect } from "react";
+import { useRouter, useParams } from "next/navigation";
+import axiosInstance from "@/lib/axios";
 import {
     BarChart3,
     Zap,
@@ -11,7 +13,8 @@ import {
     ShieldCheck,
     CheckCircle2,
     Info,
-    ChevronRight
+    ChevronRight,
+    Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/shared/components/ui/progress";
@@ -30,31 +33,97 @@ import { SmallCard, SmallCardContent } from "@/components/custom/SmallCard";
 import { showSuccess } from "@/utils/toast";
 
 export default function PlanUsagePage() {
+    const router = useRouter();
+    const params = useParams() as { orgName?: string };
+    const orgName = params.orgName || "";
     const [showUpgradeModal, setShowUpgradeModal] = useState(false);
     const [showAddSeatsModal, setShowAddSeatsModal] = useState(false);
     const [newSeats, setNewSeats] = useState("5");
+    const [apiPlan, setApiPlan] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
 
-    const currentPlan = {
-        name: "Enterprise Pro",
-        status: "Active",
-        billingCycle: "Yearly",
-        nextBilling: "Oct 24, 2026",
-        price: "$499/mo",
-    };
+    useEffect(() => {
+        const fetchCurrentPlan = async () => {
+            try {
+                setLoading(true);
+                const response = await axiosInstance.get("/OrgBilling/current-plan");
+                setApiPlan(response.data?.currentPlan || null);
+            } catch (error) {
+                console.error("Failed to fetch current plan:", error);
+                setApiPlan(null);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchCurrentPlan();
+    }, []);
 
-    const usageStats = [
-        { title: "Active Users", value: "42", limit: "100", percentage: 42, icon: Users, color: "text-primary", bg: "bg-primary/10" },
-        { title: "Cloud Storage", value: "156 GB", limit: "500 GB", percentage: 31, icon: HardDrive, color: "text-indigo-600", bg: "bg-indigo-50" },
-        { title: "Api Monthly Calls", value: "850k", limit: "1M", percentage: 85, icon: Zap, color: "text-amber-600", bg: "bg-amber-50" },
-        { title: "Total Workspaces", value: "8", limit: "25", percentage: 32, icon: BarChart3, color: "text-emerald-600", bg: "bg-emerald-50" }
-    ];
+    const downloadBillingStatement = useCallback(() => {
+        const csvContent = [
+            ["Invoice ID", "Date", "Description", "Amount", "Status"],
+            ["INV-2026-003", "Mar 01, 2026", "Enterprise Pro - Monthly", "$499.00", "Upcoming"],
+            ["INV-2026-002", "Feb 01, 2026", "Enterprise Pro - Monthly", "$499.00", "Paid"],
+            ["INV-2026-001", "Jan 01, 2026", "Enterprise Pro - Monthly", "$499.00", "Paid"],
+            ["INV-2025-012", "Dec 01, 2025", "Enterprise Pro - Monthly + Storage", "$512.50", "Paid"],
+            ["INV-2025-011", "Nov 01, 2025", "Enterprise Pro - Monthly", "$499.00", "Paid"],
+        ].map(row => row.join(",")).join("\n");
+        const blob = new Blob([csvContent], { type: "text/csv" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `billing-statement-${new Date().toISOString().slice(0, 10)}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+        showSuccess("Billing statement downloaded");
+    }, []);
+
+    const currentPlan = apiPlan
+        ? {
+            name: apiPlan.planSnapshot?.name || "Enterprise Pro",
+            status: apiPlan.paymentStatus === "active" ? "Active" : apiPlan.paymentStatus || "Active",
+            billingCycle: apiPlan.planSnapshot?.billingCycle
+                ? apiPlan.planSnapshot.billingCycle.charAt(0).toUpperCase() + apiPlan.planSnapshot.billingCycle.slice(1)
+                : "Yearly",
+            nextBilling: apiPlan.nextPaymentDate
+                ? new Date(apiPlan.nextPaymentDate).toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })
+                : "Oct 24, 2026",
+            price: apiPlan.planSnapshot?.price
+                ? `$${apiPlan.planSnapshot.price}/mo`
+                : "$499/mo",
+        }
+        : {
+            name: "Enterprise Pro",
+            status: "Active",
+            billingCycle: "Yearly",
+            nextBilling: "Oct 24, 2026",
+            price: "$499/mo",
+        };
+
+    const apiLimits = apiPlan?.planSnapshot?.limits;
+    const usageStats = apiLimits
+        ? [
+            { title: "Active Users", value: "42", limit: String(apiLimits.maxUsers || 100), percentage: Math.round((42 / (apiLimits.maxUsers || 100)) * 100), icon: Users, color: "text-primary", bg: "bg-primary/10" },
+            { title: "Cloud Storage", value: "156 GB", limit: `${apiLimits.maxStorageGB || 500} GB`, percentage: Math.round((156 / (apiLimits.maxStorageGB || 500)) * 100), icon: HardDrive, color: "text-indigo-600", bg: "bg-indigo-50" },
+            { title: "Api Monthly Calls", value: "850k", limit: "1M", percentage: 85, icon: Zap, color: "text-amber-600", bg: "bg-amber-50" },
+            { title: "Total Workspaces", value: "8", limit: String(apiLimits.maxProjects || 25), percentage: Math.round((8 / (apiLimits.maxProjects || 25)) * 100), icon: BarChart3, color: "text-emerald-600", bg: "bg-emerald-50" }
+        ]
+        : [
+            { title: "Active Users", value: "42", limit: "100", percentage: 42, icon: Users, color: "text-primary", bg: "bg-primary/10" },
+            { title: "Cloud Storage", value: "156 GB", limit: "500 GB", percentage: 31, icon: HardDrive, color: "text-indigo-600", bg: "bg-indigo-50" },
+            { title: "Api Monthly Calls", value: "850k", limit: "1M", percentage: 85, icon: Zap, color: "text-amber-600", bg: "bg-amber-50" },
+            { title: "Total Workspaces", value: "8", limit: "25", percentage: 32, icon: BarChart3, color: "text-emerald-600", bg: "bg-emerald-50" }
+        ];
 
     return (
-        <div className="space-y-6 text-[#1A1A1A]">
-            <div className="flex flex-col gap-1">
-                <h1 className="text-xl font-semibold text-gray-900">Plan & Usage</h1>
-                <p className="text-xs text-gray-600">Monitor your organization's resource consumption and subscription health.</p>
+        <div className="flex flex-col min-h-screen bg-transparent">
+            <div className="p-6 pb-0">
+                <div className="mb-1">
+                    <h1 className="text-2xl font-bold tracking-tight text-zinc-900">Plan & Usage</h1>
+                    <p className="text-sm text-zinc-500 mt-1">Monitor your organization&apos;s resource consumption and subscription health.</p>
+                </div>
             </div>
+
+            <div className="flex-1 p-6 space-y-6">
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-1 space-y-6">
@@ -98,9 +167,9 @@ export default function PlanUsagePage() {
                                 <Button
                                     variant="ghost"
                                     className="w-full text-white hover:bg-white/10 rounded-none font-medium text-xs h-10"
-                                    onClick={() => showSuccess("Billing statement downloaded successfully")}
+                                    onClick={downloadBillingStatement}
                                 >
-                                    Download Billing Statement
+                                    <Download className="mr-2" size={14} /> Download Billing Statement
                                 </Button>
                             </div>
                         </div>
@@ -173,16 +242,19 @@ export default function PlanUsagePage() {
                             <h3 className="text-base font-medium text-gray-900">Enterprise Feature Access</h3>
                         </div>
                         <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-4 gap-x-6">
-                            {[
-                                "Unlimited Global Projects",
-                                "Advanced Sales Pipeline",
-                                "Client Lifecycle Graph",
-                                "Administrative Governance",
-                                "Direct Account Manager",
-                                "Gold Support Tier",
-                                "Global Currency Engine",
-                                "Api Management Core"
-                            ].map((feature, i) => (
+                            {(apiPlan?.planSnapshot?.features && apiPlan.planSnapshot.features.length > 0
+                                ? apiPlan.planSnapshot.features
+                                : [
+                                    "Unlimited Global Projects",
+                                    "Advanced Sales Pipeline",
+                                    "Client Lifecycle Graph",
+                                    "Administrative Governance",
+                                    "Direct Account Manager",
+                                    "Gold Support Tier",
+                                    "Global Currency Engine",
+                                    "Api Management Core"
+                                ]
+                            ).map((feature: string, i: number) => (
                                 <div key={i} className="flex items-center gap-3 text-xs text-gray-700 font-medium">
                                     <div className="w-1.5 h-1.5 bg-primary rounded-none" />
                                     {feature}
@@ -208,7 +280,7 @@ export default function PlanUsagePage() {
                                 <li className="flex gap-2">✓ 25 Core Users</li>
                                 <li className="flex gap-2">✓ 100GB Governance Storage</li>
                             </ul>
-                            <Button variant="outline" onClick={() => { setShowUpgradeModal(false); showSuccess("Plan upgrade request submitted"); }} className="w-full rounded-none font-medium text-xs border-zinc-200 group-hover:bg-primary group-hover:text-white transition-colors">Select Tier</Button>
+                            <Button variant="outline" onClick={() => { setShowUpgradeModal(false); router.push(`/${orgName}/modules/billing/upgrade`); }} className="w-full rounded-none font-medium text-xs border-zinc-200 group-hover:bg-primary group-hover:text-white transition-colors">Select Tier</Button>
                         </div>
                         <div className="border-2 border-primary p-6 rounded-none space-y-4 relative shadow-lg bg-primary/5">
                             <div className="absolute top-0 right-0 bg-primary text-white text-[9px] px-3 py-1 font-medium rounded-bl-xl translate-y-[-50%]">Active Setup</div>
@@ -222,7 +294,7 @@ export default function PlanUsagePage() {
                         </div>
                     </div>
                     <DialogFooter className="p-6 border-t border-zinc-100 flex justify-center bg-zinc-50 rounded-b-xl sm:justify-center">
-                        <Button variant="ghost" onClick={() => setShowUpgradeModal(false)} className="text-gray-500 font-medium text-xs opacity-60 hover:opacity-100">Maintain Current Allocation</Button>
+                        <Button variant="ghost" onClick={() => setShowUpgradeModal(false)} className="text-zinc-500 font-medium text-xs opacity-60 hover:opacity-100">Maintain Current Allocation</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
@@ -256,6 +328,7 @@ export default function PlanUsagePage() {
                     </div>
                 </DialogContent>
             </Dialog>
+            </div>
         </div>
     );
 }

@@ -19,7 +19,7 @@ export default function ClientManagementLayout({ children }: { children: React.R
         setIsNavigating(true)
         const timer = setTimeout(() => {
             setIsNavigating(false)
-        }, 500)
+        }, 150)
         return () => clearTimeout(timer)
     }, [pathname])
 

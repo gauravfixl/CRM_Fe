@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import {
     UserCheck,
     Search,
@@ -194,7 +194,18 @@ export default function LicensesPage() {
     };
 
     const handleExport = () => {
-        showSuccess("License list exported successfully");
+        const csvContent = [
+            ["Name", "Email", "Role", "Plan", "Status", "Assigned Date"],
+            ...licenseUsers.map(u => [u.name, u.email, u.role, u.plan, u.status, u.assignedDate]),
+        ].map(row => row.join(",")).join("\n");
+        const blob = new Blob([csvContent], { type: "text/csv" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `licenses-${new Date().toISOString().slice(0, 10)}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+        showSuccess("License list exported");
     };
 
     const renderFormFields = () => (
@@ -242,11 +253,12 @@ export default function LicensesPage() {
     );
 
     return (
-        <div className="space-y-6 text-[#1A1A1A]">
-            <div className="flex items-center justify-between">
-                <div className="flex flex-col gap-1">
-                    <h1 className="text-xl font-semibold text-gray-900">License Management</h1>
-                    <p className="text-xs text-gray-600">Manage user quotas, assign seats, and monitor license utilization across business units.</p>
+        <div className="flex flex-col min-h-screen bg-transparent">
+            <div className="p-6 pb-0">
+                <div className="flex items-center justify-between mb-1">
+                <div>
+                    <h1 className="text-2xl font-bold tracking-tight text-zinc-900">License Management</h1>
+                    <p className="text-sm text-zinc-500 mt-1">Manage user quotas, assign seats, and monitor license utilization across business units.</p>
                 </div>
                 <div className="flex gap-3">
                     <Button
@@ -257,40 +269,31 @@ export default function LicensesPage() {
                         <Download size={14} /> Export List
                     </Button>
                     <Button
-                        className="rounded-none bg-primary hover:bg-primary/90 font-medium text-xs h-9 gap-2 shadow-md shadow-primary/20 px-5"
+                        className="rounded-none bg-primary hover:bg-primary/90 font-medium text-xs h-8 gap-2 shadow-md shadow-primary/20 px-5"
                         onClick={openCreateModal}
                     >
                         <Plus size={14} /> Assign New License
                     </Button>
                 </div>
+                </div>
             </div>
 
+            <div className="flex-1 p-6 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {summary.map((item, idx) => (
-                    <SmallCard
-                        key={idx}
-                        className={`border transition-all duration-300 transform hover:-translate-y-1 ${item.isHighlight
-                            ? "bg-gradient-to-r from-primary/70 to-primary text-white shadow-lg hover:shadow-2xl"
-                            : "bg-white shadow-lg hover:shadow-2xl"
-                            }`}
-                    >
-                        <SmallCardContent className="p-4">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className={`text-xs ${item.isHighlight ? "text-white opacity-80" : "text-gray-600"}`}>
-                                        {item.label}
-                                    </p>
-                                    <p className={`text-xl font-semibold mt-1 ${item.isHighlight ? "text-white" : "text-gray-900"}`}>
-                                        {item.value}
-                                    </p>
-                                    <p className={`text-[10px] mt-1 ${item.isHighlight ? "text-white opacity-80" : item.color}`}>
-                                        {item.sub}
-                                    </p>
-                                </div>
-                                <UserCheck className={`w-5 h-5 ${item.isHighlight ? "text-white" : "text-primary"}`} />
-                            </div>
-                        </SmallCardContent>
-                    </SmallCard>
+                    idx === 0 ? (
+                        <div key={idx} className="bg-gradient-to-br from-primary/80 to-primary p-6 rounded-none shadow-xl shadow-primary/20 text-white">
+                            <p className="text-white text-xs opacity-80">{item.label}</p>
+                            <p className="text-white text-xl font-semibold mt-1">{item.value}</p>
+                            <p className="text-white text-[10px] mt-1 opacity-70">{item.sub}</p>
+                        </div>
+                    ) : (
+                        <div key={idx} className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
+                            <p className="text-zinc-500 text-xs">{item.label}</p>
+                            <p className="text-xl font-semibold text-zinc-900 mt-1">{item.value}</p>
+                            <p className={`text-[10px] mt-1 ${item.color}`}>{item.sub}</p>
+                        </div>
+                    )
                 ))}
             </div>
 
@@ -419,26 +422,10 @@ export default function LicensesPage() {
                     </table>
                 </div>
 
-                <div className="p-4 border-t border-zinc-100 bg-zinc-50/50 flex items-center justify-between">
-                    <p className="text-[11px] font-medium text-gray-500">
-                        Showing <span className="text-gray-900 font-semibold">{filteredUsers.length}</span> of <span className="text-gray-900 font-semibold">{licenseUsers.length} records</span>
+                <div className="p-4 border-t border-zinc-100 bg-zinc-50/50">
+                    <p className="text-[11px] font-medium text-zinc-500">
+                        Showing <span className="text-zinc-900 font-semibold">{filteredUsers.length}</span> of <span className="text-zinc-900 font-semibold">{licenseUsers.length} records</span>
                     </p>
-                    <div className="flex gap-2">
-                        <Button
-                            variant="outline"
-                            className="rounded-none border-zinc-200 font-medium text-[10px] h-8 px-4 bg-white"
-                            onClick={() => showWarning("All records are displayed on this page")}
-                        >
-                            Previous
-                        </Button>
-                        <Button
-                            variant="outline"
-                            className="rounded-none border-zinc-200 font-medium text-[10px] h-8 px-4 bg-white"
-                            onClick={() => showWarning("All records are displayed on this page")}
-                        >
-                            Next
-                        </Button>
-                    </div>
                 </div>
             </div>
 
@@ -483,6 +470,7 @@ export default function LicensesPage() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+            </div>
         </div>
     );
 }

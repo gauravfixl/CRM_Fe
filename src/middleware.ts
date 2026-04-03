@@ -104,15 +104,14 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(unauthorizedUrl);
   }
 
-  // Validate token structure and expiration
+  // Validate token structure - only redirect for invalid (malformed) tokens.
+  // Expired tokens are handled client-side by the axios interceptor which
+  // silently refreshes them via the /auth/refresh endpoint.
   const payload = decodeJwtPayload(orgToken);
-  if (!payload || isTokenExpired(payload)) {
+  if (!payload) {
     const unauthorizedUrl = new URL("/unauthorized", request.url);
     unauthorizedUrl.searchParams.set("path", pathname);
-    unauthorizedUrl.searchParams.set(
-      "reason",
-      !payload ? "invalid_session" : "session_expired"
-    );
+    unauthorizedUrl.searchParams.set("reason", "invalid_session");
     const response = NextResponse.redirect(unauthorizedUrl);
     response.cookies.delete("orgToken");
     return response;

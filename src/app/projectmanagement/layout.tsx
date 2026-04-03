@@ -160,7 +160,7 @@ export default function ProjectManagementLayout({ children }: { children: React.
         setIsNavigating(true)
         const timer = setTimeout(() => {
             setIsNavigating(false)
-        }, 500)
+        }, 150)
         return () => clearTimeout(timer)
     }, [pathname])
 

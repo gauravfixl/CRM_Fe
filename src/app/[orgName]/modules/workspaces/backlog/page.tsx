@@ -163,22 +163,22 @@ export default function BacklogPage() {
     }
 
     const handleMoveToSprint = async (issueId: string, sprintId: string) => {
-        updateIssue(issueId, { sprintId })
-        toast.success("Moved to sprint")
         try {
             await updateTask(selectedProjectId, issueId, { sprintId })
+            updateIssue(issueId, { sprintId })
+            toast.success("Moved to sprint")
         } catch (err) {
-            console.warn("Backend sync failed, local store updated:", err)
+            toast.error("Failed to move issue")
         }
     }
 
     const handleMoveToBacklog = async (issueId: string) => {
-        updateIssue(issueId, { sprintId: null })
-        toast.success("Moved to backlog")
         try {
             await updateTask(selectedProjectId, issueId, { sprintId: null })
+            updateIssue(issueId, { sprintId: null })
+            toast.success("Moved to backlog")
         } catch (err) {
-            console.warn("Backend sync failed, local store updated:", err)
+            toast.error("Failed to move issue")
         }
     }
 
@@ -204,39 +204,65 @@ export default function BacklogPage() {
         const key = sprintId || "backlog"
         const title = inlineInputs[key]?.trim()
         if (!title) return
-        const newIssue: Issue = {
-            id: `ISSUE-${Date.now()}`,
-            projectId: selectedProjectId,
-            title,
-            description: "",
-            status: "TODO",
-            priority: "MEDIUM",
-            type: "TASK",
-            assigneeId: "",
-            reporterId: "",
-            createdAt: new Date().toISOString(),
-            sprintId: sprintId || undefined,
-            columnOrder: 0,
-            history: [],
-        }
-        addIssue(newIssue)
-        setInlineInputs(prev => ({ ...prev, [key]: "" }))
-        toast.success("Issue created")
+
+        const selectedProject = workspaceProjects.find(p => p.id === selectedProjectId)
+
+        // Try API first — only add to store on success
         try {
-            const board = workspaceProjects.find(p => p.id === selectedProjectId)
-            if (board?.boardId) {
-                await createTask(selectedProjectId, {
-                    boardId: board.boardId,
+            if (selectedProject?.boardId) {
+                const res = await createTask(selectedProjectId, {
+                    boardId: selectedProject.boardId,
                     name: title,
                     type: "task",
                     status: "TODO",
                     priority: "medium",
                     sprintId: sprintId || undefined,
                 })
+                // Use API response to build the issue for store
+                const apiTask = res?.data?.task || res?.data?.data || res?.data
+                const newIssue: Issue = {
+                    id: apiTask?._id || `ISSUE-${Date.now()}`,
+                    projectId: selectedProjectId,
+                    title: apiTask?.name || title,
+                    description: "",
+                    status: "TODO",
+                    priority: "MEDIUM",
+                    type: "TASK",
+                    assigneeId: "",
+                    reporterId: "",
+                    createdAt: new Date().toISOString(),
+                    sprintId: sprintId || undefined,
+                    columnOrder: 0,
+                    history: [],
+                }
+                addIssue(newIssue)
+                toast.success("Issue created")
+            } else {
+                // No boardId — fallback to store only
+                const newIssue: Issue = {
+                    id: `ISSUE-${Date.now()}`,
+                    projectId: selectedProjectId,
+                    title,
+                    description: "",
+                    status: "TODO",
+                    priority: "MEDIUM",
+                    type: "TASK",
+                    assigneeId: "",
+                    reporterId: "",
+                    createdAt: new Date().toISOString(),
+                    sprintId: sprintId || undefined,
+                    columnOrder: 0,
+                    history: [],
+                }
+                addIssue(newIssue)
+                toast.success("Issue created (local only — no board found)")
             }
         } catch (err) {
-            console.warn("Backend sync failed, local store updated:", err)
+            toast.error("Failed to create issue. Please try again.")
+            return // Don't add to store if API fails
         }
+
+        setInlineInputs(prev => ({ ...prev, [key]: "" }))
     }
 
     const handleSetPoints = (issueId: string, points: number) => {

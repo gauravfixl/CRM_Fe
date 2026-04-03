@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import {
     History,
     Filter,
@@ -26,6 +26,7 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { SmallCard, SmallCardHeader, SmallCardContent } from "@/shared/components/custom/SmallCard"
 import { toast } from "sonner"
+import axiosInstance from "@/lib/axios"
 
 const activities = [
     {
@@ -90,10 +91,103 @@ const activities = [
     },
 ]
 
+const MODULE_LABELS: Record<string, string> = {
+    lead: "Lead Management",
+    firm: "Business Unit",
+    client: "Identity",
+    invoice: "Billing",
+    project: "System",
+    task: "System",
+}
+
+const MODULE_ICONS: Record<string, typeof Shield> = {
+    lead: User,
+    firm: Building2,
+    client: User,
+    invoice: Settings,
+    project: History,
+    task: History,
+}
+
+function getRelativeTime(dateStr: string): string {
+    const now = new Date()
+    const date = new Date(dateStr)
+    const diffMs = now.getTime() - date.getTime()
+    const diffSecs = Math.floor(diffMs / 1000)
+    const diffMins = Math.floor(diffSecs / 60)
+    const diffHours = Math.floor(diffMins / 60)
+    const diffDays = Math.floor(diffHours / 24)
+
+    if (diffMins < 1) return "Just now"
+    if (diffMins < 60) return `${diffMins} min${diffMins > 1 ? "s" : ""} ago`
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? "s" : ""} ago`
+    if (diffDays === 1) return "Yesterday"
+    return `${diffDays} days ago`
+}
+
+function mapApiActivity(item: any) {
+    const module = item.module || ""
+    const isSecurity = module === "lead" && /security|block|mfa|login/i.test(item.activityDesc || "")
+    return {
+        id: item._id,
+        type: MODULE_LABELS[module] || "System",
+        action: `${item.activity || ""} - ${item.activityDesc || ""}`,
+        actor: item.userId ? `${item.userId.firstName || ""} ${item.userId.lastName || ""}`.trim() : "System",
+        target: item.activityDesc || "",
+        timestamp: getRelativeTime(item.createdAt),
+        severity: isSecurity ? "high" as const : "low" as const,
+        icon: MODULE_ICONS[module] || History,
+    }
+}
+
+const MODULES = ["lead", "firm", "client", "invoice", "project", "task"]
+
 export default function OrgActivityPage() {
     const [searchQuery, setSearchQuery] = useState("")
+    const [activityList, setActivityList] = useState(activities)
+    const [loading, setLoading] = useState(false)
+    const [totalEvents, setTotalEvents] = useState(0)
 
-    const filteredActivities = activities.filter(act =>
+    useEffect(() => {
+        async function fetchActivities() {
+            setLoading(true)
+            try {
+                const responses = await Promise.allSettled(
+                    MODULES.map((mod) => axiosInstance.get(`/activities/module/${mod}`))
+                )
+                let allItems: any[] = []
+                let total = 0
+                let anySuccess = false
+
+                for (const res of responses) {
+                    if (res.status === "fulfilled" && res.value?.data?.data) {
+                        anySuccess = true
+                        allItems = allItems.concat(res.value.data.data)
+                        if (res.value.data.pagination?.total) {
+                            total += res.value.data.pagination.total
+                        }
+                    }
+                }
+
+                if (anySuccess && allItems.length > 0) {
+                    allItems.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                    setActivityList(allItems.map(mapApiActivity))
+                    setTotalEvents(total || allItems.length)
+                } else {
+                    setActivityList(activities)
+                    setTotalEvents(activities.length)
+                }
+            } catch {
+                setActivityList(activities)
+                setTotalEvents(activities.length)
+            } finally {
+                setLoading(false)
+            }
+        }
+        fetchActivities()
+    }, [])
+
+    const filteredActivities = activityList.filter(act =>
         act.action.toLowerCase().includes(searchQuery.toLowerCase()) ||
         act.actor.toLowerCase().includes(searchQuery.toLowerCase()) ||
         act.type.toLowerCase().includes(searchQuery.toLowerCase())
@@ -130,7 +224,7 @@ export default function OrgActivityPage() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-white text-xs opacity-80">Total Events (24h)</p>
-                                <p className="text-white text-xl font-semibold mt-1">1,284</p>
+                                <p className="text-white text-xl font-semibold mt-1">{totalEvents.toLocaleString()}</p>
                                 <p className="text-white text-[10px] mt-1">+12% from yesterday</p>
                             </div>
                             <CheckCircle2 className="w-5 h-5 text-white" />

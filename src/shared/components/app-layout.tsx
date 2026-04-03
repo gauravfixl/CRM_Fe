@@ -114,7 +114,7 @@ export function AppLayout({ children, leftPanel: propLeftPanel, rightPanel: prop
     showLoader()
     const timer = setTimeout(() => {
       hideLoader()
-    }, 500) // Snappier feel
+    }, 150)
 
     if (scrollContainerRef.current) {
       scrollContainerRef.current.scrollTop = 0

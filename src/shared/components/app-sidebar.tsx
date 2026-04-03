@@ -739,7 +739,8 @@ const adminSidebarGroupsData = [
     title: "BILLING & SUBSCRIPTION",
     icon: CreditCard,
     items: [
-      { title: "Current Plan", icon: CreditCard, url: "/modules/billing/plan" },
+      { title: "Current Plan", icon: CreditCard, url: "/modules/organization/subscription" },
+      { title: "Plan & Usage", icon: BarChart3, url: "/modules/billing/plan" },
       { title: "Usage & Limits", icon: BarChart3, url: "/modules/billing/usage" },
       { title: "Modules & Add-ons", icon: Package, url: "/modules/billing/addons" },
       { title: "Licenses", icon: UserCheck, url: "/modules/billing/licenses" },

@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useCallback, useEffect } from "react";
+import { axiosInstance } from "@/lib/axios";
 import {
   Receipt,
   Download,
@@ -13,12 +14,29 @@ import {
   TrendingUp,
   DollarSign,
   FileText,
+  X,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
-import { showSuccess } from "@/utils/toast";
+import {
+  Dialog,
+  DialogContent,
+} from "@/shared/components/ui/dialog";
+import { showSuccess } from "@/shared/utils/toast";
 
-const invoices = [
+interface Invoice {
+  id: string;
+  date: string;
+  description: string;
+  amount: string;
+  method: string;
+  status: string;
+  clientName?: string;
+  clientEmail?: string;
+  firmName?: string;
+}
+
+const staticInvoices: Invoice[] = [
   {
     id: "INV-2026-003",
     date: "Mar 01, 2026",
@@ -66,6 +84,38 @@ const statusFilters = ["All", "Paid", "Upcoming", "Overdue"] as const;
 export default function InvoicesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("All");
+  const [viewingInvoice, setViewingInvoice] = useState<Invoice | null>(null);
+  const [invoices, setInvoices] = useState<Invoice[]>(staticInvoices);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchInvoices = async () => {
+      try {
+        setLoading(true);
+        const res = await axiosInstance.get("/invoice/all");
+        if (res.data?.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
+          const mapped: Invoice[] = res.data.data.map((inv: any) => ({
+            id: inv.invoiceNumber || inv._id,
+            date: inv.date || "—",
+            description: inv.firmName ? `${inv.firmName} - ${inv.clientName || ""}` : (inv.clientName || "Invoice"),
+            amount: inv.amount ? `$${inv.amount}` : "—",
+            method: inv.method || "—",
+            status: inv.status || "Paid",
+            clientName: inv.clientName,
+            clientEmail: inv.clientemail,
+            firmName: inv.firmName,
+          }));
+          setInvoices(mapped);
+        }
+      } catch {
+        // On failure (401, network error, etc.), keep the static invoices as fallback
+        setInvoices(staticInvoices);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchInvoices();
+  }, []);
 
   const cycleStatusFilter = () => {
     const currentIndex = statusFilters.indexOf(
@@ -85,9 +135,20 @@ export default function InvoicesPage() {
     return matchesSearch && matchesStatus;
   });
 
-  const handleDownload = (invoiceId: string) => {
-    showSuccess("Invoice downloaded");
-  };
+  const handleDownload = useCallback((invoice: Invoice) => {
+    const csvContent = [
+      ["Invoice ID", "Date", "Description", "Amount", "Payment Method", "Status"],
+      [invoice.id, invoice.date, invoice.description, invoice.amount, invoice.method, invoice.status],
+    ].map(row => row.join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${invoice.id}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showSuccess(`${invoice.id} downloaded`);
+  }, []);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -118,54 +179,44 @@ export default function InvoicesPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col min-h-screen bg-transparent">
       {/* Header */}
-      <div>
-        <h1 className="text-xl font-semibold text-gray-900">Invoices</h1>
-        <p className="text-xs text-gray-600 mt-1">
-          View and download your billing invoices and transaction history.
-        </p>
+      <div className="p-6 pb-0">
+        <div className="flex items-center justify-between mb-1">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-zinc-900">Invoices</h1>
+            <p className="text-sm text-zinc-500 mt-1">
+              View and download your billing invoices and transaction history.
+            </p>
+          </div>
+        </div>
       </div>
 
+      <div className="flex-1 p-6 space-y-6">
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Total Billed (YTD) */}
-        <div className="bg-gradient-to-br from-primary to-primary/80 text-white p-5 rounded-none">
-          <div className="flex items-center gap-2">
-            <TrendingUp size={14} className="text-white/70" />
-            <p className="text-xs text-white/70">Total billed (YTD)</p>
-          </div>
-          <p className="text-xl font-semibold mt-1">$5,988.00</p>
+        <div className="bg-gradient-to-br from-primary/80 to-primary p-6 rounded-none shadow-xl shadow-primary/20 text-white">
+          <p className="text-white text-xs opacity-80">Total Billed (YTD)</p>
+          <p className="text-white text-xl font-semibold mt-1">$5,988.00</p>
+          <p className="text-white text-[10px] mt-1 opacity-70">Year to date</p>
         </div>
 
-        {/* Next Invoice */}
-        <div className="bg-white border border-gray-200 p-5 rounded-none">
-          <div className="flex items-center gap-2">
-            <FileText size={14} className="text-gray-400" />
-            <p className="text-xs text-gray-500">Next invoice</p>
-          </div>
-          <p className="text-xl font-semibold text-gray-900 mt-1">$499.00</p>
-          <p className="text-[10px] text-gray-500 mt-1">Due Mar 01, 2026</p>
+        <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
+          <p className="text-zinc-500 text-xs">Next Invoice</p>
+          <p className="text-xl font-semibold text-zinc-900 mt-1">$499.00</p>
+          <p className="text-primary text-[10px] mt-1">Due Mar 01, 2026</p>
         </div>
 
-        {/* Paid Invoices */}
-        <div className="bg-white border border-gray-200 p-5 rounded-none">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 size={14} className="text-gray-400" />
-            <p className="text-xs text-gray-500">Paid invoices</p>
-          </div>
-          <p className="text-xl font-semibold text-gray-900 mt-1">12</p>
-          <p className="text-[10px] text-green-600 mt-1">All payments up to date</p>
+        <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
+          <p className="text-zinc-500 text-xs">Paid Invoices</p>
+          <p className="text-xl font-semibold text-zinc-900 mt-1">12</p>
+          <p className="text-emerald-600 text-[10px] mt-1">All payments up to date</p>
         </div>
 
-        {/* Outstanding */}
-        <div className="bg-white border border-gray-200 p-5 rounded-none">
-          <div className="flex items-center gap-2">
-            <DollarSign size={14} className="text-gray-400" />
-            <p className="text-xs text-gray-500">Outstanding</p>
-          </div>
-          <p className="text-xl font-semibold text-gray-900 mt-1">$0.00</p>
-          <p className="text-[10px] text-amber-600 mt-1">No overdue invoices</p>
+        <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
+          <p className="text-zinc-500 text-xs">Outstanding</p>
+          <p className="text-xl font-semibold text-zinc-900 mt-1">$0.00</p>
+          <p className="text-amber-600 text-[10px] mt-1">No overdue invoices</p>
         </div>
       </div>
 
@@ -255,15 +306,16 @@ export default function InvoicesPage() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-8 w-8 p-0 rounded-none hover:bg-gray-100 text-gray-500 hover:text-primary"
-                        onClick={() => handleDownload(invoice.id)}
+                        className="h-8 w-8 p-0 rounded-none hover:bg-zinc-100 text-zinc-500 hover:text-primary"
+                        onClick={() => handleDownload(invoice)}
                       >
                         <Download size={14} />
                       </Button>
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-8 w-8 p-0 rounded-none hover:bg-gray-100 text-gray-500 hover:text-primary"
+                        className="h-8 w-8 p-0 rounded-none hover:bg-zinc-100 text-zinc-500 hover:text-primary"
+                        onClick={() => setViewingInvoice(invoice)}
                       >
                         <ExternalLink size={14} />
                       </Button>
@@ -281,6 +333,64 @@ export default function InvoicesPage() {
             Showing {filteredInvoices.length} of {invoices.length} invoices
           </p>
         </div>
+      </div>
+
+      {/* Invoice Detail Modal */}
+      <Dialog open={!!viewingInvoice} onOpenChange={() => setViewingInvoice(null)}>
+        <DialogContent className="max-w-md rounded-none p-0 overflow-hidden shadow-2xl border-none">
+          <div className="bg-gradient-to-r from-primary/80 to-primary px-5 py-4 text-white">
+            <h2 className="text-base font-semibold">Invoice Details</h2>
+            <p className="text-xs opacity-80 mt-1">{viewingInvoice?.id}</p>
+          </div>
+          {viewingInvoice && (
+            <div className="p-5 space-y-4 bg-white">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-[10px] text-zinc-500 font-medium">Invoice ID</p>
+                  <p className="text-sm font-semibold text-zinc-900 mt-0.5">{viewingInvoice.id}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-zinc-500 font-medium">Date</p>
+                  <p className="text-sm font-semibold text-zinc-900 mt-0.5">{viewingInvoice.date}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-zinc-500 font-medium">Amount</p>
+                  <p className="text-sm font-semibold text-zinc-900 mt-0.5">{viewingInvoice.amount}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-zinc-500 font-medium">Status</p>
+                  <div className="mt-0.5">{getStatusBadge(viewingInvoice.status)}</div>
+                </div>
+              </div>
+              <div className="border-t border-zinc-100 pt-4">
+                <p className="text-[10px] text-zinc-500 font-medium">Description</p>
+                <p className="text-sm text-zinc-900 mt-0.5">{viewingInvoice.description}</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-zinc-500 font-medium">Payment Method</p>
+                <p className="text-sm text-zinc-900 mt-0.5">{viewingInvoice.method}</p>
+              </div>
+              <div className="flex gap-2 pt-2">
+                <Button
+                  size="sm"
+                  className="flex-1 rounded-none bg-primary hover:bg-primary/90 text-xs font-medium h-9 gap-2"
+                  onClick={() => { handleDownload(viewingInvoice); setViewingInvoice(null); }}
+                >
+                  <Download size={14} /> Download CSV
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 rounded-none text-xs font-medium h-9"
+                  onClick={() => setViewingInvoice(null)}
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
       </div>
     </div>
   );
