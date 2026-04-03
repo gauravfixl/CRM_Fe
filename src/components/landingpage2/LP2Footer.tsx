@@ -118,31 +118,33 @@ const itemVariants = {
 
 export default function LP2Footer() {
   return (
-    <footer className="relative bg-gradient-to-b from-[#EBF3FB] via-[#F0F6FC] to-[#F5F9FE] overflow-hidden">
+    <footer className="relative bg-gradient-to-b from-[#1A1D29] via-[#1F2332] to-[#252938] overflow-hidden">
       {/* Subtle decorative background */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-gradient-to-b from-[#0067B8]/[0.06] to-transparent rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-gradient-to-b from-[#0067B8]/[0.15] to-transparent rounded-full blur-3xl pointer-events-none" />
 
       {/* Main Footer Content */}
       <div className="relative max-w-[1280px] mx-auto px-6 py-14">
         {/* Brand + Social Row */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-10 border-b border-[#D6E8F7]">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-[#0067B8] flex items-center justify-center">
-              <span className="text-white font-bold text-sm">C</span>
-            </div>
-            <span className="text-[17px] font-bold text-[#1A1A1A] tracking-tight">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-10 border-b border-white/10">
+          <Link href="/" className="flex items-center gap-3">
+            <img
+              src="/images/cubicleweb.png"
+              alt="CubicleERP"
+              className="h-8 w-auto object-contain brightness-0 invert"
+            />
+            <span className="text-[17px] font-bold text-white tracking-tight">
               CubicleERP
             </span>
-          </div>
+          </Link>
           <div className="flex items-center gap-2">
-            <span className="text-[13px] text-[#6B7280] mr-2">Follow us</span>
+            <span className="text-[13px] text-gray-400 mr-2">Follow us</span>
             {socialIcons.map((icon) => (
               <motion.a
                 key={icon.label}
                 href={icon.href}
                 whileHover={{ scale: 1.1, y: -2 }}
                 whileTap={{ scale: 0.95 }}
-                className="w-9 h-9 flex items-center justify-center rounded-full bg-white/70 text-[#6B7280] hover:bg-[#0067B8] hover:text-white transition-all duration-200 shadow-sm"
+                className="w-9 h-9 flex items-center justify-center rounded-full bg-white/5 text-gray-400 hover:bg-[#0067B8] hover:text-white transition-all duration-200 shadow-sm border border-white/10"
                 aria-label={icon.label}
               >
                 {icon.icon}
@@ -161,7 +163,7 @@ export default function LP2Footer() {
         >
           {footerColumns.map((column) => (
             <motion.div key={column.title} variants={itemVariants}>
-              <h4 className="text-[13px] font-semibold text-[#1A1A1A] uppercase tracking-wider mb-4">
+              <h4 className="text-[13px] font-semibold text-white uppercase tracking-wider mb-4">
                 {column.title}
               </h4>
               <ul className="space-y-2.5">
@@ -169,7 +171,7 @@ export default function LP2Footer() {
                   <li key={link.label}>
                     <Link
                       href={link.href}
-                      className="group flex items-center text-[13.5px] text-[#6B7280] hover:text-[#0067B8] transition-colors duration-200"
+                      className="group flex items-center text-[13.5px] text-gray-400 hover:text-[#0067B8] transition-colors duration-200"
                     >
                       <span className="w-0 group-hover:w-2 h-px bg-[#0067B8] mr-0 group-hover:mr-2 transition-all duration-200" />
                       {link.label}
@@ -182,7 +184,7 @@ export default function LP2Footer() {
         </motion.div>
 
         {/* Bottom Bar */}
-        <div className="mt-12 pt-6 border-t border-[#D6E8F7]">
+        <div className="mt-12 pt-6 border-t border-white/10">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-1.5">
@@ -190,10 +192,10 @@ export default function LP2Footer() {
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
                 </span>
-                <span className="text-[11px] text-emerald-600 font-medium">All systems operational</span>
+                <span className="text-[11px] text-emerald-400 font-medium">All systems operational</span>
               </div>
-              <span className="text-[#D1D5DB]">|</span>
-              <p className="text-[12px] text-[#9CA3AF]">
+              <span className="text-gray-600">|</span>
+              <p className="text-[12px] text-gray-500">
                 &copy; {new Date().getFullYear()} CubicleERP by Fixl Solutions. All rights reserved.
               </p>
             </div>
@@ -202,7 +204,7 @@ export default function LP2Footer() {
                 <Link
                   key={link.label}
                   href={link.href}
-                  className="text-[12px] text-[#9CA3AF] hover:text-[#6B7280] transition-colors duration-200"
+                  className="text-[12px] text-gray-500 hover:text-gray-300 transition-colors duration-200"
                 >
                   {link.label}
                 </Link>
