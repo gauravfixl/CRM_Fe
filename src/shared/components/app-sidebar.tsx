@@ -107,6 +107,22 @@ import { userById } from "@/hooks/userHooks"
 import { useLoaderStore } from "@/lib/loaderStore"
 import { useRoleAccess } from "@/shared/hooks/use-role-access"
 
+// Type definitions for sidebar navigation
+type FluentIcon = React.ComponentType<React.SVGProps<SVGSVGElement>>;
+
+interface SidebarNavSubItem {
+  title: string;
+  icon: FluentIcon;
+  url: string;
+}
+
+interface SidebarNavItem {
+  title: string;
+  icon: FluentIcon;
+  url?: string;
+  items?: SidebarNavSubItem[];
+}
+
 // Microsoft Entra-style icon colors
 const ICON_COLORS: Record<string, { bg: string; icon: string }> = {
   "SECURITY": { bg: "bg-red-100 dark:bg-red-950", icon: "text-red-500 dark:text-red-400" },
@@ -1050,14 +1066,14 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
   const finalSidebarGroups = useMemo(() => {
     return activeSidebarData.map(group => ({
       ...group,
-      items: group.items.map(item => {
-        let finalUrl = item.url;
-        if (currentOrg && !item.url.startsWith("/hrmcubicle")) {
-          finalUrl = `/${currentOrg}${item.url.startsWith("/") ? "" : "/"}${item.url}`;
+      items: group.items.map((item: SidebarNavItem) => {
+        let finalUrl = item.url ?? "";
+        if (currentOrg && !item.url?.startsWith("/hrmcubicle")) {
+          finalUrl = `/${currentOrg}${item.url?.startsWith("/") ? "" : "/"}${item.url}`;
         }
 
         // Handle nested items if they exist
-        const nestedItems = item.items?.map((subItem: any) => {
+        const nestedItems = item.items?.map((subItem: SidebarNavSubItem) => {
           let subUrl = subItem.url;
           if (currentOrg && !subUrl.startsWith("/hrmcubicle")) {
             subUrl = `/${currentOrg}${subUrl.startsWith("/") ? "" : "/"}${subUrl}`;
@@ -1075,7 +1091,7 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
     if (!pathname) return;
 
     finalSidebarGroups.forEach(group => {
-      group.items.forEach(item => {
+      group.items.forEach((item: SidebarNavItem) => {
         // Check if current path is in sub-items
         const isPathInSubItems = item.items?.some((sub: any) => pathname.includes(sub.url));
 
@@ -1084,7 +1100,7 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
           setExpandedGroups(prev => prev.includes(group.title) ? prev : [...prev, group.title]);
           setExpandedSubItems(prev => prev.includes(item.title) ? prev : [...prev, item.title]);
           setActiveCategory(group.title);
-        } else if (pathname.includes(item.url)) {
+        } else if (pathname.includes(item.url ?? "")) {
           // Expand group if sub-item is active
           setExpandedGroups(prev => prev.includes(group.title) ? prev : [...prev, group.title]);
           setActiveCategory(group.title);
@@ -1674,7 +1690,7 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
 
                               {hasNestedItems && isSubExpanded && !isCollapsed && (
                                 <div className="ml-7 mt-1 space-y-1 border-l border-zinc-100 dark:border-zinc-800 p-1">
-                                  {subItem.items.map((nestedItem: any) => {
+                                  {(subItem.items ?? []).map((nestedItem: any) => {
                                     const isNestedActive = pathname === nestedItem.url;
                                     return (
                                       <Link
@@ -1719,7 +1735,7 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
 
       {/* SECONDARY SIDEBAR - Module Drill-down or Category List */}
       {finalSubSidebarGroups.length > 0 && (
-        <aside className={`mt-[63px] h-[calc(100svh-63px)] border-r border-border bg-zinc-50 dark:bg-zinc-900 flex-shrink-0 relative hover-scroll hidden md:flex flex-col transition-all duration-300 ${isSubCollapsed ? "w-[60px]" : "w-64"}`}>
+        <aside className={`h-full border-r border-border bg-zinc-50 dark:bg-zinc-900 flex-shrink-0 relative hover-scroll hidden md:flex flex-col transition-all duration-300 ${isSubCollapsed ? "w-[60px]" : "w-64"}`}>
           <div className={`p-4 border-b border-border flex items-center sticky top-0 bg-inherit z-10 ${isSubCollapsed ? "justify-center" : "justify-between"}`}>
             {!isSubCollapsed && (
               <h3 className="font-bold text-sm text-foreground uppercase tracking-wide truncate">
