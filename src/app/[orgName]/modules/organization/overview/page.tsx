@@ -60,10 +60,10 @@ export default function OrgOverviewPage() {
     }, []);
 
     return (
-        <div className="flex flex-col h-full w-full bg-slate-50/50 p-6 space-y-8 overflow-y-auto font-sans">
+        <div className="flex flex-col h-full w-full bg-slate-50/50 space-y-4 overflow-y-auto font-sans">
             {/* WELCOME HEADER */}
             {/* WELCOME HEADER */}
-            <div className="bg-blue-600 text-white p-8 rounded-none shadow-lg relative overflow-hidden">
+            <div className="bg-blue-600 text-white px-6 py-7 rounded-none shadow-lg relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-8 opacity-10">
                     <Building2 className="w-64 h-64" />
                 </div>
@@ -84,7 +84,7 @@ export default function OrgOverviewPage() {
             </div>
 
             {/* QUICK STATS */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 px-4">
                 <SmallCard className="border bg-gradient-to-r from-primary/70 to-primary text-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
                     <SmallCardContent className="p-4">
                         <div className="flex items-center justify-between">
@@ -140,7 +140,7 @@ export default function OrgOverviewPage() {
             </div>
 
             {/* MAIN CONTENT SPLIT */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 px-4 pb-6">
 
                 {/* RECENT ALERTS */}
                 <Card className="lg:col-span-2 border-none shadow-md rounded-none">

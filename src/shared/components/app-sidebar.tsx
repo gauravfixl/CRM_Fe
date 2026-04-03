@@ -1730,7 +1730,7 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
 
       {/* SECONDARY SIDEBAR - Module Drill-down or Category List */}
       {finalSubSidebarGroups.length > 0 && (
-        <aside className={`mt-[63px] h-[calc(100svh-63px)] border-r border-border bg-zinc-50 dark:bg-zinc-900 flex-shrink-0 relative hover-scroll hidden md:flex flex-col transition-all duration-300 ${isSubCollapsed ? "w-[60px]" : "w-64"}`}>
+        <aside className={`h-full border-r border-border bg-zinc-50 dark:bg-zinc-900 flex-shrink-0 relative hover-scroll hidden md:flex flex-col transition-all duration-300 ${isSubCollapsed ? "w-[60px]" : "w-64"}`}>
           <div className={`p-4 border-b border-border flex items-center sticky top-0 bg-inherit z-10 ${isSubCollapsed ? "justify-center" : "justify-between"}`}>
             {!isSubCollapsed && (
               <h3 className="font-bold text-sm text-foreground uppercase tracking-wide truncate">
