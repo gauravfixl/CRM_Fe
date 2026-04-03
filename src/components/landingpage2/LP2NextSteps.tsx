@@ -207,7 +207,7 @@ export default function LP2NextSteps() {
                   delay: i * 0.12,
                 }}
                 whileHover={{ y: -5, boxShadow: `0 12px 30px ${card.color}15` }}
-                className="rounded-2xl bg-white border-2 p-8 group cursor-pointer transition-all duration-300 relative overflow-hidden"
+                className="rounded-2xl bg-white border-2 p-6 group cursor-pointer transition-all duration-300 relative overflow-hidden min-h-[200px] flex flex-col"
                 style={{ borderColor: card.color + "20" }}
               >
                 {/* Hover glow */}
@@ -221,29 +221,29 @@ export default function LP2NextSteps() {
                   style={{ backgroundColor: card.color }}
                 />
 
-                <div className="relative">
+                <div className="relative flex-1 flex flex-col">
                   <motion.div
-                    className="flex h-14 w-14 items-center justify-center rounded-xl"
+                    className="flex h-12 w-12 items-center justify-center rounded-xl"
                     style={{ backgroundColor: card.bg }}
                     whileHover={{ scale: 1.1, rotate: 5 }}
                     transition={{ type: "spring", stiffness: 300 }}
                   >
-                    <Icon className="h-6 w-6" style={{ color: card.color }} />
+                    <Icon className="h-5 w-5" style={{ color: card.color }} />
                   </motion.div>
 
-                  <h4 className="mt-5 text-lg font-bold text-[#1A1A1A] group-hover:text-[#0067B8] transition-colors">
+                  <h4 className="mt-4 text-[17px] font-bold text-[#1A1A1A] group-hover:text-[#0067B8] transition-colors">
                     {card.title}
                   </h4>
-                  <p className="mt-2 text-[14px] text-[#505050] leading-relaxed">{card.desc}</p>
+                  <p className="mt-2 text-[13px] text-[#505050] leading-relaxed flex-1">{card.desc}</p>
 
                   <Link href={card.href}>
                     <motion.span
-                      className="mt-5 inline-flex items-center gap-1.5 text-[14px] font-semibold group/link"
+                      className="mt-4 inline-flex items-center gap-1.5 text-[13px] font-semibold group/link"
                       style={{ color: card.color }}
                       whileHover={{ x: 4 }}
                     >
                       {card.cta}
-                      <ArrowRight className="h-4 w-4 transition-transform group-hover/link:translate-x-1" />
+                      <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover/link:translate-x-1" />
                     </motion.span>
                   </Link>
                 </div>

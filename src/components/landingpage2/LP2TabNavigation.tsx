@@ -5,15 +5,15 @@ import { motion } from "framer-motion"
 import { useActiveSection } from "./hooks/useActiveSection"
 
 const tabs = [
-  { id: "overview", label: "Overview" },
-  { id: "solutions", label: "Solutions" },
-  { id: "product-demos", label: "Product demos" },
-  { id: "automation", label: "Automation" },
-  { id: "apps-addons", label: "Apps and add-ons" },
-  { id: "customer-stories", label: "Customer stories" },
-  { id: "security", label: "Security" },
-  { id: "featured-news", label: "Featured news" },
-  { id: "next-steps", label: "Next steps" },
+  { id: "overview", label: "Overview", color: "#F0F9FF" }, // Light blue
+  { id: "solutions", label: "Solutions", color: "#FEF3C7" }, // Light yellow
+  { id: "product-demos", label: "Product demos", color: "#ECFDF5" }, // Light green
+  { id: "automation", label: "Automation", color: "#FCE7F3" }, // Light pink
+  { id: "apps-addons", label: "Apps and add-ons", color: "#F3E8FF" }, // Light purple
+  { id: "customer-stories", label: "Customer stories", color: "#FEF2F2" }, // Light red
+  { id: "security", label: "Security", color: "#DBEAFE" }, // Light blue-gray
+  { id: "featured-news", label: "Featured news", color: "#FEF3C7" }, // Light amber
+  { id: "next-steps", label: "Next steps", color: "#E0F2FE" }, // Light sky
 ]
 
 const TAB_BAR_HEIGHT = 48
@@ -23,6 +23,7 @@ export default function LP2TabNavigation() {
   const activeSection = useActiveSection()
   const navBarRef = useRef<HTMLDivElement>(null)
   const [isSticky, setIsSticky] = useState(false)
+  const [currentBgColor, setCurrentBgColor] = useState("#FFFFFF")
   const naturalTop = useRef<number | null>(null)
 
   useEffect(() => {
@@ -37,7 +38,8 @@ export default function LP2TabNavigation() {
     const onScroll = () => {
       if (naturalTop.current === null) calcTop()
       if (naturalTop.current !== null) {
-        setIsSticky(window.scrollY >= naturalTop.current)
+        const isNowSticky = window.scrollY >= naturalTop.current
+        setIsSticky(isNowSticky)
       }
     }
 
@@ -48,6 +50,16 @@ export default function LP2TabNavigation() {
       window.removeEventListener("resize", calcTop)
     }
   }, [isSticky])
+
+  // Update background color based on active section
+  useEffect(() => {
+    const activeTab = tabs.find(tab => tab.id === activeSection)
+    if (activeTab && isSticky) {
+      setCurrentBgColor(activeTab.color)
+    } else {
+      setCurrentBgColor("#FFFFFF")
+    }
+  }, [activeSection, isSticky])
 
   const scrollToSection = useCallback((sectionId: string) => {
     const el = document.getElementById(sectionId)
@@ -66,15 +78,17 @@ export default function LP2TabNavigation() {
       <nav
         ref={navBarRef}
         className={`
-          w-full bg-white border-b border-[#E5E5E5] z-40
-          transition-shadow duration-200
-          ${
-            isSticky
-              ? "fixed left-0 right-0 shadow-sm"
-              : "relative"
+          w-full border-b border-[#E5E5E5] z-40
+          ${isSticky
+            ? "fixed left-0 right-0 shadow-sm"
+            : "relative"
           }
         `}
-        style={isSticky ? { top: 0 } : undefined}
+        style={{
+          top: isSticky ? 0 : undefined,
+          backgroundColor: currentBgColor,
+          transition: 'background-color 0.5s ease-in-out',
+        }}
       >
         <div className="mx-auto max-w-[1280px] px-6 flex items-center justify-between"
           style={{ height: TAB_BAR_HEIGHT }}
@@ -90,10 +104,9 @@ export default function LP2TabNavigation() {
                   className={`
                     relative whitespace-nowrap h-full flex items-center
                     text-[14px] cursor-pointer transition-colors duration-150
-                    ${
-                      isActive
-                        ? "text-[#1A1A1A] font-semibold"
-                        : "text-[#505050] font-normal hover:text-[#1A1A1A]"
+                    ${isActive
+                      ? "text-[#1A1A1A] font-semibold"
+                      : "text-[#505050] font-normal hover:text-[#1A1A1A]"
                     }
                   `}
                 >
