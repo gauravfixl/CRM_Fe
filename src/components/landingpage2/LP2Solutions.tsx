@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import Link from "next/link"
 import {
@@ -30,6 +30,7 @@ const accordionData = [
     accent: "bg-blue-500",
     accentLight: "bg-blue-100",
     textAccent: "text-blue-600",
+    bgColor: "#EBF5FF", // Light blue background
     stats: [
       { label: "Active Leads", value: "2,847", icon: TrendingUp },
       { label: "Conversion Rate", value: "34.2%", icon: PieChart },
@@ -47,6 +48,7 @@ const accordionData = [
     accent: "bg-emerald-500",
     accentLight: "bg-emerald-100",
     textAccent: "text-emerald-600",
+    bgColor: "#ECFDF5", // Light green background
     stats: [
       { label: "Employees", value: "1,245", icon: Users },
       { label: "Attendance", value: "96.8%", icon: Clock },
@@ -64,6 +66,7 @@ const accordionData = [
     accent: "bg-purple-500",
     accentLight: "bg-purple-100",
     textAccent: "text-purple-600",
+    bgColor: "#F5F3FF", // Light purple background
     stats: [
       { label: "Active Projects", value: "42", icon: Briefcase },
       { label: "On Track", value: "87%", icon: TrendingUp },
@@ -81,6 +84,7 @@ const accordionData = [
     accent: "bg-amber-500",
     accentLight: "bg-amber-100",
     textAccent: "text-amber-600",
+    bgColor: "#FFFBEB", // Light amber background
     stats: [
       { label: "Revenue", value: "$1.2M", icon: TrendingUp },
       { label: "Invoices", value: "348", icon: FileText },
@@ -204,21 +208,29 @@ function HRMVisual() {
 
 function PMVisual() {
   const columns = [
-    { name: "To Do", color: "#6B7280", tasks: [
-      { title: "Design system update", tag: "Design", tagColor: "#8B5CF6" },
-      { title: "API documentation", tag: "Docs", tagColor: "#0891B2" },
-    ]},
-    { name: "In Progress", color: "#3B82F6", tasks: [
-      { title: "Build auth module", tag: "Dev", tagColor: "#0067B8" },
-      { title: "Setup CI/CD pipeline", tag: "DevOps", tagColor: "#D83B01" },
-    ]},
-    { name: "Review", color: "#F59E0B", tasks: [
-      { title: "Landing page v2", tag: "Design", tagColor: "#8B5CF6" },
-    ]},
-    { name: "Done", color: "#10B981", tasks: [
-      { title: "Database migration", tag: "Dev", tagColor: "#0067B8" },
-      { title: "User testing round 1", tag: "QA", tagColor: "#107C10" },
-    ]},
+    {
+      name: "To Do", color: "#6B7280", tasks: [
+        { title: "Design system update", tag: "Design", tagColor: "#8B5CF6" },
+        { title: "API documentation", tag: "Docs", tagColor: "#0891B2" },
+      ]
+    },
+    {
+      name: "In Progress", color: "#3B82F6", tasks: [
+        { title: "Build auth module", tag: "Dev", tagColor: "#0067B8" },
+        { title: "Setup CI/CD pipeline", tag: "DevOps", tagColor: "#D83B01" },
+      ]
+    },
+    {
+      name: "Review", color: "#F59E0B", tasks: [
+        { title: "Landing page v2", tag: "Design", tagColor: "#8B5CF6" },
+      ]
+    },
+    {
+      name: "Done", color: "#10B981", tasks: [
+        { title: "Database migration", tag: "Dev", tagColor: "#0067B8" },
+        { title: "User testing round 1", tag: "QA", tagColor: "#107C10" },
+      ]
+    },
   ]
   return (
     <div className="w-full rounded-2xl bg-white border border-[#E5E5E5] shadow-lg overflow-hidden">
@@ -326,15 +338,66 @@ const accentColors = ["#0067B8", "#107C10", "#5C2D91", "#008575"]
 export default function LP2Solutions() {
   const [activeIndex, setActiveIndex] = useState(0)
   const [ref, inView] = useIntersection("-80px")
+  const [isHovered, setIsHovered] = useState(false)
+  const [isManuallyInteracted, setIsManuallyInteracted] = useState(false)
+
+  // Auto-rotation effect
+  useEffect(() => {
+    // Only auto-rotate if section is in view and not hovered/manually interacted
+    if (!inView || isHovered || isManuallyInteracted) return
+
+    const interval = setInterval(() => {
+      setActiveIndex((prev) => {
+        // If closed (-1), start from 0, otherwise go to next
+        if (prev === -1) return 0
+        return (prev + 1) % accordionData.length
+      })
+    }, 4500) // Change every 4.5 seconds
+
+    return () => clearInterval(interval)
+  }, [inView, isHovered, isManuallyInteracted])
+
+  // Resume auto-rotation after manual interaction
+  useEffect(() => {
+    if (!isManuallyInteracted) return
+
+    const timeout = setTimeout(() => {
+      setIsManuallyInteracted(false)
+    }, 5000) // Resume after 5 seconds
+
+    return () => clearTimeout(timeout)
+  }, [isManuallyInteracted])
 
   const toggle = (index: number) => {
-    setActiveIndex(index === activeIndex ? -1 : index)
+    // Allow closing if clicking the same index
+    if (index === activeIndex) {
+      setActiveIndex(-1)
+    } else {
+      setActiveIndex(index)
+    }
+    setIsManuallyInteracted(true)
+  }
+
+  const handleMouseEnter = () => {
+    setIsHovered(true)
+  }
+
+  const handleMouseLeave = () => {
+    setIsHovered(false)
   }
 
   const activeColor = activeIndex >= 0 ? accentColors[activeIndex] : "#0067B8"
+  const activeBgColor = activeIndex >= 0 ? accordionData[activeIndex].bgColor : "#F8F9FC"
 
   return (
-    <section id="solutions" className="relative py-20 overflow-hidden" style={{ background: "linear-gradient(180deg, #F8F9FC 0%, #EEF1F8 100%)" }}>
+    <motion.section
+      id="solutions"
+      className="relative py-20 overflow-hidden"
+      animate={{
+        backgroundColor: activeBgColor
+      }}
+      transition={{ duration: 0.6, ease: "easeInOut" }}
+    >
       {/* Background decorative elements */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         <motion.div
@@ -383,35 +446,69 @@ export default function LP2Solutions() {
         {/* Two-column layout */}
         <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
           {/* Left — Accordion (40%) */}
-          <div className="w-full lg:w-[40%]">
+          <div
+            className="w-full lg:w-[40%] h-[480px] overflow-visible"
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+          >
             {accordionData.map((item, index) => {
               const isActive = activeIndex === index
               const color = accentColors[index]
               return (
                 <motion.div
                   key={item.title}
-                  className={`border-b transition-all duration-300 ${isActive ? "border-b-transparent" : "border-b-[#E0E0E0]"}`}
+                  className={`border-b transition-all duration-300 rounded-xl overflow-hidden ${isActive ? "border-b-transparent" : "border-b-[#E0E0E0]"}`}
                   layout
+                  animate={{
+                    backgroundColor: isActive ? `${color}20` : "transparent",
+                    scale: isActive ? 1.02 : 1,
+                  }}
+                  whileHover={{
+                    backgroundColor: isActive ? `${color}20` : `${color}10`,
+                    scale: isActive ? 1.02 : 1.01,
+                  }}
+                  transition={{ duration: 0.3 }}
                 >
                   <button
                     onClick={() => toggle(index)}
-                    className="w-full flex items-center justify-between py-5 text-left group"
+                    className="w-full flex items-center justify-between py-5 px-4 text-left group"
                   >
                     <div className="flex items-center gap-3">
                       <motion.div
                         className="w-1 h-8 rounded-full"
                         style={{ backgroundColor: isActive ? color : "#D1D5DB" }}
-                        animate={{ backgroundColor: isActive ? color : "#D1D5DB", height: isActive ? 32 : 24 }}
+                        animate={{
+                          backgroundColor: isActive ? color : "#D1D5DB",
+                          height: isActive ? 32 : 24,
+                          boxShadow: isActive ? `0 0 16px ${color}60` : "none"
+                        }}
+                        whileHover={{
+                          backgroundColor: color,
+                          height: isActive ? 32 : 28,
+                          boxShadow: `0 0 12px ${color}50`
+                        }}
                         transition={{ duration: 0.3 }}
                       />
                       <div className="flex items-center gap-2.5">
                         <motion.div
                           className="w-8 h-8 rounded-lg flex items-center justify-center"
                           style={{ backgroundColor: isActive ? color + "15" : "transparent" }}
-                          animate={{ backgroundColor: isActive ? color + "15" : "transparent" }}
+                          animate={{
+                            backgroundColor: isActive ? color + "35" : "transparent",
+                            scale: isActive ? 1.1 : 1
+                          }}
+                          whileHover={{
+                            backgroundColor: isActive ? color + "35" : color + "20",
+                            scale: 1.1
+                          }}
                           transition={{ duration: 0.3 }}
                         >
-                          <item.Icon className="w-4 h-4" style={{ color: isActive ? color : "#9CA3AF" }} />
+                          <motion.div
+                            whileHover={{ scale: 1.1 }}
+                            transition={{ duration: 0.2 }}
+                          >
+                            <item.Icon className="w-4 h-4" style={{ color: isActive ? color : "#9CA3AF" }} />
+                          </motion.div>
                         </motion.div>
                         <span className={`text-lg font-semibold transition-colors duration-300 ${isActive ? "text-[#1A1A1A]" : "text-[#6B6B6B] group-hover:text-[#1A1A1A]"}`}>
                           {item.title}
@@ -457,7 +554,7 @@ export default function LP2Solutions() {
           </div>
 
           {/* Right — Visual (60%) */}
-          <div className="w-full lg:w-[60%]">
+          <div className="w-full lg:w-[60%] h-[480px]">
             <AnimatePresence mode="wait">
               {activeIndex >= 0 && (() => {
                 const Visual = visuals[activeIndex]
@@ -465,20 +562,43 @@ export default function LP2Solutions() {
                 return (
                   <motion.div
                     key={activeIndex}
-                    initial={{ opacity: 0, y: 20, scale: 0.97 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: -20, scale: 0.97 }}
+                    initial={{ opacity: 0, y: 20, scale: 0.97, rotateX: 5 }}
+                    animate={{ opacity: 1, y: 0, scale: 1, rotateX: 0 }}
+                    exit={{ opacity: 0, y: -20, scale: 0.97, rotateX: -5 }}
                     transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
                     className="relative"
+                    style={{ perspective: "1000px" }}
                   >
-                    {/* Glow behind the card */}
+                    {/* Multiple layered glows for depth */}
                     <div
-                      className="absolute -inset-4 rounded-3xl opacity-[0.08] blur-2xl"
+                      className="absolute -inset-6 rounded-3xl opacity-[0.15] blur-3xl"
                       style={{ backgroundColor: color }}
                     />
-                    <div className="relative">
+                    <div
+                      className="absolute -inset-3 rounded-3xl opacity-[0.1] blur-xl"
+                      style={{ backgroundColor: color }}
+                    />
+
+                    {/* 3D Card wrapper with colored border and shadow */}
+                    <motion.div
+                      className="relative"
+                      style={{
+                        transformStyle: "preserve-3d",
+                      }}
+                      animate={{
+                        boxShadow: `
+                          0 2px 4px ${color}15,
+                          0 8px 16px ${color}20,
+                          0 16px 32px ${color}25,
+                          0 0 0 1px ${color}30,
+                          inset 0 1px 0 0 rgba(255,255,255,0.5)
+                        `,
+                      }}
+                      transition={{ duration: 0.4 }}
+                      className="rounded-2xl"
+                    >
                       <Visual />
-                    </div>
+                    </motion.div>
                   </motion.div>
                 )
               })()}
@@ -486,6 +606,6 @@ export default function LP2Solutions() {
           </div>
         </div>
       </motion.div>
-    </section>
+    </motion.section>
   )
 }

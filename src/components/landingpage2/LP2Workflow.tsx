@@ -254,55 +254,106 @@ export default function LP2Workflow() {
           </p>
         </motion.div>
 
-        {/* Workflow visualization */}
-        <div className="max-w-3xl mx-auto">
+        {/* Workflow visualization - Zigzag Layout */}
+        <div className="max-w-6xl mx-auto">
 
-          {/* Step 1: Trigger */}
-          <div className="flex flex-col lg:flex-row items-center gap-4 lg:gap-6">
-            <div className="flex-1 flex justify-center lg:justify-end">
+          {/* Step 1: Trigger - Right Side */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center mb-4">
+            <div className="lg:text-right order-2 lg:order-1">
               <AnnotationLabel text={steps[0].annotation} color={steps[0].color} side="left" delay={0.3} isVisible={isVisible} />
             </div>
-            <StepCard {...steps[0]} type={steps[0].type} delay={0.15} isVisible={isVisible} index={1} />
-            <div className="flex-1 hidden lg:block" />
+            <div className="order-1 lg:order-2">
+              <StepCard {...steps[0]} type={steps[0].type} delay={0.15} isVisible={isVisible} index={1} />
+            </div>
           </div>
 
-          <AnimatedConnector isVisible={isVisible} delay={0.4} color="#107C10" />
+          {/* Connector */}
+          <div className="flex justify-center -my-2 relative z-10">
+            <div className="relative">
+              <AnimatedConnector isVisible={isVisible} delay={0.4} color="#107C10" />
+              {/* Floating particle */}
+              <motion.div
+                className="absolute top-1/2 left-1/2 w-1.5 h-1.5 rounded-full bg-green-400"
+                initial={{ opacity: 0, x: -8, y: 0 }}
+                animate={isVisible ? {
+                  opacity: [0, 1, 1, 0],
+                  x: [-8, -4, 4, 8],
+                  y: [0, 8, 16, 24]
+                } : {}}
+                transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
+              />
+            </div>
+          </div>
 
-          {/* Step 2: AI Action */}
-          <div className="flex flex-col lg:flex-row items-center gap-4 lg:gap-6">
-            <div className="flex-1 hidden lg:block" />
-            <StepCard {...steps[1]} type={steps[1].type} delay={0.5} isVisible={isVisible} index={2} />
-            <div className="flex-1 flex justify-center lg:justify-start">
+          {/* Step 2: AI Action - Left Side */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center mb-4">
+            <div className="order-1">
+              <StepCard {...steps[1]} type={steps[1].type} delay={0.5} isVisible={isVisible} index={2} />
+            </div>
+            <div className="lg:text-left order-2">
               <AnnotationLabel text={steps[1].annotation} color={steps[1].color} side="right" delay={0.6} isVisible={isVisible} />
             </div>
           </div>
 
-          <AnimatedConnector isVisible={isVisible} delay={0.7} color="#5C2D91" />
-
-          {/* Step 3: Condition */}
-          <div className="flex flex-col lg:flex-row items-center gap-4 lg:gap-6">
-            <div className="flex-1 flex justify-center lg:justify-end">
-              <AnnotationLabel text={steps[2].annotation} color={steps[2].color} side="left" delay={0.85} isVisible={isVisible} />
+          {/* Connector */}
+          <div className="flex justify-center -my-2 relative z-10">
+            <div className="relative">
+              <AnimatedConnector isVisible={isVisible} delay={0.7} color="#5C2D91" />
+              {/* Floating particle */}
+              <motion.div
+                className="absolute top-1/2 left-1/2 w-1.5 h-1.5 rounded-full bg-purple-400"
+                initial={{ opacity: 0, x: 8, y: 0 }}
+                animate={isVisible ? {
+                  opacity: [0, 1, 1, 0],
+                  x: [8, 4, -4, -8],
+                  y: [0, 8, 16, 24]
+                } : {}}
+                transition={{ duration: 2, repeat: Infinity, repeatDelay: 1.2 }}
+              />
             </div>
-            <StepCard {...steps[2]} type={steps[2].type} delay={0.75} isVisible={isVisible} index={3} />
-            <div className="flex-1 hidden lg:block" />
           </div>
 
-          {/* Branch connector */}
+          {/* Step 3: Condition - Right Side */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center mb-4">
+            <div className="lg:text-right order-2 lg:order-1">
+              <AnnotationLabel text={steps[2].annotation} color={steps[2].color} side="left" delay={0.85} isVisible={isVisible} />
+            </div>
+            <div className="order-1 lg:order-2">
+              <StepCard {...steps[2]} type={steps[2].type} delay={0.75} isVisible={isVisible} index={3} />
+            </div>
+          </div>
+
+          {/* Branch connector - Center */}
           <div className="flex justify-center py-2">
             <motion.div
-              className="w-0.5 h-8 rounded-full bg-[#0067B8]/20"
+              className="relative w-0.5 h-10 rounded-full bg-[#0067B8]/20"
               initial={{ scaleY: 0 }}
               animate={isVisible ? { scaleY: 1 } : {}}
               transition={{ duration: 0.3, delay: 0.9 }}
-            />
+            >
+              {/* Branching indicator with pulse */}
+              <motion.div
+                className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-5 h-5 rounded-full bg-[#0067B8] flex items-center justify-center shadow-lg"
+                initial={{ scale: 0 }}
+                animate={isVisible ? { scale: 1 } : {}}
+                transition={{ delay: 1.0, type: "spring", stiffness: 300 }}
+              >
+                <GitBranch size={11} className="text-white" />
+                {/* Pulse ring */}
+                <motion.div
+                  className="absolute inset-0 rounded-full border-2 border-[#0067B8]"
+                  animate={{ scale: [1, 1.6, 1.6], opacity: [0.6, 0, 0] }}
+                  transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
+                />
+              </motion.div>
+            </motion.div>
           </div>
 
-          {/* Yes / No branches */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
-            {/* Yes branch */}
+          {/* Yes / No branches - Side by Side */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-4">
+            {/* Yes branch - Left */}
             <motion.div
-              className="flex flex-col items-center"
+              className="flex flex-col items-center lg:items-end"
               initial={{ opacity: 0, x: -30 }}
               animate={isVisible ? { opacity: 1, x: 0 } : {}}
               transition={{ duration: 0.6, delay: 0.95 }}
@@ -310,6 +361,10 @@ export default function LP2Workflow() {
               <motion.span
                 className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold bg-[#E8F5E9] text-[#107C10] border border-[#107C10]/20 mb-3"
                 whileHover={{ scale: 1.05 }}
+                animate={isVisible ? {
+                  boxShadow: ["0 0 0 0 rgba(16,124,16,0)", "0 0 0 8px rgba(16,124,16,0.1)", "0 0 0 0 rgba(16,124,16,0)"]
+                } : {}}
+                transition={{ duration: 2, repeat: Infinity, repeatDelay: 2 }}
               >
                 <CheckCircle2 size={12} />
                 Yes — Qualified
@@ -321,12 +376,17 @@ export default function LP2Workflow() {
                 transition={{ delay: 1.0 }}
               />
               <motion.div
-                className="bg-white rounded-2xl border-2 border-[#107C10]/20 shadow-sm px-6 py-5 flex items-center gap-4 w-full max-w-sm group cursor-default"
+                className="bg-white rounded-2xl border-2 border-[#107C10]/20 shadow-sm px-6 py-5 flex items-center gap-4 w-full max-w-md group cursor-default"
                 whileHover={{ y: -4, boxShadow: "0 12px 30px rgba(16,124,16,0.12)", borderColor: "#107C10" + "50" }}
               >
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: branches.yes.bg }}>
+                <motion.div
+                  className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
+                  style={{ backgroundColor: branches.yes.bg }}
+                  whileHover={{ rotate: [0, -10, 10, 0], scale: 1.1 }}
+                  transition={{ duration: 0.5 }}
+                >
                   <branches.yes.icon size={22} style={{ color: branches.yes.color }} />
-                </div>
+                </motion.div>
                 <div>
                   <span className="text-[10px] font-bold uppercase tracking-wider text-[#107C10]">Action</span>
                   <p className="text-[15px] text-[#1A1A1A] font-semibold mt-0.5">{branches.yes.title}</p>
@@ -334,9 +394,9 @@ export default function LP2Workflow() {
               </motion.div>
             </motion.div>
 
-            {/* No branch */}
+            {/* No branch - Right */}
             <motion.div
-              className="flex flex-col items-center"
+              className="flex flex-col items-center lg:items-start"
               initial={{ opacity: 0, x: 30 }}
               animate={isVisible ? { opacity: 1, x: 0 } : {}}
               transition={{ duration: 0.6, delay: 1.05 }}
@@ -344,6 +404,10 @@ export default function LP2Workflow() {
               <motion.span
                 className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold bg-[#FFF0E8] text-[#D83B01] border border-[#D83B01]/20 mb-3"
                 whileHover={{ scale: 1.05 }}
+                animate={isVisible ? {
+                  boxShadow: ["0 0 0 0 rgba(216,59,1,0)", "0 0 0 8px rgba(216,59,1,0.1)", "0 0 0 0 rgba(216,59,1,0)"]
+                } : {}}
+                transition={{ duration: 2, repeat: Infinity, repeatDelay: 2.5 }}
               >
                 No — Not Qualified
               </motion.span>
@@ -354,12 +418,17 @@ export default function LP2Workflow() {
                 transition={{ delay: 1.1 }}
               />
               <motion.div
-                className="bg-white rounded-2xl border-2 border-[#D83B01]/20 shadow-sm px-6 py-5 flex items-center gap-4 w-full max-w-sm group cursor-default"
+                className="bg-white rounded-2xl border-2 border-[#D83B01]/20 shadow-sm px-6 py-5 flex items-center gap-4 w-full max-w-md group cursor-default"
                 whileHover={{ y: -4, boxShadow: "0 12px 30px rgba(216,59,1,0.12)", borderColor: "#D83B01" + "50" }}
               >
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: branches.no.bg }}>
+                <motion.div
+                  className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
+                  style={{ backgroundColor: branches.no.bg }}
+                  whileHover={{ rotate: [0, -10, 10, 0], scale: 1.1 }}
+                  transition={{ duration: 0.5 }}
+                >
                   <branches.no.icon size={22} style={{ color: branches.no.color }} />
-                </div>
+                </motion.div>
                 <div>
                   <span className="text-[10px] font-bold uppercase tracking-wider text-[#D83B01]">Nurture</span>
                   <p className="text-[15px] text-[#1A1A1A] font-semibold mt-0.5">{branches.no.title}</p>
@@ -368,55 +437,53 @@ export default function LP2Workflow() {
             </motion.div>
           </div>
 
-          {/* Merge connector */}
-          <motion.div
-            className="flex justify-center py-2"
-            initial={{ opacity: 0 }}
-            animate={isVisible ? { opacity: 1 } : {}}
-            transition={{ duration: 0.4, delay: 1.15 }}
-          >
-            <div className="flex flex-col items-center">
-              <div className="flex items-end">
-                <div className="w-[calc(25vw-40px)] max-w-[140px] border-b-2 border-dashed border-[#008575]/30 border-r-2 h-6 rounded-br-xl" />
-                <div className="w-[calc(25vw-40px)] max-w-[140px] border-b-2 border-dashed border-[#008575]/30 border-l-2 h-6 rounded-bl-xl" />
-              </div>
-              <motion.div
-                className="w-0.5 h-8 rounded-full bg-[#008575]/20"
-                initial={{ scaleY: 0 }}
-                animate={isVisible ? { scaleY: 1 } : {}}
-                transition={{ delay: 1.2 }}
-              />
-            </div>
-          </motion.div>
+          {/* Merge connector - Simplified */}
+          <div className="flex justify-center py-2">
+            <motion.div
+              className="w-0.5 h-8 rounded-full bg-[#008575]/20"
+              initial={{ scaleY: 0 }}
+              animate={isVisible ? { scaleY: 1 } : {}}
+              transition={{ delay: 1.15 }}
+            />
+          </div>
 
-          {/* Final step: Notification */}
-          <div className="flex flex-col lg:flex-row items-center gap-4 lg:gap-6">
-            <div className="flex-1 hidden lg:block" />
-            <StepCard {...finalStep} type={finalStep.type} delay={1.2} isVisible={isVisible} index={4} />
-            <div className="flex-1 flex justify-center lg:justify-start">
+          {/* Final step: Notification - Left Side */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center">
+            <div className="order-1">
+              <StepCard {...finalStep} type={finalStep.type} delay={1.2} isVisible={isVisible} index={4} />
+            </div>
+            <div className="lg:text-left order-2">
               <AnnotationLabel text={finalStep.annotation} color={finalStep.color} side="right" delay={1.3} isVisible={isVisible} />
             </div>
           </div>
 
           {/* Completion badge */}
           <motion.div
-            className="flex justify-center mt-10"
+            className="flex justify-center mt-8"
             initial={{ opacity: 0, scale: 0.8 }}
             animate={isVisible ? { opacity: 1, scale: 1 } : {}}
             transition={{ delay: 1.4, type: "spring", stiffness: 200 }}
           >
             <motion.div
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 shadow-sm"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 shadow-sm relative overflow-hidden"
               whileHover={{ scale: 1.03, boxShadow: "0 8px 20px rgba(16,124,16,0.1)" }}
             >
+              {/* Shimmer effect */}
+              <motion.div
+                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent"
+                initial={{ x: "-100%" }}
+                animate={{ x: "200%" }}
+                transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
+              />
               <motion.div
                 animate={{ rotate: [0, 10, -10, 0] }}
                 transition={{ duration: 0.5, delay: 1.6, repeat: Infinity, repeatDelay: 5 }}
+                className="relative z-10"
               >
                 <CheckCircle2 size={18} className="text-green-600" />
               </motion.div>
-              <span className="text-sm font-bold text-green-700">Workflow Complete</span>
-              <span className="text-xs text-green-500">— Fully automated</span>
+              <span className="text-sm font-bold text-green-700 relative z-10">Workflow Complete</span>
+              <span className="text-xs text-green-500 relative z-10">— Fully automated</span>
             </motion.div>
           </motion.div>
         </div>
