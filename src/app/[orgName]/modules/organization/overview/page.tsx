@@ -26,6 +26,7 @@ export default function OrgOverviewPage() {
     const [org, setOrg] = useState<any>(null);
     const [totalUsers, setTotalUsers] = useState<number | null>(null);
     const [activeFirms, setActiveFirms] = useState<number | null>(null);
+    const [billingPlan, setBillingPlan] = useState<any>(null);
 
     useEffect(() => {
         const load = async () => {
@@ -54,6 +55,13 @@ export default function OrgOverviewPage() {
             } catch (e) {
                 setActiveFirms(null);
             }
+
+            try {
+                const billingRes = await axiosInstance.get("/OrgBilling/current-plan");
+                setBillingPlan(billingRes?.data?.currentPlan ?? null);
+            } catch (e) {
+                setBillingPlan(null);
+            }
         };
 
         load();
@@ -74,7 +82,7 @@ export default function OrgOverviewPage() {
                             <Globe className="w-4 h-4" /> US-East
                         </span>
                         <span className="flex items-center gap-2 px-3 py-1 bg-white/10 rounded-full">
-                            <CreditCard className="w-4 h-4" /> Enterprise Plan
+                            <CreditCard className="w-4 h-4" /> {billingPlan?.planSnapshot?.name ?? "Enterprise Plan"}
                         </span>
                         <span className="flex items-center gap-2 px-3 py-1 bg-white/10 rounded-full">
                             <ShieldCheck className="w-4 h-4" /> SOC2 Compliant
@@ -130,8 +138,8 @@ export default function OrgOverviewPage() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-gray-600 text-xs">Monthly Spend</p>
-                                <p className="text-xl font-semibold text-gray-900 mt-1">$1,389</p>
-                                <p className="text-gray-600 text-[10px] mt-1">Next bill: Feb 01</p>
+                                <p className="text-xl font-semibold text-gray-900 mt-1">{billingPlan?.planSnapshot?.price != null ? `$${billingPlan.planSnapshot.price.toLocaleString()}` : "$1,389"}</p>
+                                <p className="text-gray-600 text-[10px] mt-1">{billingPlan?.nextPaymentDate ? `Next bill: ${new Date(billingPlan.nextPaymentDate).toLocaleDateString("en-US", { month: "short", day: "2-digit" })}` : "Next bill: Feb 01"}</p>
                             </div>
                             <CreditCard className="w-5 h-5 text-primary" />
                         </div>

@@ -26,10 +26,12 @@ const SubHeader: React.FC<SubHeaderProps> = ({
 }) => {
   return (
     <div className={`relative w-full ${height} shadow overflow-hidden mb-8`}>
+      {/* Background gradient fallback */}
+      <div className="absolute inset-0 bg-gradient-to-r from-primary via-primary/90 to-primary/80" />
       {/* Background image */}
       <div
         className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: "var(--header-image)" }}
+        style={{ backgroundImage: "var(--header-image, url('/images/blue-header.png'))" }}
       />
 
       {/* Content overlay */}

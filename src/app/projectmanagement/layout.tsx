@@ -7,6 +7,7 @@ import { GlobalTopBar } from "@/shared/components/projectmanagement/global-top-b
 import { ProjectSidebar } from "@/shared/components/projectmanagement/sidebar"
 import { SessionProvider } from "next-auth/react"
 import { SidebarProvider } from "@/shared/components/ui/sidebar"
+import { DashboardAccessGate } from "@/shared/components/custom/DashboardAccessGate"
 import { motion, AnimatePresence } from "framer-motion"
 import Loader from "@/shared/components/custom/Loader"
 import { useWorkspaceStore } from "@/shared/data/workspace-store"
@@ -159,11 +160,12 @@ export default function ProjectManagementLayout({ children }: { children: React.
         setIsNavigating(true)
         const timer = setTimeout(() => {
             setIsNavigating(false)
-        }, 500)
+        }, 150)
         return () => clearTimeout(timer)
     }, [pathname])
 
     return (
+        <DashboardAccessGate dashboardPath="/projectmanagement" dashboardName="Project Management">
         <SidebarProvider style={{ "--sidebar-width": "14rem" } as React.CSSProperties}>
             <div className="flex flex-col h-screen overflow-hidden w-full bg-[#f8fafc] text-foreground font-sans text-[13px] relative transition-all duration-300">
                 {/* 🚀 Global Top Loader */}
@@ -207,5 +209,6 @@ export default function ProjectManagementLayout({ children }: { children: React.
                 </div>
             </div>
         </SidebarProvider>
+        </DashboardAccessGate>
     )
 }

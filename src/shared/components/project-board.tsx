@@ -17,6 +17,7 @@ import { addTask, getTaskById, getTasksByColumn, deleteTask, reorderTask, type T
 import { getAllProjectMembers, type ProjectMember } from "@/modules/project-management/project-member/hooks/projectMemberHooks"
 import { addNewColumn, updateColumn } from "@/modules/project-management/board/hooks/boardHooks"
 import { useLoaderStore } from "@/lib/loaderStore"
+import { useWorkflowStore } from "@/shared/data/workflow-store"
 
 interface ProjectBoardProps {
   workspaceId: string
@@ -50,6 +51,7 @@ export function ProjectBoard({ projectId, project, teams, tasks, setTasks }: Pro
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [columnToDelete, setColumnToDelete] = useState<string | null>(null)
   const { showLoader, hideLoader } = useLoaderStore()
+  const { getConfig } = useWorkflowStore()
 
   const [newTaskTitle, setNewTaskTitle] = useState("")
   const [newTaskDescription, setNewTaskDescription] = useState("")
@@ -81,6 +83,13 @@ export function ProjectBoard({ projectId, project, teams, tasks, setTasks }: Pro
     fetchBoard()
   }, [projectId, boardId])
 
+  // SYNC GAP NOTE: This board fetches tasks exclusively from the API via getTasksByColumn(boardId).
+  // The backlog page (useIssueStore) uses an "API first, then store" pattern. If the API call
+  // succeeds on the backlog side, the task will exist in the API and appear here on next fetch.
+  // If the backlog's API call fails, the issue won't be added to the store either (as of the
+  // data sync fix), so there should be no orphaned store-only issues. If a future fallback
+  // path adds store-only issues, a merge step should be added here to reconcile
+  // useIssueStore issues with the API response (converting Issue -> Task format).
   useEffect(() => {
     if (!boardId) return
     const fetchTasks = async () => {
@@ -248,12 +257,24 @@ export function ProjectBoard({ projectId, project, teams, tasks, setTasks }: Pro
     <div className="space-y-6 h-[100vh] overflow-x-hidden">
       <DragDropContext onDragEnd={handleDragEnd}>
         <div className="flex gap-4 p-4 h-[calc(100vh-140px)] overflow-x-auto pb-8">
-          {filteredTasks.map((column: Column) => (
-            <div key={column.id || column._id} className="w-80 flex-shrink-0 flex flex-col h-full bg-slate-100/50 dark:bg-slate-900/50 rounded-lg border border-slate-200 dark:border-slate-800">
-              <div className="p-2 border-b bg-gray-100 dark:bg-gray-800 sticky top-0 z-20">
+          {filteredTasks.map((column: Column) => {
+            const taskCount = column.tasks?.length || 0
+            const workflowConfig = getConfig(projectId)
+            const workflowColumn = workflowConfig.columns.find(wc => wc.key === column.key)
+            const wipLimit = workflowColumn?.limit || 0
+            const isOverWipLimit = wipLimit > 0 && taskCount > wipLimit
+
+            return (
+            <div key={column.id || column._id} className={`w-80 flex-shrink-0 flex flex-col h-full rounded-lg border ${isOverWipLimit ? "border-red-300 bg-red-50/30 dark:bg-red-950/20" : "bg-slate-100/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800"}`}>
+              <div className={`p-2 border-b sticky top-0 z-20 ${isOverWipLimit ? "bg-red-100 dark:bg-red-900/40 border-red-200" : "bg-gray-100 dark:bg-gray-800"}`}>
                 <div className="flex items-center justify-between">
                   <h6 className="font-small text-sm uppercase tracking-wide text-gray-700">{column.name}</h6>
-                  <Badge variant="secondary">{column.tasks?.length || 0}</Badge>
+                  <div className="flex items-center gap-1.5">
+                    {isOverWipLimit && (
+                      <Badge className="bg-red-100 text-red-600 text-[9px] border-none">Over WIP Limit ({taskCount}/{wipLimit})</Badge>
+                    )}
+                    <Badge variant="secondary">{taskCount}</Badge>
+                  </div>
                 </div>
               </div>
 
@@ -330,7 +351,7 @@ export function ProjectBoard({ projectId, project, teams, tasks, setTasks }: Pro
                 )}
               </Droppable>
             </div>
-          ))}
+          )})}
 
           <div className="flex-shrink-0 w-80">
             {isAddingColumn ? (

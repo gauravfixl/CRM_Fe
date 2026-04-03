@@ -7,6 +7,13 @@ import {
   SIDEBAR_GROUP_PERMISSIONS,
   SIDEBAR_ITEM_PERMISSIONS,
   PAGE_ROUTE_PERMISSIONS,
+  HRM_SIDEBAR_GROUP_PERMISSIONS,
+  HRM_SIDEBAR_ITEM_PERMISSIONS,
+  LEAD_SIDEBAR_GROUP_PERMISSIONS,
+  LEAD_SIDEBAR_ITEM_PERMISSIONS,
+  CLIENT_SIDEBAR_GROUP_PERMISSIONS,
+  CLIENT_SIDEBAR_ITEM_PERMISSIONS,
+  DASHBOARD_ACCESS_PERMISSIONS,
 } from "@/shared/utils/module-permission-map";
 
 /**
@@ -126,6 +133,93 @@ export function useRoleAccess() {
     [permissions, userRole, isAdminRole]
   );
 
+  /**
+   * Check if user can access a specific dashboard module (HRM, Lead, Client, PM).
+   * Used by layout-level access gates.
+   */
+  const canAccessDashboard = useCallback(
+    (dashboardPath: string): boolean => {
+      if (isAdminRole(userRole)) return true;
+      const requirements = DASHBOARD_ACCESS_PERMISSIONS[dashboardPath];
+      if (!requirements) return true;
+      return hasAnyPermission(requirements);
+    },
+    [hasAnyPermission, userRole, isAdminRole]
+  );
+
+  /**
+   * Filter a module-specific sidebar (HRM, Lead, Client).
+   * Takes an array of nav items with title/items structure and filters
+   * based on the module's permission maps.
+   */
+  const filterModuleSidebar = useCallback(
+    <T extends { title: string; items?: Array<{ title: string; [key: string]: any }> }>(
+      navItems: T[],
+      module: "hrm" | "lead" | "client"
+    ): T[] => {
+      const groupMap =
+        module === "hrm"
+          ? HRM_SIDEBAR_GROUP_PERMISSIONS
+          : module === "lead"
+          ? LEAD_SIDEBAR_GROUP_PERMISSIONS
+          : CLIENT_SIDEBAR_GROUP_PERMISSIONS;
+
+      const itemMap =
+        module === "hrm"
+          ? HRM_SIDEBAR_ITEM_PERMISSIONS
+          : module === "lead"
+          ? LEAD_SIDEBAR_ITEM_PERMISSIONS
+          : CLIENT_SIDEBAR_ITEM_PERMISSIONS;
+
+      return navItems
+        .filter((group) => {
+          const requirements = groupMap[group.title];
+          if (!requirements || requirements.length === 0) return true;
+          return hasAnyPermission(requirements);
+        })
+        .map((group) => {
+          if (!group.items || group.items.length === 0) return group;
+          return {
+            ...group,
+            items: group.items.filter((item) => {
+              const requirements = itemMap[item.title];
+              if (!requirements) return true;
+              return hasAnyPermission(requirements);
+            }),
+          };
+        });
+    },
+    [hasAnyPermission]
+  );
+
+  /**
+   * Map OrgAdmin permissions to PM sidebar role.
+   * Bridges the OrgAdmin RBAC system to PM's config-driven role system.
+   */
+  const getPMSidebarRole = useCallback((): "Admin" | "Manager" | "Member" => {
+    if (isAdminRole(userRole)) return "Admin";
+    if (!permissions || permissions.length === 0) return "Member";
+
+    const pmPerms = permissions.find(
+      (p: Permission) => p.module === "project_management"
+    );
+    if (!pmPerms) return "Member";
+
+    if (
+      pmPerms.actions.includes("DELETE_PROJECT") ||
+      pmPerms.actions.includes("EDIT_PROJECT")
+    ) {
+      return "Admin";
+    }
+    if (
+      pmPerms.actions.includes("CREATE_PROJECT") ||
+      pmPerms.actions.includes("CREATE_TASK")
+    ) {
+      return "Manager";
+    }
+    return "Member";
+  }, [permissions, userRole, isAdminRole]);
+
   const accessSummary = useMemo(() => {
     return {
       role: userRole,
@@ -141,6 +235,9 @@ export function useRoleAccess() {
     canAccessSidebarItem,
     canAccessPage,
     filterSidebarGroups,
+    filterModuleSidebar,
+    canAccessDashboard,
+    getPMSidebarRole,
     checkPermission,
     accessSummary,
     permissions,

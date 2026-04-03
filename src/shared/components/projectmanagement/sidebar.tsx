@@ -64,6 +64,7 @@ import {
 import { useProjectStore } from "@/shared/data/projects-store"
 import { useWorkspaceStore } from "@/shared/data/workspace-store"
 import { usePermissions } from "@/shared/hooks/use-permissions"
+import { useRoleAccess } from "@/shared/hooks/use-role-access"
 import { SIDEBAR_CONFIG, SidebarRole } from "./sidebar.config"
 import CreateWorkspaceModal from "./create-workspace-modal"
 
@@ -84,12 +85,23 @@ export function ProjectSidebar() {
     }, [])
 
     const permissions = usePermissions({ workspaceId: activeWorkspaceId || undefined })
+    const { getPMSidebarRole } = useRoleAccess()
 
+    // Bridge OrgAdmin roles to PM sidebar roles
+    // First check OrgAdmin-level permissions, then fall back to workspace-level
     const currentUserRole: SidebarRole = React.useMemo(() => {
-        if (permissions.role === 'WorkspaceAdmin') return 'Admin'
-        if (permissions.role === 'ProjectOwner' || permissions.role === 'ProjectAdmin') return 'Manager'
-        return 'Member'
-    }, [permissions.role])
+        const orgRole = getPMSidebarRole()
+        // If OrgAdmin gives Admin access, use that; otherwise use workspace-level role
+        if (orgRole === 'Admin') return 'Admin'
+        // For Manager/Member, take the higher of OrgAdmin vs workspace permission
+        const wsRole: SidebarRole = permissions.role === 'WorkspaceAdmin'
+            ? 'Admin'
+            : (permissions.role === 'ProjectOwner' || permissions.role === 'ProjectAdmin')
+                ? 'Manager'
+                : 'Member'
+        const roleHierarchy: Record<SidebarRole, number> = { Admin: 3, Manager: 2, Member: 1 }
+        return roleHierarchy[orgRole] >= roleHierarchy[wsRole] ? orgRole : wsRole
+    }, [permissions.role, getPMSidebarRole])
 
     const starredProjects = projects.filter(p => p.starred)
 
