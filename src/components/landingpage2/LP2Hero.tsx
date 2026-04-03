@@ -19,20 +19,20 @@ import {
 
 const heroBackgrounds = [
   {
-    src: "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=1920&q=80",
-    alt: "Modern office workspace with team collaboration",
+    src: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1920&q=80",
+    alt: "Business analytics dashboard with charts and data visualization",
   },
   {
     src: "https://images.unsplash.com/photo-1551434678-e076c223a692?w=1920&q=80",
-    alt: "Team working on business analytics dashboard",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1920&q=80",
-    alt: "Business data analytics and charts on screen",
+    alt: "Professional team collaborating on business strategy",
   },
   {
     src: "https://images.unsplash.com/photo-1553877522-43269d4ea984?w=1920&q=80",
-    alt: "Professional business meeting with digital tools",
+    alt: "Modern office workspace with digital collaboration tools",
+  },
+  {
+    src: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=1920&q=80",
+    alt: "Business professionals working on financial reports and CRM",
   },
 ]
 
@@ -67,7 +67,7 @@ const itemVariants = {
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] },
+    transition: { duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] as const },
   },
 }
 
@@ -77,7 +77,7 @@ const fadeInRight = {
     opacity: 1,
     x: 0,
     scale: 1,
-    transition: { duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94], delay: 0.3 },
+    transition: { duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] as const, delay: 0.3 },
   },
 }
 
@@ -121,7 +121,7 @@ export default function LP2Hero() {
         setIsDeleting(false)
         setCurrentWordIndex((prev) => (prev + 1) % rotatingWords.length)
         // Small pause before typing next word
-        setTimeout(() => {}, pauseAfterDelete)
+        setTimeout(() => { }, pauseAfterDelete)
         return
       }
     }
@@ -135,7 +135,7 @@ export default function LP2Hero() {
 
   return (
     <section
-      className="relative overflow-hidden pt-32 pb-28"
+      className="relative overflow-hidden pt-20 pb-16 min-h-[70vh] max-h-[75vh] flex items-center"
       style={{
         background:
           "linear-gradient(135deg, #E3F2FD 0%, #F3E5F5 25%, #E8F5E9 50%, #FFF8E1 75%, #FFF3E0 100%)",
@@ -324,65 +324,8 @@ export default function LP2Hero() {
                 </svg>
               </motion.div>
 
-              {/* Connecting arcs via SVG */}
-              <svg
-                className="absolute inset-0 w-full h-full"
-                viewBox="0 0 440 440"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <circle
-                  cx="220"
-                  cy="220"
-                  r={radius}
-                  stroke="#ffffff"
-                  strokeWidth="1"
-                  strokeDasharray="6 4"
-                  fill="none"
-                  opacity={0.5}
-                />
-                {/* Animated pulse ring */}
-                <motion.circle
-                  cx="220"
-                  cy="220"
-                  r={radius}
-                  stroke="#ffffff"
-                  strokeWidth="1.5"
-                  fill="none"
-                  initial={{ opacity: 0.5, r: radius - 5 }}
-                  animate={{ opacity: [0.4, 0, 0.4], r: [radius - 5, radius + 20, radius - 5] }}
-                  transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                />
-                {/* Lines from center to each module */}
-                {modules.map((mod, i) => {
-                  const angleRad = (mod.angle - 90) * (Math.PI / 180)
-                  const x = 220 + radius * Math.cos(angleRad)
-                  const y = 220 + radius * Math.sin(angleRad)
-                  return (
-                    <motion.line
-                      key={i}
-                      x1="220"
-                      y1="220"
-                      x2={x}
-                      y2={y}
-                      stroke={mod.color}
-                      strokeWidth="1"
-                      strokeDasharray="4 3"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: [0.2, 0.5, 0.2] }}
-                      transition={{
-                        duration: 3,
-                        repeat: Infinity,
-                        ease: "easeInOut",
-                        delay: i * 0.4,
-                      }}
-                    />
-                  )
-                })}
-              </svg>
-
-              {/* Center circle with pulse */}
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
+              {/* Center circle with pulse - STATIC (outside rotating container) */}
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
                 {/* Pulse rings */}
                 <motion.div
                   className="absolute -inset-4 rounded-full border-2 border-white/30"
@@ -410,52 +353,123 @@ export default function LP2Hero() {
                 </div>
               </div>
 
-              {/* Module icons with enhanced animations */}
-              {modules.map((mod, i) => {
-                const angleRad = (mod.angle - 90) * (Math.PI / 180)
-                const x = radius * Math.cos(angleRad)
-                const y = radius * Math.sin(angleRad)
-                const Icon = mod.icon
+              {/* Rotating container for all modules */}
+              <motion.div
+                className="absolute inset-0"
+                animate={{ rotate: 360 }}
+                transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
+              >
+                {/* Module icons with enhanced animations */}
 
-                return (
-                  <motion.div
-                    key={mod.label}
-                    className="absolute top-1/2 left-1/2 z-10"
-                    style={{
-                      x: x - 28,
-                      y: y - 28,
-                    }}
-                    initial={{ opacity: 0, scale: 0 }}
-                    animate={{
-                      opacity: 1,
-                      scale: 1,
-                      y: [y - 28, y - 36, y - 28],
-                    }}
-                    transition={{
-                      opacity: { duration: 0.5, delay: 0.8 + i * 0.15 },
-                      scale: { duration: 0.5, delay: 0.8 + i * 0.15, type: "spring", stiffness: 200 },
-                      y: { duration: 3 + i * 0.3, repeat: Infinity, ease: "easeInOut", delay: i * 0.35 },
-                    }}
-                  >
-                    <div className="flex flex-col items-center gap-1.5 group cursor-pointer">
-                      <div
-                        className="relative w-[60px] h-[60px] rounded-full flex items-center justify-center shadow-lg transition-all duration-300 group-hover:scale-110 group-hover:shadow-xl"
-                        style={{ backgroundColor: mod.color }}
+                {/* Connecting arcs via SVG */}
+                <svg
+                  className="absolute inset-0 w-full h-full"
+                  viewBox="0 0 440 440"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <circle
+                    cx="220"
+                    cy="220"
+                    r={radius}
+                    stroke="#ffffff"
+                    strokeWidth="1"
+                    strokeDasharray="6 4"
+                    fill="none"
+                    opacity={0.5}
+                  />
+                  {/* Animated pulse ring */}
+                  <motion.circle
+                    cx="220"
+                    cy="220"
+                    r={radius}
+                    stroke="#ffffff"
+                    strokeWidth="1.5"
+                    fill="none"
+                    initial={{ opacity: 0.5, r: radius - 5 }}
+                    animate={{ opacity: [0.4, 0, 0.4], r: [radius - 5, radius + 20, radius - 5] }}
+                    transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                  />
+                  {/* Lines from center to each module */}
+                  {modules.map((mod, i) => {
+                    const angleRad = (mod.angle - 90) * (Math.PI / 180)
+                    const x = 220 + radius * Math.cos(angleRad)
+                    const y = 220 + radius * Math.sin(angleRad)
+                    return (
+                      <motion.line
+                        key={i}
+                        x1="220"
+                        y1="220"
+                        x2={x}
+                        y2={y}
+                        stroke={mod.color}
+                        strokeWidth="1"
+                        strokeDasharray="4 3"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: [0.2, 0.5, 0.2] }}
+                        transition={{
+                          duration: 3,
+                          repeat: Infinity,
+                          ease: "easeInOut",
+                          delay: i * 0.4,
+                        }}
+                      />
+                    )
+                  })}
+                </svg>
+
+                {/* Module icons with enhanced animations */}
+                {modules.map((mod, i) => {
+                  const angleRad = (mod.angle - 90) * (Math.PI / 180)
+                  const x = radius * Math.cos(angleRad)
+                  const y = radius * Math.sin(angleRad)
+                  const Icon = mod.icon
+
+                  return (
+                    <motion.div
+                      key={mod.label}
+                      className="absolute top-1/2 left-1/2 z-10"
+                      style={{
+                        x: x - 28,
+                        y: y - 28,
+                      }}
+                      initial={{ opacity: 0, scale: 0, rotate: 0 }}
+                      animate={{
+                        opacity: 1,
+                        scale: 1,
+                        y: [y - 28, y - 36, y - 28],
+                      }}
+                      transition={{
+                        opacity: { duration: 0.5, delay: 0.8 + i * 0.15 },
+                        scale: { duration: 0.5, delay: 0.8 + i * 0.15, type: "spring", stiffness: 200 },
+                        y: { duration: 3 + i * 0.3, repeat: Infinity, ease: "easeInOut", delay: i * 0.35 },
+                      }}
+                    >
+                      {/* Inner wrapper to counter-rotate and keep content upright */}
+                      <motion.div
+                        animate={{ rotate: -360 }}
+                        transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
+                        className="flex flex-col items-center gap-1.5 group cursor-pointer"
                       >
-                        <Icon className="w-6 h-6 text-white" strokeWidth={1.8} />
-                        {/* Subtle glow */}
                         <div
-                          className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-30 transition-opacity duration-300 blur-md"
+                          className="relative w-[60px] h-[60px] rounded-full flex items-center justify-center shadow-lg transition-all duration-300 group-hover:scale-110 group-hover:shadow-xl"
                           style={{ backgroundColor: mod.color }}
-                        />
-                      </div>
-                      <span className="text-[11px] font-semibold text-white whitespace-nowrap" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.5)" }}>
-                        {mod.label}
-                      </span>
-                    </div>
-                  </motion.div>
-                )
-              })}
+                        >
+                          <Icon className="w-6 h-6 text-white" strokeWidth={1.8} />
+                          {/* Subtle glow */}
+                          <div
+                            className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-30 transition-opacity duration-300 blur-md"
+                            style={{ backgroundColor: mod.color }}
+                          />
+                        </div>
+                        <span className="text-[11px] font-semibold text-white whitespace-nowrap" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.5)" }}>
+                          {mod.label}
+                        </span>
+                      </motion.div>
+                    </motion.div>
+                  )
+                })}
+              </motion.div>
 
               {/* Small floating particles around the visualization */}
               {[...Array(6)].map((_, i) => (

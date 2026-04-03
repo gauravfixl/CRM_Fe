@@ -71,13 +71,12 @@ function StarRating({ rating }: { rating: number }) {
       {Array.from({ length: 5 }, (_, i) => (
         <Star
           key={i}
-          className={`w-3.5 h-3.5 ${
-            i < fullStars
-              ? "fill-[#F59E0B] text-[#F59E0B]"
-              : i === fullStars && hasHalf
+          className={`w-3.5 h-3.5 ${i < fullStars
+            ? "fill-[#F59E0B] text-[#F59E0B]"
+            : i === fullStars && hasHalf
               ? "fill-[#F59E0B]/50 text-[#F59E0B]"
               : "fill-[#E5E5E5] text-[#E5E5E5]"
-          }`}
+            }`}
         />
       ))}
     </span>
@@ -154,7 +153,7 @@ export default function LP2Integrations() {
 
         {/* Stats Row */}
         <motion.div
-          className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-14"
+          className="flex justify-center gap-4 mb-14 flex-wrap"
           initial={{ opacity: 0, y: 20 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.6, delay: 0.15 }}
@@ -162,7 +161,7 @@ export default function LP2Integrations() {
           {stats.map((stat, i) => (
             <motion.div
               key={stat.label}
-              className="bg-white/60 backdrop-blur-sm rounded-2xl border border-white/80 p-5 text-center hover:bg-white hover:shadow-md transition-all duration-300"
+              className="bg-white/60 backdrop-blur-sm rounded-2xl border border-white/80 px-8 py-5 text-center hover:bg-white hover:shadow-md transition-all duration-300 min-w-[180px]"
               initial={{ opacity: 0, y: 20 }}
               animate={inView ? { opacity: 1, y: 0 } : {}}
               transition={{ delay: 0.2 + i * 0.08 }}
@@ -175,7 +174,7 @@ export default function LP2Integrations() {
         </motion.div>
 
         {/* Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
+        <div className="flex justify-center gap-5 flex-wrap">
           {apps.map((app, index) => {
             const Icon = app.icon
 
@@ -190,7 +189,7 @@ export default function LP2Integrations() {
                   ease: [0.25, 0.46, 0.45, 0.94],
                 }}
                 whileHover={{ y: -6, boxShadow: `0 16px 40px ${app.color}18` }}
-                className="bg-white rounded-2xl border-2 p-6 flex flex-col transition-all duration-300 group cursor-pointer relative overflow-hidden"
+                className="bg-white rounded-2xl border-2 p-6 flex flex-col transition-all duration-300 group cursor-pointer relative overflow-hidden w-full sm:w-[280px]"
                 style={{ borderColor: app.color + "20" }}
               >
                 {/* Hover glow */}

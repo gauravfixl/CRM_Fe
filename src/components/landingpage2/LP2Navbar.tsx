@@ -247,13 +247,14 @@ export default function LP2Navbar() {
             onMouseEnter={() => handleDropdownEnter("explore")}
             onMouseLeave={handleDropdownLeave}
           >
-            <button className="flex items-center gap-1 px-3 py-2 text-sm text-[#1A1A1A] hover:text-[#0067B8] transition-colors duration-300 rounded-sm">
+            <button className="relative flex items-center gap-1 px-3 py-2 text-sm text-[#1A1A1A] hover:text-[#0067B8] transition-colors duration-300 rounded-sm group">
               Products
               <ChevronDown
                 size={14}
                 className={`transition-transform duration-300 ${activeDropdown === "explore" ? "rotate-180" : ""
                   }`}
               />
+              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#0067B8] group-hover:w-full transition-all duration-300 ease-out"></span>
             </button>
 
             <AnimatePresence>
@@ -297,13 +298,14 @@ export default function LP2Navbar() {
             onMouseEnter={() => handleDropdownEnter("products")}
             onMouseLeave={handleDropdownLeave}
           >
-            <button className="flex items-center gap-1 px-3 py-2 text-sm text-[#1A1A1A] hover:text-[#0067B8] transition-colors duration-300 rounded-sm">
+            <button className="relative flex items-center gap-1 px-3 py-2 text-sm text-[#1A1A1A] hover:text-[#0067B8] transition-colors duration-300 rounded-sm group">
               Solutions
               <ChevronDown
                 size={14}
                 className={`transition-transform duration-300 ${activeDropdown === "products" ? "rotate-180" : ""
                   }`}
               />
+              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#0067B8] group-hover:w-full transition-all duration-300 ease-out"></span>
             </button>
 
             <AnimatePresence>
@@ -343,21 +345,24 @@ export default function LP2Navbar() {
 
           <Link
             href="/landingpage2/pricing"
-            className="px-3 py-2 text-sm text-[#1A1A1A] hover:text-[#0067B8] transition-colors duration-300"
+            className="relative px-3 py-2 text-sm text-[#1A1A1A] hover:text-[#0067B8] transition-colors duration-300 group"
           >
             Pricing
+            <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#0067B8] group-hover:w-full transition-all duration-300 ease-out"></span>
           </Link>
           <Link
             href="/resources"
-            className="px-3 py-2 text-sm text-[#1A1A1A] hover:text-[#0067B8] transition-colors duration-300"
+            className="relative px-3 py-2 text-sm text-[#1A1A1A] hover:text-[#0067B8] transition-colors duration-300 group"
           >
             Resources
+            <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#0067B8] group-hover:w-full transition-all duration-300 ease-out"></span>
           </Link>
           <Link
             href="/support"
-            className="px-3 py-2 text-sm text-[#1A1A1A] hover:text-[#0067B8] transition-colors duration-300"
+            className="relative px-3 py-2 text-sm text-[#1A1A1A] hover:text-[#0067B8] transition-colors duration-300 group"
           >
             Support
+            <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#0067B8] group-hover:w-full transition-all duration-300 ease-out"></span>
           </Link>
         </div>
 
@@ -365,9 +370,10 @@ export default function LP2Navbar() {
         <div className="hidden lg:flex items-center gap-3">
           <Link
             href="/contact"
-            className="text-sm text-[#1A1A1A] hover:text-[#0067B8] transition-colors duration-300 px-3 py-2"
+            className="relative text-sm text-[#1A1A1A] hover:text-[#0067B8] transition-colors duration-300 px-3 py-2 group"
           >
             Contact us
+            <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#0067B8] group-hover:w-full transition-all duration-300 ease-out"></span>
           </Link>
           <Link
             href="/auth/signup"
