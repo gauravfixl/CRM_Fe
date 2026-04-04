@@ -106,6 +106,24 @@ const exploreItems = [
     description: "Track hours & productivity",
     href: "/explore/time-tracking",
   },
+  {
+    icon: Truck,
+    title: "SCM",
+    description: "End-to-end supply chain",
+    href: "/explore/scm",
+  },
+  {
+    icon: Factory,
+    title: "Manufacturing",
+    description: "Production & MRP",
+    href: "/explore/manufacturing",
+  },
+  {
+    icon: ShoppingCart,
+    title: "E-Commerce & POS",
+    description: "Online & offline retail",
+    href: "/explore/ecommerce",
+  },
 ]
 
 const productItems = [

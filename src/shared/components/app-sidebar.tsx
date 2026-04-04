@@ -1298,6 +1298,7 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
         group: "DASHBOARD",
         items: [
           { title: "Organization Dashboard", url: `/modules/organization/overview`, icon: LayoutDashboard },
+          { title: "Setup & Onboarding", url: `/modules/organization/onboarding`, icon: CheckCircle },
           { title: "Org Health & Usage", url: `/modules/organization/health`, icon: Activity },
           { title: "Recent Admin Activity", url: `/modules/organization/activity`, icon: History },
         ]
@@ -1316,7 +1317,6 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
         items: [
           { title: "Firms List", url: `/modules/firm-management/firms`, icon: ListTree },
           { title: "Create Firm", url: `/modules/firm-management/firms/add`, icon: Plus },
-          { title: "Onboarding Status", url: `/modules/organization/onboarding`, icon: Clock },
         ]
       },
       {
@@ -1324,7 +1324,6 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
         items: [
           { title: "Firm Admins", url: `/modules/organization/admins`, icon: ShieldCheck },
           { title: "Module Access", url: `/modules/organization/access`, icon: Package },
-          { title: "Settings Summary", url: `/modules/organization/settings`, icon: Settings },
         ]
       }
     ].map(group => ({
@@ -1480,9 +1479,9 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
     if (pathname?.includes("/modules/settings/entitlements/pipeline")) return "PipelineGov";
 
     // Organization Granular Drill-down
-    if (pathname?.includes("/modules/organization/overview")) return "OrgOverview";
+    if (pathname?.includes("/modules/organization/overview") || pathname?.includes("/modules/organization/onboarding")) return "OrgOverview";
     if (pathname?.includes("/modules/firm-management/firms/deleted") || pathname?.includes("/modules/organization/trash")) return "OrgRecycleBin";
-    if (pathname?.includes("/modules/firm-management/firms") || pathname?.includes("/modules/organization/firms") || pathname.includes("/modules/organization/create") || pathname?.includes("/modules/organization/onboarding") || pathname?.includes("/modules/organization/admins") || pathname?.includes("/modules/organization/access")) return "OrgFirms";
+    if (pathname?.includes("/modules/firm-management/firms") || pathname?.includes("/modules/organization/firms") || pathname.includes("/modules/organization/create") || pathname?.includes("/modules/organization/admins") || pathname?.includes("/modules/organization/access")) return "OrgFirms";
     if (pathname?.includes("/modules/organization/branding")) return "OrgBranding";
     if (pathname?.includes("/modules/organization/settings")) return "OrgSettings";
     if (pathname?.includes("/modules/organization/users")) return "OrgUsers";

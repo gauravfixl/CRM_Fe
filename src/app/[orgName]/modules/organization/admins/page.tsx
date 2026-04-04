@@ -17,6 +17,7 @@ import {
     Lock,
     X,
     User,
+    Users,
     Check
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -25,6 +26,7 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { SmallCard, SmallCardHeader, SmallCardContent } from "@/shared/components/custom/SmallCard"
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/shared/components/ui/dropdown-menu"
 import {
     Dialog,
     DialogContent,
@@ -65,6 +67,85 @@ export default function FirmAdminsPage() {
     const [searchQuery, setSearchQuery] = useState("")
     const [isInviteOpen, setIsInviteOpen] = useState(false)
     const [loading, setLoading] = useState(true)
+
+    const [isEditOpen, setIsEditOpen] = useState(false)
+    const [selectedAdmin, setSelectedAdmin] = useState<any>(null)
+
+    const handleExport = () => {
+        const csvContent = [
+            ["ID", "Name", "Email", "Role", "Status", "Last Active"].join(","),
+            ...admins.map(a => [a.id, a.name || '—', a.email, a.role, a.status, a.lastActive || '—'].join(","))
+        ].join("\n")
+        const blob = new Blob([csvContent], { type: "text/csv" })
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement("a")
+        a.href = url
+        a.download = "firm_admins_ledger.csv"
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        window.URL.revokeObjectURL(url)
+        toast.success("Ledger exported successfully")
+    }
+
+    const handleEditRole = (admin: any) => {
+        if (admin.role === "Super Admin" || admin.role === "SuperAdmin") {
+            toast.error("Cannot edit a Super Admin role from here.")
+            return
+        }
+        if (admin.status === "Pending") {
+            toast.info("Cannot edit role of a pending invite currently.")
+            return
+        }
+        setSelectedAdmin(admin)
+        setIsEditOpen(true)
+    }
+
+    const submitEditRole = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault()
+        if (!selectedAdmin) return
+        const formData = new FormData(e.currentTarget)
+        const role = formData.get("role") as string
+        const apiRole = roleReverseMap[role] || role
+
+        toast.promise(
+            axiosInstance.put(`/organization/updateuser/${selectedAdmin.id}`, { Role: apiRole, custom: false }),
+            {
+                loading: "Updating role...",
+                success: () => {
+                    setIsEditOpen(false)
+                    fetchAdmins()
+                    return "Role updated successfully"
+                },
+                error: (err) => err.response?.data?.message || "Failed to update role"
+            }
+        )
+    }
+
+    const handleRevokeAccess = async (admin: any) => {
+        if (admin.role === "Super Admin" || admin.role === "SuperAdmin") {
+            toast.error("Cannot revoke Super Admin access.")
+            return
+        }
+        if (admin.status === "Pending") {
+            toast.info("Cannot revoke pending invite via this endpoint yet.")
+            return
+        }
+
+        if (window.confirm(`Are you sure you want to revoke access for ${admin.name}?`)) {
+            toast.promise(
+                axiosInstance.delete(`/organization/deleteuser/${admin.id}`),
+                {
+                    loading: "Revoking access...",
+                    success: () => {
+                        fetchAdmins()
+                        return "Access revoked successfully"
+                    },
+                    error: (err) => err.response?.data?.message || "Failed to revoke access"
+                }
+            )
+        }
+    }
 
     const fetchAdmins = async () => {
         try {
@@ -137,49 +218,49 @@ export default function FirmAdminsPage() {
     }
 
     return (
-        <div className="flex flex-col h-full w-full bg-slate-50/50 p-6 space-y-6 overflow-y-auto">
+        <div className="flex flex-col h-full w-full bg-slate-50/50 p-6 space-y-6 overflow-y-auto font-outfit">
             {/* HEADER */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight text-slate-900">Firm Administrators</h1>
-                    <p className="text-sm text-slate-500 mt-1">Manage institutional level identities and their global access privileges.</p>
+                    <h1 className="text-xl font-semibold text-gray-900">Firm Administrators</h1>
+                    <p className="text-sm text-gray-600 mt-1">Manage institutional level identities and their global access privileges.</p>
                 </div>
                 <div className="flex gap-3">
-                    <Button variant="outline" className="h-9 gap-2 border-slate-200 font-bold" onClick={() => toast.info("Exporting admin ledger...")}>
+                    <Button variant="outline" className="h-9 gap-2 border-gray-200 font-medium" onClick={handleExport}>
                         <Download className="w-4 h-4" />
                         Export Ledger
                     </Button>
                     <Dialog open={isInviteOpen} onOpenChange={setIsInviteOpen}>
                         <DialogTrigger asChild>
-                            <Button className="h-9 bg-slate-900 hover:bg-black text-white gap-2 font-black uppercase text-[10px] tracking-widest px-6 shadow-xl">
+                            <Button className="h-9 bg-primary hover:bg-primary/90 text-white gap-2 font-medium px-6 shadow-sm rounded-md">
                                 <UserPlus className="w-4 h-4" />
                                 Invite Firm Admin
                             </Button>
                         </DialogTrigger>
-                        <DialogContent className="sm:max-w-[450px] p-0 overflow-hidden border-none rounded-3xl shadow-2xl">
-                            <div className="bg-indigo-600 p-8 text-white relative">
-                                <Shield className="absolute right-4 top-4 w-12 h-12 text-white opacity-10" />
+                        <DialogContent className="sm:max-w-[450px] p-0 overflow-hidden border-none rounded-xl shadow-xl">
+                            <div className="bg-primary p-6 text-white relative">
+                                <Shield className="absolute right-6 top-6 w-12 h-12 text-white/10" />
                                 <DialogHeader>
-                                    <DialogTitle className="text-2xl font-black text-white tracking-tight">Access Provisioning</DialogTitle>
-                                    <DialogDescription className="text-indigo-100 font-medium">
+                                    <DialogTitle className="text-xl font-semibold text-white">Access Provisioning</DialogTitle>
+                                    <DialogDescription className="text-white/80 text-sm mt-1">
                                         Grant administrative privileges to a new institutional identity.
                                     </DialogDescription>
                                 </DialogHeader>
                             </div>
-                            <form onSubmit={handleInviteAdmin} className="p-8 space-y-5 bg-white">
+                            <form onSubmit={handleInviteAdmin} className="p-6 space-y-5 bg-white">
                                 <div className="space-y-4">
                                     <div className="space-y-2">
-                                        <Label htmlFor="fullName" className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Full Legal Name</Label>
-                                        <Input id="fullName" name="fullName" placeholder="e.g. Alexander Pierce" className="h-12 rounded-xl bg-slate-50 border-slate-100 font-bold" />
+                                        <Label htmlFor="fullName" className="text-sm font-medium text-gray-700">Full Legal Name</Label>
+                                        <Input id="fullName" name="fullName" placeholder="e.g. Alexander Pierce" className="h-10 rounded-md bg-white border-gray-200" />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label htmlFor="email" className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Corporate Email</Label>
-                                        <Input id="email" name="email" type="email" placeholder="alex@firm.com" className="h-12 rounded-xl bg-slate-50 border-slate-100 font-bold" />
+                                        <Label htmlFor="email" className="text-sm font-medium text-gray-700">Corporate Email</Label>
+                                        <Input id="email" name="email" type="email" placeholder="alex@firm.com" className="h-10 rounded-md bg-white border-gray-200" />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label htmlFor="role" className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Administrative Role</Label>
+                                        <Label htmlFor="role" className="text-sm font-medium text-gray-700">Administrative Role</Label>
                                         <Select name="role" defaultValue="Org Admin">
-                                            <SelectTrigger className="h-12 rounded-xl bg-slate-50 border-slate-100 font-bold">
+                                            <SelectTrigger className="h-10 rounded-md bg-white border-gray-200">
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
@@ -192,8 +273,8 @@ export default function FirmAdminsPage() {
                                     </div>
                                 </div>
                                 <div className="pt-4 flex items-center justify-between">
-                                    <p className="text-[10px] text-slate-400 font-medium italic max-w-[180px]">MFA invitation will be sent to the provided email.</p>
-                                    <Button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 font-black uppercase text-[10px] tracking-widest h-11 rounded-xl shadow-lg shadow-indigo-100">
+                                    <p className="text-xs text-gray-500 max-w-[200px]">MFA invitation will be sent to the provided email.</p>
+                                    <Button type="submit" className="bg-primary hover:bg-primary/90 text-white px-6 font-medium h-10 rounded-md shadow-sm">
                                         Send Invite
                                     </Button>
                                 </div>
@@ -204,131 +285,206 @@ export default function FirmAdminsPage() {
             </div>
 
             {/* QUICK STATS */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <SmallCard className="bg-white border-slate-200 shadow-sm border-t-4 border-t-indigo-600">
-                    <SmallCardHeader className="pb-2 text-left">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Admins</p>
-                    </SmallCardHeader>
-                    <SmallCardContent className="text-left">
-                        <p className="text-2xl font-black text-slate-900">{admins.length}</p>
-                        <p className="text-[10px] text-slate-400 font-medium mt-1 uppercase tracking-tighter">Global Scope</p>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <SmallCard className="border bg-gradient-to-r from-primary/70 to-primary text-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                    <SmallCardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-white text-xs opacity-80">Total Admins</p>
+                                <p className="text-white text-xl font-semibold mt-1">{admins.length}</p>
+                                <p className="text-white text-[10px] mt-1">Global Scope</p>
+                            </div>
+                            <Users className="w-5 h-5 text-white" />
+                        </div>
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="bg-white border-slate-200 shadow-sm border-t-4 border-t-emerald-500">
-                    <SmallCardHeader className="pb-2 text-left">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Active Seats</p>
-                    </SmallCardHeader>
-                    <SmallCardContent className="text-left">
-                        <p className="text-2xl font-black text-emerald-600">{admins.filter(a => a.status === 'Active').length}</p>
-                        <p className="text-[10px] text-emerald-600 font-bold flex items-center gap-1 mt-1 uppercase tracking-tighter">Verified identities</p>
+                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                    <SmallCardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-gray-600 text-xs">Active Seats</p>
+                                <p className="text-xl font-semibold text-gray-900 mt-1">{admins.filter(a => a.status === 'Active').length}</p>
+                                <p className="text-green-600 text-[10px] mt-1">Verified identities</p>
+                            </div>
+                            <ShieldCheck className="w-5 h-5 text-primary" />
+                        </div>
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="bg-white border-slate-200 shadow-sm border-t-4 border-t-amber-500">
-                    <SmallCardHeader className="pb-2 text-left">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pending Keys</p>
-                    </SmallCardHeader>
-                    <SmallCardContent className="text-left">
-                        <p className="text-2xl font-black text-amber-600">{admins.filter(a => a.status === 'Pending').length}</p>
-                        <p className="text-[10px] text-slate-400 font-medium mt-1 uppercase tracking-tighter">Awaiting MFA sync</p>
+                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                    <SmallCardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-gray-600 text-xs">Pending Keys</p>
+                                <p className="text-xl font-semibold text-gray-900 mt-1">{admins.filter(a => a.status === 'Pending').length}</p>
+                                <p className="text-amber-600 text-[10px] mt-1">Awaiting MFA sync</p>
+                            </div>
+                            <Lock className="w-5 h-5 text-primary" />
+                        </div>
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="bg-white border-slate-200 shadow-sm border-t-4 border-t-blue-500">
-                    <SmallCardHeader className="pb-2 text-left">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Global Roles</p>
-                    </SmallCardHeader>
-                    <SmallCardContent className="text-left">
-                        <p className="text-2xl font-black text-blue-600">4</p>
-                        <p className="text-[10px] text-slate-400 font-medium mt-1 uppercase tracking-tighter">Hierarchical Levels</p>
+                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                    <SmallCardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-gray-600 text-xs">Global Roles</p>
+                                <p className="text-xl font-semibold text-gray-900 mt-1">4</p>
+                                <p className="text-blue-600 text-[10px] mt-1">Hierarchical Levels</p>
+                            </div>
+                            <Shield className="w-5 h-5 text-primary" />
+                        </div>
                     </SmallCardContent>
                 </SmallCard>
             </div>
 
             {/* FILTER BAR */}
-            <div className="flex items-center gap-4 bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
+            <div className="flex items-center gap-4 bg-white p-2 rounded-lg border border-gray-200 shadow-sm mt-2">
                 <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <Input
                         placeholder="Search admins by name or email..."
-                        className="pl-10 h-10 border-none bg-slate-50 focus-visible:ring-0 text-sm"
+                        className="pl-10 h-9 border-none bg-transparent focus-visible:ring-0 text-sm font-medium"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                     />
                 </div>
-                <Separator orientation="vertical" className="h-6" />
-                <Button variant="ghost" className="h-10 text-xs font-bold gap-2 text-slate-600">
+                <Separator orientation="vertical" className="h-6 bg-gray-200" />
+                <Button variant="ghost" className="h-9 text-xs font-semibold gap-2 text-gray-600">
                     <Filter className="w-4 h-4" />
                     Filter Roles
                 </Button>
             </div>
 
             {/* ADMINS TABLE */}
-            <Card className="border-slate-200 shadow-sm overflow-hidden">
-                <CardHeader className="border-b border-slate-100 bg-slate-50/50 flex flex-row items-center justify-between">
+            <Card className="border-gray-200 shadow-sm overflow-hidden bg-white">
+                <CardHeader className="border-b border-gray-100 bg-white flex flex-row items-center justify-between p-4">
                     <div>
-                        <CardTitle className="text-base font-black text-slate-900 uppercase tracking-tight">Administrative Directory</CardTitle>
-                        <CardDescription className="text-xs font-medium">List of all identities with organizational override capabilities.</CardDescription>
+                        <CardTitle className="text-base font-semibold text-gray-900">Administrative Directory</CardTitle>
+                        <CardDescription className="text-sm text-gray-500 mt-1">List of all identities with organizational override capabilities.</CardDescription>
                     </div>
                 </CardHeader>
                 <CardContent className="p-0">
                     <div className="overflow-x-auto">
                         <table className="w-full text-left">
-                            <thead className="bg-slate-50/30 border-b border-slate-100">
+                            <thead className="bg-gray-50/50 border-b border-gray-100">
                                 <tr>
-                                    <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Identity Details</th>
-                                    <th className="px-4 py-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Global Role</th>
-                                    <th className="px-4 py-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Status</th>
-                                    <th className="px-4 py-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Last Observed</th>
-                                    <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] text-right">Actions</th>
+                                    <th className="px-6 py-3 text-xs font-semibold text-gray-500">Identity Details</th>
+                                    <th className="px-4 py-3 text-xs font-semibold text-gray-500">Global Role</th>
+                                    <th className="px-4 py-3 text-xs font-semibold text-gray-500">Status</th>
+                                    <th className="px-4 py-3 text-xs font-semibold text-gray-500">Last Observed</th>
+                                    <th className="px-6 py-3 text-xs font-semibold text-gray-500 text-right">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-100">
+                            <tbody className="divide-y divide-gray-100">
                                 {filteredAdmins.map((admin) => (
-                                    <tr key={admin.id} className="hover:bg-slate-50/50 transition-colors group">
-                                        <td className="px-6 py-5">
-                                            <div className="flex items-center gap-4">
-                                                <div className="h-11 w-11 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-slate-400 group-hover:text-indigo-600 shadow-sm transition-colors">
-                                                    <User className="w-5 h-5" />
+                                    <tr key={admin.id} className="hover:bg-gray-50/50 transition-colors group">
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-primary shadow-sm transition-colors">
+                                                    <User className="w-4 h-4" />
                                                 </div>
                                                 <div>
-                                                    <p className="text-sm font-black text-slate-900 leading-none">{admin.name}</p>
-                                                    <p className="text-[11px] text-slate-500 mt-1.5 font-medium">{admin.email}</p>
+                                                    <p className="text-sm font-semibold text-gray-900">{admin.name}</p>
+                                                    <p className="text-xs text-gray-500 mt-0.5">{admin.email}</p>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-4 py-5 font-bold text-slate-700 text-xs uppercase tracking-tight">
+                                        <td className="px-4 py-4 text-sm font-medium text-gray-700">
                                             {admin.role}
                                         </td>
-                                        <td className="px-4 py-5">
-                                            <Badge className={`text-[9px] font-black uppercase tracking-tight rounded-md border-none ${admin.status === 'Active' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'
+                                        <td className="px-4 py-4">
+                                            <Badge className={`text-xs font-medium px-2 py-0.5 rounded-full border-none ${admin.status === 'Active' ? 'bg-green-100 text-green-700 hover:bg-green-100' : 'bg-amber-100 text-amber-700 hover:bg-amber-100'
                                                 }`}>
                                                 {admin.status}
                                             </Badge>
                                         </td>
-                                        <td className="px-4 py-5 text-xs text-slate-500 font-medium">
+                                        <td className="px-4 py-4 text-sm text-gray-500">
                                             {admin.lastActive}
                                         </td>
-                                        <td className="px-6 py-5 text-right">
-                                            <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-300 hover:text-slate-600 transition-colors" onClick={() => toast.info(`Options for ${admin.name}`)}>
-                                                <MoreVertical className="w-4 h-4" />
-                                            </Button>
+                                        <td className="px-6 py-4 text-right">
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-gray-600 transition-colors">
+                                                        <MoreVertical className="w-4 h-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end" className="w-48 bg-white z-50">
+                                                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                                    <DropdownMenuSeparator />
+                                                    <DropdownMenuItem onClick={() => handleEditRole(admin)} className="cursor-pointer font-medium">
+                                                        Edit Role
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => handleRevokeAccess(admin)} className="cursor-pointer font-medium text-red-600 focus:text-red-700">
+                                                        Revoke Access
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
                                         </td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
                         {filteredAdmins.length === 0 && (
-                            <div className="p-20 flex flex-col items-center justify-center text-center">
-                                <SearchX className="w-12 h-12 text-slate-200 mb-4" />
-                                <p className="text-sm font-bold text-slate-900">No identities found</p>
-                                <p className="text-xs text-slate-400 mt-1">Try refining your search terms.</p>
+                            <div className="p-16 flex flex-col items-center justify-center text-center">
+                                <SearchX className="w-10 h-10 text-gray-300 mb-3" />
+                                <p className="text-sm font-semibold text-gray-900">No identities found</p>
+                                <p className="text-sm text-gray-500 mt-1">Try refining your search terms.</p>
                             </div>
                         )}
                     </div>
                 </CardContent>
             </Card>
+
+            {/* Edit Role Dialog */}
+            <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+                <DialogContent className="sm:max-w-[450px] p-0 border-none rounded-xl shadow-xl overflow-hidden bg-white">
+                    <div className="bg-primary p-6 text-white relative">
+                        <Shield className="absolute right-6 top-6 w-12 h-12 text-white/10" />
+                        <DialogHeader>
+                            <DialogTitle className="text-xl font-semibold text-white">Edit Access Privileges</DialogTitle>
+                            <DialogDescription className="text-white/80 text-sm mt-1">
+                                Update the administrative role for this identity.
+                            </DialogDescription>
+                        </DialogHeader>
+                    </div>
+                    <form onSubmit={submitEditRole} className="p-6 space-y-5 flex flex-col items-stretch">
+                        <div className="space-y-4">
+                            <div className="space-y-2">
+                                <Label className="text-sm font-medium text-gray-700">Identity Details</Label>
+                                <div className="p-3 bg-gray-50 rounded-md border border-gray-100 flex items-center gap-3">
+                                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                                        <User className="w-4 h-4" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-bold text-gray-900">{selectedAdmin?.name}</p>
+                                        <p className="text-xs text-gray-500">{selectedAdmin?.email}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="edit-role" className="text-sm font-medium text-gray-700">Administrative Role</Label>
+                                <Select name="role" defaultValue={selectedAdmin?.role || "Org Admin"}>
+                                    <SelectTrigger id="edit-role" className="h-10 rounded-md bg-white border-gray-200">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="Org Admin">Org Admin (Management)</SelectItem>
+                                        <SelectItem value="Compliance Officer">Compliance Officer</SelectItem>
+                                        <SelectItem value="Billing Admin">Billing Admin</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                        <div className="col-span-full pt-4 flex justify-end gap-3 mt-auto">
+                            <Button type="button" variant="outline" className="h-10 rounded-md whitespace-nowrap px-6 shrink-0" onClick={() => setIsEditOpen(false)}>Cancel</Button>
+                            <Button type="submit" className="bg-primary hover:bg-primary/90 text-white font-medium h-10 rounded-md px-6 shadow-sm whitespace-nowrap shrink-0">Save Changes</Button>
+                        </div>
+                    </form>
+                </DialogContent>
+            </Dialog>
+
         </div>
     )
 }
