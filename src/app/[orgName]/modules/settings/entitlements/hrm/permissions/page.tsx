@@ -269,8 +269,8 @@ export default function HRPermissionsPage() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-xs text-white/80">Access Level</p>
-                                <p className="text-xl font-semibold">{accessPercentage}%</p>
-                                <Progress value={accessPercentage} className="h-1 mt-2 bg-blue-400 [&>div]:bg-white" />
+                                <p className="text-xl font-semibold text-white tracking-tight">{accessPercentage}%</p>
+                                <p className="text-[10px] text-white/80">Current role baseline</p>
                             </div>
                             <Shield className="w-5 h-5 text-white/80" />
                         </div>

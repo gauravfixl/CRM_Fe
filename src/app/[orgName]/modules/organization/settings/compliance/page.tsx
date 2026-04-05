@@ -138,7 +138,7 @@ export default function CompliancePage() {
                             </div>
                         </CardContent>
                         <CardFooter className="bg-slate-50/30 border-t border-slate-100 p-4">
-                            <Button variant="ghost" className="w-full text-xs font-black uppercase text-blue-600 gap-2 h-9">
+                            <Button variant="ghost" className="w-full text-xs font-black uppercase text-blue-600 gap-2 h-9" onClick={() => toast.info("Opening Legal Directory portal...")}>
                                 Browse Legal Directory <ExternalLink className="w-3.5 h-3.5" />
                             </Button>
                         </CardFooter>
@@ -185,7 +185,7 @@ export default function CompliancePage() {
                             <p className="text-xs text-slate-400 font-medium leading-relaxed font-sans">
                                 Currently 4 entities are under Legal Hold due to pending "Audit-2024". Their data retention overrides all other policies.
                             </p>
-                            <Button className="w-full bg-white text-slate-950 hover:bg-slate-100 font-black uppercase text-[10px] tracking-widest h-10 mt-4 shadow-xl">
+                            <Button className="w-full bg-white text-slate-950 hover:bg-slate-100 font-black uppercase text-[10px] tracking-widest h-10 mt-4 shadow-xl" onClick={() => toast.info("Fetching active legal holds for review...")}>
                                 Review Active Holds
                             </Button>
                         </div>
@@ -203,7 +203,7 @@ export default function CompliancePage() {
                                 <p className="text-[10px] text-slate-500 font-medium mt-1">compliance@fixl.io</p>
                             </div>
                         </div>
-                        <Button variant="outline" className="w-full text-xs font-bold border-slate-200 h-10 flex items-center justify-between">
+                        <Button variant="outline" className="w-full text-xs font-bold border-slate-200 h-10 flex items-center justify-between" onClick={() => toast.info("Opening Authorized Registry...")}>
                             Authorized Registry <ArrowRight className="w-3.5 h-3.5 text-slate-300" />
                         </Button>
                     </Card>

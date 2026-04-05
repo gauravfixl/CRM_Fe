@@ -277,6 +277,7 @@ export default function ThemeSettingsPage() {
                             <Button
                                 className="w-full font-bold h-10 shadow-lg"
                                 style={{ backgroundColor: primaryColor, borderRadius: `${borderRadius}rem` }}
+                                onClick={() => toast.success("This is how your primary buttons will feel!")}
                             >
                                 Preview Button
                             </Button>

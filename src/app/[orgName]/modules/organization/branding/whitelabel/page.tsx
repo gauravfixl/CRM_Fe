@@ -164,7 +164,10 @@ export default function WhiteLabelPage() {
                         </div>
                         <Switch
                             checked={removeBranding}
-                            onCheckedChange={setRemoveBranding}
+                            onCheckedChange={(val) => {
+                                setRemoveBranding(val);
+                                toast.success("Branding removal preference updated");
+                            }}
                         />
                     </SmallCardHeader>
                 </SmallCard>
@@ -179,7 +182,10 @@ export default function WhiteLabelPage() {
                         </div>
                         <Switch
                             checked={customLogin}
-                            onCheckedChange={setCustomLogin}
+                            onCheckedChange={(val) => {
+                                setCustomLogin(val);
+                                toast.success("Custom login URL routing updated");
+                            }}
                         />
                     </SmallCardHeader>
                 </SmallCard>

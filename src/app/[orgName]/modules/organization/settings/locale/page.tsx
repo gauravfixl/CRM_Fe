@@ -88,7 +88,16 @@ export default function LocalizationPage() {
                     <p className="text-sm text-slate-500 mt-1">Configure default regional settings for all Business Units in the organization.</p>
                 </div>
                 <div className="flex gap-3">
-                    <Button variant="outline" className="h-9 gap-2 border-slate-200 font-bold" onClick={() => toast.info("Resetting to system defaults...")}>
+                    <Button variant="outline" className="h-9 gap-2 border-slate-200 font-bold" onClick={() => {
+                        setLocale({
+                            language: "en-US",
+                            timezone: "UTC-5",
+                            currency: "USD",
+                            dateFormat: "MM/DD/YYYY",
+                            timeFormat: "12h"
+                        });
+                        toast.success("Reset to defaults successfully.");
+                    }}>
                         <RefreshCw className="w-4 h-4" />
                         Reset Defaults
                     </Button>

@@ -338,6 +338,8 @@ const authAdminMenuData = [
       { title: "Conditional Access", url: "/modules/settings/auth/conditional", icon: Lock },
       { title: "Password Policy", url: "/modules/settings/auth/password-policy", icon: Settings },
       { title: "Login Restrictions", icon: ShieldAlert, url: "/modules/settings/auth/restrictions" },
+      { title: "Login Policies", icon: ShieldCheck, url: "/modules/settings/auth/policies" },
+      { title: "Sessions", icon: History, url: "/modules/settings/auth/sessions" },
     ]
   }
 ];
@@ -664,9 +666,6 @@ const adminSidebarGroupsData = [
       { title: "Roles & Permissions", icon: Shield, url: "/modules/administration/roles" },
       { title: "Teams / Groups", icon: Network, url: "/modules/teams" },
       { title: "Authentication", icon: Key, url: "/modules/settings/auth" },
-      { title: "SSO & Identity Providers", icon: Globe, url: "/modules/settings/auth/sso" },
-      { title: "Login Policies", icon: ShieldCheck, url: "/modules/settings/auth/policies" },
-      { title: "Sessions", icon: History, url: "/modules/settings/auth/sessions" },
     ]
   },
   {
@@ -1298,7 +1297,6 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
         group: "DASHBOARD",
         items: [
           { title: "Organization Dashboard", url: `/modules/organization/overview`, icon: LayoutDashboard },
-          { title: "Setup & Onboarding", url: `/modules/organization/onboarding`, icon: CheckCircle },
           { title: "Org Health & Usage", url: `/modules/organization/health`, icon: Activity },
           { title: "Recent Admin Activity", url: `/modules/organization/activity`, icon: History },
         ]

@@ -112,7 +112,10 @@ export default function CurrencySettingsPage() {
                                 <Label className="text-sm font-bold text-slate-900">Automatic Updates</Label>
                                 <p className="text-xs text-slate-500">Sync with OpenExchangeRates daily at 00:00 UTC.</p>
                             </div>
-                            <Switch checked={autoUpdateRates} onCheckedChange={setAutoUpdateRates} />
+                            <Switch checked={autoUpdateRates} onCheckedChange={(val) => {
+                                setAutoUpdateRates(val);
+                                toast.success(val ? "Automatic exchange rate sync enabled" : "Automatic exchange rate sync disabled");
+                            }} />
                         </div>
 
                         <Separator />

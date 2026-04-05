@@ -19,7 +19,7 @@ import {
     SearchX,
     Users
 } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { CustomButton } from "@/shared/components/custom/CustomButton"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -206,14 +206,14 @@ export default function OrgActivityPage() {
                     <p className="text-sm text-slate-500 mt-1">Real-time audit trail of all administrative events across the organization.</p>
                 </div>
                 <div className="flex gap-3">
-                    <Button variant="outline" className="h-9 gap-2 border-slate-200" onClick={() => toast.success("Feed Refreshed")}>
+                    <CustomButton variant="outline" className="h-10 px-4 gap-2 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 font-semibold shadow-sm hover:translate-y-[-1px] transition-all" onClick={() => toast.success("Activity feed updated")}>
                         <Clock className="w-4 h-4" />
                         Refresh
-                    </Button>
-                    <Button className="h-9 bg-blue-600 hover:bg-blue-700 text-white gap-2 font-bold shadow-sm" onClick={handleExport}>
+                    </CustomButton>
+                    <CustomButton className="h-10 px-6 bg-indigo-600 hover:bg-indigo-700 text-white gap-2 font-bold shadow-xl border-0" onClick={handleExport}>
                         <Download className="w-4 h-4" />
                         Export Audit Log
-                    </Button>
+                    </CustomButton>
                 </div>
             </div>
 
@@ -284,10 +284,10 @@ export default function OrgActivityPage() {
                     />
                 </div>
                 <Separator orientation="vertical" className="h-6" />
-                <Button variant="ghost" className="h-10 text-xs font-bold gap-2 text-slate-600">
+                <CustomButton variant="ghost" className="h-10 text-xs font-bold gap-2 text-slate-600 hover:bg-slate-50 rounded-xl" onClick={() => toast.info("Opening advanced filter panel...")}>
                     <Filter className="w-4 h-4" />
                     Advanced Filters
-                </Button>
+                </CustomButton>
             </div>
 
             {/* ACTIVITY STREAM */}
@@ -328,9 +328,9 @@ export default function OrgActivityPage() {
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <Button variant="ghost" size="sm" className="h-8 text-[10px] font-bold opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => toast.info(`Viewing details for ${act.id}`)}>
+                                        <CustomButton variant="ghost" size="sm" className="h-8 px-3 text-[10px] font-bold opacity-0 group-hover:opacity-100 transition-opacity text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/20 rounded-lg" onClick={() => toast.info(`Viewing details for ${act.id}`)}>
                                             View Details
-                                        </Button>
+                                        </CustomButton>
                                         <ChevronRight className="w-4 h-4 text-slate-300" />
                                     </div>
                                 </div>
@@ -350,7 +350,7 @@ export default function OrgActivityPage() {
                     </div>
                 </CardContent>
                 <CardFooter className="bg-slate-50/50 border-t border-slate-100 py-3 flex justify-center">
-                    <Button variant="ghost" className="text-xs font-bold text-blue-600">Load More Activity</Button>
+                    <CustomButton variant="ghost" className="text-xs font-bold text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/20 px-6 rounded-xl" onClick={() => toast.promise(new Promise(res => setTimeout(res, 1000)), { loading: "Loading more events...", success: "Activity loaded", error: "Failed to load" })}>Load More Activity</CustomButton>
                 </CardFooter>
             </Card>
         </div>

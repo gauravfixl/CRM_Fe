@@ -43,7 +43,13 @@ export default function LanguageSettingsPage() {
                     <p className="text-sm text-slate-500 mt-1">Customize system localization formats and display language.</p>
                 </div>
                 <div className="flex gap-3">
-                    <Button variant="outline" className="h-9 gap-2 border-slate-200 font-bold rounded-none hover:bg-slate-100">
+                    <Button variant="outline" className="h-9 gap-2 border-slate-200 font-bold rounded-none hover:bg-slate-100" onClick={() => {
+                        setLanguage("en-US");
+                        setDateFormat("MM/DD/YYYY");
+                        setTimeFormat("12h");
+                        setNumberFormat("comma");
+                        toast.success("Reset to defaults successfully.");
+                    }}>
                         <Undo2 className="w-4 h-4" /> Reset
                     </Button>
                     <Button

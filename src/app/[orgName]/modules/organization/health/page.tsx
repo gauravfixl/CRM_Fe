@@ -11,7 +11,8 @@ import {
     AlertCircle,
     CheckCircle2
 } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { CustomButton } from "@/shared/components/custom/CustomButton"
+import { toast } from "sonner"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { SmallCard, SmallCardHeader, SmallCardContent } from "@/shared/components/custom/SmallCard"
@@ -34,10 +35,10 @@ export default function OrgHealthPage() {
                     <h1 className="text-2xl font-bold tracking-tight text-slate-900">Org Health & Usage</h1>
                     <p className="text-sm text-slate-500 mt-1">Real-time status of your organization's infrastructure and resources.</p>
                 </div>
-                <Button variant="outline" className="h-9 gap-2">
+                <CustomButton variant="outline" className="h-10 px-4 gap-2 rounded-xl border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 font-semibold shadow-sm hover:translate-y-[-1px] transition-all" onClick={() => toast.promise(new Promise(res => setTimeout(res, 1500)), { loading: "Refreshing system status...", success: "All systems operational", error: "Failed to refresh" })}>
                     <RefreshCw className="w-4 h-4" />
                     Refresh Status
-                </Button>
+                </CustomButton>
             </div>
 
             {/* KEY METRICS GRID */}

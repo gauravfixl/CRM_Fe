@@ -45,7 +45,12 @@ export default function DocBrandingPage() {
                     <Button
                         variant="outline"
                         className="h-9 gap-2 border-slate-200 font-bold rounded-none hover:bg-slate-100"
-                        onClick={() => toast.info("Printing sample invoice...")}
+                        onClick={() => {
+                            toast.info("Preparing sample invoice for printing...");
+                            setTimeout(() => {
+                                window.print();
+                            }, 500);
+                        }}
                     >
                         <Printer className="w-4 h-4" />
                         Print Sample
@@ -142,9 +147,11 @@ export default function DocBrandingPage() {
                 </div>
 
                 {/* PREVIEW COLUMN */}
-                <div className="lg:col-span-3 bg-zinc-100 border border-zinc-200 p-8 flex justify-center overflow-hidden rounded-none shadow-inner relative">
-                    <div className="absolute top-4 right-4 bg-white/80 backdrop-blur px-3 py-1 text-[10px] font-bold uppercase tracking-widest rounded-none shadow-sm flex items-center gap-2">
-                        <Eye className="w-3 h-3" /> A4 Preview
+                <div className="lg:col-span-3 bg-zinc-100 border border-zinc-200 pt-16 pb-8 px-8 flex justify-center overflow-hidden rounded-none shadow-inner relative h-full min-h-[700px]">
+                    <div className="absolute top-4 right-4 z-10">
+                        <div className="bg-slate-900 text-white text-[11px] uppercase font-bold px-3 py-1.5 rounded-full flex items-center gap-2 shadow-sm ring-1 ring-white/20">
+                            <Eye className="w-3.5 h-3.5" /> <span className="leading-none mt-[1px]">A4 Preview</span>
+                        </div>
                     </div>
 
                     {/* A4 PAPER */}

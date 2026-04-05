@@ -97,7 +97,7 @@ export default function SalaryComponentsPage() {
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <SmallCard className="rounded-xl border bg-gradient-to-r from-primary/70 to-primary text-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
-                    <SmallCardContent className="p-4"><div className="flex items-center justify-between"><div><p className="text-xs text-white/80">Total Components</p><p className="text-xl font-semibold">{components.length}</p><p className="text-[10px] text-white/70">Active in payroll</p></div><DollarSign className="w-5 h-5 text-white/80" /></div></SmallCardContent>
+                    <SmallCardContent className="p-4"><div className="flex items-center justify-between"><div><p className="text-xs text-white/80">Total Components</p><p className="text-xl font-semibold text-white tracking-tight">{components.length}</p><p className="text-[10px] text-white/70">Active in payroll</p></div><DollarSign className="w-5 h-5 text-white/80" /></div></SmallCardContent>
                 </SmallCard>
                 <SmallCard className="rounded-xl border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
                     <SmallCardContent className="p-4"><div className="flex items-center justify-between"><div><p className="text-xs text-gray-600">Earnings</p><p className="text-xl font-semibold text-gray-900">{earnings}</p><p className="text-[10px] text-gray-500">Pay components</p></div><Wallet className="w-5 h-5 text-gray-400" /></div></SmallCardContent>

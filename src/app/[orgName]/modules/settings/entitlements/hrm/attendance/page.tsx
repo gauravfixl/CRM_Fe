@@ -162,7 +162,7 @@ export default function AttendanceRulesPage() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-xs text-white/80">Mode</p>
-                                <p className="text-xl font-semibold">{mode}</p>
+                                <p className="text-xl font-semibold text-white tracking-tight">{mode}</p>
                                 <p className="text-[10px] text-white/70">Current policy</p>
                             </div>
                             <Monitor className="w-5 h-5 text-white/80" />

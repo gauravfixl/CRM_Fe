@@ -170,7 +170,7 @@ export default function RegionSettingsPage() {
                             </div>
                         </CardContent>
                         <CardFooter className="bg-slate-50 p-4 border-t border-slate-100">
-                            <Button variant="outline" className="w-full h-8 text-xs font-bold uppercase rounded-none border-slate-300">
+                            <Button variant="outline" className="w-full h-8 text-xs font-bold uppercase rounded-none border-slate-300" onClick={() => toast.info("Opening calendar editor...")}>
                                 Edit Calendar
                             </Button>
                         </CardFooter>

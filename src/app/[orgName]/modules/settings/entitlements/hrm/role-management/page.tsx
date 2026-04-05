@@ -433,7 +433,7 @@ export default function RoleManagementPage() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-xs text-white/80">Total Roles</p>
-                                <p className="text-xl font-semibold">{roles.length}</p>
+                                <p className="text-xl font-semibold text-white tracking-tight">{roles.length}</p>
                                 <p className="text-[10px] text-white/70">System + Custom</p>
                             </div>
                             <ShieldCheck className="w-5 h-5 text-white/80" />

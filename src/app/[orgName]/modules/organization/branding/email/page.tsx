@@ -23,6 +23,7 @@ import { Separator } from "@/components/ui/separator";
 export default function EmailBrandingPage() {
     const [template, setTemplate] = useState("welcome");
     const [headerImage, setHeaderImage] = useState<string | null>(null);
+    const fileInputRef = React.useRef<HTMLInputElement>(null);
     const [footerText, setFooterText] = useState("© 2026 Fixl Solutions. All rights reserved.");
     const [primaryColor, setPrimaryColor] = useState("#2563eb");
 
@@ -38,8 +39,27 @@ export default function EmailBrandingPage() {
         toast.success("Test email sent to admin@example.com");
     };
 
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setHeaderImage(reader.result as string);
+            toast.success("Header image uploaded successfully!");
+        };
+        reader.readAsDataURL(file);
+    };
+
     return (
         <div className="flex flex-col h-full w-full bg-slate-50/50 p-6 space-y-6 overflow-y-auto">
+            {/* HIDDEN FILE INPUT */}
+            <input 
+                type="file" 
+                ref={fileInputRef} 
+                className="hidden" 
+                accept="image/*" 
+                onChange={handleFileChange} 
+            />
             {/* HEADER */}
             <div className="flex items-center justify-between">
                 <div>
@@ -97,13 +117,26 @@ export default function EmailBrandingPage() {
                             <div className="space-y-4">
                                 <Label className="text-xs font-bold uppercase tracking-widest text-slate-500">Brand Assets</Label>
 
-                                <div className="border-2 border-dashed border-slate-200 p-6 flex flex-col items-center justify-center text-center hover:bg-slate-50 transition-colors cursor-pointer group">
-                                    <div className="h-10 w-10 bg-blue-50 text-blue-500 rounded-none flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                                <div 
+                                    className="border-2 border-dashed border-slate-200 p-6 flex flex-col items-center justify-center text-center hover:bg-slate-50 transition-colors cursor-pointer group"
+                                    onClick={() => fileInputRef.current?.click()}
+                                >
+                                    <div className="h-10 w-10 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
                                         <Upload className="w-5 h-5" />
                                     </div>
                                     <p className="text-sm font-bold text-slate-700">Header Logo / Banner</p>
                                     <p className="text-[10px] text-slate-400 mt-1">Recommended: 600x120px PNG</p>
                                 </div>
+                                {headerImage && (
+                                    <Button 
+                                        variant="outline" 
+                                        size="sm" 
+                                        className="w-full text-xs font-bold text-red-500 hover:text-red-600 hover:bg-red-50 border-red-100" 
+                                        onClick={() => { setHeaderImage(null); toast.info("Header image removed"); }}
+                                    >
+                                        Remove Image
+                                    </Button>
+                                )}
 
                                 <div className="space-y-2">
                                     <Label className="text-xs font-bold uppercase tracking-widest text-slate-500">Footer Text</Label>
@@ -138,13 +171,15 @@ export default function EmailBrandingPage() {
                 </div>
 
                 {/* PREVIEW COLUMN */}
-                <div className="relative">
-                    <Card className="border-none shadow-xl bg-slate-200 h-full min-h-[600px] rounded-none overflow-hidden flex flex-col items-center pt-8 pb-8 px-4">
-                        <div className="absolute top-4 right-4 flex gap-2">
-                            <div className="bg-slate-800 text-white text-[10px] uppercase font-bold px-3 py-1 rounded-none flex items-center gap-2">
-                                <Eye className="w-3 h-3" /> Live Preview
-                            </div>
+                <div className="relative h-full">
+                    {/* Live Preview Badge - Moved outside overflow-hidden card to prevent clipping */}
+                    <div className="absolute top-4 right-4 flex gap-2 z-10">
+                        <div className="bg-slate-900 text-white text-[11px] uppercase font-bold px-3 py-1.5 rounded-full flex items-center gap-2 shadow-sm ring-1 ring-white/20">
+                            <Eye className="w-3.5 h-3.5" /> <span className="leading-none mt-[1px]">Live Preview</span>
                         </div>
+                    </div>
+
+                    <Card className="border-none shadow-xl bg-slate-200 h-full min-h-[600px] rounded-none flex flex-col items-center pt-14 pb-8 px-4 relative">
 
                         {/* EMAIL CANVAS */}
                         <div className="bg-white w-full max-w-md shadow-2xl rounded-none overflow-hidden flex flex-col">
