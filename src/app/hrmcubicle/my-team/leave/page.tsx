@@ -25,8 +25,13 @@ import {
 } from "@/shared/components/ui/dropdown-menu";
 
 const TeamLeavePage = () => {
-    const { leaves, members } = useTeamStore();
+    const { leaves, members, loadHrmPendingLeaves, hrmPendingLeaves, approveHrmLeave, rejectHrmLeave } = useTeamStore();
     const { toast } = useToast();
+
+    // Load pending leaves from API on mount
+    React.useEffect(() => {
+        loadHrmPendingLeaves().catch(() => {});
+    }, []);
     const [view, setView] = useState<'pending' | 'history'>('pending');
 
     const pendingLeaves = (leaves || []).filter(l => l.status === 'Pending');
@@ -63,7 +68,7 @@ const TeamLeavePage = () => {
     };
 
     return (
-        <div className="flex-1 min-h-screen bg-[#f8fafc] p-6 space-y-6 text-start">
+        <div className="flex-1 min-h-screen bg-[#f8fafc] p-6 space-y-6 text-start" style={{ zoom: "90%" }}>
             <div className="flex flex-col md:flex-row justify-between md:items-center gap-6">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900 tracking-tight leading-none">Team Leave Requests</h1>

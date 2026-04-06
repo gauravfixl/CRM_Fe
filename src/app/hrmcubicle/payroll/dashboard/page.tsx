@@ -111,18 +111,18 @@ const PayrollDashboard = () => {
                     {/* KPI Tiles */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                         {[
-                            { label: "Total Cost", val: stats.totalCost, icon: DollarSign, color: "text-[#8B5CF6]", bg: "bg-[#8B5CF6]/10", trend: "+4.2%" },
-                            { label: "Compliance", val: stats.compliance, icon: ShieldCheck, color: "text-emerald-500", bg: "bg-emerald-50", trend: "Perfect" },
-                            { label: "Liability", val: stats.liability, icon: Scale, color: "text-amber-500", bg: "bg-amber-50", trend: "On Track" },
-                            { label: "Inclusion", val: stats.inclusionRate, icon: Users, color: "text-blue-500", bg: "bg-blue-50", trend: stats.inclusionText }
+                            { label: "Total Cost", val: stats.totalCost, icon: DollarSign, color: "text-[#8B5CF6]", bg: "bg-[#8B5CF6]/20", trend: "+4.2%", cardBg: "bg-[#CB9DF0]/15 border-[#CB9DF0]/30" },
+                            { label: "Compliance", val: stats.compliance, icon: ShieldCheck, color: "text-emerald-600", bg: "bg-emerald-100", trend: "Perfect", cardBg: "bg-emerald-50 border-emerald-200" },
+                            { label: "Liability", val: stats.liability, icon: Scale, color: "text-amber-600", bg: "bg-amber-100", trend: "On Track", cardBg: "bg-amber-50 border-amber-200" },
+                            { label: "Inclusion", val: stats.inclusionRate, icon: Users, color: "text-blue-600", bg: "bg-blue-100", trend: stats.inclusionText, cardBg: "bg-blue-50 border-blue-200" }
                         ].map((stat, i) => (
-                            <Card key={i} className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden hover:shadow-md transition-all">
+                            <Card key={i} className={cn("rounded-2xl border shadow-sm overflow-hidden hover:shadow-md transition-all", stat.cardBg)}>
                                 <CardContent className="p-5">
                                     <div className="flex justify-between items-start mb-4">
                                         <div className={`h-10 w-10 ${stat.bg} ${stat.color} rounded-xl flex items-center justify-center`}>
                                             <stat.icon size={20} />
                                         </div>
-                                        <Badge variant="outline" className="font-bold text-[9px] text-slate-400 border-slate-100 bg-slate-50">{stat.trend}</Badge>
+                                        <Badge variant="outline" className="font-bold text-[9px] text-slate-400 border-slate-100 bg-white/60">{stat.trend}</Badge>
                                     </div>
                                     <div className="space-y-1">
                                         <p className="text-xs font-bold text-slate-500 capitalize tracking-wide">{stat.label}</p>

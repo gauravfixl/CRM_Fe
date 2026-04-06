@@ -167,10 +167,10 @@ const CompOffManagementPage = () => {
   };
 
   const statCards = [
-    { label: "Earned This Month", value: stats.earned, icon: Gift, color: "text-purple-600", bg: "bg-purple-50" },
-    { label: "Pending Approval", value: stats.pending, icon: Clock, color: "text-amber-600", bg: "bg-amber-50" },
-    { label: "Availed", value: stats.availed, icon: CalendarCheck, color: "text-green-600", bg: "bg-green-50" },
-    { label: "Expired / Lapsed", value: stats.expired, icon: CalendarX, color: "text-red-600", bg: "bg-red-50" },
+    { label: "Earned This Month", value: stats.earned, icon: Gift, color: "text-purple-700", bg: "bg-purple-100", cardBg: "bg-purple-50 border-purple-200" },
+    { label: "Pending Approval", value: stats.pending, icon: Clock, color: "text-amber-700", bg: "bg-amber-100", cardBg: "bg-amber-50 border-amber-200" },
+    { label: "Availed", value: stats.availed, icon: CalendarCheck, color: "text-green-700", bg: "bg-green-100", cardBg: "bg-green-50 border-green-200" },
+    { label: "Expired / Lapsed", value: stats.expired, icon: CalendarX, color: "text-red-700", bg: "bg-red-100", cardBg: "bg-red-50 border-red-200" },
   ];
 
   return (
@@ -193,14 +193,14 @@ const CompOffManagementPage = () => {
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {statCards.map((s) => (
-          <Card key={s.label} className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <Card key={s.label} className={cn("rounded-2xl border shadow-sm", s.cardBg)}>
             <CardContent className="p-5 flex items-center gap-4">
               <div className={cn("w-11 h-11 rounded-xl flex items-center justify-center", s.bg)}>
                 <s.icon className={cn("w-5 h-5", s.color)} />
               </div>
               <div>
+                <div className="text-xs font-medium text-slate-600 mb-1">{s.label}</div>
                 <div className="text-2xl font-bold text-slate-800">{s.value}</div>
-                <div className="text-xs text-slate-500">{s.label}</div>
               </div>
             </CardContent>
           </Card>

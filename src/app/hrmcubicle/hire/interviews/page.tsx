@@ -294,7 +294,7 @@ const InterviewsPage = () => {
     });
 
     return (
-        <div className="flex-1 space-y-4 p-4 min-h-screen flex flex-col bg-[#fcfdff] overflow-y-auto custom-scrollbar">
+        <div className="flex-1 space-y-4 p-4 min-h-screen flex flex-col bg-[#fcfdff] overflow-y-auto custom-scrollbar" style={{ zoom: "90%" }}>
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
@@ -330,7 +330,7 @@ const InterviewsPage = () => {
                                 placeholder="Search by name or round..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="pl-9 rounded-lg border-none bg-slate-50 h-8 font-bold text-[10px] text-slate-600 focus-visible:ring-2 focus-visible:ring-indigo-100 placeholder:text-slate-300"
+                                className="pl-9 rounded-lg border border-slate-200 bg-slate-50 h-8 font-bold text-[10px] text-slate-600 focus-visible:ring-2 focus-visible:ring-indigo-100 placeholder:text-slate-300"
                             />
                         </div>
                     </div>
@@ -453,7 +453,7 @@ const InterviewsPage = () => {
                         <div className="space-y-1.5 p-0.5">
                             <Label className="font-bold text-slate-700 text-xs ml-1">Candidate</Label>
                             <Select value={formData.candidateId} onValueChange={(val) => setFormData({ ...formData, candidateId: val })}>
-                                <SelectTrigger className="h-10 rounded-lg bg-slate-50 border-none font-bold px-3 text-xs focus:ring-2 focus:ring-indigo-100 ring-offset-0">
+                                <SelectTrigger className="h-10 rounded-lg bg-slate-50 border border-slate-200 font-bold px-3 text-xs focus:ring-2 focus:ring-indigo-100 ring-offset-0">
                                     <SelectValue placeholder="Select Candidate" />
                                 </SelectTrigger>
                                 <SelectContent className="rounded-xl border-none font-bold">
@@ -465,24 +465,24 @@ const InterviewsPage = () => {
                         </div>
                         <div className="space-y-1.5">
                             <Label className="font-bold text-slate-700 text-xs ml-1">Round Title</Label>
-                            <Input value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} className="h-10 rounded-lg bg-slate-50 border-none font-bold px-3 text-xs" />
+                            <Input value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} className="h-10 rounded-lg bg-slate-50 border border-slate-200 font-bold px-3 text-xs" />
                         </div>
                         <div className="space-y-1.5">
                             <Label className="font-bold text-slate-700 text-xs ml-1">Interviewer</Label>
-                            <Input placeholder="e.g. John Doe" value={formData.interviewer} onChange={(e) => setFormData({ ...formData, interviewer: e.target.value })} className="h-10 rounded-lg bg-slate-50 border-none font-bold px-3 text-xs" />
+                            <Input placeholder="e.g. John Doe" value={formData.interviewer} onChange={(e) => setFormData({ ...formData, interviewer: e.target.value })} className="h-10 rounded-lg bg-slate-50 border border-slate-200 font-bold px-3 text-xs" />
                         </div>
                         <div className="space-y-1.5">
                             <Label className="font-bold text-slate-700 text-xs ml-1">Date</Label>
-                            <Input type="date" value={formData.date} onChange={(e) => setFormData({ ...formData, date: e.target.value })} className="h-10 rounded-lg bg-slate-50 border-none font-bold px-3 text-xs" />
+                            <Input type="date" value={formData.date} onChange={(e) => setFormData({ ...formData, date: e.target.value })} className="h-10 rounded-lg bg-slate-50 border border-slate-200 font-bold px-3 text-xs" />
                         </div>
                         <div className="space-y-1.5">
                             <Label className="font-bold text-slate-700 text-xs ml-1">Time</Label>
-                            <Input type="time" value={formData.time} onChange={(e) => setFormData({ ...formData, time: e.target.value })} className="h-10 rounded-lg bg-slate-50 border-none font-bold px-3 text-xs" />
+                            <Input type="time" value={formData.time} onChange={(e) => setFormData({ ...formData, time: e.target.value })} className="h-10 rounded-lg bg-slate-50 border border-slate-200 font-bold px-3 text-xs" />
                         </div>
                         <div className="space-y-1.5">
                             <Label className="font-bold text-slate-700 text-xs ml-1">Duration</Label>
                             <Select value={formData.duration} onValueChange={(val) => setFormData({ ...formData, duration: val })}>
-                                <SelectTrigger className="h-10 rounded-lg bg-slate-50 border-none font-bold px-3 text-xs">
+                                <SelectTrigger className="h-10 rounded-lg bg-slate-50 border border-slate-200 font-bold px-3 text-xs">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent className="rounded-xl border-none font-bold">
@@ -496,7 +496,7 @@ const InterviewsPage = () => {
                         <div className="space-y-1.5">
                             <Label className="font-bold text-slate-700 text-xs ml-1">Mode</Label>
                             <Select value={formData.mode} onValueChange={(val: any) => setFormData({ ...formData, mode: val })}>
-                                <SelectTrigger className="h-10 rounded-lg bg-slate-50 border-none font-bold px-3 text-xs">
+                                <SelectTrigger className="h-10 rounded-lg bg-slate-50 border border-slate-200 font-bold px-3 text-xs">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent className="rounded-xl border-none font-bold">
@@ -514,7 +514,7 @@ const InterviewsPage = () => {
                                     placeholder={formData.mode === 'Video' ? "zoom.us/j/..." : "Conference Room A"}
                                     value={formData.location}
                                     onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                                    className="h-9 rounded-lg bg-slate-50 border-none font-bold px-9 text-xs"
+                                    className="h-9 rounded-lg bg-slate-50 border border-slate-200 font-bold px-9 text-xs"
                                 />
                             </div>
                         </div>
@@ -568,7 +568,7 @@ const InterviewsPage = () => {
                                 placeholder="Key strengths, weaknesses..."
                                 value={feedbackData.comments}
                                 onChange={(e) => setFeedbackData({ ...feedbackData, comments: e.target.value })}
-                                className="h-20 rounded-lg bg-slate-50 border-none font-medium p-3 text-xs resize-none"
+                                className="h-20 rounded-lg bg-slate-50 border border-slate-200 font-medium p-3 text-xs resize-none"
                             />
                         </div>
                     </div>

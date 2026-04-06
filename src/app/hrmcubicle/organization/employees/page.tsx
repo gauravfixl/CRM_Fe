@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     Users,
@@ -66,7 +66,14 @@ import {
 
 const EmployeesPage = () => {
     const { toast } = useToast();
-    const { employees, departments, designations, locations, addEmployee, updateEmployee, deleteEmployee } = useOrganisationStore();
+    const { employees, departments, designations, locations, addEmployee, updateEmployee, deleteEmployee, loadEmployeesFromApi, loadDepartmentsFromApi, loadDesignationsFromApi } = useOrganisationStore();
+
+    // Load from API on mount
+    useEffect(() => {
+        loadEmployeesFromApi().catch(() => {});
+        loadDepartmentsFromApi().catch(() => {});
+        loadDesignationsFromApi().catch(() => {});
+    }, []);
 
     const [searchQuery, setSearchQuery] = useState("");
     const [statusFilter, setStatusFilter] = useState<string>("All");
@@ -286,7 +293,7 @@ const EmployeesPage = () => {
                             <Search className="absolute left-4 top-1/2 -transform -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
                             <Input
                                 placeholder="Search by name, email, or employee code..."
-                                className="pl-11 h-10 rounded-xl bg-slate-50 border-none shadow-none font-medium text-xs focus-visible:ring-2 focus-visible:ring-indigo-100 w-full"
+                                className="pl-11 h-10 rounded-xl bg-slate-50 border border-slate-200 shadow-none font-medium text-xs focus-visible:ring-2 focus-visible:ring-indigo-100 w-full"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
@@ -294,7 +301,7 @@ const EmployeesPage = () => {
 
                         <div className="flex flex-wrap gap-3 flex-1 justify-start md:justify-end">
                             <Select value={statusFilter} onValueChange={setStatusFilter}>
-                                <SelectTrigger className="w-36 h-10 rounded-xl bg-slate-50 border-none font-bold text-[10px] ring-1 ring-slate-100">
+                                <SelectTrigger className="w-36 h-10 rounded-xl bg-slate-50 border border-slate-200 font-bold text-[10px]">
                                     <SelectValue placeholder="Status" />
                                 </SelectTrigger>
                                 <SelectContent className="rounded-xl border-none shadow-2xl p-2 font-bold">
@@ -306,7 +313,7 @@ const EmployeesPage = () => {
                             </Select>
 
                             <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-                                <SelectTrigger className="w-40 h-10 rounded-xl bg-slate-50 border-none font-bold text-[10px] ring-1 ring-slate-100">
+                                <SelectTrigger className="w-40 h-10 rounded-xl bg-slate-50 border border-slate-200 font-bold text-[10px]">
                                     <SelectValue placeholder="Department" />
                                 </SelectTrigger>
                                 <SelectContent className="rounded-xl border-none shadow-2xl p-2 font-bold max-h-[250px]">

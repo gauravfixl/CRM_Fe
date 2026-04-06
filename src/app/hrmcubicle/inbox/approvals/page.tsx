@@ -48,9 +48,13 @@ const ApprovalsPage = () => {
 
     const [selectedApproval, setSelectedApproval] = useState<ApprovalItem | null>(null);
     const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
+    const [isDelegateDialogOpen, setIsDelegateDialogOpen] = useState(false);
+    const [isEscalateDialogOpen, setIsEscalateDialogOpen] = useState(false);
     const [isAuditDialogOpen, setIsAuditDialogOpen] = useState(false);
     const [auditApproval, setAuditApproval] = useState<ApprovalItem | null>(null);
     const [rejectionReason, setRejectionReason] = useState("");
+    const [delegateTo, setDelegateTo] = useState("");
+    const [escalateTo, setEscalateTo] = useState("");
 
     const [filterCategory, setFilterCategory] = useState<ApprovalCategory | 'All'>('All');
     const [filterStatus, setFilterStatus] = useState<ApprovalStatus | 'All'>('Pending');
@@ -84,6 +88,28 @@ const ApprovalsPage = () => {
         setIsRejectDialogOpen(false);
         setRejectionReason("");
         toast({ title: "Request Rejected" });
+    };
+
+    const handleDelegate = () => {
+        if (!selectedApproval || !delegateTo) {
+            toast({ title: "Error", description: "Please specify who to delegate to", variant: "destructive" });
+            return;
+        }
+        delegateRequest(selectedApproval.id, delegateTo);
+        setIsDelegateDialogOpen(false);
+        setDelegateTo("");
+        toast({ title: "Request Delegated", description: `Delegated to ${delegateTo}` });
+    };
+
+    const handleEscalate = () => {
+        if (!selectedApproval || !escalateTo) {
+            toast({ title: "Error", description: "Please specify who to escalate to", variant: "destructive" });
+            return;
+        }
+        escalateRequest(selectedApproval.id, escalateTo);
+        setIsEscalateDialogOpen(false);
+        setEscalateTo("");
+        toast({ title: "Request Escalated", description: `Escalated to ${escalateTo}` });
     };
 
     const toggleSelect = (id: string) => {
@@ -121,16 +147,16 @@ const ApprovalsPage = () => {
     };
 
     const stats = [
-        { label: "Pending", count: approvals.filter(a => a.status === 'Pending').length, icon: <Clock className="w-5 h-5 text-white" />, bg: "bg-amber-500" },
-        { label: "Delegated", count: approvals.filter(a => a.status === 'Delegated').length, icon: <Forward className="w-5 h-5 text-white" />, bg: "bg-indigo-600" },
-        { label: "Escalated", count: approvals.filter(a => a.status === 'Escalated').length, icon: <TrendingUp className="w-5 h-5 text-white" />, bg: "bg-purple-600" },
-        { label: "History", count: approvals.filter(a => ['Approved', 'Rejected'].includes(a.status)).length, icon: <ShieldCheck className="w-5 h-5 text-white" />, bg: "bg-emerald-600" },
+        { label: "Pending", count: approvals.filter(a => a.status === 'Pending').length, icon: <Clock className="w-5 h-5 text-orange-600" />, bg: "bg-orange-100", text: "text-orange-700", iconBg: "bg-orange-200" },
+        { label: "Delegated", count: approvals.filter(a => a.status === 'Delegated').length, icon: <Forward className="w-5 h-5 text-blue-600" />, bg: "bg-blue-100", text: "text-blue-700", iconBg: "bg-blue-200" },
+        { label: "Escalated", count: approvals.filter(a => a.status === 'Escalated').length, icon: <TrendingUp className="w-5 h-5 text-purple-600" />, bg: "bg-purple-100", text: "text-purple-700", iconBg: "bg-purple-200" },
+        { label: "History", count: approvals.filter(a => ['Approved', 'Rejected'].includes(a.status)).length, icon: <ShieldCheck className="w-5 h-5 text-emerald-600" />, bg: "bg-emerald-100", text: "text-emerald-700", iconBg: "bg-emerald-200" },
     ];
 
     return (
-        <div className="flex flex-col min-h-screen bg-slate-50/30">
+        <div className="flex flex-col min-h-screen bg-slate-50/30" style={{ zoom: 0.9 }}>
             <header className="p-6 bg-white border-b border-slate-100 sticky top-0 z-30 shadow-sm">
-                <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                <div className="w-full flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                     <div className="space-y-1">
                         <div className="flex items-center gap-3">
                             <h1 className="text-2xl font-bold text-slate-900 tracking-tight">HR Approval Center</h1>
@@ -157,17 +183,17 @@ const ApprovalsPage = () => {
                 </div>
             </header>
 
-            <main className="p-6 max-w-7xl mx-auto w-full space-y-6">
+            <main className="p-6 w-full space-y-6">
                 {/* Stats Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 max-w-5xl text-start">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 w-full text-start">
                     {stats.map((stat, i) => (
-                        <Card key={i} className={`border-none shadow-md ${stat.bg} overflow-hidden group hover:scale-[1.02] transition-all duration-300`}>
+                        <Card key={i} className={`border border-slate-100 shadow-sm ${stat.bg} overflow-hidden group hover:scale-[1.02] transition-all duration-300`}>
                             <CardContent className="p-5 flex items-center justify-between">
                                 <div className="space-y-1">
-                                    <p className="text-[10px] font-bold text-white uppercase tracking-widest opacity-80">{stat.label}</p>
-                                    <h3 className="text-3xl font-black text-white">{stat.count}</h3>
+                                    <p className={`text-[10px] font-bold uppercase tracking-widest opacity-70 ${stat.text}`}>{stat.label}</p>
+                                    <h3 className={`text-2xl font-black ${stat.text}`}>{stat.count}</h3>
                                 </div>
-                                <div className={`h-12 w-12 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center transition-transform group-hover:rotate-12`}>
+                                <div className={`h-12 w-12 rounded-xl ${stat.iconBg} flex items-center justify-center transition-transform group-hover:rotate-12`}>
                                     {stat.icon}
                                 </div>
                             </CardContent>
@@ -316,13 +342,29 @@ const ApprovalsPage = () => {
                                                                         >
                                                                             <CheckCircle2 size={16} /> Approve
                                                                         </Button>
-                                                                        <Button
-                                                                            variant="ghost"
-                                                                            className="text-slate-400 hover:text-rose-600 font-bold text-xs h-10 px-4 rounded-xl hover:bg-rose-50 transition-all"
-                                                                            onClick={() => { setSelectedApproval(approval); setIsRejectDialogOpen(true); }}
-                                                                        >
-                                                                            Reject Request
-                                                                        </Button>
+                                                                        <div className="flex items-center gap-2">
+                                                                            <Button
+                                                                                variant="ghost"
+                                                                                className="text-slate-400 hover:text-indigo-600 font-bold text-xs h-10 px-3 rounded-xl hover:bg-indigo-50 transition-all gap-1.5"
+                                                                                onClick={() => { setSelectedApproval(approval); setIsDelegateDialogOpen(true); }}
+                                                                            >
+                                                                                <Forward size={14} /> Delegate
+                                                                            </Button>
+                                                                            <Button
+                                                                                variant="ghost"
+                                                                                className="text-slate-400 hover:text-purple-600 font-bold text-xs h-10 px-3 rounded-xl hover:bg-purple-50 transition-all gap-1.5"
+                                                                                onClick={() => { setSelectedApproval(approval); setIsEscalateDialogOpen(true); }}
+                                                                            >
+                                                                                <TrendingUp size={14} /> Escalate
+                                                                            </Button>
+                                                                            <Button
+                                                                                variant="ghost"
+                                                                                className="text-slate-400 hover:text-rose-600 font-bold text-xs h-10 px-3 rounded-xl hover:bg-rose-50 transition-all"
+                                                                                onClick={() => { setSelectedApproval(approval); setIsRejectDialogOpen(true); }}
+                                                                            >
+                                                                                Reject
+                                                                            </Button>
+                                                                        </div>
                                                                     </>
                                                                 ) : (
                                                                     <Button variant="ghost" className="h-10 text-slate-400 font-bold text-xs gap-2" onClick={() => { setAuditApproval(approval); setIsAuditDialogOpen(true); }}>
@@ -368,6 +410,58 @@ const ApprovalsPage = () => {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+            {/* Delegate Dialog */}
+            <Dialog open={isDelegateDialogOpen} onOpenChange={setIsDelegateDialogOpen}>
+                <DialogContent className="bg-white rounded-3xl border-none p-10 max-w-md shadow-2xl">
+                    <DialogHeader className="space-y-4">
+                        <div className="h-12 w-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 mb-2">
+                            <Forward size={28} />
+                        </div>
+                        <DialogTitle className="text-2xl font-bold tracking-tight text-slate-900">Delegate Request</DialogTitle>
+                        <DialogDescription className="text-slate-500 font-medium">Assign this request to another team lead or manager for review.</DialogDescription>
+                    </DialogHeader>
+                    <div className="py-6 space-y-2">
+                        <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Delegate To *</Label>
+                        <Input
+                            className="rounded-2xl bg-slate-50 border-slate-200 focus:bg-white h-12 font-medium px-4"
+                            placeholder="e.g. Team Lead - Sarah, HR Manager..."
+                            value={delegateTo}
+                            onChange={(e) => setDelegateTo(e.target.value)}
+                        />
+                    </div>
+                    <DialogFooter className="gap-3">
+                        <Button variant="outline" className="rounded-xl h-12 font-bold px-8" onClick={() => setIsDelegateDialogOpen(false)}>Cancel</Button>
+                        <Button className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl h-12 font-bold shadow-lg shadow-indigo-100" onClick={handleDelegate}>Delegate Now</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Escalate Dialog */}
+            <Dialog open={isEscalateDialogOpen} onOpenChange={setIsEscalateDialogOpen}>
+                <DialogContent className="bg-white rounded-3xl border-none p-10 max-w-md shadow-2xl">
+                    <DialogHeader className="space-y-4">
+                        <div className="h-12 w-12 bg-purple-50 rounded-2xl flex items-center justify-center text-purple-600 mb-2">
+                            <TrendingUp size={28} />
+                        </div>
+                        <DialogTitle className="text-2xl font-bold tracking-tight text-slate-900">Escalate Request</DialogTitle>
+                        <DialogDescription className="text-slate-500 font-medium">Escalate this to a higher authority for urgent attention.</DialogDescription>
+                    </DialogHeader>
+                    <div className="py-6 space-y-2">
+                        <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Escalate To *</Label>
+                        <Input
+                            className="rounded-2xl bg-slate-50 border-slate-200 focus:bg-white h-12 font-medium px-4"
+                            placeholder="e.g. Head of Operations, VP HR..."
+                            value={escalateTo}
+                            onChange={(e) => setEscalateTo(e.target.value)}
+                        />
+                    </div>
+                    <DialogFooter className="gap-3">
+                        <Button variant="outline" className="rounded-xl h-12 font-bold px-8" onClick={() => setIsEscalateDialogOpen(false)}>Cancel</Button>
+                        <Button className="flex-1 bg-purple-600 hover:bg-purple-700 text-white rounded-xl h-12 font-bold shadow-lg shadow-purple-100" onClick={handleEscalate}>Escalate Now</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
             {/* Audit Trail Dialog */}
             <Dialog open={isAuditDialogOpen} onOpenChange={setIsAuditDialogOpen}>
                 <DialogContent className="bg-white rounded-3xl border-none p-10 max-w-md shadow-2xl">

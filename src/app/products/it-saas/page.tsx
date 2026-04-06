@@ -3,175 +3,178 @@
 import ExploreProductPage from "@/components/landingpage2/explore/ExploreProductPage"
 import {
     Laptop,
-    Zap,
-    Users,
+    Ticket,
+    Clock,
+    CreditCard,
+    UserCheck,
     BarChart3,
-    Shield,
-    Workflow,
+    Server,
 } from "lucide-react"
 
 const data = {
     name: "IT & SaaS",
-    tagline: "Operations & support platform for tech companies",
+    tagline: "Unified operations platform for modern tech companies",
     description:
-        "CubicleERP IT & SaaS is purpose-built for software companies, IT service providers, and tech startups. Manage customer support, track incidents, automate IT operations, monitor system performance, and streamline billing with integrated ticketing, knowledge management, asset tracking, and comprehensive analytics designed for modern tech operations.",
+        "CubicleERP IT & SaaS empowers software companies, managed service providers, and cloud-native startups to deliver exceptional customer experiences at scale. From ticket management and SLA enforcement to subscription billing, customer onboarding, usage analytics, and infrastructure monitoring, every critical workflow lives in one intelligent platform built for the speed and complexity of tech operations.",
     icon: Laptop,
-    color: "#0891B2",
-    lightColor: "#ECFDF5",
-    heroImage: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1920&q=80",
+    color: "#BE185D",
+    lightColor: "#FCE7F3",
+    heroImage:
+        "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=1920&q=80",
+    variant: 4 as const,
     features: [
         {
-            icon: Zap,
-            title: "Incident & Ticket Management",
+            icon: Ticket,
+            title: "Ticket & Incident Management",
             description:
-                "Centralized ticketing system for all customer support requests and internal IT incidents. Automated ticket routing based on priority and expertise. SLA tracking and escalation management. Multi-channel ticket creation via email, chat, and web portal.",
+                "Centralize every customer request, bug report, and internal incident into a single prioritized queue with intelligent routing and automatic categorization. SLA timers start the moment a ticket is created, with configurable escalation paths that alert the right team members before deadlines are breached. Multi-channel intake from email, chat, API webhooks, and a self-service portal ensures no issue falls through the cracks.",
         },
         {
-            icon: Users,
-            title: "Customer Support Portal",
+            icon: Clock,
+            title: "SLA Tracking & Compliance",
             description:
-                "Self-service customer portal for ticket creation, status tracking, and knowledge base access. Reduce support volume with comprehensive knowledge base and FAQs. Customer satisfaction surveys and feedback collection. Community forums for peer-to-peer support.",
+                "Define granular service-level agreements per customer tier, product line, or contract and monitor adherence in real time with color-coded dashboards. Automated alerts notify agents and managers when response or resolution windows are at risk, while built-in remediation workflows trigger corrective actions instantly. Generate audit-ready SLA compliance reports that can be shared directly with stakeholders during quarterly business reviews.",
         },
         {
-            icon: Workflow,
-            title: "IT Operations Automation",
+            icon: CreditCard,
+            title: "Subscription Billing & Revenue",
             description:
-                "Automate routine IT tasks and workflows. Automated incident response and remediation. Integration with monitoring tools for proactive alerting. Workflow automation reduces manual work and improves response times.",
+                "Handle the full billing lifecycle for SaaS products, including plan creation, trial management, proration, upgrades, downgrades, and cancellations without leaving CubicleERP. Support usage-based metering, seat-based pricing, and hybrid models with automated invoice generation and payment collection through integrated gateways. Revenue recognition rules align with ASC 606 standards, giving your finance team accurate MRR, ARR, and churn metrics at a glance.",
+        },
+        {
+            icon: UserCheck,
+            title: "Customer Onboarding & Success",
+            description:
+                "Orchestrate structured onboarding journeys with task checklists, milestone tracking, and automated welcome sequences that guide new customers from sign-up to first value. Health scores aggregate product usage, support interactions, and billing signals so customer success managers can proactively intervene before churn risk escalates. Built-in playbooks for expansion, renewal, and at-risk scenarios ensure consistent outcomes across your entire book of business.",
         },
         {
             icon: BarChart3,
-            title: "Asset & License Management",
+            title: "Usage Analytics & Insights",
             description:
-                "Track software licenses, hardware assets, and subscriptions. Automated license renewal reminders and compliance tracking. Asset lifecycle management from procurement to retirement. Cost optimization through license utilization analysis.",
+                "Track feature adoption, session frequency, API call volumes, and storage consumption across your user base with granular cohort and account-level breakdowns. Interactive dashboards surface trends like declining engagement or spike patterns that inform product roadmap decisions and upsell opportunities. Export data to your warehouse or consume it via API to power custom reports, machine-learning models, and executive dashboards.",
         },
         {
-            icon: Shield,
-            title: "Performance Monitoring & Analytics",
+            icon: Server,
+            title: "Infrastructure Monitoring & Alerts",
             description:
-                "Monitor system performance, uptime, and user experience. Track key metrics like MTTR, MTTF, and customer satisfaction. Generate performance reports and trend analysis. Identify bottlenecks and optimization opportunities.",
-        },
-        {
-            icon: Workflow,
-            title: "Billing & Revenue Management",
-            description:
-                "Integrated billing for SaaS subscriptions and support services. Usage-based billing and metered pricing support. Automated invoicing and payment processing. Revenue recognition and financial reporting.",
+                "Monitor server health, container orchestration, database performance, and network latency from a unified control plane integrated with tools like Prometheus, Datadog, and CloudWatch. Anomaly detection and threshold-based alerting automatically create incidents, page on-call engineers, and kick off runbook automations to minimize mean time to resolution. Post-incident timelines with root-cause tagging feed continuous improvement processes and help teams prevent recurrence.",
         },
     ],
     benefits: [
         {
-            title: "Improve Customer Support Quality",
+            title: "Resolve Issues Faster",
             description:
-                "Faster response times and better issue resolution with organized ticketing. Self-service options reduce support volume. Comprehensive knowledge base empowers customers. Increase customer satisfaction and retention.",
+                "Intelligent ticket routing, SLA enforcement, and automated escalations cut average resolution time by up to 45%. Your support team spends less time triaging and more time solving, leading to happier customers and lower churn.",
         },
         {
-            title: "Reduce Operational Overhead",
+            title: "Maximize Recurring Revenue",
             description:
-                "Automate routine IT tasks and support workflows. Reduce manual work and human error. Improve team efficiency and productivity. Tech companies using CubicleERP see an average 30% reduction in support costs.",
+                "Automated subscription billing, dunning management, and renewal reminders eliminate revenue leakage and reduce involuntary churn. Accurate MRR and ARR dashboards give leadership real-time visibility into financial health.",
         },
         {
-            title: "Enhance System Reliability",
+            title: "Scale Without Proportional Headcount",
             description:
-                "Proactive monitoring and alerting prevent issues before they impact customers. Automated incident response reduces downtime. Comprehensive audit trails for compliance and troubleshooting.",
+                "Self-service portals, knowledge bases, and workflow automations deflect routine inquiries and tasks so your team can support a growing customer base without linearly increasing staff. Companies on CubicleERP handle 3x more tickets per agent on average.",
         },
         {
-            title: "Streamline Operations",
+            title: "Improve Customer Retention",
             description:
-                "Unified platform for support, IT operations, asset management, and billing. Eliminate data silos and manual processes. Improve team collaboration and communication.",
+                "Proactive health scoring and success playbooks identify at-risk accounts early and trigger intervention workflows automatically. Structured onboarding ensures customers reach value milestones quickly, strengthening long-term loyalty.",
         },
         {
-            title: "Optimize Costs",
+            title: "Gain Actionable Product Insights",
             description:
-                "License and asset management reduces unnecessary spending. Usage analytics identify optimization opportunities. Automated billing reduces revenue leakage.",
+                "Usage analytics reveal which features drive engagement and which are underutilized, informing roadmap prioritization and pricing strategy. Data-driven decisions replace guesswork, accelerating product-market fit and expansion revenue.",
         },
         {
-            title: "Scale Your Business",
+            title: "Ensure Uptime & Reliability",
             description:
-                "Support growing customer base without proportional increase in support staff. Automated workflows scale with your business. Platform grows with your company.",
+                "Integrated infrastructure monitoring with automated incident creation and runbook execution keeps your services running smoothly. Post-incident analysis and trend reporting drive continuous reliability improvements and build customer trust.",
         },
     ],
     steps: [
         {
             step: "1",
-            title: "IT Operations Assessment",
+            title: "Discovery & Architecture",
             description:
-                "Our IT specialists conduct a thorough assessment of your support processes, IT operations, system architecture, and business requirements. We create a customized implementation plan aligned with your tech operations needs.",
+                "Our IT solutions team audits your current support workflows, billing systems, monitoring stack, and customer success processes. We map data flows, identify automation opportunities, and design a tailored CubicleERP configuration that aligns with your tech operations and growth targets.",
         },
         {
             step: "2",
-            title: "Configuration & Integration",
+            title: "Integration & Migration",
             description:
-                "We configure CubicleERP for your IT workflows, integrate with monitoring tools and communication platforms, migrate existing ticket and asset data, and set up automation rules. Your team receives comprehensive training on all features.",
+                "We connect CubicleERP to your existing tools -- monitoring platforms, payment gateways, communication channels, and CI/CD pipelines. Historical tickets, customer records, and billing data are migrated cleanly, and your team is trained on every module with role-specific workshops.",
         },
         {
             step: "3",
-            title: "Launch & Optimization",
+            title: "Launch & Continuous Improvement",
             description:
-                "We conduct thorough testing and quality assurance before launch. Phased rollout ensures smooth transition. Ongoing support and optimization to maximize adoption and operational efficiency.",
+                "A phased rollout begins with your support and billing teams, expanding to customer success and engineering operations. Post-launch, our customer success managers review KPIs weekly, tune automations, and recommend optimizations so your platform evolves alongside your business.",
         },
     ],
     useCases: [
         {
-            title: "SaaS Companies",
+            title: "B2B SaaS Companies",
             description:
-                "SaaS companies use CubicleERP to manage customer support, track system performance, automate operations, and handle billing for their cloud services.",
+                "Product-led and sales-led SaaS companies use CubicleERP to unify support, billing, and customer success on a single platform -- reducing tool sprawl and giving every team a shared view of the customer lifecycle.",
             highlights: [
-                "Customer support ticketing and portal",
-                "System performance monitoring",
-                "Automated SaaS billing",
+                "Subscription billing with usage metering and proration",
+                "Customer health scores and renewal playbooks",
+                "Feature adoption analytics tied to account revenue",
             ],
         },
         {
-            title: "IT Service Providers",
+            title: "Managed Service Providers",
             description:
-                "MSPs and IT service providers use CubicleERP to manage customer incidents, track assets, automate IT operations, and bill for services.",
+                "MSPs and IT outsourcing firms rely on CubicleERP to manage multi-tenant ticket queues, enforce per-client SLAs, track infrastructure across customer environments, and generate transparent service reports.",
             highlights: [
-                "Multi-customer ticket management",
-                "Asset tracking and management",
-                "Service-based billing",
+                "Multi-tenant ticketing with per-client SLA rules",
+                "Infrastructure monitoring across customer environments",
+                "Automated service billing and compliance reporting",
             ],
         },
         {
-            title: "Tech Startups",
+            title: "Developer Platform Companies",
             description:
-                "Tech startups use CubicleERP to manage customer support, automate operations, and scale their business without hiring large support teams.",
+                "API-first and developer-tool companies leverage CubicleERP to monitor API usage, manage developer onboarding, track release rollouts, and maintain comprehensive knowledge bases that reduce support burden.",
             highlights: [
-                "Scalable support infrastructure",
-                "Automated IT operations",
-                "Cost-effective customer support",
+                "API call tracking and rate-limit management",
+                "Release management with rollout status dashboards",
+                "Developer-facing knowledge base and changelog automation",
             ],
         },
     ],
     faqs: [
         {
-            question: "What monitoring tools does CubicleERP integrate with?",
-            answer:
-                "CubicleERP integrates with popular monitoring tools like Datadog, New Relic, Prometheus, and others. We also support generic integrations via webhooks and REST APIs. Our integration team can help you connect your existing monitoring stack.",
+            question:
+                "How does CubicleERP handle usage-based and hybrid billing models?",
+            answer: "CubicleERP supports flat-rate, per-seat, usage-based, tiered, and hybrid pricing models out of the box. You define metering events -- such as API calls, storage consumed, or active users -- and the platform aggregates them in real time against each customer's plan. Invoices are generated automatically at the end of each billing cycle with detailed line items, and customers can view their consumption dashboards in the self-service portal.",
         },
         {
-            question: "Can CubicleERP handle multi-tenant support?",
-            answer:
-                "Yes. CubicleERP supports multi-tenant operations with separate ticket queues, knowledge bases, and billing for each customer. Manage multiple customers from a single platform with complete isolation.",
+            question:
+                "Can CubicleERP integrate with our existing monitoring and DevOps tools?",
+            answer: "Yes. CubicleERP offers native integrations with Datadog, Prometheus, Grafana, New Relic, PagerDuty, AWS CloudWatch, and Azure Monitor, among others. For tools without a native connector, our webhook and REST API framework lets you push alerts directly into the incident management module. CI/CD integrations with GitHub Actions, GitLab CI, and Jenkins enable release tracking and automated status updates.",
         },
         {
-            question: "How does CubicleERP track SLAs?",
-            answer:
-                "CubicleERP automatically tracks SLA compliance for each ticket based on priority and customer tier. Automated escalation alerts when SLAs are at risk. Generate SLA compliance reports for customer reviews.",
+            question:
+                "How does the customer health score work?",
+            answer: "The health score is a composite metric calculated from product usage frequency, support ticket volume and sentiment, billing status, onboarding milestone completion, and NPS or CSAT survey responses. Each signal is weighted based on your business priorities, and the score updates daily. When a score drops below a configurable threshold, CubicleERP automatically triggers a success playbook -- such as scheduling a check-in call or sending a re-engagement campaign.",
         },
         {
-            question: "Can customers access their own tickets?",
-            answer:
-                "Yes. CubicleERP includes a customer portal where customers can create tickets, track status, view knowledge base articles, and communicate with support. This reduces support volume and improves customer satisfaction.",
+            question:
+                "Is CubicleERP suitable for multi-tenant SaaS operations?",
+            answer: "Absolutely. CubicleERP provides full multi-tenancy with isolated data, separate branding for customer portals, per-tenant SLA configurations, and individual billing profiles. Role-based access control ensures that agents only see the tenants assigned to them, while administrators get a consolidated view across all accounts for reporting and capacity planning.",
         },
         {
-            question: "Does CubicleERP support automation workflows?",
-            answer:
-                "Yes. CubicleERP includes powerful workflow automation for ticket routing, incident response, and IT operations. Create custom workflows based on ticket properties, customer tier, or system alerts.",
+            question:
+                "What kind of knowledge base and self-service capabilities are included?",
+            answer: "CubicleERP includes a full-featured knowledge base with rich-text articles, versioning, category organization, and full-text search. Articles can be internal-only or customer-facing, and the platform tracks which articles deflect the most tickets. The self-service portal lets customers create and track tickets, view billing history, access documentation, and participate in community forums -- all branded to match your product.",
         },
     ],
     stats: [
-        { value: "400+", label: "Tech companies" },
-        { value: "1M+", label: "Tickets managed monthly" },
-        { value: "30%", label: "Cost reduction average" },
+        { value: "500+", label: "Tech companies served" },
+        { value: "2M+", label: "Tickets resolved monthly" },
+        { value: "45%", label: "Faster resolution times" },
         { value: "99.99%", label: "Platform uptime SLA" },
     ],
 }

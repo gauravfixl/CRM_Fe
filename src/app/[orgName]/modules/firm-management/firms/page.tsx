@@ -256,6 +256,7 @@ export default function FirmsPage() {
                     <CustomTableHead>Address</CustomTableHead>
                     <CustomTableHead>Phone</CustomTableHead>
                     <CustomTableHead>Website</CustomTableHead>
+                    <CustomTableHead>Onboarding</CustomTableHead>
                     <CustomTableHead>Actions</CustomTableHead>
                     <CustomTableHead className="w-[70px]"></CustomTableHead>
                   </CustomTableRow>
@@ -287,6 +288,19 @@ export default function FirmsPage() {
                           ) : (
                             "-"
                           )}
+                        </CustomTableCell>
+                        <CustomTableCell>
+                          <div className="flex flex-col gap-1 w-24">
+                             <div className="flex items-center justify-between text-[10px] font-semibold tracking-wider uppercase">
+                                <span className={firm.status === 'Active' ? 'text-emerald-600' : 'text-blue-600'}>
+                                  {firm.status === 'Active' ? 'Complete' : 'Pending'}
+                                </span>
+                                {firm.status !== 'Active' && <span className="text-slate-400 font-bold">2/5</span>}
+                             </div>
+                             <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                                <div className={`h-full rounded-full transition-all ${firm.status === 'Active' ? 'bg-emerald-500 w-full' : 'bg-blue-500 w-2/5'}`} />
+                             </div>
+                          </div>
                         </CustomTableCell>
                         <CustomTableCell>
                           <CustomDropdownMenu>

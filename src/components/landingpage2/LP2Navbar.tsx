@@ -31,6 +31,7 @@ import {
   Landmark,
   Truck,
   Laptop,
+  Wallet,
 } from "lucide-react"
 
 const exploreItems = [
@@ -39,72 +40,105 @@ const exploreItems = [
     title: "CRM",
     description: "Customer relationships & sales",
     href: "/explore/crm",
+    color: "#0067B8",
   },
   {
     icon: UserCheck,
     title: "HRM",
     description: "HR operations & employee mgmt",
     href: "/explore/hrm",
+    color: "#7C3AED",
   },
   {
     icon: Briefcase,
     title: "Projects",
     description: "Plan, track & deliver on time",
     href: "/explore/project-management",
+    color: "#0891B2",
   },
   {
     icon: DollarSign,
     title: "Finance",
     description: "Accounting, invoicing & reports",
     href: "/explore/finance",
+    color: "#059669",
   },
   {
     icon: Globe,
     title: "Client Portal",
     description: "Self-service for clients",
     href: "/explore/client-portal",
+    color: "#DC2626",
   },
   {
     icon: HeadphonesIcon,
     title: "Helpdesk",
     description: "Fast, reliable support",
     href: "/explore/helpdesk",
+    color: "#D97706",
   },
   {
     icon: BarChart3,
     title: "Analytics",
     description: "Insights & business intelligence",
     href: "/explore/analytics",
+    color: "#2563EB",
   },
   {
     icon: Package,
     title: "Inventory",
     description: "Stock & warehouse management",
     href: "/explore/inventory",
+    color: "#9333EA",
   },
   {
     icon: FileText,
     title: "Documents",
     description: "Centralized document management",
     href: "/explore/documents",
+    color: "#0284C7",
   },
   {
     icon: Mail,
     title: "Email Marketing",
     description: "Campaigns & email automation",
     href: "/explore/email-marketing",
+    color: "#E11D48",
   },
   {
     icon: Workflow,
     title: "Automation",
     description: "Workflows & process automation",
     href: "/explore/automation",
+    color: "#EA580C",
   },
   {
     icon: Clock,
     title: "Time Tracking",
     description: "Track hours & productivity",
     href: "/explore/time-tracking",
+    color: "#4F46E5",
+  },
+  {
+    icon: Wallet,
+    title: "Payroll",
+    description: "Salary, taxes & compliance",
+    href: "/explore/payroll",
+    color: "#16A34A",
+  },
+  {
+    icon: Truck,
+    title: "SCM",
+    description: "End-to-end supply chain",
+    href: "/explore/scm",
+    color: "#0D9488",
+  },
+  {
+    icon: ShoppingCart,
+    title: "E-Commerce & POS",
+    description: "Online & offline retail",
+    href: "/explore/ecommerce",
+    color: "#BE185D",
   },
 ]
 
@@ -114,72 +148,84 @@ const productItems = [
     title: "Enterprise",
     description: "For large organizations",
     href: "/products/enterprise",
+    color: "#0067B8",
   },
   {
     icon: Target,
     title: "Startups",
     description: "Grow fast & stay agile",
     href: "/products/startups",
+    color: "#EA580C",
   },
   {
     icon: BarChart3,
     title: "Agencies",
     description: "Clients, projects & billing",
     href: "/products/agencies",
+    color: "#7C3AED",
   },
   {
     icon: Shield,
     title: "Healthcare",
     description: "HIPAA-ready platform",
     href: "/products/healthcare",
+    color: "#DC2626",
   },
   {
     icon: GraduationCap,
     title: "Education",
     description: "Schools & institutions",
     href: "/products/education",
+    color: "#2563EB",
   },
   {
     icon: Home,
     title: "Real Estate",
     description: "Property & deals management",
     href: "/products/real-estate",
+    color: "#059669",
   },
   {
     icon: ShoppingCart,
     title: "Retail",
     description: "Inventory & sales tracking",
     href: "/products/retail",
+    color: "#D97706",
   },
   {
     icon: Factory,
     title: "Manufacturing",
     description: "Production & supply chain",
     href: "/products/manufacturing",
+    color: "#9333EA",
   },
   {
     icon: Scale,
     title: "Legal",
     description: "Case & client management",
     href: "/products/legal",
+    color: "#0891B2",
   },
   {
     icon: Landmark,
     title: "Non-Profit",
     description: "Donors & fundraising",
     href: "/products/non-profit",
+    color: "#16A34A",
   },
   {
     icon: Truck,
     title: "Logistics",
     description: "Fleet & delivery tracking",
     href: "/products/logistics",
+    color: "#4F46E5",
   },
   {
     icon: Laptop,
     title: "IT & SaaS",
     description: "Tech operations & support",
     href: "/products/it-saas",
+    color: "#BE185D",
   },
 ]
 
@@ -264,26 +310,33 @@ export default function LP2Navbar() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 8 }}
                   transition={{ duration: 0.2 }}
-                  className="absolute top-full left-1/2 -translate-x-1/2 mt-1 w-[620px] bg-white rounded-lg shadow-xl border border-[#E5E5E5] p-3"
+                  className="absolute top-full left-1/2 -translate-x-1/2 mt-1 w-[720px] bg-white rounded-lg shadow-xl border border-[#E5E5E5] p-2.5"
                 >
-                  <div className="grid grid-cols-3 gap-1">
+                  <div className="grid grid-cols-5 gap-0.5">
                     {exploreItems.map((item) => (
                       <Link
                         key={item.title}
                         href={item.href}
-                        className="flex items-center gap-2.5 px-2.5 py-2 rounded-md hover:bg-[#F5F5F5] transition-colors duration-200 group"
+                        className="relative flex flex-col items-center gap-1 px-1.5 py-2 rounded-md hover:bg-[#F8F9FA] transition-all duration-200 group"
                       >
-                        <div className="w-7 h-7 rounded-md bg-[#EBF3FB] flex items-center justify-center shrink-0 group-hover:bg-[#D6E8F7] transition-colors duration-200">
-                          <item.icon size={14} className="text-[#0067B8]" />
+                        <div
+                          className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-all duration-200"
+                          style={{ backgroundColor: `${item.color}15` }}
+                        >
+                          <item.icon size={16} style={{ color: item.color }} />
                         </div>
-                        <div className="min-w-0">
-                          <p className="text-[13px] font-semibold text-[#1A1A1A] group-hover:text-[#0067B8] transition-colors duration-200 leading-tight">
+                        <div className="text-center min-w-0 w-full">
+                          <p className="text-[11.5px] font-semibold text-[#1A1A1A] transition-colors duration-200 leading-tight group-hover:text-[var(--hover-color)]" style={{ '--hover-color': item.color } as React.CSSProperties}>
                             {item.title}
                           </p>
-                          <p className="text-[10.5px] text-[#6B6B6B] leading-tight truncate">
+                          <p className="text-[9.5px] text-[#6B6B6B] leading-tight mt-0.5 line-clamp-1">
                             {item.description}
                           </p>
                         </div>
+                        <span
+                          className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-0 h-[2px] rounded-full group-hover:w-3/4 transition-all duration-300 ease-out"
+                          style={{ backgroundColor: item.color }}
+                        />
                       </Link>
                     ))}
                   </div>
@@ -315,26 +368,33 @@ export default function LP2Navbar() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 8 }}
                   transition={{ duration: 0.2 }}
-                  className="absolute top-full left-1/2 -translate-x-1/2 mt-1 w-[620px] bg-white rounded-lg shadow-xl border border-[#E5E5E5] p-3"
+                  className="absolute top-full left-1/2 -translate-x-1/2 mt-1 w-[580px] bg-white rounded-lg shadow-xl border border-[#E5E5E5] p-2.5"
                 >
-                  <div className="grid grid-cols-3 gap-1">
+                  <div className="grid grid-cols-4 gap-0.5">
                     {productItems.map((item) => (
                       <Link
                         key={item.title}
                         href={item.href}
-                        className="flex items-center gap-2.5 px-2.5 py-2 rounded-md hover:bg-[#F5F5F5] transition-colors duration-200 group"
+                        className="relative flex flex-col items-center gap-1 px-1.5 py-2 rounded-md hover:bg-[#F8F9FA] transition-all duration-200 group"
                       >
-                        <div className="w-7 h-7 rounded-md bg-[#EBF3FB] flex items-center justify-center shrink-0 group-hover:bg-[#D6E8F7] transition-colors duration-200">
-                          <item.icon size={14} className="text-[#0067B8]" />
+                        <div
+                          className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-all duration-200"
+                          style={{ backgroundColor: `${item.color}15` }}
+                        >
+                          <item.icon size={16} style={{ color: item.color }} />
                         </div>
-                        <div className="min-w-0">
-                          <p className="text-[13px] font-semibold text-[#1A1A1A] group-hover:text-[#0067B8] transition-colors duration-200 leading-tight">
+                        <div className="text-center min-w-0 w-full">
+                          <p className="text-[11.5px] font-semibold text-[#1A1A1A] transition-colors duration-200 leading-tight group-hover:text-[var(--hover-color)]" style={{ '--hover-color': item.color } as React.CSSProperties}>
                             {item.title}
                           </p>
-                          <p className="text-[10.5px] text-[#6B6B6B] leading-tight truncate">
+                          <p className="text-[9.5px] text-[#6B6B6B] leading-tight mt-0.5 line-clamp-1">
                             {item.description}
                           </p>
                         </div>
+                        <span
+                          className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-0 h-[2px] rounded-full group-hover:w-3/4 transition-all duration-300 ease-out"
+                          style={{ backgroundColor: item.color }}
+                        />
                       </Link>
                     ))}
                   </div>
@@ -438,13 +498,16 @@ export default function LP2Navbar() {
                             key={item.title}
                             href={item.href}
                             onClick={() => setMobileOpen(false)}
-                            className="flex items-center gap-3 p-2.5 rounded-md hover:bg-[#F5F5F5] transition-colors duration-200"
+                            className="flex items-center gap-3 p-2.5 rounded-md hover:bg-[#F8F9FA] transition-colors duration-200 group"
                           >
-                            <div className="w-8 h-8 rounded-md bg-[#EBF3FB] flex items-center justify-center shrink-0">
-                              <item.icon size={16} className="text-[#0067B8]" />
+                            <div
+                              className="w-8 h-8 rounded-md flex items-center justify-center shrink-0"
+                              style={{ backgroundColor: `${item.color}15` }}
+                            >
+                              <item.icon size={16} style={{ color: item.color }} />
                             </div>
                             <div>
-                              <p className="text-sm font-medium text-[#1A1A1A]">
+                              <p className="text-sm font-medium text-[#1A1A1A] group-hover:text-[var(--hover-color)]" style={{ '--hover-color': item.color } as React.CSSProperties}>
                                 {item.title}
                               </p>
                               <p className="text-xs text-[#6B6B6B]">
@@ -487,13 +550,16 @@ export default function LP2Navbar() {
                             key={item.title}
                             href={item.href}
                             onClick={() => setMobileOpen(false)}
-                            className="flex items-center gap-3 p-2.5 rounded-md hover:bg-[#F5F5F5] transition-colors duration-200"
+                            className="flex items-center gap-3 p-2.5 rounded-md hover:bg-[#F8F9FA] transition-colors duration-200 group"
                           >
-                            <div className="w-8 h-8 rounded-md bg-[#EBF3FB] flex items-center justify-center shrink-0">
-                              <item.icon size={16} className="text-[#0067B8]" />
+                            <div
+                              className="w-8 h-8 rounded-md flex items-center justify-center shrink-0"
+                              style={{ backgroundColor: `${item.color}15` }}
+                            >
+                              <item.icon size={16} style={{ color: item.color }} />
                             </div>
                             <div>
-                              <p className="text-sm font-medium text-[#1A1A1A]">
+                              <p className="text-sm font-medium text-[#1A1A1A] group-hover:text-[var(--hover-color)]" style={{ '--hover-color': item.color } as React.CSSProperties}>
                                 {item.title}
                               </p>
                               <p className="text-xs text-[#6B6B6B]">

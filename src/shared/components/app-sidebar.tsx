@@ -338,6 +338,8 @@ const authAdminMenuData = [
       { title: "Conditional Access", url: "/modules/settings/auth/conditional", icon: Lock },
       { title: "Password Policy", url: "/modules/settings/auth/password-policy", icon: Settings },
       { title: "Login Restrictions", icon: ShieldAlert, url: "/modules/settings/auth/restrictions" },
+      { title: "Login Policies", icon: ShieldCheck, url: "/modules/settings/auth/policies" },
+      { title: "Sessions", icon: History, url: "/modules/settings/auth/sessions" },
     ]
   }
 ];
@@ -664,9 +666,6 @@ const adminSidebarGroupsData = [
       { title: "Roles & Permissions", icon: Shield, url: "/modules/administration/roles" },
       { title: "Teams / Groups", icon: Network, url: "/modules/teams" },
       { title: "Authentication", icon: Key, url: "/modules/settings/auth" },
-      { title: "SSO & Identity Providers", icon: Globe, url: "/modules/settings/auth/sso" },
-      { title: "Login Policies", icon: ShieldCheck, url: "/modules/settings/auth/policies" },
-      { title: "Sessions", icon: History, url: "/modules/settings/auth/sessions" },
     ]
   },
   {
@@ -1316,7 +1315,6 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
         items: [
           { title: "Firms List", url: `/modules/firm-management/firms`, icon: ListTree },
           { title: "Create Firm", url: `/modules/firm-management/firms/add`, icon: Plus },
-          { title: "Onboarding Status", url: `/modules/organization/onboarding`, icon: Clock },
         ]
       },
       {
@@ -1324,7 +1322,6 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
         items: [
           { title: "Firm Admins", url: `/modules/organization/admins`, icon: ShieldCheck },
           { title: "Module Access", url: `/modules/organization/access`, icon: Package },
-          { title: "Settings Summary", url: `/modules/organization/settings`, icon: Settings },
         ]
       }
     ].map(group => ({
@@ -1480,9 +1477,9 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
     if (pathname?.includes("/modules/settings/entitlements/pipeline")) return "PipelineGov";
 
     // Organization Granular Drill-down
-    if (pathname?.includes("/modules/organization/overview")) return "OrgOverview";
+    if (pathname?.includes("/modules/organization/overview") || pathname?.includes("/modules/organization/onboarding")) return "OrgOverview";
     if (pathname?.includes("/modules/firm-management/firms/deleted") || pathname?.includes("/modules/organization/trash")) return "OrgRecycleBin";
-    if (pathname?.includes("/modules/firm-management/firms") || pathname?.includes("/modules/organization/firms") || pathname.includes("/modules/organization/create") || pathname?.includes("/modules/organization/onboarding") || pathname?.includes("/modules/organization/admins") || pathname?.includes("/modules/organization/access")) return "OrgFirms";
+    if (pathname?.includes("/modules/firm-management/firms") || pathname?.includes("/modules/organization/firms") || pathname.includes("/modules/organization/create") || pathname?.includes("/modules/organization/admins") || pathname?.includes("/modules/organization/access")) return "OrgFirms";
     if (pathname?.includes("/modules/organization/branding")) return "OrgBranding";
     if (pathname?.includes("/modules/organization/settings")) return "OrgSettings";
     if (pathname?.includes("/modules/organization/users")) return "OrgUsers";

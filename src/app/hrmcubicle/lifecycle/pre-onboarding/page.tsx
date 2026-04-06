@@ -155,7 +155,7 @@ const PreOnboardingPage = () => {
                             <Plus className="mr-2 h-4 w-4" /> Create Offer
                         </Button>
                     </DialogTrigger>
-                    <DialogContent className="bg-white rounded-[2rem] border border-slate-100 shadow-2xl p-8 max-w-3xl">
+                    <DialogContent className="bg-white rounded-[2rem] border-2 border-slate-200 shadow-2xl p-8 max-w-3xl">
                         <DialogHeader>
                             <DialogTitle className="text-xl font-bold text-slate-900 tracking-tight">New Candidate Offer</DialogTitle>
                             <DialogDescription className="text-[10px] font-bold text-slate-400">Stage 0: Generate offer letter & profile.</DialogDescription>
@@ -299,7 +299,7 @@ const PreOnboardingPage = () => {
 
             {/* BGV Review Dialog */}
             <Dialog open={isBGVDialogOpen} onOpenChange={(open) => { setIsBGVDialogOpen(open); if (!open) setPreviewDoc(null); }}>
-                <DialogContent className="bg-white rounded-[2rem] border-none shadow-2xl p-6 max-w-4xl">
+                <DialogContent className="bg-white rounded-[2rem] border-2 border-slate-200 shadow-2xl p-6 max-w-4xl">
                     <div className="flex gap-6 min-h-[400px]">
                         <div className="flex-1 space-y-4">
                             <DialogHeader>

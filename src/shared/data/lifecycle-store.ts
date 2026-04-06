@@ -1,5 +1,17 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import {
+    getAllOnboardings,
+    initiateOnboarding as initiateOnboardingApi,
+    updateOnboardingStatus as updateOnboardingStatusApi,
+    deleteOnboarding as deleteOnboardingApi,
+    getAllAssets as getAllAssetsApi,
+    createAsset as createAssetApi,
+    updateAssetApi,
+    deleteAssetApi,
+    assignAssetApi,
+    returnAssetApi,
+} from "@/modules/hrm/hooks/lifecycleHooks";
 
 export interface OnboardingTask {
     id: string;
@@ -173,6 +185,12 @@ interface LifecycleState {
     approveClearance: (id: string, dept: keyof ClearanceStatus) => void;
     completeClearance: (id: string) => void;
     finalizeSettlement: (id: string, amount: number) => void;
+
+    // Backend API Sync Methods
+    loadOnboardingsFromApi: () => Promise<void>;
+    loadAssetsFromApi: () => Promise<void>;
+    syncOnboardingToApi: (employeeId: string, data: any) => Promise<void>;
+    syncAssetToApi: (action: 'create' | 'update' | 'delete' | 'assign' | 'return', payload: any) => Promise<void>;
 }
 
 export const useLifecycleStore = create<LifecycleState>()(
@@ -758,7 +776,105 @@ export const useLifecycleStore = create<LifecycleState>()(
                     }
                     return a;
                 })
-            }))
+            })),
+
+            // ==================== Backend API Sync Methods ====================
+
+            loadOnboardingsFromApi: async () => {
+                try {
+                    const response = await getAllOnboardings();
+                    if (response?.data?.data) {
+                        const apiOnboardings = response.data.data;
+                        // Map API data to local NewHire format
+                        const mappedHires: NewHire[] = apiOnboardings.map((ob: any) => ({
+                            id: ob._id || ob.id,
+                            name: ob.employeeId?.firstName ? `${ob.employeeId.firstName} ${ob.employeeId.lastName || ''}`.trim() : ob.employeeName || 'Unknown',
+                            position: ob.designation || ob.position || 'N/A',
+                            department: ob.department || 'N/A',
+                            startDate: ob.startDate || ob.createdAt?.split('T')[0] || new Date().toISOString().split('T')[0],
+                            progress: ob.status === 'Completed' ? 100 : ob.status === 'InProgress' ? 50 : 0,
+                            status: ob.status === 'Completed' ? 'Completed' as const : ob.status === 'InProgress' ? 'Onboarding' as const : 'Pre-boarding' as const,
+                            mentor: ob.mentor || 'TBD',
+                            tasks: (ob.checklist || []).map((task: any, i: number) => ({
+                                id: task._id || `T${i}`,
+                                title: task.task || task.title || `Task ${i + 1}`,
+                                description: task.description || '',
+                                assignedTo: task.assignedTo || 'HR',
+                                dueDate: task.dueDate || ob.startDate || new Date().toISOString().split('T')[0],
+                                status: task.completed ? 'Completed' as const : 'Pending' as const,
+                            }))
+                        }));
+
+                        if (mappedHires.length > 0) {
+                            set({ newHires: mappedHires });
+                        }
+                    }
+                } catch (err) {
+                    console.warn("Could not load onboardings from API, using local data:", err);
+                }
+            },
+
+            loadAssetsFromApi: async () => {
+                try {
+                    const response = await getAllAssetsApi();
+                    if (response?.data?.data) {
+                        const apiAssets = response.data.data;
+                        const mappedAssets: InventoryAsset[] = apiAssets.map((asset: any) => ({
+                            id: asset._id || asset.assetId || asset.id,
+                            name: asset.name || asset.assetName || 'Unknown Asset',
+                            type: (['Laptop', 'Mobile', 'Monitor'].includes(asset.type || asset.category) ? asset.type || asset.category : 'Laptop') as InventoryAsset['type'],
+                            status: asset.status === 'assigned' ? 'Assigned' as const : asset.status === 'maintenance' ? 'Repair' as const : 'Available' as const,
+                            condition: (['Excellent', 'Good', 'Used'].includes(asset.condition) ? asset.condition : 'Good') as InventoryAsset['condition'],
+                            assignedTo: asset.assignedTo?._id || asset.assignedTo || undefined,
+                            history: (asset.history || []).map((h: any) => ({
+                                id: h._id || `AH${Date.now()}`,
+                                employeeId: h.employeeId || '',
+                                employeeName: h.employeeName || 'Unknown',
+                                action: h.action === 'assigned' ? 'Assigned' as const : 'Returned' as const,
+                                date: h.date || h.createdAt?.split('T')[0] || new Date().toISOString().split('T')[0],
+                            }))
+                        }));
+
+                        if (mappedAssets.length > 0) {
+                            set({ assets: mappedAssets });
+                        }
+                    }
+                } catch (err) {
+                    console.warn("Could not load assets from API, using local data:", err);
+                }
+            },
+
+            syncOnboardingToApi: async (employeeId, data) => {
+                try {
+                    await initiateOnboardingApi(employeeId, data);
+                } catch (err) {
+                    console.warn("Could not sync onboarding to API:", err);
+                }
+            },
+
+            syncAssetToApi: async (action, payload) => {
+                try {
+                    switch (action) {
+                        case 'create':
+                            await createAssetApi(payload);
+                            break;
+                        case 'update':
+                            await updateAssetApi(payload.id, payload.data);
+                            break;
+                        case 'delete':
+                            await deleteAssetApi(payload.id);
+                            break;
+                        case 'assign':
+                            await assignAssetApi({ assetId: payload.assetId, employeeId: payload.employeeId });
+                            break;
+                        case 'return':
+                            await returnAssetApi(payload.assetId);
+                            break;
+                    }
+                } catch (err) {
+                    console.warn(`Could not sync asset ${action} to API:`, err);
+                }
+            },
         }),
         {
             name: 'lifecycle-storage-v2',

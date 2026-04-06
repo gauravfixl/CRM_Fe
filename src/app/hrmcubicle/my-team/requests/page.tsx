@@ -105,7 +105,7 @@ const TeamRequestsPage = () => {
     };
 
     return (
-        <div className="flex-1 space-y-6 p-6 bg-[#f8fafc] min-h-screen text-start">
+        <div className="flex-1 space-y-6 p-6 bg-[#f8fafc] min-h-screen text-start" style={{ zoom: "90%" }}>
 
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                 <div>
@@ -338,7 +338,7 @@ const TeamRequestsPage = () => {
                         </div>
                         <div className="space-y-2">
                             <Label className="font-bold text-[9px] uppercase tracking-widest text-slate-400 ml-1">Batch Remark</Label>
-                            <Textarea placeholder="Add a comment for all processed requests..." className="rounded-xl border-none bg-slate-100/50 p-4 min-h-[100px] text-xs font-bold focus:bg-white shadow-inner" />
+                            <Textarea placeholder="Add a comment for all processed requests..." className="rounded-xl border border-slate-200 bg-slate-100/50 p-4 min-h-[100px] text-xs font-bold focus:bg-white shadow-inner" />
                         </div>
                     </div>
                     <DialogFooter className="flex-col gap-3">

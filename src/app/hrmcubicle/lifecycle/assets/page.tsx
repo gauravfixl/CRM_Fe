@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
     Laptop,
@@ -39,10 +39,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 const AssetAllocationPage = () => {
     const { toast } = useToast();
-    const { assets, employees, newHires, assignAsset, returnAsset, addAsset, deleteAsset, updateAsset } = useLifecycleStore();
+    const { assets, employees, newHires, assignAsset, returnAsset, addAsset, deleteAsset, updateAsset, loadAssetsFromApi, syncAssetToApi } = useLifecycleStore();
     const [searchTerm, setSearchTerm] = useState("");
     const [filterType, setFilterType] = useState("All");
     const [filterStatus, setFilterStatus] = useState("All");
+
+    // Try to load asset data from backend API on mount
+    useEffect(() => {
+        loadAssetsFromApi();
+    }, [loadAssetsFromApi]);
 
     const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
     const [isRegisterDialogOpen, setIsRegisterDialogOpen] = useState(false);
@@ -79,6 +84,7 @@ const AssetAllocationPage = () => {
         }
 
         assignAsset(selectedAssetId, selectedEmployeeId, employee.name);
+        syncAssetToApi('assign', { assetId: selectedAssetId, employeeId: selectedEmployeeId });
         setIsAssignDialogOpen(false);
         setSelectedAssetId("");
         setSelectedEmployeeId("");
@@ -91,6 +97,7 @@ const AssetAllocationPage = () => {
             return;
         }
         addAsset(newAssetForm);
+        syncAssetToApi('create', { name: newAssetForm.name, assetId: newAssetForm.id, type: newAssetForm.type, condition: newAssetForm.condition, status: newAssetForm.status });
         setNewAssetForm({ id: "", name: "", type: "Laptop", condition: "Excellent", status: "Available" });
         setIsRegisterDialogOpen(false);
         toast({ title: "Registered", description: "New item added to inventory master." });
@@ -99,6 +106,7 @@ const AssetAllocationPage = () => {
     const handleReturn = (e: React.MouseEvent, assetId: string) => {
         e.stopPropagation();
         returnAsset(assetId);
+        syncAssetToApi('return', { assetId });
         toast({ title: "Asset Returned", description: "Marked as Available in inventory." });
     };
 
@@ -123,7 +131,7 @@ const AssetAllocationPage = () => {
                                 <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> Register Item
                             </Button>
                         </DialogTrigger>
-                        <DialogContent className="bg-white rounded-xl border border-slate-100 p-6 max-w-sm shadow-2xl">
+                        <DialogContent className="bg-white rounded-xl border-2 border-slate-200 p-6 max-w-sm shadow-2xl">
                             <DialogHeader>
                                 <DialogTitle className="text-lg font-bold">Register New Asset</DialogTitle>
                                 <DialogDescription className="text-[10px] font-bold text-slate-400">Add a new device to the company inventory.</DialogDescription>
@@ -171,7 +179,7 @@ const AssetAllocationPage = () => {
                                 <Plus className="mr-1.5 h-3.5 w-3.5" /> Assign Asset
                             </Button>
                         </DialogTrigger>
-                        <DialogContent className="bg-white rounded-xl border border-slate-100 p-6 max-w-sm shadow-2xl">
+                        <DialogContent className="bg-white rounded-xl border-2 border-slate-200 p-6 max-w-sm shadow-2xl">
                             <DialogHeader>
                                 <DialogTitle className="text-lg font-bold">Assign Inventory</DialogTitle>
                                 <DialogDescription className="text-[10px] font-bold text-slate-400">Allocate an available asset to an active/onboarding employee.</DialogDescription>
@@ -366,7 +374,7 @@ const AssetAllocationPage = () => {
 
             {/* Asset Details & History Modal */}
             <Dialog open={isHistoryOpen} onOpenChange={setIsHistoryOpen}>
-                <DialogContent className="bg-white rounded-xl border border-slate-100 p-6 max-w-md shadow-2xl">
+                <DialogContent className="bg-white rounded-xl border-2 border-slate-200 p-6 max-w-md shadow-2xl">
                     <DialogHeader>
                         <div className="flex items-center gap-3 mb-2">
                             <div className="h-10 w-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400">

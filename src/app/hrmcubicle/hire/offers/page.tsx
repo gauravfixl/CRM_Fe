@@ -287,7 +287,7 @@ const OfferLettersPage = () => {
     });
 
     return (
-        <div className="flex-1 space-y-4 p-4 min-h-screen flex flex-col bg-[#fcfdff] overflow-y-auto custom-scrollbar">
+        <div className="flex-1 space-y-4 p-4 min-h-screen flex flex-col bg-[#fcfdff] overflow-y-auto custom-scrollbar" style={{ zoom: "90%" }}>
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
@@ -323,7 +323,7 @@ const OfferLettersPage = () => {
                                 placeholder="Search candidates or roles..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="pl-9 rounded-lg border-none bg-slate-50 h-8 font-bold text-[10px] text-slate-600 focus-visible:ring-2 focus-visible:ring-indigo-100 placeholder:text-slate-300"
+                                className="pl-9 rounded-lg border border-slate-200 bg-slate-50 h-8 font-bold text-[10px] text-slate-600 focus-visible:ring-2 focus-visible:ring-indigo-100 placeholder:text-slate-300"
                             />
                         </div>
                     </div>
@@ -439,7 +439,7 @@ const OfferLettersPage = () => {
                             <div className="col-span-2 grid grid-cols-[140px_1fr] items-center gap-4">
                                 <Label className="font-bold text-slate-700 text-xs text-right pr-2">Offer Template</Label>
                                 <Select value={offerForm.templateId} onValueChange={(val) => setOfferForm({ ...offerForm, templateId: val })}>
-                                    <SelectTrigger className="h-9 rounded-lg bg-slate-50 border-none font-bold px-3 text-xs">
+                                    <SelectTrigger className="h-9 rounded-lg bg-slate-50 border border-slate-200 font-bold px-3 text-xs">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent className="rounded-xl border-none font-bold">
@@ -452,22 +452,22 @@ const OfferLettersPage = () => {
 
                             <div className="grid grid-cols-[140px_1fr] items-center gap-4">
                                 <Label className="font-bold text-slate-700 text-xs text-right pr-2">Candidate Name</Label>
-                                <Input value={offerForm.candidateName} onChange={(e) => setOfferForm({ ...offerForm, candidateName: e.target.value })} className="h-9 rounded-lg bg-slate-50 border-none font-bold px-3 text-xs" />
+                                <Input value={offerForm.candidateName} onChange={(e) => setOfferForm({ ...offerForm, candidateName: e.target.value })} className="h-9 rounded-lg bg-slate-50 border border-slate-200 font-bold px-3 text-xs" />
                             </div>
 
                             <div className="grid grid-cols-[140px_1fr] items-center gap-4">
                                 <Label className="font-bold text-slate-700 text-xs text-right pr-2">Role</Label>
-                                <Input value={offerForm.role} onChange={(e) => setOfferForm({ ...offerForm, role: e.target.value })} className="h-9 rounded-lg bg-slate-50 border-none font-bold px-3 text-xs" />
+                                <Input value={offerForm.role} onChange={(e) => setOfferForm({ ...offerForm, role: e.target.value })} className="h-9 rounded-lg bg-slate-50 border border-slate-200 font-bold px-3 text-xs" />
                             </div>
 
                             <div className="grid grid-cols-[140px_1fr] items-center gap-4">
                                 <Label className="font-bold text-slate-700 text-xs text-right pr-2">Joining Date</Label>
-                                <Input type="date" value={offerForm.joiningDate} onChange={(e) => setOfferForm({ ...offerForm, joiningDate: e.target.value })} className="h-9 rounded-lg bg-slate-50 border-none font-bold px-3 text-xs" />
+                                <Input type="date" value={offerForm.joiningDate} onChange={(e) => setOfferForm({ ...offerForm, joiningDate: e.target.value })} className="h-9 rounded-lg bg-slate-50 border border-slate-200 font-bold px-3 text-xs" />
                             </div>
 
                             <div className="grid grid-cols-[140px_1fr] items-center gap-4">
                                 <Label className="font-bold text-slate-700 text-xs text-right pr-2">Offer Expiry</Label>
-                                <Input type="date" value={offerForm.expiryDate} onChange={(e) => setOfferForm({ ...offerForm, expiryDate: e.target.value })} className="h-9 rounded-lg bg-slate-50 border-none font-bold px-3 text-xs" />
+                                <Input type="date" value={offerForm.expiryDate} onChange={(e) => setOfferForm({ ...offerForm, expiryDate: e.target.value })} className="h-9 rounded-lg bg-slate-50 border border-slate-200 font-bold px-3 text-xs" />
                             </div>
                         </div>
 
@@ -490,15 +490,15 @@ const OfferLettersPage = () => {
                                 </div>
                                 <div className="grid grid-cols-[140px_1fr] items-center gap-4 text-slate-400">
                                     <Label className="font-bold text-slate-600 text-xs text-right pr-2">Basic Salary</Label>
-                                    <Input value={offerForm.basic} readOnly className="h-9 rounded-lg bg-slate-50/50 border-none font-medium px-3 text-xs opacity-70" />
+                                    <Input value={offerForm.basic} readOnly className="h-9 rounded-lg bg-slate-50/50 border border-slate-200 font-medium px-3 text-xs opacity-70" />
                                 </div>
                                 <div className="grid grid-cols-[140px_1fr] items-center gap-4 text-slate-400">
                                     <Label className="font-bold text-slate-600 text-xs text-right pr-2">HRA (20%)</Label>
-                                    <Input value={offerForm.hra} readOnly className="h-9 rounded-lg bg-slate-50/50 border-none font-medium px-3 text-xs opacity-70" />
+                                    <Input value={offerForm.hra} readOnly className="h-9 rounded-lg bg-slate-50/50 border border-slate-200 font-medium px-3 text-xs opacity-70" />
                                 </div>
                                 <div className="grid grid-cols-[140px_1fr] items-center gap-4 text-slate-400">
                                     <Label className="font-bold text-slate-600 text-xs text-right pr-2">Special Allowances</Label>
-                                    <Input value={offerForm.allowances} readOnly className="h-9 rounded-lg bg-slate-50/50 border-none font-medium px-3 text-xs opacity-70" />
+                                    <Input value={offerForm.allowances} readOnly className="h-9 rounded-lg bg-slate-50/50 border border-slate-200 font-medium px-3 text-xs opacity-70" />
                                 </div>
                             </div>
                         </div>

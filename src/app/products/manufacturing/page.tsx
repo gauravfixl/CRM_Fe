@@ -6,173 +6,176 @@ import {
     Cog,
     Layers,
     TrendingUp,
-    AlertTriangle,
-    Zap,
+    ShieldCheck,
+    Gauge,
+    ClipboardList,
 } from "lucide-react"
 
 const data = {
     name: "Manufacturing",
-    tagline: "Production management for modern manufacturers",
+    tagline: "Streamline production, maximize efficiency, deliver quality",
     description:
-        "CubicleERP Manufacturing delivers comprehensive production planning, quality control, and supply chain management for manufacturers of all sizes. From bill of materials and production scheduling to real-time shop floor tracking and supplier collaboration — everything you need to optimize production efficiency, reduce waste, and deliver products on time and within budget.",
+        "CubicleERP Manufacturing empowers modern manufacturers with end-to-end production management — from raw material procurement and BOM management to shop floor execution and finished goods dispatch. With built-in MRP, quality control, OEE tracking, and real-time production dashboards, you gain complete visibility across every stage of your manufacturing operations to reduce waste, improve throughput, and consistently deliver on time.",
     icon: Factory,
-    color: "#34495E",
-    lightColor: "#D5DBDB",
-    heroImage: "https://images.unsplash.com/photo-1565043666747-69f6646db940?w=1920&q=80",
+    color: "#9333EA",
+    lightColor: "#F3E8FF",
+    heroImage:
+        "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=1920&q=80",
+    variant: 4 as const,
     features: [
         {
             icon: Layers,
-            title: "Bill of Materials & Recipes",
+            title: "Bill of Materials Management",
             description:
-                "Create and manage complex bills of materials with multiple levels of sub-assemblies. Track component requirements, alternative materials, and cost variations. Version control ensures you're always using the correct specifications for each product variant.",
+                "Define and manage multi-level bills of materials with unlimited sub-assembly depth, alternative components, and configurable product variants. Track cost rollups across every BOM level in real time and maintain full version history so engineering changes never disrupt active production runs. Phantom assemblies, co-products, and by-product definitions ensure your BOM structure mirrors the real production process accurately.",
         },
         {
             icon: Cog,
-            title: "Production Planning & Scheduling",
+            title: "Material Requirements Planning (MRP)",
             description:
-                "Intelligent production scheduling that considers capacity, lead times, and demand forecasts. Automatically generate work orders, allocate resources, and optimize production sequences to minimize changeovers and maximize throughput. Adjust schedules in real-time based on demand changes or equipment issues.",
+                "Automatically calculate net material requirements based on demand forecasts, current inventory, open purchase orders, and production schedules. MRP runs generate planned purchase requisitions and production orders with optimal lot sizing, reducing excess stock while preventing shortages. Time-phased planning ensures materials arrive exactly when needed, keeping carrying costs low and production lines running without interruption.",
         },
         {
-            icon: AlertTriangle,
+            icon: ClipboardList,
+            title: "Production Scheduling & Work Orders",
+            description:
+                "Create, assign, and track work orders through every production stage with drag-and-drop Gantt scheduling that respects machine capacity, labor availability, and tooling constraints. Finite capacity scheduling automatically resolves conflicts and suggests optimal sequencing to minimize changeover time between production runs. Real-time status updates from the shop floor keep planners informed of progress, delays, and bottlenecks as they happen.",
+        },
+        {
+            icon: ShieldCheck,
             title: "Quality Control & Compliance",
             description:
-                "Implement quality checkpoints at every production stage with automated inspection workflows. Track defects, manage non-conformances, and maintain full traceability for regulatory compliance. Generate quality reports and identify improvement opportunities through statistical analysis.",
-        },
-        {
-            icon: TrendingUp,
-            title: "Shop Floor Execution",
-            description:
-                "Real-time visibility into production progress with mobile shop floor terminals. Track work order status, material consumption, labor hours, and equipment utilization. Capture production data automatically to eliminate manual data entry and improve accuracy.",
-        },
-        {
-            icon: Zap,
-            title: "Supplier Collaboration",
-            description:
-                "Manage supplier relationships with purchase order automation, delivery tracking, and performance metrics. Share demand forecasts with suppliers for better planning. Maintain supplier scorecards based on quality, delivery, and cost performance.",
+                "Embed inspection checkpoints at incoming material receipt, in-process stages, and final dispatch with configurable quality plans that define parameters, tolerances, and sampling rules. Automatically quarantine non-conforming materials, trigger corrective action workflows, and maintain complete lot traceability from raw material to finished product for audit readiness. Statistical process control charts and Pareto analysis help quality teams identify root causes and drive continuous improvement.",
         },
         {
             icon: Factory,
-            title: "Equipment & Maintenance Management",
+            title: "Shop Floor Management",
             description:
-                "Track equipment performance, schedule preventive maintenance, and manage maintenance work orders. Monitor equipment utilization and identify bottlenecks. Reduce unplanned downtime with predictive maintenance alerts based on equipment performance data.",
+                "Equip operators with intuitive shop floor terminals that display work instructions, capture production quantities, log material consumption, and record downtime reasons in real time. Barcode and RFID scanning streamline material issue, WIP tracking, and finished goods receipt, eliminating manual data entry errors. Supervisors get live dashboards showing machine status, operator performance, and work order progress across every production cell and line.",
+        },
+        {
+            icon: Gauge,
+            title: "OEE & Performance Tracking",
+            description:
+                "Measure Overall Equipment Effectiveness by automatically capturing availability, performance, and quality data from each machine and production line. Drill down into the six big losses — breakdowns, setup time, minor stoppages, reduced speed, startup rejects, and production rejects — to pinpoint exactly where efficiency is lost. Trend analysis and shift-by-shift comparisons help management set realistic targets, benchmark across facilities, and track improvement initiatives over time.",
         },
     ],
     benefits: [
         {
-            title: "Reduce Production Costs",
+            title: "Cut Production Costs by Up to 25%",
             description:
-                "Optimize material usage, minimize waste, and improve labor efficiency. Manufacturers using CubicleERP reduce production costs by 15-25% through better planning and execution.",
+                "Optimized material planning, reduced scrap rates, and improved labor utilization combine to significantly lower your per-unit manufacturing cost. Data-driven insights highlight the biggest cost drivers so you focus improvement efforts where they matter most.",
         },
         {
-            title: "Improve On-Time Delivery",
+            title: "Achieve 95%+ On-Time Delivery",
             description:
-                "Better production scheduling and real-time visibility ensure orders are completed on schedule. Reduce late deliveries and improve customer satisfaction with reliable delivery dates.",
+                "Accurate capacity planning and real-time schedule visibility ensure production commitments are met consistently. Proactive alerts on delays and bottlenecks give planners time to adjust before delivery dates are impacted.",
         },
         {
-            title: "Increase Equipment Utilization",
+            title: "Reduce Inventory Carrying Costs",
             description:
-                "Optimize production sequences to minimize changeovers and idle time. Real-time monitoring identifies bottlenecks and inefficiencies, allowing you to maximize throughput from existing equipment.",
+                "MRP-driven procurement ensures you buy only what you need, when you need it. Safety stock levels are calculated dynamically based on demand variability and supplier lead times, keeping working capital free without risking stockouts.",
         },
         {
-            title: "Enhance Product Quality",
+            title: "Improve First-Pass Quality Yield",
             description:
-                "Systematic quality control processes and traceability reduce defects and rework. Maintain compliance with industry standards and customer requirements with automated quality workflows.",
+                "Systematic quality checkpoints and real-time defect tracking catch issues early before they cascade through downstream operations. Fewer defects mean less rework, lower scrap, and higher customer satisfaction with every shipment.",
         },
         {
-            title: "Streamline Supply Chain",
+            title: "Maximize Equipment Uptime",
             description:
-                "Better demand forecasting and supplier collaboration reduce inventory levels while ensuring material availability. Improve supplier relationships with transparent performance metrics and collaborative planning.",
+                "Preventive maintenance scheduling driven by OEE data and equipment runtime hours reduces unplanned breakdowns. When machines run reliably, throughput increases without additional capital expenditure on new equipment.",
         },
         {
-            title: "Enable Data-Driven Decisions",
+            title: "Empower Data-Driven Decisions",
             description:
-                "Real-time production dashboards and analytics provide visibility into performance metrics. Identify improvement opportunities and make informed decisions about capacity, staffing, and process optimization.",
+                "Real-time production dashboards, cost variance reports, and trend analytics give managers the visibility they need to make informed decisions. From shift planning to capital investment, every decision is backed by accurate, up-to-the-minute operational data.",
         },
     ],
     steps: [
         {
             step: "1",
-            title: "Process Assessment",
+            title: "Map Your Production Processes",
             description:
-                "We analyze your current production processes, equipment, and workflows. We document your bill of materials structure, production sequences, and quality requirements to create a detailed implementation plan.",
+                "Our manufacturing consultants work alongside your production and engineering teams to document your BOMs, routing sequences, quality plans, and shop floor workflows. This detailed process map becomes the blueprint for configuring CubicleERP to match exactly how your factory operates.",
         },
         {
             step: "2",
-            title: "System Configuration",
+            title: "Configure & Integrate",
             description:
-                "We configure CubicleERP for your manufacturing operations including bill of materials setup, production workflows, quality checkpoints, and equipment tracking. Integrate with your existing systems and shop floor equipment.",
+                "We set up your bills of materials, work centers, production routings, MRP parameters, and quality inspection plans within CubicleERP. Integrations with your existing ERP modules, shop floor equipment, barcode scanners, and IoT devices are configured and tested to ensure seamless data flow across your operation.",
         },
         {
             step: "3",
-            title: "Training & Deployment",
+            title: "Train, Launch & Optimize",
             description:
-                "Comprehensive training for production planners, shop floor supervisors, and quality inspectors. Phased rollout starting with pilot production lines, followed by full deployment with ongoing support.",
+                "Role-based training ensures planners, operators, quality inspectors, and supervisors are confident using the system before go-live. We launch with a pilot production line, validate results, and then roll out across your entire facility with ongoing support and periodic performance reviews to continuously optimize your operations.",
         },
     ],
     useCases: [
         {
             title: "Discrete Manufacturing",
             description:
-                "Manufacturers of assembled products use CubicleERP to manage complex bills of materials, coordinate multi-stage production, and ensure quality at each assembly step.",
+                "Manufacturers of assembled products — from automotive components to electronics and industrial machinery — use CubicleERP to coordinate complex multi-stage production with hundreds of component parts and tight delivery schedules.",
             highlights: [
-                "Multi-level bill of materials with sub-assemblies",
-                "Work order generation and tracking",
-                "Quality checkpoints at each assembly stage",
+                "Multi-level BOM management with engineering change control",
+                "Finite capacity scheduling across multiple work centers",
+                "Full lot and serial number traceability for every assembly",
             ],
         },
         {
             title: "Process Manufacturing",
             description:
-                "Chemical, pharmaceutical, and food manufacturers use CubicleERP to manage recipes, batch production, and regulatory compliance with complete traceability.",
+                "Chemical, pharmaceutical, food and beverage, and cosmetics manufacturers rely on CubicleERP to manage batch recipes, track yield and potency, and maintain strict regulatory compliance with complete batch genealogy.",
             highlights: [
-                "Recipe management with ingredient tracking",
-                "Batch production with yield tracking",
-                "Regulatory compliance and traceability",
+                "Recipe and formula management with ingredient substitution rules",
+                "Batch production with yield, potency, and shelf-life tracking",
+                "FDA, GMP, and ISO compliance with automated audit trails",
             ],
         },
         {
-            title: "Contract Manufacturing",
+            title: "Make-to-Order & Job Shop",
             description:
-                "Contract manufacturers managing multiple customer orders use CubicleERP to coordinate production, track costs by customer, and maintain quality standards.",
+                "Custom and contract manufacturers handling diverse job orders use CubicleERP to quote accurately, plan capacity across concurrent jobs, and track profitability on every order from material issue through final shipment.",
             highlights: [
-                "Multi-customer order management",
-                "Cost tracking by customer and product",
-                "Quality compliance for each customer",
+                "Job costing with real-time material, labor, and overhead tracking",
+                "Dynamic scheduling that adapts to changing job priorities",
+                "Customer-specific quality standards and inspection protocols",
             ],
         },
     ],
     faqs: [
         {
-            question: "How does CubicleERP handle complex bill of materials?",
-            answer:
-                "CubicleERP supports unlimited levels of sub-assemblies and component hierarchies. You can define alternative materials, manage component variants, and track cost variations. The system automatically calculates total material requirements for production planning.",
+            question:
+                "How does CubicleERP handle complex, multi-level bills of materials?",
+            answer: "CubicleERP supports unlimited BOM levels with sub-assemblies, phantom assemblies, co-products, and by-products. You can define multiple BOM versions for the same product, manage engineering change orders with effective dates, and configure alternative components with substitution rules. The system automatically rolls up costs across all levels and calculates total material requirements for MRP planning, ensuring your production always references the correct specifications.",
         },
         {
-            question: "Can CubicleERP integrate with my shop floor equipment?",
-            answer:
-                "Yes. CubicleERP integrates with industrial IoT devices, PLCs, and manufacturing execution systems (MES) to capture real-time production data. We also provide mobile shop floor terminals for manual data entry where needed.",
+            question:
+                "Can the MRP engine handle both make-to-stock and make-to-order scenarios?",
+            answer: "Yes. CubicleERP's MRP engine supports make-to-stock, make-to-order, assemble-to-order, and engineer-to-order manufacturing strategies. You can configure different planning policies per product or product family. The system considers demand forecasts, actual sales orders, safety stock levels, reorder points, and supplier lead times to generate optimized procurement and production plans for each strategy.",
         },
         {
-            question: "How does production scheduling work?",
-            answer:
-                "CubicleERP uses demand forecasts, inventory levels, and production capacity to automatically generate optimized production schedules. The system considers lead times, changeover times, and resource constraints. You can manually adjust schedules based on business priorities.",
+            question:
+                "How does shop floor data collection work?",
+            answer: "CubicleERP provides browser-based shop floor terminals optimized for touch screens and industrial tablets. Operators scan barcodes or RFID tags to clock into work orders, report production quantities, log material consumption, and record downtime events with reason codes. The system also integrates with PLCs and IoT sensors to capture machine data automatically. All data flows into real-time dashboards that supervisors and planners can access from anywhere.",
         },
         {
-            question: "What quality control features are available?",
-            answer:
-                "CubicleERP provides quality checkpoints at any production stage, automated inspection workflows, defect tracking, and non-conformance management. Generate quality reports, track trends, and identify improvement opportunities through statistical analysis.",
+            question:
+                "What quality management capabilities are included?",
+            answer: "The quality module includes configurable inspection plans with sampling rules, measurement parameters, and tolerance limits. You can set up quality checkpoints at incoming goods receipt, in-process production stages, and final inspection before dispatch. Non-conformance management tracks defects through disposition, root cause analysis, and corrective actions. Statistical process control charts, Pareto analysis, and trend reports help quality teams drive continuous improvement across your operations.",
         },
         {
-            question: "How do you ensure regulatory compliance?",
-            answer:
-                "CubicleERP maintains complete traceability from raw materials through finished products. Automated audit trails, batch tracking, and compliance reporting help you meet industry regulations including FDA, ISO, and environmental standards.",
+            question:
+                "How is OEE calculated and what insights does it provide?",
+            answer: "OEE is calculated as the product of Availability, Performance, and Quality percentages for each machine or production line. CubicleERP captures planned vs. actual run time, ideal vs. actual cycle time, and total vs. good unit counts — either through operator input or automated machine integration. The system breaks losses into the six big loss categories so you can see exactly where efficiency is being lost. Shift comparisons, trend charts, and facility benchmarks help you set targets and measure the impact of improvement initiatives over time.",
         },
     ],
     stats: [
-        { value: "500+", label: "Manufacturing facilities" },
-        { value: "20%", label: "Cost reduction average" },
-        { value: "95%", label: "On-time delivery rate" },
-        { value: "40%", label: "Waste reduction" },
+        { value: "500+", label: "Manufacturing facilities managed" },
+        { value: "25%", label: "Average production cost reduction" },
+        { value: "95%", label: "On-time delivery achievement" },
+        { value: "40%", label: "Reduction in production waste" },
     ],
 }
 

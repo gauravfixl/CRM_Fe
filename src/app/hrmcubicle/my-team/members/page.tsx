@@ -50,7 +50,12 @@ import {
 
 const TeamMembersPage = () => {
     const { toast } = useToast();
-    const { members, addMember, updateMember, removeMember } = useTeamStore();
+    const { members, addMember, updateMember, removeMember, loadHrmEmployees, hrmEmployees } = useTeamStore();
+
+    // Load employees from API on mount
+    React.useEffect(() => {
+        loadHrmEmployees().catch(() => {});
+    }, []);
     const [searchTerm, setSearchTerm] = useState("");
     const [filterStatus, setFilterStatus] = useState<'All' | 'Active' | 'On Leave'>('All');
     const [isAddOpen, setIsAddOpen] = useState(false);
@@ -124,7 +129,7 @@ const TeamMembersPage = () => {
     };
 
     return (
-        <div className="flex-1 min-h-screen bg-[#f8fafc] p-5 space-y-5">
+        <div className="flex-1 min-h-screen bg-[#f8fafc] p-5 space-y-5" style={{ zoom: "90%" }}>
             <div className="flex flex-col md:flex-row justify-between md:items-center gap-6">
                 <div>
                     <h1 className="text-xl font-bold text-slate-900 tracking-tight leading-none">Team Members</h1>
@@ -149,7 +154,7 @@ const TeamMembersPage = () => {
                                     placeholder="Employee name"
                                     value={memberForm.name}
                                     onChange={e => setMemberForm({ ...memberForm, name: e.target.value })}
-                                    className="rounded-xl bg-slate-50 border-none h-12"
+                                    className="rounded-xl bg-slate-50 border border-slate-200 h-12"
                                 />
                             </div>
                             <div className="space-y-2">
@@ -159,7 +164,7 @@ const TeamMembersPage = () => {
                                     placeholder="email@company.com"
                                     value={memberForm.email}
                                     onChange={e => setMemberForm({ ...memberForm, email: e.target.value })}
-                                    className="rounded-xl bg-slate-50 border-none h-12"
+                                    className="rounded-xl bg-slate-50 border border-slate-200 h-12"
                                 />
                             </div>
                             <div className="space-y-2">
@@ -168,7 +173,7 @@ const TeamMembersPage = () => {
                                     placeholder="+91..."
                                     value={memberForm.phone}
                                     onChange={e => setMemberForm({ ...memberForm, phone: e.target.value })}
-                                    className="rounded-xl bg-slate-50 border-none h-12"
+                                    className="rounded-xl bg-slate-50 border border-slate-200 h-12"
                                 />
                             </div>
                             <div className="space-y-2">
@@ -177,7 +182,7 @@ const TeamMembersPage = () => {
                                     placeholder="e.g. UX Designer"
                                     value={memberForm.designation}
                                     onChange={e => setMemberForm({ ...memberForm, designation: e.target.value })}
-                                    className="rounded-xl bg-slate-50 border-none h-12"
+                                    className="rounded-xl bg-slate-50 border border-slate-200 h-12"
                                 />
                             </div>
                         </div>

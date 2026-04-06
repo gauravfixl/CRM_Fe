@@ -103,7 +103,7 @@ const SalaryRevisionPage = () => {
     };
 
     return (
-        <div className="flex flex-col h-full bg-[#f8fafc] font-sans overflow-y-auto" style={{ zoom: "67%" }}>
+        <div className="flex flex-col h-full bg-[#f8fafc] font-sans overflow-y-auto" style={{ zoom: "90%" }}>
             <div className="h-20 bg-white border-b border-slate-200 px-8 flex items-center justify-between sticky top-0 z-20 shadow-sm">
                 <div className="flex items-center gap-4">
                     <div className="h-10 w-10 bg-[#8B5CF6]/10 rounded-xl flex items-center justify-center text-[#8B5CF6]"><TrendingUp size={20} /></div>
@@ -122,16 +122,16 @@ const SalaryRevisionPage = () => {
                 {/* Stats */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                     {[
-                        { label: "Pending Revisions", val: stats.pending, icon: Clock, color: "text-amber-500", bg: "bg-amber-50" },
-                        { label: "Avg Increment", val: `${stats.avgIncrement}%`, icon: Percent, color: "text-[#8B5CF6]", bg: "bg-[#8B5CF6]/10" },
-                        { label: "Budget Impact", val: `₹${(stats.budgetImpact / 100000).toFixed(1)}L`, icon: DollarSign, color: "text-blue-500", bg: "bg-blue-50" },
-                        { label: "Approved This Cycle", val: stats.approved, icon: CheckCircle2, color: "text-emerald-500", bg: "bg-emerald-50" },
+                        { label: "Pending Revisions", val: stats.pending, icon: Clock, color: "text-amber-600", bg: "bg-amber-100", cardBg: "bg-amber-50 border-amber-200" },
+                        { label: "Avg Increment", val: `${stats.avgIncrement}%`, icon: Percent, color: "text-[#8B5CF6]", bg: "bg-[#8B5CF6]/20", cardBg: "bg-[#CB9DF0]/15 border-[#CB9DF0]/30" },
+                        { label: "Budget Impact", val: `₹${(stats.budgetImpact / 100000).toFixed(1)}L`, icon: DollarSign, color: "text-blue-600", bg: "bg-blue-100", cardBg: "bg-blue-50 border-blue-200" },
+                        { label: "Approved This Cycle", val: stats.approved, icon: CheckCircle2, color: "text-emerald-600", bg: "bg-emerald-100", cardBg: "bg-emerald-50 border-emerald-200" },
                     ].map((s, i) => (
-                        <Card key={i} className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                        <Card key={i} className={cn("rounded-2xl border shadow-sm", s.cardBg)}>
                             <CardContent className="p-5">
                                 <div className="flex items-center gap-3">
                                     <div className={`h-10 w-10 ${s.bg} ${s.color} rounded-xl flex items-center justify-center`}><s.icon size={20} /></div>
-                                    <div><p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">{s.label}</p><p className="text-xl font-bold text-slate-900">{s.val}</p></div>
+                                    <div><p className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">{s.label}</p><p className="text-xl font-bold text-slate-900">{s.val}</p></div>
                                 </div>
                             </CardContent>
                         </Card>

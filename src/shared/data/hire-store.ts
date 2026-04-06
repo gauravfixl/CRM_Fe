@@ -1,5 +1,26 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import {
+    getAllJobs,
+    createJobPosting,
+    updateJobPosting,
+    closeJobPosting,
+    getAllCandidates,
+    createCandidate,
+    updateCandidate,
+    updateCandidateStatus,
+    deleteCandidate as deleteCandidateApi,
+    getAllInterviews,
+    createInterview,
+    updateInterviewStatus,
+    submitInterviewFeedback,
+    deleteInterview as deleteInterviewApi,
+    getAllOffers,
+    createOffer,
+    updateOffer,
+    updateOfferStatus,
+    deleteOffer as deleteOfferApi,
+} from "@/modules/hrm/hooks/hrmHooks";
 
 // --- Shared Types ---
 export interface ActivityLog {
@@ -323,10 +344,131 @@ export const useHireStore = create<HireState>()(
             })),
             submitOfferForApproval: (id) => set((state) => ({
                 offers: state.offers.map(o => o.id === id ? { ...o, approvalStatus: 'Pending Approval' } : o)
-            }))
+            })),
+
+            // ===== API INTEGRATION =====
+            loadJobsFromApi: async () => {
+                try {
+                    const res = await getAllJobs();
+                    const data = res?.data?.data ?? res?.data ?? [];
+                    if (data.length > 0) {
+                        const mapped = data.map((j: any) => ({
+                            id: j._id || j.id,
+                            title: j.title || "",
+                            department: j.department || "",
+                            location: j.location || "",
+                            type: j.type || j.employmentType || "Full-time",
+                            experience: j.experience || "",
+                            salaryRange: j.salaryRange || j.salary || "",
+                            description: j.description || "",
+                            skills: j.skills || j.requiredSkills || [],
+                            hiringManagerId: j.hiringManager || "",
+                            recruiters: j.recruiters || [],
+                            workflowStatus: j.status || j.workflowStatus || "Active",
+                            approvalChain: j.approvalChain || [],
+                            applicantsCount: j.applicantsCount || 0,
+                            postedDate: j.createdAt ? new Date(j.createdAt).toISOString().split("T")[0] : "",
+                            views: j.views || 0,
+                            logs: j.logs || [],
+                        }));
+                        set({ jobs: mapped });
+                    }
+                } catch (err) { console.error("Failed to load jobs:", err); }
+            },
+
+            loadCandidatesFromApi: async () => {
+                try {
+                    const res = await getAllCandidates();
+                    const data = res?.data?.data ?? res?.data ?? [];
+                    if (data.length > 0) {
+                        const mapped = data.map((c: any) => ({
+                            id: c._id || c.id,
+                            jobId: c.jobId?._id || c.jobId || "",
+                            firstName: c.firstName || c.name?.split(" ")[0] || "",
+                            lastName: c.lastName || c.name?.split(" ").slice(1).join(" ") || "",
+                            email: c.email || "",
+                            phone: c.phone || "",
+                            resumeUrl: c.resumeUrl || c.resume || "",
+                            source: c.source || "Direct",
+                            status: c.status || "New",
+                            rating: c.rating || 0,
+                            skills: c.skills || [],
+                            appliedDate: c.createdAt ? new Date(c.createdAt).toISOString().split("T")[0] : "",
+                            notes: c.notes || [],
+                            logs: c.logs || [],
+                        }));
+                        set({ candidates: mapped });
+                    }
+                } catch (err) { console.error("Failed to load candidates:", err); }
+            },
+
+            loadInterviewsFromApi: async () => {
+                try {
+                    const res = await getAllInterviews();
+                    const data = res?.data?.data ?? res?.data ?? [];
+                    if (data.length > 0) {
+                        const mapped = data.map((i: any) => ({
+                            id: i._id || i.id,
+                            candidateId: i.candidateId?._id || i.candidateId || "",
+                            jobId: i.jobId?._id || i.jobId || "",
+                            title: i.title || i.roundTitle || "",
+                            interviewer: i.interviewer || "",
+                            date: i.date ? new Date(i.date).toISOString().split("T")[0] : "",
+                            time: i.time || "",
+                            duration: i.duration || "1 hour",
+                            mode: i.mode || "Video",
+                            location: i.location || i.meetingLink || "",
+                            status: i.status || "Scheduled",
+                            feedback: i.feedback || { rating: 0, strengths: "", concerns: "", recommendation: "", comments: "" },
+                            logs: i.logs || [],
+                        }));
+                        set({ interviews: mapped });
+                    }
+                } catch (err) { console.error("Failed to load interviews:", err); }
+            },
+
+            loadOffersFromApi: async () => {
+                try {
+                    const res = await getAllOffers();
+                    const data = res?.data?.data ?? res?.data ?? [];
+                    if (data.length > 0) {
+                        const mapped = data.map((o: any) => ({
+                            id: o._id || o.id,
+                            candidateId: o.candidateId?._id || o.candidateId || "",
+                            jobId: o.jobId?._id || o.jobId || "",
+                            candidateName: o.candidateName || "",
+                            role: o.role || o.position || "",
+                            ctc: o.ctc || o.salary || "",
+                            basic: o.basic || "",
+                            hra: o.hra || "",
+                            allowances: o.allowances || "",
+                            joiningDate: o.joiningDate ? new Date(o.joiningDate).toISOString().split("T")[0] : "",
+                            expiryDate: o.expiryDate ? new Date(o.expiryDate).toISOString().split("T")[0] : "",
+                            templateId: o.templateId || "standard_ft",
+                            status: o.status || "Draft",
+                            approvalStatus: o.approvalStatus || "Draft",
+                            logs: o.logs || [],
+                        }));
+                        set({ offers: mapped });
+                    }
+                } catch (err) { console.error("Failed to load offers:", err); }
+            },
+
+            createJobApi: async (data: any) => {
+                try { await createJobPosting(data); await (get() as any).loadJobsFromApi(); } catch (err) { console.error("Failed to create job:", err); throw err; }
+            },
+            createCandidateApi: async (data: any) => {
+                try { await createCandidate(data); await (get() as any).loadCandidatesFromApi(); } catch (err) { console.error("Failed to create candidate:", err); throw err; }
+            },
+            createInterviewApi: async (data: any) => {
+                try { await createInterview(data); await (get() as any).loadInterviewsFromApi(); } catch (err) { console.error("Failed to create interview:", err); throw err; }
+            },
+            createOfferApi: async (data: any) => {
+                try { await createOffer(data); await (get() as any).loadOffersFromApi(); } catch (err) { console.error("Failed to create offer:", err); throw err; }
+            },
         }),
         {
-            name: 'hire-storage-v2', // Versioned to avoid conflict
+            name: 'hire-storage-v2',
         }
     )
 );

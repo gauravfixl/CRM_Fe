@@ -42,7 +42,7 @@ import {
 import { useTeamStore } from "@/shared/data/team-store";
 
 const TeamLifecyclePage = () => {
-    const { members, lifecycleEvents, initiateTransition } = useTeamStore();
+    const { members, lifecycleEvents = [], initiateTransition } = useTeamStore() as any;
     const { toast } = useToast();
     const [mounted, setMounted] = useState(false);
     const [showTransition, setShowTransition] = useState(false);
@@ -185,7 +185,7 @@ const TeamLifecyclePage = () => {
     };
 
     return (
-        <div className="flex-1 space-y-6 p-6 bg-[#f8fafc] min-h-screen text-start font-sans">
+        <div className="flex-1 space-y-6 p-6 bg-[#f8fafc] min-h-screen text-start font-sans" style={{ zoom: "90%" }}>
 
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 text-start">
                 <div>
@@ -406,7 +406,7 @@ const TeamLifecyclePage = () => {
                         <div className="space-y-2">
                             <Label className="font-bold text-[9px] tracking-widest text-slate-400 ml-1">Select Team Member</Label>
                             <Select value={transitionMemberId} onValueChange={setTransitionMemberId}>
-                                <SelectTrigger className="h-11 rounded-xl border-none bg-slate-100/50 px-4 focus:bg-white shadow-inner font-bold text-sm">
+                                <SelectTrigger className="h-11 rounded-xl border border-slate-200 bg-slate-100/50 px-4 focus:bg-white font-bold text-sm">
                                     <SelectValue placeholder="Choose a direct report..." />
                                 </SelectTrigger>
                                 <SelectContent className="rounded-xl border-none shadow-xl bg-white">

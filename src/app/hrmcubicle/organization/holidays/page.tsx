@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     Calendar,
@@ -51,7 +51,9 @@ import {
 
 const HolidayCalendarPage = () => {
     const { toast } = useToast();
-    const { holidays, locations, addHoliday, updateHoliday, deleteHoliday } = useOrganisationStore();
+    const { holidays, locations, addHoliday, updateHoliday, deleteHoliday, loadHolidaysFromApi, createHolidayApi, updateHolidayApi, deleteHolidayApi } = useOrganisationStore();
+
+    useEffect(() => { loadHolidaysFromApi().catch(() => {}); }, []);
 
     const [searchQuery, setSearchQuery] = useState("");
     const [yearFilter, setYearFilter] = useState<string>(new Date().getFullYear().toString());
@@ -179,38 +181,38 @@ const HolidayCalendarPage = () => {
             <main className="p-8 pt-6 max-w-[1440px] mx-auto w-full space-y-8">
                 {/* Stats Section - Full Width */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
-                    <Card className="rounded-[2rem] border-none bg-indigo-50/80 text-indigo-900 p-6 shadow-sm ring-1 ring-indigo-100/50 group hover:shadow-xl transition-all">
+                    <Card className="rounded-xl border-none bg-gradient-to-br from-indigo-50 to-indigo-100/60 p-6 shadow-sm ring-1 ring-indigo-100 group hover:shadow-xl transition-all">
                         <div className="flex justify-between items-start">
                             <div>
-                                <p className="text-[10px] font-black text-indigo-400 capitalize tracking-widest leading-none mb-2">Total Holidays</p>
-                                <h3 className="text-3xl font-black tracking-tight">{filteredHolidays.length}</h3>
+                                <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest leading-none mb-2">Total Holidays</p>
+                                <h3 className="text-2xl font-extrabold text-indigo-700 tracking-tight">{filteredHolidays.length}</h3>
                                 <p className="text-[9px] font-bold text-indigo-400/60 mt-1 italic">Calendar year 2026</p>
                             </div>
-                            <div className="h-10 w-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-indigo-600">
+                            <div className="h-10 w-10 rounded-xl bg-indigo-100 flex items-center justify-center text-indigo-600">
                                 <Globe size={20} />
                             </div>
                         </div>
                     </Card>
-                    <Card className="rounded-[2rem] border-none bg-emerald-50/80 text-emerald-900 p-6 shadow-sm ring-1 ring-emerald-100/50 group hover:shadow-xl transition-all">
+                    <Card className="rounded-xl border-none bg-gradient-to-br from-emerald-50 to-emerald-100/60 p-6 shadow-sm ring-1 ring-emerald-100 group hover:shadow-xl transition-all">
                         <div className="flex justify-between items-start">
                             <div>
-                                <p className="text-[10px] font-black text-emerald-400 capitalize tracking-widest leading-none mb-2">Public Holidays</p>
-                                <h3 className="text-3xl font-black tracking-tight">{filteredHolidays.filter(h => h.type === 'Public').length}</h3>
+                                <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest leading-none mb-2">Public Holidays</p>
+                                <h3 className="text-2xl font-extrabold text-emerald-700 tracking-tight">{filteredHolidays.filter(h => h.type === 'Public').length}</h3>
                                 <p className="text-[9px] font-bold text-emerald-400/60 mt-1 italic">Standard gazetted days</p>
                             </div>
-                            <div className="h-10 w-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-emerald-600">
+                            <div className="h-10 w-10 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-600">
                                 <Calendar size={20} />
                             </div>
                         </div>
                     </Card>
-                    <Card className="rounded-[2rem] border-none bg-rose-50/80 text-rose-900 p-6 shadow-sm ring-1 ring-rose-100/50 group hover:shadow-xl transition-all">
+                    <Card className="rounded-xl border-none bg-gradient-to-br from-rose-50 to-rose-100/60 p-6 shadow-sm ring-1 ring-rose-100 group hover:shadow-xl transition-all">
                         <div className="flex justify-between items-start">
                             <div>
-                                <p className="text-[10px] font-black text-rose-400 capitalize tracking-widest leading-none mb-2">Company Specific</p>
-                                <h3 className="text-3xl font-black tracking-tight">{filteredHolidays.filter(h => h.type === 'Company').length}</h3>
+                                <p className="text-[10px] font-bold text-rose-400 uppercase tracking-widest leading-none mb-2">Company Specific</p>
+                                <h3 className="text-2xl font-extrabold text-rose-700 tracking-tight">{filteredHolidays.filter(h => h.type === 'Company').length}</h3>
                                 <p className="text-[9px] font-bold text-rose-400/60 mt-1 italic">Internal culture days</p>
                             </div>
-                            <div className="h-10 w-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-rose-600">
+                            <div className="h-10 w-10 rounded-xl bg-rose-100 flex items-center justify-center text-rose-600">
                                 <Star size={20} />
                             </div>
                         </div>
@@ -224,14 +226,14 @@ const HolidayCalendarPage = () => {
                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                             <Input
                                 placeholder="Search holiday across the organization..."
-                                className="pl-11 h-9 rounded-xl bg-slate-50 border-none shadow-none font-bold text-[10px] focus-visible:ring-2 focus-visible:ring-indigo-100 w-full"
+                                className="pl-11 h-9 rounded-xl bg-slate-50 border border-slate-200 shadow-none font-bold text-[10px] focus-visible:ring-2 focus-visible:ring-indigo-100 w-full"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
                         </div>
                         <div className="h-6 w-px bg-slate-100" />
                         <Select value={yearFilter} onValueChange={setYearFilter}>
-                            <SelectTrigger className="w-28 h-9 rounded-xl bg-white border-none font-bold text-[10px] ring-1 ring-slate-100">
+                            <SelectTrigger className="w-28 h-9 rounded-xl bg-white border border-slate-200 font-bold text-[10px]">
                                 <SelectValue placeholder="Select Year" />
                             </SelectTrigger>
                             <SelectContent className="rounded-xl border-none shadow-2xl p-2 font-bold text-[10px]">
@@ -241,7 +243,7 @@ const HolidayCalendarPage = () => {
                             </SelectContent>
                         </Select>
                         <Select value={locationFilter} onValueChange={setLocationFilter}>
-                            <SelectTrigger className="w-32 h-9 rounded-xl bg-white border-none font-bold text-[10px] ring-1 ring-slate-100">
+                            <SelectTrigger className="w-32 h-9 rounded-xl bg-white border border-slate-200 font-bold text-[10px]">
                                 <SelectValue placeholder="Location" />
                             </SelectTrigger>
                             <SelectContent className="rounded-xl border-none shadow-2xl p-2 font-bold text-[10px]">

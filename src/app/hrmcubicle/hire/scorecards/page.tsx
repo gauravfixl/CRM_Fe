@@ -295,17 +295,12 @@ const InterviewScorecardsPage = () => {
   const compareCards = candidateSummary.filter((c) => c.position === comparePosition)
 
   return (
-    <div className="flex-1 p-8 h-full flex flex-col bg-[#f8fafc] overflow-y-auto custom-scrollbar space-y-6">
+    <div className="flex-1 p-8 h-full flex flex-col bg-[#f8fafc] overflow-y-auto custom-scrollbar space-y-6" style={{ zoom: "90%" }}>
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => router.push("/hrmcubicle/hire")} className="rounded-xl">
-            <ArrowLeft className="h-4 w-4 mr-1" /> Back
-          </Button>
-          <div>
-            <h1 className="text-2xl font-black tracking-tight text-slate-900">Interview Scorecards</h1>
-            <p className="text-sm text-slate-500">Create evaluation templates and review candidate scores</p>
-          </div>
+        <div>
+          <h1 className="text-2xl font-black tracking-tight text-slate-900">Interview Scorecards</h1>
+          <p className="text-sm text-slate-500">Create evaluation templates and review candidate scores</p>
         </div>
         <div className="flex items-center gap-3">
           <Button variant="outline" className="rounded-xl font-bold" onClick={() => { setComparePosition(positions[0]); setCompareOpen(true) }}>
@@ -320,21 +315,21 @@ const InterviewScorecardsPage = () => {
       {/* Summary Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: "Total Evaluations", value: scorecards.length, icon: ClipboardList, color: "text-violet-600 bg-violet-50" },
-          { label: "Candidates Reviewed", value: candidateSummary.length, icon: Users, color: "text-blue-600 bg-blue-50" },
-          { label: "Hire Recommended", value: scorecards.filter((s) => s.recommendation === "Hire").length, icon: ThumbsUp, color: "text-emerald-600 bg-emerald-50" },
-          { label: "Templates", value: templates.length, icon: Layers, color: "text-amber-600 bg-amber-50" },
+          { label: "Total Evaluations", value: scorecards.length, icon: ClipboardList, bg: "bg-violet-50 border-violet-100", iconColor: "text-violet-600 bg-violet-100", valueColor: "text-violet-700" },
+          { label: "Candidates Reviewed", value: candidateSummary.length, icon: Users, bg: "bg-blue-50 border-blue-100", iconColor: "text-blue-600 bg-blue-100", valueColor: "text-blue-700" },
+          { label: "Hire Recommended", value: scorecards.filter((s) => s.recommendation === "Hire").length, icon: ThumbsUp, bg: "bg-emerald-50 border-emerald-100", iconColor: "text-emerald-600 bg-emerald-100", valueColor: "text-emerald-700" },
+          { label: "Templates", value: templates.length, icon: Layers, bg: "bg-amber-50 border-amber-100", iconColor: "text-amber-600 bg-amber-100", valueColor: "text-amber-700" },
         ].map((stat) => {
           const Icon = stat.icon
           return (
-            <Card key={stat.label} className="rounded-2xl border border-slate-200 bg-white shadow-sm p-4">
+            <Card key={stat.label} className={cn("rounded-2xl border shadow-sm p-5", stat.bg)}>
               <div className="flex items-center gap-3">
-                <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", stat.color)}>
+                <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", stat.iconColor)}>
                   <Icon className="h-5 w-5" />
                 </div>
                 <div>
-                  <p className="text-2xl font-black text-slate-900">{stat.value}</p>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{stat.label}</p>
+                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">{stat.label}</p>
+                  <p className={cn("text-lg font-bold", stat.valueColor)}>{stat.value}</p>
                 </div>
               </div>
             </Card>

@@ -56,48 +56,7 @@ export default function SSOIdentityProvidersPage() {
 
             <div className="p-4 md:p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
 
-                {/* Federation HUD */}
-                <div className="bg-gradient-to-br from-indigo-600 to-indigo-800 text-white p-6 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-10 relative overflow-hidden shadow-2xl">
-                    <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none text-white">
-                        <Globe className="h-64 w-64" />
-                    </div>
-                    <div className="relative z-10 space-y-6 max-w-2xl text-center md:text-left">
-                        <div className="flex items-center justify-center md:justify-start gap-3">
-                            <Badge className="bg-indigo-600 text-white border-0 rounded-lg px-3 font-bold text-xs tracking-widest">Federated Identity</Badge>
-                            <div className="flex items-center gap-1.5 text-emerald-500">
-                                <Activity className="w-3.5 h-3.5 animate-pulse" />
-                                <span className="text-xs font-bold tracking-widest">System Operational</span>
-                            </div>
-                        </div>
-                        <h2 className="text-2xl font-bold tracking-tighter leading-none text-white">Federation Gateway</h2>
-                        <p className="text-zinc-300 font-medium leading-relaxed text-lg italic opacity-90">
-                            Centralized Single Sign-On allows you to manage authentication across all corporate directories.
-                            Enforce protocol mapping and just-in-time (JIT) user provisioning.
-                        </p>
-                        <div className="flex items-center justify-center md:justify-start gap-10 pt-4">
-                            <div className="flex flex-col">
-                                <span className="text-4xl font-bold text-white italic tracking-tighter">2</span>
-                                <span className="text-xs font-bold text-zinc-400 tracking-widest">Configured</span>
-                            </div>
-                            <Separator orientation="vertical" className="h-10 bg-zinc-800" />
-                            <div className="flex flex-col">
-                                <span className="text-4xl font-bold text-indigo-500 italic tracking-tighter">1.2k</span>
-                                <span className="text-xs font-bold text-zinc-400 tracking-widest">Synced Identities</span>
-                            </div>
-                        </div>
-                    </div>
 
-                    <div className="shrink-0 relative z-10 w-full md:w-80 space-y-4">
-                        <div className="bg-zinc-900 border border-zinc-800 p-8 rounded-xl text-center space-y-2">
-                            <Server className="w-8 h-8 text-indigo-500 mx-auto mb-2 opacity-30" />
-                            <p className="text-xs font-bold text-zinc-400 tracking-widest">Identity Sync Engine</p>
-                            <p className="text-xl font-bold italic tracking-tighter text-white">Last Heartbeat: 2m ago</p>
-                            <div className="h-1 w-full bg-zinc-800 mt-4">
-                                <div className="h-full bg-emerald-500 w-[94%]"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
 
                 {/* Filters */}
                 <div className="flex items-center gap-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-2 rounded-xl shadow-sm">

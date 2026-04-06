@@ -177,12 +177,12 @@ const CandidatesPage = () => {
 
     // Stages Config
     const stages = [
-        { id: "New", title: "New Applied", color: "bg-slate-50/50", textColor: "text-slate-500", dot: "bg-slate-400", bar: "bg-slate-200" },
-        { id: "Screening", title: "Screening", color: "bg-sky-50/60", textColor: "text-sky-600", dot: "bg-sky-400", bar: "bg-sky-400" },
-        { id: "Interview", title: "Interview", color: "bg-indigo-50/60", textColor: "text-indigo-600", dot: "bg-indigo-400", bar: "bg-indigo-400" },
-        { id: "Offer", title: "Offered", color: "bg-amber-50/60", textColor: "text-amber-600", dot: "bg-amber-400", bar: "bg-amber-400" },
-        { id: "Hired", title: "Hired", color: "bg-emerald-50/60", textColor: "text-emerald-600", dot: "bg-emerald-400", bar: "bg-emerald-400" },
-        { id: "Rejected", title: "Rejected", color: "bg-rose-50/60", textColor: "text-rose-600", dot: "bg-rose-400", bar: "bg-rose-400" }
+        { id: "New", title: "New Applied", color: "bg-slate-50/50", textColor: "text-slate-500", dot: "bg-slate-400", bar: "bg-slate-200", border: "border-slate-300" },
+        { id: "Screening", title: "Screening", color: "bg-sky-50/60", textColor: "text-sky-600", dot: "bg-sky-400", bar: "bg-sky-400", border: "border-sky-300" },
+        { id: "Interview", title: "Interview", color: "bg-indigo-50/60", textColor: "text-indigo-600", dot: "bg-indigo-400", bar: "bg-indigo-400", border: "border-indigo-300" },
+        { id: "Offer", title: "Offered", color: "bg-amber-50/60", textColor: "text-amber-600", dot: "bg-amber-400", bar: "bg-amber-400", border: "border-amber-300" },
+        { id: "Hired", title: "Hired", color: "bg-emerald-50/60", textColor: "text-emerald-600", dot: "bg-emerald-400", bar: "bg-emerald-400", border: "border-emerald-300" },
+        { id: "Rejected", title: "Rejected", color: "bg-rose-50/60", textColor: "text-rose-600", dot: "bg-rose-400", bar: "bg-rose-400", border: "border-rose-300" }
     ];
 
     const filteredCandidates = useMemo(() => {
@@ -327,7 +327,7 @@ const CandidatesPage = () => {
     };
 
     return (
-        <div className={`flex-1 space-y-4 p-4 bg-[#fcfdff] flex flex-col ${viewMode === 'kanban' ? 'h-full overflow-hidden' : 'min-h-screen overflow-y-auto'}`}>
+        <div className={`flex-1 space-y-4 p-4 bg-[#fcfdff] flex flex-col ${viewMode === 'kanban' ? 'h-full overflow-hidden' : 'min-h-screen overflow-y-auto'}`} style={{ zoom: "90%" }}>
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
@@ -368,11 +368,11 @@ const CandidatesPage = () => {
                         placeholder="Search by name, email or skills..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-10 rounded-lg border-none bg-slate-50 h-9 w-full font-bold text-[11px] text-slate-700 focus-visible:ring-2 focus-visible:ring-purple-100 transition-all shadow-inner placeholder:text-slate-300"
+                        className="pl-10 rounded-lg border border-slate-200 bg-slate-50 h-9 w-full font-bold text-[11px] text-slate-700 focus-visible:ring-2 focus-visible:ring-purple-100 transition-all shadow-inner placeholder:text-slate-300"
                     />
                 </div>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="w-[160px] h-9 rounded-lg border-none bg-slate-50 font-bold text-[11px] text-slate-500 px-4 shadow-inner">
+                    <SelectTrigger className="w-[160px] h-9 rounded-lg border border-slate-200 bg-slate-50 font-bold text-[11px] text-slate-500 px-4 shadow-inner">
                         <div className="flex items-center gap-2">
                             <Filter className="h-3 w-3 text-slate-300" />
                             <span>{statusFilter === 'all' ? 'All Stages' : statusFilter}</span>
@@ -404,7 +404,7 @@ const CandidatesPage = () => {
                                             {stageCandidates.length}
                                         </Badge>
                                     </div>
-                                    <div className={`flex-1 ${stage.color} rounded-xl p-2 space-y-2 overflow-y-auto custom-scrollbar border border-dashed border-slate-200 relative`}>
+                                    <div className={`flex-1 ${stage.color} rounded-xl p-2 space-y-2 overflow-y-auto custom-scrollbar border border-dashed ${stage.border} relative`}>
                                         <div className={`absolute top-0 left-0 right-0 h-0.5 ${stage.bar} rounded-t-xl opacity-30`} />
                                         <AnimatePresence>
                                             {stageCandidates.map(candidate => {
@@ -606,7 +606,7 @@ const CandidatesPage = () => {
                                                 value={formData.jobId}
                                                 onValueChange={(val) => setFormData({ ...formData, jobId: val })}
                                             >
-                                                <SelectTrigger className="h-12 rounded-xl bg-slate-50 border-none font-bold">
+                                                <SelectTrigger className="h-12 rounded-xl bg-slate-50 border border-slate-200 font-bold">
                                                     <SelectValue placeholder="Select Job" />
                                                 </SelectTrigger>
                                                 <SelectContent className="rounded-xl border-none font-bold">
@@ -622,7 +622,7 @@ const CandidatesPage = () => {
                                                 value={formData.source}
                                                 onValueChange={(val) => setFormData({ ...formData, source: val })}
                                             >
-                                                <SelectTrigger className="h-12 rounded-xl bg-slate-50 border-none font-bold">
+                                                <SelectTrigger className="h-12 rounded-xl bg-slate-50 border border-slate-200 font-bold">
                                                     <SelectValue />
                                                 </SelectTrigger>
                                                 <SelectContent className="rounded-xl border-none font-bold">
@@ -638,7 +638,7 @@ const CandidatesPage = () => {
                                             <div className="relative">
                                                 <LinkIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                                                 <Input
-                                                    className="pl-10 h-12 rounded-xl bg-slate-50 border-none font-medium"
+                                                    className="pl-10 h-12 rounded-xl bg-slate-50 border border-slate-200 font-medium"
                                                     placeholder="https://drive.google.com/..."
                                                     value={formData.resumeUrl}
                                                     onChange={(e) => setFormData({ ...formData, resumeUrl: e.target.value })}
@@ -650,7 +650,7 @@ const CandidatesPage = () => {
                                             <div className="relative">
                                                 <Tag className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                                                 <Input
-                                                    className="pl-10 h-12 rounded-xl bg-slate-50 border-none font-medium"
+                                                    className="pl-10 h-12 rounded-xl bg-slate-50 border border-slate-200 font-medium"
                                                     placeholder="React, Figma, Urgent Hiring (comma separated)"
                                                     value={formData.tagsInput}
                                                     onChange={(e) => setFormData({ ...formData, tagsInput: e.target.value })}
@@ -668,7 +668,7 @@ const CandidatesPage = () => {
                                         <div className="space-y-2">
                                             <Label className="font-bold text-slate-700 ml-1">First Name</Label>
                                             <Input
-                                                className="h-12 rounded-xl bg-slate-50 border-none font-bold"
+                                                className="h-12 rounded-xl bg-slate-50 border border-slate-200 font-bold"
                                                 value={formData.firstName}
                                                 onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
                                             />
@@ -676,7 +676,7 @@ const CandidatesPage = () => {
                                         <div className="space-y-2">
                                             <Label className="font-bold text-slate-700 ml-1">Last Name</Label>
                                             <Input
-                                                className="h-12 rounded-xl bg-slate-50 border-none font-bold"
+                                                className="h-12 rounded-xl bg-slate-50 border border-slate-200 font-bold"
                                                 value={formData.lastName}
                                                 onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                                             />
@@ -685,7 +685,7 @@ const CandidatesPage = () => {
                                             <Label className="font-bold text-slate-700 ml-1">Email Address</Label>
                                             <Input
                                                 type="email"
-                                                className="h-12 rounded-xl bg-slate-50 border-none font-bold"
+                                                className="h-12 rounded-xl bg-slate-50 border border-slate-200 font-bold"
                                                 value={formData.email}
                                                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                             />
@@ -693,7 +693,7 @@ const CandidatesPage = () => {
                                         <div className="col-span-2 space-y-2">
                                             <Label className="font-bold text-slate-700 ml-1">Phone Number</Label>
                                             <Input
-                                                className="h-12 rounded-xl bg-slate-50 border-none font-bold"
+                                                className="h-12 rounded-xl bg-slate-50 border border-slate-200 font-bold"
                                                 value={formData.phone}
                                                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                                             />
@@ -702,7 +702,7 @@ const CandidatesPage = () => {
                                             <div className="col-span-2 space-y-2">
                                                 <Label className="font-bold text-slate-700 ml-1">Initial Note</Label>
                                                 <Textarea
-                                                    className="h-24 rounded-xl bg-slate-50 border-none font-medium resize-none"
+                                                    className="h-24 rounded-xl bg-slate-50 border border-slate-200 font-medium resize-none"
                                                     placeholder="Quick screening note..."
                                                     value={formData.notes}
                                                     onChange={(e) => setFormData({ ...formData, notes: e.target.value })}

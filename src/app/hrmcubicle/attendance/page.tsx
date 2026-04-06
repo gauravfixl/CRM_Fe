@@ -240,7 +240,7 @@ const MyAttendancePage = () => {
     const isCurrentMonth = currentMonth === new Date().getMonth() && currentYear === new Date().getFullYear();
 
     return (
-        <div className="flex-1 min-h-screen bg-[#f8fafc] p-6 space-y-6" style={{ zoom: "80%" }}>
+        <div className="flex-1 min-h-screen bg-[#f8fafc] p-6 space-y-6" style={{ zoom: "90%" }}>
             <div className="flex flex-col md:flex-row justify-between md:items-center gap-6">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900 tracking-tight">My Attendance</h1>

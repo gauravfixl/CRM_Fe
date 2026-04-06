@@ -406,7 +406,7 @@ export default function ApprovalChainsPage() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-xs text-white/80">Total Chains</p>
-                                <p className="text-xl font-semibold">{chains.length}</p>
+                                <p className="text-xl font-semibold text-white tracking-tight">{chains.length}</p>
                                 <p className="text-[10px] text-white/70">Approval workflows</p>
                             </div>
                             <GitBranch className="w-5 h-5 text-white/80" />

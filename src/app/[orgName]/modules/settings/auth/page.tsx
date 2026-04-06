@@ -161,6 +161,10 @@ export default function AuthenticationSettingsPage() {
                                 </div>
                                 <Switch
                                     checked={method.active}
+                                    onCheckedChange={(v) => {
+                                        setMethods(prev => ({ ...prev, [method.id]: v }))
+                                        toast.success(`${method.name} toggled ${v ? "on" : "off"}`)
+                                    }}
                                     className="data-[state=checked]:bg-indigo-600 h-6 w-11"
                                 />
                             </CardHeader>

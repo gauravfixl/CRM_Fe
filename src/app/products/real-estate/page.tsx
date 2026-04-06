@@ -2,177 +2,185 @@
 
 import ExploreProductPage from "@/components/landingpage2/explore/ExploreProductPage"
 import {
-    Building,
+    Home,
+    Building2,
     Users,
+    FileText,
     DollarSign,
-    Calendar,
-    BarChart3,
-    Workflow,
+    Search,
+    MapPin,
+    ClipboardCheck,
+    TrendingUp,
+    Handshake,
+    Eye,
+    FolderOpen,
 } from "lucide-react"
 
 const data = {
     name: "Real Estate",
-    tagline: "Property management & leasing platform",
+    tagline: "Close more deals, manage every property, delight every client",
     description:
-        "CubicleERP Real Estate is purpose-built for property management companies, real estate developers, and commercial landlords. Manage properties, tenants, leases, maintenance, and financials on a single platform. From residential portfolios to commercial real estate, streamline operations and maximize property profitability.",
-    icon: Building,
-    color: "#92400E",
-    lightColor: "#FFFBEB",
-    heroImage: "https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=1920&q=80",
+        "CubicleERP Real Estate is an all-in-one platform built for brokerages, property managers, and real estate developers. From capturing leads and matching buyers to managing tenants, tracking leases, and calculating commissions, every workflow lives in one place. Whether you handle residential sales, commercial leasing, or mixed-use portfolios, CubicleERP gives you the tools to grow revenue and deliver exceptional client experiences.",
+    icon: Home,
+    color: "#059669",
+    lightColor: "#D1FAE5",
+    heroImage:
+        "https://images.unsplash.com/photo-1582407947092-ff6e2780e24c?w=1920&q=80",
+    variant: 2 as const,
     features: [
         {
-            icon: Building,
-            title: "Property Management",
+            icon: Building2,
+            title: "Property Listings & Inventory",
             description:
-                "Centralized property management with complete property profiles, maintenance tracking, tenant information, and lease management. Track property status, maintenance history, and compliance requirements all in one place.",
+                "Maintain a comprehensive, searchable inventory of every property in your portfolio with rich detail including photos, floor plans, amenities, and pricing history. Listings sync across your website, property portals, and social channels so prospects always see up-to-date availability. Bulk-import properties from spreadsheets or MLS feeds and keep every record accurate with automated data validation.",
+        },
+        {
+            icon: TrendingUp,
+            title: "Deal Pipeline & Commission Tracking",
+            description:
+                "Visualize every transaction from initial inquiry through closing on a drag-and-drop pipeline board that mirrors your sales process. Automated commission splits calculate agent payouts, brokerage fees, and referral bonuses the moment a deal is marked closed. Built-in forecasting uses historical close rates to project monthly and quarterly revenue so leadership can plan with confidence.",
         },
         {
             icon: Users,
-            title: "Tenant Management",
+            title: "Tenant & Lease Management",
             description:
-                "Complete tenant profiles with lease information, contact details, payment history, and communication history. Manage tenant requests, maintenance issues, and lease renewals. Maintain tenant relationships and reduce turnover.",
+                "Store complete tenant profiles including contact details, lease terms, payment history, maintenance requests, and communication logs in a single timeline view. Automated alerts notify your team well before lease expirations, rent escalations, or renewal windows so nothing falls through the cracks. Tenants can submit maintenance requests and pay rent through a self-service portal, reducing administrative overhead for your property managers.",
         },
         {
-            icon: DollarSign,
-            title: "Rent Collection & Accounting",
+            icon: Search,
+            title: "Intelligent Client Matching",
             description:
-                "Automated rent collection with online payment options, late payment tracking, and automatic reminders. Integrated accounting for property expenses, maintenance costs, and profitability analysis by property.",
+                "CubicleERP analyzes buyer and renter preferences — budget, location, size, amenities — and instantly surfaces matching properties from your inventory. Smart scoring ranks each match so agents spend their time on the most promising showings rather than manual searches. When new listings are added, qualified prospects are automatically notified, keeping engagement high and reducing time-to-close.",
         },
         {
-            icon: Calendar,
-            title: "Lease Management",
+            icon: Eye,
+            title: "Virtual Tours & Inspection Management",
             description:
-                "Complete lease tracking with automatic renewal reminders, lease expiration alerts, and rent escalation calculations. Maintain lease documents, track lease terms, and manage lease amendments.",
+                "Embed 360-degree virtual tour links, video walkthroughs, and interactive floor plans directly on each property record so remote buyers can explore from anywhere. Schedule and track property inspections with checklists, photo uploads, and deficiency reports that attach automatically to the property file. Inspection findings feed into maintenance workflows, ensuring issues are resolved before they affect tenant satisfaction or sale negotiations.",
         },
         {
-            icon: BarChart3,
-            title: "Financial Analytics",
+            icon: FolderOpen,
+            title: "Document Management & e-Signatures",
             description:
-                "Track profitability by property, analyze occupancy rates, monitor maintenance costs, and generate financial reports. Identify opportunities to improve rental income and reduce expenses.",
-        },
-        {
-            icon: Workflow,
-            title: "Maintenance Workflow",
-            description:
-                "Automated maintenance request tracking, vendor management, and work order generation. Track maintenance history, schedule preventive maintenance, and manage maintenance budgets by property.",
+                "Centralize every document — lease agreements, disclosure forms, inspection reports, title deeds — in a secure, version-controlled repository organized by property and transaction. Built-in e-signature workflows let clients, agents, and landlords sign contracts digitally from any device, eliminating printing and courier delays. Role-based access controls ensure sensitive financial and legal documents are visible only to authorized team members.",
         },
     ],
     benefits: [
         {
-            title: "Maximize Rental Income",
+            title: "Close Deals Faster",
             description:
-                "Automated rent collection, late payment tracking, and occupancy optimization help maximize rental income. Reduce vacancy periods and improve collection rates.",
+                "Automated client matching, instant property alerts, and digital signature workflows cut the average time from inquiry to signed contract. Agents spend less time on paperwork and more time building relationships that drive referrals.",
         },
         {
-            title: "Reduce Operating Costs",
+            title: "Maximize Occupancy & Rental Income",
             description:
-                "Centralized maintenance management, vendor tracking, and preventive maintenance scheduling reduce emergency repairs and operating costs. Track expenses by property and identify cost-saving opportunities.",
+                "Proactive lease-expiration alerts, automated renewal reminders, and vacancy dashboards help you keep occupancy rates high. Rent escalation tracking ensures you capture every contractual increase without manual follow-up.",
         },
         {
-            title: "Improve Tenant Satisfaction",
+            title: "Eliminate Commission Errors",
             description:
-                "Responsive maintenance management, online rent payment options, and tenant communication tools improve tenant satisfaction and reduce turnover.",
+                "Automatic commission calculations based on configurable split structures remove spreadsheet guesswork and payment disputes. Agents see real-time earnings, and finance teams process payouts with a single click.",
         },
         {
-            title: "Streamline Operations",
+            title: "Deliver Outstanding Client Experiences",
             description:
-                "Unified platform for property management, tenant management, and financial tracking reduces manual work and eliminates data silos. Your team spends less time on administration and more time on tenant service.",
+                "Self-service portals for tenants and buyers, virtual tour integrations, and timely communication keep every stakeholder informed and engaged. Higher satisfaction translates directly into renewals, referrals, and positive reviews.",
         },
         {
-            title: "Enhance Financial Visibility",
+            title: "Gain Portfolio-Wide Visibility",
             description:
-                "Detailed financial analytics by property help you understand profitability, identify underperforming properties, and make data-driven decisions about your portfolio.",
+                "Real-time dashboards consolidate occupancy rates, revenue per property, maintenance spend, and pipeline value into a single view. Make data-driven decisions about acquisitions, dispositions, and capital improvements with full financial clarity.",
         },
         {
-            title: "Support Multi-Property Portfolios",
+            title: "Scale Without Adding Headcount",
             description:
-                "Manage multiple properties with unified management and financial tracking. Get portfolio-wide visibility while maintaining property-specific customization.",
+                "Automation across listings, lease management, inspections, and accounting means your team handles a growing portfolio without proportional staff increases. Standardized workflows ensure consistency whether you manage ten units or ten thousand.",
         },
     ],
     steps: [
         {
             step: "1",
-            title: "Portfolio Assessment",
+            title: "Portfolio & Workflow Discovery",
             description:
-                "Our real estate specialists conduct a thorough assessment of your property portfolio, tenant base, lease structures, and current management processes. We create a detailed implementation plan tailored to your portfolio.",
+                "Our real estate specialists map your property portfolio, transaction workflows, commission structures, and integration needs. We design a tailored configuration plan that mirrors how your brokerage or property management company actually operates — no generic templates.",
         },
         {
             step: "2",
-            title: "Configuration & Migration",
+            title: "Data Migration & System Setup",
             description:
-                "We configure CubicleERP for your properties, migrate existing tenant and lease data, set up financial tracking, and integrate with your existing tools. Your team receives comprehensive training on all features.",
+                "We import your existing property listings, tenant records, lease agreements, and financial history into CubicleERP with full data validation. Your team receives role-specific training — agents learn the deal pipeline, property managers master lease tracking, and leadership gets fluent in analytics dashboards.",
         },
         {
             step: "3",
-            title: "Go-Live & Optimization",
+            title: "Launch & Continuous Optimization",
             description:
-                "Phased rollout with parallel running periods ensures smooth transition. 24/7 support during go-live and ongoing optimization to maximize adoption and operational improvements.",
+                "A phased go-live ensures zero disruption to active deals and tenant operations. Post-launch, our team monitors adoption metrics, fine-tunes automation rules, and delivers quarterly reviews to help you unlock new efficiencies as your portfolio evolves.",
         },
     ],
     useCases: [
         {
-            title: "Large Property Management Companies",
+            title: "Residential Brokerages",
             description:
-                "Large property management companies with hundreds of properties use CubicleERP to standardize operations across their portfolio while maintaining property-specific customization.",
+                "Fast-moving residential brokerages use CubicleERP to manage hundreds of active listings, match buyers instantly, and close transactions with digital contracts — all while keeping commission accounting error-free.",
             highlights: [
-                "Multi-property management with unified financial tracking",
-                "Centralized tenant management across all properties",
-                "Portfolio-wide analytics and reporting",
+                "Automated buyer-property matching with smart scoring",
+                "Digital contract signing that cuts closing time by days",
+                "Real-time commission dashboards for agents and brokers",
             ],
         },
         {
-            title: "Commercial Real Estate",
+            title: "Commercial Property Managers",
             description:
-                "Commercial landlords and developers use CubicleERP to manage office buildings, retail centers, and industrial properties with complex lease structures and multiple tenants.",
+                "Commercial property managers rely on CubicleERP to handle complex multi-tenant leases, schedule inspections across large portfolios, and maintain full financial visibility from individual units to the entire portfolio.",
             highlights: [
-                "Complex lease management with multiple tenants per property",
-                "Commercial-specific financial tracking and reporting",
-                "Maintenance management for large commercial properties",
+                "Multi-tenant lease tracking with CAM and escalation clauses",
+                "Inspection scheduling with automated deficiency workflows",
+                "Portfolio-wide occupancy and revenue analytics",
             ],
         },
         {
-            title: "Residential Landlords",
+            title: "Real Estate Developers",
             description:
-                "Individual landlords and small property management companies use CubicleERP to manage residential properties, track rent collection, and handle maintenance.",
+                "Developers use CubicleERP to market new projects, track buyer interest from launch events through unit selection and final sale, and manage post-handover warranty and maintenance obligations.",
             highlights: [
-                "Simple property and tenant management",
-                "Automated rent collection and late payment tracking",
-                "Maintenance request tracking and vendor management",
+                "Project inventory management with unit-level status tracking",
+                "Buyer journey pipeline from expression of interest to handover",
+                "Post-sale warranty and snagging management",
             ],
         },
     ],
     faqs: [
         {
-            question: "Can CubicleERP handle complex lease structures?",
-            answer:
-                "Yes. CubicleERP supports various lease structures including fixed rent, percentage rent, triple net leases, and hybrid arrangements. You can configure rent escalations, CAM charges, and other lease-specific terms.",
+            question:
+                "Can CubicleERP handle both sales and rental workflows in one system?",
+            answer: "Absolutely. CubicleERP provides separate but interconnected pipelines for sales transactions and rental/lease management. Agents can track a property sale from listing to closing on one board while property managers handle tenant onboarding, rent collection, and lease renewals on another — all sharing the same property and contact database so nothing is duplicated.",
         },
         {
-            question: "Does CubicleERP support online rent payment?",
-            answer:
-                "Yes. CubicleERP includes integrated online payment options that allow tenants to pay rent securely. Payments are automatically recorded and reconciled with your accounting system.",
+            question:
+                "How does the commission calculation work for complex split structures?",
+            answer: "You define commission rules at the brokerage, team, or individual agent level — including percentage splits, flat fees, tiered structures, and referral bonuses. When a deal closes, CubicleERP automatically calculates each party's share, generates payout summaries, and feeds the amounts into your accounting module. Rules can be adjusted per transaction if a deal has a unique arrangement.",
         },
         {
-            question: "How does CubicleERP handle maintenance requests?",
-            answer:
-                "CubicleERP includes a maintenance request system where tenants can submit requests online. Requests are automatically routed to appropriate vendors, tracked through completion, and recorded in the property maintenance history.",
+            question:
+                "Does CubicleERP integrate with property listing portals and MLS systems?",
+            answer: "Yes. CubicleERP supports integrations with major property portals and MLS feeds so your listings publish automatically and inquiries flow back into your pipeline without manual data entry. We also offer an open API for custom integrations with regional or niche listing platforms your market relies on.",
         },
         {
-            question: "Can CubicleERP track maintenance costs by property?",
-            answer:
-                "Yes. All maintenance costs are tracked by property, allowing you to analyze maintenance expenses and identify properties with high maintenance costs. This helps you make decisions about property improvements or vendor changes.",
+            question:
+                "How does the tenant self-service portal work?",
+            answer: "Tenants receive secure login credentials to a branded portal where they can view lease details, submit and track maintenance requests, make rent payments online, and download statements. Maintenance requests are automatically routed to the assigned property manager and can trigger vendor work orders. This reduces phone calls and emails while giving tenants 24/7 access to the information they need.",
         },
         {
-            question: "Does CubicleERP support multiple currencies?",
-            answer:
-                "Yes. CubicleERP supports multiple currencies, making it suitable for international property portfolios. You can set rental rates and track expenses in different currencies with automatic conversion.",
+            question:
+                "Can we manage property inspections and attach reports to listings?",
+            answer: "Yes. You can schedule inspections directly from any property record, assign inspectors, and use customizable checklists with photo and note fields. Completed inspection reports are stored in the property's document repository and can be shared with prospective buyers or flagged for maintenance follow-up. Recurring inspection schedules can also be set for regulatory or internal compliance requirements.",
         },
     ],
     stats: [
-        { value: "1000+", label: "Properties managed" },
-        { value: "95%", label: "Average rent collection rate" },
-        { value: "30%", label: "Maintenance cost reduction" },
-        { value: "99.9%", label: "Platform uptime SLA" },
+        { value: "2,500+", label: "Properties managed on platform" },
+        { value: "40%", label: "Faster deal closing time" },
+        { value: "98%", label: "Rent collection rate" },
+        { value: "60%", label: "Reduction in admin workload" },
     ],
 }
 

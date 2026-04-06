@@ -30,8 +30,13 @@ import {
 } from "@/shared/components/ui/dropdown-menu";
 
 const TeamAttendancePage = () => {
-    const { members, attendance } = useTeamStore();
+    const { members, attendance, loadHrmEmployees, hrmEmployees } = useTeamStore();
     const { toast } = useToast();
+
+    // Load team members from API on mount
+    React.useEffect(() => {
+        loadHrmEmployees().catch(() => {});
+    }, []);
     const [searchTerm, setSearchTerm] = useState("");
 
     const presentCount = (attendance || []).filter(a => a.status === 'Present').length;
@@ -69,7 +74,7 @@ const TeamAttendancePage = () => {
     });
 
     return (
-        <div className="flex-1 min-h-screen bg-[#f8fafc] p-6 space-y-6">
+        <div className="flex-1 min-h-screen bg-[#f8fafc] p-6 space-y-6" style={{ zoom: "90%" }}>
             <div className="flex flex-col md:flex-row justify-between md:items-center gap-6">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900 tracking-tight leading-none">Team Attendance</h1>

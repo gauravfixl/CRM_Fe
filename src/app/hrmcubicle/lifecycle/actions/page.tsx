@@ -388,7 +388,7 @@ const LifecycleActionsPage = () => {
 
                 {/* Unified Action Dialog */}
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                    <DialogContent className="bg-white rounded-[2.5rem] border-none p-0 max-w-xl shadow-[0_50px_100px_-30px_rgba(0,0,0,0.2)] outline-none overflow-hidden">
+                    <DialogContent className="bg-white rounded-[2.5rem] border-2 border-slate-200 p-0 max-w-xl shadow-[0_50px_100px_-30px_rgba(0,0,0,0.2)] outline-none overflow-hidden">
                         <div style={{ transform: 'scale(0.85)', transformOrigin: 'center' }} className="p-12">
                             <div className="absolute -top-32 -left-32 h-64 w-64 rounded-full bg-[#CB9DF0]/10 -z-10 blur-[80px]" />
                             <div className="absolute -bottom-32 -right-32 h-64 w-64 rounded-full bg-[#F0C1E1]/10 -z-10 blur-[80px]" />

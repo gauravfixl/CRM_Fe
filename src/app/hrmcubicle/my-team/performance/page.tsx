@@ -30,7 +30,14 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
 
 const TeamPerformancePage = () => {
-    const { performance, addReview, updateGoals, members } = useTeamStore();
+    const { performance, addReview, updateGoals, members, loadHrmAppraisals, loadHrmGoals, loadHrmFeedback } = useTeamStore();
+
+    // Load performance data from API on mount
+    React.useEffect(() => {
+        loadHrmAppraisals().catch(() => {});
+        loadHrmGoals().catch(() => {});
+        loadHrmFeedback().catch(() => {});
+    }, []);
     const { toast } = useToast();
     const [isReviewOpen, setIsReviewOpen] = useState(false);
     const [isGoalOpen, setIsGoalOpen] = useState(false);
@@ -83,7 +90,7 @@ const TeamPerformancePage = () => {
     };
 
     return (
-        <div className="flex-1 min-h-screen bg-[#f8fafc] p-6 space-y-6 text-start">
+        <div className="flex-1 min-h-screen bg-[#f8fafc] p-6 space-y-6 text-start" style={{ zoom: "90%" }}>
             <div className="flex flex-col md:flex-row justify-between md:items-center gap-6">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900 tracking-tight leading-none">Team Performance</h1>
@@ -226,7 +233,7 @@ const TeamPerformancePage = () => {
                         <div className="space-y-2">
                             <Label className="font-bold text-slate-700 text-[10px] tracking-widest ml-1">Overall Rating</Label>
                             <Select value={rating} onValueChange={setRating}>
-                                <SelectTrigger className="rounded-xl h-10 bg-slate-50 border-none font-bold text-sm">
+                                <SelectTrigger className="rounded-xl h-10 bg-slate-50 border border-slate-200 font-bold text-sm">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent className="rounded-xl border-none shadow-xl bg-white">
@@ -273,14 +280,14 @@ const TeamPerformancePage = () => {
                                 placeholder="e.g. Lead the migration to Microservices"
                                 value={goalHeading}
                                 onChange={(e) => setGoalHeading(e.target.value)}
-                                className="rounded-xl h-10 bg-slate-50 border-none font-bold text-sm"
+                                className="rounded-xl h-10 bg-slate-50 border border-slate-200 font-bold text-sm"
                             />
                         </div>
                         <div className="grid grid-cols-2 gap-5">
                             <div className="space-y-2">
                                 <Label className="font-bold ml-1 text-[10px] text-slate-400 tracking-widest">Target Period</Label>
                                 <Select defaultValue="q2">
-                                    <SelectTrigger className="rounded-xl h-10 bg-slate-50 border-none font-bold text-sm">
+                                    <SelectTrigger className="rounded-xl h-10 bg-slate-50 border border-slate-200 font-bold text-sm">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent className="bg-white border-none shadow-xl rounded-xl">
@@ -294,7 +301,7 @@ const TeamPerformancePage = () => {
                             <div className="space-y-2">
                                 <Label className="font-bold ml-1 text-[10px] text-slate-400 tracking-widest">Priority</Label>
                                 <Select defaultValue="high">
-                                    <SelectTrigger className="rounded-xl h-10 bg-slate-50 border-none font-bold text-sm">
+                                    <SelectTrigger className="rounded-xl h-10 bg-slate-50 border border-slate-200 font-bold text-sm">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent className="bg-white border-none shadow-xl rounded-xl">

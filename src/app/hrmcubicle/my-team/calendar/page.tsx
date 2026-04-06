@@ -116,7 +116,7 @@ const TeamCalendarPage = () => {
     const todaysEvents = calendarEvents.filter(e => e.date === "2026-01-19");
 
     return (
-        <div className="flex-1 space-y-6 p-6 bg-[#f8fafc] min-h-screen text-start">
+        <div className="flex-1 space-y-6 p-6 bg-[#f8fafc] min-h-screen text-start" style={{ zoom: "90%" }}>
 
             {/* Header section */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
@@ -126,7 +126,7 @@ const TeamCalendarPage = () => {
                 </div>
                 <div className="flex items-center gap-3">
                     <Select defaultValue="jan">
-                        <SelectTrigger className="w-[160px] h-10 rounded-xl border-none shadow-sm font-bold text-slate-600 bg-white text-xs">
+                        <SelectTrigger className="w-[160px] h-10 rounded-xl border border-slate-200 shadow-sm font-bold text-slate-600 bg-white text-xs">
                             <SelectValue placeholder="Select Month" />
                         </SelectTrigger>
                         <SelectContent className="rounded-xl border-none shadow-xl bg-white">
@@ -322,7 +322,7 @@ const TeamCalendarPage = () => {
                                     placeholder="Meeting, Lunch, etc."
                                     value={newEventTitle}
                                     onChange={(e) => setNewEventTitle(e.target.value)}
-                                    className="rounded-xl bg-slate-50 border-none h-11 font-bold text-sm shadow-inner"
+                                    className="rounded-xl bg-slate-50 border border-slate-200 h-11 font-bold text-sm"
                                 />
                             </div>
                             <div className="space-y-1.5 text-start">
@@ -331,13 +331,13 @@ const TeamCalendarPage = () => {
                                     type="date"
                                     value={newEventDate}
                                     onChange={(e) => setNewEventDate(e.target.value)}
-                                    className="rounded-xl bg-slate-50 border-none h-11 font-bold text-sm shadow-inner"
+                                    className="rounded-xl bg-slate-50 border border-slate-200 h-11 font-bold text-sm"
                                 />
                             </div>
                             <div className="space-y-1.5 text-start">
                                 <Label className="text-[10px] font-bold text-slate-400 tracking-widest ml-1">Event Type</Label>
                                 <Select value={newEventType} onValueChange={(v: any) => setNewEventType(v)}>
-                                    <SelectTrigger className="rounded-xl bg-slate-50 border-none h-11 font-bold text-sm shadow-inner">
+                                    <SelectTrigger className="rounded-xl bg-slate-50 border border-slate-200 h-11 font-bold text-sm">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent className="rounded-xl border-none shadow-xl bg-white">

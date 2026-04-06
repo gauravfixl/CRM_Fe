@@ -19,7 +19,13 @@ import {
   ImagePlus,
   Loader2,
   ArrowLeft,
+  Briefcase,
+  Lock,
+  Smartphone,
+  ExternalLink
 } from "lucide-react";
+import { CustomButton } from "@/shared/components/custom/CustomButton";
+import { toast } from "sonner";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -44,6 +50,7 @@ export default function ProfilePage() {
     e.preventDefault();
     updateUser(localUser);
     setEditingSection(null);
+    toast.success("Profile updated successfully");
   };
 
   const handleAvatarUpload = async (e: ChangeEvent<HTMLInputElement>) => {
@@ -63,9 +70,11 @@ export default function ProfilePage() {
         updateUser({
           avatar: { url: res.data.profilePhoto, public_id: "" },
         } as any);
+        toast.success("Profile photo updated");
       }
     } catch (err) {
       console.error("Avatar upload failed:", err);
+      toast.error("Failed to upload avatar");
     } finally {
       setAvatarUploading(false);
       if (avatarInputRef.current) avatarInputRef.current.value = "";
@@ -78,17 +87,18 @@ export default function ProfilePage() {
 
     setCoverUploading(true);
     try {
-      // Store cover photo as base64 in local state since no backend API exists for cover
       const reader = new FileReader();
       reader.onload = () => {
         const base64 = reader.result as string;
         updateUser({ coverPhoto: base64 } as any);
         setCoverUploading(false);
+        toast.success("Cover photo updated");
       };
       reader.readAsDataURL(file);
     } catch (err) {
       console.error("Cover upload failed:", err);
       setCoverUploading(false);
+      toast.error("Failed to upload cover photo");
     }
     if (coverInputRef.current) coverInputRef.current.value = "";
   };
@@ -97,7 +107,7 @@ export default function ProfilePage() {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
-          <User className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+          <User className="w-12 h-12 text-slate-300 mx-auto mb-4" />
           <p className="text-slate-500 font-medium">No user data found.</p>
         </div>
       </div>
@@ -110,342 +120,293 @@ export default function ProfilePage() {
   const coverUrl = u.coverPhoto;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30">
+    <div className="min-h-screen bg-[#f8fafc] dark:bg-[#09090b] font-sans selection:bg-indigo-100 selection:text-indigo-900">
       {/* Hidden file inputs */}
-      <input
-        ref={avatarInputRef}
-        type="file"
-        accept="image/jpeg,image/png,image/webp,image/jpg"
-        className="hidden"
-        onChange={handleAvatarUpload}
-      />
-      <input
-        ref={coverInputRef}
-        type="file"
-        accept="image/jpeg,image/png,image/webp,image/jpg"
-        className="hidden"
-        onChange={handleCoverUpload}
-      />
+      <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
+      <input ref={coverInputRef} type="file" accept="image/*" className="hidden" onChange={handleCoverUpload} />
 
-      <div className="max-w-[1400px] mx-auto px-8 py-10">
-
-        {/* Page Header */}
-        <div className="mb-8 flex items-center gap-4">
-          <button
-            onClick={() => router.back()}
-            className="w-10 h-10 rounded-xl bg-white border border-slate-200 shadow-sm flex items-center justify-center hover:bg-slate-50 hover:border-slate-300 transition-colors cursor-pointer"
-          >
-            <ArrowLeft className="w-5 h-5 text-slate-600" />
-          </button>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">My Profile</h1>
-            <p className="text-sm text-slate-500 mt-1">Manage your personal information and preferences</p>
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+        
+        {/* Navigation & Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <CustomButton 
+              variant="outline" 
+              size="sm" 
+              className="rounded-xl border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm"
+              onClick={() => router.back()}
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" /> Back
+            </CustomButton>
+            <div>
+              <h1 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Account Settings</h1>
+              <p className="text-xs text-slate-500 font-medium">Manage your professional identity and security</p>
+            </div>
+          </div>
+          <div className="hidden sm:flex items-center gap-2">
+             <CustomButton variant="ghost" size="sm" className="text-xs font-bold text-slate-600 dark:text-zinc-400">
+                Sign out
+             </CustomButton>
           </div>
         </div>
 
-        {/* Profile Hero Card */}
-        <div className="relative bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden mb-6">
-          {/* Cover Photo / Banner */}
-          <div className="h-44 relative group">
+        {/* Profile Card */}
+        <div className="relative bg-white dark:bg-zinc-900 rounded-3xl border border-slate-200/60 dark:border-zinc-800/50 shadow-xl shadow-slate-200/20 dark:shadow-none overflow-hidden">
+          {/* Banner Container */}
+          <div className="h-40 relative group overflow-hidden">
             {coverUrl ? (
-              <img src={coverUrl} alt="Cover" className="w-full h-full object-cover" />
+              <img src={coverUrl} alt="Cover" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
             ) : (
-              <div className="w-full h-full bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 relative">
-                <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0djItSDJ2LTJoMzR6bTAtMzB2Mkgydi0yaDM0em0wIDEwdjJIMnYtMmgzNHptMCAxMHYySDJ2LTJoMzR6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-30" />
+              <div className="w-full h-full bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-700 relative">
+                <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-50 contrast-150" />
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/20" />
               </div>
             )}
-            {/* Cover photo overlay on hover */}
-            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition-all">
-              <button
+            
+            {/* Banner Actions Overlay */}
+            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3 backdrop-blur-[2px]">
+              <CustomButton 
+                size="sm" 
+                className="bg-white/90 text-slate-900 hover:bg-white border-none font-bold"
                 onClick={() => coverInputRef.current?.click()}
-                disabled={coverUploading}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/90 text-slate-700 text-xs font-bold shadow-lg hover:bg-white transition-colors cursor-pointer"
               >
-                {coverUploading ? (
-                  <><Loader2 className="w-4 h-4 animate-spin" /> Uploading...</>
-                ) : (
-                  <><ImagePlus className="w-4 h-4" /> Change Cover Photo</>
-                )}
-              </button>
+                <ImagePlus className="w-3.5 h-3.5 mr-2" /> Change Cover
+              </CustomButton>
               {coverUrl && (
-                <button
+                <CustomButton 
+                  size="sm" 
+                  variant="destructive"
+                  className="bg-red-500/90 text-white font-bold"
                   onClick={() => updateUser({ coverPhoto: undefined } as any)}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-red-500/90 text-white text-xs font-bold shadow-lg hover:bg-red-600 transition-colors cursor-pointer"
                 >
-                  <X className="w-4 h-4" /> Remove
-                </button>
+                  Remove
+                </CustomButton>
               )}
             </div>
           </div>
 
-          {/* Avatar & Info */}
-          <div className="px-8 pb-8 -mt-16 relative">
-            <div className="flex flex-col sm:flex-row sm:items-end gap-5">
-              {/* Avatar */}
-              <div className="relative group">
-                <div className="w-32 h-32 rounded-2xl bg-white p-1.5 shadow-lg shadow-slate-200/50">
+          {/* Profile Details Container */}
+          <div className="px-8 pb-8">
+            <div className="flex flex-col md:flex-row md:items-end gap-6 -mt-12 relative z-10">
+              {/* Avatar section */}
+              <div className="relative group shrink-0">
+                <div className="w-28 h-28 rounded-2xl bg-white dark:bg-zinc-900 p-1.5 shadow-2xl ring-4 ring-white dark:ring-zinc-900">
                   {avatarUrl ? (
-                    <img
-                      src={avatarUrl}
-                      alt="Profile"
-                      className="w-full h-full rounded-xl object-cover"
-                    />
+                    <img src={avatarUrl} alt="Avatar" className="w-full h-full rounded-xl object-cover" />
                   ) : (
-                    <div className="w-full h-full rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
-                      <span className="text-3xl font-bold text-white">{initials}</span>
+                    <div className="w-full h-full rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center text-white text-2xl font-black">
+                      {initials}
+                    </div>
+                  )}
+                  {/* Photo Edit Overlay */}
+                  <div className="absolute inset-1.5 bg-black/40 rounded-xl opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer" onClick={() => avatarInputRef.current?.click()}>
+                     <Camera className="w-6 h-6 text-white text-opacity-80" />
+                  </div>
+                </div>
+                <button 
+                  className="absolute -bottom-1 -right-1 w-8 h-8 bg-indigo-600 text-white rounded-lg shadow-lg flex items-center justify-center border-2 border-white dark:border-zinc-900 hover:bg-indigo-700 transition-all active:scale-90"
+                  onClick={() => avatarInputRef.current?.click()}
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              {/* Identity & Badges */}
+              <div className="flex-1 space-y-2 pb-1">
+                <div className="flex items-center gap-3">
+                  <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">{u.firstName} {u.lastName}</h2>
+                  <span className="px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 text-[10px] font-black uppercase tracking-widest border border-indigo-100/50 dark:border-indigo-900/50 shadow-sm">
+                    {u.role || "Administrator"}
+                  </span>
+                </div>
+                <div className="flex flex-wrap items-center gap-4 text-xs font-bold text-slate-500 dark:text-zinc-400">
+                  <div className="flex items-center gap-1.5">
+                    <Mail className="w-3.5 h-3.5 text-slate-400" />
+                    {u.email}
+                  </div>
+                  {singleOrg?.orgName && (
+                    <div className="flex items-center gap-1.5">
+                      <Building2 className="w-3.5 h-3.5 text-slate-400" />
+                      {singleOrg.orgName}
                     </div>
                   )}
                 </div>
-                {/* Avatar upload button */}
-                <button
-                  onClick={() => avatarInputRef.current?.click()}
-                  disabled={avatarUploading}
-                  className="absolute -bottom-1 -right-1 w-10 h-10 bg-white rounded-xl shadow-md flex items-center justify-center border border-slate-200 hover:bg-blue-50 hover:border-blue-300 transition-colors cursor-pointer"
-                >
-                  {avatarUploading ? (
-                    <Loader2 className="w-4 h-4 text-blue-600 animate-spin" />
-                  ) : (
-                    <Camera className="w-4 h-4 text-slate-600" />
-                  )}
-                </button>
-                {/* Avatar remove button */}
-                {avatarUrl && (
-                  <button
-                    onClick={() => updateUser({ avatar: undefined } as any)}
-                    className="absolute -top-1 -right-1 w-7 h-7 bg-red-500 rounded-lg shadow-md flex items-center justify-center hover:bg-red-600 transition-colors cursor-pointer opacity-0 group-hover:opacity-100"
-                  >
-                    <X className="w-3.5 h-3.5 text-white" />
-                  </button>
-                )}
               </div>
 
-              {/* Name & Role */}
-              <div className="flex-1 pb-1">
-                <h2 className="text-2xl font-bold text-slate-900">{u.firstName} {u.lastName}</h2>
-                <div className="flex flex-wrap items-center gap-3 mt-1.5">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold">
-                    <Shield className="w-3 h-3" />
-                    {u.role || "User"}
-                  </span>
-                  {singleOrg?.orgName && (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-600 text-xs font-semibold">
-                      <Building2 className="w-3 h-3" />
-                      {singleOrg.orgName}
-                    </span>
-                  )}
-                </div>
+              {/* Global Actions */}
+              <div className="flex items-center gap-2">
+                <CustomButton 
+                   className="rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200 dark:shadow-none font-bold text-xs h-9 px-5"
+                   onClick={() => setEditingSection(editingSection ? null : "personal")}
+                >
+                  {editingSection === "personal" ? <><X className="w-3.5 h-3.5 mr-2" /> Cancel Edit</> : <><Pencil className="w-3.5 h-3.5 mr-2" /> Edit Profile</>}
+                </CustomButton>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Info Cards Grid */}
-        <div className="grid gap-6">
-
-          {/* Personal Information */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm">
-            <div className="flex items-center justify-between px-7 py-5 border-b border-slate-100">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center">
-                  <User className="w-4.5 h-4.5 text-blue-600" />
-                </div>
-                <div>
-                  <h3 className="text-base font-semibold text-slate-900">Personal Information</h3>
-                  <p className="text-xs text-slate-400 mt-0.5">Your basic contact details</p>
+        {/* Form Sections */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          
+          {/* Main Info Columns */}
+          <div className="lg:col-span-2 space-y-6">
+            
+            {/* Personal Details Section */}
+            <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-slate-200/60 dark:border-zinc-800/50 p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-950/30 flex items-center justify-center">
+                    <User className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-tight">Basic Information</h3>
                 </div>
               </div>
-              {editingSection !== "personal" && (
-                <button
-                  onClick={() => setEditingSection("personal")}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-                >
-                  <Pencil className="w-3.5 h-3.5" />
-                  Edit
-                </button>
-              )}
-            </div>
 
-            <div className="px-7 py-6">
               {editingSection === "personal" ? (
-                <form onSubmit={handleSubmit} className="space-y-5">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {[
                       { name: "firstName", label: "First Name", icon: User },
                       { name: "lastName", label: "Last Name", icon: User },
-                      { name: "email", label: "Email Address", icon: Mail },
-                      { name: "phone", label: "Phone Number", icon: Phone },
+                      { name: "phone", label: "Phone & Contact", icon: Smartphone },
                     ].map(({ name, label, icon: Icon }) => (
-                      <div key={name}>
-                        <label className="block text-xs font-semibold text-slate-500 mb-1.5">{label}</label>
+                      <div key={name} className="space-y-1.5">
+                        <label className="text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest px-1">{label}</label>
                         <div className="relative">
-                          <Icon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                          <Icon className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                           <input
-                            type={name === "email" ? "email" : "text"}
                             name={name}
                             value={u[name] || ""}
                             onChange={handleChange}
-                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50/50 text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all"
+                            className="w-full pl-9 pr-4 py-2 text-sm font-bold text-slate-800 dark:text-zinc-200 bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
                           />
                         </div>
                       </div>
                     ))}
                   </div>
-                  <div className="flex items-center gap-3 pt-2">
-                    <button
-                      type="submit"
-                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-colors shadow-sm shadow-blue-200"
-                    >
-                      <Check className="w-4 h-4" />
+                  <div className="flex items-center gap-2 pt-2">
+                    <CustomButton type="submit" size="sm" className="bg-indigo-600 hover:bg-indigo-700 font-bold px-6">
                       Save Changes
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setEditingSection(null)}
-                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-100 text-slate-600 text-xs font-bold hover:bg-slate-200 transition-colors"
-                    >
-                      <X className="w-4 h-4" />
-                      Cancel
-                    </button>
+                    </CustomButton>
+                    <CustomButton type="button" variant="ghost" size="sm" onClick={() => setEditingSection(null)} className="text-xs font-bold text-slate-500">
+                      Discard
+                    </CustomButton>
                   </div>
                 </form>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-6 gap-x-12">
                   {[
                     { label: "First Name", value: u.firstName, icon: User },
                     { label: "Last Name", value: u.lastName, icon: User },
                     { label: "Email Address", value: u.email, icon: Mail },
                     { label: "Phone Number", value: u.phone, icon: Phone },
                   ].map(({ label, value, icon: Icon }) => (
-                    <div key={label} className="flex items-start gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-slate-50 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <Icon className="w-4 h-4 text-slate-400" />
+                    <div key={label} className="group">
+                      <div className="flex items-center gap-2 mb-1">
+                         <Icon className="w-3.5 h-3.5 text-slate-400 group-hover:text-indigo-500 transition-colors" />
+                         <span className="text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest">{label}</span>
                       </div>
-                      <div>
-                        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{label}</p>
-                        <p className="text-sm font-semibold text-slate-800 mt-0.5">{value || "—"}</p>
-                      </div>
+                      <p className="text-sm font-bold text-slate-800 dark:text-zinc-200 pl-5">{value || "Not set"}</p>
                     </div>
                   ))}
                 </div>
               )}
             </div>
-          </div>
 
-          {/* Address */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm">
-            <div className="flex items-center justify-between px-7 py-5 border-b border-slate-100">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center">
-                  <MapPin className="w-4.5 h-4.5 text-emerald-600" />
+            {/* Workplace & Location */}
+            <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-slate-200/60 dark:border-zinc-800/50 p-6 shadow-sm">
+               <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 flex items-center justify-center">
+                    <Briefcase className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  </div>
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-tight">Workplace & Origin</h3>
                 </div>
-                <div>
-                  <h3 className="text-base font-semibold text-slate-900">Address</h3>
-                  <p className="text-xs text-slate-400 mt-0.5">Your location details</p>
-                </div>
+                {editingSection !== "address" && (
+                   <button onClick={() => setEditingSection("address")} className="text-[10px] font-black text-indigo-600 uppercase hover:underline">Manage</button>
+                )}
               </div>
-              {editingSection !== "address" && (
-                <button
-                  onClick={() => setEditingSection("address")}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 transition-colors"
-                >
-                  <Pencil className="w-3.5 h-3.5" />
-                  Edit
-                </button>
-              )}
-            </div>
 
-            <div className="px-7 py-6">
-              {editingSection === "address" ? (
-                <form onSubmit={handleSubmit} className="space-y-5">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+               {editingSection === "address" ? (
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     {[
                       { name: "country", label: "Country", icon: Globe },
                       { name: "city", label: "City", icon: Building2 },
                       { name: "state", label: "State", icon: MapPin },
                     ].map(({ name, label, icon: Icon }) => (
-                      <div key={name}>
-                        <label className="block text-xs font-semibold text-slate-500 mb-1.5">{label}</label>
+                      <div key={name} className="space-y-1.5">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">{label}</label>
                         <div className="relative">
-                          <Icon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                          <Icon className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                           <input
-                            type="text"
                             name={name}
                             value={u[name] || ""}
                             onChange={handleChange}
-                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50/50 text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 transition-all"
+                            className="w-full pl-9 pr-4 py-2 text-sm font-bold text-slate-800 dark:text-zinc-200 bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-xl outline-none"
                           />
                         </div>
                       </div>
                     ))}
                   </div>
-                  <div className="flex items-center gap-3 pt-2">
-                    <button
-                      type="submit"
-                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 transition-colors shadow-sm shadow-emerald-200"
-                    >
-                      <Check className="w-4 h-4" />
-                      Save Changes
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setEditingSection(null)}
-                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-100 text-slate-600 text-xs font-bold hover:bg-slate-200 transition-colors"
-                    >
-                      <X className="w-4 h-4" />
-                      Cancel
-                    </button>
-                  </div>
+                  <CustomButton type="submit" size="sm" className="bg-emerald-600 hover:bg-emerald-700 font-bold px-6 border-none">Update Location</CustomButton>
                 </form>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  {[
-                    { label: "Country", value: u.country, icon: Globe },
-                    { label: "City", value: u.city, icon: Building2 },
-                    { label: "State", value: u.state, icon: MapPin },
-                  ].map(({ label, value, icon: Icon }) => (
-                    <div key={label} className="flex items-start gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-slate-50 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <Icon className="w-4 h-4 text-slate-400" />
+               ) : (
+                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                    {[
+                      { label: "City / Region", value: u.city, icon: Building2 },
+                      { label: "State / District", value: u.state, icon: MapPin },
+                      { label: "Country", value: u.country, icon: Globe },
+                    ].map(({ label, value, icon: Icon }) => (
+                      <div key={label}>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{label}</p>
+                        <div className="flex items-center gap-2">
+                           <Icon className="w-3 h-3 text-emerald-500" />
+                           <p className="text-sm font-bold text-slate-800 dark:text-zinc-200">{value || "—"}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{label}</p>
-                        <p className="text-sm font-semibold text-slate-800 mt-0.5">{value || "—"}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+                    ))}
+                 </div>
+               )}
             </div>
           </div>
 
-          {/* Security Section */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm">
-            <div className="flex items-center justify-between px-7 py-5 border-b border-slate-100">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-amber-50 flex items-center justify-center">
-                  <Shield className="w-4.5 h-4.5 text-amber-600" />
-                </div>
-                <div>
-                  <h3 className="text-base font-semibold text-slate-900">Security</h3>
-                  <p className="text-xs text-slate-400 mt-0.5">Manage your security preferences</p>
-                </div>
-              </div>
-            </div>
-            <div className="px-7 py-6">
-              <div className="flex items-center justify-between p-4 rounded-xl bg-slate-50 border border-slate-100">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-white flex items-center justify-center shadow-sm">
-                    <Shield className="w-4 h-4 text-slate-500" />
+          {/* Sidebar Area - Security & Stats */}
+          <div className="space-y-6">
+            {/* Security Profile */}
+            <div className="bg-indigo-600 rounded-3xl p-6 text-white shadow-lg shadow-indigo-200 dark:shadow-none relative overflow-hidden group">
+               <div className="absolute top-0 right-0 p-8 transform translate-x-12 -translate-y-12 transition-transform group-hover:scale-110">
+                  <Shield className="w-32 h-32 text-white/10" />
+               </div>
+               <div className="relative z-10 space-y-4">
+                  <div className="flex items-center gap-2">
+                    <Lock className="w-4 h-4 text-indigo-200" />
+                    <h4 className="text-xs font-black uppercase tracking-widest">Account Security</h4>
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-slate-800">Two-Factor Authentication</p>
-                    <p className="text-xs text-slate-400 mt-0.5">Add an extra layer of security to your account</p>
+                    <p className="text-2xl font-black">2FA: {u.twoFAEnabled ? "Active" : "Off"}</p>
+                    <p className="text-[10px] text-indigo-100/70 font-bold mt-1 leading-relaxed">Multi-factor authentication adds a layer of protection to your account.</p>
                   </div>
-                </div>
-                <span className={`px-3 py-1 rounded-full text-xs font-bold ${u.twoFAEnabled ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
-                  {u.twoFAEnabled ? "Enabled" : "Disabled"}
-                </span>
-              </div>
+                  <CustomButton className="w-full bg-white text-indigo-600 hover:bg-indigo-50 font-bold text-[11px] rounded-xl border-none">
+                     Secure Device Info <ExternalLink className="w-3 h-3 ml-2" />
+                  </CustomButton>
+               </div>
+            </div>
+
+            {/* Quick Stats / Info */}
+            <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-slate-200/60 dark:border-zinc-800/50 p-6 shadow-sm">
+               <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Account Integrity</h4>
+               <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                     <p className="text-xs font-bold text-slate-700 dark:text-zinc-300">Profile Strength</p>
+                     <p className="text-xs font-black text-indigo-600">85%</p>
+                  </div>
+                  <div className="w-full h-1.5 bg-slate-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                     <div className="h-full bg-indigo-500 rounded-full" style={{ width: '85%' }} />
+                  </div>
+                  <p className="text-[10px] text-slate-400 font-medium">Verify your phone number to reach 100%.</p>
+               </div>
             </div>
           </div>
 

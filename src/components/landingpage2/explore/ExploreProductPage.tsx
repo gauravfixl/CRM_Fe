@@ -110,9 +110,10 @@ export default function ExploreProductPage({ data }: { data: ProductPageData }) 
       <section className="relative overflow-hidden pt-28 pb-24">
         {/* Background image */}
         {data.heroImage && (
-          <div className="absolute inset-0">
-            <Image src={data.heroImage} alt="" fill className="object-cover" priority unoptimized />
-          </div>
+          <div
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+            style={{ backgroundImage: `url(${data.heroImage})` }}
+          />
         )}
         {/* Subtle dark overlay — no product color, just dark for readability */}
         <div className="absolute inset-0" style={{ background: "linear-gradient(160deg, rgba(10,15,30,0.55) 0%, rgba(10,15,30,0.45) 50%, rgba(10,15,30,0.35) 100%)" }} />

@@ -63,12 +63,20 @@ export interface Request {
     status: RequestStatus;
     createdAt: string;
     updatedAt: string;
+    adminReply?: string;
+}
+
+export interface NotificationPreference {
+    category: string;
+    inApp: boolean;
+    email: boolean;
 }
 
 interface InboxState {
     approvals: ApprovalItem[];
     notifications: Notification[];
     requests: Request[];
+    notificationPreferences: NotificationPreference[];
 
     // Approvals
     approveRequest: (id: string, approvedBy: string) => void;
@@ -82,8 +90,12 @@ interface InboxState {
     markAllAsRead: () => void;
     deleteNotification: (id: string) => void;
 
+    // Notification Preferences
+    updateNotificationPreferences: (prefs: NotificationPreference[]) => void;
+
     // Requests
     updateRequestStatus: (id: string, status: RequestStatus) => void;
+    addReplyToRequest: (id: string, reply: string) => void;
     deleteRequest: (id: string) => void;
 }
 
@@ -211,6 +223,13 @@ export const useInboxStore = create<InboxState>()(
             approvals: MOCK_APPROVALS,
             notifications: MOCK_NOTIFICATIONS,
             requests: MOCK_REQUESTS,
+            notificationPreferences: [
+                { category: 'Announcement', inApp: true, email: true },
+                { category: 'Policy', inApp: true, email: true },
+                { category: 'Payroll', inApp: true, email: true },
+                { category: 'Performance', inApp: true, email: false },
+                { category: 'System', inApp: true, email: false },
+            ],
 
             approveRequest: (id, approvedBy) => set((state) => ({
                 approvals: state.approvals.map(a =>
@@ -266,9 +285,17 @@ export const useInboxStore = create<InboxState>()(
                 notifications: state.notifications.filter(n => n.id !== id)
             })),
 
+            updateNotificationPreferences: (prefs) => set({ notificationPreferences: prefs }),
+
             updateRequestStatus: (id, status) => set((state) => ({
                 requests: state.requests.map(r =>
                     r.id === id ? { ...r, status, updatedAt: new Date().toISOString() } : r
+                )
+            })),
+
+            addReplyToRequest: (id, reply) => set((state) => ({
+                requests: state.requests.map(r =>
+                    r.id === id ? { ...r, adminReply: reply, updatedAt: new Date().toISOString() } : r
                 )
             })),
 

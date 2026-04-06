@@ -46,7 +46,14 @@ import Link from "next/link";
 
 const PerformanceOverviewPage = () => {
   const { toast } = useToast();
-  const { user, performance, addPersonalGoal } = useMeStore();
+  const { user, performance, addPersonalGoal, loadMyGoals, loadMyFeedback, loadMyAppraisals, createMyGoal } = useMeStore();
+
+  // Load performance data from API on mount
+  React.useEffect(() => {
+    loadMyGoals().catch(() => {});
+    loadMyFeedback().catch(() => {});
+    loadMyAppraisals().catch(() => {});
+  }, []);
 
   const [isNewObjectiveOpen, setIsNewObjectiveOpen] = React.useState(false);
   const [isAssessmentOpen, setIsAssessmentOpen] = React.useState(false);
@@ -77,20 +84,25 @@ const PerformanceOverviewPage = () => {
     </motion.div>
   );
 
-  const handleCreateGoal = () => {
+  const handleCreateGoal = async () => {
     if (!newGoal.title) {
       toast({ title: "Error", description: "Goal title is required", variant: "destructive" });
       return;
     }
-    addPersonalGoal({
-      title: newGoal.title!,
-      progress: 0,
-      status: "Draft",
-      priority: newGoal.priority,
-      category: newGoal.category,
-      weightage: newGoal.weightage || 10,
-      dueDate: newGoal.dueDate!
-    });
+    try {
+      await createMyGoal({ goal: newGoal.title!, targetDate: newGoal.dueDate! });
+    } catch {
+      // Fallback to local if API fails
+      addPersonalGoal({
+        title: newGoal.title!,
+        progress: 0,
+        status: "Draft",
+        priority: newGoal.priority,
+        category: newGoal.category,
+        weightage: newGoal.weightage || 10,
+        dueDate: newGoal.dueDate!
+      });
+    }
     setNewGoal({ title: "", description: "", priority: "Medium", category: "Technical", weightage: 10, dueDate: new Date().toISOString().split('T')[0] });
     setIsNewObjectiveOpen(false);
     toast({ title: "Objective Created", description: "Your performance goal has been set." });
@@ -122,7 +134,7 @@ const PerformanceOverviewPage = () => {
   ];
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#f8fafc] font-sans" style={{ zoom: "80%" }}>
+    <div className="flex flex-col min-h-screen bg-[#f8fafc] font-sans" style={{ zoom: "90%" }}>
       <header className="py-4 px-8 bg-white border-b border-slate-100 sticky top-0 z-30 shadow-sm rounded-b-3xl">
         <div className="max-w-[1600px] mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
           <div className="space-y-1 text-start">
@@ -165,8 +177,8 @@ const PerformanceOverviewPage = () => {
                     </Badge>
                   </div>
                   <div className="space-y-1 text-start">
-                    <p className="text-[10px] font-bold text-slate-600 tracking-widest leading-none opacity-75">{stat.label}</p>
-                    <h3 className="text-4xl font-black text-slate-900 tracking-tight leading-none">{stat.value}</h3>
+                    <p className="text-xs font-semibold text-slate-600 tracking-wide leading-none opacity-75">{stat.label}</p>
+                    <h3 className="text-2xl font-bold text-slate-900 tracking-tight leading-none">{stat.value}</h3>
                   </div>
                 </CardContent>
               </Card>
@@ -344,7 +356,7 @@ const PerformanceOverviewPage = () => {
 
       {/* 🎯 Detailed Goals Modal */}
       <Dialog open={activeModal === 'goals'} onOpenChange={() => setActiveModal(null)}>
-        <DialogContent style={{ zoom: "80%" }} className="bg-white rounded-[2.5rem] border-none p-10 max-w-5xl max-h-[85vh] overflow-y-auto custom-scrollbar shadow-3xl text-start font-sans">
+        <DialogContent style={{ zoom: "90%" }} className="bg-white rounded-[2.5rem] border-none p-10 max-w-5xl max-h-[85vh] overflow-y-auto custom-scrollbar shadow-3xl text-start font-sans">
           <DialogHeader className="mb-8 text-start">
             <div className="flex items-center gap-5">
               <div className="h-14 w-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center shadow-inner border border-indigo-100">
@@ -419,7 +431,7 @@ const PerformanceOverviewPage = () => {
 
       {/* 💬 Continuous Feedback Modal */}
       <Dialog open={activeModal === 'feedback'} onOpenChange={() => setActiveModal(null)}>
-        <DialogContent style={{ zoom: "80%" }} className="bg-white rounded-[2.5rem] border-none p-10 max-w-5xl max-h-[85vh] overflow-y-auto custom-scrollbar shadow-3xl text-start font-sans">
+        <DialogContent style={{ zoom: "90%" }} className="bg-white rounded-[2.5rem] border-none p-10 max-w-5xl max-h-[85vh] overflow-y-auto custom-scrollbar shadow-3xl text-start font-sans">
           <DialogHeader className="mb-8 text-start">
             <div className="flex items-center gap-5">
               <div className="h-14 w-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center shadow-inner border border-indigo-100">
@@ -471,7 +483,7 @@ const PerformanceOverviewPage = () => {
 
       {/* 👥 Performance Reviews Modal */}
       <Dialog open={activeModal === 'reviews'} onOpenChange={() => setActiveModal(null)}>
-        <DialogContent style={{ zoom: "80%" }} className="bg-white rounded-[2.5rem] border-none p-10 max-w-4xl max-h-[85vh] overflow-y-auto custom-scrollbar shadow-3xl text-start">
+        <DialogContent style={{ zoom: "90%" }} className="bg-white rounded-[2.5rem] border-none p-10 max-w-4xl max-h-[85vh] overflow-y-auto custom-scrollbar shadow-3xl text-start">
           <DialogHeader className="mb-8 text-start">
             <div className="flex items-center gap-5">
               <div className="h-14 w-14 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center shadow-inner border border-purple-100">
@@ -514,7 +526,7 @@ const PerformanceOverviewPage = () => {
 
       {/* 📈 Performance Reports Modal */}
       <Dialog open={activeModal === 'reports'} onOpenChange={() => setActiveModal(null)}>
-        <DialogContent style={{ zoom: "80%" }} className="bg-white rounded-[2.5rem] border-none p-10 max-w-4xl max-h-[85vh] overflow-y-auto custom-scrollbar shadow-3xl text-start">
+        <DialogContent style={{ zoom: "90%" }} className="bg-white rounded-[2.5rem] border-none p-10 max-w-4xl max-h-[85vh] overflow-y-auto custom-scrollbar shadow-3xl text-start">
           <DialogHeader className="mb-8 text-start">
             <div className="flex items-center gap-5">
               <div className="h-14 w-14 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center shadow-inner border border-emerald-100">
@@ -570,7 +582,7 @@ const PerformanceOverviewPage = () => {
 
       {/* 🎯 New Objective Dialog */}
       <Dialog open={isNewObjectiveOpen} onOpenChange={setIsNewObjectiveOpen}>
-        <DialogContent style={{ zoom: "80%" }} className="bg-white rounded-[2.5rem] border-none p-10 max-w-lg shadow-3xl text-start font-sans">
+        <DialogContent style={{ zoom: "90%" }} className="bg-white rounded-[2.5rem] border-none p-10 max-w-lg shadow-3xl text-start font-sans">
           <DialogHeader className="space-y-5 text-start">
             <div className="h-14 w-14 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 shadow-inner border border-indigo-100">
               <Plus size={28} />
@@ -633,7 +645,7 @@ const PerformanceOverviewPage = () => {
 
       {/* ⭐ Complete Assessment Dialog */}
       <Dialog open={isAssessmentOpen} onOpenChange={setIsAssessmentOpen}>
-        <DialogContent style={{ zoom: "80%" }} className="bg-white rounded-[2.5rem] border-none p-10 max-w-xl shadow-3xl text-start font-sans">
+        <DialogContent style={{ zoom: "90%" }} className="bg-white rounded-[2.5rem] border-none p-10 max-w-xl shadow-3xl text-start font-sans">
           <DialogHeader className="space-y-5 text-start">
             <div className="h-16 w-16 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-500 shadow-inner border border-amber-100">
               <Star size={32} />

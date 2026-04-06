@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     Briefcase,
@@ -55,7 +55,9 @@ import { Progress } from "@/shared/components/ui/progress";
 
 const DesignationsPage = () => {
     const { toast } = useToast();
-    const { designations, departments, employees, addDesignation, updateDesignation, deleteDesignation } = useOrganisationStore();
+    const { designations, departments, employees, addDesignation, updateDesignation, deleteDesignation, loadDesignationsFromApi, loadDepartmentsFromApi } = useOrganisationStore();
+
+    useEffect(() => { loadDesignationsFromApi().catch(() => {}); loadDepartmentsFromApi().catch(() => {}); }, []);
 
     const [searchQuery, setSearchQuery] = useState("");
     const [levelFilter, setLevelFilter] = useState<string>("All");
@@ -177,7 +179,7 @@ const DesignationsPage = () => {
 
                     <div className="flex items-center gap-2 w-full md:w-auto">
                         <Select value={levelFilter} onValueChange={setLevelFilter}>
-                            <SelectTrigger className="w-36 h-10 rounded-xl bg-slate-50 border-none font-bold text-xs shadow-none hover:bg-slate-100 transition-colors">
+                            <SelectTrigger className="w-36 h-10 rounded-xl bg-slate-50 border border-slate-200 font-bold text-xs shadow-none hover:bg-slate-100 transition-colors">
                                 <SelectValue placeholder="All Levels" />
                             </SelectTrigger>
                             <SelectContent className="rounded-xl border-none shadow-2xl p-2 font-bold">
@@ -194,7 +196,7 @@ const DesignationsPage = () => {
                             <Search className="absolute left-4 top-1/2 -transform -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
                             <Input
                                 placeholder="Search designations..."
-                                className="pl-11 h-10 rounded-xl bg-slate-50 border-none shadow-none font-medium text-xs focus-visible:ring-2 focus-visible:ring-slate-100 placeholder:text-slate-400"
+                                className="pl-11 h-10 rounded-xl bg-slate-50 border border-slate-200 shadow-none font-medium text-xs focus-visible:ring-2 focus-visible:ring-slate-100 placeholder:text-slate-400"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
@@ -219,11 +221,11 @@ const DesignationsPage = () => {
                             return designation?.level === level;
                         });
                         const cardColors = {
-                            1: "bg-blue-50/50 border-blue-100 hover:bg-blue-100/50 transition-colors",
-                            2: "bg-emerald-50/50 border-emerald-100 hover:bg-emerald-100/50 transition-colors",
-                            3: "bg-purple-50/50 border-purple-100 hover:bg-purple-100/50 transition-colors",
-                            4: "bg-amber-50/50 border-amber-100 hover:bg-amber-100/50 transition-colors",
-                            5: "bg-rose-50/50 border-rose-100 hover:bg-rose-100/50 transition-colors"
+                            1: "bg-blue-50/50 border-none hover:bg-blue-100/50 transition-colors",
+                            2: "bg-emerald-50/50 border-none hover:bg-emerald-100/50 transition-colors",
+                            3: "bg-purple-50/50 border-none hover:bg-purple-100/50 transition-colors",
+                            4: "bg-amber-50/50 border-none hover:bg-amber-100/50 transition-colors",
+                            5: "bg-rose-50/50 border-none hover:bg-rose-100/50 transition-colors"
                         };
                         const textColors = {
                             1: "text-blue-700",
@@ -234,7 +236,7 @@ const DesignationsPage = () => {
                         };
 
                         return (
-                            <Card key={level} className={`rounded-[1.5rem] border p-5 shadow-sm ${cardColors[level as keyof typeof cardColors]}`}>
+                            <Card key={level} className={`rounded-xl border-none p-5 shadow-sm ${cardColors[level as keyof typeof cardColors]}`}>
                                 <div className="space-y-2">
                                     <div className="flex items-center justify-between">
                                         <p className={`text-[11px] font-semibold ${textColors[level as keyof typeof textColors]}`}>{getLevelLabel(level)}</p>
