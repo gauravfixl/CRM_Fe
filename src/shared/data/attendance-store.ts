@@ -1,5 +1,13 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import {
+    getMyAttendance,
+    getEmployeeAttendance,
+    requestRegularization as requestRegularizationApi,
+    approveRegularization as approveRegularizationApi,
+    rejectRegularization as rejectRegularizationApi,
+} from "@/modules/hrm/hooks/hrmHooks";
+import { axiosInstance as axios } from "@/lib/axios";
 
 export interface AttendanceLog {
     id: string;
@@ -31,6 +39,14 @@ interface AttendanceState {
     rejectBulkRegularization: (ids: string[]) => void;
     getLogsByEmployee: (empId: string) => AttendanceLog[];
     addBulkLogs: (logs: AttendanceLog[]) => void;
+
+    // Backend API Sync Methods
+    loadAttendanceFromApi: () => Promise<void>;
+    syncClockInToApi: (empId: string) => Promise<void>;
+    syncClockOutToApi: (empId: string) => Promise<void>;
+    syncRegularizationToApi: (logId: string, reason: string) => Promise<void>;
+    syncApproveRegularizationToApi: (logId: string) => Promise<void>;
+    syncRejectRegularizationToApi: (logId: string, remarks: string) => Promise<void>;
 }
 
 // Better Mock Data for Multiple Employees
@@ -188,7 +204,77 @@ export const useAttendanceStore = create<AttendanceState>()(
 
             addBulkLogs: (newLogs) => set((state) => ({
                 logs: [...newLogs, ...state.logs]
-            }))
+            })),
+
+            // ==================== Backend API Sync Methods ====================
+
+            loadAttendanceFromApi: async () => {
+                try {
+                    const response = await getMyAttendance();
+                    if (response?.data?.data && Array.isArray(response.data.data)) {
+                        const apiLogs = response.data.data;
+                        const mappedLogs: AttendanceLog[] = apiLogs.map((log: any) => ({
+                            id: log._id || log.id || Math.random().toString(36).substr(2, 9),
+                            empId: log.employeeId?._id || log.employeeId || '',
+                            empName: log.employeeId?.firstName ? `${log.employeeId.firstName} ${log.employeeId.lastName || ''}`.trim() : log.empName || 'Unknown',
+                            department: log.department || log.employeeId?.department || 'N/A',
+                            date: log.date?.split('T')[0] || new Date().toISOString().split('T')[0],
+                            checkIn: log.punchIn ? new Date(log.punchIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : null,
+                            checkOut: log.punchOut ? new Date(log.punchOut).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : null,
+                            totalHours: log.totalMinutes ? `${Math.floor(log.totalMinutes / 60)}h ${log.totalMinutes % 60}m` : '0h',
+                            status: log.status === 'present' ? 'Present' : log.status === 'absent' ? 'Absent' : log.status === 'halfDay' ? 'Half Day' : log.status === 'late' ? 'Late' : log.status === 'onLeave' ? 'On Leave' : log.status === 'weekend' ? 'Weekend' : 'Present',
+                            regularizationStatus: log.regularizationStatus || 'None',
+                            isDiscrepancy: log.isDiscrepancy || false,
+                            remark: log.remark || undefined,
+                        }));
+                        if (mappedLogs.length > 0) {
+                            set({ logs: mappedLogs });
+                        }
+                    }
+                } catch (err) {
+                    console.warn("Could not load attendance from API, using local data:", err);
+                }
+            },
+
+            syncClockInToApi: async (empId) => {
+                try {
+                    await axios.post("/hrm/attendance/punch", { employeeId: empId, punchType: "IN" });
+                } catch (err) {
+                    console.warn("Could not sync clock-in to API:", err);
+                }
+            },
+
+            syncClockOutToApi: async (empId) => {
+                try {
+                    await axios.post("/hrm/attendance/punch", { employeeId: empId, punchType: "OUT" });
+                } catch (err) {
+                    console.warn("Could not sync clock-out to API:", err);
+                }
+            },
+
+            syncRegularizationToApi: async (logId, reason) => {
+                try {
+                    await requestRegularizationApi({ attendanceId: logId, reason, correctedPunchIn: "", correctedPunchOut: "" });
+                } catch (err) {
+                    console.warn("Could not sync regularization to API:", err);
+                }
+            },
+
+            syncApproveRegularizationToApi: async (logId) => {
+                try {
+                    await approveRegularizationApi(logId);
+                } catch (err) {
+                    console.warn("Could not sync approve to API:", err);
+                }
+            },
+
+            syncRejectRegularizationToApi: async (logId, remarks) => {
+                try {
+                    await rejectRegularizationApi(logId, remarks);
+                } catch (err) {
+                    console.warn("Could not sync reject to API:", err);
+                }
+            },
         }),
         { name: 'attendance-storage-v2' }
     )

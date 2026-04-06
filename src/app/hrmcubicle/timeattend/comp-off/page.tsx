@@ -163,14 +163,18 @@ const CompOffManagementPage = () => {
   };
 
   const handleExport = () => {
-    toast({ title: "Export Started", description: "Comp-off report is being generated." });
+    const csv = "Employee,Date Earned,Hours,Reason,Status,Expiry\n" + compOffs.map(c => `${c.empName},${c.date},${c.hours},${c.reason},${c.status},${c.expiryDate}`).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = `comp_off_report_${new Date().toISOString().split("T")[0]}.csv`; a.click(); URL.revokeObjectURL(url);
+    toast({ title: "Exported", description: "Comp-off report downloaded as CSV." });
   };
 
   const statCards = [
-    { label: "Earned This Month", value: stats.earned, icon: Gift, color: "text-purple-700", bg: "bg-purple-100", cardBg: "bg-purple-50 border-purple-200" },
-    { label: "Pending Approval", value: stats.pending, icon: Clock, color: "text-amber-700", bg: "bg-amber-100", cardBg: "bg-amber-50 border-amber-200" },
-    { label: "Availed", value: stats.availed, icon: CalendarCheck, color: "text-green-700", bg: "bg-green-100", cardBg: "bg-green-50 border-green-200" },
-    { label: "Expired / Lapsed", value: stats.expired, icon: CalendarX, color: "text-red-700", bg: "bg-red-100", cardBg: "bg-red-50 border-red-200" },
+    { label: "Earned This Month", value: stats.earned, icon: Gift, color: "text-slate-800", bg: "bg-white/30", cardBg: "bg-[#CB9DF0]" },
+    { label: "Pending Approval", value: stats.pending, icon: Clock, color: "text-slate-800", bg: "bg-white/30", cardBg: "bg-[#F0C1E1]" },
+    { label: "Availed", value: stats.availed, icon: CalendarCheck, color: "text-slate-800", bg: "bg-white/30", cardBg: "bg-[#FFF9BF]" },
+    { label: "Expired / Lapsed", value: stats.expired, icon: CalendarX, color: "text-slate-800", bg: "bg-white/30", cardBg: "bg-[#FDDBBB]" },
   ];
 
   return (
@@ -193,7 +197,7 @@ const CompOffManagementPage = () => {
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {statCards.map((s) => (
-          <Card key={s.label} className={cn("rounded-2xl border shadow-sm", s.cardBg)}>
+          <Card key={s.label} className={cn("rounded-none border-none shadow-sm", s.cardBg)}>
             <CardContent className="p-5 flex items-center gap-4">
               <div className={cn("w-11 h-11 rounded-xl flex items-center justify-center", s.bg)}>
                 <s.icon className={cn("w-5 h-5", s.color)} />
@@ -325,7 +329,7 @@ const CompOffManagementPage = () => {
 
       {/* Grant Dialog */}
       <Dialog open={grantDialog} onOpenChange={setGrantDialog}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md border-2 border-slate-200">
           <DialogHeader>
             <DialogTitle>Grant Comp-Off</DialogTitle>
             <DialogDescription>Grant compensatory off to an employee</DialogDescription>
@@ -355,7 +359,7 @@ const CompOffManagementPage = () => {
 
       {/* Avail Dialog */}
       <Dialog open={!!availDialog} onOpenChange={() => setAvailDialog(null)}>
-        <DialogContent className="sm:max-w-sm">
+        <DialogContent className="sm:max-w-sm border-2 border-slate-200">
           <DialogHeader>
             <DialogTitle>Avail Comp-Off</DialogTitle>
             <DialogDescription>Select date to avail comp-off for {availDialog?.employeeName}</DialogDescription>
@@ -373,7 +377,7 @@ const CompOffManagementPage = () => {
 
       {/* Auto Rules Dialog */}
       <Dialog open={rulesDialog} onOpenChange={setRulesDialog}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md border-2 border-slate-200">
           <DialogHeader>
             <DialogTitle>Auto-Grant Rules</DialogTitle>
             <DialogDescription>Configure automatic comp-off granting rules</DialogDescription>

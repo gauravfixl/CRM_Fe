@@ -185,15 +185,40 @@ const TaxDeclarationsPage = () => {
     };
 
     const handleExportReport = () => {
-        toast({ title: "Generating Audit Report", description: "Your tax ledger is being compiled into Excel format." });
+        const headers = ["Employee Name", "Employee ID", "Fiscal Year", "Regime", "Total Savings", "Estimated Tax", "Status", "Submitted Date"];
+        const rows = declarations.map(dec => [
+            dec.employeeName,
+            dec.employeeId,
+            dec.fiscalYear,
+            dec.regime,
+            dec.totalSavings,
+            dec.estimatedTax,
+            dec.status,
+            dec.submittedDate
+        ]);
+        const csvContent = [headers, ...rows].map(row => row.map(v => `"${v}"`).join(",")).join("\n");
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `tax_declarations_${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        toast({ title: "Report Exported", description: `CSV file with ${declarations.length} declarations downloaded.` });
     };
 
     const handleSendReminders = () => {
-        toast({ title: "Reminders Dispatched", description: "Notifications sent to employees with pending submissions." });
+        const pendingCount = declarations.filter(d => d.status === 'Pending').length;
+        toast({ title: "Reminders Dispatched", description: `Notifications sent to ${pendingCount} employee(s) with pending declarations.` });
     };
 
     const handleViewProofs = (name: string) => {
-        toast({ title: "Opening Artifacts", description: `Loading verification documents for ${name}...` });
+        setIsSheetOpen(false);
+        const proofPath = `/hrmcubicle/payroll/proof-submission`;
+        window.location.href = proofPath;
+        toast({ title: "Navigating to Proofs", description: `Opening proof submissions for ${name}...` });
     };
 
     return (
@@ -261,7 +286,7 @@ const TaxDeclarationsPage = () => {
                                                         placeholder="Search Employee..."
                                                         value={searchQuery}
                                                         onChange={(e) => setSearchQuery(e.target.value)}
-                                                        className="pl-9 h-9 bg-slate-50 border-none rounded-lg text-xs font-semibold focus:ring-1 focus:ring-[#CB9DF0]"
+                                                        className="pl-9 h-9 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold focus:ring-1 focus:ring-[#CB9DF0]"
                                                     />
                                                 </div>
                                                 <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -432,7 +457,7 @@ const TaxDeclarationsPage = () => {
 
             {/* Redesigned Attractive Form Dialog */}
             <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-                <DialogContent className="bg-white rounded-3xl border-none p-8 max-w-lg font-sans shadow-2xl fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[100]">
+                <DialogContent className="bg-white rounded-3xl border-2 border-slate-200 p-8 max-w-lg font-sans shadow-2xl fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[100]">
                     <div className="absolute top-0 left-0 w-32 h-32 bg-[#F0C1E1]/10 rounded-full -translate-y-16 -translate-x-16 blur-3xl" />
                     <DialogHeader className="text-start space-y-2 relative z-10">
                         <Badge className="bg-[#F0C1E1] text-white border-none font-bold text-[9px] px-3 py-1 capitalize tracking-wide w-fit shadow-lg shadow-[#F0C1E1]/20">Fiscal Node</Badge>
@@ -447,7 +472,7 @@ const TaxDeclarationsPage = () => {
                                 placeholder="Formal Identity..."
                                 value={formData.employeeName}
                                 onChange={e => setFormData({ ...formData, employeeName: e.target.value })}
-                                className="rounded-xl bg-slate-50 border-none h-12 font-semibold text-sm tracking-tight px-4"
+                                className="rounded-xl bg-slate-50 border border-slate-200 h-12 font-semibold text-sm tracking-tight px-4"
                             />
                         </div>
                         <div className="grid grid-cols-2 gap-4 text-start">
@@ -457,13 +482,13 @@ const TaxDeclarationsPage = () => {
                                     placeholder="EMPXXX"
                                     value={formData.employeeId}
                                     onChange={e => setFormData({ ...formData, employeeId: e.target.value })}
-                                    className="rounded-xl bg-slate-50 border-none h-12 font-bold text-sm tracking-wide px-4"
+                                    className="rounded-xl bg-slate-50 border border-slate-200 h-12 font-bold text-sm tracking-wide px-4"
                                 />
                             </div>
                             <div className="space-y-2 text-start">
                                 <Label className="text-[10px] font-bold text-slate-400 capitalize tracking-wide block ml-1 text-start leading-none">Tax Regime</Label>
                                 <Select value={formData.regime} onValueChange={(v) => setFormData({ ...formData, regime: v })}>
-                                    <SelectTrigger className="rounded-xl h-12 bg-slate-50 border-none font-bold text-xs px-4 focus:ring-1 focus:ring-[#CB9DF0]">
+                                    <SelectTrigger className="rounded-xl h-12 bg-slate-50 border border-slate-200 font-bold text-xs px-4 focus:ring-1 focus:ring-[#CB9DF0]">
                                         <SelectValue placeholder="Select Regime" />
                                     </SelectTrigger>
                                     <SelectContent position="popper" className="rounded-xl border border-slate-100 shadow-2xl p-2 font-sans bg-white z-[200] min-w-[180px]">
@@ -480,7 +505,7 @@ const TaxDeclarationsPage = () => {
                                     type="number"
                                     value={formData.totalSavings}
                                     onChange={e => setFormData({ ...formData, totalSavings: e.target.value })}
-                                    className="rounded-xl bg-slate-50 border-none h-12 font-bold text-base text-slate-900 px-4 tabular-nums"
+                                    className="rounded-xl bg-slate-50 border border-slate-200 h-12 font-bold text-base text-slate-900 px-4 tabular-nums"
                                 />
                             </div>
                             <div className="space-y-2 text-start">
@@ -489,7 +514,7 @@ const TaxDeclarationsPage = () => {
                                     type="number"
                                     value={formData.estimatedTax}
                                     onChange={e => setFormData({ ...formData, estimatedTax: e.target.value })}
-                                    className="rounded-xl bg-slate-50 border-none h-12 font-bold text-base text-rose-500 px-4 tabular-nums"
+                                    className="rounded-xl bg-slate-50 border border-slate-200 h-12 font-bold text-base text-rose-500 px-4 tabular-nums"
                                 />
                             </div>
                         </div>
@@ -567,7 +592,7 @@ const TaxDeclarationsPage = () => {
                             >
                                 Verify Compliance
                             </Button>
-                            <Button variant="ghost" className="w-full h-10 text-slate-400 font-bold capitalize text-[9px] tracking-widest hover:text-rose-500 transition-all border-none" onClick={() => setIsSheetOpen(false)}>Flag Deficiency</Button>
+                            <Button variant="ghost" className="w-full h-10 text-slate-400 font-bold capitalize text-[9px] tracking-widest hover:text-rose-500 transition-all border-none" onClick={() => { updateDeclarationStatus(selectedDec.id, 'Pending'); setIsSheetOpen(false); toast({ title: "Deficiency Flagged", description: `${selectedDec?.employeeName}'s declaration has been flagged and reverted to Pending status.`, variant: "destructive" }); }}>Flag Deficiency</Button>
                         </div>
                     </div>
                 </SheetContent>

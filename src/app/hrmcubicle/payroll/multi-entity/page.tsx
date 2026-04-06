@@ -256,7 +256,7 @@ const MultiEntityPage = () => {
                             <CardContent className="p-0">
                                 <div className="p-5 border-b border-slate-100 flex items-center justify-between">
                                     <h3 className="text-sm font-bold text-slate-900">Statutory Registrations per Entity</h3>
-                                    <Button variant="outline" className="h-9 rounded-lg font-bold text-xs gap-2 border-slate-200"><Plus size={14} /> Add Registration</Button>
+                                    <Button variant="outline" className="h-9 rounded-lg font-bold text-xs gap-2 border-slate-200" onClick={() => toast({ title: "Add Registration", description: "Statutory registration form would open here." })}><Plus size={14} /> Add Registration</Button>
                                 </div>
                                 <Table>
                                     <TableHeader className="bg-slate-50/50">
@@ -286,7 +286,7 @@ const MultiEntityPage = () => {
 
             {/* Create/Edit Entity Dialog */}
             <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-                <DialogContent className="bg-white rounded-2xl border-none p-6 max-w-lg shadow-2xl">
+                <DialogContent className="bg-white rounded-2xl border-2 border-slate-200 p-6 max-w-lg shadow-2xl">
                     <DialogHeader>
                         <DialogTitle className="text-lg font-bold text-slate-900">{editingId ? "Edit Entity" : "Add Legal Entity"}</DialogTitle>
                         <DialogDescription className="text-xs font-medium text-slate-500">Configure legal entity for payroll processing.</DialogDescription>
@@ -315,7 +315,7 @@ const MultiEntityPage = () => {
 
             {/* Detail Dialog */}
             <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-                <DialogContent className="bg-white rounded-2xl border-none p-6 max-w-lg shadow-2xl">
+                <DialogContent className="bg-white rounded-2xl border-2 border-slate-200 p-6 max-w-lg shadow-2xl">
                     <DialogHeader><DialogTitle className="text-lg font-bold text-slate-900">Entity Details</DialogTitle></DialogHeader>
                     {viewingEntity && (
                         <div className="space-y-4 py-2">

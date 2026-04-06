@@ -288,7 +288,7 @@ const ReimbursementsPage = () => {
                                                         placeholder="Search employee..."
                                                         value={searchQuery}
                                                         onChange={(e) => setSearchQuery(e.target.value)}
-                                                        className="pl-9 h-9 bg-slate-50 border-none rounded-lg text-xs font-semibold focus:ring-1 focus:ring-[#CB9DF0]"
+                                                        className="pl-9 h-9 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold focus:ring-1 focus:ring-[#CB9DF0]"
                                                     />
                                                 </div>
                                                 <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -471,7 +471,7 @@ const ReimbursementsPage = () => {
                                             </div>
                                         ))}
                                     </div>
-                                    <Button variant="outline" className="w-full mt-4 h-8 border-none bg-slate-50 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg font-semibold text-[10px] transition-all">View full report</Button>
+                                    <Button variant="outline" onClick={() => toast({ title: "Detailed Report", description: "Full reimbursement analytics report would open here." })} className="w-full mt-4 h-8 border-none bg-slate-50 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg font-semibold text-[10px] transition-all">View full report</Button>
                                 </Card>
                             </div>
                         </div>
@@ -481,7 +481,7 @@ const ReimbursementsPage = () => {
 
             {/* Rejection Narrative Dialog */}
             <Dialog open={isRejectionOpen} onOpenChange={setIsRejectionOpen}>
-                <DialogContent className="bg-white rounded-3xl border-none p-8 max-w-md font-sans shadow-2xl fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[150]">
+                <DialogContent className="bg-white rounded-3xl border-2 border-slate-200 p-8 max-w-md font-sans shadow-2xl fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[150]">
                     <DialogHeader className="text-start space-y-2 font-sans">
                         <div className="h-10 w-10 bg-rose-50 rounded-xl flex items-center justify-center text-rose-500 mb-2">
                             <XCircle size={20} />
@@ -496,7 +496,7 @@ const ReimbursementsPage = () => {
                             placeholder="e.g., Attached receipt is illegible or outside policy period..."
                             value={rejectionReason}
                             onChange={(e) => setRejectionReason(e.target.value)}
-                            className="rounded-2xl bg-slate-50 border-none h-32 font-medium text-sm p-4 focus-visible:ring-1 focus-visible:ring-rose-200 transition-all"
+                            className="rounded-2xl bg-slate-50 border border-slate-200 h-32 font-medium text-sm p-4 focus-visible:ring-1 focus-visible:ring-rose-200 transition-all"
                         />
                         <div className="flex gap-2">
                             {["Illegible Document", "Invalid Category", "Policy Cap Hit"].map((tag) => (
@@ -521,7 +521,7 @@ const ReimbursementsPage = () => {
 
             {/* Manual Entry Form */}
             <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-                <DialogContent className="bg-white rounded-3xl border-none p-8 max-w-lg font-sans shadow-2xl fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[100]">
+                <DialogContent className="bg-white rounded-3xl border-2 border-slate-200 p-8 max-w-lg font-sans shadow-2xl fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[100]">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-[#CB9DF0]/10 rounded-full -translate-y-16 translate-x-16 blur-3xl opacity-50" />
                     <DialogHeader className="text-start space-y-2 relative z-10 font-sans">
                         <Badge className="bg-[#CB9DF0] text-white border-none font-bold text-[10px] px-3 py-1 w-fit shadow-lg shadow-[#CB9DF0]/20">Audit artifact</Badge>
@@ -536,7 +536,7 @@ const ReimbursementsPage = () => {
                                 placeholder="Formal identity..."
                                 value={formData.employeeName}
                                 onChange={e => setFormData({ ...formData, employeeName: e.target.value })}
-                                className="rounded-xl bg-slate-50 border-none h-12 font-medium text-sm px-4 focus-visible:ring-1 focus-visible:ring-[#CB9DF0]/50"
+                                className="rounded-xl bg-slate-50 border border-slate-200 h-12 font-medium text-sm px-4 focus-visible:ring-1 focus-visible:ring-[#CB9DF0]/50"
                             />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
@@ -546,13 +546,13 @@ const ReimbursementsPage = () => {
                                     placeholder="EMPXXX"
                                     value={formData.employeeId}
                                     onChange={e => setFormData({ ...formData, employeeId: e.target.value })}
-                                    className="rounded-xl bg-slate-50 border-none h-12 font-semibold text-sm px-4"
+                                    className="rounded-xl bg-slate-50 border border-slate-200 h-12 font-semibold text-sm px-4"
                                 />
                             </div>
                             <div className="space-y-2 text-start">
                                 <Label className="text-[11px] font-semibold text-slate-500 block ml-1 leading-none mb-1">Claim category</Label>
                                 <Select value={formData.category} onValueChange={(v) => setFormData({ ...formData, category: v })}>
-                                    <SelectTrigger className="rounded-xl h-12 bg-slate-50 border-none font-semibold text-xs px-4 focus:ring-1 focus:ring-[#CB9DF0]">
+                                    <SelectTrigger className="rounded-xl h-12 bg-slate-50 border border-slate-200 font-semibold text-xs px-4 focus:ring-1 focus:ring-[#CB9DF0]">
                                         <SelectValue placeholder="Select category" />
                                     </SelectTrigger>
                                     <SelectContent position="popper" className="rounded-xl border border-slate-100 shadow-2xl p-2 font-sans bg-white z-[200] min-w-[180px]">
@@ -571,7 +571,7 @@ const ReimbursementsPage = () => {
                                     type="number"
                                     value={formData.amount}
                                     onChange={e => setFormData({ ...formData, amount: e.target.value })}
-                                    className="rounded-xl bg-slate-50 border-none h-12 font-bold text-base text-slate-900 px-4 tabular-nums"
+                                    className="rounded-xl bg-slate-50 border border-slate-200 h-12 font-bold text-base text-slate-900 px-4 tabular-nums"
                                 />
                             </div>
                             <div className="space-y-2 text-start">
@@ -580,7 +580,7 @@ const ReimbursementsPage = () => {
                                     type="date"
                                     value={formData.submittedDate}
                                     onChange={e => setFormData({ ...formData, submittedDate: e.target.value })}
-                                    className="rounded-xl bg-slate-50 border-none h-12 font-semibold text-sm px-4"
+                                    className="rounded-xl bg-slate-50 border border-slate-200 h-12 font-semibold text-sm px-4"
                                 />
                             </div>
                         </div>

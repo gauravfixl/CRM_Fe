@@ -184,12 +184,12 @@ const BiometricIntegrationPage = () => {
       {/* Sync Dashboard */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {[
-          { label: "Devices Online", value: `${onlineCount}/${devices.length}`, icon: Wifi, color: "text-green-700", bg: "bg-green-50", cardBg: "bg-emerald-50 border-emerald-200" },
-          { label: "Records Synced Today", value: totalSynced, icon: Activity, color: "text-blue-700", bg: "bg-blue-100", cardBg: "bg-blue-50 border-blue-200" },
-          { label: "Sync Errors", value: totalErrors, icon: AlertTriangle, color: totalErrors > 0 ? "text-red-700" : "text-slate-400", bg: totalErrors > 0 ? "bg-red-100" : "bg-slate-100", cardBg: totalErrors > 0 ? "bg-red-50 border-red-200" : "bg-slate-50 border-slate-200" },
-          { label: "Total Enrolled", value: mockEnrollments.filter((e) => e.status !== "Not Enrolled").length, icon: Users, color: "text-purple-700", bg: "bg-purple-100", cardBg: "bg-purple-50 border-purple-200" },
+          { label: "Devices Online", value: `${onlineCount}/${devices.length}`, icon: Wifi, color: "text-slate-800", bg: "bg-white/30", cardBg: "bg-[#CB9DF0]" },
+          { label: "Records Synced Today", value: totalSynced, icon: Activity, color: "text-slate-800", bg: "bg-white/30", cardBg: "bg-[#F0C1E1]" },
+          { label: "Sync Errors", value: totalErrors, icon: AlertTriangle, color: "text-slate-800", bg: "bg-white/30", cardBg: totalErrors > 0 ? "bg-[#FDDBBB]" : "bg-[#FFF9BF]" },
+          { label: "Total Enrolled", value: mockEnrollments.filter((e) => e.status !== "Not Enrolled").length, icon: Users, color: "text-slate-800", bg: "bg-white/30", cardBg: "bg-[#FFF9BF]" },
         ].map((s) => (
-          <Card key={s.label} className={cn("rounded-2xl border shadow-sm", s.cardBg)}>
+          <Card key={s.label} className={cn("rounded-none border-none shadow-sm", s.cardBg)}>
             <CardContent className="p-5 flex items-center gap-4">
               <div className={cn("w-11 h-11 rounded-xl flex items-center justify-center", s.bg)}>
                 <s.icon className={cn("w-5 h-5", s.color)} />
@@ -372,7 +372,7 @@ const BiometricIntegrationPage = () => {
 
       {/* Add Device Dialog */}
       <Dialog open={addDeviceOpen} onOpenChange={setAddDeviceOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md border-2 border-slate-200">
           <DialogHeader>
             <DialogTitle>Add Biometric Device</DialogTitle>
             <DialogDescription>Register a new biometric device for attendance tracking</DialogDescription>
@@ -417,7 +417,7 @@ const BiometricIntegrationPage = () => {
 
       {/* Settings Dialog */}
       <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md border-2 border-slate-200">
           <DialogHeader>
             <DialogTitle>Integration Settings</DialogTitle>
             <DialogDescription>Configure sync and data format settings</DialogDescription>

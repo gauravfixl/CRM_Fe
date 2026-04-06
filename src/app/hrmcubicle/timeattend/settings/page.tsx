@@ -180,7 +180,7 @@ const TimeAttendSettingsPage = () => {
                                         <p className="text-sm text-slate-500">Allow employees some extra time before marking late.</p>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <Input type="number" className="w-20" value={gracePeriod} onChange={(e) => setGracePeriod(Number(e.target.value))} />
+                                        <Input type="number" className="w-20 border border-slate-200" value={gracePeriod} onChange={(e) => setGracePeriod(Number(e.target.value))} />
                                         <span className="text-sm text-slate-500">Mins</span>
                                     </div>
                                 </div>
@@ -236,7 +236,7 @@ const TimeAttendSettingsPage = () => {
                                     <p className="text-sm text-slate-500">Days required to apply for leave in advance.</p>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <Input type="number" className="w-20" value={noticePeriod} onChange={(e) => setNoticePeriod(Number(e.target.value))} />
+                                    <Input type="number" className="w-20 border border-slate-200" value={noticePeriod} onChange={(e) => setNoticePeriod(Number(e.target.value))} />
                                     <span className="text-sm text-slate-500">Days</span>
                                 </div>
                             </div>
@@ -249,6 +249,71 @@ const TimeAttendSettingsPage = () => {
                             </div>
                         </CardContent>
                     </Card>
+                </TabsContent>
+
+                {/* Shift Rules Tab */}
+                <TabsContent value="shift-rules" className="space-y-4">
+                    <div className="grid gap-6 md:grid-cols-2">
+                        <Card className="shadow-sm border-slate-200">
+                            <CardHeader>
+                                <CardTitle className="text-lg flex items-center gap-2">
+                                    <Clock className="h-5 w-5 text-[#6366f1]" /> Shift Configuration
+                                </CardTitle>
+                                <CardDescription>Define shift timings and rotation rules.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-6">
+                                <div className="flex items-center justify-between">
+                                    <div className="space-y-0.5">
+                                        <Label className="text-base">Default Shift Start</Label>
+                                        <p className="text-sm text-slate-500">Standard start time for the default shift.</p>
+                                    </div>
+                                    <Input type="time" defaultValue="09:00" className="w-32 border border-slate-200" />
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <div className="space-y-0.5">
+                                        <Label className="text-base">Default Shift End</Label>
+                                        <p className="text-sm text-slate-500">Standard end time for the default shift.</p>
+                                    </div>
+                                    <Input type="time" defaultValue="18:00" className="w-32 border border-slate-200" />
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <div className="space-y-0.5">
+                                        <Label className="text-base">Minimum Break Duration</Label>
+                                        <p className="text-sm text-slate-500">Minimum break time between shifts (in minutes).</p>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Input type="number" defaultValue={60} className="w-20 border border-slate-200" />
+                                        <span className="text-sm text-slate-500">Mins</span>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        <Card className="shadow-sm border-slate-200">
+                            <CardHeader>
+                                <CardTitle className="text-lg flex items-center gap-2">
+                                    <Settings className="h-5 w-5 text-[#6366f1]" /> Rotation & Allowances
+                                </CardTitle>
+                                <CardDescription>Configure shift rotation and allowance rules.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-6">
+                                <div className="flex items-center justify-between">
+                                    <div className="space-y-0.5">
+                                        <Label className="text-base">Enable Shift Rotation</Label>
+                                        <p className="text-sm text-slate-500">Automatically rotate shifts on a weekly basis.</p>
+                                    </div>
+                                    <Switch />
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <div className="space-y-0.5">
+                                        <Label className="text-base">Night Shift Allowance</Label>
+                                        <p className="text-sm text-slate-500">Enable additional allowance for night shift employees.</p>
+                                    </div>
+                                    <Switch />
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
                 </TabsContent>
 
                 {/* Approval Workflows Tab */}
@@ -286,7 +351,7 @@ const TimeAttendSettingsPage = () => {
 
             {/* Workflow Create/Edit Dialog */}
             <Dialog open={isWorkflowDialogOpen} onOpenChange={setIsWorkflowDialogOpen}>
-                <DialogContent className="sm:max-w-[450px] rounded-2xl p-8 bg-white border-none shadow-2xl">
+                <DialogContent className="sm:max-w-[450px] rounded-2xl p-8 bg-white border-2 border-slate-200 shadow-2xl">
                     <DialogHeader>
                         <DialogTitle className="text-xl font-bold text-slate-900">
                             {editingWorkflow ? "Edit Workflow" : "Create New Workflow"}
@@ -302,7 +367,7 @@ const TimeAttendSettingsPage = () => {
                                 placeholder="e.g. Overtime Approval"
                                 value={workflowName}
                                 onChange={(e) => setWorkflowName(e.target.value)}
-                                className="h-11 rounded-lg"
+                                className="h-11 rounded-lg border border-slate-200"
                             />
                         </div>
                         <div className="grid gap-2">
@@ -311,7 +376,7 @@ const TimeAttendSettingsPage = () => {
                                 placeholder="e.g. Manager → HR → Director"
                                 value={workflowSteps}
                                 onChange={(e) => setWorkflowSteps(e.target.value)}
-                                className="h-11 rounded-lg"
+                                className="h-11 rounded-lg border border-slate-200"
                             />
                         </div>
                     </div>

@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   CalendarDays,
@@ -46,6 +47,7 @@ import {
 
 const MasterAttendancePage = () => {
   const { toast } = useToast();
+  const router = useRouter();
   const {
     logs,
     approveRegularization,
@@ -127,6 +129,7 @@ const MasterAttendancePage = () => {
             </Button>
             <Button
               className="bg-[#CB9DF0] hover:bg-[#b580e0] text-white rounded-xl font-black h-14 px-10 shadow-2xl shadow-purple-200"
+              onClick={() => toast({ title: "Compliance Audit", description: "Generating compliance audit report..." })}
             >
               <ShieldCheck size={18} className="mr-2" /> Compliance audit
             </Button>
@@ -146,10 +149,10 @@ const MasterAttendancePage = () => {
           </div>
 
           <Select value={filterDept} onValueChange={setFilterDept}>
-            <SelectTrigger className="w-64 h-14 rounded-2xl bg-slate-50 border-none font-bold text-slate-600">
+            <SelectTrigger className="w-64 h-14 rounded-2xl bg-slate-50 border border-slate-200 font-bold text-slate-600">
               <SelectValue placeholder="Department" />
             </SelectTrigger>
-            <SelectContent className="rounded-2xl font-bold border-none shadow-2xl">
+            <SelectContent className="rounded-2xl font-bold border border-slate-200 shadow-2xl">
               {departments.map(d => (
                 <SelectItem key={d} value={d}>{d}</SelectItem>
               ))}
@@ -157,10 +160,10 @@ const MasterAttendancePage = () => {
           </Select>
 
           <Select value={filterStatus} onValueChange={setFilterStatus}>
-            <SelectTrigger className="w-64 h-14 rounded-2xl bg-slate-50 border-none font-bold text-slate-600">
+            <SelectTrigger className="w-64 h-14 rounded-2xl bg-slate-50 border border-slate-200 font-bold text-slate-600">
               <SelectValue placeholder="Work Status" />
             </SelectTrigger>
-            <SelectContent className="rounded-2xl font-bold border-none shadow-2xl">
+            <SelectContent className="rounded-2xl font-bold border border-slate-200 shadow-2xl">
               {statuses.map(s => (
                 <SelectItem key={s} value={s}>{s}</SelectItem>
               ))}
@@ -296,10 +299,14 @@ const MasterAttendancePage = () => {
                         </div>
                       ) : (
                         <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
-                          <Button variant="ghost" size="icon" className="h-12 w-12 rounded-xl text-slate-300 hover:text-[#CB9DF0]">
+                          <Button variant="ghost" size="icon" className="h-12 w-12 rounded-xl text-slate-300 hover:text-[#CB9DF0]"
+                            onClick={() => toast({ title: "Edit Attendance", description: `Opening editor for ${log.empName}'s attendance record.` })}
+                          >
                             <FileEdit size={20} />
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-12 w-12 rounded-xl text-slate-300 hover:text-[#CB9DF0]">
+                          <Button variant="ghost" size="icon" className="h-12 w-12 rounded-xl text-slate-300 hover:text-[#CB9DF0]"
+                            onClick={() => router.push("/hrmcubicle/timeattend/attendance/settings")}
+                          >
                             <Settings size={20} />
                           </Button>
                         </div>

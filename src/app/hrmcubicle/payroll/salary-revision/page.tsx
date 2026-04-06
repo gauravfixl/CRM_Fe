@@ -150,7 +150,7 @@ const SalaryRevisionPage = () => {
                                 </TabsList>
                                 <div className="relative w-56 mb-3">
                                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-300" />
-                                    <Input placeholder="Search..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-9 rounded-lg border-none bg-slate-50 h-8 font-bold text-[10px]" />
+                                    <Input placeholder="Search..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-9 rounded-lg border border-slate-200 bg-slate-50 h-8 font-bold text-[10px]" />
                                 </div>
                             </div>
                             <TabsContent value={activeTab} className="m-0">
@@ -221,7 +221,7 @@ const SalaryRevisionPage = () => {
 
             {/* Create/Edit Dialog */}
             <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-                <DialogContent className="bg-white rounded-2xl border-none p-6 max-w-lg shadow-2xl">
+                <DialogContent className="bg-white rounded-2xl border-2 border-slate-200 p-6 max-w-lg shadow-2xl">
                     <DialogHeader>
                         <DialogTitle className="text-lg font-bold text-slate-900">{editingId ? "Edit Revision" : "New Salary Revision"}</DialogTitle>
                     </DialogHeader>
@@ -261,7 +261,7 @@ const SalaryRevisionPage = () => {
 
             {/* Detail Dialog */}
             <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-                <DialogContent className="bg-white rounded-2xl border-none p-6 max-w-lg shadow-2xl">
+                <DialogContent className="bg-white rounded-2xl border-2 border-slate-200 p-6 max-w-lg shadow-2xl">
                     <DialogHeader><DialogTitle className="text-lg font-bold text-slate-900">Revision Details</DialogTitle></DialogHeader>
                     {viewingRevision && (
                         <div className="space-y-4 py-2">

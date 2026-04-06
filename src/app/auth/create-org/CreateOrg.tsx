@@ -13,6 +13,14 @@ import { useAuthStore } from "@/lib/useAuthStore"
 import { showSuccess, showError } from "@/utils/toast"
 import { createOrg } from "@/hooks/orgHooks"
 import CountryStateCityDropdown from "@/components/custom/CountryStateCityDropDown"
+import { ErrorMessage } from "@/components/custom/ErrorMessage"
+
+// Helper to get border class based on field validity
+function getInputBorderClass(value: string, error: string | undefined, touched: boolean): string {
+  if (error) return "border-red-500 focus-visible:ring-red-500"
+  if (touched && value.trim()) return "border-green-500 focus-visible:ring-green-500"
+  return ""
+}
 
 export default function CreateOrganizationPage() {
   const router = useRouter()
@@ -21,6 +29,7 @@ export default function CreateOrganizationPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({})
 
   const [formData, setFormData] = useState({
     orgName: "",
@@ -41,12 +50,103 @@ export default function CreateOrganizationPage() {
         contactEmail: user.email || "",
         contactPhone: user.phone || "",
       }))
+      // Mark pre-filled fields as touched
+      setTouchedFields(prev => ({
+        ...prev,
+        contactEmail: true,
+        contactPhone: true,
+      }))
     }
   }, [user])
 
+  // Real-time field validation
+  const validateField = (field: string, value: string) => {
+    let error = ""
+
+    switch (field) {
+      case "orgName":
+        if (!value.trim()) {
+          error = "Organization name is required"
+        } else if (/\d/.test(value)) {
+          error = "Organization name cannot contain numbers"
+        }
+        break
+      case "contactName":
+        if (!value.trim()) {
+          error = "Contact name is required"
+        } else if (!/^[A-Za-z\s]+$/.test(value.trim())) {
+          error = "Only alphabets are allowed"
+        }
+        break
+      case "contactEmail":
+        if (!value.trim()) {
+          error = "Contact email is required"
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim())) {
+          error = "Please enter a valid email (e.g. user@example.com)"
+        }
+        break
+      case "contactPhone":
+        if (!value.trim()) {
+          error = "Contact phone is required"
+        }
+        break
+      case "address":
+        if (!value.trim()) {
+          error = "Address is required"
+        } else if (value.trim().length < 10) {
+          error = "Address must be at least 10 characters"
+        } else if (!/^[A-Za-z0-9\s,.:\-]+$/.test(value.trim())) {
+          error = "Only alphabets, numbers and , . : - are allowed"
+        }
+        break
+      case "orgCountry":
+        if (!value.trim()) {
+          error = "Country is required"
+        }
+        break
+      case "orgState":
+        if (!value.trim()) {
+          error = "State is required"
+        }
+        break
+      case "orgCity":
+        if (!value.trim()) {
+          error = "City is required"
+        }
+        break
+    }
+
+    setErrors(prev => ({ ...prev, [field]: error }))
+  }
+
   const handleInputChange = (field: string, value: string | File | null) => {
     setFormData(prev => ({ ...prev, [field]: value }))
-    setErrors(prev => ({ ...prev, [field]: "" }))
+    setTouchedFields(prev => ({ ...prev, [field]: true }))
+
+    if (typeof value === "string") {
+      validateField(field, value)
+    } else {
+      setErrors(prev => ({ ...prev, [field]: "" }))
+    }
+  }
+
+  // Only allow alphabets in contact name
+  const handleContactNameInput = (value: string) => {
+    const filtered = value.replace(/[^A-Za-z\s]/g, "")
+    handleInputChange("contactName", filtered)
+  }
+
+  // Filter out numbers from org name
+  const handleOrgNameInput = (value: string) => {
+    const filtered = value.replace(/\d/g, "")
+    handleInputChange("orgName", filtered)
+  }
+
+  const handleBlur = (field: string) => {
+    setTouchedFields(prev => ({ ...prev, [field]: true }))
+    if (typeof formData[field as keyof typeof formData] === "string") {
+      validateField(field, formData[field as keyof typeof formData] as string)
+    }
   }
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -64,16 +164,25 @@ export default function CreateOrganizationPage() {
   const handleCreateOrg = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    setErrors({})
-    const newErrors: typeof errors = {}
+    const newErrors: Record<string, string> = {}
     if (!formData.orgName.trim()) newErrors.orgName = "Organization name is required"
+    else if (/\d/.test(formData.orgName)) newErrors.orgName = "Organization name cannot contain numbers"
+    if (!formData.contactName.trim()) newErrors.contactName = "Contact name is required"
+    else if (!/^[A-Za-z\s]+$/.test(formData.contactName.trim())) newErrors.contactName = "Only alphabets are allowed"
+    if (!formData.contactEmail.trim()) newErrors.contactEmail = "Contact email is required"
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.contactEmail.trim())) newErrors.contactEmail = "Please enter a valid email"
+    if (!formData.contactPhone.trim()) newErrors.contactPhone = "Contact phone is required"
     if (!formData.address.trim()) newErrors.address = "Address is required"
-    if (!formData.orgCity.trim()) newErrors.orgCity = "City is required"
-    if (!formData.orgState.trim()) newErrors.orgState = "State is required"
+    else if (formData.address.trim().length < 10) newErrors.address = "Address must be at least 10 characters"
+    else if (!/^[A-Za-z0-9\s,.:\-]+$/.test(formData.address.trim())) newErrors.address = "Only alphabets, numbers and , . : - are allowed"
     if (!formData.orgCountry.trim()) newErrors.orgCountry = "Country is required"
-    if (!formData.contactName.trim()) newErrors.contactName = "Contact Name is required"
-    if (!formData.contactEmail.trim()) newErrors.contactEmail = "Contact Email is required"
-    if (!formData.contactPhone.trim()) newErrors.contactPhone = "Contact Phone is required"
+    if (!formData.orgState.trim()) newErrors.orgState = "State is required"
+    if (!formData.orgCity.trim()) newErrors.orgCity = "City is required"
+
+    // Mark all fields as touched
+    const allTouched: Record<string, boolean> = {}
+    Object.keys(formData).forEach(key => (allTouched[key] = true))
+    setTouchedFields(allTouched)
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)
@@ -148,6 +257,7 @@ export default function CreateOrganizationPage() {
 
           <CardContent className="create-org-content space-y-6">
             <form onSubmit={handleCreateOrg} className="create-org-form space-y-4">
+              {/* Organization Name */}
               <div className="create-org-field space-y-2">
                 <Label htmlFor="orgName">
                   Organization Name <span className="text-red-500">*</span>
@@ -155,67 +265,91 @@ export default function CreateOrganizationPage() {
                 <Input
                   id="orgName"
                   value={formData.orgName}
-                  onChange={(e) => handleInputChange("orgName", e.target.value)}
+                  onChange={(e) => handleOrgNameInput(e.target.value)}
+                  onBlur={() => handleBlur("orgName")}
                   placeholder="Enter organization name"
-                  className="create-org-input h-11"
+                  className={`create-org-input h-11 ${getInputBorderClass(formData.orgName, errors.orgName, touchedFields.orgName)}`}
                 />
-                {errors.orgName && (
-                  <p className="create-org-error text-red-500 text-sm">{errors.orgName}</p>
+                {touchedFields.orgName && !errors.orgName && formData.orgName.trim() ? (
+                  <p className="text-xs text-green-600 mt-1">Looks good!</p>
+                ) : (
+                  <ErrorMessage message={errors.orgName} />
                 )}
+                <p className="text-[10px] text-gray-400 mt-0.5">Numbers are not allowed</p>
               </div>
 
               <div className="create-org-contact grid grid-cols-2 gap-4">
+                {/* Contact Name */}
                 <div className="create-org-field space-y-2">
-                  <Label htmlFor="contactName">Contact Name</Label>
+                  <Label htmlFor="contactName">Contact Name <span className="text-red-500">*</span></Label>
                   <Input
                     id="contactName"
                     value={formData.contactName}
-                    onChange={(e) => handleInputChange("contactName", e.target.value)}
+                    onChange={(e) => handleContactNameInput(e.target.value)}
+                    onBlur={() => handleBlur("contactName")}
                     placeholder="e.g., Admin"
-                    className="create-org-input h-11"
+                    className={`create-org-input h-11 ${getInputBorderClass(formData.contactName, errors.contactName, touchedFields.contactName)}`}
                   />
-                  {errors.contactName && (
-                    <p className="create-org-error text-red-500 text-sm">{errors.contactName}</p>
+                  {touchedFields.contactName && !errors.contactName && formData.contactName.trim() ? (
+                    <p className="text-xs text-green-600 mt-1">Looks good!</p>
+                  ) : (
+                    <ErrorMessage message={errors.contactName} />
                   )}
+                  <p className="text-[10px] text-gray-400 mt-0.5">Only alphabets allowed</p>
                 </div>
+
+                {/* Contact Email (pre-filled, read-only) */}
                 <div className="create-org-field space-y-2">
-                  <Label htmlFor="contactEmail">Contact Email</Label>
+                  <Label htmlFor="contactEmail">Contact Email <span className="text-red-500">*</span></Label>
                   <Input
                     id="contactEmail"
                     type="email"
                     value={formData.contactEmail}
-                    className="create-org-input h-11 cursor-not-allowed"
+                    readOnly
+                    className={`create-org-input h-11 cursor-not-allowed bg-gray-50 ${getInputBorderClass(formData.contactEmail, errors.contactEmail, touchedFields.contactEmail)}`}
                   />
-                  {errors.contactEmail && (
-                    <p className="create-org-error text-red-500 text-sm">{errors.contactEmail}</p>
+                  {touchedFields.contactEmail && !errors.contactEmail && formData.contactEmail.trim() ? (
+                    <p className="text-xs text-green-600 mt-1">Pre-filled from your account</p>
+                  ) : (
+                    <ErrorMessage message={errors.contactEmail} />
                   )}
                 </div>
               </div>
 
               <div className="create-org-contact grid grid-cols-2 gap-4">
+                {/* Contact Phone (pre-filled, read-only) */}
                 <div className="create-org-field space-y-2">
-                  <Label htmlFor="contactPhone">Contact Phone</Label>
+                  <Label htmlFor="contactPhone">Contact Phone <span className="text-red-500">*</span></Label>
                   <Input
                     id="contactPhone"
                     value={formData.contactPhone}
-                    className="create-org-input h-11 cursor-not-allowed"
+                    readOnly
+                    className={`create-org-input h-11 cursor-not-allowed bg-gray-50 ${getInputBorderClass(formData.contactPhone, errors.contactPhone, touchedFields.contactPhone)}`}
                   />
-                  {errors.contactPhone && (
-                    <p className="create-org-error text-red-500 text-sm">{errors.contactPhone}</p>
+                  {touchedFields.contactPhone && !errors.contactPhone && formData.contactPhone.trim() ? (
+                    <p className="text-xs text-green-600 mt-1">Pre-filled from your account</p>
+                  ) : (
+                    <ErrorMessage message={errors.contactPhone} />
                   )}
                 </div>
+
+                {/* Address */}
                 <div className="create-org-field space-y-2">
-                  <Label htmlFor="address">Address</Label>
+                  <Label htmlFor="address">Address <span className="text-red-500">*</span></Label>
                   <Input
                     id="address"
                     value={formData.address}
                     onChange={(e) => handleInputChange("address", e.target.value)}
+                    onBlur={() => handleBlur("address")}
                     placeholder="Street, Building, Area"
-                    className="create-org-input h-11"
+                    className={`create-org-input h-11 ${getInputBorderClass(formData.address, errors.address, touchedFields.address)}`}
                   />
-                  {errors.address && (
-                    <p className="create-org-error text-red-500 text-sm">{errors.address}</p>
+                  {touchedFields.address && !errors.address && formData.address.trim() ? (
+                    <p className="text-xs text-green-600 mt-1">Looks good!</p>
+                  ) : (
+                    <ErrorMessage message={errors.address} />
                   )}
+                  <p className="text-[10px] text-gray-400 mt-0.5">Min 10 characters, alphabets, numbers and , . : - allowed (no special characters like @, $, %, &, *, /, \, #)</p>
                 </div>
               </div>
 
@@ -231,13 +365,13 @@ export default function CreateOrganizationPage() {
                 cityName="orgCity"
               />
               {errors.orgCountry && (
-                <p className="create-org-error text-red-500 text-sm">{errors.orgCountry}</p>
+                <p className="create-org-error text-red-500 text-xs mt-1">{errors.orgCountry}</p>
               )}
               {errors.orgState && (
-                <p className="create-org-error text-red-500 text-sm">{errors.orgState}</p>
+                <p className="create-org-error text-red-500 text-xs mt-1">{errors.orgState}</p>
               )}
               {errors.orgCity && (
-                <p className="create-org-error text-red-500 text-sm">{errors.orgCity}</p>
+                <p className="create-org-error text-red-500 text-xs mt-1">{errors.orgCity}</p>
               )}
 
               <Button

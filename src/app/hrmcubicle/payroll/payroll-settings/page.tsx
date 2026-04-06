@@ -317,7 +317,7 @@ const PayrollSettingsPage = () => {
                                                         const key = `${item.id}Rate` as keyof typeof statutoryFormData;
                                                         setStatutoryFormData({ ...statutoryFormData, [key]: parseFloat(e.target.value) });
                                                     }}
-                                                    className="h-11 bg-slate-50 border-none rounded-xl font-bold text-sm px-4 tabular-nums focus:ring-2 ring-slate-100 transition-all font-sans"
+                                                    className="h-11 bg-slate-50 border border-slate-200 rounded-xl font-bold text-sm px-4 tabular-nums focus:ring-2 ring-slate-100 transition-all font-sans"
                                                 />
                                             </div>
                                         )}
@@ -342,7 +342,7 @@ const PayrollSettingsPage = () => {
                                             <div className="space-y-3">
                                                 <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block font-sans">Cycle Start Date</Label>
                                                 <Select value={payCycleData.cycleStart} onValueChange={v => setPayCycleData({ ...payCycleData, cycleStart: v })}>
-                                                    <SelectTrigger className="h-12 rounded-xl bg-slate-50 border-none font-bold text-sm"><SelectValue /></SelectTrigger>
+                                                    <SelectTrigger className="h-12 rounded-xl bg-slate-50 border border-slate-200 font-bold text-sm"><SelectValue /></SelectTrigger>
                                                     <SelectContent>
                                                         {[...Array(28)].map((_, i) => (
                                                             <SelectItem key={i} value={`${i + 1}`}>Day {i + 1}</SelectItem>
@@ -359,7 +359,7 @@ const PayrollSettingsPage = () => {
                                             <div className="space-y-3">
                                                 <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block font-sans">Cycle End Date</Label>
                                                 <Select value={payCycleData.cycleEnd} onValueChange={v => setPayCycleData({ ...payCycleData, cycleEnd: v })}>
-                                                    <SelectTrigger className="h-12 rounded-xl bg-slate-50 border-none font-bold text-sm"><SelectValue /></SelectTrigger>
+                                                    <SelectTrigger className="h-12 rounded-xl bg-slate-50 border border-slate-200 font-bold text-sm"><SelectValue /></SelectTrigger>
                                                     <SelectContent>
                                                         <SelectItem value="30">Day 30</SelectItem>
                                                         <SelectItem value="31">Day 31 (End of Month)</SelectItem>
@@ -375,7 +375,7 @@ const PayrollSettingsPage = () => {
                                             <div className="space-y-3">
                                                 <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block font-sans">Payout Date</Label>
                                                 <Select value={payCycleData.payoutDay} onValueChange={v => setPayCycleData({ ...payCycleData, payoutDay: v })}>
-                                                    <SelectTrigger className="h-12 rounded-xl bg-slate-50 border-none font-bold text-sm"><SelectValue /></SelectTrigger>
+                                                    <SelectTrigger className="h-12 rounded-xl bg-slate-50 border border-slate-200 font-bold text-sm"><SelectValue /></SelectTrigger>
                                                     <SelectContent>
                                                         {[...Array(10)].map((_, i) => (
                                                             <SelectItem key={i} value={`${i + 1}`}>Day {i + 1} of Next Month</SelectItem>
@@ -416,7 +416,7 @@ const PayrollSettingsPage = () => {
 
             {/* Salary Component Form Dialog */}
             <Dialog open={isComponentFormOpen} onOpenChange={setIsComponentFormOpen}>
-                <DialogContent className="bg-white rounded-3xl border-none p-8 max-w-lg font-sans shadow-2xl overflow-hidden relative">
+                <DialogContent className="bg-white rounded-3xl border-2 border-slate-200 p-8 max-w-lg font-sans shadow-2xl overflow-hidden relative">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-[#CB9DF0]/10 rounded-full -translate-y-16 translate-x-16 blur-3xl" />
                     <DialogHeader className="text-start space-y-2 relative z-10">
                         <Badge className="bg-[#CB9DF0] text-white border-none font-bold text-[9px] px-3 py-1 uppercase tracking-wider w-fit">Component Editor</Badge>
@@ -431,17 +431,17 @@ const PayrollSettingsPage = () => {
                                 placeholder="e.g. Basic Salary, HRA"
                                 value={compFormData.name}
                                 onChange={e => setCompFormData({ ...compFormData, name: e.target.value })}
-                                className="rounded-xl bg-slate-50 border-none h-12 font-bold text-sm tracking-tight px-4 font-sans focus-visible:ring-offset-0 focus-visible:ring-[#8B5CF6]"
+                                className="rounded-xl bg-slate-50 border border-slate-200 h-12 font-bold text-sm tracking-tight px-4 font-sans focus-visible:ring-offset-0 focus-visible:ring-[#8B5CF6]"
                             />
                         </div>
                         <div className="grid grid-cols-2 gap-4 text-start">
                             <div className="space-y-2 text-start text-start">
                                 <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block ml-1 text-start leading-none">Type</Label>
                                 <Select value={compFormData.type} onValueChange={(v: any) => setCompFormData({ ...compFormData, type: v })}>
-                                    <SelectTrigger className="rounded-xl h-12 bg-slate-50 border-none font-bold text-xs uppercase px-4 text-slate-700">
+                                    <SelectTrigger className="rounded-xl h-12 bg-slate-50 border border-slate-200 font-bold text-xs uppercase px-4 text-slate-700">
                                         <SelectValue />
                                     </SelectTrigger>
-                                    <SelectContent className="rounded-xl border-none shadow-2xl p-2 font-sans bg-white">
+                                    <SelectContent className="rounded-xl border border-slate-200 shadow-2xl p-2 font-sans bg-white">
                                         <SelectItem value="Earning" className="rounded-lg text-xs font-bold text-emerald-600 h-10 uppercase tracking-wide">Earning</SelectItem>
                                         <SelectItem value="Deduction" className="rounded-lg text-xs font-bold text-rose-600 h-10 uppercase tracking-wide">Deduction</SelectItem>
                                     </SelectContent>
@@ -450,10 +450,10 @@ const PayrollSettingsPage = () => {
                             <div className="space-y-2 text-start text-start">
                                 <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block ml-1 text-start leading-none">Calculation</Label>
                                 <Select value={compFormData.amountType} onValueChange={(v: any) => setCompFormData({ ...compFormData, amountType: v })}>
-                                    <SelectTrigger className="rounded-xl h-12 bg-slate-50 border-none font-bold text-xs uppercase px-4 text-slate-700">
+                                    <SelectTrigger className="rounded-xl h-12 bg-slate-50 border border-slate-200 font-bold text-xs uppercase px-4 text-slate-700">
                                         <SelectValue />
                                     </SelectTrigger>
-                                    <SelectContent className="rounded-xl border-none shadow-2xl p-2 font-sans bg-white">
+                                    <SelectContent className="rounded-xl border border-slate-200 shadow-2xl p-2 font-sans bg-white">
                                         <SelectItem value="Fixed" className="rounded-lg text-xs font-bold text-slate-700 h-10 uppercase tracking-wide">Fixed Amount</SelectItem>
                                         <SelectItem value="Percentage of Basic" className="rounded-lg text-xs font-bold text-slate-700 h-10 uppercase tracking-wide">% of Basic</SelectItem>
                                     </SelectContent>
@@ -466,7 +466,7 @@ const PayrollSettingsPage = () => {
                                 type="number"
                                 value={compFormData.value}
                                 onChange={e => setCompFormData({ ...compFormData, value: e.target.value })}
-                                className="rounded-xl bg-slate-50 border-none h-12 font-bold text-base px-6 text-slate-900 tabular-nums font-sans focus-visible:ring-offset-0 focus-visible:ring-[#8B5CF6] text-start"
+                                className="rounded-xl bg-slate-50 border border-slate-200 h-12 font-bold text-base px-6 text-slate-900 tabular-nums font-sans focus-visible:ring-offset-0 focus-visible:ring-[#8B5CF6] text-start"
                             />
                         </div>
                         <div className="flex items-center justify-between p-4 rounded-2xl bg-slate-50/50 border border-slate-50 text-start">
@@ -491,7 +491,7 @@ const PayrollSettingsPage = () => {
 
             {/* Bank Management Dialog */}
             <Dialog open={isBankDialogOpen} onOpenChange={setIsBankDialogOpen}>
-                <DialogContent className="bg-white rounded-3xl border-none p-8 max-w-md font-sans shadow-2xl">
+                <DialogContent className="bg-white rounded-3xl border-2 border-slate-200 p-8 max-w-md font-sans shadow-2xl">
                     <DialogHeader className="space-y-2">
                         <DialogTitle className="text-xl font-bold text-slate-900">Bank Integration</DialogTitle>
                         <DialogDescription className="text-xs font-medium text-slate-400">Configure primary disbursement source</DialogDescription>
@@ -502,7 +502,7 @@ const PayrollSettingsPage = () => {
                             <Input
                                 value={bankDetails.bankName}
                                 onChange={(e) => setBankDetails({ ...bankDetails, bankName: e.target.value })}
-                                className="h-10 bg-slate-50 border-none rounded-xl"
+                                className="h-10 bg-slate-50 border border-slate-200 rounded-xl"
                             />
                         </div>
                         <div className="space-y-2">
@@ -510,7 +510,7 @@ const PayrollSettingsPage = () => {
                             <Input
                                 value={bankDetails.accountNumber}
                                 onChange={(e) => setBankDetails({ ...bankDetails, accountNumber: e.target.value })}
-                                className="h-10 bg-slate-50 border-none rounded-xl"
+                                className="h-10 bg-slate-50 border border-slate-200 rounded-xl"
                             />
                         </div>
                     </div>
