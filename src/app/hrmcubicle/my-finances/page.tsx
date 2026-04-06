@@ -119,7 +119,7 @@ const MyFinancesPage = () => {
   const formatINR = (amt: number) => `₹${amt.toLocaleString("en-IN")}`;
 
   return (
-    <div className="flex flex-col h-full bg-[#f8fafc] font-sans" style={{ zoom: "80%" }}>
+    <div className="flex flex-col h-full bg-[#f8fafc] font-sans" style={{ zoom: "90%" }}>
       {/* Professional Header */}
       <div className="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between">
         <div className="flex items-center gap-3 text-start">
@@ -159,10 +159,10 @@ const MyFinancesPage = () => {
                 <div className="space-y-2">
                   <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-start block ml-1">Expense Node</Label>
                   <Select value={claimForm.type} onValueChange={(v) => setClaimForm({ ...claimForm, type: v })}>
-                    <SelectTrigger className="rounded-xl h-12 bg-slate-50 border-none font-bold text-sm">
+                    <SelectTrigger className="rounded-xl h-12 bg-slate-50 border border-slate-200 font-bold text-sm">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="rounded-xl border-none shadow-2xl p-2 font-sans">
+                    <SelectContent className="rounded-xl border border-slate-200 shadow-2xl p-2 font-sans">
                       {['Travel', 'Medical', 'Food', 'Internet', 'Education'].map(cat => (
                         <SelectItem key={cat} value={cat} className="rounded-lg">{cat}</SelectItem>
                       ))}
@@ -177,7 +177,7 @@ const MyFinancesPage = () => {
                       placeholder="0.00"
                       value={claimForm.amount}
                       onChange={e => setClaimForm({ ...claimForm, amount: e.target.value })}
-                      className="rounded-xl bg-slate-50 border-none h-12 font-bold text-sm"
+                      className="rounded-xl bg-slate-50 border border-slate-200 h-12 font-bold text-sm"
                     />
                   </div>
                   <div className="space-y-2 text-start">
@@ -186,7 +186,7 @@ const MyFinancesPage = () => {
                       type="date"
                       value={claimForm.date}
                       onChange={e => setClaimForm({ ...claimForm, date: e.target.value })}
-                      className="rounded-xl bg-slate-50 border-none h-12 font-bold text-sm"
+                      className="rounded-xl bg-slate-50 border border-slate-200 h-12 font-bold text-sm"
                     />
                   </div>
                 </div>
@@ -196,7 +196,7 @@ const MyFinancesPage = () => {
                     placeholder="Brief technical description of expense..."
                     value={claimForm.description}
                     onChange={e => setClaimForm({ ...claimForm, description: e.target.value })}
-                    className="rounded-xl bg-slate-50 border-none min-h-[100px] font-medium text-sm p-4"
+                    className="rounded-xl bg-slate-50 border border-slate-200 min-h-[100px] font-medium text-sm p-4"
                   />
                 </div>
               </div>

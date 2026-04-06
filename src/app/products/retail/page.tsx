@@ -7,172 +7,180 @@ import {
     Users,
     TrendingUp,
     Package,
-    Zap,
+    Store,
+    RotateCcw,
+    LayoutGrid,
+    CreditCard,
+    Truck,
+    Heart,
+    BarChart3,
 } from "lucide-react"
 
 const data = {
     name: "Retail",
-    tagline: "Unified commerce platform for modern retailers",
+    tagline: "All-in-one commerce platform built for modern retail success",
     description:
-        "CubicleERP Retail transforms how you manage inventory, sales, and customer relationships across all channels. From point-of-sale integration and real-time inventory tracking to omnichannel order management and customer analytics — everything you need to deliver exceptional shopping experiences while optimizing operations and maximizing profitability.",
+        "CubicleERP Retail empowers retailers with a unified platform to manage point-of-sale operations, real-time inventory, omnichannel sales, and customer loyalty programs from a single dashboard. Whether you run a single boutique or a chain of stores, streamline every aspect of your retail business — from barcode scanning and supplier management to returns processing and multi-store analytics — and deliver exceptional shopping experiences that keep customers coming back.",
     icon: ShoppingCart,
-    color: "#E74C3C",
-    lightColor: "#FADBD8",
-    heroImage: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1920&q=80",
+    color: "#D97706",
+    lightColor: "#FEF3C7",
+    heroImage:
+        "https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=1920&q=80",
+    variant: 3 as const,
     features: [
         {
-            icon: Barcode,
-            title: "Unified Inventory Management",
+            icon: CreditCard,
+            title: "Integrated POS System",
             description:
-                "Real-time inventory visibility across all locations, warehouses, and sales channels. Automatic stock level alerts, intelligent reorder points, and SKU-level tracking prevent stockouts and overstock situations. Manage variants, bundles, and serial numbers with complete traceability from purchase to sale.",
-        },
-        {
-            icon: ShoppingCart,
-            title: "Omnichannel Order Management",
-            description:
-                "Seamlessly manage orders from physical stores, e-commerce platforms, mobile apps, and marketplaces in one unified system. Automatic order routing, split shipments, and unified fulfillment workflows ensure customers get their orders quickly regardless of channel.",
-        },
-        {
-            icon: Users,
-            title: "Customer Loyalty & Analytics",
-            description:
-                "Build customer profiles with purchase history, preferences, and lifetime value. Create targeted loyalty programs, personalized promotions, and segment-based marketing campaigns. Track customer behavior across channels to identify trends and optimize merchandising strategies.",
-        },
-        {
-            icon: TrendingUp,
-            title: "Sales Analytics & Reporting",
-            description:
-                "Real-time dashboards showing sales by category, location, salesperson, and time period. Identify top-performing products, analyze profit margins, and forecast demand. Compare performance across stores and make data-driven decisions on pricing, promotions, and inventory allocation.",
+                "Process transactions seamlessly with a fully integrated point-of-sale system that supports credit cards, digital wallets, UPI, and buy-now-pay-later options. Every sale automatically updates inventory counts, triggers accounting entries, and feeds into your analytics dashboards in real time. Configure custom tax rules, discounts, and promotional pricing that cashiers can apply with a single tap at checkout.",
         },
         {
             icon: Package,
-            title: "Supplier & Vendor Management",
+            title: "Real-Time Inventory Management",
             description:
-                "Manage purchase orders, track deliveries, and maintain vendor performance metrics. Automated reordering based on inventory levels, supplier lead times, and seasonal demand. Negotiate better terms with data-backed supplier performance analytics.",
+                "Maintain complete visibility of stock levels across every store, warehouse, and fulfillment center with live inventory tracking down to the SKU level. Automated reorder points, safety stock calculations, and demand-driven replenishment ensure you never face unexpected stockouts or costly overstock situations. Track product variants, serial numbers, batch lots, and expiry dates with full traceability from receiving dock to customer hands.",
         },
         {
-            icon: Zap,
-            title: "POS Integration & Payments",
+            icon: LayoutGrid,
+            title: "Omnichannel Sales Management",
             description:
-                "Connect with leading POS systems and payment processors for seamless transaction processing. Support multiple payment methods including cards, digital wallets, and buy-now-pay-later options. Real-time sales data flows directly into your accounting and inventory systems.",
+                "Unify your in-store, e-commerce, mobile app, and marketplace sales channels into a single order management hub that provides a consistent shopping experience everywhere. Enable buy-online-pick-up-in-store, ship-from-store, and endless aisle capabilities so customers can shop however they prefer. Inventory is allocated intelligently across channels to maximize sell-through rates and minimize fulfillment costs.",
+        },
+        {
+            icon: Heart,
+            title: "Customer Loyalty & Engagement",
+            description:
+                "Build rich customer profiles that capture purchase history, preferences, wish lists, and engagement across every touchpoint to power personalized marketing. Design tiered loyalty programs with points, rewards, exclusive offers, and birthday perks that drive repeat visits and increase average order value. Segment your customer base for targeted campaigns and measure the ROI of every promotion in real time.",
+        },
+        {
+            icon: Barcode,
+            title: "Barcode & Label Management",
+            description:
+                "Generate, print, and scan barcodes and QR codes for rapid product identification, stock receiving, cycle counts, and checkout processing. Support all major barcode formats including UPC, EAN, Code 128, and custom internal SKU schemes with batch label printing for new arrivals. Mobile barcode scanning turns any smartphone or tablet into a portable inventory tool for stocktakes and price checks on the shop floor.",
+        },
+        {
+            icon: Truck,
+            title: "Supplier & Procurement Management",
+            description:
+                "Manage your entire supplier network with vendor scorecards, lead time tracking, and automated purchase order generation based on real-time inventory needs. Compare supplier pricing, negotiate volume discounts, and track delivery performance to ensure you always source products at the best cost and reliability. Receive goods with barcode verification, manage partial shipments, and automatically reconcile supplier invoices against purchase orders.",
         },
     ],
     benefits: [
         {
-            title: "Reduce Inventory Carrying Costs",
+            title: "Cut Inventory Carrying Costs by 30%",
             description:
-                "Optimize stock levels with predictive analytics and demand forecasting. Reduce excess inventory by 20-30% while maintaining service levels, freeing up cash for growth initiatives.",
+                "Demand forecasting and intelligent reorder algorithms keep stock levels optimized, reducing excess inventory, minimizing storage costs, and freeing up working capital for growth.",
         },
         {
-            title: "Increase Sales & Customer Lifetime Value",
+            title: "Boost Customer Retention & Lifetime Value",
             description:
-                "Personalized recommendations, targeted promotions, and loyalty programs drive repeat purchases. Retailers using CubicleERP see average order value increase by 25% and customer retention improve by 35%.",
+                "Personalized loyalty programs, targeted promotions, and unified customer profiles across all channels drive repeat purchases and increase average order value by up to 25%.",
         },
         {
-            title: "Streamline Operations Across Locations",
+            title: "Eliminate Manual Errors & Shrinkage",
             description:
-                "Centralized management of multiple stores reduces administrative overhead and ensures consistent brand experience. Standardized processes and workflows improve efficiency and reduce errors across all locations.",
+                "Automated stock reconciliation, barcode-verified receiving, and real-time audit trails reduce inventory discrepancies and shrinkage, protecting your margins at every step.",
         },
         {
-            title: "Improve Profit Margins",
+            title: "Accelerate Checkout & Reduce Wait Times",
             description:
-                "Better inventory management, reduced shrinkage, and optimized pricing strategies directly improve bottom-line profitability. Real-time margin analysis by product and category helps identify optimization opportunities.",
+                "Fast POS processing with integrated payment methods, quick barcode scanning, and pre-configured discount rules let cashiers handle more customers with fewer errors during peak hours.",
         },
         {
-            title: "Enable Faster Decision-Making",
+            title: "Make Data-Driven Merchandising Decisions",
             description:
-                "Real-time dashboards and automated alerts keep you informed of sales trends, inventory issues, and customer behavior. Make pricing and merchandising decisions in minutes instead of days.",
+                "Real-time sales analytics, product performance dashboards, and margin analysis empower store managers to optimize product placement, pricing strategies, and promotional calendars.",
         },
         {
-            title: "Scale Your Business Confidently",
+            title: "Scale Seamlessly Across Locations & Channels",
             description:
-                "Whether opening new locations or expanding to new channels, CubicleERP scales with you. Add stores, integrate new sales channels, and manage growth without system limitations or costly upgrades.",
+                "Add new stores, launch e-commerce channels, or expand to marketplaces without system constraints. CubicleERP grows with your business while keeping operations centralized and consistent.",
         },
     ],
     steps: [
         {
             step: "1",
-            title: "Assessment & Planning",
+            title: "Retail Operations Audit & Setup",
             description:
-                "We analyze your current retail operations, sales channels, and pain points. We create a detailed implementation plan that minimizes disruption to your stores and ensures smooth data migration from legacy systems.",
+                "We assess your current retail workflows, POS systems, inventory processes, and sales channels. A tailored implementation plan is created to migrate your product catalog, customer data, and historical transactions with zero disruption to daily store operations.",
         },
         {
             step: "2",
-            title: "System Configuration & Integration",
+            title: "Configuration, Integration & Testing",
             description:
-                "We configure CubicleERP for your retail operations, integrate with your POS systems, e-commerce platforms, and payment processors. Set up inventory rules, pricing strategies, and customer loyalty programs tailored to your business model.",
+                "We configure CubicleERP for your store layouts, pricing rules, tax structures, and loyalty programs. Integrations with your POS hardware, e-commerce platforms, payment gateways, and supplier portals are set up and rigorously tested with real transaction scenarios.",
         },
         {
             step: "3",
-            title: "Training & Launch",
+            title: "Staff Training & Phased Go-Live",
             description:
-                "Comprehensive training for store managers, cashiers, and back-office staff. Phased rollout starting with pilot locations, followed by full deployment with 24/7 support during launch period.",
+                "Your store managers, cashiers, warehouse staff, and back-office teams receive hands-on training tailored to their roles. We execute a phased rollout starting with pilot locations, followed by full deployment with dedicated support during the critical launch window.",
         },
     ],
     useCases: [
         {
             title: "Multi-Store Retail Chains",
             description:
-                "Large retail chains with dozens or hundreds of locations use CubicleERP to maintain consistent operations, pricing, and customer experience across all stores while allowing local flexibility.",
+                "Retail chains with multiple locations rely on CubicleERP to centralize inventory control, standardize pricing and promotions, and benchmark store performance — all while allowing regional managers the flexibility to adapt to local market conditions.",
             highlights: [
-                "Centralized inventory management with location-level control",
-                "Unified pricing with local promotion flexibility",
-                "Store performance dashboards with peer comparison",
+                "Centralized stock allocation with inter-store transfer workflows",
+                "Standardized pricing with location-specific promotion overrides",
+                "Comparative store performance dashboards and regional analytics",
             ],
         },
         {
-            title: "Omnichannel Retailers",
+            title: "Omnichannel & E-Commerce Retailers",
             description:
-                "Retailers selling through physical stores, e-commerce, mobile apps, and marketplaces use CubicleERP to provide seamless shopping experiences and unified inventory across all channels.",
+                "Retailers selling across physical stores, websites, mobile apps, and marketplaces use CubicleERP to maintain a single source of truth for inventory, orders, and customers — enabling seamless experiences like BOPIS and ship-from-store.",
             highlights: [
-                "Buy online, pick up in store (BOPIS) workflows",
-                "Unified customer profiles across all channels",
-                "Inventory visibility and allocation across channels",
+                "Unified inventory pool shared across online and offline channels",
+                "Buy-online-pick-up-in-store and ship-from-store fulfillment",
+                "Consolidated customer profiles with cross-channel purchase history",
             ],
         },
         {
             title: "Specialty & Boutique Retailers",
             description:
-                "Specialty retailers with unique inventory management needs use CubicleERP to track complex product hierarchies, manage seasonal inventory, and build loyal customer communities.",
+                "Specialty shops and boutiques leverage CubicleERP to manage complex product hierarchies, seasonal collections, and high-touch customer relationships that differentiate them from mass-market competitors.",
             highlights: [
-                "Advanced product variant and bundle management",
-                "Seasonal inventory planning and forecasting",
-                "Customer preference tracking and personalization",
+                "Advanced variant management for size, color, material, and custom attributes",
+                "Seasonal collection planning with pre-order and made-to-order workflows",
+                "VIP customer tracking with personalized recommendations and wish lists",
             ],
         },
     ],
     faqs: [
         {
-            question: "How does CubicleERP integrate with my existing POS system?",
-            answer:
-                "CubicleERP integrates with all major POS systems including Square, Toast, Shopify, Lightspeed, and others through APIs or pre-built connectors. Sales transactions sync in real-time to your inventory and accounting systems. If you use a custom POS, our integration team can build a connector using our open API.",
+            question:
+                "How does CubicleERP integrate with my existing POS hardware and software?",
+            answer: "CubicleERP connects with all major POS systems including Square, Shopify POS, Lightspeed, Clover, and Vend through pre-built API connectors. Sales transactions, refunds, and payment data sync in real time to your inventory and accounting modules. For custom or legacy POS terminals, our integration team builds tailored connectors using our open REST API, ensuring barcode scanners, receipt printers, and card terminals work seamlessly from day one.",
         },
         {
-            question: "Can I manage multiple sales channels from one system?",
-            answer:
-                "Yes. CubicleERP provides unified order management for physical stores, e-commerce platforms, mobile apps, and marketplaces like Amazon and eBay. Orders from all channels appear in one queue, inventory is shared across channels, and customer profiles are unified regardless of where they shop.",
+            question:
+                "Can I manage returns, exchanges, and refunds through the system?",
+            answer: "Absolutely. CubicleERP includes a comprehensive returns and exchanges module that handles in-store returns, online return requests, cross-channel returns (buy online, return in store), and warranty claims. Each return automatically adjusts inventory levels, triggers accounting reversals, and updates the customer profile. You can configure return policies by product category, set approval workflows for high-value returns, and track return reasons to identify quality or sizing issues.",
         },
         {
-            question: "How does inventory forecasting work?",
-            answer:
-                "CubicleERP uses historical sales data, seasonal trends, and current inventory levels to forecast demand for each product. The system automatically suggests reorder quantities and timing to maintain optimal stock levels. You can adjust forecasts based on planned promotions or market changes.",
+            question:
+                "How does inventory forecasting and automatic reordering work?",
+            answer: "The system analyzes historical sales data, seasonal patterns, current stock levels, and supplier lead times to generate demand forecasts for every product at every location. When projected stock falls below your configured safety thresholds, CubicleERP automatically creates draft purchase orders with recommended quantities and preferred suppliers. You can review and approve orders in bulk, adjust forecasts for upcoming promotions or market shifts, and track forecast accuracy over time to continuously improve planning.",
         },
         {
-            question: "What reporting and analytics are available?",
-            answer:
-                "CubicleERP provides real-time dashboards showing sales by category, location, and time period; inventory turnover rates; profit margins by product; customer purchase patterns; and staff performance metrics. Create custom reports and schedule automated distribution to stakeholders.",
+            question:
+                "What sales analytics and reporting capabilities are included?",
+            answer: "CubicleERP provides real-time dashboards covering sales by product, category, location, channel, and time period, along with gross margin analysis, inventory turnover rates, and customer acquisition metrics. You can drill down into individual store performance, compare periods, and identify your top and bottom performers. Custom report builder lets you create tailored reports, schedule automated email distribution, and export data to Excel or BI tools for deeper analysis.",
         },
         {
-            question: "How do you handle data migration from my current system?",
-            answer:
-                "Our implementation team handles complete data migration including product catalogs, inventory levels, customer records, and historical transactions. We validate data quality, reconcile discrepancies, and run parallel operations during transition to ensure accuracy and minimize disruption.",
+            question:
+                "How do you handle data migration and onboarding for existing retail businesses?",
+            answer: "Our implementation team manages the complete migration of your product catalog, inventory levels, pricing rules, customer records, supplier information, and historical transaction data from your current system. We run data validation checks, reconcile discrepancies, and execute parallel operations during the transition period so your stores continue operating without interruption. Most single-store retailers are fully operational within two weeks, while multi-store chains typically complete rollout within four to eight weeks depending on complexity.",
         },
     ],
     stats: [
-        { value: "2000+", label: "Retail locations managed" },
-        { value: "25%", label: "Average AOV increase" },
-        { value: "35%", label: "Customer retention improvement" },
-        { value: "99.9%", label: "System uptime" },
+        { value: "3,500+", label: "Retail locations powered" },
+        { value: "30%", label: "Reduction in inventory costs" },
+        { value: "25%", label: "Increase in average order value" },
+        { value: "99.9%", label: "POS system uptime" },
     ],
 }
 

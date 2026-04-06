@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     Building2,
@@ -55,7 +55,9 @@ import { Progress } from "@/shared/components/ui/progress";
 
 const DepartmentsPage = () => {
     const { toast } = useToast();
-    const { departments, employees, addDepartment, updateDepartment, deleteDepartment } = useOrganisationStore();
+    const { departments, employees, addDepartment, updateDepartment, deleteDepartment, loadDepartmentsFromApi, createDepartmentApi, updateDepartmentApi, deleteDepartmentApi } = useOrganisationStore();
+
+    useEffect(() => { loadDepartmentsFromApi().catch(() => {}); }, []);
 
     const [searchQuery, setSearchQuery] = useState("");
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -155,7 +157,7 @@ const DepartmentsPage = () => {
                             <Search className="absolute left-3.5 top-1/2 -transform -translate-y-1/2 w-3.5 h-3.5 text-slate-400 group-focus-within:text-purple-500 transition-colors" />
                             <Input
                                 placeholder="Search departments..."
-                                className="pl-10 h-9 rounded-xl bg-slate-50 border-none shadow-none font-medium text-[11px] focus-visible:ring-2 focus-visible:ring-purple-100 placeholder:text-slate-400"
+                                className="pl-10 h-9 rounded-xl bg-slate-50 border border-slate-200 shadow-none font-medium text-[11px] focus-visible:ring-2 focus-visible:ring-purple-100 placeholder:text-slate-400"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
@@ -174,7 +176,7 @@ const DepartmentsPage = () => {
 
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-                    <Card className="rounded-[1.25rem] border-none bg-indigo-100/90 text-indigo-700 p-4 shadow-sm ring-1 ring-indigo-200/50 transition-all hover:scale-[1.02] relative overflow-hidden group">
+                    <Card className="rounded-xl border-none bg-indigo-100/90 text-indigo-700 p-4 shadow-sm transition-all hover:scale-[1.02] relative overflow-hidden group">
                         <div className="relative z-10 space-y-2.5">
                             <div className="h-8 w-8 bg-white/90 rounded-lg flex items-center justify-center shadow-sm text-indigo-600 transition-transform group-hover:scale-110">
                                 <Building2 size={16} />
@@ -186,7 +188,7 @@ const DepartmentsPage = () => {
                         </div>
                     </Card>
 
-                    <Card className="rounded-[1.25rem] border-none bg-emerald-100/90 text-emerald-700 p-4 shadow-sm ring-1 ring-emerald-200/50 transition-all hover:scale-[1.02] relative overflow-hidden group">
+                    <Card className="rounded-xl border-none bg-emerald-100/90 text-emerald-700 p-4 shadow-sm transition-all hover:scale-[1.02] relative overflow-hidden group">
                         <div className="relative z-10 space-y-2.5">
                             <div className="h-8 w-8 bg-white/90 rounded-lg flex items-center justify-center shadow-sm text-emerald-600 transition-transform group-hover:scale-110">
                                 <Activity size={16} />
@@ -198,7 +200,7 @@ const DepartmentsPage = () => {
                         </div>
                     </Card>
 
-                    <Card className="rounded-[1.25rem] border-none bg-purple-100/90 text-purple-700 p-4 shadow-sm ring-1 ring-purple-200/50 transition-all hover:scale-[1.02] relative overflow-hidden group">
+                    <Card className="rounded-xl border-none bg-purple-100/90 text-purple-700 p-4 shadow-sm transition-all hover:scale-[1.02] relative overflow-hidden group">
                         <div className="relative z-10 space-y-2.5">
                             <div className="h-8 w-8 bg-white/90 rounded-lg flex items-center justify-center shadow-sm text-purple-600 transition-transform group-hover:scale-110">
                                 <Crown size={16} />
@@ -210,7 +212,7 @@ const DepartmentsPage = () => {
                         </div>
                     </Card>
 
-                    <Card className="rounded-[1.25rem] border-none bg-amber-100/90 text-amber-700 p-4 shadow-sm ring-1 ring-amber-200/50 transition-all hover:scale-[1.02] relative overflow-hidden group">
+                    <Card className="rounded-xl border-none bg-amber-100/90 text-amber-700 p-4 shadow-sm transition-all hover:scale-[1.02] relative overflow-hidden group">
                         <div className="relative z-10 space-y-2.5">
                             <div className="h-8 w-8 bg-white/90 rounded-lg flex items-center justify-center shadow-sm text-amber-600 transition-transform group-hover:scale-110">
                                 <Users size={16} />

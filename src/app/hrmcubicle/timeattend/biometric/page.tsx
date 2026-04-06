@@ -184,19 +184,19 @@ const BiometricIntegrationPage = () => {
       {/* Sync Dashboard */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {[
-          { label: "Devices Online", value: `${onlineCount}/${devices.length}`, icon: Wifi, color: "text-green-600", bg: "bg-green-50" },
-          { label: "Records Synced Today", value: totalSynced, icon: Activity, color: "text-blue-600", bg: "bg-blue-50" },
-          { label: "Sync Errors", value: totalErrors, icon: AlertTriangle, color: totalErrors > 0 ? "text-red-600" : "text-slate-400", bg: totalErrors > 0 ? "bg-red-50" : "bg-slate-50" },
-          { label: "Total Enrolled", value: mockEnrollments.filter((e) => e.status !== "Not Enrolled").length, icon: Users, color: "text-purple-600", bg: "bg-purple-50" },
+          { label: "Devices Online", value: `${onlineCount}/${devices.length}`, icon: Wifi, color: "text-green-700", bg: "bg-green-50", cardBg: "bg-emerald-50 border-emerald-200" },
+          { label: "Records Synced Today", value: totalSynced, icon: Activity, color: "text-blue-700", bg: "bg-blue-100", cardBg: "bg-blue-50 border-blue-200" },
+          { label: "Sync Errors", value: totalErrors, icon: AlertTriangle, color: totalErrors > 0 ? "text-red-700" : "text-slate-400", bg: totalErrors > 0 ? "bg-red-100" : "bg-slate-100", cardBg: totalErrors > 0 ? "bg-red-50 border-red-200" : "bg-slate-50 border-slate-200" },
+          { label: "Total Enrolled", value: mockEnrollments.filter((e) => e.status !== "Not Enrolled").length, icon: Users, color: "text-purple-700", bg: "bg-purple-100", cardBg: "bg-purple-50 border-purple-200" },
         ].map((s) => (
-          <Card key={s.label} className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <Card key={s.label} className={cn("rounded-2xl border shadow-sm", s.cardBg)}>
             <CardContent className="p-5 flex items-center gap-4">
               <div className={cn("w-11 h-11 rounded-xl flex items-center justify-center", s.bg)}>
                 <s.icon className={cn("w-5 h-5", s.color)} />
               </div>
               <div>
+                <div className="text-xs font-medium text-slate-600 mb-1">{s.label}</div>
                 <div className="text-2xl font-bold text-slate-800">{s.value}</div>
-                <div className="text-xs text-slate-500">{s.label}</div>
               </div>
             </CardContent>
           </Card>

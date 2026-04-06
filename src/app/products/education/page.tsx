@@ -7,86 +7,89 @@ import {
   Users,
   Calendar,
   DollarSign,
-  BarChart3,
+  ClipboardCheck,
+  Monitor,
 } from "lucide-react"
 
 const data = {
   name: "Education",
-  tagline: "Smart management for schools and institutions",
+  tagline: "Transform institutional management with intelligent campus solutions",
   description:
-    "CubicleERP Education empowers schools, colleges, universities, coaching centers, and training institutes with a unified platform to manage student admissions, academic operations, fee collection, staff coordination, and institutional analytics. Simplify administration, improve communication with parents and students, and focus on delivering quality education — not drowning in paperwork.",
+    "CubicleERP Education is a comprehensive platform built for schools, colleges, universities, and training institutes to streamline every aspect of academic administration. From student admissions and fee collection to timetable scheduling, exam management, and parent engagement, our solution eliminates paperwork and empowers educators to focus on what matters most — delivering quality education. Gain full visibility into institutional performance with real-time analytics and connected workflows across departments.",
   icon: GraduationCap,
-  color: "#F59E0B",
-  lightColor: "#FFFBEB",
-  heroImage: "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=1920&q=80",
+  color: "#2563EB",
+  lightColor: "#DBEAFE",
+  heroImage:
+    "https://images.unsplash.com/photo-1562774053-701939374585?w=1920&q=80",
+  variant: 1 as const,
   features: [
     {
       icon: BookOpen,
-      title: "Admissions & Enrollment Management",
+      title: "Student Information System",
       description:
-        "Digitize the entire admissions funnel — from inquiry and application to document verification, entrance assessments, and enrollment confirmation. Track application status, communicate with prospective students, manage waitlists, and generate admission letters automatically. Support multiple intake cycles and program-specific admission criteria.",
+        "Maintain a centralized, secure repository of every student's academic journey — from enrollment to alumni status. Track personal details, academic history, attendance records, health information, disciplinary actions, and extracurricular achievements in one unified profile. Parents and students get portal access to view grades, download transcripts, and update contact information without burdening administrative staff.",
     },
     {
       icon: Users,
-      title: "Student Information System",
+      title: "Admissions & Enrollment Management",
       description:
-        "Maintain comprehensive student records including personal details, academic history, attendance, disciplinary records, health information, and emergency contacts. Track student progress across semesters, generate transcripts automatically, and provide students and parents with portal access to view grades, attendance, and fee status.",
-    },
-    {
-      icon: Calendar,
-      title: "Timetable & Academic Planning",
-      description:
-        "Create conflict-free timetables with automated scheduling that considers teacher availability, room capacity, and equipment requirements. Manage academic calendars, exam schedules, and event planning. Support for multiple sections, elective courses, and lab rotations across departments.",
+        "Digitize your entire admissions pipeline from initial inquiry and online application to document verification, merit-list generation, and enrollment confirmation. Manage multiple intake cycles, program-specific eligibility criteria, entrance assessments, and waitlists with full audit trails. Automated communication keeps applicants informed at every stage while reducing manual follow-up by your admissions team.",
     },
     {
       icon: DollarSign,
-      title: "Fee Management & Collections",
+      title: "Fee Collection & Financial Management",
       description:
-        "Configure complex fee structures with tuition, lab fees, transportation charges, and hostel costs. Support installment plans, scholarships, sibling discounts, and late payment penalties. Send automated payment reminders, accept online payments, and generate detailed fee receipts and defaulter reports.",
+        "Handle complex, multi-component fee structures covering tuition, laboratory charges, transportation, hostel fees, and custom components with ease. Configure installment plans, early-payment discounts, sibling concessions, scholarship adjustments, and late-payment penalties — all with automated reminders via SMS and email. Accept online payments through multiple gateways and generate detailed receipts, defaulter reports, and financial summaries instantly.",
     },
     {
-      icon: BarChart3,
-      title: "Examination & Grading System",
+      icon: Calendar,
+      title: "Timetable & Academic Scheduling",
       description:
-        "Manage the complete examination lifecycle — schedule creation, seat allocation, grade entry, result processing, and report card generation. Support multiple grading systems (GPA, percentage, letter grades), internal assessments, and continuous evaluation. Generate analytics on class performance, subject-wise results, and year-over-year trends.",
+        "Generate conflict-free timetables automatically by factoring in teacher availability, room capacity, lab equipment requirements, and inter-section dependencies. Support elective courses, rotating lab sessions, and multi-campus scheduling from a single interface. Changes propagate instantly to student and faculty portals, and substitution management ensures classes are never left unattended.",
     },
     {
-      icon: GraduationCap,
-      title: "Staff & Faculty Management",
+      icon: ClipboardCheck,
+      title: "Examination & Grade Management",
       description:
-        "Handle faculty recruitment, onboarding, workload allocation, leave management, and performance evaluation. Track teaching hours, research contributions, and professional development activities. Manage substitute assignments, payroll, and compliance with educational board requirements for staff qualifications.",
+        "Orchestrate the full examination lifecycle — from schedule creation and hall-ticket generation to seating arrangement, invigilation assignment, grade entry, and result processing. Support diverse grading systems including GPA, percentage, letter grades, and continuous internal assessment with customizable weightages. Publish results to student portals and generate detailed report cards, class toppers lists, and subject-wise performance analytics.",
+    },
+    {
+      icon: Monitor,
+      title: "Parent Portal & Communication Hub",
+      description:
+        "Provide parents with a dedicated portal offering real-time visibility into their child's attendance, grades, fee status, homework assignments, and school announcements. Two-way messaging between parents and teachers fosters engagement without the overhead of individual phone calls. Push notifications and scheduled newsletters keep families connected to campus life and upcoming events.",
     },
   ],
   benefits: [
     {
       title: "Reduce Administrative Workload by 60%",
       description:
-        "Automate routine tasks like attendance tracking, fee reminders, report card generation, and certificate issuance. Office staff spend less time on manual data entry and more time supporting students and faculty with meaningful work.",
+        "Automate repetitive tasks like attendance recording, fee reminders, report card generation, certificate issuance, and circular distribution. Free your office staff from manual data entry so they can focus on supporting students and faculty with higher-value work.",
     },
     {
-      title: "Improve Parent & Student Communication",
+      title: "Boost Fee Collection Rates by 35%",
       description:
-        "Dedicated portals for parents and students provide real-time access to attendance, grades, fee status, and school announcements. Automated SMS and email notifications keep families informed without requiring staff to make individual calls.",
+        "Automated payment reminders, flexible installment plans, and convenient online payment options dramatically reduce fee defaults. Real-time defaulter tracking with escalation workflows ensures timely follow-up without adding manual effort for your accounts team.",
     },
     {
-      title: "Increase Fee Collection Rates",
+      title: "Strengthen Parent & Student Engagement",
       description:
-        "Automated reminders, online payment options, and installment plan management reduce fee defaults by up to 35%. Real-time defaulter tracking and escalation workflows ensure timely follow-up without manual effort.",
+        "Dedicated self-service portals give parents and students instant access to attendance, grades, assignments, and announcements. Transparent communication builds trust, reduces inquiry calls to the office, and keeps families actively involved in the educational journey.",
     },
     {
       title: "Make Data-Driven Academic Decisions",
       description:
-        "Analyze student performance trends, teacher effectiveness, admission conversion rates, and financial health with real-time dashboards. Identify at-risk students early, allocate resources effectively, and demonstrate institutional performance to accreditation bodies.",
+        "Analyze student performance trends, teacher effectiveness, admission conversion rates, and financial health through real-time dashboards. Identify at-risk students early, allocate resources strategically, and present institutional performance data to accreditation bodies with confidence.",
     },
     {
-      title: "Streamline Compliance & Accreditation",
+      title: "Simplify Compliance & Accreditation",
       description:
-        "Maintain organized records required for educational board compliance, accreditation reviews, and government audits. Generate reports on student-teacher ratios, infrastructure utilization, academic outcomes, and financial transparency on demand.",
+        "Keep all records organized and audit-ready for educational board compliance, accreditation reviews, and government inspections. Generate reports on student-teacher ratios, infrastructure utilization, academic outcomes, and financial transparency at the click of a button.",
     },
     {
-      title: "Scale Across Campuses",
+      title: "Scale Seamlessly Across Campuses",
       description:
-        "Manage multiple campuses, branches, or franchise locations from a single platform. Standardize processes while allowing campus-specific customization for local requirements, fee structures, and academic calendars.",
+        "Manage multiple branches, campuses, or franchise locations from a single unified platform. Standardize core processes institution-wide while allowing campus-specific customization for local fee structures, academic calendars, and regulatory requirements.",
     },
   ],
   steps: [
@@ -94,83 +97,88 @@ const data = {
       step: "1",
       title: "Configure Your Institution",
       description:
-        "Set up academic structure — departments, programs, sections, and subjects. Configure fee schedules, grading systems, and academic calendar. Import existing student and staff data from spreadsheets or your current system.",
+        "Set up your academic structure — departments, programs, sections, and subjects. Define fee schedules, grading policies, and the academic calendar. Import existing student, staff, and financial data from spreadsheets or your legacy system with guided migration support.",
     },
     {
       step: "2",
-      title: "Digitize Operations",
+      title: "Digitize Campus Operations",
       description:
-        "Move admissions, attendance, fee collection, and examinations online. Train staff on the platform with role-specific guides. Activate parent and student portals for transparent communication and self-service access.",
+        "Move admissions, attendance tracking, fee collection, timetable management, and examinations online. Train your team with role-specific walkthroughs and activate parent and student portals for transparent, self-service communication.",
     },
     {
       step: "3",
-      title: "Analyze & Optimize",
+      title: "Analyze, Improve & Grow",
       description:
-        "Use dashboards to track enrollment trends, fee collection rates, academic performance, and operational efficiency. Continuously improve institutional processes based on data insights and stakeholder feedback.",
+        "Leverage real-time dashboards to monitor enrollment trends, fee recovery rates, academic performance, and operational efficiency. Use data insights and stakeholder feedback to continuously refine processes and elevate educational outcomes across your institution.",
     },
   ],
   useCases: [
     {
       title: "K-12 Schools",
       description:
-        "Primary and secondary schools use CubicleERP to manage student admissions, daily attendance, parent communication, fee collection, and report card generation across multiple sections and grades.",
+        "Primary and secondary schools use CubicleERP to manage student admissions, daily attendance, parent communication, fee collection, and report card generation across multiple grades and sections — all from one intuitive dashboard.",
       highlights: [
-        "Automated daily attendance with parent notification alerts",
-        "Fee management with sibling discounts and installment plans",
-        "Report card generation with continuous assessment tracking",
+        "Automated daily attendance with instant parent SMS notifications",
+        "Fee management with sibling discounts, transport add-ons, and installment tracking",
+        "Continuous assessment-based report cards with teacher remarks and skill indicators",
       ],
     },
     {
       title: "Colleges & Universities",
       description:
-        "Higher education institutions use CubicleERP to manage complex academic structures with multiple departments, elective courses, credit systems, and research programs alongside administrative operations.",
+        "Higher education institutions rely on CubicleERP to handle complex academic structures with multiple departments, credit-based courses, elective selections, research programs, and hostel management alongside administrative operations.",
       highlights: [
-        "Credit-based course management with GPA calculation",
-        "Faculty workload planning and research tracking",
-        "Multi-campus management with centralized reporting",
+        "Credit-based course registration with GPA calculation and transcript generation",
+        "Faculty workload allocation, research tracking, and performance evaluation",
+        "Multi-campus governance with centralized analytics and decentralized operations",
       ],
     },
     {
       title: "Coaching & Training Institutes",
       description:
-        "Competitive exam coaching centers and professional training institutes use CubicleERP to manage batch scheduling, student enrollment, test series, and fee collection for short-duration programs.",
+        "Competitive exam coaching centers and professional training institutes use CubicleERP to manage batch scheduling, rolling enrollments, practice test series, and fee collection for short-duration and intensive programs.",
       highlights: [
-        "Batch-based scheduling with flexible enrollment cycles",
-        "Test series management with automated result analysis",
-        "Course-wise fee tracking with installment options",
+        "Flexible batch-based scheduling with overlapping enrollment cycles",
+        "Test series management with automated scoring and comparative result analysis",
+        "Course-wise fee tracking with partial payments and refund processing",
       ],
     },
   ],
   faqs: [
     {
-      question: "Can CubicleERP handle multiple academic boards and grading systems?",
+      question:
+        "Can CubicleERP handle multiple academic boards and grading systems?",
       answer:
-        "Yes. CubicleERP supports CBSE, ICSE, State Boards, IB, Cambridge, and custom grading systems. You can configure different grading scales (GPA, percentage, letter grades), assessment components, and promotion criteria for each program or board within the same institution.",
+        "Absolutely. CubicleERP supports CBSE, ICSE, State Boards, IB, Cambridge, and fully custom grading systems. You can configure different grading scales — GPA, percentage, letter grades, or descriptive indicators — along with distinct assessment components and promotion criteria for each program or board within the same institution. Switching between boards for multi-stream schools is seamless.",
     },
     {
-      question: "Is there a mobile app for parents and students?",
+      question:
+        "How does fee management handle complex and multi-component fee structures?",
       answer:
-        "CubicleERP provides a responsive web portal that works seamlessly on mobile devices for parents and students. They can view attendance, grades, fee status, and announcements from any device. A dedicated mobile app with push notifications is available for institutions on our Premium plan.",
+        "CubicleERP lets you build fee structures with unlimited components including tuition, lab fees, library charges, transport, hostel, and any custom heads you need. Each component can have its own due dates, installment schedules, and payment rules. You can layer on early-payment discounts, sibling concessions, merit scholarships, and late-payment penalties. The system auto-calculates balances and sends reminders, so your accounts team deals with exceptions rather than routine follow-ups.",
     },
     {
-      question: "How does fee management handle complex fee structures?",
+      question:
+        "Is there a parent and student portal accessible on mobile devices?",
       answer:
-        "CubicleERP supports multi-component fee structures including tuition, lab fees, library charges, transport, hostel, and custom components. You can configure installment plans, early payment discounts, sibling discounts, scholarship adjustments, and late payment penalties. Each component can have different due dates and payment rules.",
+        "Yes. CubicleERP provides a fully responsive web portal that works flawlessly on smartphones, tablets, and desktops. Parents and students can view attendance, grades, fee status, homework assignments, and school announcements from any device. Institutions on our Premium plan also get a dedicated mobile app with push notifications for real-time alerts on attendance, results, and fee due dates.",
     },
     {
-      question: "Can we migrate data from our current school management system?",
+      question:
+        "Can we migrate data from our existing school management system?",
       answer:
-        "Yes. We support data migration from spreadsheets and popular school ERP systems. Our education team assists with student records, fee history, academic data, and staff information migration. We ensure data integrity through validation checks and provide parallel running support during the transition period.",
+        "Yes, we provide full migration support. Our education onboarding team helps you transfer student records, fee history, academic data, staff information, and historical results from spreadsheets or popular school ERP platforms. Every record goes through validation checks to ensure data integrity, and we offer a parallel-running period so your team can verify everything before going fully live.",
     },
     {
-      question: "Does CubicleERP support online examinations?",
+      question:
+        "Does CubicleERP support online examinations and automated result processing?",
       answer:
-        "CubicleERP supports exam scheduling, seating arrangement, grade entry, and result processing. For online test delivery, we integrate with popular assessment platforms. The results from these platforms can be imported back into CubicleERP for unified grade management and analytics.",
+        "CubicleERP handles the complete exam management workflow — schedule creation, hall-ticket generation, seating arrangement, grade entry, moderation, and result publication. For online test delivery with proctoring, we integrate with leading assessment platforms. Results from those platforms flow back into CubicleERP automatically for unified grade management, analytics, and report card generation without duplicate data entry.",
     },
   ],
   stats: [
-    { value: "60%", label: "Less admin workload" },
-    { value: "35%", label: "Increase in fee collection" },
+    { value: "60%", label: "Reduction in admin workload" },
+    { value: "35%", label: "Improvement in fee collection" },
     { value: "500+", label: "Institutions onboarded" },
     { value: "98%", label: "Parent satisfaction rate" },
   ],

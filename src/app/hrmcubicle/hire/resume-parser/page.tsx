@@ -180,17 +180,12 @@ const ResumeParserPage = () => {
   }
 
   return (
-    <div className="flex-1 p-8 h-full flex flex-col bg-[#f8fafc] overflow-y-auto custom-scrollbar space-y-6">
+    <div className="flex-1 p-8 h-full flex flex-col bg-[#f8fafc] overflow-y-auto custom-scrollbar space-y-6" style={{ zoom: "90%" }}>
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => router.push("/hrmcubicle/hire")} className="rounded-xl">
-            <ArrowLeft className="h-4 w-4 mr-1" /> Back
-          </Button>
-          <div>
-            <h1 className="text-2xl font-black tracking-tight text-slate-900">Resume Parser</h1>
-            <p className="text-sm text-slate-500">Upload resumes and auto-extract candidate information</p>
-          </div>
+        <div>
+          <h1 className="text-2xl font-black tracking-tight text-slate-900">Resume Parser</h1>
+          <p className="text-sm text-slate-500">Upload resumes and auto-extract candidate information</p>
         </div>
       </div>
 

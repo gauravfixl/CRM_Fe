@@ -190,14 +190,14 @@ const LocationsPage = () => {
                             <Search className="absolute left-4 top-1/2 -transform -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
                             <Input
                                 placeholder="Search by name, code, or city..."
-                                className="pl-11 h-10 rounded-xl bg-slate-50 border-none shadow-none font-medium text-xs focus-visible:ring-2 focus-visible:ring-slate-100 placeholder:text-slate-400"
+                                className="pl-11 h-10 rounded-xl bg-slate-50 border border-slate-200 shadow-none font-medium text-xs focus-visible:ring-2 focus-visible:ring-slate-100 placeholder:text-slate-400"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
                         </div>
 
                         <Select value={typeFilter} onValueChange={setTypeFilter}>
-                            <SelectTrigger className="w-36 h-10 rounded-xl bg-slate-50 border-none font-bold text-xs shadow-none hover:bg-slate-100 transition-colors">
+                            <SelectTrigger className="w-36 h-10 rounded-xl bg-slate-50 border border-slate-200 font-bold text-xs shadow-none hover:bg-slate-100 transition-colors">
                                 <SelectValue placeholder="All Types" />
                             </SelectTrigger>
                             <SelectContent className="rounded-xl border-none shadow-2xl p-2 font-bold">
@@ -222,7 +222,7 @@ const LocationsPage = () => {
 
                 {/* Location Type Stats */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <Card className="rounded-[1.5rem] border-none bg-amber-100/70 text-amber-800 p-5 shadow-sm border border-amber-200">
+                    <Card className="rounded-xl border-none bg-amber-100/70 text-amber-800 p-5 shadow-sm">
                         <div className="space-y-1">
                             <p className="text-[10px] font-bold text-amber-500 capitalize tracking-widest leading-none">Global Network</p>
                             <h3 className="text-xl font-bold tracking-tight mt-1">{locations.length}</h3>
@@ -237,12 +237,12 @@ const LocationsPage = () => {
                         });
                         const Icon = getTypeIcon(type);
                         const lightColors = {
-                            'Office': 'bg-indigo-100/80 text-indigo-800 border-indigo-200',
-                            'Remote': 'bg-emerald-100/80 text-emerald-800 border-emerald-200',
-                            'Hybrid': 'bg-rose-100/80 text-rose-800 border-rose-200'
+                            'Office': 'bg-indigo-100/80 text-indigo-800 border-none',
+                            'Remote': 'bg-emerald-100/80 text-emerald-800 border-none',
+                            'Hybrid': 'bg-rose-100/80 text-rose-800 border-none'
                         };
                         return (
-                            <Card key={type} className={`rounded-[1.5rem] border p-5 shadow-sm ${lightColors[type]}`}>
+                            <Card key={type} className={`rounded-xl border-none p-5 shadow-sm ${lightColors[type]}`}>
                                 <div className="space-y-2">
                                     <div className="flex items-center justify-between">
                                         <p className="text-[10px] font-bold capitalize tracking-widest opacity-60 leading-none">{type}</p>

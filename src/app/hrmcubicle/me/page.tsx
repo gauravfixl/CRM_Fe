@@ -34,9 +34,14 @@ import { useToast } from "@/shared/components/ui/use-toast";
 import { useMeStore } from "@/shared/data/me-store";
 
 const ProfilePage = () => {
-    const { user, bankDetails, updateUser, updateBankDetails } = useMeStore();
+    const { user, bankDetails, updateUser, updateBankDetails, loadMyProfile, updateMyProfile } = useMeStore();
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const { toast } = useToast();
+
+    // Load profile from API on mount
+    useEffect(() => {
+        loadMyProfile().catch(() => {});
+    }, []);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const bannerInputRef = useRef<HTMLInputElement>(null);
 
@@ -173,7 +178,7 @@ const ProfilePage = () => {
     const reportingTo = user.reportingTo;
 
     return (
-        <div className="space-y-6 pb-10">
+        <div className="space-y-6 pb-10" style={{ zoom: "90%" }}>
             {/* Profile Header Card */}
             <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden group">
                 <div

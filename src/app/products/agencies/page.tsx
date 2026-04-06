@@ -6,173 +6,175 @@ import {
   Users,
   Clock,
   DollarSign,
-  FolderOpen,
-  FileText,
+  FolderKanban,
+  LayoutDashboard,
 } from "lucide-react"
 
 const data = {
   name: "Agencies",
-  tagline: "Manage clients, projects, and billing in one place",
+  tagline: "Orchestrate clients, creatives, and cash flow from a single command center",
   description:
-    "CubicleERP for Agencies is purpose-built for digital agencies, creative studios, consulting firms, and professional services teams. Track client relationships, manage multiple projects simultaneously, log billable hours, generate invoices automatically, and get real-time profitability insights — all without switching between a dozen disconnected tools.",
+    "CubicleERP for Agencies unifies client management, project tracking, time billing, and profitability analytics into one cohesive platform built for digital agencies, creative studios, and professional services firms. Stop juggling disconnected spreadsheets, Slack threads, and invoicing tools — manage retainers, allocate resources across concurrent projects, and get real-time margin visibility so you can scale your agency without sacrificing quality or profitability.",
   icon: BarChart3,
-  color: "#8B5CF6",
-  lightColor: "#F5F3FF",
-  heroImage: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=1920&q=80",
+  color: "#7C3AED",
+  lightColor: "#F3E8FF",
+  heroImage:
+    "https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=1920&q=80",
+  variant: 3 as const,
   features: [
     {
       icon: Users,
       title: "Client Relationship Management",
       description:
-        "Maintain a complete history of every client interaction — meetings, emails, contracts, and deliverables. Track client satisfaction scores, renewal dates, and expansion opportunities. Build deeper relationships with organized communication logs and proactive outreach reminders.",
+        "Maintain a 360-degree view of every client relationship with centralized communication logs, contract histories, and satisfaction tracking. Automatically surface renewal dates, upsell opportunities, and at-risk accounts so your account managers never miss a beat. Build deeper partnerships by having every meeting note, deliverable, and invoice accessible in one unified client profile.",
     },
     {
-      icon: FolderOpen,
-      title: "Multi-Project Management",
+      icon: FolderKanban,
+      title: "Multi-Project Tracking & Creative Workflows",
       description:
-        "Run dozens of client projects simultaneously with Kanban boards, Gantt timelines, and sprint planning. Set milestones, assign tasks across teams, track dependencies, and monitor progress in real time. Each project links directly to the client record and associated billing.",
+        "Run dozens of client projects in parallel using Kanban boards, Gantt timelines, and custom creative workflows with built-in approval stages. Link every task to a client record, a budget line, and a team member so nothing falls through the cracks. Set milestones, track revision rounds, manage dependencies, and get instant visibility into which projects are on track and which need attention.",
     },
     {
       icon: Clock,
-      title: "Time Tracking & Billable Hours",
+      title: "Time Billing & Retainer Management",
       description:
-        "Track time against projects, tasks, and clients with one-click timers or manual entry. Set billable rates per client, project, or team member. Automatically calculate billable vs. non-billable time and flag underreported hours before invoicing deadlines.",
+        "Capture every billable minute with one-click timers, manual entry, or weekly timesheets that sync directly to client projects. Support hourly, retainer, fixed-fee, and milestone-based billing models across your entire portfolio. Automatically track retainer burn-down rates, flag overserviced accounts, and alert teams when they approach budget thresholds before it impacts your margin.",
     },
     {
-      icon: DollarSign,
-      title: "Automated Invoicing & Billing",
+      icon: LayoutDashboard,
+      title: "Resource Allocation & Capacity Planning",
       description:
-        "Generate invoices automatically from tracked time, project milestones, or retainer agreements. Support hourly, fixed-fee, and recurring billing models. Send invoices directly to clients, accept online payments, and track outstanding receivables with automated reminders.",
+        "Visualize your entire team's workload across all active projects with drag-and-drop resource scheduling boards. Identify overallocated team members, spot upcoming capacity gaps, and make data-driven staffing decisions before bottlenecks cause missed deadlines. Balance creative talent across client accounts to maximize utilization while preventing burnout and maintaining work quality.",
     },
     {
       icon: BarChart3,
-      title: "Project Profitability Analytics",
+      title: "Profitability Analytics & Multi-Client Dashboards",
       description:
-        "Know exactly which clients and projects are profitable and which are bleeding margin. Track revenue vs. cost per project, per team member, and per service line. Identify scope creep early with budget burn-rate alerts and utilization dashboards.",
+        "Know exactly which clients, projects, and service lines drive your margins with real-time profitability dashboards that connect revenue, tracked hours, and delivery costs. Drill down from agency-wide performance to individual project P&L statements and team member contribution metrics. Spot scope creep early with budget burn-rate alerts and use historical data to price future work more accurately.",
     },
     {
-      icon: FileText,
-      title: "Proposals & Contracts",
+      icon: DollarSign,
+      title: "Automated Invoicing & Revenue Forecasting",
       description:
-        "Create professional proposals and statements of work with customizable templates. Track proposal status, get electronic signatures, and automatically convert won proposals into active projects with pre-configured tasks, budgets, and timelines.",
+        "Generate polished invoices automatically from tracked time, completed milestones, or recurring retainer schedules and send them directly to clients with online payment options. Forecast upcoming revenue based on active contracts, pipeline proposals, and historical billing patterns. Track outstanding receivables with automated payment reminders and aging reports to keep your cash flow healthy and predictable.",
     },
   ],
   benefits: [
     {
-      title: "Maximize Billable Utilization",
+      title: "Capture Every Billable Minute",
       description:
-        "Most agencies lose 20-30% of billable time to administrative overhead and poor tracking. CubicleERP's integrated time tracking and project management helps you capture every billable minute and identify where non-billable time is being spent.",
+        "Most agencies lose 20-30% of revenue to unbilled hours and poor time tracking. CubicleERP's integrated timers and automated billing workflows ensure every minute of client work gets captured, approved, and invoiced — turning lost time into recovered revenue.",
     },
     {
-      title: "Eliminate Revenue Leakage",
+      title: "Eliminate Scope Creep Before It Kills Margins",
       description:
-        "Stop losing money to unbilled hours, forgotten expenses, and scope creep. Automated invoicing from tracked time ensures every hour of work gets billed. Budget alerts notify project managers when projects approach or exceed agreed-upon limits.",
+        "Real-time budget tracking and burn-rate alerts notify project managers the moment a project trends over scope. Change request workflows formalize additional work so your team never gives away hours for free.",
     },
     {
-      title: "Deliver Projects On Time",
+      title: "Deliver Projects On Time, Every Time",
       description:
-        "Visualize project timelines, track task dependencies, and identify bottlenecks before they cause delays. Resource allocation dashboards show team capacity across all active projects so you can plan effectively and avoid overcommitting your team.",
+        "Resource scheduling, dependency tracking, and capacity dashboards give you complete visibility into your delivery pipeline. Identify bottlenecks weeks in advance and rebalance workloads so deadlines are met without last-minute scrambles.",
     },
     {
-      title: "Win More Business",
+      title: "Scale Without Proportional Overhead",
       description:
-        "Professional proposals, organized client records, and quick response times help you stand out in competitive pitches. Track your proposal win rate and refine your approach based on data, not guesswork.",
+        "Automated invoicing, templated project setups, and streamlined client onboarding let you take on more clients without hiring more operations staff. Grow revenue while keeping your overhead lean and your margins healthy.",
     },
     {
-      title: "Scale Your Agency Profitably",
+      title: "Win More Pitches With Data-Backed Proposals",
       description:
-        "Understand your true cost of delivery per service line and per client. Use profitability data to make informed decisions about pricing, hiring, and which types of projects to pursue. Grow revenue without proportionally growing overhead.",
+        "Use historical project data to build accurate estimates and professional proposals that instill client confidence. Track your win rate across service lines and refine your pricing strategy based on actual delivery costs, not guesswork.",
     },
     {
-      title: "Retain Top Talent",
+      title: "Retain Your Best People",
       description:
-        "Built-in HR tools help you manage your team's wellbeing — track workload balance, manage leave requests, and ensure no one is consistently overallocated. Happy, well-managed teams deliver better work and stay longer.",
+        "Balanced workload allocation and transparent project planning prevent chronic overwork that drives top talent away. Give your team clarity on priorities, fair distribution of assignments, and the tools to do their best creative work.",
     },
   ],
   steps: [
     {
       step: "1",
-      title: "Set Up Your Agency",
+      title: "Configure Your Agency Workspace",
       description:
-        "Configure your workspace with service lines, billing rates, and project templates. Import your client list and existing project data. Invite your team and assign roles — account managers, designers, developers, and project leads.",
+        "Set up your service lines, billing rates, team roles, and project templates. Import your client list and existing project data, then invite your team — account managers, creatives, developers, and leadership — with role-based permissions.",
     },
     {
       step: "2",
-      title: "Start Managing Projects",
+      title: "Launch Projects & Track Time",
       description:
-        "Create projects from templates or scratch, assign tasks, and start tracking time. Link everything to client records so billing, communication, and deliverables are always connected. Set budgets and milestones to keep projects on track.",
+        "Create client projects from templates or scratch, assign tasks across your team, and start tracking billable hours. Link every deliverable to a client record and budget so billing, communication, and progress stay connected in real time.",
     },
     {
       step: "3",
-      title: "Invoice & Analyze",
+      title: "Invoice, Analyze & Grow",
       description:
-        "Generate invoices from tracked time or project milestones. Review profitability reports, utilization rates, and client satisfaction metrics. Use insights to optimize pricing, improve processes, and grow your agency strategically.",
+        "Generate invoices from tracked time or milestones, review profitability by client and project, and use utilization insights to optimize pricing, staffing, and the types of engagements you pursue. Let data guide your agency's growth strategy.",
     },
   ],
   useCases: [
     {
       title: "Digital Marketing Agencies",
       description:
-        "Marketing agencies juggling multiple client campaigns use CubicleERP to track deliverables, log billable hours, and generate monthly retainer invoices automatically.",
+        "Marketing agencies managing multi-channel campaigns across dozens of clients use CubicleERP to track deliverables, automate retainer billing, and prove ROI to clients with transparent reporting dashboards.",
       highlights: [
-        "Campaign project templates with recurring task structures",
-        "Retainer billing with automatic monthly invoice generation",
-        "Client reporting dashboards with deliverable tracking",
-      ],
-    },
-    {
-      title: "Software Development Shops",
-      description:
-        "Dev agencies building custom software for clients use CubicleERP to manage sprints, track developer hours, and maintain clear project scopes with budget visibility.",
-      highlights: [
-        "Sprint planning with story point and hour-based estimation",
-        "Developer time tracking with per-project billing rates",
-        "Scope management with change request tracking and approvals",
+        "Recurring campaign templates with automated monthly task generation",
+        "Retainer burn-down tracking with automatic invoice generation",
+        "Client-facing dashboards showing deliverable status and spend",
       ],
     },
     {
       title: "Creative & Design Studios",
       description:
-        "Design studios managing brand projects, video production, and creative campaigns use CubicleERP to streamline approvals, track revisions, and maintain creative briefs alongside billing.",
+        "Design studios handling brand identity, video production, and packaging projects use CubicleERP to manage revision workflows, track creative hours, and maintain profitability across fixed-fee and milestone-based engagements.",
       highlights: [
-        "Creative brief templates with revision tracking workflows",
-        "Asset delivery management with client approval stages",
-        "Fixed-fee and milestone-based billing for creative projects",
+        "Multi-stage approval workflows with revision round tracking",
+        "Creative brief management linked to project budgets and timelines",
+        "Fixed-fee and milestone billing with automatic progress invoicing",
+      ],
+    },
+    {
+      title: "Software Development Shops",
+      description:
+        "Dev agencies building custom applications for clients use CubicleERP to run sprints, track developer utilization, manage change requests, and maintain clear project scopes with real-time budget visibility.",
+      highlights: [
+        "Sprint planning with story point estimation and velocity tracking",
+        "Developer time tracking with per-project and per-client billing rates",
+        "Scope change request workflows with client approval and budget adjustment",
       ],
     },
   ],
   faqs: [
     {
-      question: "Can CubicleERP handle different billing models?",
+      question: "Can CubicleERP handle different billing models simultaneously?",
       answer:
-        "Yes. CubicleERP supports hourly billing (with time tracking integration), fixed-fee projects, monthly retainers, milestone-based billing, and hybrid models. You can set different billing rates per client, project, or team member and mix billing models across your client portfolio.",
+        "Absolutely. CubicleERP supports hourly billing with integrated time tracking, fixed-fee projects, monthly and quarterly retainers, milestone-based invoicing, and hybrid models that combine multiple approaches. You can configure different billing rates per client, per project, or per individual team member, and mix billing models freely across your client portfolio. The system automatically calculates amounts based on the applicable model when generating invoices.",
     },
     {
-      question: "How does time tracking work for agency teams?",
+      question: "How does resource allocation work across multiple projects?",
       answer:
-        "Team members can track time using one-click timers, manual entry, or weekly timesheets. Time entries are linked to specific projects, tasks, and clients. Managers can review timesheets, flag missing entries, and approve hours before invoicing. Time tracking data feeds directly into invoicing and profitability reports.",
+        "CubicleERP provides a visual resource scheduling board where you can see every team member's allocation across all active projects. You can drag and drop assignments, set allocation percentages, and instantly identify who is overbooked or has available capacity. The system flags conflicts when you try to overallocate someone and suggests alternative team members with the right skills and availability. Capacity forecasting lets you plan weeks ahead so you can hire or adjust timelines proactively.",
     },
     {
-      question: "Can clients see their project progress?",
+      question: "Can clients access their own project portal?",
       answer:
-        "Yes. CubicleERP includes a client portal where clients can view project timelines, approve deliverables, access shared documents, and see invoice history. You control exactly what each client can see, maintaining transparency without exposing internal operations or profitability data.",
+        "Yes. CubicleERP includes a configurable client portal where your clients can view project timelines, approve deliverables, download shared assets, review and pay invoices, and communicate with your team. You have full control over what each client sees — you can share progress and documents while keeping internal discussions, cost data, and profitability metrics completely private.",
     },
     {
-      question: "Is there a limit on the number of projects or clients?",
+      question: "Is there a limit on projects, clients, or team size?",
       answer:
-        "No. All plans include unlimited projects and unlimited clients. There are no per-project fees or client limits. You only pay based on the number of internal team members using the platform.",
+        "No. All plans include unlimited projects, unlimited clients, and no per-project fees. You can manage as many concurrent engagements as your agency handles. Pricing is based solely on the number of internal team members using the platform, making it simple and predictable as you grow.",
     },
     {
-      question: "How does CubicleERP compare to agency-specific tools like Teamwork or Harvest?",
+      question: "How does CubicleERP compare to tools like Teamwork, Harvest, or Monday.com?",
       answer:
-        "Unlike point solutions that handle only project management (Teamwork) or time tracking (Harvest), CubicleERP combines CRM, project management, time tracking, invoicing, HR, and analytics in one platform. You get deeper insights because your data is connected — see how client relationships impact project profitability and team utilization in a single dashboard.",
+        "Unlike point solutions that handle only project management or only time tracking, CubicleERP combines CRM, project management, time tracking, invoicing, resource planning, HR, and profitability analytics in a single connected platform. This means your data flows seamlessly — tracked time becomes invoices, project costs feed profitability reports, and client interactions inform account health scores. You eliminate the cost, complexity, and data silos of maintaining five or six separate subscriptions.",
     },
   ],
   stats: [
-    { value: "35%", label: "Increase in billable hours" },
-    { value: "50%", label: "Faster invoicing cycles" },
-    { value: "800+", label: "Agencies worldwide" },
-    { value: "2x", label: "Improvement in utilization" },
+    { value: "35%", label: "Increase in billable utilization" },
+    { value: "50%", label: "Faster invoice-to-payment cycles" },
+    { value: "800+", label: "Agencies powered worldwide" },
+    { value: "2x", label: "Improvement in project margin visibility" },
   ],
 }
 

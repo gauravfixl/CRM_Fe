@@ -104,7 +104,7 @@ const TimeAttendDashboard = () => {
   ];
 
   return (
-    <div className="flex-1 min-h-screen bg-[#fcfdff] p-8 space-y-8" style={{ zoom: '0.6' }}>
+    <div className="flex-1 min-h-screen bg-[#fcfdff] p-8 space-y-8" style={{ zoom: '0.85' }}>
       <div className="flex flex-col md:flex-row justify-between md:items-center gap-6">
         <div>
           <h1 className="text-3xl font-black text-slate-900 tracking-tight">Team Attendance</h1>

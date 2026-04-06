@@ -125,7 +125,7 @@ const TeamReportsPage = () => {
     if (!mounted) return null;
 
     return (
-        <div className="flex-1 space-y-6 p-6 bg-[#f8fafc] min-h-screen text-start">
+        <div className="flex-1 space-y-6 p-6 bg-[#f8fafc] min-h-screen text-start" style={{ zoom: "90%" }}>
 
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                 <div>
@@ -137,7 +137,7 @@ const TeamReportsPage = () => {
                 </div>
                 <div className="flex items-center gap-3">
                     <Select value={timeRange} onValueChange={refreshData}>
-                        <SelectTrigger className="w-[160px] h-12 rounded-2xl border-none shadow-sm font-bold text-xs bg-white text-slate-600">
+                        <SelectTrigger className="w-[160px] h-12 rounded-2xl border border-slate-200 shadow-sm font-bold text-xs bg-white text-slate-600">
                             <Calendar className="h-4 w-4 mr-2 text-indigo-500" />
                             <SelectValue placeholder="Time Range" />
                         </SelectTrigger>

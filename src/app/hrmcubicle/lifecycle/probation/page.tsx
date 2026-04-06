@@ -465,7 +465,7 @@ const ProbationManagementPage = () => {
 
                 {/* Archive Dialog */}
                 <Dialog open={isArchiveOpen} onOpenChange={setIsArchiveOpen}>
-                    <DialogContent className="bg-white rounded-[2.5rem] border-none p-0 max-w-3xl shadow-[0_50px_100px_-30px_rgba(0,0,0,0.2)] outline-none overflow-hidden">
+                    <DialogContent className="bg-white rounded-[2.5rem] border-2 border-slate-200 p-0 max-w-3xl shadow-[0_50px_100px_-30px_rgba(0,0,0,0.2)] outline-none overflow-hidden">
                         <div className="p-10">
                             <DialogHeader className="mb-6">
                                 <DialogTitle className="text-2xl font-black text-slate-900 tracking-tight italic">Probation Lifecycle Archive</DialogTitle>
@@ -499,7 +499,7 @@ const ProbationManagementPage = () => {
 
                 {/* Extension Dialog */}
                 <Dialog open={isExtendOpen} onOpenChange={setIsExtendOpen}>
-                    <DialogContent className="bg-white rounded-[2.5rem] border-none p-0 max-w-xl shadow-[0_50px_100px_-30px_rgba(0,0,0,0.2)] outline-none overflow-hidden">
+                    <DialogContent className="bg-white rounded-[2.5rem] border-2 border-slate-200 p-0 max-w-xl shadow-[0_50px_100px_-30px_rgba(0,0,0,0.2)] outline-none overflow-hidden">
                         <div style={{ transform: 'scale(0.85)', transformOrigin: 'center' }} className="p-12">
                             <div className="absolute -top-32 -left-32 h-64 w-64 rounded-full bg-[#FDDBBB]/10 -z-10 blur-[80px]" />
 

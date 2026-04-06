@@ -18,43 +18,45 @@ const data = {
   icon: Building2,
   color: "#0067B8",
   lightColor: "#E3F2FD",
-  heroImage: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1920&q=80",
+  heroImage:
+    "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1920&q=80",
+  variant: 1 as const,
   features: [
     {
       icon: Users,
       title: "Multi-Entity Management",
       description:
-        "Manage multiple subsidiaries, branches, and business units from a single dashboard. Each entity maintains its own chart of accounts, workflows, and user permissions while leadership gets a consolidated, real-time view across the entire organization. Easily allocate resources, compare performance, and enforce governance policies across all entities.",
+        "Manage multiple subsidiaries, branches, and business units from a single unified dashboard. Each entity maintains its own chart of accounts, workflows, and user permissions while leadership gets a consolidated, real-time view across the entire organization. Easily allocate resources, compare performance metrics, and enforce governance policies across all entities without switching between disconnected tools.",
     },
     {
       icon: Lock,
       title: "Advanced Security & Compliance",
       description:
-        "Enterprise-grade security with SSO/SAML integration, two-factor authentication, IP whitelisting, and detailed audit trails for every action. Meet SOC 2, GDPR, and HIPAA compliance requirements out of the box with data encryption at rest and in transit, role-based access controls, and automated compliance reporting.",
+        "Enterprise-grade security with SSO/SAML integration, two-factor authentication, IP whitelisting, and detailed audit trails for every action taken in the system. Meet SOC 2, GDPR, and HIPAA compliance requirements out of the box with data encryption at rest and in transit, granular role-based access controls, and automated compliance reporting. Regular penetration testing and vulnerability assessments ensure your data remains protected against evolving threats.",
     },
     {
       icon: Workflow,
       title: "Custom Workflow Automation",
       description:
-        "Design sophisticated multi-step approval workflows, automated escalations, and conditional routing rules without writing code. Automate purchase order approvals, expense claims, leave requests, and any business process with configurable triggers, conditions, and actions that adapt to your organizational hierarchy.",
+        "Design sophisticated multi-step approval workflows, automated escalations, and conditional routing rules without writing a single line of code. Automate purchase order approvals, expense claims, leave requests, and any business process with configurable triggers, conditions, and actions that adapt to your organizational hierarchy. Built-in workflow analytics let you identify bottlenecks and optimize process efficiency across departments.",
     },
     {
       icon: BarChart3,
       title: "Executive Analytics & BI",
       description:
-        "Purpose-built executive dashboards with real-time KPIs, drill-down capabilities, and predictive analytics powered by AI. Create custom reports, schedule automated distribution, and embed live dashboards in board presentations. Track revenue, margins, headcount, project profitability, and operational efficiency across all departments.",
+        "Purpose-built executive dashboards with real-time KPIs, drill-down capabilities, and predictive analytics powered by AI and machine learning models. Create custom reports, schedule automated distribution to stakeholders, and embed live dashboards in board presentations. Track revenue, margins, headcount, project profitability, and operational efficiency across all departments with historical trend analysis and forecasting.",
     },
     {
       icon: Shield,
-      title: "Dedicated Support & SLA",
+      title: "Dedicated Support & SLA Guarantees",
       description:
-        "Get a dedicated customer success manager, priority support queue, and guaranteed SLA response times. Access 24/7 phone and email support, scheduled health checks, quarterly business reviews, and proactive performance monitoring to ensure your platform runs smoothly at all times.",
+        "Get a dedicated customer success manager, priority support queue, and guaranteed SLA response times backed by contractual commitments. Access 24/7 phone and email support, scheduled platform health checks, quarterly business reviews, and proactive performance monitoring to ensure your platform runs smoothly at all times. Our enterprise support team includes technical architects who understand your specific configuration and business context.",
     },
     {
       icon: Building2,
       title: "API & Custom Integrations",
       description:
-        "Connect CubicleERP with your existing tech stack using our comprehensive REST API, webhooks, and pre-built connectors for Salesforce, SAP, Oracle, Microsoft 365, Slack, and hundreds of other tools. Build custom integrations with full API documentation, sandbox environments, and dedicated integration support.",
+        "Connect CubicleERP with your existing tech stack using our comprehensive REST API, webhooks, and pre-built connectors for Salesforce, SAP, Oracle, Microsoft 365, Slack, and hundreds of other enterprise tools. Build custom integrations with full API documentation, sandbox environments, and dedicated integration support from our engineering team. Rate-limited endpoints, OAuth 2.0 authentication, and versioned APIs ensure stability and security for all connected systems.",
     },
   ],
   benefits: [
@@ -148,7 +150,8 @@ const data = {
         "Implementation timelines vary based on complexity, but most enterprise deployments are completed in 8-16 weeks. We follow an agile implementation methodology with phased rollouts, so your teams can start using core modules within the first few weeks while more complex configurations are finalized. Our dedicated project managers ensure timelines are met without compromising quality.",
     },
     {
-      question: "Can CubicleERP integrate with our existing ERP and legacy systems?",
+      question:
+        "Can CubicleERP integrate with our existing ERP and legacy systems?",
       answer:
         "Yes. CubicleERP provides a comprehensive REST API, webhooks, and pre-built connectors for major enterprise platforms including SAP, Oracle, Microsoft Dynamics, Salesforce, and Workday. For custom integrations, our integration team builds and maintains connectors using our open API. We also support data sync via flat files, SFTP, and middleware platforms like MuleSoft and Zapier.",
     },
@@ -165,7 +168,7 @@ const data = {
     {
       question: "Do you offer on-premise or private cloud deployment?",
       answer:
-        "CubicleERP is primarily a cloud-hosted solution, but we offer private cloud deployment options for enterprises with strict data residency or regulatory requirements. Private cloud deployments include dedicated infrastructure, custom backup schedules, and enhanced security configurations. Contact our enterprise team to discuss deployment options.",
+        "CubicleERP is primarily a cloud-hosted solution, but we offer private cloud deployment options for enterprises with strict data residency or regulatory requirements. Private cloud deployments include dedicated infrastructure, custom backup schedules, and enhanced security configurations. Contact our enterprise team to discuss deployment options that meet your compliance and governance needs.",
     },
   ],
   stats: [

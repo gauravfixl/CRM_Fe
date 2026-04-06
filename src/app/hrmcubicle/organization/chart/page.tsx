@@ -262,14 +262,14 @@ const OrgChartPage = () => {
             <main className="p-6 pt-4 max-w-[1440px] mx-auto w-full">
                 {/* Stats Overview */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
-                    <Card className="rounded-[2rem] border-none bg-rose-100/70 text-rose-800 p-8 shadow-sm border border-rose-200">
+                    <Card className="rounded-xl border-none bg-rose-100/70 text-rose-800 p-8 shadow-sm">
                         <div className="space-y-1">
                             <p className="text-[10px] font-bold text-rose-500 capitalize tracking-widest leading-none">Total Employees</p>
                             <h3 className="text-3xl font-bold tracking-tight">{employees.length}</h3>
                         </div>
                     </Card>
 
-                    <Card className="rounded-[2rem] bg-purple-100/70 border border-purple-200 p-8 shadow-sm">
+                    <Card className="rounded-xl bg-purple-100/70 border-none p-8 shadow-sm">
                         <div className="space-y-1">
                             <p className="text-[10px] font-bold text-purple-500 capitalize tracking-widest">Department Heads</p>
                             <h3 className="text-3xl font-bold text-purple-800 tracking-tight">
@@ -278,7 +278,7 @@ const OrgChartPage = () => {
                         </div>
                     </Card>
 
-                    <Card className="rounded-[2rem] bg-indigo-100/70 border border-indigo-200 p-8 shadow-sm">
+                    <Card className="rounded-xl bg-indigo-100/70 border-none p-8 shadow-sm">
                         <div className="space-y-1">
                             <p className="text-[10px] font-bold text-indigo-500 capitalize tracking-widest">Reporting Lines</p>
                             <h3 className="text-3xl font-bold text-indigo-800 tracking-tight">
@@ -287,7 +287,7 @@ const OrgChartPage = () => {
                         </div>
                     </Card>
 
-                    <Card className="rounded-[2rem] bg-emerald-100/70 border border-emerald-200 p-8 shadow-sm">
+                    <Card className="rounded-xl bg-emerald-100/70 border-none p-8 shadow-sm">
                         <div className="space-y-1">
                             <p className="text-[10px] font-bold text-emerald-500 capitalize tracking-widest">Hierarchy Levels</p>
                             <h3 className="text-3xl font-bold text-emerald-800 tracking-tight">

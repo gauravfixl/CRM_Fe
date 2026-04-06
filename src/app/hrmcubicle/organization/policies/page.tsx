@@ -160,7 +160,7 @@ const PolicyCenterPage = () => {
                             {(["HR", "IT", "Finance", "General"] as const).map((cat) => (
                                 <Card
                                     key={cat}
-                                    className={`cursor-pointer group overflow-hidden border transition-all hover:shadow-xl rounded-[2.5rem] ${categoryFilter === cat ? 'ring-2 ring-indigo-500 bg-white' : 'hover:scale-[1.02]'} ${getCategoryStyles(cat).split(' ')[0]} ${getCategoryStyles(cat).split(' ')[2]}`}
+                                    className={`cursor-pointer group overflow-hidden border-none transition-all hover:shadow-xl rounded-xl ${categoryFilter === cat ? 'ring-2 ring-indigo-500 bg-white' : 'hover:scale-[1.02]'} ${getCategoryStyles(cat).split(' ')[0]} ${getCategoryStyles(cat).split(' ')[2]}`}
                                     onClick={() => setCategoryFilter(categoryFilter === cat ? 'All' : cat)}
                                 >
                                     <div className="p-6 space-y-4">
@@ -179,7 +179,7 @@ const PolicyCenterPage = () => {
                         </div>
                     </div>
 
-                    <Card className="rounded-[2.5rem] bg-indigo-50/50 border border-indigo-100 p-8 shadow-sm relative overflow-hidden group">
+                    <Card className="rounded-xl bg-indigo-50/50 border-none p-8 shadow-sm relative overflow-hidden group">
                         <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-110 transition-transform">
                             <Shield size={120} className="text-indigo-600" />
                         </div>
@@ -208,7 +208,7 @@ const PolicyCenterPage = () => {
                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                             <Input
                                 placeholder="Search policies by title..."
-                                className="pl-11 h-9 rounded-xl bg-slate-50 border-none shadow-none font-bold text-[10px] focus-visible:ring-2 focus-visible:ring-indigo-50"
+                                className="pl-11 h-9 rounded-xl bg-slate-50 border border-slate-200 shadow-none font-bold text-[10px] focus-visible:ring-2 focus-visible:ring-indigo-50"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />

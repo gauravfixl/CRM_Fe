@@ -8,136 +8,144 @@ import {
   Lock,
   BarChart3,
   Workflow,
+  Stethoscope,
+  CalendarCheck,
+  FileHeart,
+  ClipboardCheck,
+  Video,
+  Building2,
 } from "lucide-react"
 
 const data = {
   name: "Healthcare",
-  tagline: "HIPAA-compliant ERP for healthcare organizations",
+  tagline: "HIPAA-Compliant ERP Built for Modern Healthcare Organizations",
   description:
-    "CubicleERP Healthcare is purpose-built for hospitals, clinics, medical practices, and healthcare networks. With built-in HIPAA compliance, patient data protection, integrated scheduling, and healthcare-specific workflows, manage patient care, billing, and operations on a single secure platform designed for the unique demands of modern healthcare delivery.",
+    "CubicleERP Healthcare is a comprehensive, purpose-built platform for hospitals, clinics, medical practices, and healthcare networks. Featuring built-in HIPAA compliance, end-to-end patient lifecycle management, integrated medical billing, clinical workflow automation, telemedicine capabilities, and secure EHR integration, it empowers healthcare organizations to deliver exceptional patient care while maintaining regulatory compliance and operational efficiency on a single unified platform.",
   icon: Heart,
   color: "#DC2626",
   lightColor: "#FEE2E2",
-  heroImage: "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=1920&q=80",
+  heroImage:
+    "https://images.unsplash.com/photo-1587351021759-3e566b6af7cc?w=1920&q=80",
+  variant: 4 as const,
   features: [
     {
       icon: Shield,
-      title: "HIPAA Compliance Built-In",
+      title: "HIPAA Compliance & Regulatory Readiness",
       description:
-        "Every feature is designed with HIPAA requirements in mind. Automatic audit trails for all patient data access, role-based access controls, data encryption at rest and in transit, and secure patient communication channels. Generate compliance reports instantly for audits and regulatory reviews.",
+        "Every module within CubicleERP Healthcare is engineered with HIPAA requirements at its core, ensuring automatic audit trails for every patient data access event, granular role-based access controls, and end-to-end encryption for data at rest and in transit. Generate compliance reports on demand for OCR audits, state regulatory reviews, and internal governance checks without scrambling to compile documentation. Our platform continuously monitors compliance posture and proactively alerts administrators to any policy violations or access anomalies, keeping your organization audit-ready at all times.",
     },
     {
       icon: Users,
       title: "Patient Management & Scheduling",
       description:
-        "Centralized patient records with complete medical history, appointment scheduling with automated reminders, and integrated telemedicine capabilities. Manage patient communications, consent forms, and insurance information all in one secure location with full HIPAA compliance.",
+        "Manage the entire patient lifecycle from registration through discharge with centralized patient records that include complete medical history, demographics, insurance details, consent forms, and communication preferences. Intelligent appointment scheduling with automated reminders via SMS, email, and patient portal notifications reduces no-shows by up to 35%, while waitlist management and multi-provider scheduling ensure maximum clinic utilization. Integrated telemedicine capabilities allow seamless virtual visits directly within the platform, expanding access to care for remote and mobility-limited patients.",
     },
     {
-      icon: Lock,
-      title: "Secure Patient Data Protection",
+      icon: Stethoscope,
+      title: "Medical Billing & Revenue Cycle Management",
       description:
-        "Advanced encryption, role-based access controls, and automatic session timeouts protect sensitive patient information. Track every access to patient records with detailed audit logs. Support for multi-factor authentication and SSO integration for healthcare staff.",
+        "Streamline your entire revenue cycle with integrated medical billing that covers charge capture, insurance eligibility verification, claim submission, denial management, and patient collections on a single platform. Automated coding assistance with ICD-10, CPT, and HCPCS validation reduces claim denials and accelerates reimbursement timelines, while real-time analytics on days in accounts receivable, clean claim rates, and payer mix help you optimize financial performance. Built-in support for Medicare, Medicaid, and commercial payer rules ensures compliant billing across all payer types.",
     },
     {
       icon: Workflow,
       title: "Clinical Workflow Automation",
       description:
-        "Automate referral processes, lab order workflows, prescription management, and clinical documentation. Create custom workflows for your specific clinical protocols and ensure consistent, compliant care delivery across all departments and locations.",
+        "Design and deploy custom clinical workflows that match your organization's unique care delivery protocols, from patient intake and triage to referral management, lab ordering, prescription routing, and discharge planning. Automated task assignment and escalation rules ensure that no clinical action falls through the cracks, while configurable approval chains maintain proper clinical oversight and documentation standards. Pre-built workflow templates for common specialties accelerate deployment while allowing full customization to match your specific clinical processes and regulatory requirements.",
     },
     {
-      icon: BarChart3,
-      title: "Healthcare Analytics & Reporting",
+      icon: Lock,
+      title: "Secure Data & EHR Integration",
       description:
-        "Track patient outcomes, clinical quality metrics, operational efficiency, and financial performance. Generate reports on readmission rates, patient satisfaction, staff utilization, and revenue cycle metrics. Identify trends and opportunities for improvement with healthcare-specific KPIs.",
+        "Connect CubicleERP seamlessly with existing EHR systems like Epic, Cerner, Athenahealth, and AllScripts through native HL7 FHIR and HL7v2 integration interfaces, enabling bidirectional data exchange without disrupting established clinical workflows. AES-256 encryption at rest combined with TLS 1.3 in transit, multi-factor authentication, automatic session timeouts, and detailed access logging protect sensitive patient information across every touchpoint. Regular third-party penetration testing and SOC 2 Type II compliance ensure that your security posture meets the highest industry standards for healthcare data protection.",
     },
     {
-      icon: Heart,
-      title: "Billing & Insurance Management",
+      icon: Video,
+      title: "Telemedicine & Patient Portal",
       description:
-        "Integrated medical billing with insurance claim management, automated eligibility verification, and revenue cycle optimization. Reduce claim denials, accelerate reimbursement, and improve cash flow with healthcare-specific billing workflows and compliance checks.",
+        "Offer patients a modern, secure digital front door with an integrated patient portal where they can view medical records, lab results, and visit summaries, schedule and manage appointments, request prescription refills, and communicate securely with their care team. Built-in HIPAA-compliant video conferencing enables telemedicine visits directly within the platform, complete with virtual waiting rooms, screen sharing for diagnostic review, and automatic visit documentation. Patient engagement tools including health reminders, educational content delivery, and satisfaction surveys help drive better outcomes and stronger patient relationships.",
     },
   ],
   benefits: [
     {
-      title: "Ensure Patient Safety & Quality Care",
+      title: "Ensure Patient Safety & Quality of Care",
       description:
-        "Integrated clinical workflows, automated safety checks, and complete patient history reduce medical errors and improve care quality. Every clinical decision is supported by complete, accurate patient data.",
+        "Integrated clinical decision support, automated drug interaction checks, allergy alerts, and complete patient history at the point of care significantly reduce medical errors and improve clinical outcomes. Every care decision is backed by accurate, real-time patient data accessible to authorized clinical staff.",
     },
     {
-      title: "Maintain HIPAA Compliance Effortlessly",
+      title: "Achieve Effortless HIPAA Compliance",
       description:
-        "Built-in compliance features eliminate the need for manual compliance tracking. Automatic audit trails, encryption, and access controls ensure your organization stays compliant without additional effort or cost.",
+        "Built-in compliance controls eliminate manual tracking and reduce the risk of costly HIPAA violations. Automatic audit trails, encryption, access controls, and breach notification workflows keep your organization compliant without adding administrative burden or requiring dedicated compliance software.",
     },
     {
-      title: "Improve Revenue Cycle Performance",
+      title: "Accelerate Revenue Cycle Performance",
       description:
-        "Reduce claim denials, accelerate reimbursement, and improve cash flow with integrated billing and insurance management. Healthcare organizations using CubicleERP see an average 25% improvement in revenue cycle metrics.",
+        "Reduce claim denial rates by up to 40%, shorten days in A/R, and improve net collection rates with automated eligibility verification, coding validation, and proactive denial management. Healthcare organizations using CubicleERP see an average 25% improvement across key revenue cycle metrics.",
     },
     {
-      title: "Enhance Patient Experience",
+      title: "Elevate the Patient Experience",
       description:
-        "Patient portals, appointment reminders, secure messaging, and integrated telemedicine improve patient satisfaction and engagement. Patients can access their records, schedule appointments, and communicate with providers securely.",
+        "Empower patients with self-service appointment scheduling, secure messaging, online bill pay, and access to their health records through a modern patient portal. Reduced wait times, automated reminders, and telemedicine options drive higher patient satisfaction and retention scores.",
     },
     {
-      title: "Streamline Operations",
+      title: "Unify Clinical & Administrative Operations",
       description:
-        "Unified platform for clinical, administrative, and financial operations reduces manual work, eliminates data silos, and improves staff efficiency. Your team spends less time on paperwork and more time on patient care.",
+        "A single platform for clinical documentation, scheduling, billing, inventory, human resources, and compliance eliminates data silos and reduces manual work across departments. Staff spend less time on redundant data entry and context switching, freeing up more time for direct patient care.",
     },
     {
-      title: "Support Multi-Location Networks",
+      title: "Scale Across Multi-Location Networks",
       description:
-        "Manage multiple clinics, hospitals, or urgent care centers from a single platform. Maintain consistent clinical protocols while allowing location-specific customization. Share patient records securely across your network.",
+        "Manage multiple clinics, hospitals, urgent care centers, or specialty practices from one centralized platform while maintaining location-specific configurations and clinical protocols. Unified patient records follow patients across your network, improving care continuity and reducing duplicate testing.",
     },
   ],
   steps: [
     {
       step: "1",
-      title: "Healthcare Assessment",
+      title: "Healthcare Assessment & Planning",
       description:
-        "Our healthcare specialists conduct a thorough assessment of your clinical workflows, billing processes, compliance requirements, and technology infrastructure. We create a detailed implementation plan tailored to your organization's specific needs.",
+        "Our healthcare specialists conduct a comprehensive assessment of your clinical workflows, billing processes, compliance posture, and technology infrastructure. We map your current state, identify optimization opportunities, and create a detailed implementation roadmap tailored to your organization's size, specialty mix, and operational requirements.",
     },
     {
       step: "2",
-      title: "Configuration & Integration",
+      title: "Configuration, Integration & Training",
       description:
-        "We configure CubicleERP for your clinical workflows, integrate with existing EHR systems and medical devices, migrate patient data securely, and set up HIPAA-compliant communication channels. Your team receives comprehensive training on all clinical and administrative features.",
+        "We configure CubicleERP to match your clinical workflows and administrative processes, integrate with existing EHR systems and medical devices via HL7 FHIR, securely migrate patient and financial data, and set up HIPAA-compliant communication channels. Your clinical and administrative teams receive role-specific hands-on training to ensure confident adoption from day one.",
     },
     {
       step: "3",
       title: "Compliance Verification & Go-Live",
       description:
-        "We conduct thorough compliance testing, verify HIPAA controls, and perform security audits before go-live. Phased rollout with parallel running periods ensures smooth transition. 24/7 support during go-live and ongoing optimization for maximum adoption.",
+        "We perform thorough HIPAA compliance testing, verify all security controls and access policies, and conduct penetration testing before go-live. A phased rollout with parallel running periods ensures zero disruption to patient care. Dedicated 24/7 support during the transition period and ongoing optimization help maximize adoption and return on investment.",
     },
   ],
   useCases: [
     {
-      title: "Hospital Networks",
+      title: "Hospital Networks & Health Systems",
       description:
-        "Large hospital systems use CubicleERP to standardize clinical workflows, billing processes, and compliance across multiple facilities while maintaining local autonomy in care delivery.",
+        "Large hospital systems and integrated delivery networks use CubicleERP to standardize clinical workflows, billing processes, supply chain management, and regulatory compliance across multiple facilities while preserving local clinical autonomy.",
       highlights: [
-        "Unified patient records across all hospital locations",
-        "Centralized billing with location-level financial tracking",
-        "Standardized clinical protocols with local customization",
+        "Unified patient records accessible across all hospital locations and departments",
+        "Centralized revenue cycle management with facility-level financial tracking and reporting",
+        "Standardized clinical protocols with specialty and location-specific customization",
       ],
     },
     {
-      title: "Medical Practices & Clinics",
+      title: "Medical Practices & Outpatient Clinics",
       description:
-        "Independent practices and small clinic networks use CubicleERP to manage patient care, scheduling, billing, and compliance without the complexity of enterprise EHR systems.",
+        "Independent practices, physician groups, and outpatient clinic networks use CubicleERP to manage patient care, scheduling, billing, and compliance without the complexity and cost of enterprise EHR platforms designed for large hospitals.",
       highlights: [
-        "Simple patient scheduling and appointment management",
-        "Integrated medical billing and insurance claims",
-        "HIPAA compliance without IT overhead",
+        "Intuitive appointment scheduling with automated patient reminders and waitlist management",
+        "Integrated medical billing with insurance eligibility verification and claim tracking",
+        "Full HIPAA compliance without dedicated IT staff or expensive third-party tools",
       ],
     },
     {
-      title: "Specialty Healthcare Networks",
+      title: "Specialty & Allied Healthcare Providers",
       description:
-        "Specialty practices (cardiology, orthopedics, oncology, etc.) use CubicleERP with specialty-specific workflows, referral management, and clinical documentation tailored to their specialty.",
+        "Specialty practices in cardiology, orthopedics, oncology, behavioral health, and allied health disciplines use CubicleERP with specialty-specific workflow templates, referral coordination, and clinical documentation tailored to their unique care delivery models.",
       highlights: [
-        "Specialty-specific clinical workflows and templates",
-        "Integrated referral and consultation management",
-        "Specialty-specific reporting and analytics",
+        "Specialty-specific clinical workflows, documentation templates, and outcome measures",
+        "Integrated referral management with automated tracking and status notifications",
+        "Specialty-focused analytics dashboards with benchmarking against industry standards",
       ],
     },
   ],
@@ -145,33 +153,34 @@ const data = {
     {
       question: "Is CubicleERP Healthcare truly HIPAA compliant?",
       answer:
-        "Yes. CubicleERP Healthcare is designed from the ground up with HIPAA compliance in mind. We maintain comprehensive audit trails, enforce role-based access controls, encrypt all patient data at rest and in transit, and provide detailed compliance reporting. However, HIPAA compliance is a shared responsibility — your organization must also implement appropriate administrative and physical safeguards. We provide the technical controls; you implement organizational policies.",
+        "Yes. CubicleERP Healthcare is architected from the ground up with HIPAA compliance embedded into every layer of the platform. We implement comprehensive technical safeguards including AES-256 encryption at rest, TLS 1.3 encryption in transit, role-based access controls, automatic audit trails for all PHI access, multi-factor authentication, and automatic session management. We also provide Business Associate Agreements (BAAs) and support your administrative and physical safeguard requirements with policy templates and compliance documentation. However, HIPAA compliance is a shared responsibility -- your organization must implement appropriate administrative policies and physical safeguards alongside our technical controls.",
     },
     {
       question: "Can CubicleERP integrate with our existing EHR system?",
       answer:
-        "Yes. CubicleERP provides HL7 and FHIR integration capabilities for connecting with major EHR systems like Epic, Cerner, Athena, and others. We also support custom integrations via our REST API. Our healthcare integration team can help design and implement the integration that works best for your organization.",
+        "Absolutely. CubicleERP provides native HL7 FHIR R4 and HL7v2 integration interfaces for connecting with major EHR systems including Epic, Cerner, Athenahealth, AllScripts, eClinicalWorks, and NextGen. We support bidirectional data exchange for patient demographics, clinical documents, lab results, medication lists, and scheduling data. For systems without standard interfaces, our REST API and webhook framework enable custom integrations. Our dedicated healthcare integration team works with your IT staff to design, implement, test, and validate every integration before go-live.",
     },
     {
-      question: "How do you handle patient data security?",
+      question: "How does CubicleERP handle patient data security?",
       answer:
-        "Patient data is encrypted at rest using AES-256 encryption and in transit using TLS 1.3. We maintain detailed audit logs of all patient data access, enforce role-based access controls, support multi-factor authentication, and conduct regular security audits and penetration testing. All data is stored in HIPAA-compliant data centers with redundant backups.",
+        "Patient data security is our highest priority. All protected health information is encrypted at rest using AES-256 encryption and in transit using TLS 1.3. We enforce granular role-based access controls so staff only see the data relevant to their role, maintain immutable audit logs of every PHI access event, support multi-factor authentication and single sign-on via SAML/OAuth, and implement automatic session timeouts for inactive users. Our infrastructure is hosted in HIPAA-compliant, SOC 2 Type II certified data centers with geographic redundancy. We conduct regular third-party penetration testing and vulnerability assessments to continuously validate our security posture.",
     },
     {
-      question: "Can patients access their own records?",
+      question: "Can patients access their own health records through the platform?",
       answer:
-        "Yes. CubicleERP includes a secure patient portal where patients can view their medical records, appointment history, test results, and billing information. Patients can also schedule appointments, request prescription refills, and communicate securely with their healthcare providers.",
+        "Yes. CubicleERP includes a secure, mobile-responsive patient portal that gives patients 24/7 access to their medical records, lab results, visit summaries, medication lists, immunization history, and billing statements. Patients can also schedule and manage appointments, request prescription refills, complete intake forms before visits, make online payments, and communicate securely with their care team via encrypted messaging. The portal supports the ONC Cures Act requirements for patient data access and interoperability, ensuring your organization meets federal information blocking regulations.",
     },
     {
-      question: "How does CubicleERP handle multi-location patient records?",
+      question:
+        "How does CubicleERP support multi-location healthcare networks?",
       answer:
-        "CubicleERP maintains a unified patient record across all locations in your network. When a patient visits any location, their complete medical history, medications, allergies, and previous treatments are immediately available to clinical staff. This improves care quality and reduces duplicate testing.",
+        "CubicleERP maintains a unified, longitudinal patient record that is securely accessible across all locations in your network. When a patient visits any facility, their complete medical history, active medications, allergies, problem lists, and previous encounters are immediately available to authorized clinical staff, improving care quality and eliminating duplicate testing. Each location can maintain its own scheduling templates, provider configurations, fee schedules, and workflow customizations while sharing a common patient database. Centralized reporting provides network-wide visibility into clinical quality, financial performance, and operational efficiency, with drill-down capability to individual locations.",
     },
   ],
   stats: [
-    { value: "200+", label: "Healthcare organizations" },
-    { value: "100%", label: "HIPAA compliant" },
-    { value: "25%", label: "Revenue cycle improvement" },
+    { value: "200+", label: "Healthcare organizations served" },
+    { value: "100%", label: "HIPAA compliance guarantee" },
+    { value: "25%", label: "Average revenue cycle improvement" },
     { value: "99.99%", label: "Platform uptime SLA" },
   ],
 }

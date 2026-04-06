@@ -151,7 +151,7 @@ const HiringReportsPage = () => {
     };
 
     return (
-        <div className="flex-1 h-full max-h-screen overflow-hidden space-y-4 p-4 flex flex-col bg-[#fcfdff]">
+        <div className="flex-1 h-full max-h-screen overflow-hidden space-y-4 p-4 flex flex-col bg-[#fcfdff]" style={{ zoom: "90%" }}>
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>

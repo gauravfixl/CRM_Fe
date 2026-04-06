@@ -8,171 +8,179 @@ import {
   DollarSign,
   Rocket,
   Users,
+  BarChart3,
+  Clock,
+  Flame,
+  FileText,
+  Layers,
+  Settings,
 } from "lucide-react"
 
 const data = {
   name: "Startups",
-  tagline: "Lean tools to grow fast and stay agile",
+  tagline: "Launch fast, scale smart, and stay lean with CubicleERP",
   description:
-    "CubicleERP for Startups gives early-stage and growth-stage companies everything they need to move fast without the overhead of enterprise software. Get CRM, invoicing, HR, project management, and analytics in one affordable platform that grows with you — so you can focus on building your product and closing customers, not managing a dozen disconnected tools.",
+    "CubicleERP for Startups is the all-in-one business platform built for founders who refuse to slow down. From day-one operations to Series B and beyond, get CRM, invoicing, HR, project management, burn rate tracking, and investor reporting in a single affordable platform. Stop duct-taping together a dozen SaaS tools and start running your startup on a system designed for speed, agility, and relentless growth.",
   icon: Target,
-  color: "#10B981",
-  lightColor: "#ECFDF5",
-  heroImage: "https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=1920&q=80",
+  color: "#EA580C",
+  lightColor: "#FFF7ED",
+  heroImage:
+    "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=1920&q=80",
+  variant: 2 as const,
   features: [
     {
       icon: Zap,
-      title: "Quick Setup & Onboarding",
+      title: "Rapid Deployment & Quick Onboarding",
       description:
-        "Go from sign-up to fully operational in under 15 minutes. Import contacts, set up your pipeline, and start tracking deals immediately. No implementation consultants, no week-long configuration sessions — just intuitive workflows designed for teams that move fast and iterate constantly.",
-    },
-    {
-      icon: TrendingUp,
-      title: "Growth-Focused CRM",
-      description:
-        "A sales pipeline built for speed. Track leads from first touch to closed deal, automate follow-up sequences, and get real-time visibility into your conversion funnel. Built-in lead scoring helps your small sales team prioritize the opportunities most likely to convert.",
+        "Go from zero to fully operational in under 10 minutes with our guided setup wizard that configures everything based on your startup stage and team size. Import your contacts, connect your email, and start tracking deals instantly — no implementation consultants, no lengthy onboarding calls. Every new team member gets up to speed in minutes thanks to an intuitive interface designed for fast-moving teams that don't have time for training manuals.",
     },
     {
       icon: DollarSign,
-      title: "Simple Invoicing & Payments",
+      title: "Affordable, Startup-Friendly Pricing",
       description:
-        "Create professional invoices in seconds, set up recurring billing, and accept online payments. Track outstanding receivables, send automated payment reminders, and get a clear picture of your cash flow — the lifeline of every startup.",
+        "Start free with up to 3 users and all core modules included — no credit card required, no trial clock ticking down. As your team grows, upgrade at transparent per-user pricing with no hidden fees, no per-module charges, and no long-term contracts locking you in. Special discounts are available for YC, Techstars, 500 Startups, and other accelerator graduates so you can invest your runway where it matters most.",
     },
     {
-      icon: Users,
-      title: "Lightweight HR & People Ops",
+      icon: TrendingUp,
+      title: "Built to Scale with Your Growth",
       description:
-        "Manage your growing team with essential HR tools — employee directory, leave tracking, onboarding checklists, and document storage. As you scale from 5 to 50+ employees, CubicleERP grows with you without forcing a migration to a more complex HR system.",
+        "CubicleERP is engineered to carry you from founding team to 500+ employees without ever needing to re-platform or migrate data. Activate advanced modules like workflow automation, multi-entity management, and custom analytics as your needs evolve. The same system that runs your 5-person seed-stage company handles the complexity of a 200-person Series C organization seamlessly.",
     },
     {
-      icon: Rocket,
-      title: "Project & Task Management",
+      icon: Settings,
+      title: "Agile Tools for Agile Teams",
       description:
-        "Keep your team aligned with built-in project boards, sprint tracking, and task assignments. Link projects to client deals and invoices so you always know the financial health of every engagement. Perfect for product sprints, client deliverables, and cross-functional initiatives.",
+        "Built-in sprint boards, kanban workflows, and real-time task tracking keep your product and engineering teams aligned without leaving the platform. Link every project to its associated deal, invoice, and customer record so you always see the full picture. Customize workflows on the fly — because at a startup, the process that works today might need to change by next sprint.",
     },
     {
-      icon: Target,
-      title: "Startup-Friendly Pricing",
+      icon: Flame,
+      title: "Burn Rate & Cash Runway Tracking",
       description:
-        "No long-term contracts, no per-module fees, no hidden costs. Pay per user per month with all modules included. Start with our free tier for up to 3 users and upgrade as your team grows. Special startup pricing available for YC, Techstars, and accelerator graduates.",
+        "Monitor your monthly burn rate, cash runway, and expense trends with real-time financial dashboards purpose-built for startup economics. Set up alerts that notify you when your runway drops below critical thresholds so you're never caught off guard. Combine expense tracking, invoice receivables, and payroll data into a single cash-flow view that gives you and your investors complete financial clarity.",
+    },
+    {
+      icon: BarChart3,
+      title: "Investor Reporting & Board Decks",
+      description:
+        "Generate polished, board-ready reports with MRR, ARR, churn, CAC, LTV, and pipeline metrics pulled directly from your live data — no more midnight spreadsheet marathons before board meetings. Export investor updates as PDF or share live dashboards with your board members through secure read-only links. When VCs ask tough questions about unit economics, you'll have precise, real-time answers backed by actual data.",
     },
   ],
   benefits: [
     {
-      title: "Replace Your Entire Tool Stack",
+      title: "Replace Your Entire SaaS Stack",
       description:
-        "Stop juggling between Trello for projects, Google Sheets for pipeline tracking, and Wave for invoicing. CubicleERP combines all your essential business tools in one place, saving you hundreds of dollars per month in SaaS subscriptions and hours of manual data sync.",
+        "Eliminate the cost and chaos of juggling HubSpot, Asana, QuickBooks, Gusto, and Google Sheets. CubicleERP consolidates CRM, projects, invoicing, HR, and analytics into one platform — saving you hundreds of dollars per month in subscriptions and countless hours of manual data syncing between disconnected tools.",
     },
     {
-      title: "Make Data-Driven Decisions Early",
+      title: "Run Lean Without Cutting Corners",
       description:
-        "Access real-time dashboards showing revenue trends, pipeline health, team utilization, and cash runway. When every decision matters, having accurate data at your fingertips helps you allocate resources wisely and identify growth opportunities faster than competitors.",
+        "Automate repetitive tasks like lead routing, invoice generation, payment reminders, and onboarding workflows so your small team operates with the efficiency of a company three times its size. Every automation you set up is time reclaimed for building product and closing customers.",
     },
     {
-      title: "Scale Without Re-Platforming",
+      title: "Make Data-Driven Decisions from Day One",
       description:
-        "Most startups outgrow their tools within 12-18 months and face painful migrations. CubicleERP is designed to scale from founding team to 500+ employees without switching platforms. Activate advanced modules as you need them — no data migration, no retraining.",
+        "Access real-time dashboards covering revenue trends, pipeline health, burn rate, team utilization, and customer metrics. When every dollar and every hour counts, having accurate data at your fingertips means you allocate resources wisely and spot growth opportunities before your competitors do.",
     },
     {
-      title: "Impress Investors with Professionalism",
+      title: "Impress Investors with Operational Maturity",
       description:
-        "Generate board-ready financial reports, accurate revenue forecasts, and customer metrics instantly. When VCs ask about your MRR growth, churn rate, or sales velocity, you'll have precise answers backed by real data — not spreadsheet estimates.",
+        "Demonstrate to VCs and board members that your startup runs on real systems, not spreadsheets. Instant access to financial reports, sales forecasts, and customer health metrics signals that your company is investment-ready and built on a foundation that can handle hypergrowth.",
     },
     {
-      title: "Move Faster with Automation",
+      title: "Onboard New Hires in Minutes, Not Weeks",
       description:
-        "Automate repetitive tasks like lead assignment, invoice creation, payment reminders, and onboarding emails. Your small team gets leverage that lets them operate like a company twice their size without hiring additional administrative staff.",
+        "As your team doubles after each funding round, CubicleERP's unified platform means new hires learn one system instead of ten. Built-in onboarding checklists, role-based access, and an intuitive interface get every new team member productive on their first day.",
     },
     {
-      title: "Stay Focused on What Matters",
+      title: "Stay Focused on Product-Market Fit",
       description:
-        "Spend less time on admin and more time building your product and talking to customers. CubicleERP handles the operational backbone of your business so your founding team can focus on achieving product-market fit and closing your next round.",
+        "Spend less time on operational overhead and more time talking to customers and iterating on your product. CubicleERP handles the business backbone — billing, HR, pipeline management, and reporting — so your founding team stays laser-focused on what actually moves the needle.",
     },
   ],
   steps: [
     {
       step: "1",
-      title: "Sign Up in Seconds",
+      title: "Sign Up and Launch in Minutes",
       description:
-        "Create your account, invite your team, and choose your modules. Our guided setup wizard configures your workspace based on your industry and team size. You'll be ready to start tracking deals and managing projects within minutes.",
+        "Create your workspace, invite co-founders and early team members, and let the setup wizard configure your modules based on your startup stage and industry. Import existing contacts from CSV, Google Contacts, or your current CRM and connect your email for automatic conversation logging — you'll be fully operational before your coffee gets cold.",
     },
     {
       step: "2",
-      title: "Import & Connect",
+      title: "Centralize Your Operations",
       description:
-        "Import existing contacts from CSV, Google Contacts, or your current CRM. Connect your email for automatic conversation logging and set up payment integrations. CubicleERP pulls in your existing data so you start with a complete picture.",
+        "Start tracking deals in your sales pipeline, send your first invoice, set up recurring billing, and manage your team's tasks from one unified dashboard. Connect payment gateways, configure automated follow-ups, and build the workflows that will power your growth engine.",
     },
     {
       step: "3",
-      title: "Grow with Confidence",
+      title: "Scale Without Breaking Stride",
       description:
-        "Start closing deals, sending invoices, and managing your team. As your startup scales, activate additional modules, add users, and customize workflows — all without switching platforms or losing historical data.",
+        "As your startup grows, activate advanced modules like workflow automation, investor reporting, multi-entity management, and custom analytics. Add unlimited users, create department-specific dashboards, and evolve your processes — all without migrating platforms or losing a single record.",
     },
   ],
   useCases: [
     {
-      title: "Pre-Seed & Seed Stage",
+      title: "Pre-Seed & Seed-Stage Founders",
       description:
-        "Founding teams of 2-10 people use CubicleERP as their all-in-one business OS. Track early customer conversations, manage contractor payments, and build the operational foundation that will support rapid growth.",
+        "Founding teams of 2-10 people use CubicleERP as their complete business operating system from day one. Track early customer conversations, manage contractor payments, monitor burn rate, and build the operational foundation that investors expect to see when you walk into your first pitch meeting.",
       highlights: [
-        "Free tier for up to 3 users — perfect for co-founders",
-        "Simple CRM to track early customer discovery and sales",
-        "Basic invoicing and expense tracking for runway management",
+        "Free tier for up to 3 users — ideal for co-founders bootstrapping on zero budget",
+        "Integrated CRM and invoicing to manage first customers and revenue from one place",
+        "Burn rate dashboard and runway calculator to keep cash flow visible at all times",
       ],
     },
     {
-      title: "Series A & Growth Stage",
+      title: "Series A Growth-Stage Companies",
       description:
-        "Post-funding startups scaling from 10 to 100 employees use CubicleERP to professionalize operations. Structured sales processes, formal HR workflows, and detailed financial reporting replace the spreadsheets and ad-hoc tools of the early days.",
+        "Post-funding startups scaling from 15 to 150 employees use CubicleERP to professionalize operations and replace the patchwork of spreadsheets and free tools that got them through the early days. Structured sales processes, formal HR workflows, and detailed financial reporting become the backbone of sustainable growth.",
       highlights: [
-        "Multi-stage sales pipelines with team performance tracking",
-        "Full HR suite with onboarding, leave management, and payroll",
-        "Investor-ready reporting with MRR, churn, and CAC metrics",
+        "Multi-stage sales pipelines with team quotas, leaderboards, and performance tracking",
+        "Full HR suite with onboarding automation, leave management, and employee directory",
+        "Board-ready reporting with MRR, ARR, churn, CAC, and LTV metrics generated instantly",
       ],
     },
     {
-      title: "B2B SaaS Companies",
+      title: "B2B SaaS & Tech Startups",
       description:
-        "SaaS startups use CubicleERP to manage the complete customer lifecycle — from lead generation and demo scheduling to subscription billing and customer success tracking.",
+        "SaaS startups use CubicleERP to manage the entire customer lifecycle — from inbound lead capture and demo scheduling through subscription billing, renewal tracking, and customer success management. Every metric investors care about is tracked automatically and available in real time.",
       highlights: [
-        "Recurring billing with automatic subscription management",
-        "Customer health scoring to reduce churn proactively",
-        "Product usage integration for data-driven upsell opportunities",
+        "Recurring billing engine with automatic subscription management and dunning workflows",
+        "Customer health scoring and churn prediction to drive proactive retention strategies",
+        "Product-usage integration for data-driven expansion revenue and upsell opportunities",
       ],
     },
   ],
   faqs: [
     {
-      question: "Is CubicleERP really free for small teams?",
+      question: "Is CubicleERP really free for small startup teams?",
       answer:
-        "Yes. Our Starter plan is completely free for up to 3 users and includes core CRM, basic invoicing, and project management. There's no credit card required, no trial expiration, and no feature lockout. When you're ready to add more users or need advanced features like automation and analytics, you can upgrade to our Growth plan at startup-friendly pricing.",
+        "Yes, completely free for up to 3 users with no trial expiration and no credit card required. The free Starter plan includes core CRM, basic invoicing, project management, and team collaboration — everything a founding team needs to get off the ground. When you're ready for advanced features like automation, investor reporting, and analytics, upgrade to our Growth plan at startup-friendly pricing that scales with your headcount.",
     },
     {
-      question: "How is CubicleERP different from using separate tools?",
+      question: "How does CubicleERP help with investor reporting and board decks?",
       answer:
-        "Using separate tools for CRM (HubSpot), projects (Asana), invoicing (Stripe), and HR (Gusto) means your data lives in silos, you pay multiple subscriptions, and your team wastes time switching between apps. CubicleERP combines all these functions in one platform with shared data, consistent UI, and integrated workflows — at a fraction of the combined cost.",
+        "CubicleERP automatically tracks key startup metrics — MRR, ARR, churn rate, CAC, LTV, pipeline velocity, and burn rate — from your live operational data. You can generate board-ready PDF reports with one click or share secure, real-time dashboards directly with your investors and advisors. No more late-night spreadsheet sessions before board meetings. Your numbers are always current because they're pulled from the same system you use to run your business every day.",
     },
     {
-      question: "Can I migrate my data from HubSpot, Notion, or other tools?",
+      question: "Can I migrate data from HubSpot, Notion, Stripe, or other tools we currently use?",
       answer:
-        "Absolutely. We support CSV import for contacts, deals, and invoices from any platform. For HubSpot, Salesforce, and Notion, we provide guided migration assistants that map your fields automatically. Our support team also offers free migration assistance for startups switching from other platforms.",
+        "Absolutely. CubicleERP supports CSV import for contacts, deals, invoices, and projects from any platform. For HubSpot, Salesforce, and Notion, we provide guided migration assistants that automatically map your fields and preserve your data relationships. Our support team also offers free white-glove migration assistance for startups switching from other platforms, so you don't lose a single record or relationship in the transition.",
     },
     {
-      question: "Do you offer special pricing for accelerator startups?",
+      question: "Do you offer special pricing for accelerator and incubator startups?",
       answer:
-        "Yes! Startups that are part of Y Combinator, Techstars, 500 Startups, or any recognized accelerator program get 50% off our Growth plan for the first year. Contact our startup team with your accelerator details to activate the discount. We also offer credits through various startup programs and partnerships.",
+        "Yes! Startups that are part of Y Combinator, Techstars, 500 Startups, Plug and Play, or any recognized accelerator or incubator program receive 50% off the Growth plan for the first 12 months. We also participate in startup credit programs like the AWS Activate ecosystem and various VC perks platforms. Contact our startup partnerships team with your accelerator details to activate your discount — it takes less than 24 hours to verify and apply.",
     },
     {
-      question: "What happens as my team grows beyond 50 people?",
+      question: "What happens when we outgrow our current plan or need enterprise features?",
       answer:
-        "CubicleERP scales seamlessly. As you grow, you can activate advanced modules like workflow automation, custom reporting, and multi-entity management. You'll never need to migrate to a different platform. Many of our enterprise customers started with us at the seed stage and still use CubicleERP at 500+ employees.",
+        "CubicleERP is designed so you never have to re-platform. As your startup scales from seed to Series C and beyond, simply activate additional modules like advanced workflow automation, custom API integrations, multi-entity management, and role-based security controls. Many of our largest enterprise customers started with us as 3-person founding teams and still run on CubicleERP at 500+ employees. Your data, workflows, and history carry forward seamlessly — zero migration, zero downtime, zero retraining.",
     },
   ],
   stats: [
-    { value: "2,000+", label: "Startups trust CubicleERP" },
-    { value: "15 min", label: "Average setup time" },
-    { value: "60%", label: "Savings vs separate tools" },
-    { value: "3x", label: "Faster deal closure" },
+    { value: "2,500+", label: "Startups powered by CubicleERP" },
+    { value: "<10 min", label: "Average time to full setup" },
+    { value: "65%", label: "Cost savings vs separate SaaS tools" },
+    { value: "3.2x", label: "Faster deal closure on average" },
   ],
 }
 

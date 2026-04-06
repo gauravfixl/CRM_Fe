@@ -131,43 +131,43 @@ const TeamsPage = () => {
             <main className="p-8 pt-6 max-w-[1440px] mx-auto w-full space-y-8">
                 {/* 📊 Metrics */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                    <Card className="rounded-[2.5rem] border-none bg-white p-6 shadow-sm ring-1 ring-slate-100">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Total Teams</p>
+                    <Card className="rounded-xl border-none bg-gradient-to-br from-indigo-50 to-indigo-100/60 p-6 shadow-sm ring-1 ring-indigo-100">
+                        <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-3">Total Teams</p>
                         <div className="flex items-end justify-between">
-                            <h3 className="text-4xl font-black text-slate-900 leading-none">{teams.length}</h3>
-                            <div className="h-10 w-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                            <h3 className="text-2xl font-extrabold text-indigo-700 leading-none">{teams.length}</h3>
+                            <div className="h-10 w-10 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center">
                                 <LayoutGrid size={20} />
                             </div>
                         </div>
                     </Card>
-                    <Card className="rounded-[2.5rem] border-none bg-white p-6 shadow-sm ring-1 ring-slate-100">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Active Membes</p>
+                    <Card className="rounded-xl border-none bg-gradient-to-br from-emerald-50 to-emerald-100/60 p-6 shadow-sm ring-1 ring-emerald-100">
+                        <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest mb-3">Active Members</p>
                         <div className="flex items-end justify-between">
-                            <h3 className="text-4xl font-black text-slate-900 leading-none">
+                            <h3 className="text-2xl font-extrabold text-emerald-700 leading-none">
                                 {Array.from(new Set(teams.flatMap(t => t.memberIds))).length}
                             </h3>
-                            <div className="h-10 w-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                            <div className="h-10 w-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center">
                                 <Users size={20} />
                             </div>
                         </div>
                     </Card>
-                    <Card className="rounded-[2.5rem] border-none bg-white p-6 shadow-sm ring-1 ring-slate-100">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Avg. Velocity</p>
+                    <Card className="rounded-xl border-none bg-gradient-to-br from-amber-50 to-amber-100/60 p-6 shadow-sm ring-1 ring-amber-100">
+                        <p className="text-[10px] font-bold text-amber-400 uppercase tracking-widest mb-3">Avg. Velocity</p>
                         <div className="flex items-end justify-between">
-                            <h3 className="text-4xl font-black text-slate-900 leading-none">
+                            <h3 className="text-2xl font-extrabold text-amber-700 leading-none">
                                 {Math.round(teams.reduce((acc, t) => acc + t.stats.velocity, 0) / (teams.length || 1))}%
                             </h3>
-                            <div className="h-10 w-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                            <div className="h-10 w-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center">
                                 <Zap size={20} />
                             </div>
                         </div>
                     </Card>
-                    <Card className="rounded-[2.5rem] border-none bg-slate-900 p-6 shadow-2xl overflow-hidden relative group">
-                        <Target className="absolute -right-4 -bottom-4 h-24 w-24 text-white/5 group-hover:scale-110 transition-transform" />
-                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">Goal Alignment</p>
+                    <Card className="rounded-xl border-none bg-gradient-to-br from-violet-50 to-violet-100/60 p-6 shadow-sm ring-1 ring-violet-100 overflow-hidden relative group">
+                        <Target className="absolute -right-4 -bottom-4 h-24 w-24 text-violet-100 group-hover:scale-110 transition-transform" />
+                        <p className="text-[10px] font-bold text-violet-400 uppercase tracking-widest mb-3">Goal Alignment</p>
                         <div className="flex items-end justify-between">
-                            <h3 className="text-4xl font-black text-white leading-none">94%</h3>
-                            <ArrowUpRight className="text-emerald-400 mb-1" size={24} />
+                            <h3 className="text-2xl font-extrabold text-violet-700 leading-none">94%</h3>
+                            <ArrowUpRight className="text-violet-500 mb-1" size={24} />
                         </div>
                     </Card>
                 </div>

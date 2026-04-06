@@ -147,7 +147,7 @@ const PayrollSettingsPage = () => {
     };
 
     return (
-        <div className="flex flex-col h-full bg-[#f8fafc] font-sans overflow-y-auto" style={{ zoom: "67%" }}>
+        <div className="flex flex-col h-full bg-[#f8fafc] font-sans overflow-y-auto" style={{ zoom: "82%" }}>
             {/* Header */}
             <div className="bg-white border-b border-slate-200 py-6 px-8 flex items-center justify-between shadow-sm sticky top-0 z-20">
                 <div className="flex items-center gap-4">

@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
     UserPlus,
     Search,
@@ -289,7 +289,7 @@ const KanbanCard = ({ hire, index }: { hire: NewHire, index: number }) => {
 
             {/* Sub-dialog for adding tasks */}
             <Dialog open={isTaskDialogOpen} onOpenChange={setIsTaskDialogOpen}>
-                <DialogContent className="bg-white rounded-2xl border border-slate-100 p-6 max-w-sm shadow-2xl">
+                <DialogContent className="bg-white rounded-2xl border-2 border-slate-200 p-6 max-w-sm shadow-2xl">
                     <DialogHeader>
                         <DialogTitle className="text-lg font-bold text-slate-900 tracking-tight">New Milestone</DialogTitle>
                         <DialogDescription className="text-[10px] font-bold text-slate-400">
@@ -315,7 +315,7 @@ const KanbanCard = ({ hire, index }: { hire: NewHire, index: number }) => {
 
             {/* Edit Details Dialog */}
             <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-                <DialogContent className="bg-white rounded-2xl border border-slate-100 p-6 max-w-sm shadow-2xl">
+                <DialogContent className="bg-white rounded-2xl border-2 border-slate-200 p-6 max-w-sm shadow-2xl">
                     <DialogHeader>
                         <DialogTitle className="text-lg font-bold text-slate-900 tracking-tight">Edit Profile</DialogTitle>
                         <DialogDescription className="text-[10px] font-bold text-slate-400">Update candidate information.</DialogDescription>
@@ -363,11 +363,16 @@ const KanbanCard = ({ hire, index }: { hire: NewHire, index: number }) => {
 };
 
 const OnboardingPage = () => {
-    const { newHires, addNewHire, deleteNewHire, completeOnboarding, syncTasks, onboardingDuration, setOnboardingDuration } = useLifecycleStore();
+    const { newHires, addNewHire, deleteNewHire, completeOnboarding, syncTasks, onboardingDuration, setOnboardingDuration, loadOnboardingsFromApi } = useLifecycleStore();
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [viewMode, setViewMode] = useState<"kanban" | "list">("kanban");
     const [activeTab, setActiveTab] = useState("all");
     const { toast } = useToast();
+
+    // Try to load onboarding data from backend API on mount
+    useEffect(() => {
+        loadOnboardingsFromApi();
+    }, [loadOnboardingsFromApi]);
 
     const [formData, setFormData] = useState({
         name: "", position: "", department: "Engineering", startDate: "", mentor: "TBD"
@@ -450,7 +455,7 @@ const OnboardingPage = () => {
                                     <Settings className="h-4 w-4" />
                                 </Button>
                             </DialogTrigger>
-                            <DialogContent className="bg-white rounded-2xl border border-slate-100 p-6 max-w-xs shadow-2xl">
+                            <DialogContent className="bg-white rounded-2xl border-2 border-slate-200 p-6 max-w-xs shadow-2xl">
                                 <DialogHeader>
                                     <DialogTitle className="text-lg font-bold text-slate-900">Hub Settings</DialogTitle>
                                     <DialogDescription className="text-[10px] font-bold text-slate-400">Configure global onboarding parameters.</DialogDescription>
@@ -635,7 +640,7 @@ const OnboardingPage = () => {
 
             {/* Dialog */}
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="bg-white rounded-[2rem] border border-slate-100 shadow-2xl p-8 max-w-2xl">
+                <DialogContent className="bg-white rounded-[2rem] border-2 border-slate-200 shadow-2xl p-8 max-w-2xl">
                     <DialogHeader>
                         <DialogTitle className="text-xl font-bold text-slate-900 tracking-tight">Manual Candidate Entry</DialogTitle>
                         <DialogDescription className="text-[10px] font-bold text-slate-400">Add a new hire directly to the onboarding pipeline.</DialogDescription>

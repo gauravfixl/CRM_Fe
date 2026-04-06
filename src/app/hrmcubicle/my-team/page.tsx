@@ -58,7 +58,7 @@ const TeamOverviewPage = () => {
   };
 
   return (
-    <div className="flex-1 min-h-screen bg-[#f8fafc] p-6 space-y-8">
+    <div className="flex-1 min-h-screen bg-[#f8fafc] p-6 space-y-8" style={{ zoom: "90%" }}>
       {/* Header */}
       <div className="flex justify-between items-start">
         <div>

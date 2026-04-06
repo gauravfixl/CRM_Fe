@@ -1,5 +1,15 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import {
+    getAllEmployees,
+    getEmployeeAttendance,
+    getPendingLeaveRequests,
+    approveLeaveRequest,
+    rejectLeaveRequest,
+    getAllAppraisals,
+    getAllGoals,
+    getAllFeedback,
+} from "@/modules/hrm/hooks/hrmHooks"
 
 export type UserRole = "ADMIN" | "MEMBER" | "VIEWER"
 export type TeamMemberRole = "TeamAdmin" | "TeamLead" | "TeamMember" | "TeamViewer"
@@ -21,6 +31,14 @@ export interface TeamMemberWithRole extends TeamMember {
     addedBy: string
 }
 
+export interface CalendarEvent {
+    title: string
+    date: string
+    type: 'meeting' | 'birthday' | 'anniversary' | 'holiday' | 'leave'
+    attendees: string[]
+    color: string
+}
+
 export interface Team {
     id: string
     workspaceId: string
@@ -39,7 +57,11 @@ export interface Team {
 interface TeamStore {
     members: TeamMember[]
     teams: Team[]
+    calendarEvents: CalendarEvent[]
     teamMemberRoles: Record<string, TeamMemberRole> // teamId-userId -> role
+
+    // Calendar Actions
+    addEvent: (event: CalendarEvent) => void
 
     // Member Actions (Workspace Level)
     addMember: (member: TeamMember) => void
@@ -64,6 +86,22 @@ interface TeamStore {
     // Board Management
     assignBoardToTeam: (teamId: string, boardId: string, workflowId?: string) => void
     toggleTeamBoard: (teamId: string, useTeamBoard: boolean) => void
+
+    // HRM API Integration
+    hrmEmployees: any[]
+    hrmPendingLeaves: any[]
+    hrmTeamAttendance: Record<string, any[]>
+    hrmAppraisals: any[]
+    hrmGoals: any[]
+    hrmFeedback: any[]
+    loadHrmEmployees: () => Promise<void>
+    loadHrmPendingLeaves: () => Promise<void>
+    loadHrmTeamAttendance: (employeeId: string) => Promise<void>
+    approveHrmLeave: (id: string) => Promise<void>
+    rejectHrmLeave: (id: string, reason: string) => Promise<void>
+    loadHrmAppraisals: () => Promise<void>
+    loadHrmGoals: () => Promise<void>
+    loadHrmFeedback: () => Promise<void>
 }
 
 const INITIAL_MEMBERS: TeamMember[] = [
@@ -107,6 +145,13 @@ export const useTeamStore = create<TeamStore>()(
         (set, get) => ({
             members: INITIAL_MEMBERS,
             teams: INITIAL_TEAMS,
+            calendarEvents: [
+                { title: "Team Standup", date: "2026-01-19", type: "meeting", attendees: ["u1", "u2"], color: "emerald" },
+                { title: "Sprint Review", date: "2026-01-22", type: "meeting", attendees: ["u1", "u2", "u3"], color: "emerald" },
+                { title: "Sarah's Birthday", date: "2026-01-25", type: "birthday", attendees: [], color: "rose" },
+                { title: "Republic Day", date: "2026-01-26", type: "holiday", attendees: [], color: "indigo" },
+                { title: "James on Leave", date: "2026-01-28", type: "leave", attendees: ["u3"], color: "amber" },
+            ],
             teamMemberRoles: {
                 "t1-u1": "TeamAdmin",
                 "t1-u2": "TeamMember",
@@ -114,6 +159,11 @@ export const useTeamStore = create<TeamStore>()(
                 "t2-u2": "TeamLead",
                 "t2-u3": "TeamMember"
             },
+
+            // Calendar
+            addEvent: (event) => set((state) => ({
+                calendarEvents: [...state.calendarEvents, event]
+            })),
 
             // Members
             addMember: (member) => set((state) => ({
@@ -204,7 +254,97 @@ export const useTeamStore = create<TeamStore>()(
                 teams: state.teams.map(t =>
                     t.id === teamId ? { ...t, useTeamBoard } : t
                 )
-            }))
+            })),
+
+            // ===== HRM API INTEGRATION =====
+            hrmEmployees: [],
+            hrmPendingLeaves: [],
+            hrmTeamAttendance: {},
+            hrmAppraisals: [],
+            hrmGoals: [],
+            hrmFeedback: [],
+
+            loadHrmEmployees: async () => {
+                try {
+                    const res = await getAllEmployees();
+                    const employees = res?.data?.data ?? res?.data ?? [];
+                    set({ hrmEmployees: employees });
+                } catch (err) {
+                    console.error("Failed to load HRM employees:", err);
+                }
+            },
+
+            loadHrmPendingLeaves: async () => {
+                try {
+                    const res = await getPendingLeaveRequests();
+                    const leaves = res?.data?.data ?? res?.data ?? [];
+                    set({ hrmPendingLeaves: leaves });
+                } catch (err) {
+                    console.error("Failed to load pending leaves:", err);
+                }
+            },
+
+            loadHrmTeamAttendance: async (employeeId: string) => {
+                try {
+                    const res = await getEmployeeAttendance(employeeId);
+                    const records = res?.data?.data ?? [];
+                    set((state) => ({
+                        hrmTeamAttendance: {
+                            ...state.hrmTeamAttendance,
+                            [employeeId]: records
+                        }
+                    }));
+                } catch (err) {
+                    console.error("Failed to load team attendance:", err);
+                }
+            },
+
+            approveHrmLeave: async (id: string) => {
+                try {
+                    await approveLeaveRequest(id);
+                    await get().loadHrmPendingLeaves();
+                } catch (err) {
+                    console.error("Failed to approve leave:", err);
+                    throw err;
+                }
+            },
+
+            rejectHrmLeave: async (id: string, reason: string) => {
+                try {
+                    await rejectLeaveRequest(id, reason);
+                    await get().loadHrmPendingLeaves();
+                } catch (err) {
+                    console.error("Failed to reject leave:", err);
+                    throw err;
+                }
+            },
+
+            loadHrmAppraisals: async () => {
+                try {
+                    const res = await getAllAppraisals();
+                    set({ hrmAppraisals: res?.data?.data ?? [] });
+                } catch (err) {
+                    console.error("Failed to load appraisals:", err);
+                }
+            },
+
+            loadHrmGoals: async () => {
+                try {
+                    const res = await getAllGoals();
+                    set({ hrmGoals: res?.data?.data ?? [] });
+                } catch (err) {
+                    console.error("Failed to load goals:", err);
+                }
+            },
+
+            loadHrmFeedback: async () => {
+                try {
+                    const res = await getAllFeedback();
+                    set({ hrmFeedback: res?.data?.data ?? [] });
+                } catch (err) {
+                    console.error("Failed to load feedback:", err);
+                }
+            }
         }),
         {
             name: 'cubicle-team-storage',

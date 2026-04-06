@@ -61,12 +61,12 @@ const StatutoryDashboard = () => {
     }, [pfRecords, esiRecords, ptRecords, lwfRecords, gratuityRecords, form16Records])
 
     const kpis = [
-        { label: "PF Compliance", val: `${stats.pfCompliance}%`, icon: Landmark, color: "text-[#8B5CF6]", bg: "bg-[#8B5CF6]/10", trend: `${pfRecords.length} employees` },
-        { label: "ESI Coverage", val: `${stats.esiPct}%`, icon: ShieldCheck, color: "text-emerald-500", bg: "bg-emerald-50", trend: `${esiRecords.length} eligible` },
-        { label: "PT Filed", val: `${stats.ptPct}%`, icon: Building2, color: "text-blue-500", bg: "bg-blue-50", trend: `${ptRecords.length} employees` },
-        { label: "LWF Status", val: `${stats.lwfPct}%`, icon: Scale, color: "text-amber-500", bg: "bg-amber-50", trend: `${lwfRecords.length} records` },
-        { label: "Gratuity Provisioned", val: `₹${(stats.gratuityProvisioned / 100000).toFixed(1)}L`, icon: Gift, color: "text-pink-500", bg: "bg-pink-50", trend: `${gratuityRecords.filter((r) => r.status !== "Not Eligible").length} eligible` },
-        { label: "Form 16 Generated", val: `${stats.form16Pct}%`, icon: FileText, color: "text-cyan-500", bg: "bg-cyan-50", trend: `${stats.form16Generated}/${form16Records.length}` },
+        { label: "PF Compliance", val: `${stats.pfCompliance}%`, icon: Landmark, color: "text-[#8B5CF6]", bg: "bg-[#8B5CF6]/20", trend: `${pfRecords.length} employees`, cardBg: "bg-[#CB9DF0]/15 border-[#CB9DF0]/30" },
+        { label: "ESI Coverage", val: `${stats.esiPct}%`, icon: ShieldCheck, color: "text-emerald-600", bg: "bg-emerald-100", trend: `${esiRecords.length} eligible`, cardBg: "bg-emerald-50 border-emerald-200" },
+        { label: "PT Filed", val: `${stats.ptPct}%`, icon: Building2, color: "text-blue-600", bg: "bg-blue-100", trend: `${ptRecords.length} employees`, cardBg: "bg-blue-50 border-blue-200" },
+        { label: "LWF Status", val: `${stats.lwfPct}%`, icon: Scale, color: "text-amber-600", bg: "bg-amber-100", trend: `${lwfRecords.length} records`, cardBg: "bg-amber-50 border-amber-200" },
+        { label: "Gratuity Provisioned", val: `₹${(stats.gratuityProvisioned / 100000).toFixed(1)}L`, icon: Gift, color: "text-pink-600", bg: "bg-pink-100", trend: `${gratuityRecords.filter((r) => r.status !== "Not Eligible").length} eligible`, cardBg: "bg-pink-50 border-pink-200" },
+        { label: "Form 16 Generated", val: `${stats.form16Pct}%`, icon: FileText, color: "text-cyan-600", bg: "bg-cyan-100", trend: `${stats.form16Generated}/${form16Records.length}`, cardBg: "bg-cyan-50 border-cyan-200" },
     ]
 
     const modules = [
@@ -120,7 +120,7 @@ const StatutoryDashboard = () => {
     }
 
     return (
-        <div className="flex flex-col h-full bg-[#f8fafc] font-sans overflow-y-auto" style={{ zoom: "67%" }}>
+        <div className="flex flex-col h-full bg-[#f8fafc] font-sans overflow-y-auto" style={{ zoom: "90%" }}>
             {/* Header */}
             <div className="h-20 bg-white border-b border-slate-200 px-8 flex items-center justify-between sticky top-0 z-20 shadow-sm">
                 <div className="flex items-center gap-4">
@@ -147,13 +147,13 @@ const StatutoryDashboard = () => {
                     {/* KPI Tiles */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
                         {kpis.map((stat, i) => (
-                            <Card key={i} className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden hover:shadow-md transition-all">
+                            <Card key={i} className={cn("rounded-2xl border shadow-sm overflow-hidden hover:shadow-md transition-all", stat.cardBg)}>
                                 <CardContent className="p-5">
                                     <div className="flex justify-between items-start mb-4">
                                         <div className={`h-10 w-10 ${stat.bg} ${stat.color} rounded-xl flex items-center justify-center`}>
                                             <stat.icon size={20} />
                                         </div>
-                                        <Badge variant="outline" className="font-bold text-[9px] text-slate-400 border-slate-100 bg-slate-50">{stat.trend}</Badge>
+                                        <Badge variant="outline" className="font-bold text-[9px] text-slate-400 border-slate-100 bg-white/60">{stat.trend}</Badge>
                                     </div>
                                     <div className="space-y-1">
                                         <p className="text-xs font-bold text-slate-500 capitalize tracking-wide">{stat.label}</p>

@@ -140,7 +140,7 @@ const TeamDocumentsPage = () => {
     if (!mounted) return null;
 
     return (
-        <div className="flex flex-col min-h-screen bg-[#f8fafc] font-sans relative" style={{ zoom: "80%" }}>
+        <div className="flex flex-col min-h-screen bg-[#f8fafc] font-sans relative" style={{ zoom: "90%" }}>
             <header className="py-2.5 px-8 bg-white border-b border-slate-100 sticky top-0 z-30 shadow-sm rounded-b-3xl">
                 <div className="max-w-[1600px] mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div className="text-start">
@@ -214,7 +214,7 @@ const TeamDocumentsPage = () => {
                         </div>
                         <div className="flex items-center gap-3">
                             <Select value={fileTypeFilter} onValueChange={setFileTypeFilter}>
-                                <SelectTrigger className="w-[120px] h-10 border-none shadow-sm rounded-xl font-bold text-xs bg-white text-slate-600">
+                                <SelectTrigger className="w-[120px] h-10 border border-slate-200 shadow-sm rounded-xl font-bold text-xs bg-white text-slate-600">
                                     <SelectValue placeholder="Format" />
                                 </SelectTrigger>
                                 <SelectContent className="bg-white border-none shadow-xl rounded-xl">

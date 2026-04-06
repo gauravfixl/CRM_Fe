@@ -28,7 +28,7 @@ const HireDashboardPage = () => {
   const todayInterviews = upcomingInterviews.filter(i => new Date(i.date).toDateString() === new Date().toDateString());
 
   return (
-    <div className="flex-1 p-8 h-full flex flex-col bg-[#fcfdff] overflow-y-auto custom-scrollbar space-y-8">
+    <div className="flex-1 p-8 h-full flex flex-col bg-[#fcfdff] overflow-y-auto custom-scrollbar space-y-8" style={{ zoom: "90%" }}>
       {/* Welcome Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-indigo-600 rounded-[2.5rem] p-8 shadow-xl shadow-indigo-200 text-white relative overflow-hidden">
         <div className="relative z-10 space-y-2">

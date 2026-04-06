@@ -207,7 +207,7 @@ const CompliancePage = () => {
                                             <Settings2 size={14} /> Configure Policies
                                         </Button>
                                     </DialogTrigger>
-                                    <DialogContent className="bg-white rounded-[2.5rem] border-none p-10 max-w-xl shadow-2xl">
+                                    <DialogContent className="bg-white rounded-[2.5rem] border-2 border-slate-200 p-10 max-w-xl shadow-2xl">
                                         <DialogHeader>
                                             <DialogTitle className="text-2xl font-black text-slate-900 italic">Policy Configuration</DialogTitle>
                                             <DialogDescription className="font-bold text-slate-400">Add or remove mandatory compliance documents.</DialogDescription>
@@ -416,7 +416,7 @@ const CompliancePage = () => {
 
                 {/* Archive Dialog */}
                 <Dialog open={isArchiveOpen} onOpenChange={setIsArchiveOpen}>
-                    <DialogContent className="bg-white rounded-[2.5rem] border-none p-0 max-w-3xl shadow-[0_50px_100px_-30px_rgba(0,0,0,0.2)] outline-none overflow-hidden">
+                    <DialogContent className="bg-white rounded-[2.5rem] border-2 border-slate-200 p-0 max-w-3xl shadow-[0_50px_100px_-30px_rgba(0,0,0,0.2)] outline-none overflow-hidden">
                         <div className="p-10">
                             <DialogHeader className="mb-6">
                                 <DialogTitle className="text-2xl font-black text-slate-900 tracking-tight italic">Compliance Audit Archive</DialogTitle>
