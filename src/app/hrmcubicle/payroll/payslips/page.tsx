@@ -229,10 +229,10 @@ const PayslipsPage = () => {
                                             value={searchTerm}
                                             onChange={e => setSearchTerm(e.target.value)}
                                             placeholder="Audit ID or Employee name..."
-                                            className="pl-9 h-10 bg-slate-50 border-none rounded-xl text-xs font-medium"
+                                            className="pl-9 h-10 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium"
                                         />
                                     </div>
-                                    <Button variant="outline" className="h-10 rounded-xl border-slate-100 text-slate-500 font-semibold text-[10px] gap-2">
+                                    <Button variant="outline" onClick={() => toast({ title: "Refine", description: "Advanced filter options would appear here." })} className="h-10 rounded-xl border-slate-100 text-slate-500 font-semibold text-[10px] gap-2">
                                         <Filter size={14} /> Refine
                                     </Button>
                                 </div>
@@ -368,7 +368,7 @@ const PayslipsPage = () => {
 
             {/* PDF Preview Dialog */}
             <Dialog open={isPdfPreviewOpen} onOpenChange={setIsPdfPreviewOpen}>
-                <DialogContent className="bg-white rounded-3xl border-none p-0 max-w-4xl font-sans shadow-2xl fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[100] overflow-hidden">
+                <DialogContent className="bg-white rounded-3xl border-2 border-slate-200 p-0 max-w-4xl font-sans shadow-2xl fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[100] overflow-hidden">
                     <div className="flex flex-col h-[80vh]">
                         <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
                             <div>
@@ -376,7 +376,19 @@ const PayslipsPage = () => {
                                 <p className="text-xs font-medium text-slate-500 mt-1">{selectedPayslip?.employeeName} • {selectedPayslip?.month}</p>
                             </div>
                             <div className="flex gap-2">
-                                <Button variant="outline" className="h-9 px-4 rounded-lg font-semibold text-xs gap-2 border-slate-200">
+                                <Button variant="outline" onClick={() => {
+                                    const content = `PAYSLIP - ${selectedPayslip?.month}\n\nEmployee: ${selectedPayslip?.employeeName}\nEmployee ID: ${selectedPayslip?.employeeId}\n\nBasic Salary: ${formatINR(selectedPayslip?.netAmount * 0.5 || 0)}\nHRA: ${formatINR(selectedPayslip?.netAmount * 0.2 || 0)}\nAllowances: ${formatINR(selectedPayslip?.netAmount * 0.15 || 0)}\nGross Salary: ${formatINR(selectedPayslip?.netAmount * 0.85 || 0)}\n\nDeductions:\nPF Contribution: ${formatINR(selectedPayslip?.netAmount * 0.12 || 0)}\nTDS: ${formatINR(selectedPayslip?.netAmount * 0.03 || 0)}\n\nNet Payable: ${formatINR(selectedPayslip?.netAmount || 0)}`;
+                                    const blob = new Blob([content], { type: "text/plain" });
+                                    const url = URL.createObjectURL(blob);
+                                    const a = document.createElement("a");
+                                    a.href = url;
+                                    a.download = `Payslip_${selectedPayslip?.employeeId}_${selectedPayslip?.month}.txt`;
+                                    document.body.appendChild(a);
+                                    a.click();
+                                    document.body.removeChild(a);
+                                    URL.revokeObjectURL(url);
+                                    toast({ title: "Downloaded", description: "Payslip has been downloaded." });
+                                }} className="h-9 px-4 rounded-lg font-semibold text-xs gap-2 border-slate-200">
                                     <Download size={14} /> Download
                                 </Button>
                                 <Button variant="ghost" size="sm" onClick={() => setIsPdfPreviewOpen(false)} className="h-9 w-9 p-0 rounded-lg hover:bg-slate-100">
@@ -446,7 +458,7 @@ const PayslipsPage = () => {
 
             {/* Email Preview Dialog */}
             <Dialog open={isEmailPreviewOpen} onOpenChange={setIsEmailPreviewOpen}>
-                <DialogContent className="bg-white rounded-3xl border-none p-8 max-w-2xl font-sans shadow-2xl fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[100]">
+                <DialogContent className="bg-white rounded-3xl border-2 border-slate-200 p-8 max-w-2xl font-sans shadow-2xl fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[100]">
                     <DialogHeader className="text-start space-y-2">
                         <div className="flex items-center gap-2">
                             <div className="h-8 w-8 bg-emerald-50 rounded-lg flex items-center justify-center">
@@ -528,7 +540,7 @@ const PayslipsPage = () => {
                             </div>
                         </ScrollArea>
                         <div className="p-8 border-t border-slate-50 bg-slate-50/50 text-start">
-                            <Button className="w-full h-12 bg-slate-900 text-white rounded-xl font-bold text-[10px] tracking-wider shadow-xl shadow-slate-200 border-none transition-all hover:bg-[#8B5CF6]">Sync design across terminal</Button>
+                            <Button onClick={() => toast({ title: "Template Synced", description: "Payslip template has been synced across all terminals." })} className="w-full h-12 bg-slate-900 text-white rounded-xl font-bold text-[10px] tracking-wider shadow-xl shadow-slate-200 border-none transition-all hover:bg-[#8B5CF6]">Sync design across terminal</Button>
                         </div>
                     </div>
                 </SheetContent>
@@ -536,7 +548,7 @@ const PayslipsPage = () => {
 
             {/* Initialization Form Dialog */}
             <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-                <DialogContent className="bg-white rounded-3xl border-none p-8 max-w-lg font-sans shadow-2xl overflow-hidden relative fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[100]">
+                <DialogContent className="bg-white rounded-3xl border-2 border-slate-200 p-8 max-w-lg font-sans shadow-2xl overflow-hidden relative fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[100]">
                     <div className="absolute top-0 left-0 w-32 h-32 bg-[#EC4899]/10 rounded-full -translate-y-16 -translate-x-16 blur-3xl" />
                     <DialogHeader className="text-start space-y-2 relative z-10 font-sans">
                         <Badge className="bg-[#EC4899] text-white border-none font-bold text-[10px] px-3 py-1 w-fit shadow-md">Statement node</Badge>
@@ -551,7 +563,7 @@ const PayslipsPage = () => {
                                 placeholder="Formal identity..."
                                 value={formData.employeeName}
                                 onChange={e => setFormData({ ...formData, employeeName: e.target.value })}
-                                className="rounded-xl bg-slate-50 border-none h-12 font-medium text-sm px-4"
+                                className="rounded-xl bg-slate-50 border border-slate-200 h-12 font-medium text-sm px-4"
                             />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
@@ -561,7 +573,7 @@ const PayslipsPage = () => {
                                     placeholder="EMPXXX"
                                     value={formData.employeeId}
                                     onChange={e => setFormData({ ...formData, employeeId: e.target.value })}
-                                    className="rounded-xl bg-slate-50 border-none h-12 font-bold text-sm px-4"
+                                    className="rounded-xl bg-slate-50 border border-slate-200 h-12 font-bold text-sm px-4"
                                 />
                             </div>
                             <div className="space-y-2 text-start font-sans">
@@ -570,7 +582,7 @@ const PayslipsPage = () => {
                                     type="number"
                                     value={formData.netAmount}
                                     onChange={e => setFormData({ ...formData, netAmount: e.target.value })}
-                                    className="rounded-xl bg-slate-50 border-none h-12 font-bold text-base px-4 tabular-nums"
+                                    className="rounded-xl bg-slate-50 border border-slate-200 h-12 font-bold text-base px-4 tabular-nums"
                                 />
                             </div>
                         </div>

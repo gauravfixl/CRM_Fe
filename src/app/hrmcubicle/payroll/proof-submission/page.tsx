@@ -257,7 +257,26 @@ const ProofSubmissionPage = () => {
     };
 
     const handleExport = (format: string) => {
-        toast({ title: `Exporting as ${format}`, description: "Download will begin shortly..." });
+        const headers = ["Employee Name", "Employee ID", "Type", "Amount", "Submitted Date", "Status"];
+        const rows = proofs.map(p => [
+            p.employeeName,
+            p.employeeId,
+            p.type,
+            p.amount,
+            p.submittedDate,
+            p.status
+        ]);
+        const csvContent = [headers, ...rows].map(row => row.map(v => `"${v}"`).join(",")).join("\n");
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `proof_submissions_${format.toLowerCase().replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        toast({ title: `Exported as ${format}`, description: `CSV file with ${proofs.length} proof records downloaded.` });
         setIsExportOpen(false);
     };
 
@@ -278,7 +297,7 @@ const ProofSubmissionPage = () => {
                     <Button onClick={() => setIsExportOpen(true)} variant="outline" className="h-10 border-slate-200 rounded-lg font-semibold text-xs gap-2 px-4 hover:bg-slate-50 border-none bg-slate-50/50">
                         <Download size={14} /> Export data
                     </Button>
-                    <Button variant="outline" className="h-10 border-slate-200 rounded-lg font-semibold text-xs gap-2 px-4 hover:bg-slate-50 border-none bg-slate-50/50">
+                    <Button variant="outline" onClick={() => toast({ title: "Batch Import", description: "Prepare a CSV file with columns: Employee Name, Employee ID, Type, Amount, Date. Upload via the form for each entry." })} className="h-10 border-slate-200 rounded-lg font-semibold text-xs gap-2 px-4 hover:bg-slate-50 border-none bg-slate-50/50">
                         <Upload size={14} /> Batch import
                     </Button>
                     <Button onClick={() => handleOpenForm()} className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-lg h-10 px-6 font-bold text-xs shadow-lg shadow-[#8B5CF6]/20 border-none transition-all hover:scale-[1.02]">
@@ -327,7 +346,7 @@ const ProofSubmissionPage = () => {
                                             placeholder="Search employee..."
                                             value={searchQuery}
                                             onChange={(e) => setSearchQuery(e.target.value)}
-                                            className="pl-9 h-9 bg-slate-50 border-none rounded-lg text-xs font-medium"
+                                            className="pl-9 h-9 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium"
                                         />
                                     </div>
                                     <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -471,7 +490,7 @@ const ProofSubmissionPage = () => {
 
             {/* Form Dialog with File Upload */}
             <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-                <DialogContent className="bg-white rounded-3xl border-none p-8 max-w-lg font-sans shadow-2xl overflow-hidden relative fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[100]">
+                <DialogContent className="bg-white rounded-3xl border-2 border-slate-200 p-8 max-w-lg font-sans shadow-2xl overflow-hidden relative fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[100]">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-[#FDDBBB]/10 rounded-full -translate-y-16 translate-x-16 blur-3xl" />
                     <DialogHeader className="space-y-2 relative z-10 font-sans">
                         <Badge className="bg-[#FDDBBB] text-slate-700 border-none font-bold text-[10px] px-3 py-1 w-fit shadow-md">Audit node</Badge>
@@ -486,7 +505,7 @@ const ProofSubmissionPage = () => {
                                 placeholder="Candidate ledger name..."
                                 value={formData.employeeName}
                                 onChange={e => setFormData({ ...formData, employeeName: e.target.value })}
-                                className="rounded-xl bg-slate-50 border-none h-12 font-medium text-sm px-4"
+                                className="rounded-xl bg-slate-50 border border-slate-200 h-12 font-medium text-sm px-4"
                             />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
@@ -496,13 +515,13 @@ const ProofSubmissionPage = () => {
                                     placeholder="EMPXXX"
                                     value={formData.employeeId}
                                     onChange={e => setFormData({ ...formData, employeeId: e.target.value })}
-                                    className="rounded-xl bg-slate-50 border-none h-12 font-bold text-sm px-4"
+                                    className="rounded-xl bg-slate-50 border border-slate-200 h-12 font-bold text-sm px-4"
                                 />
                             </div>
                             <div className="space-y-2">
                                 <Label className="text-[11px] font-semibold text-slate-500 block ml-1 leading-none">Artifact type</Label>
                                 <Select value={formData.type} onValueChange={(v) => setFormData({ ...formData, type: v })}>
-                                    <SelectTrigger className="rounded-xl h-12 bg-slate-50 border-none font-bold text-xs px-4">
+                                    <SelectTrigger className="rounded-xl h-12 bg-slate-50 border border-slate-200 font-bold text-xs px-4">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent className="rounded-xl border-none shadow-2xl p-2 font-sans bg-white z-[200]">
@@ -521,7 +540,7 @@ const ProofSubmissionPage = () => {
                                     type="number"
                                     value={formData.amount}
                                     onChange={e => setFormData({ ...formData, amount: e.target.value })}
-                                    className="rounded-xl bg-slate-50 border-none h-12 font-bold text-base text-slate-900 px-4 tabular-nums"
+                                    className="rounded-xl bg-slate-50 border border-slate-200 h-12 font-bold text-base text-slate-900 px-4 tabular-nums"
                                 />
                                 <p className="text-[10px] font-medium text-slate-400 ml-1 italic">Max: {formatINR(amountLimits[formData.type])}</p>
                             </div>
@@ -531,7 +550,7 @@ const ProofSubmissionPage = () => {
                                     type="date"
                                     value={formData.submittedDate}
                                     onChange={e => setFormData({ ...formData, submittedDate: e.target.value })}
-                                    className="rounded-xl bg-slate-50 border-none h-12 font-semibold text-sm px-4"
+                                    className="rounded-xl bg-slate-50 border border-slate-200 h-12 font-semibold text-sm px-4"
                                 />
                             </div>
                         </div>
@@ -577,7 +596,7 @@ const ProofSubmissionPage = () => {
 
             {/* Approval Comment Dialog */}
             <Dialog open={isApprovalCommentOpen} onOpenChange={setIsApprovalCommentOpen}>
-                <DialogContent className="bg-white rounded-3xl border-none p-8 max-w-lg font-sans shadow-2xl fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[100]">
+                <DialogContent className="bg-white rounded-3xl border-2 border-slate-200 p-8 max-w-lg font-sans shadow-2xl fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[100]">
                     <DialogHeader className="space-y-2 font-sans">
                         <div className="h-12 w-12 bg-emerald-50 rounded-2xl flex items-center justify-center mb-4">
                             <MessageSquare size={24} className="text-emerald-600" />
@@ -592,7 +611,7 @@ const ProofSubmissionPage = () => {
                             placeholder="Enter approval comments or notes..."
                             value={approvalComment}
                             onChange={(e) => setApprovalComment(e.target.value)}
-                            className="min-h-32 rounded-xl bg-slate-50 border-none font-medium text-sm resize-none"
+                            className="min-h-32 rounded-xl bg-slate-50 border border-slate-200 font-medium text-sm resize-none"
                         />
                     </div>
                     <DialogFooter className="flex gap-3 font-sans">
@@ -606,7 +625,7 @@ const ProofSubmissionPage = () => {
 
             {/* Export Dialog */}
             <Dialog open={isExportOpen} onOpenChange={setIsExportOpen}>
-                <DialogContent className="bg-white rounded-3xl border-none p-8 max-w-lg font-sans shadow-2xl fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[100]">
+                <DialogContent className="bg-white rounded-3xl border-2 border-slate-200 p-8 max-w-lg font-sans shadow-2xl fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[100]">
                     <DialogHeader className="space-y-2 font-sans">
                         <div className="h-12 w-12 bg-blue-50 rounded-2xl flex items-center justify-center mb-4">
                             <Download size={24} className="text-blue-600" />
@@ -712,7 +731,7 @@ const ProofSubmissionPage = () => {
                             >
                                 Authorize artifact
                             </Button>
-                            <Button variant="ghost" className="w-full h-10 text-slate-400 font-bold text-xs hover:text-rose-500 transition-all border-none" onClick={() => setIsSheetOpen(false)}>Reject protocol</Button>
+                            <Button variant="ghost" className="w-full h-10 text-slate-400 font-bold text-xs hover:text-rose-500 transition-all border-none" onClick={() => { updateProofStatus(selectedProof.id, 'Rejected'); setIsSheetOpen(false); toast({ title: "Proof Rejected", description: `${selectedProof?.employeeName}'s proof has been rejected.`, variant: "destructive" }); }}>Reject protocol</Button>
                         </div>
                     </div>
                 </SheetContent>

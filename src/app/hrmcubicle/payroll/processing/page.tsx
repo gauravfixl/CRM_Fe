@@ -318,9 +318,9 @@ const SalaryProcessingPage = () => {
                                         <div className="flex gap-2">
                                             <div className="relative w-64">
                                                 <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                                                <Input placeholder="Search employee..." className="pl-9 h-9 bg-slate-50 border-none rounded-lg text-xs font-medium" />
+                                                <Input placeholder="Search employee..." className="pl-9 h-9 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium" />
                                             </div>
-                                            <Button variant="outline" size="sm" className="h-9 rounded-lg border-slate-100 text-slate-500 font-semibold text-[10px]"><Filter size={14} className="mr-2" /> Filter</Button>
+                                            <Button variant="outline" size="sm" className="h-9 rounded-lg border-slate-100 text-slate-500 font-semibold text-[10px]" onClick={() => toast({ title: "Filter", description: "Filter options would appear here." })}><Filter size={14} className="mr-2" /> Filter</Button>
                                         </div>
                                     </div>
                                 </CardHeader>
@@ -443,7 +443,7 @@ const SalaryProcessingPage = () => {
                                             <span>Minimum wage</span>
                                             <span className="text-emerald-500">Compliant</span>
                                         </div>
-                                        <Button className="w-full h-11 bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-xl font-bold text-xs shadow-lg shadow-[#8B5CF6]/20 mt-4 border-none transition-all">Initialize bulk sync</Button>
+                                        <Button className="w-full h-11 bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-xl font-bold text-xs shadow-lg shadow-[#8B5CF6]/20 mt-4 border-none transition-all" onClick={() => toast({ title: "Bulk Sync", description: "Payroll data sync initiated for all employees." })}>Initialize bulk sync</Button>
                                     </div>
                                 </div>
                             </Card>
@@ -500,7 +500,7 @@ const SalaryProcessingPage = () => {
 
             {/* Finalize Dialog */}
             <Dialog open={isFinalizeDialogOpen} onOpenChange={setIsFinalizeDialogOpen}>
-                <DialogContent className="bg-white rounded-3xl border-none p-8 max-w-lg font-sans shadow-2xl fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[100]">
+                <DialogContent className="bg-white rounded-3xl border-2 border-slate-200 p-8 max-w-lg font-sans shadow-2xl fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[100]">
                     <DialogHeader className="space-y-2">
                         <div className="h-12 w-12 bg-emerald-50 rounded-2xl flex items-center justify-center mb-4">
                             <Lock size={24} className="text-emerald-600" />
@@ -543,7 +543,7 @@ const SalaryProcessingPage = () => {
 
             {/* Export Dialog */}
             <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
-                <DialogContent className="bg-white rounded-3xl border-none p-8 max-w-lg font-sans shadow-2xl fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[100]">
+                <DialogContent className="bg-white rounded-3xl border-2 border-slate-200 p-8 max-w-lg font-sans shadow-2xl fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[100]">
                     <DialogHeader className="space-y-2">
                         <div className="h-12 w-12 bg-blue-50 rounded-2xl flex items-center justify-center mb-4">
                             <Download size={24} className="text-blue-600" />
@@ -600,7 +600,7 @@ const SalaryProcessingPage = () => {
                                                 value={selectedEmployee?.fixed}
                                                 onChange={(e) => setSelectedEmployee({ ...selectedEmployee, fixed: parseFloat(e.target.value) })}
                                                 disabled={isFinalized}
-                                                className="h-12 bg-slate-50 border-none rounded-xl font-bold text-xs"
+                                                className="h-12 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs"
                                             />
                                         </div>
                                         <div className="space-y-2">
@@ -610,7 +610,7 @@ const SalaryProcessingPage = () => {
                                                 value={selectedEmployee?.variable}
                                                 onChange={(e) => setSelectedEmployee({ ...selectedEmployee, variable: parseFloat(e.target.value) })}
                                                 disabled={isFinalized}
-                                                className="h-12 bg-slate-50 border-none rounded-xl font-bold text-xs"
+                                                className="h-12 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs"
                                             />
                                         </div>
                                         <div className="space-y-2">
@@ -620,7 +620,7 @@ const SalaryProcessingPage = () => {
                                                 value={selectedEmployee?.ot}
                                                 onChange={(e) => setSelectedEmployee({ ...selectedEmployee, ot: parseFloat(e.target.value) })}
                                                 disabled={isFinalized}
-                                                className="h-12 bg-slate-50 border-none rounded-xl font-bold text-xs"
+                                                className="h-12 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs"
                                             />
                                         </div>
                                     </div>
@@ -634,7 +634,7 @@ const SalaryProcessingPage = () => {
                                             value={selectedEmployee?.lop}
                                             onChange={(e) => setSelectedEmployee({ ...selectedEmployee, lop: parseFloat(e.target.value) })}
                                             disabled={isFinalized}
-                                            className="h-12 bg-slate-50 border-none rounded-xl font-bold text-xs"
+                                            className="h-12 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs"
                                         />
                                     </div>
                                 </div>

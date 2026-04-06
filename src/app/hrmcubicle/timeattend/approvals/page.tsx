@@ -163,7 +163,7 @@ const AttendanceApprovalsPage = () => {
                 </AnimatePresence>
 
                 {/* Main Content Card */}
-                <Card className="border-none shadow-2xl shadow-slate-200/50 rounded-[3rem] bg-white overflow-hidden p-0 relative">
+                <Card className="border-none shadow-2xl shadow-slate-200/50 rounded-none bg-white overflow-hidden p-0 relative">
                     <div className="p-6 border-b border-slate-50 bg-slate-50/50 flex items-center justify-between">
                         <div className="flex items-center gap-4">
                             <Checkbox
@@ -272,7 +272,7 @@ const AttendanceApprovalsPage = () => {
 
                 {/* Audit Trail Dialog */}
                 <Dialog open={isAuditOpen} onOpenChange={setIsAuditOpen}>
-                    <DialogContent className="max-w-2xl rounded-[2.5rem] border-none p-10 bg-white">
+                    <DialogContent className="max-w-2xl rounded-[2.5rem] border-2 border-slate-200 p-10 bg-white">
                         <DialogHeader>
                             <DialogTitle className="text-2xl font-bold flex items-center gap-3">
                                 <History className="text-indigo-500" /> Full Audit Trail: {selectedLog?.empName}
@@ -325,7 +325,7 @@ const AttendanceApprovalsPage = () => {
 
                 {/* Flag Confirmation Dialog */}
                 <Dialog open={isFlagDialogOpen} onOpenChange={setIsFlagDialogOpen}>
-                    <DialogContent className="max-w-md rounded-[2.5rem] border-none p-10 bg-white">
+                    <DialogContent className="max-w-md rounded-[2.5rem] border-2 border-slate-200 p-10 bg-white">
                         <DialogHeader>
                             <DialogTitle className="text-2xl font-bold flex items-center gap-3">
                                 <ShieldAlert className="text-rose-500" /> Flag for Investigation

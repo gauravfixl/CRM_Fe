@@ -151,7 +151,7 @@ const ShiftAllowancePage = () => {
 
                 {/* Analytics */}
                 <div className="grid gap-8 md:grid-cols-3">
-                    <Card className="shadow-2xl shadow-slate-200/50 border-none rounded-[3.5rem] bg-emerald-100 p-12 overflow-hidden relative group">
+                    <Card className="shadow-2xl shadow-slate-200/50 border-none rounded-none bg-emerald-100 p-12 overflow-hidden relative group">
                         <div className="relative z-10">
                             <div className="flex items-center justify-between mb-8">
                                 <p className="text-sm font-extrabold text-slate-400">Gross payout</p>
@@ -172,7 +172,7 @@ const ShiftAllowancePage = () => {
                         <div className="absolute -bottom-10 -right-10 h-48 w-48 bg-emerald-100 rounded-full blur-3xl opacity-40 group-hover:scale-125 transition-transform" />
                     </Card>
 
-                    <Card className="shadow-2xl shadow-slate-200/50 border-none rounded-[3.5rem] bg-purple-100 p-12 overflow-hidden relative group">
+                    <Card className="shadow-2xl shadow-slate-200/50 border-none rounded-none bg-purple-100 p-12 overflow-hidden relative group">
                         <div className="relative z-10">
                             <div className="flex items-center justify-between mb-8">
                                 <p className="text-sm font-extrabold text-slate-400">Staff coverage</p>
@@ -190,7 +190,7 @@ const ShiftAllowancePage = () => {
                         </div>
                     </Card>
 
-                    <Card className="shadow-2xl shadow-slate-200/50 border-none rounded-[3.5rem] bg-amber-100 p-12 overflow-hidden relative">
+                    <Card className="shadow-2xl shadow-slate-200/50 border-none rounded-none bg-amber-100 p-12 overflow-hidden relative">
                         <div className="relative z-10">
                             <div className="flex items-center justify-between mb-8">
                                 <p className="text-sm font-extrabold text-slate-400">System status</p>
@@ -466,7 +466,7 @@ const ShiftAllowancePage = () => {
 
                 {/* Timesheet Insight Modal */}
                 <Dialog open={isTimesheetOpen} onOpenChange={setIsTimesheetOpen}>
-                    <DialogContent className="max-w-3xl rounded-[3rem] border-none p-12 bg-white">
+                    <DialogContent className="max-w-3xl rounded-[3rem] border-2 border-slate-200 p-12 bg-white">
                         <DialogHeader>
                             <DialogTitle className="text-3xl font-bold flex items-center gap-4">
                                 <div className="h-12 w-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-500">

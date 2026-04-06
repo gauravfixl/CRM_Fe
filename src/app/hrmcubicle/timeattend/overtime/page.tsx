@@ -157,7 +157,7 @@ const OvertimeAdminPage = () => {
                 {/* Info Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {stats.cards.map((stat, i) => (
-                        <Card key={i} className={`border-none shadow-lg rounded-[2rem] ${stat.color} p-6 h-28 flex items-center justify-between overflow-hidden relative group transition-all hover:scale-[1.02]`}>
+                        <Card key={i} className={`border-none shadow-lg rounded-none ${stat.color} p-6 h-28 flex items-center justify-between overflow-hidden relative group transition-all hover:scale-[1.02]`}>
                             <div className="relative z-10">
                                 <p className="text-sm font-bold text-slate-900/60 leading-tight mb-1 tracking-tight">{stat.label}</p>
                                 <h3 className="text-3xl font-bold text-slate-900 tracking-tighter leading-none">{stat.value}</h3>
@@ -177,14 +177,14 @@ const OvertimeAdminPage = () => {
                     <div className="relative flex-1 min-w-[300px]">
                         <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300" size={20} />
                         <Input
-                            className="h-14 pl-16 rounded-2xl bg-slate-50 border-none w-full font-bold text-lg placeholder:italic transition-all shadow-inner focus:bg-white focus:ring-2 focus:ring-[#CB9DF0]/20"
+                            className="h-14 pl-16 rounded-2xl bg-slate-50 border border-slate-200 w-full font-bold text-lg placeholder:italic transition-all shadow-inner focus:bg-white focus:ring-2 focus:ring-[#CB9DF0]/20"
                             placeholder="Identify employee or Request ID..."
                             value={searchTerm}
                             onChange={e => setSearchTerm(e.target.value)}
                         />
                     </div>
                     <Select value={filterStatus} onValueChange={setFilterStatus}>
-                        <SelectTrigger className="w-64 h-14 rounded-2xl bg-slate-50 border-none font-bold text-slate-600 px-6">
+                        <SelectTrigger className="w-64 h-14 rounded-2xl bg-slate-50 border border-slate-200 font-bold text-slate-600 px-6">
                             <SelectValue placeholder="Status Filter" />
                         </SelectTrigger>
                         <SelectContent className="rounded-2xl font-bold border-none shadow-2xl">
@@ -297,7 +297,7 @@ const OvertimeAdminPage = () => {
 
                 {/* Bulk Approval Dialog */}
                 <Dialog open={isBulkConfirmOpen} onOpenChange={setIsBulkConfirmOpen}>
-                    <DialogContent className="bg-white rounded-[2.5rem] border-none p-10 max-w-md shadow-2xl">
+                    <DialogContent className="bg-white rounded-[2.5rem] border-2 border-slate-200 p-10 max-w-md shadow-2xl">
                         <DialogHeader>
                             <DialogTitle className="text-2xl font-bold tracking-tight text-slate-900">Mass OT approval</DialogTitle>
                             <DialogDescription className="font-bold text-slate-400 text-sm leading-tight">Authorize all currently pending overtime hours into the payroll cycle?</DialogDescription>

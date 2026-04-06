@@ -130,7 +130,7 @@ export default function SalaryStructurePage() {
                 </div>
                 <div className="flex items-center gap-3">
                     <Button variant="outline" className="h-10 rounded-lg font-bold text-xs gap-2 border-slate-200" onClick={handleExport}><Download size={14} /> Export</Button>
-                    <Button className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-lg h-10 px-5 font-bold text-xs"><Plus size={14} className="mr-1.5" /> New Template</Button>
+                    <Button className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-lg h-10 px-5 font-bold text-xs" onClick={() => toast({ title: "New Template", description: "Salary structure template creation form would open here." })}><Plus size={14} className="mr-1.5" /> New Template</Button>
                 </div>
             </div>
 
@@ -224,7 +224,7 @@ export default function SalaryStructurePage() {
                             <CardContent className="p-0">
                                 <div className="p-5 border-b border-slate-100 flex items-center justify-between">
                                     <h3 className="text-sm font-bold text-slate-900">Salary Components Master List</h3>
-                                    <Button variant="outline" className="h-9 rounded-lg font-bold text-xs gap-2 border-slate-200"><Plus size={14} /> Add Component</Button>
+                                    <Button variant="outline" className="h-9 rounded-lg font-bold text-xs gap-2 border-slate-200" onClick={() => toast({ title: "Add Component", description: "Component creation form would open here." })}><Plus size={14} /> Add Component</Button>
                                 </div>
                                 <Table>
                                     <TableHeader className="bg-slate-50/50">
@@ -270,7 +270,7 @@ export default function SalaryStructurePage() {
 
             {/* Template Detail Dialog */}
             <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-                <DialogContent className="bg-white rounded-2xl border-none p-6 max-w-2xl shadow-2xl max-h-[80vh] overflow-y-auto">
+                <DialogContent className="bg-white rounded-2xl border-2 border-slate-200 p-6 max-w-2xl shadow-2xl max-h-[80vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle className="text-lg font-bold text-slate-900">{viewingTemplate?.name}</DialogTitle>
                         <DialogDescription className="text-xs font-medium text-slate-500">{viewingTemplate?.description}</DialogDescription>

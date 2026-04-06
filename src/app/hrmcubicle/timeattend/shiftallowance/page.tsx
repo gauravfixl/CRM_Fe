@@ -115,14 +115,14 @@ const ShiftAllowancePage: React.FC = () => {
         {mainTab === "Shift Allowance Policy" && (
           <div className="grid grid-cols-12 gap-8 items-start">
             {/* Sidebar */}
-            <Card className="col-span-3 shadow-2xl shadow-slate-200/50 border-none rounded-[2.5rem] bg-white overflow-hidden p-8 h-fit">
+            <Card className="col-span-3 shadow-2xl shadow-slate-200/50 border-none rounded-none bg-white overflow-hidden p-8 h-fit">
               <h2 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-6">
                 Policy list
               </h2>
               <input
                 type="text"
                 placeholder="Search policies..."
-                className="w-full h-12 rounded-xl bg-slate-50 border-none px-6 font-bold text-sm mb-6 placeholder:font-bold focus:ring-2 focus:ring-[#CB9DF0]/20 transition-all"
+                className="w-full h-12 rounded-xl bg-slate-50 border border-slate-200 px-6 font-bold text-sm mb-6 placeholder:font-bold focus:ring-2 focus:ring-[#CB9DF0]/20 transition-all"
               />
               <div className="space-y-2 max-h-[500px] overflow-y-auto pr-2 no-scrollbar">
                 {policies.map((policy) => (

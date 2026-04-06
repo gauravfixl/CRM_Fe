@@ -159,7 +159,7 @@ const LoansPage = () => {
                             </TabsList>
                             <div className="relative w-64 mb-3">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-300" />
-                                <Input placeholder="Search loans..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-9 rounded-lg border-none bg-slate-50 h-8 font-bold text-[10px]" />
+                                <Input placeholder="Search loans..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-9 rounded-lg border border-slate-200 bg-slate-50 h-8 font-bold text-[10px]" />
                             </div>
                         </div>
                         <TabsContent value={activeTab} className="m-0">
@@ -210,7 +210,7 @@ const LoansPage = () => {
 
             {/* Create/Edit Dialog */}
             <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-                <DialogContent className="bg-white rounded-2xl border-none p-6 max-w-lg shadow-2xl">
+                <DialogContent className="bg-white rounded-2xl border-2 border-slate-200 p-6 max-w-lg shadow-2xl">
                     <DialogHeader>
                         <DialogTitle className="text-lg font-bold text-slate-900">{editingId ? "Edit Loan" : "New Loan Request"}</DialogTitle>
                         <DialogDescription className="text-xs font-medium text-slate-500">Fill loan details. EMI is auto-calculated.</DialogDescription>
@@ -243,7 +243,7 @@ const LoansPage = () => {
 
             {/* EMI Schedule Dialog */}
             <Dialog open={isEmiOpen} onOpenChange={setIsEmiOpen}>
-                <DialogContent className="bg-white rounded-2xl border-none p-6 max-w-2xl shadow-2xl max-h-[80vh] overflow-y-auto">
+                <DialogContent className="bg-white rounded-2xl border-2 border-slate-200 p-6 max-w-2xl shadow-2xl max-h-[80vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle className="text-lg font-bold text-slate-900">EMI Schedule — {viewingLoan?.employeeName}</DialogTitle>
                         <DialogDescription className="text-xs font-medium text-slate-500">{viewingLoan?.loanType} • Principal ₹{viewingLoan?.principal.toLocaleString()} • {viewingLoan?.interestRate}% p.a. • {viewingLoan?.tenure} months</DialogDescription>

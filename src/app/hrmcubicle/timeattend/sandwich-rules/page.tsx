@@ -316,7 +316,7 @@ const SandwichRulesPage = () => {
 
       {/* Add Rule Dialog */}
       <Dialog open={addRuleDialog} onOpenChange={setAddRuleDialog}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md border-2 border-slate-200">
           <DialogHeader>
             <DialogTitle>Configure Sandwich Rule</DialogTitle>
             <DialogDescription>Define when intervening days should be counted as leave</DialogDescription>
@@ -349,7 +349,7 @@ const SandwichRulesPage = () => {
 
       {/* Simulation Dialog */}
       <Dialog open={simulationOpen} onOpenChange={setSimulationOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md border-2 border-slate-200">
           <DialogHeader>
             <DialogTitle>Impact Simulation</DialogTitle>
             <DialogDescription>See how sandwich rules affect leave balance for given dates</DialogDescription>

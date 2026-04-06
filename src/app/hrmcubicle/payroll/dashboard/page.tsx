@@ -259,7 +259,7 @@ const PayrollDashboard = () => {
 
             {/* Exceptions Dialog */}
             <Dialog open={isExceptionsOpen} onOpenChange={setIsExceptionsOpen}>
-                <DialogContent className="bg-white rounded-3xl border-none p-8 max-w-lg shadow-2xl">
+                <DialogContent className="bg-white rounded-3xl border-2 border-slate-200 p-8 max-w-lg shadow-2xl">
                     <DialogHeader>
                         <DialogTitle className="text-xl font-bold text-slate-900">Payroll Exceptions</DialogTitle>
                         <DialogDescription className="text-sm font-medium text-slate-500">

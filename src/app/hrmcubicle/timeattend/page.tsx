@@ -39,7 +39,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 const TimeAttendDashboard = () => {
   const router = useRouter();
   const { toast } = useToast();
-  const { logs, clockIn, clockOut } = useAttendanceStore();
+  const { logs, clockIn, clockOut, loadAttendanceFromApi } = useAttendanceStore();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isMounted, setIsMounted] = useState(false);
   const [isManualEntryOpen, setIsManualEntryOpen] = useState(false);
@@ -48,10 +48,13 @@ const TimeAttendDashboard = () => {
     empName: "",
     action: "in"
   });
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterDept, setFilterDept] = useState("All");
 
   // Prevent Hydration Error
   useEffect(() => {
     setIsMounted(true);
+    loadAttendanceFromApi();
   }, []);
 
   // Live Clock
@@ -118,7 +121,7 @@ const TimeAttendDashboard = () => {
                 <UserPlus className="mr-2 h-5 w-5" /> Manual Entry
               </Button>
             </DialogTrigger>
-            <DialogContent className="bg-white rounded-[2rem] border-none p-8">
+            <DialogContent className="bg-white rounded-[2rem] border-2 border-slate-200 p-8">
               <DialogHeader>
                 <DialogTitle>Manual Attendance Entry</DialogTitle>
                 <DialogDescription>Mark attendance for employees who forgot to punch or had biometric issues.</DialogDescription>
@@ -130,7 +133,7 @@ const TimeAttendDashboard = () => {
                     placeholder="e.g. EMP007"
                     value={manualEntry.empId}
                     onChange={e => setManualEntry({ ...manualEntry, empId: e.target.value })}
-                    className="rounded-xl bg-slate-50 border-none h-12"
+                    className="rounded-xl bg-slate-50 border border-slate-200 h-12"
                   />
                 </div>
                 <div className="space-y-2">
@@ -139,13 +142,13 @@ const TimeAttendDashboard = () => {
                     placeholder="e.g. Rahul Verma"
                     value={manualEntry.empName}
                     onChange={e => setManualEntry({ ...manualEntry, empName: e.target.value })}
-                    className="rounded-xl bg-slate-50 border-none h-12"
+                    className="rounded-xl bg-slate-50 border border-slate-200 h-12"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>Action</Label>
                   <Select value={manualEntry.action} onValueChange={v => setManualEntry({ ...manualEntry, action: v })}>
-                    <SelectTrigger className="rounded-xl h-12 bg-slate-50 border-none">
+                    <SelectTrigger className="rounded-xl h-12 bg-slate-50 border border-slate-200">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -163,7 +166,14 @@ const TimeAttendDashboard = () => {
             </DialogContent>
           </Dialog>
 
-          <Button variant="outline" className="rounded-xl h-12 border-slate-200 font-bold text-slate-600 hover:bg-slate-50">
+          <Button variant="outline" className="rounded-xl h-12 border-slate-200 font-bold text-slate-600 hover:bg-slate-50"
+            onClick={() => {
+              const csv = "Employee ID,Name,Department,Status,Time\n" + teamMembers.map(m => `${m.id},${m.name},${m.dept},${m.status},${m.time}`).join("\n");
+              const blob = new Blob([csv], { type: "text/csv" });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a"); a.href = url; a.download = `attendance_${new Date().toISOString().split("T")[0]}.csv`; a.click(); URL.revokeObjectURL(url);
+              toast({ title: "Exported", description: "Attendance data exported as CSV." });
+            }}>
             <Download className="mr-2 h-4 w-4" /> Export
           </Button>
         </div>
@@ -173,7 +183,7 @@ const TimeAttendDashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((stat, i) => (
           <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
-            <Card className={`border-none shadow-lg rounded-[2rem] ${stat.color} p-6 flex items-center gap-4`}>
+            <Card className={`border-none shadow-lg rounded-none ${stat.color} p-6 flex items-center gap-4`}>
               <div className="h-14 w-14 bg-white/30 rounded-2xl flex items-center justify-center backdrop-blur-sm shadow-sm">
                 {stat.icon}
               </div>
@@ -196,16 +206,27 @@ const TimeAttendDashboard = () => {
           <div className="flex gap-3">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-              <Input placeholder="Search employee..." className="pl-10 rounded-xl bg-slate-50 border-none h-10 w-64" />
+              <Input placeholder="Search employee..." className="pl-10 rounded-xl bg-slate-50 border border-slate-200 h-10 w-64" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
             </div>
-            <Button variant="outline" size="icon" className="rounded-xl border-slate-200">
-              <Filter size={18} />
-            </Button>
+            <Select value={filterDept} onValueChange={setFilterDept}>
+              <SelectTrigger className="rounded-xl border-slate-200 h-10 w-40">
+                <Filter size={14} className="mr-2" /><SelectValue placeholder="All Depts" />
+              </SelectTrigger>
+              <SelectContent>
+                {["All", ...Array.from(new Set(teamMembers.map(m => m.dept)))].map(d => (
+                  <SelectItem key={d} value={d}>{d}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {teamMembers.map((member) => (
+          {teamMembers.filter(m => {
+            const matchesSearch = m.name.toLowerCase().includes(searchTerm.toLowerCase()) || m.id.toLowerCase().includes(searchTerm.toLowerCase());
+            const matchesDept = filterDept === "All" || m.dept === filterDept;
+            return matchesSearch && matchesDept;
+          }).map((member) => (
             <div key={member.id} className="p-4 border border-slate-100 rounded-[1.5rem] hover:shadow-md transition-all bg-white group">
               <div className="flex items-center gap-4">
                 <Avatar className={`h-12 w-12 font-bold ${member.status === 'In' ? 'bg-emerald-100 text-emerald-700' :
@@ -309,9 +330,9 @@ const TimeAttendDashboard = () => {
         <Card className="border-none shadow-xl shadow-slate-200/50 rounded-[2.5rem] bg-white p-8">
           <h3 className="font-black text-xl text-slate-900 mb-6">Pending Actions</h3>
           <div className="space-y-3">
-            <ActionItem icon={<AlertTriangle className="text-amber-500" />} title="3 Regularization Requests" action="Review" />
-            <ActionItem icon={<Clock className="text-indigo-500" />} title="5 Late Punch-ins Today" action="View" />
-            <ActionItem icon={<CheckCircle2 className="text-emerald-500" />} title="Weekly Report Ready" action="Download" />
+            <ActionItem icon={<AlertTriangle className="text-amber-500" />} title="3 Regularization Requests" action="Review" onClick={() => router.push("/hrmcubicle/timeattend/approvals")} />
+            <ActionItem icon={<Clock className="text-indigo-500" />} title="5 Late Punch-ins Today" action="View" onClick={() => router.push("/hrmcubicle/timeattend/attendance")} />
+            <ActionItem icon={<CheckCircle2 className="text-emerald-500" />} title="Weekly Report Ready" action="Download" onClick={() => router.push("/hrmcubicle/timeattend/reports")} />
           </div>
         </Card>
       </div>
@@ -333,16 +354,16 @@ function DeptBar({ name, rate, color }: any) {
   );
 }
 
-function ActionItem({ icon, title, action }: any) {
+function ActionItem({ icon, title, action, onClick }: any) {
   return (
-    <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl hover:bg-slate-100 transition-colors cursor-pointer group">
+    <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl hover:bg-slate-100 transition-colors cursor-pointer group" onClick={onClick}>
       <div className="flex items-center gap-3">
         <div className="h-10 w-10 bg-white rounded-xl flex items-center justify-center shadow-sm">
           {icon}
         </div>
         <span className="font-bold text-slate-900 text-sm">{title}</span>
       </div>
-      <Button variant="ghost" size="sm" className="text-indigo-600 font-bold group-hover:bg-indigo-50">
+      <Button variant="ghost" size="sm" className="text-indigo-600 font-bold group-hover:bg-indigo-50" onClick={onClick}>
         {action}
       </Button>
     </div>

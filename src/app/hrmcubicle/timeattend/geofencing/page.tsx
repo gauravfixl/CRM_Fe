@@ -368,7 +368,7 @@ const GeoFencingPage = () => {
 
       {/* Add/Edit Zone Dialog */}
       <Dialog open={zoneDialog} onOpenChange={setZoneDialog}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md border-2 border-slate-200">
           <DialogHeader>
             <DialogTitle>{editZone ? "Edit Zone" : "Add Geo-fence Zone"}</DialogTitle>
             <DialogDescription>Configure a new location zone for attendance tracking</DialogDescription>
@@ -415,7 +415,7 @@ const GeoFencingPage = () => {
 
       {/* Policy Dialog */}
       <Dialog open={policyDialog} onOpenChange={setPolicyDialog}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md border-2 border-slate-200">
           <DialogHeader>
             <DialogTitle>Attendance Policy Configuration</DialogTitle>
             <DialogDescription>Configure geo-fencing rules for attendance</DialogDescription>

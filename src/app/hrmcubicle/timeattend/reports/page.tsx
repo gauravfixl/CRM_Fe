@@ -120,13 +120,34 @@ const TimeAttendReportsPage = () => {
     };
 
     const handleExportAll = () => {
-        toast({ title: "Bulk Export", description: "Zipping all reports across modules..." });
-        setTimeout(() => {
-            const link = document.createElement("a");
-            link.href = "#"; // Simulation
-            link.download = "All_Reports_Bundle.zip";
-            link.click();
-        }, 2000);
+        toast({ title: "Bulk Export", description: "Generating CSV with all report data..." });
+
+        const allReports = [
+            ...reports.attendance,
+            ...reports.leave,
+            ...reports.ot,
+            ...reports.shift,
+        ];
+
+        const headers = ["Report ID", "Name", "Type", "Frequency", "Last Generated"];
+        const rows = allReports.map(r => [r.id, r.name, r.type, r.frequency, r.lastGenerated].join(","));
+        const csvContent = [headers.join(","), ...rows].join("\n");
+
+        const blob = new Blob([csvContent], { type: "text/csv" });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `All_Reports_Export_${new Date().toISOString().split("T")[0]}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+
+        toast({
+            title: "Export Complete",
+            description: `${allReports.length} reports exported as CSV.`,
+            className: "bg-emerald-50 border-emerald-100 text-emerald-800"
+        });
     };
 
     return (
@@ -152,7 +173,7 @@ const TimeAttendReportsPage = () => {
                 {/* KPI Cards Section */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
                     {/* Attendance KPI */}
-                    <Card className="border-none shadow-2xl shadow-emerald-100 bg-emerald-50 rounded-[2.5rem] p-8 relative overflow-hidden group hover:scale-[1.02] transition-all cursor-pointer">
+                    <Card className="border-none shadow-2xl shadow-emerald-100 bg-emerald-50 rounded-none p-8 relative overflow-hidden group hover:scale-[1.02] transition-all cursor-pointer">
                         <div className="relative z-10 flex flex-col justify-between h-full space-y-6">
                             <div className="flex items-center justify-between">
                                 <div className="h-14 w-14 bg-white rounded-2xl flex items-center justify-center text-emerald-500 shadow-sm">
@@ -169,7 +190,7 @@ const TimeAttendReportsPage = () => {
                     </Card>
 
                     {/* Overtime KPI */}
-                    <Card className="border-none shadow-2xl shadow-indigo-100 bg-indigo-50 rounded-[2.5rem] p-8 relative overflow-hidden group hover:scale-[1.02] transition-all cursor-pointer">
+                    <Card className="border-none shadow-2xl shadow-indigo-100 bg-indigo-50 rounded-none p-8 relative overflow-hidden group hover:scale-[1.02] transition-all cursor-pointer">
                         <div className="relative z-10 flex flex-col justify-between h-full space-y-6">
                             <div className="flex items-center justify-between">
                                 <div className="h-14 w-14 bg-white rounded-2xl flex items-center justify-center text-indigo-500 shadow-sm">
@@ -186,7 +207,7 @@ const TimeAttendReportsPage = () => {
                     </Card>
 
                     {/* Leaves KPI */}
-                    <Card className="border-none shadow-2xl shadow-rose-100 bg-rose-50 rounded-[2.5rem] p-8 relative overflow-hidden group hover:scale-[1.02] transition-all cursor-pointer">
+                    <Card className="border-none shadow-2xl shadow-rose-100 bg-rose-50 rounded-none p-8 relative overflow-hidden group hover:scale-[1.02] transition-all cursor-pointer">
                         <div className="relative z-10 flex flex-col justify-between h-full space-y-6">
                             <div className="flex items-center justify-between">
                                 <div className="h-14 w-14 bg-white rounded-2xl flex items-center justify-center text-rose-500 shadow-sm">
@@ -203,7 +224,7 @@ const TimeAttendReportsPage = () => {
                     </Card>
 
                     {/* Late Coming KPI */}
-                    <Card className="border-none shadow-2xl shadow-amber-100 bg-amber-50 rounded-[2.5rem] p-8 relative overflow-hidden group hover:scale-[1.02] transition-all cursor-pointer">
+                    <Card className="border-none shadow-2xl shadow-amber-100 bg-amber-50 rounded-none p-8 relative overflow-hidden group hover:scale-[1.02] transition-all cursor-pointer">
                         <div className="relative z-10 flex flex-col justify-between h-full space-y-6">
                             <div className="flex items-center justify-between">
                                 <div className="h-14 w-14 bg-white rounded-2xl flex items-center justify-center text-amber-500 shadow-sm">
@@ -355,7 +376,7 @@ const TimeAttendReportsPage = () => {
 
             {/* Report Detail Dialog */}
             <Dialog open={isReportDetailOpen} onOpenChange={setIsReportDetailOpen}>
-                <DialogContent className="sm:max-w-[550px] rounded-3xl p-8 bg-white border-none shadow-2xl">
+                <DialogContent className="sm:max-w-[550px] rounded-3xl p-8 bg-white border-2 border-slate-200 shadow-2xl">
                     <DialogHeader>
                         <DialogTitle className="text-2xl font-bold text-slate-900">{selectedReport?.name}</DialogTitle>
                         <DialogDescription className="font-semibold text-slate-500">
@@ -399,7 +420,7 @@ const TimeAttendReportsPage = () => {
 
             {/* Custom Report Dialog */}
             <Dialog open={isCustomReportOpen} onOpenChange={setIsCustomReportOpen}>
-                <DialogContent className="sm:max-w-[425px] rounded-3xl p-8 bg-white border-none shadow-2xl">
+                <DialogContent className="sm:max-w-[425px] rounded-3xl p-8 bg-white border-2 border-slate-200 shadow-2xl">
                     <DialogHeader>
                         <DialogTitle className="text-2xl font-bold text-slate-900">Custom Report Builder</DialogTitle>
                         <DialogDescription className="font-semibold text-slate-500">
@@ -413,7 +434,7 @@ const TimeAttendReportsPage = () => {
                                 <SelectTrigger className="w-full h-12 rounded-xl bg-slate-50 border-slate-200 font-bold text-slate-600">
                                     <SelectValue placeholder="Select type" />
                                 </SelectTrigger>
-                                <SelectContent className="rounded-xl border-none shadow-xl font-bold">
+                                <SelectContent className="rounded-xl border border-slate-200 shadow-xl font-bold">
                                     <SelectItem value="summary">Attendance Summary</SelectItem>
                                     <SelectItem value="detailed">Detailed Logs</SelectItem>
                                     <SelectItem value="exception">Exception Report</SelectItem>
@@ -429,7 +450,30 @@ const TimeAttendReportsPage = () => {
                         </div>
                     </div>
                     <DialogFooter>
-                        <Button className="w-full h-12 rounded-xl bg-[#6366f1] hover:bg-[#5558e6] font-bold text-lg shadow-lg shadow-indigo-200" onClick={() => { setIsCustomReportOpen(false); toast({ title: "Report Queued", description: "Your custom report is being generated." }); }}>
+                        <Button className="w-full h-12 rounded-xl bg-[#6366f1] hover:bg-[#5558e6] font-bold text-lg shadow-lg shadow-indigo-200" onClick={() => {
+                            setIsCustomReportOpen(false);
+
+                            const headers = ["Department", "Attendance Rate", "Late Count", "Overtime Hours", "Leave Days", "Status"];
+                            const rows = [
+                                ["Engineering", "94%", "3", "18h", "4", "Good"],
+                                ["Sales", "88%", "7", "12h", "6", "Needs Attention"],
+                                ["Operations", "91%", "5", "22h", "3", "Good"],
+                                ["HR", "97%", "1", "8h", "2", "Excellent"],
+                            ];
+                            const csvContent = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+
+                            const blob = new Blob([csvContent], { type: "text/csv" });
+                            const url = window.URL.createObjectURL(blob);
+                            const link = document.createElement("a");
+                            link.href = url;
+                            link.download = `Custom_Report_${new Date().toISOString().split("T")[0]}.csv`;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                            window.URL.revokeObjectURL(url);
+
+                            toast({ title: "Report Generated", description: "Your custom report has been downloaded.", className: "bg-emerald-50 border-emerald-100 text-emerald-800" });
+                        }}>
                             Generate Report
                         </Button>
                     </DialogFooter>

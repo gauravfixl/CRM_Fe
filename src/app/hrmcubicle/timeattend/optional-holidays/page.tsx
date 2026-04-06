@@ -194,12 +194,12 @@ const OptionalHolidaysPage = () => {
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {[
-          { label: "Mandatory Holidays", value: mandatoryHolidays.length, icon: Globe, color: "text-red-700", bg: "bg-red-100", cardBg: "bg-red-50 border-red-200" },
-          { label: "Optional Holidays", value: optionalHolidays.length, icon: CalendarDays, color: "text-blue-700", bg: "bg-blue-100", cardBg: "bg-blue-50 border-blue-200" },
-          { label: "Floating Holidays", value: floatingHolidays.length, icon: Gift, color: "text-purple-700", bg: "bg-purple-100", cardBg: "bg-purple-50 border-purple-200" },
-          { label: "Utilization Rate", value: `${totalUtilization}%`, icon: TrendingUp, color: "text-green-700", bg: "bg-green-100", cardBg: "bg-green-50 border-green-200" },
+          { label: "Mandatory Holidays", value: mandatoryHolidays.length, icon: Globe, color: "text-slate-800", bg: "bg-white/30", cardBg: "bg-[#F0C1E1]" },
+          { label: "Optional Holidays", value: optionalHolidays.length, icon: CalendarDays, color: "text-slate-800", bg: "bg-white/30", cardBg: "bg-[#CB9DF0]" },
+          { label: "Floating Holidays", value: floatingHolidays.length, icon: Gift, color: "text-slate-800", bg: "bg-white/30", cardBg: "bg-[#FFF9BF]" },
+          { label: "Utilization Rate", value: `${totalUtilization}%`, icon: TrendingUp, color: "text-slate-800", bg: "bg-white/30", cardBg: "bg-[#FDDBBB]" },
         ].map((s) => (
-          <Card key={s.label} className={cn("rounded-2xl border shadow-sm", s.cardBg)}>
+          <Card key={s.label} className={cn("rounded-none border-none shadow-sm", s.cardBg)}>
             <CardContent className="p-5 flex items-center gap-4">
               <div className={cn("w-11 h-11 rounded-xl flex items-center justify-center", s.bg)}>
                 <s.icon className={cn("w-5 h-5", s.color)} />
@@ -397,7 +397,7 @@ const OptionalHolidaysPage = () => {
 
       {/* Add Holiday Dialog */}
       <Dialog open={addHolidayDialog} onOpenChange={setAddHolidayDialog}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md border-2 border-slate-200">
           <DialogHeader>
             <DialogTitle>Add Holiday</DialogTitle>
             <DialogDescription>Add a new holiday to the optional list</DialogDescription>
@@ -438,7 +438,7 @@ const OptionalHolidaysPage = () => {
 
       {/* Request Holiday Dialog */}
       <Dialog open={requestDialog} onOpenChange={setRequestDialog}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md border-2 border-slate-200">
           <DialogHeader>
             <DialogTitle>Request Optional Holiday</DialogTitle>
             <DialogDescription>Select an optional holiday to add to your selections</DialogDescription>
@@ -465,7 +465,7 @@ const OptionalHolidaysPage = () => {
 
       {/* Config Dialog */}
       <Dialog open={configDialog} onOpenChange={setConfigDialog}>
-        <DialogContent className="sm:max-w-sm">
+        <DialogContent className="sm:max-w-sm border-2 border-slate-200">
           <DialogHeader>
             <DialogTitle>Holiday Configuration</DialogTitle>
             <DialogDescription>Set max optional holidays per employee</DialogDescription>
