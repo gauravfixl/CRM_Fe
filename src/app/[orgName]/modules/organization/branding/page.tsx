@@ -51,8 +51,21 @@ export default function OrgBrandingPage() {
     }, [storeLogoUrl, storeLoginLogoUrl, storeOrgName])
 
     const handleApplyChanges = () => {
+        const trimmedName = orgName.trim();
+        if (!trimmedName) {
+            toast.error("Organization name is required");
+            return;
+        }
+
+        // Allow Alphanumeric, spaces, and basic symbols useful for names (&, -, .)
+        const nameRegex = /^[a-zA-Z0-9\s&\-\.]+$/;
+        if (!nameRegex.test(trimmedName)) {
+            toast.error("Organization name contains invalid characters");
+            return;
+        }
+
         setBranding({
-            orgName,
+            orgName: trimmedName,
             logoUrl,
             loginLogoUrl
         })

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { Switch } from "@/shared/components/ui/switch";
-import { showSuccess } from "@/utils/toast";
+import { showSuccess, showWarning } from "@/utils/toast";
 
 export default function PasswordPoliciesPage() {
     const [isSaving, setIsSaving] = useState(false);
@@ -22,6 +22,25 @@ export default function PasswordPoliciesPage() {
     });
 
     const handleSave = () => {
+        const minLen = parseInt(policies.minLength);
+        const expDays = parseInt(policies.expirationDays);
+        const histCheck = parseInt(policies.historyCheck);
+
+        if (isNaN(minLen) || minLen < 8 || minLen > 64) {
+            showWarning("Minimum length must be between 8 and 64 characters");
+            return;
+        }
+
+        if (isNaN(expDays) || expDays < 0 || expDays > 365) {
+            showWarning("Expiration days must be between 0 and 365");
+            return;
+        }
+
+        if (isNaN(histCheck) || histCheck < 0 || histCheck > 20) {
+            showWarning("History check must be between 0 and 20");
+            return;
+        }
+
         setIsSaving(true);
         setTimeout(() => {
             setIsSaving(false);

@@ -76,30 +76,43 @@ export default function PaymentsPage() {
     };
 
     const handleAddCard = () => {
-        if (!formHolder.trim() || !formNumber.trim() || !formExpiry.trim() || !formCvv.trim()) {
+        const trimmedHolder = formHolder.trim();
+        const trimmedNumber = formNumber.replace(/\s/g, "");
+        const trimmedExpiry = formExpiry.trim();
+        const trimmedCvv = formCvv.trim();
+
+        if (!trimmedHolder || !trimmedNumber || !trimmedExpiry || !trimmedCvv) {
             showWarning("Please fill in all fields");
             return;
         }
-        if (formNumber.replace(/\s/g, "").length < 16) {
-            showWarning("Please enter a valid card number");
-            return;
-        }
-        if (!/^\d{2}\/\d{2}$/.test(formExpiry.trim())) {
-            showWarning("Please enter expiry in MM/YY format");
-            return;
-        }
-        if (formCvv.trim().length < 3) {
-            showWarning("Please enter a valid CVV");
+
+        if (/\d/.test(trimmedHolder)) {
+            showWarning("Cardholder name should not contain numbers");
             return;
         }
 
-        const last4 = formNumber.replace(/\s/g, "").slice(-4);
+        if (!/^\d{16}$/.test(trimmedNumber)) {
+            showWarning("Please enter a valid 16-digit card number");
+            return;
+        }
+
+        if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(trimmedExpiry)) {
+            showWarning("Please enter expiry in MM/YY format (e.g., 12/26)");
+            return;
+        }
+
+        if (!/^\d{3,4}$/.test(trimmedCvv)) {
+            showWarning("Please enter a valid 3 or 4 digit CVV");
+            return;
+        }
+
+        const last4 = trimmedNumber.slice(-4);
         const newMethod: PaymentMethod = {
             id: Date.now().toString(),
             type: "Visa",
             last4,
-            expiry: formExpiry.trim(),
-            holder: formHolder.trim(),
+            expiry: trimmedExpiry,
+            holder: trimmedHolder,
             isPrimary: paymentMethods.length === 0,
         };
         setPaymentMethods((prev) => [...prev, newMethod]);

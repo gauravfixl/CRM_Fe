@@ -136,6 +136,13 @@ export default function EditRolePage() {
       return
     }
 
+    // Name validation (no numbers)
+    const nameRegex = /^[a-zA-Z\s]+$/;
+    if (!nameRegex.test(formData.name.trim())) {
+      toast.error("Role name should not contain numbers or special characters")
+      return
+    }
+
     setIsSubmitting(true)
     try {
       const payload = {

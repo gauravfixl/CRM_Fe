@@ -81,13 +81,40 @@ export default function TaxConfigPage() {
     };
 
     const handleCreateTax = async () => {
+        if (!newTax.name.trim()) {
+            toast.error("Tax name is required");
+            return;
+        }
+
+        const nameRegex = /^[a-zA-Z\s]+$/;
+        if (!nameRegex.test(newTax.name.trim())) {
+            toast.error("Tax name should not contain numbers or special characters");
+            return;
+        }
+
+        if (!newTax.type) {
+            toast.error("Tax type is required");
+            return;
+        }
+
+        const rate = parseFloat(newTax.rate);
+        if (isNaN(rate) || rate < 0) {
+            toast.error("Please enter a valid positive tax rate");
+            return;
+        }
+
+        if (newTax.scope !== "global" && !newTax.regions.trim()) {
+            toast.error("Regions are required for firm-specific scope");
+            return;
+        }
+
         try {
             setCreateLoading(true);
             await addGlobalTax({
                 name: newTax.name,
                 taxName: newTax.name,
                 type: newTax.type,
-                rate: parseFloat(newTax.rate) || 0,
+                rate: rate,
                 region: newTax.regions,
                 description: newTax.description,
             });

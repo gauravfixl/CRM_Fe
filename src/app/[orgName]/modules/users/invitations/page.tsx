@@ -120,8 +120,15 @@ export default function InvitationsPage() {
     const acceptanceRate = totalSent > 0 ? Math.round((accepted / totalSent) * 100) : 0;
 
     const handleCreate = async () => {
-        if (!newEmail || !newRole) {
+        if (!newEmail.trim() || !newRole) {
             showWarning("Please fill in all fields");
+            return;
+        }
+
+        // Email validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(newEmail.trim())) {
+            showWarning("Please enter a valid email address");
             return;
         }
         try {

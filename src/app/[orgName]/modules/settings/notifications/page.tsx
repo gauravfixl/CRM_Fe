@@ -172,20 +172,27 @@ export default function NotificationRulesPage() {
 
     const handleCreate = () => {
         const errors: FormErrors = {};
-        if (!newRule.name.trim()) errors.name = "Rule name is required";
+        const sanitizedName = newRule.name.trim();
+
+        if (!sanitizedName) {
+            errors.name = "Rule name is required";
+        } else if (/\d/.test(sanitizedName)) {
+            errors.name = "Rule name cannot contain numbers";
+        }
+
         if (!newRule.trigger) errors.trigger = "Trigger event is required";
         if (newRule.channels.length === 0) errors.channels = "At least one channel is required";
         if (!newRule.recipients) errors.recipients = "Recipients is required";
 
         setFormErrors(errors);
         if (Object.keys(errors).length > 0) {
-            showWarning("Please fill in all required fields");
+            showWarning(errors.name || "Please fill in all required fields");
             return;
         }
 
         const rule: NotificationRule = {
             id: Date.now().toString(),
-            name: newRule.name.trim(),
+            name: sanitizedName,
             trigger: getTriggerLabel(newRule.trigger),
             channels: [...newRule.channels],
             recipients: getRecipientLabel(newRule.recipients),
@@ -213,14 +220,21 @@ export default function NotificationRulesPage() {
 
     const handleEdit = () => {
         const errors: FormErrors = {};
-        if (!editRule.name.trim()) errors.name = "Rule name is required";
+        const sanitizedName = editRule.name.trim();
+
+        if (!sanitizedName) {
+            errors.name = "Rule name is required";
+        } else if (/\d/.test(sanitizedName)) {
+            errors.name = "Rule name cannot contain numbers";
+        }
+
         if (!editRule.trigger) errors.trigger = "Trigger event is required";
         if (editRule.channels.length === 0) errors.channels = "At least one channel is required";
         if (!editRule.recipients) errors.recipients = "Recipients is required";
 
         setEditFormErrors(errors);
         if (Object.keys(errors).length > 0) {
-            showWarning("Please fill in all required fields");
+            showWarning(errors.name || "Please fill in all required fields");
             return;
         }
 
@@ -229,7 +243,7 @@ export default function NotificationRulesPage() {
                 rule.id === editRule.id
                     ? {
                           ...rule,
-                          name: editRule.name.trim(),
+                          name: sanitizedName,
                           trigger: getTriggerLabel(editRule.trigger),
                           channels: [...editRule.channels],
                           recipients: getRecipientLabel(editRule.recipients),
@@ -239,7 +253,7 @@ export default function NotificationRulesPage() {
         );
         setShowEditModal(false);
         setEditFormErrors({});
-        showSuccess(`Rule "${editRule.name}" updated successfully`);
+        showSuccess(`Rule "${sanitizedName}" updated successfully`);
     };
 
     const testNotification = (rule: NotificationRule) => {

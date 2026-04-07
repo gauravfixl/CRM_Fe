@@ -88,20 +88,54 @@ export default function EntitlementAddLeadPage() {
 
   const validateStep = (currentStep: number) => {
     const newErrors: Record<string, string> = {};
+    const nameRegex = /^[a-zA-Z\s]+$/;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     if (currentStep === 1) {
       if (!formData.title.trim()) newErrors.title = "Lead title is required";
       if (!formData.firm) newErrors.firm = "Please select a firm";
-      if (!formData.contact.name.trim()) newErrors.contactName = "Contact name is required";
-      if (!formData.contact.email.trim()) newErrors.contactEmail = "Valid email is required";
+      
+      const contactName = formData.contact.name.trim();
+      if (!contactName) {
+        newErrors.contactName = "Contact name is required";
+      } else if (!nameRegex.test(contactName)) {
+        newErrors.contactName = "Contact name should not contain numbers or special characters";
+      }
+
+      const contactEmail = formData.contact.email.trim();
+      if (!contactEmail) {
+        newErrors.contactEmail = "Valid email is required";
+      } else if (!emailRegex.test(contactEmail)) {
+        newErrors.contactEmail = "Please enter a valid email address";
+      }
+
       if (!formData.contact.source) newErrors.source = "Lead source is required";
     }
 
     if (currentStep === 2) {
       const { client } = formData.contact;
-      if (!client.firstName.trim()) newErrors.firstName = "First name is required";
-      if (!client.lastName.trim()) newErrors.lastName = "Last name is required";
-      if (!client.email.trim()) newErrors.clientEmail = "Client email is required";
+      
+      const fName = client.firstName.trim();
+      if (!fName) {
+        newErrors.firstName = "First name is required";
+      } else if (!nameRegex.test(fName)) {
+        newErrors.firstName = "First name should not contain numbers";
+      }
+
+      const lName = client.lastName.trim();
+      if (!lName) {
+        newErrors.lastName = "Last name is required";
+      } else if (!nameRegex.test(lName)) {
+        newErrors.lastName = "Last name should not contain numbers";
+      }
+
+      const cEmail = client.email.trim();
+      if (!cEmail) {
+        newErrors.clientEmail = "Client email is required";
+      } else if (!emailRegex.test(cEmail)) {
+        newErrors.clientEmail = "Please enter a valid email address";
+      }
+
       if (!client.phone.trim()) newErrors.phone = "Phone number is required";
       if (!client.address.country.trim()) newErrors.country = "Country is required";
     }

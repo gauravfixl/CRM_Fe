@@ -64,10 +64,25 @@ export function DynamicRuleModal({ open, onOpenChange, onRuleCreated }: DynamicR
             toast.error("Rule name is required")
             return
         }
+
+        // Name validation (no numbers)
+        const nameRegex = /^[a-zA-Z\s]+$/;
+        if (!nameRegex.test(ruleName.trim())) {
+            toast.error("Rule name should not contain numbers or special characters")
+            return
+        }
+
         if (!targetGroup.trim()) {
             toast.error("Target group is required")
             return
         }
+
+        // Target group validation (no numbers)
+        if (!nameRegex.test(targetGroup.trim())) {
+            toast.error("Target group name should not contain numbers or special characters")
+            return
+        }
+
         if (conditions.some(c => !c.value.trim())) {
             toast.error("All condition values must be filled")
             return

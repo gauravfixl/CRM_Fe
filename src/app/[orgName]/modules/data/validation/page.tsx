@@ -94,14 +94,25 @@ export default function ValidationRulesPage() {
     };
 
     const handleCreate = () => {
-        if (!createForm.name || !createForm.field || !createForm.module || !createForm.type) {
+        const sanitizedName = createForm.name.trim();
+        const sanitizedField = createForm.field.trim();
+        
+        if (!sanitizedName || !sanitizedField || !createForm.module || !createForm.type) {
             toast.error("Please fill in all required fields");
+            return;
+        }
+        if (/\d/.test(sanitizedName)) {
+            toast.error("Rule name cannot contain numbers");
+            return;
+        }
+        if (/\d/.test(sanitizedField)) {
+            toast.error("Field name cannot contain numbers");
             return;
         }
         const newRule: ValidationRule = {
             id: Date.now().toString(),
-            name: createForm.name,
-            field: createForm.field,
+            name: sanitizedName,
+            field: sanitizedField,
             module: createForm.module,
             type: createForm.type,
             status: "Active",
@@ -125,8 +136,19 @@ export default function ValidationRulesPage() {
     };
 
     const handleEdit = () => {
-        if (!editForm.name || !editForm.field || !editForm.module || !editForm.type) {
+        const sanitizedName = editForm.name.trim();
+        const sanitizedField = editForm.field.trim();
+
+        if (!sanitizedName || !sanitizedField || !editForm.module || !editForm.type) {
             toast.error("Please fill in all required fields");
+            return;
+        }
+        if (/\d/.test(sanitizedName)) {
+            toast.error("Rule name cannot contain numbers");
+            return;
+        }
+        if (/\d/.test(sanitizedField)) {
+            toast.error("Field name cannot contain numbers");
             return;
         }
         if (!editItem) return;

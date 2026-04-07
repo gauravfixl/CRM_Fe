@@ -93,13 +93,18 @@ export default function RetentionRulesPage() {
     };
 
     const handleCreate = () => {
-        if (!createForm.name || !createForm.dataType || !createForm.retention || !createForm.action) {
+        const sanitizedName = createForm.name.trim();
+        if (!sanitizedName || !createForm.dataType || !createForm.retention || !createForm.action) {
             toast.error("Please fill in all required fields");
+            return;
+        }
+        if (/\d/.test(sanitizedName)) {
+            toast.error("Rule name cannot contain numbers");
             return;
         }
         const newRule: RetentionRule = {
             id: Date.now().toString(),
-            name: createForm.name,
+            name: sanitizedName,
             dataType: createForm.dataType,
             retention: createForm.retention,
             action: createForm.action,
@@ -124,8 +129,13 @@ export default function RetentionRulesPage() {
     };
 
     const handleEdit = () => {
-        if (!editForm.name || !editForm.dataType || !editForm.retention || !editForm.action) {
+        const sanitizedName = editForm.name.trim();
+        if (!sanitizedName || !editForm.dataType || !editForm.retention || !editForm.action) {
             toast.error("Please fill in all required fields");
+            return;
+        }
+        if (/\d/.test(sanitizedName)) {
+            toast.error("Rule name cannot contain numbers");
             return;
         }
         if (!editItem) return;
