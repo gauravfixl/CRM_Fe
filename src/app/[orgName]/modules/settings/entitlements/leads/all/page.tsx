@@ -209,7 +209,7 @@ export default function MasterLeadViewPage() {
                             Refresh
                         </Button>
                         <Button
-                            onClick={() => router.push(`/${params.orgName}/modules/crm/leads/add`)}
+                            onClick={() => router.push(`/${params.orgName}/modules/settings/entitlements/leads/add`)}
                             className="h-8 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium px-3 shadow-sm active:scale-95"
                         >
                             <UserPlus className="w-3.5 h-3.5 mr-2" />

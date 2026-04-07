@@ -86,8 +86,21 @@ export function AppLayout({ children, leftPanel: propLeftPanel, rightPanel: prop
   }, [])
 
   // Redirect unauthenticated users to signin (only after hydration completes)
+  // Also handle cookie/store desync: if Zustand says authenticated but cookie is missing,
+  // clear the stale state and redirect to signin.
   useEffect(() => {
-    if (hydrated && !isAuthRoute && !isPublicRoute && !isAuthenticated) {
+    if (!hydrated) return
+    if (isAuthRoute || isPublicRoute) return
+
+    if (!isAuthenticated) {
+      router.replace('/auth/signin')
+      return
+    }
+
+    // Check if orgToken cookie exists - if not, Zustand state is stale
+    const hasCookie = document.cookie.split(';').some(c => c.trim().startsWith('orgToken='))
+    if (!hasCookie) {
+      useAuthStore.getState().logout()
       router.replace('/auth/signin')
     }
   }, [hydrated, isAuthenticated, isAuthRoute, isPublicRoute, pathname, router])
