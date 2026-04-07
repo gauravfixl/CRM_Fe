@@ -85,6 +85,7 @@ export function middleware(request: NextRequest) {
   const isStaticOrApi =
     pathname.startsWith("/_next") ||
     pathname.startsWith("/api") ||
+    pathname.startsWith("/backend-api") ||
     pathname.startsWith("/favicon") ||
     pathname.includes(".");
 
