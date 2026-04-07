@@ -136,8 +136,8 @@ export default function CustomRolesPage() {
                                 <Shield className="w-5 h-5 text-white" />
                             </div>
                         </div>
-                        <div className="text-xl font-semibold">{customRoles.length}</div>
                         <div className="text-xs text-white/80">Custom roles</div>
+                        <div className="text-xl font-semibold text-white">{customRoles.length}</div>
                         <div className="text-[10px] text-white/60 mt-1">Active in organization</div>
                     </div>
 
@@ -148,8 +148,8 @@ export default function CustomRolesPage() {
                                 <KeyRound className="w-5 h-5 text-emerald-600" />
                             </div>
                         </div>
-                        <div className="text-xl font-semibold text-gray-900">{totalPermissions}</div>
                         <div className="text-xs text-gray-500">Total permissions</div>
+                        <div className="text-xl font-semibold text-gray-900">{totalPermissions}</div>
                         <div className="text-[10px] text-gray-400 mt-1">Across all custom roles</div>
                     </div>
 
@@ -160,8 +160,8 @@ export default function CustomRolesPage() {
                                 <History className="w-5 h-5 text-indigo-600" />
                             </div>
                         </div>
-                        <div className="text-xl font-semibold text-gray-900">Verified</div>
                         <div className="text-xs text-gray-500">Compliance status</div>
+                        <div className="text-xl font-semibold text-gray-900">Verified</div>
                         <div className="text-[10px] text-gray-400 mt-1">Last checked today</div>
                     </div>
 
@@ -172,8 +172,8 @@ export default function CustomRolesPage() {
                                 <Lock className="w-5 h-5 text-blue-600" />
                             </div>
                         </div>
-                        <div className="text-xl font-semibold text-gray-900">Granular</div>
                         <div className="text-xs text-gray-500">Security depth</div>
+                        <div className="text-xl font-semibold text-gray-900">Granular</div>
                         <div className="text-[10px] text-gray-400 mt-1">Fine-grained access control</div>
                     </div>
                 </div>

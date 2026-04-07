@@ -1503,10 +1503,21 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
   // Synchronously compute active category from pathname to avoid effect delay
   const activeCategoryFromPath = useMemo(() => {
     if (!pathname) return activeCategory;
+
+    // Ensure URL match respects path segment boundaries
+    // e.g. "/security" should NOT match inside "/security-baseline"
+    const matchesPath = (url: string) => {
+      if (!url || url === '/') return pathname === url;
+      const idx = pathname.indexOf(url);
+      if (idx === -1) return false;
+      const end = idx + url.length;
+      return end >= pathname.length || '/?.#'.includes(pathname[end]);
+    };
+
     for (const group of activeSidebarData) {
-      if (group.url && pathname.includes(group.url)) return group.title;
+      if (group.url && matchesPath(group.url)) return group.title;
       if (group.items.length > 0) {
-        if (group.items.some(item => pathname.includes(item.url) || (item.url !== '/' && pathname.startsWith(item.url)))) {
+        if (group.items.some((item: any) => matchesPath(item.url))) {
           return group.title;
         }
       }

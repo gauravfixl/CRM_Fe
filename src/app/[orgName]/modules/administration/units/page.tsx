@@ -125,8 +125,8 @@ export default function AdministrativeUnitsPage() {
                             <div className="flex items-center justify-between mb-2">
                                 <Network className="w-5 h-5 text-white/80" />
                             </div>
-                            <p className="text-xl font-semibold">{units.length}</p>
                             <p className="text-xs text-white/80">Total Units</p>
+                            <p className="text-xl font-semibold text-white">{units.length}</p>
                             <p className="text-[10px] text-white/60 mt-0.5">Active containers</p>
                         </CardContent>
                     </Card>
@@ -135,8 +135,8 @@ export default function AdministrativeUnitsPage() {
                             <div className="flex items-center justify-between mb-2">
                                 <Users className="w-5 h-5 text-blue-500" />
                             </div>
-                            <p className="text-xl font-semibold text-gray-900">{totalMembers}</p>
                             <p className="text-xs text-gray-600">Total Members</p>
+                            <p className="text-xl font-semibold text-gray-900">{totalMembers}</p>
                             <p className="text-[10px] text-gray-400 mt-0.5">Across all units</p>
                         </CardContent>
                     </Card>
@@ -145,8 +145,8 @@ export default function AdministrativeUnitsPage() {
                             <div className="flex items-center justify-between mb-2">
                                 <Shield className="w-5 h-5 text-indigo-500" />
                             </div>
-                            <p className="text-xl font-semibold text-gray-900">{totalAdmins}</p>
                             <p className="text-xs text-gray-600">Total Admins</p>
+                            <p className="text-xl font-semibold text-gray-900">{totalAdmins}</p>
                             <p className="text-[10px] text-gray-400 mt-0.5">Delegated administrators</p>
                         </CardContent>
                     </Card>
@@ -155,8 +155,8 @@ export default function AdministrativeUnitsPage() {
                             <div className="flex items-center justify-between mb-2">
                                 <ShieldCheck className="w-5 h-5 text-emerald-500" />
                             </div>
-                            <p className="text-xl font-semibold text-gray-900">92%</p>
                             <p className="text-xs text-gray-600">Security Score</p>
+                            <p className="text-xl font-semibold text-gray-900">92%</p>
                             <p className="text-[10px] text-gray-400 mt-0.5">Above baseline</p>
                         </CardContent>
                     </Card>
