@@ -23,12 +23,61 @@ import { toast } from "sonner"
 import { addRole } from "@/hooks/roleNPermissionHooks"
 
 const AVAILABLE_MODULES = [
-  { id: "crm", name: "CRM & Sales", actions: ["read", "write", "create", "delete", "export", "import"] },
-  { id: "projects", name: "Project Management", actions: ["read", "write", "create", "delete", "manage_tasks", "view_financials"] },
-  { id: "invoice", name: "Billing & Invoices", actions: ["read", "write", "create", "delete", "approve", "send"] },
-  { id: "hrm", name: "Human Resources", actions: ["read", "write", "manage_leave", "view_salary", "recruit"] },
-  { id: "users", name: "Identity & Access", actions: ["read", "write", "manage_roles", "reset_passwords", "invite"] },
-  { id: "org", name: "Organization Settings", actions: ["read", "write", "configure_branding", "manage_firms"] },
+  {
+    id: "lead",
+    name: "Leads",
+    actions: ["CREATE_LEAD", "EDIT_LEAD", "DELETE_LEAD", "VIEW_LEAD", "ASSIGN_LEAD", "VIEW_DELETED_LEAD", "RESTORE_LEAD"]
+  },
+  {
+    id: "client",
+    name: "Clients",
+    actions: ["CREATE_CLIENT", "EDIT_CLIENT", "DELETE_CLIENT", "VIEW_CLIENT_LIST", "RESTORE_CLIENT", "VIEW_DELETED_CLIENT"]
+  },
+  {
+    id: "firm",
+    name: "Firms",
+    actions: ["CREATE_FIRM", "EDIT_FIRM", "DELETE_FIRM", "VIEW_FIRM", "RESTORE_FIRM", "VIEW_DELETED_FIRM"]
+  },
+  {
+    id: "invoice",
+    name: "Billing & Invoices",
+    actions: ["GENERATE_REPORT", "EXPORT_DATA", "VIEW_ORG_ANALYTICS"]
+  },
+  {
+    id: "project_management",
+    name: "Project Management",
+    actions: ["CREATE_PROJECT", "EDIT_PROJECT", "DELETE_PROJECT", "VIEW_PROJECT", "VIEW_ALL_PROJECT", "VIEW_PROJECT_ANALYTICS", "ASSIGN_PROJECT_LEAD", "ADD_PROJECT_MEMBER", "REMOVE_PROJECT_MEMBER"]
+  },
+  {
+    id: "hrm_management",
+    name: "Human Resources",
+    actions: ["CREATE_EMPLOYEE", "EDIT_EMPLOYEE", "DELETE_EMPLOYEE", "VIEW_ALL_EMPLOYEES", "VIEW_EMPLOYEE_PROFILE", "MANAGE_EMPLOYE_LEAVE", "MANAGE_PAYROLL", "VIEW_PAYSLIPS", "MANAGE_ATTENDANCE"]
+  },
+  {
+    id: "user",
+    name: "Users",
+    actions: ["CREATE_USER", "VIEW_ALL_USERS", "VIEW_USER", "UPDATE_ORG_USER", "DELETE_ORG_USER", "SUSPEND_USER", "SEND_INVITATION"]
+  },
+  {
+    id: "role_permission",
+    name: "Roles & Permissions",
+    actions: ["CREATE_ROLE", "EDIT_ROLE", "DELETE_ROLE", "VIEW_ROLE", "MANAGE_PERMISSIONS", "AUDIT_PERMISSIONS", "CHANGE_MEMBER_ROLE"]
+  },
+  {
+    id: "organization",
+    name: "Organization Settings",
+    actions: ["EDIT_ORGANIZATION", "VIEW_ORG", "VIEW_ORG_ANALYTICS", "EXPORT_ORG_DATA"]
+  },
+  {
+    id: "document",
+    name: "Documents",
+    actions: ["UPLOAD_DOCUMENT", "DOWNLOAD_DOCUMENT", "SHARE_DOCUMENT", "MANAGE_DOCUMENT_VERSIONS", "DELETE_DOCUMENT"]
+  },
+  {
+    id: "reports",
+    name: "Reports",
+    actions: ["GENERATE_REPORT", "EXPORT_DATA", "SCHEDULE_REPORTS", "SHARE_REPORTS"]
+  },
 ]
 
 export default function CreateRolePage() {
@@ -102,8 +151,10 @@ export default function CreateRolePage() {
     setIsSubmitting(true)
     try {
       const payload = {
+        role: "OrgCustom",
         name: formData.name,
         description: formData.description,
+        scope: "sc-org",
         permissions: formData.permissions,
         isCustom: true
       }
@@ -273,7 +324,7 @@ export default function CreateRolePage() {
                             {selected && <Check className="w-3 h-3 text-white stroke-[3px]" />}
                           </div>
                           <span className={`text-xs font-medium capitalize ${selected ? "text-indigo-900" : "text-zinc-600"}`}>
-                            {action.replace('_', ' ')}
+                            {action.replaceAll('_', ' ').toLowerCase()}
                           </span>
                         </div>
                       )
