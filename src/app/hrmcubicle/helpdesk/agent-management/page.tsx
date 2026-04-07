@@ -151,10 +151,10 @@ const AgentManagementPage = () => {
                                     placeholder="Search by name, role..."
                                     value={searchQuery}
                                     onChange={e => setSearchQuery(e.target.value)}
-                                    className="h-9 w-52 bg-slate-50 border-none rounded-xl pl-9 text-xs font-semibold focus-visible:ring-1 focus-visible:ring-indigo-100"
+                                    className="h-9 w-52 bg-slate-50 border border-slate-200 rounded-xl pl-9 text-xs font-semibold focus-visible:ring-1 focus-visible:ring-indigo-100"
                                 />
                             </div>
-                            <Button variant="outline" size="icon" className="h-9 w-9 rounded-xl border-slate-100 text-slate-400"><Filter size={14} /></Button>
+                            <Button variant="outline" size="icon" className="h-9 w-9 rounded-xl border-slate-100 text-slate-400" onClick={() => toast({ title: "Filter", description: "Agent filter options coming soon" })}><Filter size={14} /></Button>
                         </div>
                     </div>
 
@@ -274,7 +274,7 @@ const AgentManagementPage = () => {
                                 <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
                                     <div className="h-full bg-emerald-400 w-[92%]" />
                                 </div>
-                                <Button variant="outline" className="w-full h-8 bg-white/5 border-white/10 text-white font-bold text-[9px] uppercase h-9 rounded-xl hover:bg-white/10">Compliance Report</Button>
+                                <Button variant="outline" className="w-full h-8 bg-white/5 border-white/10 text-white font-bold text-[9px] uppercase h-9 rounded-xl hover:bg-white/10" onClick={() => toast({ title: "Compliance Report", description: "Agent compliance report being generated..." })}>Compliance Report</Button>
                             </div>
                             <PieChart size={100} className="absolute -right-6 -top-6 text-white/10 group-hover:rotate-12 transition-transform" />
                         </div>
@@ -284,7 +284,7 @@ const AgentManagementPage = () => {
 
             {/* Onboard Agent Dialog */}
             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-                <DialogContent className="max-w-2xl p-0 overflow-hidden border-none rounded-3xl shadow-3xl bg-white outline-none">
+                <DialogContent className="max-w-2xl p-0 overflow-hidden border-2 border-slate-200 rounded-3xl shadow-3xl bg-white outline-none">
                     <div className="bg-slate-50 border-b border-slate-200 px-8 py-6 flex items-center gap-4">
                         <div className="h-10 w-10 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-indigo-600 shadow-sm">
                             <UserPlus size={20} />
@@ -483,7 +483,7 @@ const AgentManagementPage = () => {
                             <Separator className="opacity-50" />
 
                             <div className="grid grid-cols-2 gap-6">
-                                <Button variant="outline" className="h-14 rounded-2xl border-slate-200 font-bold text-xs uppercase tracking-widest gap-2 hover:bg-slate-900 hover:text-white transition-all">
+                                <Button variant="outline" className="h-14 rounded-2xl border-slate-200 font-bold text-xs uppercase tracking-widest gap-2 hover:bg-slate-900 hover:text-white transition-all" onClick={() => toast({ title: "Advanced Config", description: "Advanced agent configuration panel coming soon" })}>
                                     <Settings2 size={16} /> Advanced Config
                                 </Button>
                                 <Button onClick={() => { deleteAgent(selectedAgent!.id); setIsDetailSheetOpen(false); }} variant="outline" className="h-14 rounded-2xl border-rose-100 text-rose-500 font-bold text-xs uppercase tracking-widest gap-2 hover:bg-rose-500 hover:text-white transition-all">
@@ -497,7 +497,7 @@ const AgentManagementPage = () => {
 
             {/* Add Queue Dialog */}
             <Dialog open={isAddQueueDialogOpen} onOpenChange={setIsAddQueueDialogOpen}>
-                <DialogContent className="max-w-md p-0 overflow-hidden border-none rounded-3xl shadow-3xl bg-white outline-none">
+                <DialogContent className="max-w-md p-0 overflow-hidden border-2 border-slate-200 rounded-3xl shadow-3xl bg-white outline-none">
                     <div className="bg-slate-50 border-b border-slate-200 px-8 py-6 flex items-center gap-4">
                         <div className="h-10 w-10 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-indigo-600 shadow-sm">
                             <Plus size={20} />

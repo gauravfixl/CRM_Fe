@@ -263,7 +263,7 @@ const MyTicketsPage = () => {
                                 placeholder="Search my tickets..."
                                 value={searchQuery}
                                 onChange={e => setSearchQuery(e.target.value)}
-                                className="h-8 pl-9 pr-4 w-44 bg-slate-50 border-none rounded-lg text-xs font-medium focus-visible:ring-1 focus-visible:ring-indigo-100"
+                                className="h-8 pl-9 pr-4 w-44 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium focus-visible:ring-1 focus-visible:ring-indigo-100"
                             />
                         </div>
                     </div>
@@ -350,7 +350,7 @@ const MyTicketsPage = () => {
 
             {/* Create Ticket Dialog */}
             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-                <DialogContent className="max-w-xl p-0 overflow-hidden border-none rounded-2xl shadow-3xl bg-white">
+                <DialogContent className="max-w-xl p-0 overflow-hidden border-2 border-slate-200 rounded-2xl shadow-3xl bg-white">
                     <div className="bg-slate-50 border-b border-slate-200 p-6 flex items-center gap-4">
                         <div className="h-10 w-10 bg-white border border-slate-200 rounded-lg flex items-center justify-center text-indigo-600 shadow-sm">
                             <Plus size={20} />

@@ -39,7 +39,7 @@ import {
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "sonner"
-import { axiosInstance } from "@/lib/axios"
+import { fetchUsersApi, createOrgInvite, updateOrgUser, deleteOrgUser, getAllOrgInvites } from "@/modules/crm/organizations/hooks/orgHooks"
 
 const roleMap: Record<string, string> = {
     ADMIN: "Super Admin",
@@ -55,15 +55,8 @@ const roleReverseMap: Record<string, string> = {
     "Billing Admin": "BILLING",
 }
 
-const initialAdmins = [
-    { id: "ADM-001", name: "Robert Fox", email: "robert@foxsolutions.com", role: "Super Admin", status: "Active", lastActive: "2 mins ago" },
-    { id: "ADM-002", name: "Jane Fisher", email: "jane.f@techventures.io", role: "Org Admin", status: "Active", lastActive: "1 hour ago" },
-    { id: "ADM-003", name: "Michael Chen", email: "m.chen@globaltrade.co", role: "Compliance Officer", status: "Pending", lastActive: "Never" },
-    { id: "ADM-004", name: "Sarah Jenkins", email: "sarah@fincorp.biz", role: "Billing Admin", status: "Active", lastActive: "Yesterday" },
-]
-
 export default function FirmAdminsPage() {
-    const [admins, setAdmins] = useState(initialAdmins)
+    const [admins, setAdmins] = useState<any[]>([])
     const [searchQuery, setSearchQuery] = useState("")
     const [isInviteOpen, setIsInviteOpen] = useState(false)
     const [loading, setLoading] = useState(true)
@@ -109,7 +102,7 @@ export default function FirmAdminsPage() {
         const apiRole = roleReverseMap[role] || role
 
         toast.promise(
-            axiosInstance.put(`/organization/updateuser/${selectedAdmin.id}`, { Role: apiRole, custom: false }),
+            updateOrgUser(selectedAdmin.id, { Role: apiRole, custom: false }),
             {
                 loading: "Updating role...",
                 success: () => {
@@ -117,7 +110,7 @@ export default function FirmAdminsPage() {
                     fetchAdmins()
                     return "Role updated successfully"
                 },
-                error: (err) => err.response?.data?.message || "Failed to update role"
+                error: (err: any) => err.response?.data?.message || "Failed to update role"
             }
         )
     }
@@ -134,14 +127,14 @@ export default function FirmAdminsPage() {
 
         if (window.confirm(`Are you sure you want to revoke access for ${admin.name}?`)) {
             toast.promise(
-                axiosInstance.delete(`/organization/deleteuser/${admin.id}`),
+                deleteOrgUser(admin.id),
                 {
                     loading: "Revoking access...",
                     success: () => {
                         fetchAdmins()
                         return "Access revoked successfully"
                     },
-                    error: (err) => err.response?.data?.message || "Failed to revoke access"
+                    error: (err: any) => err.response?.data?.message || "Failed to revoke access"
                 }
             )
         }
@@ -150,21 +143,25 @@ export default function FirmAdminsPage() {
     const fetchAdmins = async () => {
         try {
             setLoading(true)
-            const [usersRes, invitesRes] = await Promise.all([
-                axiosInstance.get("/organization/users/all?page=1&limit=100"),
-                axiosInstance.get("/organization/all/Invite").catch(() => ({ data: [] })),
+            const [usersData, invitesRes] = await Promise.all([
+                fetchUsersApi(),
+                getAllOrgInvites().catch(() => ({ data: [] })),
             ])
 
-            const activeAdmins = (usersRes.data?.users || []).map((user: any) => ({
-                id: user.memberId,
-                name: user.name || "—",
+            const users = usersData?.users || usersData || []
+            const activeAdmins = (Array.isArray(users) ? users : []).map((user: any) => ({
+                id: user.memberId || user._id,
+                name: user.name || [user.firstName, user.lastName].filter(Boolean).join(" ") || "—",
                 email: user.email,
                 role: roleMap[user.role] || user.role,
-                status: "Active",
-                lastActive: "—",
+                status: user.orgActive === false ? "Inactive" : "Active",
+                lastActive: user.joinedAt ? new Date(user.joinedAt).toLocaleDateString() : "—",
+                avatar: user.avatar,
             }))
 
-            const pendingInvites = (Array.isArray(invitesRes.data) ? invitesRes.data : invitesRes.data?.invites || []).map((invite: any) => ({
+            const invitesData = invitesRes?.data
+            const invites = Array.isArray(invitesData) ? invitesData : invitesData?.invites || []
+            const pendingInvites = invites.map((invite: any) => ({
                 id: invite._id || invite.id || `INV-${invite.email}`,
                 name: invite.name || invite.email?.split("@")[0] || "—",
                 email: invite.email,
@@ -176,8 +173,7 @@ export default function FirmAdminsPage() {
             setAdmins([...activeAdmins, ...pendingInvites])
         } catch (error) {
             console.error("Failed to fetch admins:", error)
-            toast.error("Failed to load admins. Showing cached data.")
-            setAdmins(initialAdmins)
+            toast.error("Failed to load admins.")
         } finally {
             setLoading(false)
         }
@@ -204,7 +200,7 @@ export default function FirmAdminsPage() {
         const apiRole = roleReverseMap[role] || "SUB_ADMIN"
 
         toast.promise(
-            axiosInstance.post("/organization/createInvite", { email, role: apiRole }),
+            createOrgInvite({ email, role: apiRole }),
             {
                 loading: "Sending encryption keys and invite link...",
                 success: () => {
@@ -378,7 +374,26 @@ export default function FirmAdminsPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">
-                                {filteredAdmins.map((admin) => (
+                                {loading && (
+                                    Array.from({ length: 4 }).map((_, i) => (
+                                        <tr key={`skeleton-${i}`} className="animate-pulse">
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="h-9 w-9 rounded-full bg-gray-200" />
+                                                    <div className="space-y-2">
+                                                        <div className="h-3 w-28 bg-gray-200 rounded" />
+                                                        <div className="h-2.5 w-36 bg-gray-100 rounded" />
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-4 py-4"><div className="h-3 w-20 bg-gray-200 rounded" /></td>
+                                            <td className="px-4 py-4"><div className="h-5 w-14 bg-gray-200 rounded-full" /></td>
+                                            <td className="px-4 py-4"><div className="h-3 w-16 bg-gray-200 rounded" /></td>
+                                            <td className="px-6 py-4 text-right"><div className="h-6 w-6 bg-gray-200 rounded ml-auto" /></td>
+                                        </tr>
+                                    ))
+                                )}
+                                {!loading && filteredAdmins.map((admin) => (
                                     <tr key={admin.id} className="hover:bg-gray-50/50 transition-colors group">
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
@@ -426,7 +441,7 @@ export default function FirmAdminsPage() {
                                 ))}
                             </tbody>
                         </table>
-                        {filteredAdmins.length === 0 && (
+                        {!loading && filteredAdmins.length === 0 && (
                             <div className="p-16 flex flex-col items-center justify-center text-center">
                                 <SearchX className="w-10 h-10 text-gray-300 mb-3" />
                                 <p className="text-sm font-semibold text-gray-900">No identities found</p>

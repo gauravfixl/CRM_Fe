@@ -339,7 +339,7 @@ const ExpenseClaimsPage = () => {
 
             {/* New Claim Dialog */}
             <Dialog open={isNewClaimOpen} onOpenChange={setIsNewClaimOpen}>
-                <DialogContent className="max-w-lg">
+                <DialogContent className="max-w-lg border-2 border-slate-200">
                     <DialogHeader>
                         <DialogTitle>New Expense Claim</DialogTitle>
                         <DialogDescription>Submit an expense for reimbursement. Fill in the details below.</DialogDescription>
@@ -396,7 +396,7 @@ const ExpenseClaimsPage = () => {
 
             {/* Receipt Preview Dialog */}
             <Dialog open={isReceiptOpen} onOpenChange={setIsReceiptOpen}>
-                <DialogContent className="max-w-md">
+                <DialogContent className="max-w-md border-2 border-slate-200">
                     <DialogHeader>
                         <DialogTitle>Receipt Preview</DialogTitle>
                         <DialogDescription>{selectedClaim?.id} - {selectedClaim?.description}</DialogDescription>

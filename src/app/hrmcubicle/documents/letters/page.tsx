@@ -188,7 +188,7 @@ const LettersPage = () => {
                                             <SelectTrigger className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 focus:bg-white transition-all shadow-sm">
                                                 <SelectValue />
                                             </SelectTrigger>
-                                            <SelectContent className="rounded-2xl border-none shadow-2xl p-2 font-bold text-xs font-sans">
+                                            <SelectContent className="rounded-2xl border border-slate-200 shadow-2xl p-2 font-bold text-xs font-sans">
                                                 <SelectItem value="Offer Letter" className="rounded-xl h-10">Offer Letter</SelectItem>
                                                 <SelectItem value="Appointment Letter" className="rounded-xl h-10">Appointment Letter</SelectItem>
                                                 <SelectItem value="Experience Letter" className="rounded-xl h-10">Experience Letter</SelectItem>
@@ -203,7 +203,7 @@ const LettersPage = () => {
                                             <SelectTrigger className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 focus:bg-white transition-all shadow-sm">
                                                 <SelectValue placeholder="Standard Template" />
                                             </SelectTrigger>
-                                            <SelectContent className="rounded-2xl border-none shadow-2xl p-2 font-bold text-xs font-sans">
+                                            <SelectContent className="rounded-2xl border border-slate-200 shadow-2xl p-2 font-bold text-xs font-sans">
                                                 <SelectItem value="standard" className="rounded-xl h-10">Standard Business Template</SelectItem>
                                                 <SelectItem value="executive" className="rounded-xl h-10">Executive Level Template</SelectItem>
                                                 <SelectItem value="intern" className="rounded-xl h-10">Internship Template</SelectItem>
@@ -221,7 +221,24 @@ const LettersPage = () => {
                                     </div>
                                 </div>
                                 <DialogFooter className="gap-3">
-                                    <Button variant="ghost" onClick={() => setIsIssueDialogOpen(false)} className="h-12 rounded-xl font-bold text-[10px] tracking-wide transition-all px-6">Save Draft</Button>
+                                    <Button variant="ghost" onClick={() => {
+                                        if (!newLetter.employeeName || !newLetter.employeeId) {
+                                            toast.error("Please provide employee details");
+                                            return;
+                                        }
+                                        issueLetter({ ...newLetter, status: "Draft" });
+                                        setIsIssueDialogOpen(false);
+                                        setNewLetter({
+                                            employeeId: "",
+                                            employeeName: "",
+                                            letterType: "Offer Letter",
+                                            templateId: "TMP-001",
+                                            issuedBy: "HR Admin",
+                                            status: "Draft",
+                                            fileUrl: "#"
+                                        });
+                                        toast.success("Draft saved successfully");
+                                    }} className="h-12 rounded-xl font-bold text-[10px] tracking-wide transition-all px-6">Save Draft</Button>
                                     <Button className="bg-indigo-600 hover:bg-slate-900 text-white rounded-xl h-12 px-10 font-bold shadow-lg shadow-indigo-100 transition-all text-[10px] tracking-wide border-none" onClick={handleIssueLetter}>Issue Document</Button>
                                 </DialogFooter>
                             </DialogContent>
@@ -240,7 +257,7 @@ const LettersPage = () => {
                         { label: "Draft Communications", value: stats.draft, icon: Stamp, color: "text-slate-700", bg: "bg-slate-100", border: "border-slate-200" },
                     ].map((stat, i) => (
                         <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
-                            <Card className={`border ${stat.border} shadow-sm rounded-[2rem] ${stat.bg} overflow-hidden group hover:shadow-xl transition-all duration-300 h-full flex flex-col justify-between p-7`}>
+                            <Card className={`border ${stat.border} shadow-sm rounded-none ${stat.bg} overflow-hidden group hover:shadow-xl transition-all duration-300 h-full flex flex-col justify-between p-7`}>
                                 <div className="flex items-start justify-between">
                                     <div className="space-y-1">
                                         <p className="text-[10px] font-bold text-slate-400 tracking-wide">{stat.label}</p>
@@ -288,7 +305,7 @@ const LettersPage = () => {
                                             <span>Status</span>
                                         </div>
                                     </SelectTrigger>
-                                    <SelectContent className="rounded-xl border-none shadow-2xl p-2 font-bold text-xs">
+                                    <SelectContent className="rounded-xl border border-slate-200 shadow-2xl p-2 font-bold text-xs">
                                         <SelectItem value="all" className="rounded-lg h-10">All Status</SelectItem>
                                         <SelectItem value="Draft" className="rounded-lg h-10 text-slate-500">Draft</SelectItem>
                                         <SelectItem value="Sent" className="rounded-lg h-10 text-indigo-500">Sent</SelectItem>
@@ -393,7 +410,10 @@ const LettersPage = () => {
                                                             <Download size={16} />
                                                         </Button>
                                                         {letter.status === 'Draft' && (
-                                                            <Button variant="ghost" size="icon" title="Send" className="h-9 w-9 text-indigo-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all border-none" onClick={() => toast.success("Relaying document to employee inbox")}>
+                                                            <Button variant="ghost" size="icon" title="Send" className="h-9 w-9 text-indigo-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all border-none" onClick={() => {
+                                                                updateLetterStatus(letter.id, "Sent");
+                                                                toast.success("Letter sent to employee successfully");
+                                                            }}>
                                                                 <Send size={16} />
                                                             </Button>
                                                         )}
@@ -403,7 +423,7 @@ const LettersPage = () => {
                                                                     <MoreHorizontal size={16} className="text-slate-400" />
                                                                 </Button>
                                                             </DropdownMenuTrigger>
-                                                            <DropdownMenuContent align="end" className="w-56 p-2 rounded-2xl border-none shadow-2xl bg-white font-sans">
+                                                            <DropdownMenuContent align="end" className="w-56 p-2 rounded-2xl border border-slate-200 shadow-2xl bg-white font-sans">
                                                                 <DropdownMenuLabel className="px-3 py-2 text-[10px] font-bold text-slate-400 tracking-wide">Document Management</DropdownMenuLabel>
                                                                 <DropdownMenuItem className="gap-3 p-3 rounded-xl cursor-pointer font-bold text-xs hover:bg-indigo-50 text-start" onClick={() => toast.success("Record moved to historical archives")}>
                                                                     <Stamp className="w-4 h-4 text-indigo-500" /> Archive Record

@@ -494,7 +494,7 @@ const ExpenseSettingsPage = () => {
 
             {/* Add/Edit Policy Dialog */}
             <Dialog open={isPolicyDialogOpen} onOpenChange={setIsPolicyDialogOpen}>
-                <DialogContent className="max-w-md">
+                <DialogContent className="max-w-md border-2 border-slate-200">
                     <DialogHeader>
                         <DialogTitle>{editingPolicy ? 'Edit' : 'New'} Expense Policy</DialogTitle>
                         <DialogDescription>Configure expense limits and requirements for a category.</DialogDescription>
@@ -553,7 +553,7 @@ const ExpenseSettingsPage = () => {
 
             {/* Add Card Dialog */}
             <Dialog open={isCardDialogOpen} onOpenChange={setIsCardDialogOpen}>
-                <DialogContent className="max-w-md">
+                <DialogContent className="max-w-md border-2 border-slate-200">
                     <DialogHeader>
                         <DialogTitle>Add Corporate Card</DialogTitle>
                         <DialogDescription>Assign a new corporate card to an employee.</DialogDescription>

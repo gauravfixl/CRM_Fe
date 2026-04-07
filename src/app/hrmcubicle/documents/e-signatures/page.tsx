@@ -134,7 +134,7 @@ const ESignaturesPage = () => {
                     </div>
                 </div>
                 <div className="flex gap-3">
-                    <Button variant="outline" className="font-bold border-slate-200">
+                    <Button variant="outline" className="font-bold border-slate-200" onClick={() => toast({ title: "Bulk Send", description: "Bulk signature request would be initiated for selected documents." })}>
                         <Users size={16} className="mr-2 text-slate-400" /> Bulk Send
                     </Button>
                     <Button className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white font-bold" onClick={() => setIsSendOpen(true)}>
@@ -145,19 +145,19 @@ const ESignaturesPage = () => {
 
             {/* Stats */}
             <div className="px-8 py-6 grid grid-cols-3 gap-6">
-                <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <Card className="rounded-none border border-slate-200 bg-white shadow-sm">
                     <CardContent className="p-5 flex items-center gap-4">
                         <div className="h-12 w-12 bg-amber-50 rounded-xl flex items-center justify-center"><Clock size={24} className="text-amber-600" /></div>
                         <div><p className="text-sm text-slate-500 font-medium">Pending Signature</p><p className="text-2xl font-bold text-slate-900">{pendingCount}</p></div>
                     </CardContent>
                 </Card>
-                <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <Card className="rounded-none border border-slate-200 bg-white shadow-sm">
                     <CardContent className="p-5 flex items-center gap-4">
                         <div className="h-12 w-12 bg-emerald-50 rounded-xl flex items-center justify-center"><FileCheck size={24} className="text-emerald-600" /></div>
                         <div><p className="text-sm text-slate-500 font-medium">Signed This Month</p><p className="text-2xl font-bold text-slate-900">{signedThisMonth}</p></div>
                     </CardContent>
                 </Card>
-                <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <Card className="rounded-none border border-slate-200 bg-white shadow-sm">
                     <CardContent className="p-5 flex items-center gap-4">
                         <div className="h-12 w-12 bg-blue-50 rounded-xl flex items-center justify-center"><Clock size={24} className="text-blue-600" /></div>
                         <div><p className="text-sm text-slate-500 font-medium">Avg Signing Time</p><p className="text-2xl font-bold text-slate-900">{avgSigningTime}</p></div>
@@ -233,7 +233,7 @@ const ESignaturesPage = () => {
                                                 <Button variant="ghost" size="icon" className="h-8 w-8 text-amber-500" onClick={() => handleReminder(doc)} title="Remind"><Bell size={14} /></Button>
                                             )}
                                             {doc.status === "Signed" && (
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400" title="Download"><Download size={14} /></Button>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400" title="Download" onClick={() => toast({ title: "Downloading", description: `Signed document "${doc.title}" is being downloaded.` })}><Download size={14} /></Button>
                                             )}
                                             <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400" onClick={() => setIsAuditOpen(doc)} title="Audit"><FileCheck size={14} /></Button>
                                         </div>
@@ -250,7 +250,7 @@ const ESignaturesPage = () => {
 
             {/* Send for Signature Dialog */}
             <Dialog open={isSendOpen} onOpenChange={setIsSendOpen}>
-                <DialogContent className="max-w-lg">
+                <DialogContent className="max-w-lg border-2 border-slate-200">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2"><Send size={20} className="text-[#8B5CF6]" /> Send for Signature</DialogTitle>
                         <DialogDescription>Select a document and add signers.</DialogDescription>
@@ -303,7 +303,7 @@ const ESignaturesPage = () => {
 
             {/* Signature Status Tracker */}
             <Dialog open={!!isTrackerOpen} onOpenChange={() => setIsTrackerOpen(null)}>
-                <DialogContent className="max-w-md">
+                <DialogContent className="max-w-md border-2 border-slate-200">
                     <DialogHeader>
                         <DialogTitle>Signature Status</DialogTitle>
                         <DialogDescription>{isTrackerOpen?.name}</DialogDescription>
@@ -345,7 +345,7 @@ const ESignaturesPage = () => {
 
             {/* Audit Trail Dialog */}
             <Dialog open={!!isAuditOpen} onOpenChange={() => setIsAuditOpen(null)}>
-                <DialogContent className="max-w-md">
+                <DialogContent className="max-w-md border-2 border-slate-200">
                     <DialogHeader>
                         <DialogTitle>Signature Audit Trail</DialogTitle>
                         <DialogDescription>{isAuditOpen?.name}</DialogDescription>

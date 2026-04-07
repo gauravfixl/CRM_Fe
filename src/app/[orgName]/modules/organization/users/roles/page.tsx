@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
     ShieldAlert,
     Plus,
@@ -10,7 +10,8 @@ import {
     Lock,
     Users,
     Edit3,
-    Trash2
+    Trash2,
+    Loader2
 } from "lucide-react";
 import SubHeader from "@/components/custom/SubHeader";
 import { CustomButton } from "@/components/custom/CustomButton";
@@ -27,40 +28,133 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog";
+import { getAllRolesNPermissions, addRole, deleteRole } from "@/hooks/roleNPermissionHooks";
+import { decryptData } from "@/utils/crypto";
 
-const initialRoles = [
-    {
-        id: "role-super",
-        name: "Super Admin",
-        users: 3,
-        description: "Full access to all settings, billing, and user management.",
-        type: "System",
-        permissions: { users: true, billing: true, settings: true, deletion: true }
-    },
-    {
-        id: "role-admin",
-        name: "Organization Admin",
-        users: 8,
-        description: "Can manage users and settings but cannot delete the organization.",
-        type: "System",
-        permissions: { users: true, billing: false, settings: true, deletion: false }
-    },
-    {
-        id: "role-viewer",
-        name: "Auditor / Viewer",
-        users: 2,
-        description: "Read-only access to logs and reports.",
-        type: "Custom",
-        permissions: { users: false, billing: false, settings: false, deletion: false }
+interface RoleItem {
+    id: string;
+    name: string;
+    users: number;
+    description: string;
+    type: "System" | "Custom";
+    permissions: Record<string, boolean>;
+}
+
+/** Maps an API role object to the shape the UI expects. */
+function mapApiRole(apiRole: any): RoleItem {
+    const permMap: Record<string, boolean> = {};
+    if (Array.isArray(apiRole.permissions)) {
+        apiRole.permissions.forEach((p: string) => {
+            permMap[p] = true;
+        });
+    } else if (apiRole.permissions && typeof apiRole.permissions === "object") {
+        Object.entries(apiRole.permissions).forEach(([key, val]) => {
+            permMap[key] = Boolean(val);
+        });
     }
-];
+
+    return {
+        id: apiRole._id || apiRole.id,
+        name: apiRole.roleName || apiRole.name || "Unnamed Role",
+        users: apiRole.userCount ?? apiRole.users ?? 0,
+        description: apiRole.description || "",
+        type: apiRole.isCustom ? "Custom" : "System",
+        permissions: permMap,
+    };
+}
 
 export default function RolesPage() {
-    const [roles, setRoles] = useState(initialRoles);
+    const [roles, setRoles] = useState<RoleItem[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [creating, setCreating] = useState(false);
+    const [deletingId, setDeletingId] = useState<string | null>(null);
+    const [dialogOpen, setDialogOpen] = useState(false);
 
-    const handleCreateRole = (e: React.FormEvent) => {
+    // Refs for the create-role form fields
+    const roleNameRef = useRef<HTMLInputElement>(null);
+    const manageUsersRef = useRef<HTMLButtonElement>(null);
+    const viewBillingRef = useRef<HTMLButtonElement>(null);
+    const editSettingsRef = useRef<HTMLButtonElement>(null);
+
+    const fetchRoles = useCallback(async () => {
+        setLoading(true);
+        try {
+            const resp = await getAllRolesNPermissions({ scope: "sc-org" });
+            let rolesData: any[] = [];
+
+            if (resp?.data?.permissions && resp?.data?.iv) {
+                // Encrypted response
+                rolesData = decryptData(resp.data.permissions, resp.data.iv);
+            } else if (resp?.data?.roles && resp?.data?.iv) {
+                // Alternative encrypted shape
+                rolesData = decryptData(resp.data.roles, resp.data.iv);
+            } else if (Array.isArray(resp?.data?.roles)) {
+                rolesData = resp.data.roles;
+            } else if (Array.isArray(resp?.data)) {
+                rolesData = resp.data;
+            }
+
+            if (Array.isArray(rolesData)) {
+                setRoles(rolesData.map(mapApiRole));
+            }
+        } catch (error) {
+            console.error("Error fetching roles:", error);
+            toast.error("Failed to load roles.");
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchRoles();
+    }, [fetchRoles]);
+
+    const handleCreateRole = async (e: React.FormEvent) => {
         e.preventDefault();
-        toast.success("New role created successfully.");
+        const roleName = roleNameRef.current?.value?.trim();
+        if (!roleName) return;
+
+        // Read switch states from data-state attribute
+        const manageUsers = manageUsersRef.current?.getAttribute("data-state") === "checked";
+        const viewBilling = viewBillingRef.current?.getAttribute("data-state") === "checked";
+        const editSettings = editSettingsRef.current?.getAttribute("data-state") === "checked";
+
+        const permissions: string[] = [];
+        if (manageUsers) permissions.push("users");
+        if (viewBilling) permissions.push("billing");
+        if (editSettings) permissions.push("settings");
+
+        setCreating(true);
+        try {
+            await addRole({
+                roleName,
+                permissions,
+                scope: "sc-org",
+                isCustom: true,
+            });
+            toast.success("New role created successfully.");
+            setDialogOpen(false);
+            await fetchRoles();
+        } catch (error) {
+            console.error("Error creating role:", error);
+            toast.error("Failed to create role.");
+        } finally {
+            setCreating(false);
+        }
+    };
+
+    const handleDeleteRole = async (role: RoleItem) => {
+        setDeletingId(role.id);
+        try {
+            await deleteRole(role.id);
+            toast.success(`Deleted ${role.name}`);
+            setRoles((prev) => prev.filter((r) => r.id !== role.id));
+        } catch (error) {
+            console.error("Error deleting role:", error);
+            toast.error(`Failed to delete ${role.name}`);
+        } finally {
+            setDeletingId(null);
+        }
     };
 
     return (
@@ -73,7 +167,7 @@ export default function RolesPage() {
                     { label: "Org Roles", href: "#" }
                 ]}
                 rightControls={
-                    <Dialog>
+                    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
                         <DialogTrigger asChild>
                             <CustomButton className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl h-10 px-6 font-semibold shadow-xl border-0">
                                 <Plus className="w-4 h-4 mr-2" />
@@ -90,24 +184,27 @@ export default function RolesPage() {
                                 <form onSubmit={handleCreateRole} className="space-y-6">
                                     <div className="space-y-2">
                                         <label className="text-xs uppercase font-semibold text-zinc-500 tracking-wider">Role Name</label>
-                                        <Input className="rounded-xl font-medium h-12 bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800" placeholder="e.g. Finance Manager" required />
+                                        <Input ref={roleNameRef} className="rounded-xl font-medium h-12 bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800" placeholder="e.g. Finance Manager" required />
                                     </div>
                                     <div className="space-y-4 border border-zinc-200 dark:border-zinc-800 p-6 rounded-2xl bg-white dark:bg-zinc-950">
                                         <label className="text-xs uppercase font-semibold text-zinc-500 tracking-wider block mb-4">Capabilities</label>
                                         <div className="flex items-center justify-between">
                                             <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Manage Users</span>
-                                            <Switch className="data-[state=checked]:bg-indigo-600" />
+                                            <Switch ref={manageUsersRef} className="data-[state=checked]:bg-indigo-600" />
                                         </div>
                                         <div className="flex items-center justify-between">
                                             <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">View Billing</span>
-                                            <Switch className="data-[state=checked]:bg-indigo-600" />
+                                            <Switch ref={viewBillingRef} className="data-[state=checked]:bg-indigo-600" />
                                         </div>
                                         <div className="flex items-center justify-between">
                                             <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Edit Settings</span>
-                                            <Switch className="data-[state=checked]:bg-indigo-600" />
+                                            <Switch ref={editSettingsRef} className="data-[state=checked]:bg-indigo-600" />
                                         </div>
                                     </div>
-                                    <CustomButton type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl h-12 text-sm">Save Role Definition</CustomButton>
+                                    <CustomButton type="submit" disabled={creating} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl h-12 text-sm">
+                                        {creating && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                                        {creating ? "Saving..." : "Save Role Definition"}
+                                    </CustomButton>
                                 </form>
                             </div>
                         </DialogContent>
@@ -116,6 +213,17 @@ export default function RolesPage() {
             />
 
             <div className="p-4 md:p-8 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                {loading ? (
+                    <div className="flex items-center justify-center py-20">
+                        <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+                    </div>
+                ) : roles.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-20 text-zinc-400">
+                        <ShieldAlert className="w-12 h-12 mb-4" />
+                        <p className="text-lg font-semibold">No roles found</p>
+                        <p className="text-sm">Create a custom role to get started.</p>
+                    </div>
+                ) : (
                 <div className="grid grid-cols-1 gap-6">
                     {roles.map((role) => (
                         <Card key={role.id} className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm hover:shadow-xl transition-all rounded-3xl overflow-hidden group">
@@ -161,8 +269,8 @@ export default function RolesPage() {
                                             <Edit3 className="w-4 h-4 text-zinc-500" />
                                         </CustomButton>
                                         {role.type !== 'System' && (
-                                            <CustomButton variant="outline" size="icon" className="h-10 w-10 rounded-xl border-zinc-200 dark:border-zinc-800 hover:bg-red-50 dark:hover:bg-red-950/20 hover:text-red-600 hover:border-red-100" onClick={() => toast.error(`Deleted ${role.name}`)}>
-                                                <Trash2 className="w-4 h-4" />
+                                            <CustomButton variant="outline" size="icon" className="h-10 w-10 rounded-xl border-zinc-200 dark:border-zinc-800 hover:bg-red-50 dark:hover:bg-red-950/20 hover:text-red-600 hover:border-red-100" disabled={deletingId === role.id} onClick={() => handleDeleteRole(role)}>
+                                                {deletingId === role.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                                             </CustomButton>
                                         )}
                                     </div>
@@ -171,6 +279,7 @@ export default function RolesPage() {
                         </Card>
                     ))}
                 </div>
+                )}
             </div>
         </div>
     );

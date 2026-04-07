@@ -93,3 +93,57 @@ export const switchOrganization = async (orgId) => {
     throw error;
   }
 };
+
+/**
+ * Fetches all organization invites.
+ */
+export const getAllOrgInvites = async () => {
+  const response = await axios.get("/organization/all/Invite");
+  return response;
+};
+
+/**
+ * Creates an organization invite.
+ * @param {Object} form - Invite data { email, role }.
+ */
+export const createOrgInvite = async (form) => {
+  const response = await axios.post("/organization/createInvite", form);
+  return response;
+};
+
+/**
+ * Declines an organization invite.
+ * @param {string} token - Invite token.
+ */
+export const declineOrgInvite = async (token) => {
+  const response = await axios.post(`/organization/declineInvite/${token}`);
+  return response;
+};
+
+/**
+ * Updates an organization member's details.
+ * @param {string} memberId - The member's ID.
+ * @param {Object} form - Updated member data.
+ */
+export const updateOrgUser = async (memberId, form) => {
+  const response = await axios.put(`/organization/updateuser/${memberId}`, form);
+  return response;
+};
+
+/**
+ * Deletes an organization member.
+ * @param {string} memberId - The member's ID.
+ */
+export const deleteOrgUser = async (memberId) => {
+  const response = await axios.delete(`/organization/deleteuser/${memberId}`);
+  return response;
+};
+
+/**
+ * Updates organization details (alternate endpoint).
+ * @param {Object} form - Updated org data.
+ */
+export const updateOrgDetails = async (form) => {
+  const response = await axios.patch("/organization/update/details", form);
+  return response;
+};

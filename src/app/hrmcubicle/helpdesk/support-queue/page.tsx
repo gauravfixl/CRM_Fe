@@ -236,7 +236,7 @@ const SupportQueuePage = () => {
                                 </div>
                             ))}
                         </div>
-                        <Button className="bg-rose-600 hover:bg-rose-700 text-white rounded-xl h-10 px-6 font-bold gap-2 text-xs uppercase tracking-widest shadow-lg shadow-rose-100 transition-all">
+                        <Button className="bg-rose-600 hover:bg-rose-700 text-white rounded-xl h-10 px-6 font-bold gap-2 text-xs uppercase tracking-widest shadow-lg shadow-rose-100 transition-all" onClick={() => toast({ title: "Power Filter", description: "Advanced filtering options would appear here." })}>
                             <Zap size={14} /> Power Filter
                         </Button>
                     </div>
@@ -277,7 +277,7 @@ const SupportQueuePage = () => {
                                 placeholder="Ref / Subject / Employee..."
                                 value={searchQuery}
                                 onChange={e => setSearchQuery(e.target.value)}
-                                className="h-9 w-64 bg-slate-50 border-none rounded-xl pl-9 text-xs font-semibold focus-visible:ring-1 focus-visible:ring-slate-100"
+                                className="h-9 w-64 bg-slate-50 border border-slate-200 rounded-xl pl-9 text-xs font-semibold focus-visible:ring-1 focus-visible:ring-slate-100"
                             />
                         </div>
                         <Button variant="outline" size="icon" className="h-9 w-9 rounded-xl border-slate-100 text-slate-400"><Filter size={14} /></Button>
@@ -436,7 +436,7 @@ const SupportQueuePage = () => {
                             <div className="h-12 border-b border-slate-100 px-6 flex items-center justify-between shrink-0 bg-white">
                                 <div className="flex items-center gap-4">
                                     <button className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest border-b-2 border-indigo-600 pb-0.5 mt-2">Activity Thread</button>
-                                    <button className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pb-0.5 mt-2 hover:text-slate-600">History Log</button>
+                                    <button className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pb-0.5 mt-2 hover:text-slate-600" onClick={() => toast({ title: "History Log", description: "Full ticket history log would open here." })}>History Log</button>
                                 </div>
                                 <span className="text-[10px] font-bold text-slate-400 uppercase">{selectedTicket?.responses.length} Messages</span>
                             </div>
@@ -521,7 +521,7 @@ const SupportQueuePage = () => {
                                             }`}
                                     />
                                     <div className="absolute right-4 bottom-4 flex items-center gap-3">
-                                        <Button variant="ghost" className="h-9 px-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Discard</Button>
+                                        <Button variant="ghost" className="h-9 px-4 text-xs font-bold text-slate-400 uppercase tracking-widest" onClick={() => { setReplyContent(""); toast({ title: "Discarded", description: "Reply draft cleared." }); }}>Discard</Button>
                                         <Button
                                             onClick={handleSendReply}
                                             className={`h-11 px-8 rounded-xl font-bold text-xs uppercase tracking-widest shadow-lg gap-3 transition-all ${isInternal ? 'bg-amber-500 hover:bg-amber-600 text-white shadow-amber-100' : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-100'
@@ -590,7 +590,7 @@ const SupportQueuePage = () => {
                                     </div>
                                     <Button variant="ghost" size="icon" className="h-8 w-8 text-indigo-400 hover:bg-white rounded-lg"><ChevronRight size={14} /></Button>
                                 </div>
-                                <Button variant="outline" className="w-full h-10 rounded-xl border-dashed border-slate-200 text-slate-400 font-bold text-[10px] uppercase tracking-widest hover:border-indigo-400 hover:text-indigo-600 transition-all">
+                                <Button variant="outline" className="w-full h-10 rounded-xl border-dashed border-slate-200 text-slate-400 font-bold text-[10px] uppercase tracking-widest hover:border-indigo-400 hover:text-indigo-600 transition-all" onClick={() => toast({ title: "Change Ownership", description: "Ticket ownership transfer dialog would open here." })}>
                                     Change Ownership
                                 </Button>
                             </div>
@@ -612,7 +612,7 @@ const SupportQueuePage = () => {
 
             {/* Quick Assign Dialog */}
             <Dialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen}>
-                <DialogContent className="max-w-md p-0 overflow-hidden border-none rounded-2xl shadow-3xl bg-white outline-none">
+                <DialogContent className="max-w-md p-0 overflow-hidden border-2 border-slate-200 rounded-2xl shadow-3xl bg-white outline-none">
                     <div className="bg-slate-50 border-b border-slate-200 p-6 flex items-center gap-4">
                         <div className="h-10 w-10 bg-white border border-slate-200 rounded-lg flex items-center justify-center text-indigo-600 shadow-sm">
                             <UserPlus size={20} />

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
     Mail,
     Send,
@@ -10,7 +10,8 @@ import {
     CheckCircle2,
     UserPlus,
     Copy,
-    LinkIcon
+    LinkIcon,
+    Loader2
 } from "lucide-react";
 import SubHeader from "@/components/custom/SubHeader";
 import { CustomButton } from "@/components/custom/CustomButton";
@@ -28,34 +29,71 @@ import {
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-
-const invites = [
-    { id: "inv-1", email: "sarah.connor@example.com", role: "Viewer", sentAt: "2 hours ago", status: "Pending", expires: "48h" },
-    { id: "inv-2", email: "kyle.reese@example.com", role: "Org Admin", sentAt: "1 day ago", status: "Pending", expires: "24h" },
-    { id: "inv-3", email: "john.doe@external.com", role: "Editor", sentAt: "5 days ago", status: "Expired", expires: "Expired" },
-];
+import { getAllOrgInvites, createOrgInvite, declineOrgInvite } from "@/modules/crm/organizations/hooks/orgHooks";
 
 export default function InvitesPage() {
-    const [inviteList, setInviteList] = useState(invites);
+    const [inviteList, setInviteList] = useState<any[]>([]);
     const [email, setEmail] = useState("");
+    const [role, setRole] = useState("viewer");
+    const [loading, setLoading] = useState(true);
+    const [sending, setSending] = useState(false);
+    const [dialogOpen, setDialogOpen] = useState(false);
 
-    const handleSendInvite = (e: React.FormEvent) => {
+    const fetchInvites = async () => {
+        try {
+            setLoading(true);
+            const res = await getAllOrgInvites();
+            setInviteList(res?.data?.invites || []);
+        } catch (err) {
+            console.error("Error fetching invites:", err);
+            toast.error("Failed to fetch invitations");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchInvites();
+    }, []);
+
+    const handleSendInvite = async (e: React.FormEvent) => {
         e.preventDefault();
-        toast.promise(new Promise(res => setTimeout(res, 1000)), {
-            loading: "Sending invitation email...",
-            success: `Invitation sent to ${email}`,
-            error: "Failed to send invitation"
-        });
-        setEmail("");
+        try {
+            setSending(true);
+            await createOrgInvite({ email, role });
+            toast.success(`Invitation sent to ${email}`);
+            setEmail("");
+            setRole("viewer");
+            setDialogOpen(false);
+            await fetchInvites();
+        } catch (err: any) {
+            console.error("Error sending invite:", err);
+            toast.error(err?.response?.data?.message || "Failed to send invitation");
+        } finally {
+            setSending(false);
+        }
     };
 
-    const handleResend = (email: string) => {
-        toast.success(`Invitation re-sent to ${email}`);
+    const handleResend = async (inviteEmail: string) => {
+        try {
+            await createOrgInvite({ email: inviteEmail, role: "viewer" });
+            toast.success(`Invitation re-sent to ${inviteEmail}`);
+            await fetchInvites();
+        } catch (err) {
+            console.error("Error resending invite:", err);
+            toast.error("Failed to resend invitation");
+        }
     };
 
-    const handleRevoke = (id: string) => {
-        setInviteList(prev => prev.filter(inv => inv.id !== id));
-        toast.info("Invitation revoked successfully.");
+    const handleRevoke = async (token: string) => {
+        try {
+            await declineOrgInvite(token);
+            toast.success("Invitation revoked successfully.");
+            await fetchInvites();
+        } catch (err) {
+            console.error("Error revoking invite:", err);
+            toast.error("Failed to revoke invitation");
+        }
     };
 
     return (
@@ -68,7 +106,7 @@ export default function InvitesPage() {
                     { label: "Invitations", href: "#" }
                 ]}
                 rightControls={
-                    <Dialog>
+                    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
                         <DialogTrigger asChild>
                             <CustomButton className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl h-10 px-6 font-semibold shadow-xl border-0">
                                 <UserPlus className="w-4 h-4 mr-2" />
@@ -103,7 +141,7 @@ export default function InvitesPage() {
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-xs uppercase font-semibold text-zinc-500 tracking-wider">Assign Role</label>
-                                        <Select defaultValue="viewer">
+                                        <Select value={role} onValueChange={setRole}>
                                             <SelectTrigger className="rounded-xl font-medium h-12 bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
                                                 <SelectValue />
                                             </SelectTrigger>
@@ -114,8 +152,9 @@ export default function InvitesPage() {
                                             </SelectContent>
                                         </Select>
                                     </div>
-                                    <CustomButton type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl h-12 text-sm border-0">
-                                        <Send className="w-4 h-4 mr-2" /> Send Invite
+                                    <CustomButton type="submit" disabled={sending} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl h-12 text-sm border-0">
+                                        {sending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}
+                                        {sending ? "Sending..." : "Send Invite"}
                                     </CustomButton>
                                 </form>
                             </div>
@@ -158,56 +197,65 @@ export default function InvitesPage() {
 
                 {/* INVITE LIST */}
                 <div className="grid gap-4">
-                    {inviteList.length > 0 ? (
-                        inviteList.map((inv) => (
-                            <Card key={inv.id} className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm hover:shadow-xl transition-all rounded-3xl group overflow-hidden">
-                                <CardContent className="p-0 flex flex-col md:flex-row items-center justify-between">
-                                    <div className="p-6 flex-1 flex items-center gap-4">
-                                        <div className={`h-12 w-12 rounded-full flex items-center justify-center border ${inv.status === 'Expired' ? 'bg-zinc-50 dark:bg-zinc-800 text-zinc-400 border-zinc-200 dark:border-zinc-700' : 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 border-indigo-100 dark:border-indigo-900/50'}`}>
-                                            <Mail className="w-5 h-5" />
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-bold text-zinc-900 dark:text-white tracking-tight">{inv.email}</p>
-                                            <div className="flex items-center gap-2 mt-1.5">
-                                                <Badge className="text-[10px] uppercase font-semibold tracking-wider rounded-md border-0 bg-zinc-100 dark:bg-zinc-800 text-zinc-500 px-2 py-0.5">
-                                                    {inv.role}
-                                                </Badge>
-                                                <span className="text-xs font-medium text-zinc-400 flex items-center gap-1.5">
-                                                    <Clock className="w-3.5 h-3.5" /> Sent {inv.sentAt}
-                                                </span>
+                    {loading ? (
+                        <div className="text-center py-20 bg-white/50 dark:bg-zinc-900/50 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-3xl">
+                            <Loader2 className="w-8 h-8 animate-spin text-indigo-600 mx-auto mb-4" />
+                            <p className="text-zinc-500 font-medium text-sm">Loading invitations...</p>
+                        </div>
+                    ) : inviteList.length > 0 ? (
+                        inviteList.map((inv) => {
+                            const isExpired = inv.status?.toLowerCase() === "expired";
+                            const sentAt = inv.createdAt ? new Date(inv.createdAt).toLocaleDateString() : "Unknown";
+                            return (
+                                <Card key={inv.token || inv._id} className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm hover:shadow-xl transition-all rounded-3xl group overflow-hidden">
+                                    <CardContent className="p-0 flex flex-col md:flex-row items-center justify-between">
+                                        <div className="p-6 flex-1 flex items-center gap-4">
+                                            <div className={`h-12 w-12 rounded-full flex items-center justify-center border ${isExpired ? 'bg-zinc-50 dark:bg-zinc-800 text-zinc-400 border-zinc-200 dark:border-zinc-700' : 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 border-indigo-100 dark:border-indigo-900/50'}`}>
+                                                <Mail className="w-5 h-5" />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-bold text-zinc-900 dark:text-white tracking-tight">{inv.email}</p>
+                                                <div className="flex items-center gap-2 mt-1.5">
+                                                    <Badge className="text-[10px] uppercase font-semibold tracking-wider rounded-md border-0 bg-zinc-100 dark:bg-zinc-800 text-zinc-500 px-2 py-0.5">
+                                                        {inv.role}
+                                                    </Badge>
+                                                    <span className="text-xs font-medium text-zinc-400 flex items-center gap-1.5">
+                                                        <Clock className="w-3.5 h-3.5" /> Sent {sentAt}
+                                                    </span>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
 
-                                    <div className="p-6 md:border-l border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 flex items-center gap-8 w-full md:w-auto justify-end">
-                                        <div className="text-right hidden md:block">
-                                            <p className="text-[10px] uppercase font-semibold tracking-wider text-zinc-400">Expires In</p>
-                                            <p className={`font-mono text-sm font-bold mt-1 ${inv.status === 'Expired' ? 'text-red-500' : 'text-zinc-700 dark:text-zinc-300'}`}>{inv.expires}</p>
-                                        </div>
+                                        <div className="p-6 md:border-l border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 flex items-center gap-8 w-full md:w-auto justify-end">
+                                            <div className="text-right hidden md:block">
+                                                <p className="text-[10px] uppercase font-semibold tracking-wider text-zinc-400">Status</p>
+                                                <p className={`font-mono text-sm font-bold mt-1 ${isExpired ? 'text-red-500' : 'text-zinc-700 dark:text-zinc-300'}`}>{inv.status || "Pending"}</p>
+                                            </div>
 
-                                        <div className="flex items-center gap-2">
-                                            <CustomButton
-                                                variant="outline"
-                                                size="sm"
-                                                className="h-10 gap-2 rounded-xl border-zinc-200 dark:border-zinc-800 font-semibold hover:bg-white dark:hover:bg-zinc-800 hover:text-indigo-600"
-                                                onClick={() => handleResend(inv.email)}
-                                            >
-                                                <RefreshCw className="w-4 h-4" />
-                                                <span className="hidden lg:inline">Resend</span>
-                                            </CustomButton>
-                                            <CustomButton
-                                                variant="ghost"
-                                                size="icon"
-                                                className="h-10 w-10 text-zinc-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-xl transition-colors"
-                                                onClick={() => handleRevoke(inv.id)}
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </CustomButton>
+                                            <div className="flex items-center gap-2">
+                                                <CustomButton
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="h-10 gap-2 rounded-xl border-zinc-200 dark:border-zinc-800 font-semibold hover:bg-white dark:hover:bg-zinc-800 hover:text-indigo-600"
+                                                    onClick={() => handleResend(inv.email)}
+                                                >
+                                                    <RefreshCw className="w-4 h-4" />
+                                                    <span className="hidden lg:inline">Resend</span>
+                                                </CustomButton>
+                                                <CustomButton
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-10 w-10 text-zinc-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-xl transition-colors"
+                                                    onClick={() => handleRevoke(inv.token)}
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </CustomButton>
+                                            </div>
                                         </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        ))
+                                    </CardContent>
+                                </Card>
+                            );
+                        })
                     ) : (
                         <div className="text-center py-20 bg-white/50 dark:bg-zinc-900/50 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-3xl">
                             <div className="h-16 w-16 bg-emerald-50 dark:bg-emerald-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
