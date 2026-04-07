@@ -70,8 +70,12 @@ async function proxy(
     resHeaders.append(key, value);
   });
 
-  // Remove any transfer-encoding since Next.js handles its own chunking
+  // fetch() auto-decompresses gzip/br, so these headers are now stale.
+  // If forwarded, the browser will try to decompress an already-plain body
+  // → ERR_CONTENT_DECODING_FAILED
   resHeaders.delete("transfer-encoding");
+  resHeaders.delete("content-encoding");
+  resHeaders.delete("content-length"); // length changed after decompression
 
   return new NextResponse(upstream.body, {
     status: upstream.status,
