@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
     ShieldCheck,
     Search,
@@ -32,7 +32,8 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu";
-import { showSuccess, showWarning } from "@/utils/toast";
+import { showSuccess, showWarning, showError } from "@/utils/toast";
+import { fetchUsersApi, updateOrgUser, deleteOrgUser } from "@/modules/crm/organizations/hooks/orgHooks";
 
 type Admin = {
     id: string;
@@ -44,21 +45,19 @@ type Admin = {
 };
 
 const ADMIN_ROLES = ["Super Admin", "Admin"] as const;
+const ADMIN_ROLE_KEYS = ["Super Admin", "Admin", "super_admin", "admin", "superadmin"];
 
-const existingUsers = [
-    { id: "u1", name: "Emily Chen", email: "emily.c@fixlsolutions.com" },
-    { id: "u2", name: "David Park", email: "david.p@fixlsolutions.com" },
-    { id: "u3", name: "Lisa Wong", email: "lisa.w@fixlsolutions.com" },
-];
-
-const initialAdmins: Admin[] = [
-    { id: "1", name: "Sarah Miller", email: "sarah.m@fixlsolutions.com", role: "Super Admin", status: "Active", lastActive: "2 mins ago" },
-    { id: "2", name: "Robert Wilson", email: "robert.w@fixlsolutions.com", role: "Admin", status: "Active", lastActive: "1 hour ago" },
-    { id: "3", name: "Vikas Singh", email: "vikas@fixlsolutions.com", role: "Super Admin", status: "Active", lastActive: "5 mins ago" },
-];
+const mapApiUserToAdmin = (apiUser: any): Admin => {
+    const name = [apiUser.firstName, apiUser.lastName].filter(Boolean).join(" ") || "Unknown";
+    const role: Admin["role"] = apiUser.role?.toLowerCase().includes("super") ? "Super Admin" : "Admin";
+    const status = apiUser.orgActive !== false ? "Active" : "Inactive";
+    return { id: apiUser._id, name, email: apiUser.email || "", role, status, lastActive: "N/A" };
+};
 
 export default function AdministratorsPage() {
-    const [admins, setAdmins] = useState<Admin[]>(initialAdmins);
+    const [admins, setAdmins] = useState<Admin[]>([]);
+    const [allNonAdminUsers, setAllNonAdminUsers] = useState<{ id: string; name: string; email: string }[]>([]);
+    const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
     const [roleFilter, setRoleFilter] = useState<string>("All");
     const [assignOpen, setAssignOpen] = useState(false);
@@ -69,6 +68,37 @@ export default function AdministratorsPage() {
     const [selectedUser, setSelectedUser] = useState("");
     const [selectedRole, setSelectedRole] = useState("");
     const [editRole, setEditRole] = useState("");
+
+    const loadAdmins = async () => {
+        try {
+            setLoading(true);
+            const res = await fetchUsersApi();
+            const data = res?.data || res || [];
+            const usersArray = Array.isArray(data) ? data : data.users ? data.users : [];
+            const adminUsers = usersArray.filter((u: any) =>
+                ADMIN_ROLE_KEYS.some((key) => u.role?.toLowerCase() === key.toLowerCase())
+            );
+            setAdmins(adminUsers.map(mapApiUserToAdmin));
+            const nonAdmins = usersArray.filter(
+                (u: any) => !ADMIN_ROLE_KEYS.some((key) => u.role?.toLowerCase() === key.toLowerCase())
+            );
+            setAllNonAdminUsers(
+                nonAdmins.map((u: any) => ({
+                    id: u._id,
+                    name: [u.firstName, u.lastName].filter(Boolean).join(" ") || "Unknown",
+                    email: u.email || "",
+                }))
+            );
+        } catch (err: any) {
+            showError(err?.response?.data?.message || "Failed to load administrators");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        loadAdmins();
+    }, []);
 
     const filtered = admins.filter((admin) => {
         const matchesSearch =
@@ -88,45 +118,61 @@ export default function AdministratorsPage() {
         return name[0].toUpperCase();
     };
 
-    const handleAssign = () => {
+    const handleAssign = async () => {
         if (!selectedUser || !selectedRole) {
             showWarning("Please select a user and role");
             return;
         }
-        const user = existingUsers.find((u) => u.id === selectedUser);
+        const user = allNonAdminUsers.find((u) => u.id === selectedUser);
         if (!user) return;
-        const newAdmin: Admin = {
-            id: Date.now().toString(),
-            name: user.name,
-            email: user.email,
-            role: selectedRole as Admin["role"],
-            status: "Active",
-            lastActive: "Just now",
-        };
-        setAdmins((prev) => [...prev, newAdmin]);
-        setSelectedUser("");
-        setSelectedRole("");
-        setAssignOpen(false);
-        showSuccess(`${user.name} assigned as ${selectedRole}`);
+        try {
+            await updateOrgUser(user.id, { role: selectedRole });
+            const newAdmin: Admin = {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                role: selectedRole as Admin["role"],
+                status: "Active",
+                lastActive: "Just now",
+            };
+            setAdmins((prev) => [...prev, newAdmin]);
+            setAllNonAdminUsers((prev) => prev.filter((u) => u.id !== selectedUser));
+            setSelectedUser("");
+            setSelectedRole("");
+            setAssignOpen(false);
+            showSuccess(`${user.name} assigned as ${selectedRole}`);
+        } catch (err: any) {
+            showError(err?.response?.data?.message || "Failed to assign admin role");
+        }
     };
 
-    const handleRemove = () => {
+    const handleRemove = async () => {
         if (!removeTarget) return;
-        setAdmins((prev) => prev.filter((a) => a.id !== removeTarget.id));
-        showSuccess(`${removeTarget.name} removed from administrators`);
-        setRemoveTarget(null);
-        setRemoveOpen(false);
+        try {
+            await updateOrgUser(removeTarget.id, { role: "Member" });
+            setAdmins((prev) => prev.filter((a) => a.id !== removeTarget.id));
+            showSuccess(`${removeTarget.name} removed from administrators`);
+            setRemoveTarget(null);
+            setRemoveOpen(false);
+        } catch (err: any) {
+            showError(err?.response?.data?.message || "Failed to remove admin");
+        }
     };
 
-    const handleEditRole = () => {
+    const handleEditRole = async () => {
         if (!editTarget || !editRole) return;
-        setAdmins((prev) =>
-            prev.map((a) => (a.id === editTarget.id ? { ...a, role: editRole as Admin["role"] } : a))
-        );
-        showSuccess(`${editTarget.name} role updated to ${editRole}`);
-        setEditTarget(null);
-        setEditRole("");
-        setEditOpen(false);
+        try {
+            await updateOrgUser(editTarget.id, { role: editRole });
+            setAdmins((prev) =>
+                prev.map((a) => (a.id === editTarget.id ? { ...a, role: editRole as Admin["role"] } : a))
+            );
+            showSuccess(`${editTarget.name} role updated to ${editRole}`);
+            setEditTarget(null);
+            setEditRole("");
+            setEditOpen(false);
+        } catch (err: any) {
+            showError(err?.response?.data?.message || "Failed to update role");
+        }
     };
 
     const roleBadgeStyle = (role: string) => {
@@ -206,7 +252,13 @@ export default function AdministratorsPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
-                            {filtered.length === 0 ? (
+                            {loading ? (
+                                <tr>
+                                    <td colSpan={5} className="px-4 py-16 text-center">
+                                        <p className="text-sm text-gray-500">Loading administrators...</p>
+                                    </td>
+                                </tr>
+                            ) : filtered.length === 0 ? (
                                 <tr>
                                     <td colSpan={5} className="px-4 py-16 text-center">
                                         <Shield className="w-10 h-10 text-gray-300 mx-auto mb-3" />
@@ -289,7 +341,7 @@ export default function AdministratorsPage() {
                                     <SelectValue placeholder="Choose a user" />
                                 </SelectTrigger>
                                 <SelectContent className="rounded-none">
-                                    {existingUsers.map((user) => (
+                                    {allNonAdminUsers.map((user) => (
                                         <SelectItem key={user.id} value={user.id}>
                                             {user.name} ({user.email})
                                         </SelectItem>

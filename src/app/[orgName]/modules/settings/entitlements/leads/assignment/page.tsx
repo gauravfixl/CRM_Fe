@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect, useMemo } from "react"
 import { useParams } from "next/navigation"
 import {
     UserCheck,
@@ -21,7 +21,8 @@ import {
     Users,
     Settings2,
     LayoutGrid,
-    Target
+    Target,
+    Loader2
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -61,13 +62,61 @@ import {
 import { SmallCard, SmallCardContent, SmallCardHeader } from "@/shared/components/custom/SmallCard"
 import { Switch } from "@/components/ui/switch"
 import { toast } from "sonner"
+import { fetchUsersApi } from "@/modules/crm/organizations/hooks/orgHooks"
+import { getLeadListByOrg } from "@/hooks/leadHooks"
+
+interface OrgUser {
+    _id: string
+    name: string
+    email: string
+    role?: string
+}
+
+interface Lead {
+    _id: string
+    name: string
+    stage: string
+    assignedTo?: { email: string; name: string }
+    owner?: string
+    source: string
+    isDeleted: boolean
+}
 
 export default function LeadAssignmentRulesPage() {
     const params = useParams()
     const [searchQuery, setSearchQuery] = useState("")
     const [isLoading, setIsLoading] = useState(false)
+    const [isFetching, setIsFetching] = useState(true)
     const [isRuleOpen, setIsRuleOpen] = useState(false)
     const [editingRule, setEditingRule] = useState<any>(null)
+    const [orgUsers, setOrgUsers] = useState<OrgUser[]>([])
+    const [leads, setLeads] = useState<Lead[]>([])
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const [usersRes, leadsRes] = await Promise.all([
+                    fetchUsersApi(),
+                    getLeadListByOrg()
+                ])
+                setOrgUsers(usersRes?.users || usersRes || [])
+                setLeads(leadsRes?.data?.data || [])
+            } catch (error) {
+                console.error("Failed to fetch assignment data:", error)
+                toast.error("Failed to load assignment data")
+            } finally {
+                setIsFetching(false)
+            }
+        }
+        fetchData()
+    }, [])
+
+    const assignmentStats = useMemo(() => {
+        const assignedLeads = leads.filter(l => l.assignedTo?.name || l.owner)
+        const unassignedLeads = leads.filter(l => !l.assignedTo?.name && !l.owner)
+        const assignmentRate = leads.length > 0 ? Math.round((assignedLeads.length / leads.length) * 100) : 0
+        return { assignedCount: assignedLeads.length, unassignedCount: unassignedLeads.length, assignmentRate }
+    }, [leads])
 
     const [rules, setRules] = useState([
         { id: "1", name: "High Value Inbound (Us/Uk)", conditions: "Value > $10k, Country = US/UK", target: "Enterprise Sales Team", method: "Round Robin", priority: 1, status: "ACTIVE" },
@@ -167,7 +216,7 @@ export default function LeadAssignmentRulesPage() {
                     <SmallCardContent className="p-4 flex flex-row items-center justify-between">
                         <div>
                             <p className="text-white text-xs opacity-80">Active Logic</p>
-                            <p className="text-white text-xl font-semibold">08 Rules</p>
+                            <p className="text-white text-xl font-semibold">{isFetching ? "..." : `${rules.filter(r => r.status === 'ACTIVE').length} Rules`}</p>
                             <p className="text-[10px] text-white/80">Top Priority: High Value</p>
                         </div>
                         <Target className="w-4 h-4 text-white" />
@@ -189,8 +238,8 @@ export default function LeadAssignmentRulesPage() {
                     <SmallCardContent className="p-4 flex flex-row items-center justify-between">
                         <div>
                             <p className="text-xs text-gray-600">Automation Success</p>
-                            <p className="text-xl font-semibold text-gray-900">92%</p>
-                            <p className="text-[10px] text-emerald-600 font-medium">Minimal unassigned</p>
+                            <p className="text-xl font-semibold text-gray-900">{isFetching ? "..." : `${assignmentStats.assignmentRate}%`}</p>
+                            <p className="text-[10px] text-emerald-600 font-medium">{isFetching ? "Loading..." : `${assignmentStats.assignedCount} assigned`}</p>
                         </div>
                         <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                     </SmallCardContent>
@@ -200,7 +249,7 @@ export default function LeadAssignmentRulesPage() {
                     <SmallCardContent className="p-4 flex flex-row items-center justify-between">
                         <div>
                             <p className="text-xs text-gray-600">Unassigned Leads</p>
-                            <p className="text-xl font-semibold text-gray-900">14</p>
+                            <p className="text-xl font-semibold text-gray-900">{isFetching ? "..." : assignmentStats.unassignedCount}</p>
                             <p className="text-[10px] text-zinc-400 font-medium">Require manual review</p>
                         </div>
                         <Info className="w-4 h-4 text-amber-400" />
@@ -398,12 +447,30 @@ export default function LeadAssignmentRulesPage() {
                         <div className="grid grid-cols-2 gap-4">
                             <div className="grid gap-2">
                                 <Label className="text-[10px] font-medium text-zinc-400">Assignment Target</Label>
-                                <Input
-                                    placeholder="Team or User ID"
-                                    value={editingRule?.target}
-                                    onChange={(e) => setEditingRule({ ...editingRule, target: e.target.value })}
-                                    className="rounded-xl bg-zinc-50 border-zinc-100 focus:ring-blue-100 h-11 text-sm font-medium"
-                                />
+                                {orgUsers.length > 0 ? (
+                                    <Select
+                                        value={editingRule?.target}
+                                        onValueChange={(v) => setEditingRule({ ...editingRule, target: v })}
+                                    >
+                                        <SelectTrigger className="h-11 rounded-xl bg-zinc-50 border-zinc-100">
+                                            <SelectValue placeholder="Select user or team" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {orgUsers.map((user) => (
+                                                <SelectItem key={user._id} value={user.name || user.email}>
+                                                    {user.name || user.email}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                ) : (
+                                    <Input
+                                        placeholder="Team or User ID"
+                                        value={editingRule?.target}
+                                        onChange={(e) => setEditingRule({ ...editingRule, target: e.target.value })}
+                                        className="rounded-xl bg-zinc-50 border-zinc-100 focus:ring-blue-100 h-11 text-sm font-medium"
+                                    />
+                                )}
                             </div>
                             <div className="grid gap-2">
                                 <Label className="text-[10px] font-medium text-zinc-400">Method</Label>

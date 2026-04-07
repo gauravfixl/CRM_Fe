@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect, useMemo } from "react"
 import { useParams } from "next/navigation"
 import {
     BarChart3,
@@ -22,7 +22,8 @@ import {
     Thermometer,
     Flame,
     Snowflake,
-    Lightbulb
+    Lightbulb,
+    Loader2
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -46,11 +47,62 @@ import {
 import { SmallCard, SmallCardContent, SmallCardHeader } from "@/shared/components/custom/SmallCard"
 import { Progress } from "@/components/ui/progress"
 import { toast } from "sonner"
+import { getLeadListByOrg } from "@/hooks/leadHooks"
+
+interface Lead {
+    _id: string
+    name: string
+    stage: string
+    source: string
+    probability: number
+    estimatedValue: number
+    isDeleted: boolean
+    createdAt: string
+}
 
 export default function LeadScoringRulesPage() {
     const params = useParams()
     const [searchQuery, setSearchQuery] = useState("")
     const [isLoading, setIsLoading] = useState(false)
+    const [isFetching, setIsFetching] = useState(true)
+    const [leads, setLeads] = useState<Lead[]>([])
+
+    useEffect(() => {
+        const fetchLeads = async () => {
+            try {
+                const res = await getLeadListByOrg()
+                setLeads(res?.data?.data || [])
+            } catch (error) {
+                console.error("Failed to fetch leads for scoring:", error)
+                toast.error("Failed to load scoring data")
+                setLeads([])
+            } finally {
+                setIsFetching(false)
+            }
+        }
+        fetchLeads()
+    }, [])
+
+    const scoringMetrics = useMemo(() => {
+        const totalLeads = leads.length
+        const hotLeads = leads.filter(l => (l.probability || 0) > 80).length
+        const warmLeads = leads.filter(l => (l.probability || 0) >= 40 && (l.probability || 0) <= 80).length
+        const coldLeads = leads.filter(l => (l.probability || 0) < 40).length
+
+        const wonLeads = leads.filter(l => l.stage === "Closed-Won" || l.stage === "Won")
+        const highProbWon = wonLeads.filter(l => (l.probability || 0) > 80).length
+        const highProbTotal = leads.filter(l => (l.probability || 0) > 80).length
+        const highProbWinRate = highProbTotal > 0 ? Math.round((highProbWon / highProbTotal) * 100) : 0
+
+        const warmProbWon = wonLeads.filter(l => (l.probability || 0) >= 40 && (l.probability || 0) <= 80).length
+        const warmProbTotal = warmLeads
+        const warmWinRate = warmProbTotal > 0 ? Math.round((warmProbWon / warmProbTotal) * 100) : 0
+
+        const accuracy = totalLeads > 0 ? Math.round((wonLeads.length / totalLeads) * 100 * 2.5) : 0
+        const clampedAccuracy = Math.min(accuracy, 100)
+
+        return { hotLeads, warmLeads: warmLeads, coldLeads, highProbWinRate, warmWinRate, accuracy: clampedAccuracy }
+    }, [leads])
 
     const handleAction = (msg: string) => {
         setIsLoading(true)
@@ -149,7 +201,7 @@ export default function LeadScoringRulesPage() {
                         <div className="flex flex-row items-center justify-between">
                             <div>
                                 <p className="text-xs text-gray-600">Model Accuracy</p>
-                                <p className="text-xl font-semibold text-emerald-600">88.4%</p>
+                                <p className="text-xl font-semibold text-emerald-600">{isFetching ? "..." : `${scoringMetrics.accuracy}%`}</p>
                                 <p className="text-[10px] text-gray-500">Based on Won leads</p>
                             </div>
                             <Target className="w-4 h-4 text-emerald-400" />
@@ -277,15 +329,15 @@ export default function LeadScoringRulesPage() {
                         <div className="space-y-4">
                             <div className="flex justify-between text-[11px] font-medium text-zinc-500">
                                 <span>80+ Score Leads</span>
-                                <span>74% Win Rate</span>
+                                <span>{isFetching ? "..." : `${scoringMetrics.highProbWinRate}% Win Rate`}</span>
                             </div>
-                            <Progress value={74} className="h-1.5 bg-zinc-100 [&>div]:bg-blue-600 shadow-inner" />
+                            <Progress value={isFetching ? 0 : scoringMetrics.highProbWinRate} className="h-1.5 bg-zinc-100 [&>div]:bg-blue-600 shadow-inner" />
 
                             <div className="flex justify-between text-[11px] font-medium text-zinc-500">
                                 <span>40-79 Score Leads</span>
-                                <span>32% Win Rate</span>
+                                <span>{isFetching ? "..." : `${scoringMetrics.warmWinRate}% Win Rate`}</span>
                             </div>
-                            <Progress value={32} className="h-1.5 bg-zinc-100 [&>div]:bg-blue-400 shadow-inner" />
+                            <Progress value={isFetching ? 0 : scoringMetrics.warmWinRate} className="h-1.5 bg-zinc-100 [&>div]:bg-blue-400 shadow-inner" />
                         </div>
                     </div>
                     <div className="bg-zinc-50/50 rounded-xl p-6 border border-zinc-100 flex flex-col justify-center">
@@ -297,7 +349,7 @@ export default function LeadScoringRulesPage() {
                             </div>
                         </div>
                         <div className="flex items-baseline gap-2">
-                            <span className="text-4xl font-semibold text-rose-600">84</span>
+                            <span className="text-4xl font-semibold text-rose-600">{isFetching ? <Loader2 className="w-6 h-6 animate-spin text-rose-400 inline" /> : scoringMetrics.hotLeads}</span>
                             <span className="text-xs font-medium text-zinc-300">Profiles</span>
                         </div>
                         <Button className="w-full mt-6 bg-zinc-900 hover:bg-black text-white text-[10px] font-medium py-6 rounded-xl shadow-lg active:scale-95 transition-all" onClick={() => handleAction("Loading high priority leads...")}>

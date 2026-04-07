@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
     ShieldAlert,
     Search,
@@ -28,7 +28,8 @@ import {
     CustomSelectItem,
 } from "@/shared/components/custom/CustomSelect"
 import { CustomLabel } from "@/shared/components/custom/CustomLabel"
-import { showSuccess, showWarning } from "@/utils/toast"
+import { showSuccess, showWarning, showError } from "@/utils/toast"
+import { fetchUsersApi, updateOrgUser } from "@/modules/crm/organizations/hooks/orgHooks"
 
 interface BlockedUser {
     id: string
@@ -40,49 +41,48 @@ interface BlockedUser {
     status: string
 }
 
+const mapApiUserToBlocked = (apiUser: any): BlockedUser => {
+    const name = [apiUser.firstName, apiUser.lastName].filter(Boolean).join(" ") || "Unknown"
+    const blockedDate = apiUser.updatedAt
+        ? new Date(apiUser.updatedAt).toISOString().split("T")[0]
+        : apiUser.joinedAt
+        ? new Date(apiUser.joinedAt).toISOString().split("T")[0]
+        : "N/A"
+    return {
+        id: apiUser._id,
+        name,
+        email: apiUser.email || "",
+        riskLevel: "Medium",
+        reason: "Account suspended",
+        blockedDate,
+        status: "Blocked",
+    }
+}
+
 export default function BlockedRiskyUsersPage() {
     const [searchQuery, setSearchQuery] = useState("")
     const [riskFilter, setRiskFilter] = useState("all")
     const [unblockTarget, setUnblockTarget] = useState<BlockedUser | null>(null)
+    const [blockedUsers, setBlockedUsers] = useState<BlockedUser[]>([])
+    const [loading, setLoading] = useState(true)
 
-    const [blockedUsers, setBlockedUsers] = useState<BlockedUser[]>([
-        {
-            id: "r1",
-            name: "James Bond",
-            email: "007@mi6.gov",
-            riskLevel: "Critical",
-            reason: "Impossible travel detected",
-            blockedDate: "2026-03-20",
-            status: "Blocked",
-        },
-        {
-            id: "r2",
-            name: "Unknown Entity",
-            email: "guest_82@proxy.net",
-            riskLevel: "Medium",
-            reason: "Multiple failed mfa attempts",
-            blockedDate: "2026-03-18",
-            status: "Blocked",
-        },
-        {
-            id: "r3",
-            name: "Sarah Connor",
-            email: "s.connor@skynet.io",
-            riskLevel: "Critical",
-            reason: "Suspicious api access pattern",
-            blockedDate: "2026-03-15",
-            status: "Blocked",
-        },
-        {
-            id: "r4",
-            name: "Alex Morgan",
-            email: "a.morgan@external.com",
-            riskLevel: "Low",
-            reason: "Outdated credentials",
-            blockedDate: "2026-03-22",
-            status: "Blocked",
-        },
-    ])
+    useEffect(() => {
+        const loadBlockedUsers = async () => {
+            try {
+                setLoading(true)
+                const res = await fetchUsersApi()
+                const data = res?.data || res || []
+                const usersArray = Array.isArray(data) ? data : data.users ? data.users : []
+                const blocked = usersArray.filter((u: any) => u.orgActive === false)
+                setBlockedUsers(blocked.map(mapApiUserToBlocked))
+            } catch (err: any) {
+                showError(err?.response?.data?.message || "Failed to load blocked users")
+            } finally {
+                setLoading(false)
+            }
+        }
+        loadBlockedUsers()
+    }, [])
 
     const filtered = blockedUsers.filter((u) => {
         const matchesSearch =
@@ -95,11 +95,16 @@ export default function BlockedRiskyUsersPage() {
     const criticalCount = blockedUsers.filter((u) => u.riskLevel === "Critical").length
     const mediumCount = blockedUsers.filter((u) => u.riskLevel === "Medium").length
 
-    const handleUnblock = () => {
+    const handleUnblock = async () => {
         if (!unblockTarget) return
-        setBlockedUsers((prev) => prev.filter((u) => u.id !== unblockTarget.id))
-        showSuccess(`${unblockTarget.name} has been unblocked successfully`)
-        setUnblockTarget(null)
+        try {
+            await updateOrgUser(unblockTarget.id, { orgActive: true })
+            setBlockedUsers((prev) => prev.filter((u) => u.id !== unblockTarget.id))
+            showSuccess(`${unblockTarget.name} has been unblocked successfully`)
+            setUnblockTarget(null)
+        } catch (err: any) {
+            showError(err?.response?.data?.message || "Failed to unblock user")
+        }
     }
 
     const riskBadge = (level: string) => {
@@ -194,7 +199,13 @@ export default function BlockedRiskyUsersPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-50">
-                                {filtered.length === 0 ? (
+                                {loading ? (
+                                    <tr>
+                                        <td colSpan={6} className="px-4 py-12 text-center">
+                                            <p className="text-sm text-gray-500">Loading blocked users...</p>
+                                        </td>
+                                    </tr>
+                                ) : filtered.length === 0 ? (
                                     <tr>
                                         <td colSpan={6} className="px-4 py-12 text-center">
                                             <ShieldCheck className="w-8 h-8 text-gray-300 mx-auto mb-2" />

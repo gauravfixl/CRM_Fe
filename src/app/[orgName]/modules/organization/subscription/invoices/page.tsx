@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
     Receipt,
     Download,
@@ -9,8 +9,10 @@ import {
     AlertCircle,
     CheckCircle2,
     ArrowRight,
-    X
+    X,
+    Loader2
 } from "lucide-react";
+import { axiosInstance } from "@/lib/axios";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
@@ -27,7 +29,21 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 
-const currentInvoice = {
+interface InvoiceItem {
+    desc: string;
+    cost: string;
+}
+
+interface InvoiceData {
+    id: string;
+    period: string;
+    dueDate: string;
+    amount: string;
+    status: string;
+    items: InvoiceItem[];
+}
+
+const fallbackInvoice: InvoiceData = {
     id: "Inv-2026-002",
     period: "January 1, 2026 - January 31, 2026",
     dueDate: "Feb 01, 2026",
@@ -41,11 +57,92 @@ const currentInvoice = {
     ]
 };
 
+function formatCurrency(value: number): string {
+    return `$${value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function formatDateStr(dateStr: string): string {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" });
+}
+
+function formatDateLong(dateStr: string): string {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+}
+
+function mapApiInvoiceToData(invoice: any): InvoiceData {
+    const createdAt = invoice.createdAt || invoice.date || new Date().toISOString();
+    const dueDate = invoice.dueDate || invoice.expiryDate || createdAt;
+    const total = invoice.totalAmount ?? invoice.total ?? invoice.grandTotal ?? 0;
+    const status = invoice.status === "Paid" || invoice.status === "paid" ? "Paid" : "Unpaid";
+
+    const items: InvoiceItem[] = [];
+    if (invoice.items && Array.isArray(invoice.items)) {
+        invoice.items.forEach((item: any) => {
+            items.push({
+                desc: item.name || item.description || item.itemName || "Item",
+                cost: formatCurrency(item.amount ?? item.price ?? item.total ?? 0),
+            });
+        });
+    }
+    if (invoice.tax != null && invoice.tax > 0) {
+        items.push({ desc: "Tax", cost: formatCurrency(invoice.tax) });
+    }
+    if (items.length === 0) {
+        items.push({ desc: invoice.description || "Invoice charge", cost: formatCurrency(total) });
+    }
+
+    const startDate = formatDateLong(createdAt);
+    const endDate = formatDateLong(dueDate);
+
+    return {
+        id: invoice.invoiceNo || invoice.invoiceNumber || invoice._id || "INV-000",
+        period: `${startDate} - ${endDate}`,
+        dueDate: formatDateStr(dueDate),
+        amount: formatCurrency(total),
+        status,
+        items,
+    };
+}
+
 export default function InvoicesPage() {
     const [isPayOpen, setIsPayOpen] = useState(false);
     const [isPaid, setIsPaid] = useState(false);
     const [cvv, setCvv] = useState("");
     const [cvvError, setCvvError] = useState("");
+    const [currentInvoice, setCurrentInvoice] = useState<InvoiceData>(fallbackInvoice);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchInvoices = async () => {
+            try {
+                setLoading(true);
+                const response = await axiosInstance.get("/invoice/all");
+                const invoices = response.data?.data || response.data?.invoices || response.data;
+                if (Array.isArray(invoices) && invoices.length > 0) {
+                    // Find the most recent unpaid invoice, or fall back to the most recent one
+                    const unpaid = invoices.find((inv: any) =>
+                        inv.status !== "Paid" && inv.status !== "paid"
+                    );
+                    const selected = unpaid || invoices[0];
+                    setCurrentInvoice(mapApiInvoiceToData(selected));
+                    if (selected.status === "Paid" || selected.status === "paid") {
+                        setIsPaid(true);
+                    }
+                } else {
+                    setCurrentInvoice(fallbackInvoice);
+                }
+            } catch (error) {
+                console.error("Failed to fetch invoices:", error);
+                toast.error("Failed to load invoice data.");
+                setCurrentInvoice(fallbackInvoice);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchInvoices();
+    }, []);
 
     const handlePayNow = () => {
         if (!cvv || cvv.length < 3) {
@@ -70,6 +167,15 @@ export default function InvoicesPage() {
             error: "Failed to generate PDF. Please try again."
         });
     };
+
+    if (loading) {
+        return (
+            <div className="flex flex-col h-full w-full bg-slate-50/50 p-6 items-center justify-center">
+                <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+                <p className="text-xs text-slate-400 mt-2">Loading invoice...</p>
+            </div>
+        );
+    }
 
     return (
         <div className="flex flex-col h-full w-full bg-slate-50/50 p-6 space-y-5 overflow-y-auto">

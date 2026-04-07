@@ -1,8 +1,8 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import SubHeader from "@/shared/components/custom/SubHeader"
-import { Globe, Plus, Search, MoreHorizontal, Users, Edit3, UserPlus, Lock, Trash2, ChevronRight } from "lucide-react"
+import { Globe, Plus, Search, MoreHorizontal, Users, Edit3, UserPlus, Lock, Trash2, ChevronRight, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -23,6 +23,8 @@ import { AssignAccessModal } from "@/components/groups/assign-access-modal"
 import { ReleaseGroupModal } from "@/components/groups/release-group-modal"
 import { GroupProfileModal } from "@/components/groups/group-profile-modal"
 import { ManageMembersModal } from "@/components/groups/manage-members-modal"
+import { toast } from "sonner"
+import { getAllTeams, createTeam, deleteTeam } from "@/hooks/teamHooks"
 
 interface Group {
     id: string
@@ -36,6 +38,34 @@ interface Group {
 export default function M365GroupsPage() {
     const [searchQuery, setSearchQuery] = useState("")
     const [groups, setGroups] = useState<Group[]>([])
+    const [loading, setLoading] = useState(true)
+
+    const fetchTeams = async () => {
+        try {
+            setLoading(true)
+            const response = await getAllTeams()
+            const teams = response.data?.teams || response.data || []
+            const mapped = teams
+                .map((t: any) => ({
+                    id: t._id || t.id,
+                    name: t.name || "",
+                    members: Array.isArray(t.members) ? t.members.length : (t.members || 0),
+                    type: t.type || "M365",
+                    description: t.description || "",
+                    status: t.status || "Active",
+                }))
+                .filter((g: Group) => g.type === "M365")
+            setGroups(mapped)
+        } catch (error: any) {
+            toast.error(error?.response?.data?.message || "Failed to fetch M365 groups")
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    useEffect(() => {
+        fetchTeams()
+    }, [])
 
     // Modal states
     const [createGroupOpen, setCreateGroupOpen] = useState(false)
@@ -46,12 +76,24 @@ export default function M365GroupsPage() {
     const [manageMembersOpen, setManageMembersOpen] = useState(false)
     const [selectedGroup, setSelectedGroup] = useState<Group | null>(null)
 
-    const handleGroupCreated = (group: GroupFormData) => {
-        setGroups(prev => [...prev, { ...group, members: 0, type: "M365" }])
+    const handleGroupCreated = async (group: GroupFormData) => {
+        try {
+            await createTeam({ ...group, type: "M365" })
+            toast.success("M365 group created successfully")
+            fetchTeams()
+        } catch (error: any) {
+            toast.error(error?.response?.data?.message || "Failed to create M365 group")
+        }
     }
 
-    const handleGroupReleased = (groupId: string) => {
-        setGroups(prev => prev.filter(g => g.id !== groupId))
+    const handleGroupReleased = async (groupId: string) => {
+        try {
+            await deleteTeam(groupId)
+            toast.success("M365 group deleted successfully")
+            setGroups(prev => prev.filter(g => g.id !== groupId))
+        } catch (error: any) {
+            toast.error(error?.response?.data?.message || "Failed to delete M365 group")
+        }
     }
 
     const handleGroupUpdated = (updated: { id: string; name: string; description: string; type: string; status: string }) => {
@@ -96,7 +138,11 @@ export default function M365GroupsPage() {
                     </div>
                 )}
 
-                {filteredGroups.length === 0 ? (
+                {loading ? (
+                    <div className="flex items-center justify-center py-20">
+                        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+                    </div>
+                ) : filteredGroups.length === 0 ? (
                     <Card className="rounded-none border-0 shadow-sm bg-white/50 backdrop-blur-sm">
                         <CardHeader>
                             <CardTitle className="text-lg font-bold">Microsoft 365 Groups</CardTitle>

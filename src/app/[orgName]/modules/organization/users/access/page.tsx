@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
     Shield,
     Building2,
@@ -9,7 +9,8 @@ import {
     X,
     Search,
     Check,
-    ArrowRight
+    ArrowRight,
+    Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,50 +27,147 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
+import { fetchUsersApi, updateOrgUser } from "@/modules/crm/organizations/hooks/orgHooks";
+import { getAllFirms } from "@/hooks/firmHooks";
 
-const initialUsers = [
-    {
-        id: "u1",
-        name: "Robert Fox",
-        role: "Org Admin",
-        firms: ["US-East HQ", "US-West Branch"],
-        avatar: "RF"
-    },
-    {
-        id: "u2",
-        name: "Jane Cooper",
-        role: "Regional Manager",
-        firms: ["US-West Branch"],
-        avatar: "JC"
-    },
-    {
-        id: "u3",
-        name: "Guy Hawkins",
-        role: "Auditor",
-        firms: ["US-East HQ", "EU-Central Ops", "Asia-Pac Hub"],
-        avatar: "GH"
-    },
-];
+interface AccessUser {
+    id: string;
+    name: string;
+    role: string;
+    firms: string[];
+    firmIds: string[];
+    avatar: string;
+}
 
-const allFirms = ["US-East HQ", "US-West Branch", "EU-Central Ops", "Asia-Pac Hub", "LatAm Sales"];
+interface FirmData {
+    _id: string;
+    FirmName: string;
+    [key: string]: any;
+}
 
 export default function AccessMatrixPage() {
     const [searchQuery, setSearchQuery] = useState("");
-    const [users, setUsers] = useState(initialUsers);
+    const [users, setUsers] = useState<AccessUser[]>([]);
+    const [allFirms, setAllFirms] = useState<FirmData[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-    const handleGrantAccess = (userId: string, firms: string[]) => {
-        setUsers(prev => prev.map(u =>
-            u.id === userId ? { ...u, firms: [...new Set([...u.firms, ...firms])] } : u
-        ));
-        toast.success("Firm access permissions updated.");
+    const loadData = useCallback(async () => {
+        try {
+            setLoading(true);
+            const [usersData, firmsRes] = await Promise.all([
+                fetchUsersApi(),
+                getAllFirms(),
+            ]);
+
+            const rawUsers = usersData?.users || usersData || [];
+            const firmsData: FirmData[] = firmsRes?.data?.firms || firmsRes?.data?.data || [];
+            setAllFirms(firmsData);
+
+            // Build a firm ID->Name lookup
+            const firmNameMap: Record<string, string> = {};
+            firmsData.forEach((f: FirmData) => {
+                firmNameMap[f._id] = f.FirmName;
+            });
+
+            const mappedUsers: AccessUser[] = (Array.isArray(rawUsers) ? rawUsers : [])
+                .filter((u: any) => u.orgActive !== false)
+                .map((u: any) => {
+                    const name = u.name || [u.firstName, u.lastName].filter(Boolean).join(" ") || u.email || "—";
+                    const initials = name
+                        .split(" ")
+                        .map((n: string) => n[0])
+                        .join("")
+                        .toUpperCase()
+                        .slice(0, 2);
+
+                    // Map firmAccess IDs to firm names
+                    const userFirmIds: string[] = Array.isArray(u.firmAccess) ? u.firmAccess : [];
+                    const userFirmNames = userFirmIds
+                        .map((fid: string) => firmNameMap[fid] || fid)
+                        .filter(Boolean);
+
+                    return {
+                        id: u.memberId || u._id,
+                        name,
+                        role: u.role || "Member",
+                        firms: userFirmNames,
+                        firmIds: userFirmIds,
+                        avatar: u.avatar || initials,
+                    };
+                });
+
+            setUsers(mappedUsers);
+        } catch (error) {
+            console.error("Failed to load access matrix data:", error);
+            toast.error("Failed to load users and firms.");
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        loadData();
+    }, [loadData]);
+
+    // Build firm name -> id lookup
+    const firmIdMap: Record<string, string> = {};
+    allFirms.forEach((f) => {
+        firmIdMap[f.FirmName] = f._id;
+    });
+
+    const allFirmNames = allFirms.map((f) => f.FirmName);
+
+    const handleGrantAccess = async (userId: string, firmNames: string[]) => {
+        const user = users.find((u) => u.id === userId);
+        if (!user) return;
+
+        const newFirmIds = firmNames
+            .map((name) => firmIdMap[name])
+            .filter(Boolean);
+        const updatedFirmIds = [...new Set([...user.firmIds, ...newFirmIds])];
+
+        setActionLoading(userId);
+        try {
+            await updateOrgUser(userId, { firmAccess: updatedFirmIds });
+            toast.success("Firm access permissions updated.");
+            await loadData();
+        } catch (error) {
+            console.error("Failed to grant access:", error);
+            toast.error("Failed to update firm access.");
+        } finally {
+            setActionLoading(null);
+        }
     };
 
-    const handleRevoke = (userId: string, firm: string) => {
-        setUsers(prev => prev.map(u =>
-            u.id === userId ? { ...u, firms: u.firms.filter(f => f !== firm) } : u
-        ));
-        toast.info(`Access to ${firm} revoked.`);
+    const handleRevoke = async (userId: string, firmName: string) => {
+        const user = users.find((u) => u.id === userId);
+        if (!user) return;
+
+        const revokedFirmId = firmIdMap[firmName];
+        const updatedFirmIds = user.firmIds.filter((fid) => fid !== revokedFirmId);
+
+        setActionLoading(userId);
+        try {
+            await updateOrgUser(userId, { firmAccess: updatedFirmIds });
+            toast.info(`Access to ${firmName} revoked.`);
+            await loadData();
+        } catch (error) {
+            console.error("Failed to revoke access:", error);
+            toast.error("Failed to revoke firm access.");
+        } finally {
+            setActionLoading(null);
+        }
     };
+
+    if (loading) {
+        return (
+            <div className="flex flex-col h-full w-full bg-slate-50/50 p-6 items-center justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+                <p className="text-sm text-slate-500 mt-3">Loading access matrix...</p>
+            </div>
+        );
+    }
 
     return (
         <div className="flex flex-col h-full w-full bg-slate-50/50 p-6 space-y-6 overflow-y-auto">
@@ -116,6 +214,12 @@ export default function AccessMatrixPage() {
 
                                 {/* ACCESS TOKENS */}
                                 <div className="p-6 bg-slate-50/30 flex-1 flex flex-col justify-center">
+                                    {actionLoading === user.id ? (
+                                        <div className="flex items-center gap-2 text-slate-400">
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                            <span className="text-xs">Updating access...</span>
+                                        </div>
+                                    ) : (
                                     <div className="flex flex-wrap items-center gap-2">
                                         {user.firms.length > 0 ? (
                                             user.firms.map((firm) => (
@@ -142,7 +246,7 @@ export default function AccessMatrixPage() {
                                                     <DialogDescription>Select firms to authorize for <strong>{user.name}</strong>.</DialogDescription>
                                                 </DialogHeader>
                                                 <div className="grid gap-2 py-4">
-                                                    {allFirms
+                                                    {allFirmNames
                                                         .filter(f => !user.firms.includes(f))
                                                         .map((firm) => (
                                                             <div key={firm} className="flex items-center justify-between p-3 border border-slate-100 hover:bg-slate-50 transition-colors cursor-pointer group/item" onClick={() => handleGrantAccess(user.id, [firm])}>
@@ -157,17 +261,23 @@ export default function AccessMatrixPage() {
                                                                 </Button>
                                                             </div>
                                                         ))}
-                                                    {allFirms.filter(f => !user.firms.includes(f)).length === 0 && (
+                                                    {allFirmNames.filter(f => !user.firms.includes(f)).length === 0 && (
                                                         <p className="text-center text-sm text-slate-400 py-4">User already has access to all firms.</p>
                                                     )}
                                                 </div>
                                             </DialogContent>
                                         </Dialog>
                                     </div>
+                                    )}
                                 </div>
                             </div>
                         </Card>
                     ))}
+                {users.filter(u => u.name.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 && (
+                    <div className="text-center py-12 text-slate-400 text-sm">
+                        No users found.
+                    </div>
+                )}
             </div>
         </div>
     );

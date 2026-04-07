@@ -16,7 +16,7 @@ import SubHeader from "@/components/custom/SubHeader"
 import { FlatCard } from "@/components/custom/FlatCard"
 import { PhoneInputWithCountryCode } from "@/components/custom/PhoneInputWithCountryCode"
 
-// --- Validation helpers ---
+// --- Validation helpers (for submit/next step) ---
 const isValidEmail = (v: string) => /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(v)
 const isValidUrl = (v: string) => /^(https?:\/\/)?([\w-]+\.)+[\w-]{2,}(\/\S*)?$/.test(v)
 const isValidGST = (v: string) => /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(v.toUpperCase())
@@ -25,32 +25,107 @@ const isValidTIN = (v: string) => /^[0-9]{11}$/.test(v)
 const isValidUIN = (v: string) => /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}[A-Z]{1}[0-9A-Z]{1}$/.test(v.toUpperCase())
 const isValidPinCode = (v: string | number) => /^[0-9]{4,10}$/.test(String(v))
 
+// --- Real-time input sanitization ---
+// Blocks invalid characters while typing so user cannot enter wrong input
+const sanitizeInput = (field: string, value: string, nested: string | null): string => {
+  const key = nested ? `${nested}.${field}` : field
+
+  switch (key) {
+    // Firm Name — alphabets, spaces, dots, ampersand, hyphens (for Pvt. Ltd. & Co.)
+    case "FirmName":
+      return value.replace(/[^a-zA-Z\s.&\-]/g, "")
+
+    // Email — valid email chars only
+    case "email":
+    case "contactPerson.email":
+      return value.replace(/[^a-zA-Z0-9._%+\-@]/g, "").toLowerCase()
+
+    // Invoice Prefix — uppercase alphabets and numbers only
+    case "invoicePrefix":
+      return value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase()
+
+    // Website — valid URL characters
+    case "website":
+      return value.replace(/[^a-zA-Z0-9.:\/\-_~?#\[\]@!$&'()*+,;=%]/g, "")
+
+    // GST Number — alphanumeric only, auto uppercase, max 15
+    case "gst_no":
+      return value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase().slice(0, 15)
+
+    // Address — alphabets, numbers, spaces, commas, dots, hyphens, slashes, hash
+    case "add.address1":
+    case "add.address2":
+    case "contactPerson.address1":
+    case "contactPerson.address2":
+    case "address1":
+    case "address2":
+      return value.replace(/[^a-zA-Z0-9\s,.\-\/#]/g, "")
+
+    // Pin Code — digits only
+    case "pinCode":
+    case "add.pinCode":
+    case "contactPerson.pinCode":
+      return value.replace(/[^0-9]/g, "")
+
+    // Name fields — alphabets, spaces, dots only
+    case "contactPerson.name":
+      return value.replace(/[^a-zA-Z\s.]/g, "")
+
+    // City, State, Country — alphabets, spaces, hyphens
+    case "city":
+    case "state":
+    case "country":
+    case "add.city":
+    case "add.state":
+    case "add.country":
+    case "contactPerson.city":
+    case "contactPerson.state":
+    case "contactPerson.country":
+      return value.replace(/[^a-zA-Z\s\-]/g, "")
+
+    // TIN — digits only, max 11
+    case "tinNo":
+      return value.replace(/[^0-9]/g, "").slice(0, 11)
+
+    // CIN — alphanumeric only, auto uppercase, max 21
+    case "cinNo":
+      return value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase().slice(0, 21)
+
+    // UIN — alphanumeric only, auto uppercase, max 15
+    case "uin":
+      return value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase().slice(0, 15)
+
+    default:
+      return value
+  }
+}
+
 // --- Format hints ---
 const FORMAT_HINTS: Record<string, string> = {
-  FirmName: "Minimum 3 characters, e.g. Fixl Solutions Pvt Ltd",
+  FirmName: "Only letters, spaces, dots, hyphens allowed (e.g. Fixl Solutions Pvt. Ltd.)",
   email: "Valid email format, e.g. contact@company.com",
   phone: "Select country code and enter digits",
-  invoicePrefix: "Short prefix for invoices, e.g. FIXL, INV",
+  invoicePrefix: "Only uppercase letters & numbers (e.g. FIXL, INV01)",
   website: "Optional — e.g. https://www.company.com",
-  gst_no: "15-character GST number, e.g. 22AAAAA0000A1Z5",
-  address1: "Street address / Building name",
-  address2: "Optional — Floor, Suite, Area",
-  pinCode: "Postal / ZIP code (4–10 digits)",
-  "contactPerson.name": "Full name, e.g. Rajesh Kumar",
-  "contactPerson.email": "Valid email, e.g. rajesh@company.com",
+  gst_no: "15-character alphanumeric GST (e.g. 22AAAAA0000A1Z5)",
+  address1: "Letters, numbers, spaces, commas, dots, hyphens (e.g. Tower B, Cyber Hub)",
+  address2: "Optional — Floor, Suite, Area (e.g. Sector 24, Gurugram)",
+  pinCode: "Only digits allowed (4–10 digits, e.g. 122002)",
+  "contactPerson.name": "Only letters, spaces, dots (e.g. Rajesh Kumar)",
+  "contactPerson.email": "Valid email (e.g. rajesh@company.com)",
   "contactPerson.phone": "Select country code and enter digits",
   "contactPerson.mobile": "Select country code and enter digits",
-  "contactPerson.altPhone": "Optional alternate phone number",
-  "contactPerson.altMobile": "Optional alternate mobile number",
-  "contactPerson.address1": "Street address",
+  "contactPerson.altPhone": "Optional — select country code and enter digits",
+  "contactPerson.altMobile": "Optional — select country code and enter digits",
+  "contactPerson.address1": "Letters, numbers, spaces, commas, dots, hyphens",
   "contactPerson.address2": "Optional — Area / Landmark",
-  "contactPerson.city": "City name",
-  "contactPerson.state": "State name",
-  "contactPerson.country": "Country name",
-  "contactPerson.pinCode": "Postal / ZIP code (4–10 digits)",
-  uin: "Optional — 15-character UIN, e.g. 22AAAAA0000A1U5",
-  tinNo: "11-digit Tax Identification Number",
-  cinNo: "21-character Company Identification Number, e.g. U12345MH2020PTC123456",
+  "contactPerson.city": "Only letters, spaces, hyphens (e.g. New Delhi)",
+  "contactPerson.state": "Only letters, spaces, hyphens (e.g. Maharashtra)",
+  "contactPerson.country": "Only letters, spaces, hyphens (e.g. India)",
+  "contactPerson.pinCode": "Only digits allowed (4–10 digits)",
+  uin: "Optional — 15-character alphanumeric UIN (e.g. 22AAAAA0000A1U5)",
+  tinNo: "Only 11 digits allowed (e.g. 12345678901)",
+  cinNo: "21-character alphanumeric CIN (e.g. U12345MH2020PTC123456)",
 }
 
 // --- Field label mapping ---
@@ -82,6 +157,21 @@ const FIELD_LABELS: Record<string, string> = {
   cinNo: "CIN (Company Identification Number)",
 }
 
+const STORAGE_KEY = "addFirmFormDraft"
+
+const DEFAULT_FORM = {
+  FirmName: "",
+  email: "",
+  phone: "",
+  invoicePrefix: "",
+  add: { address1: "", address2: "", city: "", state: "", country: "", pinCode: "" },
+  contactPerson: {
+    name: "", email: "", address1: "", address2: "", city: "", state: "", pinCode: "",
+    country: "", phone: "", mobile: "", altPhone: "", altMobile: ""
+  },
+  website: "", gst_no: "", logo: "", uin: "", tinNo: "", cinNo: ""
+}
+
 export default function AddFirmPage() {
   const params = useParams()
   const router = useRouter()
@@ -91,30 +181,39 @@ export default function AddFirmPage() {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [orgName, setOrgName] = useState("")
 
-  const [formData, setFormData] = useState({
-    FirmName: "",
-    email: "",
-    phone: "",
-    invoicePrefix: "",
-    add: { address1: "", address2: "", city: "", state: "", country: "", pinCode: "" },
-    contactPerson: {
-      name: "", email: "", address1: "", address2: "", city: "", state: "", pinCode: "",
-      country: "", phone: "", mobile: "", altPhone: "", altMobile: ""
-    },
-    website: "", gst_no: "", logo: "", uin: "", tinNo: "", cinNo: ""
-  })
+  const [formData, setFormData] = useState(DEFAULT_FORM)
 
+  // Restore form data & step from sessionStorage on mount
   useEffect(() => {
     const storedOrg = localStorage.getItem("orgName") || ""
     setOrgName(storedOrg)
+
+    try {
+      const saved = sessionStorage.getItem(STORAGE_KEY)
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (parsed.formData) setFormData(parsed.formData)
+        if (parsed.step) setStep(parsed.step)
+      }
+    } catch {}
   }, [])
 
-  // --- Input handling ---
+  // Persist form data & step to sessionStorage on every change
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ formData, step }))
+    } catch {}
+  }, [formData, step])
+
+  // --- Input handling with real-time sanitization ---
   const handleInputChange = (field: string, value: any, nested: string | null = null) => {
+    // Sanitize the value based on field type before setting state
+    const sanitized = typeof value === "string" ? sanitizeInput(field, value, nested) : value
+
     if (nested) {
       setFormData(prev => ({
         ...prev,
-        [nested]: { ...((prev as any)[nested]), [field]: value }
+        [nested]: { ...((prev as any)[nested]), [field]: sanitized }
       }))
       setErrors(prev => {
         const updated = { ...prev }
@@ -123,7 +222,7 @@ export default function AddFirmPage() {
         return updated
       })
     } else {
-      setFormData(prev => ({ ...prev, [field]: value }))
+      setFormData(prev => ({ ...prev, [field]: sanitized }))
       setErrors(prev => {
         const updated = { ...prev }
         delete updated[field]
@@ -207,10 +306,19 @@ export default function AddFirmPage() {
       }
       const response = await addNewFirm(submitData)
       addFirm(response.data)
+      // Clear draft from sessionStorage on successful creation
+      sessionStorage.removeItem(STORAGE_KEY)
       toast.success("Firm added successfully!")
       router.push(`/${orgName}/modules/firm-management/firms`)
     } catch (error: any) {
-      toast.error(error.message || "Failed to create firm")
+      // Show specific error messages
+      if (error?.response?.status === 401 || error?.code === 401) {
+        toast.error("Session expired. Please login again.")
+        router.push("/auth/signin")
+        return
+      }
+      const msg = error?.response?.data?.message || error?.message || "Failed to create firm"
+      toast.error(msg)
     } finally {
       setIsLoading(false)
     }

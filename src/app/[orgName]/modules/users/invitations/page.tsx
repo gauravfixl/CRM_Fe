@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
     UserPlus,
     Mail,
@@ -35,7 +35,8 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu";
-import { showSuccess, showWarning } from "@/utils/toast";
+import { showSuccess, showWarning, showError } from "@/utils/toast";
+import { getAllOrgInvites, createOrgInvite, declineOrgInvite } from "@/modules/crm/organizations/hooks/orgHooks";
 
 type Invitation = {
     id: string;
@@ -44,24 +45,69 @@ type Invitation = {
     status: "Pending" | "Expired" | "Accepted";
     sentDate: string;
     expiry: string;
+    token?: string;
 };
 
 const ROLES = ["Manager", "Contributor", "Member", "Viewer"] as const;
 
-const initialInvitations: Invitation[] = [
-    { id: "1", email: "ceo@partnerfirm.com", role: "Manager", status: "Pending", sentDate: "Mar 27, 2026", expiry: "23h left" },
-    { id: "2", email: "tech.support@vendor.io", role: "Contributor", status: "Expired", sentDate: "Mar 26, 2026", expiry: "Expired" },
-    { id: "3", email: "hr.lead@client.com", role: "Member", status: "Accepted", sentDate: "Mar 25, 2026", expiry: "N/A" },
-];
+const mapApiInviteToInvitation = (inv: any): Invitation => {
+    const status: Invitation["status"] =
+        inv.status === "accepted" || inv.status === "Accepted"
+            ? "Accepted"
+            : inv.status === "expired" || inv.status === "Expired"
+            ? "Expired"
+            : "Pending";
+    const sentDate = inv.createdAt
+        ? new Date(inv.createdAt).toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })
+        : inv.sentDate || "N/A";
+    let expiry = "N/A";
+    if (status === "Expired") {
+        expiry = "Expired";
+    } else if (status === "Pending" && inv.expiresAt) {
+        const diff = new Date(inv.expiresAt).getTime() - Date.now();
+        if (diff <= 0) expiry = "Expired";
+        else if (diff < 3600000) expiry = `${Math.round(diff / 60000)}m left`;
+        else if (diff < 86400000) expiry = `${Math.round(diff / 3600000)}h left`;
+        else expiry = `${Math.round(diff / 86400000)}d left`;
+    }
+    return {
+        id: inv._id || inv.id || String(Date.now()),
+        email: inv.email || "",
+        role: inv.role || "Member",
+        status,
+        sentDate,
+        expiry,
+        token: inv.token || inv._id || "",
+    };
+};
 
 export default function InvitationsPage() {
-    const [invitations, setInvitations] = useState<Invitation[]>(initialInvitations);
+    const [invitations, setInvitations] = useState<Invitation[]>([]);
+    const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
     const [createOpen, setCreateOpen] = useState(false);
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [deleteTarget, setDeleteTarget] = useState<Invitation | null>(null);
     const [newEmail, setNewEmail] = useState("");
     const [newRole, setNewRole] = useState("");
+
+    const loadInvitations = async () => {
+        try {
+            setLoading(true);
+            const res = await getAllOrgInvites();
+            const data = res?.data || res || [];
+            const invitesArray = Array.isArray(data) ? data : data.invites || data.invitations || [];
+            setInvitations(invitesArray.map(mapApiInviteToInvitation));
+        } catch (err: any) {
+            showError(err?.response?.data?.message || "Failed to load invitations");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        loadInvitations();
+    }, []);
 
     const filtered = invitations.filter((inv) =>
         inv.email.toLowerCase().includes(searchQuery.toLowerCase())
@@ -73,36 +119,55 @@ export default function InvitationsPage() {
     const expired = invitations.filter((i) => i.status === "Expired").length;
     const acceptanceRate = totalSent > 0 ? Math.round((accepted / totalSent) * 100) : 0;
 
-    const handleCreate = () => {
+    const handleCreate = async () => {
         if (!newEmail || !newRole) {
             showWarning("Please fill in all fields");
             return;
         }
-        const invite: Invitation = {
-            id: Date.now().toString(),
-            email: newEmail,
-            role: newRole,
-            status: "Pending",
-            sentDate: "Mar 27, 2026",
-            expiry: "24h left",
-        };
-        setInvitations((prev) => [...prev, invite]);
-        setNewEmail("");
-        setNewRole("");
-        setCreateOpen(false);
-        showSuccess(`Invitation sent to ${newEmail}`);
+        try {
+            const res = await createOrgInvite({ email: newEmail, role: newRole });
+            const newInvite = res?.data;
+            const invite: Invitation = newInvite
+                ? mapApiInviteToInvitation(newInvite)
+                : {
+                      id: Date.now().toString(),
+                      email: newEmail,
+                      role: newRole,
+                      status: "Pending",
+                      sentDate: new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }),
+                      expiry: "24h left",
+                  };
+            setInvitations((prev) => [...prev, invite]);
+            setNewEmail("");
+            setNewRole("");
+            setCreateOpen(false);
+            showSuccess(`Invitation sent to ${newEmail}`);
+        } catch (err: any) {
+            showError(err?.response?.data?.message || "Failed to send invitation");
+        }
     };
 
-    const handleResend = (inv: Invitation) => {
-        showSuccess(`Invitation resent to ${inv.email}`);
+    const handleResend = async (inv: Invitation) => {
+        try {
+            await createOrgInvite({ email: inv.email, role: inv.role });
+            showSuccess(`Invitation resent to ${inv.email}`);
+            await loadInvitations();
+        } catch (err: any) {
+            showError(err?.response?.data?.message || "Failed to resend invitation");
+        }
     };
 
-    const handleDelete = () => {
+    const handleDelete = async () => {
         if (!deleteTarget) return;
-        setInvitations((prev) => prev.filter((i) => i.id !== deleteTarget.id));
-        showSuccess(`Invitation for ${deleteTarget.email} removed`);
-        setDeleteTarget(null);
-        setDeleteOpen(false);
+        try {
+            await declineOrgInvite(deleteTarget.token || deleteTarget.id);
+            setInvitations((prev) => prev.filter((i) => i.id !== deleteTarget.id));
+            showSuccess(`Invitation for ${deleteTarget.email} removed`);
+            setDeleteTarget(null);
+            setDeleteOpen(false);
+        } catch (err: any) {
+            showError(err?.response?.data?.message || "Failed to delete invitation");
+        }
     };
 
     const handleCopyLink = () => {
@@ -189,7 +254,13 @@ export default function InvitationsPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
-                            {filtered.length === 0 ? (
+                            {loading ? (
+                                <tr>
+                                    <td colSpan={6} className="px-4 py-16 text-center">
+                                        <p className="text-sm text-gray-500">Loading invitations...</p>
+                                    </td>
+                                </tr>
+                            ) : filtered.length === 0 ? (
                                 <tr>
                                     <td colSpan={6} className="px-4 py-16 text-center">
                                         <Mail className="w-10 h-10 text-gray-300 mx-auto mb-3" />
