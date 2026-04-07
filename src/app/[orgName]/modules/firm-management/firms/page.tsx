@@ -141,7 +141,7 @@ export default function FirmsPage() {
       <SubHeader
         title="Firm Management"
         breadcrumbItems={[
-          { label: "All Organizations", href: `/${orgName}/modules/organization/all-org` },
+          { label: "Organisation", href: `/${orgName}/modules/organization/all-org` },
           { label: "Firms", href: `/${orgName}/modules/firm-management/firms` },
         ]}
         rightControls={

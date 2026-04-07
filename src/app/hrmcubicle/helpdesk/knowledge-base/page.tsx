@@ -147,10 +147,10 @@ const KnowledgeBasePage = () => {
                                     placeholder="Search library..."
                                     value={searchQuery}
                                     onChange={e => setSearchQuery(e.target.value)}
-                                    className="h-9 w-52 bg-slate-50 border-none rounded-xl pl-9 text-xs font-semibold focus-visible:ring-1 focus-visible:ring-emerald-100"
+                                    className="h-9 w-52 bg-slate-50 border border-slate-200 rounded-xl pl-9 text-xs font-semibold focus-visible:ring-1 focus-visible:ring-emerald-100"
                                 />
                             </div>
-                            <Button variant="outline" size="icon" className="h-9 w-9 rounded-xl border-slate-100 text-slate-400"><Filter size={14} /></Button>
+                            <Button variant="outline" size="icon" className="h-9 w-9 rounded-xl border-slate-100 text-slate-400" onClick={() => toast({ title: "Filter", description: "Filter options coming soon" })}><Filter size={14} /></Button>
                         </div>
                     </div>
 
@@ -260,7 +260,7 @@ const KnowledgeBasePage = () => {
 
             {/* Article Builder Dialog */}
             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-                <DialogContent className="max-w-3xl p-0 overflow-hidden border-none rounded-3xl shadow-3xl bg-white outline-none">
+                <DialogContent className="max-w-3xl p-0 overflow-hidden border-2 border-slate-200 rounded-3xl shadow-3xl bg-white outline-none">
                     <div className="bg-slate-50 border-b border-slate-200 px-8 py-6 flex items-center justify-between shrink-0">
                         <div className="flex items-center gap-4">
                             <div className="h-10 w-10 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-emerald-600 shadow-sm">
@@ -333,7 +333,7 @@ const KnowledgeBasePage = () => {
                                 {["policy", "new-guidelines", "hr-portal"].map(tag => (
                                     <Badge key={tag} className="bg-white border-slate-200 text-slate-500 font-bold text-[9px] h-6 px-3 uppercase tracking-tighter shadow-sm flex items-center gap-1">#{tag} <X size={10} className="ml-1 cursor-pointer" /></Badge>
                                 ))}
-                                <Button variant="ghost" className="h-6 px-2 text-[9px] font-black text-indigo-600 uppercase border border-dashed border-indigo-200">+ Tag</Button>
+                                <Button variant="ghost" className="h-6 px-2 text-[9px] font-black text-indigo-600 uppercase border border-dashed border-indigo-200" onClick={() => toast({ title: "Add Tag", description: "Tag management coming soon" })}>+ Tag</Button>
                             </div>
                         </div>
                     </div>
@@ -341,7 +341,7 @@ const KnowledgeBasePage = () => {
                     <div className="p-8 bg-slate-50 border-t border-slate-200 flex items-center justify-between shrink-0">
                         <Button variant="ghost" onClick={() => setIsCreateDialogOpen(false)} className="h-12 px-8 font-bold text-slate-400 text-xs uppercase tracking-widest">Discard Entry</Button>
                         <div className="flex items-center gap-3">
-                            <Button variant="outline" className="h-12 px-6 border-slate-200 font-bold text-xs uppercase tracking-widest gap-2 bg-white rounded-xl"><Save size={16} /> Save Draft</Button>
+                            <Button variant="outline" className="h-12 px-6 border-slate-200 font-bold text-xs uppercase tracking-widest gap-2 bg-white rounded-xl" onClick={() => toast({ title: "Draft Saved", description: "Article draft saved successfully" })}><Save size={16} /> Save Draft</Button>
                             <Button onClick={handleSave} className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl h-12 px-10 font-bold text-xs uppercase tracking-widest shadow-xl shadow-emerald-100 gap-2">
                                 <Send size={16} /> Deploy Article
                             </Button>

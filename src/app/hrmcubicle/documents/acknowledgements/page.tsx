@@ -65,7 +65,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 
 const AcknowledgementsPage = () => {
-    const { acknowledgements, policies, requestAcknowledgement, deleteAcknowledgement } = useDocumentsStore();
+    const { acknowledgements, policies, requestAcknowledgement, updateAcknowledgement, deleteAcknowledgement } = useDocumentsStore();
     const [searchQuery, setSearchQuery] = useState("");
     const [statusFilter, setStatusFilter] = useState("all");
     const [isRequestOpen, setIsRequestOpen] = useState(false);
@@ -180,7 +180,7 @@ const AcknowledgementsPage = () => {
                                             <SelectTrigger className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 focus:bg-white transition-all shadow-sm">
                                                 <SelectValue placeholder="Identify Policy/Document" />
                                             </SelectTrigger>
-                                            <SelectContent className="rounded-2xl border-none shadow-2xl p-2 font-bold text-xs font-sans">
+                                            <SelectContent className="rounded-2xl border border-slate-200 shadow-2xl p-2 font-bold text-xs font-sans">
                                                 {policies.map(p => (
                                                     <SelectItem key={p.id} value={p.id} className="rounded-xl h-10">{p.title}</SelectItem>
                                                 ))}
@@ -230,7 +230,7 @@ const AcknowledgementsPage = () => {
             <main className="p-8 max-w-[1600px] mx-auto w-full space-y-8 text-start">
                 {/* Metrics Overview */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                    <Card className="border border-slate-100 shadow-sm rounded-[2rem] bg-white overflow-hidden group hover:shadow-xl transition-all duration-300">
+                    <Card className="border border-slate-100 shadow-sm rounded-none bg-white overflow-hidden group hover:shadow-xl transition-all duration-300">
                         <CardHeader className="p-7 pb-2 flex flex-row items-center justify-between">
                             <div className="text-[10px] font-bold tracking-tight text-slate-400">Overall Compliance</div>
                             <div className="bg-indigo-50 text-indigo-600 h-9 w-9 rounded-xl flex items-center justify-center shadow-sm">
@@ -253,7 +253,7 @@ const AcknowledgementsPage = () => {
                         </CardContent>
                     </Card>
 
-                    <Card className="border border-slate-100 shadow-sm rounded-[2rem] bg-white overflow-hidden group hover:shadow-xl transition-all duration-300">
+                    <Card className="border border-slate-100 shadow-sm rounded-none bg-white overflow-hidden group hover:shadow-xl transition-all duration-300">
                         <CardHeader className="p-7 pb-2 flex flex-row items-center justify-between">
                             <div className="text-[10px] font-bold tracking-tight text-slate-400">Total Signed</div>
                             <div className="bg-emerald-50 text-emerald-600 h-9 w-9 rounded-xl flex items-center justify-center shadow-sm">
@@ -266,7 +266,7 @@ const AcknowledgementsPage = () => {
                         </CardContent>
                     </Card>
 
-                    <Card className="border border-slate-100 shadow-sm rounded-[2rem] bg-white overflow-hidden group hover:shadow-xl transition-all duration-300">
+                    <Card className="border border-slate-100 shadow-sm rounded-none bg-white overflow-hidden group hover:shadow-xl transition-all duration-300">
                         <CardHeader className="p-7 pb-2 flex flex-row items-center justify-between">
                             <div className="text-[10px] font-bold tracking-tight text-slate-400">Pending Actions</div>
                             <div className="bg-amber-50 text-amber-600 h-9 w-9 rounded-xl flex items-center justify-center shadow-sm">
@@ -279,7 +279,14 @@ const AcknowledgementsPage = () => {
                         </CardContent>
                     </Card>
 
-                    <Card className="border border-indigo-100 shadow-sm rounded-[2rem] bg-indigo-50/50 p-7 relative overflow-hidden group cursor-pointer hover:bg-white transition-all duration-500">
+                    <Card className="border border-indigo-100 shadow-sm rounded-none bg-indigo-50/50 p-7 relative overflow-hidden group cursor-pointer hover:bg-white transition-all duration-500" onClick={() => {
+                            const pendingCount = acknowledgements.filter(a => a.status === "Pending").length;
+                            if (pendingCount === 0) {
+                                toast.info("No pending acknowledgements to auto-nudge");
+                                return;
+                            }
+                            toast.success(`Auto-Nudge activated: ${pendingCount} pending employee(s) will receive smart reminders every 48 hours`);
+                        }}>
                         <div className="absolute top-[-10px] right-[-10px] h-24 w-24 bg-indigo-500/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700" />
                         <CardHeader className="p-0 pb-4 text-start">
                             <div className="bg-white text-indigo-600 h-9 w-9 rounded-xl flex items-center justify-center shadow-sm border border-indigo-100">
@@ -326,7 +333,7 @@ const AcknowledgementsPage = () => {
                                             <span>Status</span>
                                         </div>
                                     </SelectTrigger>
-                                    <SelectContent className="rounded-xl border-none shadow-2xl p-2 font-bold text-xs">
+                                    <SelectContent className="rounded-xl border border-slate-200 shadow-2xl p-2 font-bold text-xs">
                                         <SelectItem value="all" className="rounded-lg h-10">All Status</SelectItem>
                                         <SelectItem value="Pending" className="rounded-lg h-10 text-slate-500">Pending</SelectItem>
                                         <SelectItem value="Viewed" className="rounded-lg h-10 text-amber-500">Viewed</SelectItem>
@@ -449,12 +456,15 @@ const AcknowledgementsPage = () => {
                                                                     <MoreHorizontal size={16} className="text-slate-400" />
                                                                 </Button>
                                                             </DropdownMenuTrigger>
-                                                            <DropdownMenuContent align="end" className="w-56 p-2 rounded-2xl border-none shadow-2xl bg-white font-sans">
+                                                            <DropdownMenuContent align="end" className="w-56 p-2 rounded-2xl border border-slate-200 shadow-2xl bg-white font-sans">
                                                                 <DropdownMenuLabel className="px-3 py-2 text-[10px] font-bold text-slate-400 tracking-wide">Compliance Control</DropdownMenuLabel>
                                                                 <DropdownMenuItem className="gap-3 p-3 rounded-xl cursor-pointer font-bold text-xs hover:bg-indigo-50 text-start" onClick={() => toast.success("High-priority ping relayed to employee device")}>
                                                                     <Bell className="w-4 h-4 text-indigo-500" /> Priority Remind
                                                                 </DropdownMenuItem>
-                                                                <DropdownMenuItem className="gap-3 p-3 rounded-xl cursor-pointer font-bold text-xs hover:bg-indigo-50 text-start" onClick={() => toast.success("Document state updated to 'Manually Signed'")}>
+                                                                <DropdownMenuItem className="gap-3 p-3 rounded-xl cursor-pointer font-bold text-xs hover:bg-indigo-50 text-start" onClick={() => {
+                                                                    updateAcknowledgement(ack.id, "Signed", "Manually marked as signed by HR");
+                                                                    toast.success(`${ack.employeeName}'s acknowledgement force-marked as Signed`);
+                                                                }}>
                                                                     <UserCheck className="w-4 h-4 text-indigo-500" /> Force Mark Signed
                                                                 </DropdownMenuItem>
                                                                 <DropdownMenuSeparator className="my-2 bg-slate-50" />

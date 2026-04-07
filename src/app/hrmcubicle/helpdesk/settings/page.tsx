@@ -141,8 +141,8 @@ const HelpdeskSettingsPage = () => {
                                                                     </div>
                                                                 </div>
                                                                 <div className="flex items-center gap-2">
-                                                                    <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-300 hover:text-slate-600 rounded-xl bg-slate-50"><Settings2 size={16} /></Button>
-                                                                    <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-300 hover:text-rose-500 rounded-xl bg-slate-50"><Trash2 size={16} /></Button>
+                                                                    <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-300 hover:text-slate-600 rounded-xl bg-slate-50" onClick={() => toast({ title: "Edit Category", description: "Category configuration panel coming soon" })}><Settings2 size={16} /></Button>
+                                                                    <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-300 hover:text-rose-500 rounded-xl bg-slate-50" onClick={() => toast({ title: "Delete Category", description: "Category deletion would require confirmation" })}><Trash2 size={16} /></Button>
                                                                 </div>
                                                             </div>
                                                             <div className="px-6 py-4 bg-slate-50/50 flex flex-wrap gap-2">
@@ -155,7 +155,7 @@ const HelpdeskSettingsPage = () => {
                                                         </CardContent>
                                                     </Card>
                                                 ))}
-                                                <Button variant="outline" className="h-16 w-full rounded-2xl border-dashed border-2 border-slate-200 text-slate-400 font-bold uppercase tracking-widest text-[11px] gap-2 hover:bg-white hover:border-indigo-400 hover:text-indigo-600 transition-all">
+                                                <Button variant="outline" className="h-16 w-full rounded-2xl border-dashed border-2 border-slate-200 text-slate-400 font-bold uppercase tracking-widest text-[11px] gap-2 hover:bg-white hover:border-indigo-400 hover:text-indigo-600 transition-all" onClick={() => toast({ title: "New Category", description: "Category creation form would open here" })}>
                                                     <Plus size={16} /> Insert Functional Cluster
                                                 </Button>
                                             </div>
@@ -194,7 +194,7 @@ const HelpdeskSettingsPage = () => {
                                                                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Escalation Trigger</span>
                                                                     <Switch checked={true} />
                                                                 </div>
-                                                                <Button variant="outline" className="h-10 rounded-xl px-4 font-black text-[9px] uppercase tracking-widest border-slate-200">Reconfigure</Button>
+                                                                <Button variant="outline" className="h-10 rounded-xl px-4 font-black text-[9px] uppercase tracking-widest border-slate-200" onClick={() => toast({ title: "Reconfigure SLA", description: "SLA rule editor would open here" })}>Reconfigure</Button>
                                                             </div>
                                                         </CardContent>
                                                     </Card>
@@ -270,7 +270,7 @@ const HelpdeskSettingsPage = () => {
                                                         <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">Email Notifications</h4>
                                                         <p className="text-xs font-medium text-slate-400 mt-2 leading-relaxed italic">"You have a new support update regarding ticket # [TicketID]"</p>
                                                     </div>
-                                                    <Button variant="outline" className="w-full h-11 bg-slate-50 border-slate-100 text-[10px] font-bold uppercase tracking-widest rounded-xl">Edit Template</Button>
+                                                    <Button variant="outline" className="w-full h-11 bg-slate-50 border-slate-100 text-[10px] font-bold uppercase tracking-widest rounded-xl" onClick={() => toast({ title: "Edit Template", description: "Email template editor would open here" })}>Edit Template</Button>
                                                 </Card>
 
                                                 <Card className="rounded-[28px] border-none shadow-sm bg-white p-8 space-y-6 opacity-60">

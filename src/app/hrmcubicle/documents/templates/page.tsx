@@ -54,9 +54,11 @@ import { Textarea } from "@/shared/components/ui/textarea";
 import { useDocumentsStore, type LetterTemplate } from "@/shared/data/documents-store";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 const TemplatesPage = () => {
     const { letterTemplates, addTemplate, updateTemplate, deleteTemplate } = useDocumentsStore();
+    const router = useRouter();
     const [searchQuery, setSearchQuery] = useState("");
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [editingTemplate, setEditingTemplate] = useState<LetterTemplate | null>(null);
@@ -198,10 +200,10 @@ const TemplatesPage = () => {
                                                     value={newTemplate.type}
                                                     onValueChange={(val: any) => setNewTemplate({ ...newTemplate, type: val })}
                                                 >
-                                                    <SelectTrigger className="h-12 bg-white border-none rounded-xl font-bold text-xs px-4 shadow-sm">
+                                                    <SelectTrigger className="h-12 bg-white border border-slate-200 rounded-xl font-bold text-xs px-4 shadow-sm">
                                                         <SelectValue />
                                                     </SelectTrigger>
-                                                    <SelectContent className="rounded-xl border-none shadow-2xl p-2 font-bold text-xs">
+                                                    <SelectContent className="rounded-xl border border-slate-200 shadow-2xl p-2 font-bold text-xs">
                                                         <SelectItem value="Offer Letter" className="rounded-lg h-10">Offer Letter</SelectItem>
                                                         <SelectItem value="Experience Letter" className="rounded-lg h-10">Experience Letter</SelectItem>
                                                         <SelectItem value="Relieving Letter" className="rounded-lg h-10">Relieving Letter</SelectItem>
@@ -224,7 +226,7 @@ const TemplatesPage = () => {
                                             <div className="flex gap-2">
                                                 <Input
                                                     placeholder="tag_name"
-                                                    className="h-10 text-xs bg-white border-none rounded-xl font-bold px-4 shadow-sm"
+                                                    className="h-10 text-xs bg-white border border-slate-200 rounded-xl font-bold px-4 shadow-sm"
                                                     value={currentPlaceholder}
                                                     onChange={(e) => setCurrentPlaceholder(e.target.value)}
                                                     onKeyDown={(e) => e.key === 'Enter' && handleAddPlaceholder()}
@@ -361,7 +363,7 @@ const TemplatesPage = () => {
                                                             <MoreVertical size={20} />
                                                         </Button>
                                                     </DropdownMenuTrigger>
-                                                    <DropdownMenuContent align="end" className="w-56 p-2 rounded-2xl border-none shadow-2xl bg-white font-sans">
+                                                    <DropdownMenuContent align="end" className="w-56 p-2 rounded-2xl border border-slate-200 shadow-2xl bg-white font-sans">
                                                         <DropdownMenuLabel className="px-3 py-2 text-[10px] font-bold text-slate-400 tracking-wide">Options</DropdownMenuLabel>
                                                         <DropdownMenuItem className="gap-3 p-3 rounded-xl cursor-pointer font-bold text-xs hover:bg-slate-50 text-start" onClick={() => toast.success("Opening template preview")}>
                                                             <Eye size={16} className="text-indigo-500" /> Preview Blueprint
@@ -400,7 +402,7 @@ const TemplatesPage = () => {
                                             </div>
                                             <div className="flex items-center justify-between pt-4 border-t border-slate-50 mt-2">
                                                 <span className="text-[10px] text-slate-300 font-bold tracking-wide whitespace-nowrap">Updated {new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(new Date(template.updatedAt))}</span>
-                                                <Button className="h-10 bg-indigo-600 hover:bg-slate-900 text-white rounded-xl font-bold text-[10px] tracking-wide px-6 shadow-md transition-all active:scale-95 border-none">
+                                                <Button className="h-10 bg-indigo-600 hover:bg-slate-900 text-white rounded-xl font-bold text-[10px] tracking-wide px-6 shadow-md transition-all active:scale-95 border-none" onClick={() => router.push("/hrmcubicle/documents/letters")}>
                                                     Use Template <ChevronRight size={14} className="ml-2" />
                                                 </Button>
                                             </div>
@@ -487,10 +489,10 @@ const TemplatesPage = () => {
                                             value={editingTemplate?.type}
                                             onValueChange={(val: any) => setEditingTemplate(prev => prev ? { ...prev, type: val } : null)}
                                         >
-                                            <SelectTrigger className="h-12 bg-white border-none rounded-xl font-bold text-xs px-4 shadow-sm">
+                                            <SelectTrigger className="h-12 bg-white border border-slate-200 rounded-xl font-bold text-xs px-4 shadow-sm">
                                                 <SelectValue />
                                             </SelectTrigger>
-                                            <SelectContent className="rounded-xl border-none shadow-2xl p-2 font-bold text-xs">
+                                            <SelectContent className="rounded-xl border border-slate-200 shadow-2xl p-2 font-bold text-xs">
                                                 <SelectItem value="Offer Letter">Offer Letter</SelectItem>
                                                 <SelectItem value="Experience Letter">Experience Letter</SelectItem>
                                                 <SelectItem value="Relieving Letter">Relieving Letter</SelectItem>
@@ -510,7 +512,7 @@ const TemplatesPage = () => {
                                         <Input
                                             id="tag-input-edit"
                                             placeholder="new_tag"
-                                            className="h-10 text-xs bg-white border-none rounded-xl font-bold px-4 shadow-sm"
+                                            className="h-10 text-xs bg-white border border-slate-200 rounded-xl font-bold px-4 shadow-sm"
                                             onKeyDown={(e) => {
                                                 if (e.key === 'Enter') {
                                                     handleAddPlaceholderToEdit((e.currentTarget as HTMLInputElement).value);

@@ -170,46 +170,46 @@ const ExpenseApprovalsPage = () => {
 
             {/* Stats */}
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-                <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <Card className="rounded-2xl border-none bg-[#CB9DF0] shadow-sm">
                     <CardContent className="p-4 flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50">
-                            <Clock className="h-5 w-5 text-amber-600" />
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/30 backdrop-blur-sm">
+                            <Clock className="h-5 w-5 text-slate-800" />
                         </div>
                         <div>
-                            <p className="text-xs font-bold text-slate-500">Pending</p>
+                            <p className="text-xs font-bold text-slate-700">Pending</p>
                             <p className="text-xl font-bold text-slate-900">{pendingClaims.length}</p>
                         </div>
                     </CardContent>
                 </Card>
-                <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <Card className="rounded-2xl border-none bg-[#F0C1E1] shadow-sm">
                     <CardContent className="p-4 flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-green-50">
-                            <CheckCircle2 className="h-5 w-5 text-green-600" />
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/30 backdrop-blur-sm">
+                            <CheckCircle2 className="h-5 w-5 text-slate-800" />
                         </div>
                         <div>
-                            <p className="text-xs font-bold text-slate-500">Approved</p>
+                            <p className="text-xs font-bold text-slate-700">Approved</p>
                             <p className="text-xl font-bold text-slate-900">{claims.filter(c => c.status === 'Approved').length}</p>
                         </div>
                     </CardContent>
                 </Card>
-                <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <Card className="rounded-2xl border-none bg-[#FFF9BF] shadow-sm">
                     <CardContent className="p-4 flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50">
-                            <XCircle className="h-5 w-5 text-red-600" />
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/30 backdrop-blur-sm">
+                            <XCircle className="h-5 w-5 text-slate-800" />
                         </div>
                         <div>
-                            <p className="text-xs font-bold text-slate-500">Rejected</p>
+                            <p className="text-xs font-bold text-slate-700">Rejected</p>
                             <p className="text-xl font-bold text-slate-900">{claims.filter(c => c.status === 'Rejected').length}</p>
                         </div>
                     </CardContent>
                 </Card>
-                <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <Card className="rounded-2xl border-none bg-[#FDDBBB] shadow-sm">
                     <CardContent className="p-4 flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-50">
-                            <AlertTriangle className="h-5 w-5 text-orange-600" />
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/30 backdrop-blur-sm">
+                            <AlertTriangle className="h-5 w-5 text-slate-800" />
                         </div>
                         <div>
-                            <p className="text-xs font-bold text-slate-500">Policy Violations</p>
+                            <p className="text-xs font-bold text-slate-700">Policy Violations</p>
                             <p className="text-xl font-bold text-slate-900">{pendingClaims.filter(c => checkPolicyViolation(c).length > 0).length}</p>
                         </div>
                     </CardContent>
@@ -320,7 +320,7 @@ const ExpenseApprovalsPage = () => {
 
             {/* Review Dialog */}
             <Dialog open={isReviewOpen} onOpenChange={setIsReviewOpen}>
-                <DialogContent className="max-w-lg">
+                <DialogContent className="max-w-lg border-2 border-slate-200">
                     <DialogHeader>
                         <DialogTitle>Review Expense Claim</DialogTitle>
                         <DialogDescription>{selectedClaim?.id} - {selectedClaim?.employeeName}</DialogDescription>

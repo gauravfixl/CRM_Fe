@@ -181,27 +181,27 @@ const TravelManagementPage = () => {
 
             {/* Summary Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-                <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <Card className="rounded-2xl border-none bg-[#CB9DF0] shadow-sm">
                     <CardContent className="p-4">
-                        <p className="text-xs font-bold text-slate-500 uppercase">Active Requests</p>
+                        <p className="text-xs font-bold text-slate-700 uppercase">Active Requests</p>
                         <p className="text-2xl font-bold text-slate-900 mt-1">{activeRequests.length}</p>
                     </CardContent>
                 </Card>
-                <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <Card className="rounded-2xl border-none bg-[#F0C1E1] shadow-sm">
                     <CardContent className="p-4">
-                        <p className="text-xs font-bold text-slate-500 uppercase">Total Budget</p>
+                        <p className="text-xs font-bold text-slate-700 uppercase">Total Budget</p>
                         <p className="text-2xl font-bold text-slate-900 mt-1">₹{travelRequests.reduce((s, t) => s + t.estimatedBudget, 0).toLocaleString()}</p>
                     </CardContent>
                 </Card>
-                <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <Card className="rounded-2xl border-none bg-[#FFF9BF] shadow-sm">
                     <CardContent className="p-4">
-                        <p className="text-xs font-bold text-slate-500 uppercase">Advances Approved</p>
+                        <p className="text-xs font-bold text-slate-700 uppercase">Advances Approved</p>
                         <p className="text-2xl font-bold text-slate-900 mt-1">₹{travelRequests.reduce((s, t) => s + t.advanceApproved, 0).toLocaleString()}</p>
                     </CardContent>
                 </Card>
-                <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <Card className="rounded-2xl border-none bg-[#FDDBBB] shadow-sm">
                     <CardContent className="p-4">
-                        <p className="text-xs font-bold text-slate-500 uppercase">Completed Trips</p>
+                        <p className="text-xs font-bold text-slate-700 uppercase">Completed Trips</p>
                         <p className="text-2xl font-bold text-slate-900 mt-1">{completedRequests.length}</p>
                     </CardContent>
                 </Card>
@@ -335,7 +335,7 @@ const TravelManagementPage = () => {
 
             {/* New Travel Request Dialog */}
             <Dialog open={isNewRequestOpen} onOpenChange={setIsNewRequestOpen}>
-                <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+                <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto border-2 border-slate-200">
                     <DialogHeader>
                         <DialogTitle>New Travel Request</DialogTitle>
                         <DialogDescription>Plan your trip and submit for approval.</DialogDescription>
@@ -417,7 +417,7 @@ const TravelManagementPage = () => {
 
             {/* Detail Dialog */}
             <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-                <DialogContent className="max-w-lg">
+                <DialogContent className="max-w-lg border-2 border-slate-200">
                     <DialogHeader>
                         <DialogTitle>Travel Request - {selectedRequest?.id}</DialogTitle>
                         <DialogDescription>{selectedRequest?.purpose}</DialogDescription>
@@ -484,7 +484,7 @@ const TravelManagementPage = () => {
 
             {/* Per Diem Calculator */}
             <Dialog open={isPerDiemCalcOpen} onOpenChange={setIsPerDiemCalcOpen}>
-                <DialogContent className="max-w-sm">
+                <DialogContent className="max-w-sm border-2 border-slate-200">
                     <DialogHeader>
                         <DialogTitle>Per Diem Calculator</DialogTitle>
                         <DialogDescription>Calculate per diem allowance based on destination</DialogDescription>
@@ -520,7 +520,7 @@ const TravelManagementPage = () => {
 
             {/* Mileage Tracker */}
             <Dialog open={isMileageOpen} onOpenChange={setIsMileageOpen}>
-                <DialogContent className="max-w-sm">
+                <DialogContent className="max-w-sm border-2 border-slate-200">
                     <DialogHeader>
                         <DialogTitle>Mileage Tracker</DialogTitle>
                         <DialogDescription>Calculate reimbursement for km driven</DialogDescription>

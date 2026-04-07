@@ -33,10 +33,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 import { useHelpdeskStore } from "@/shared/data/helpdesk-store";
+import { useToast } from "@/shared/components/ui/use-toast";
 import { motion } from "framer-motion";
 
 const HelpdeskReportsPage = () => {
     const { tickets, agents } = useHelpdeskStore();
+    const { toast } = useToast();
     const [timeRange, setTimeRange] = useState("30");
 
     const stats = useMemo(() => ({
@@ -77,7 +79,7 @@ const HelpdeskReportsPage = () => {
                             <SelectItem value="365">Full Year</SelectItem>
                         </SelectContent>
                     </Select>
-                    <Button className="h-10 bg-slate-900 hover:bg-slate-800 text-white font-bold px-6 gap-2 text-xs uppercase tracking-widest shadow-lg shadow-slate-200 rounded-xl transition-all">
+                    <Button className="h-10 bg-slate-900 hover:bg-slate-800 text-white font-bold px-6 gap-2 text-xs uppercase tracking-widest shadow-lg shadow-slate-200 rounded-xl transition-all" onClick={() => toast({ title: "Exporting", description: "Intelligence report being compiled and downloaded..." })}>
                         <Download size={16} /> Export Intelligence
                     </Button>
                 </div>
@@ -88,22 +90,22 @@ const HelpdeskReportsPage = () => {
                     {/* Top Level KPIs */}
                     <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
                         {[
-                            { label: "SLA Compliance", val: "94.2%", trend: "+2.1%", icon: Target, color: "text-emerald-600", bg: "bg-emerald-50" },
-                            { label: "Avg Resolution", val: "4.8h", trend: "-1.5h", icon: Clock, color: "text-indigo-600", bg: "bg-indigo-50" },
-                            { label: "Resolved Vol", val: "1,240", trend: "+340", icon: CheckCircle2, color: "text-amber-600", bg: "bg-amber-50" },
-                            { label: "Customer SAT", val: "4.8/5", trend: "+0.2", icon: Star, color: "text-rose-600", bg: "bg-rose-50" },
-                            { label: "Agent Efficiency", val: "88%", trend: "+12%", icon: Activity, color: "text-indigo-600", bg: "bg-indigo-50" },
+                            { label: "SLA Compliance", val: "94.2%", trend: "+2.1%", icon: Target, cardBg: "bg-[#CB9DF0]" },
+                            { label: "Avg Resolution", val: "4.8h", trend: "-1.5h", icon: Clock, cardBg: "bg-[#F0C1E1]" },
+                            { label: "Resolved Vol", val: "1,240", trend: "+340", icon: CheckCircle2, cardBg: "bg-[#FFF9BF]" },
+                            { label: "Customer SAT", val: "4.8/5", trend: "+0.2", icon: Star, cardBg: "bg-[#FDDBBB]" },
+                            { label: "Agent Efficiency", val: "88%", trend: "+12%", icon: Activity, cardBg: "bg-rose-100" },
                         ].map((stat, i) => (
                             <motion.div key={i} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.05 }}>
-                                <Card className="border-none shadow-sm bg-white hover:shadow-xl transition-all group rounded-2xl">
+                                <Card className={`border-none shadow-sm ${stat.cardBg} hover:shadow-xl transition-all group rounded-2xl`}>
                                     <CardContent className="p-6">
-                                        <div className={`h-10 w-10 ${stat.bg} ${stat.color} rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
+                                        <div className="h-10 w-10 bg-white/30 text-slate-800 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform backdrop-blur-sm">
                                             <stat.icon size={20} />
                                         </div>
                                         <div className="space-y-1">
-                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">{stat.label}</span>
+                                            <span className="text-[10px] font-bold text-slate-700 uppercase tracking-widest block">{stat.label}</span>
                                             <span className="text-2xl font-black text-slate-900 leading-none">{stat.val}</span>
-                                            <div className={`flex items-center gap-1 text-[10px] font-bold mt-1 ${stat.trend.startsWith('+') ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                            <div className={`flex items-center gap-1 text-[10px] font-bold mt-1 ${stat.trend.startsWith('+') ? 'text-emerald-700' : 'text-rose-700'}`}>
                                                 {stat.trend.startsWith('+') ? <ArrowUpRight size={10} /> : <ArrowDownRight size={10} />}
                                                 {stat.trend} VS LY
                                             </div>
@@ -202,7 +204,7 @@ const HelpdeskReportsPage = () => {
                                         <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
                                             <Users size={14} className="text-emerald-500" /> High Performance Agents
                                         </h4>
-                                        <button className="text-[10px] font-bold text-indigo-600 uppercase">View All</button>
+                                        <button className="text-[10px] font-bold text-indigo-600 uppercase" onClick={() => toast({ title: "Agent Roster", description: "Full agent performance list would open here." })}>View All</button>
                                     </div>
                                     <CardContent className="p-6">
                                         <div className="space-y-4">
@@ -245,7 +247,7 @@ const HelpdeskReportsPage = () => {
                                             "Ticket volume for **Payroll** is likely to spike by **18%** next Tuesday based on previous monthly patterns."
                                         </p>
                                     </div>
-                                    <Button className="w-full h-11 bg-white text-slate-900 font-bold text-[10px] uppercase tracking-widest rounded-xl hover:bg-emerald-400 hover:text-white transition-all gap-2">
+                                    <Button className="w-full h-11 bg-white text-slate-900 font-bold text-[10px] uppercase tracking-widest rounded-xl hover:bg-emerald-400 hover:text-white transition-all gap-2" onClick={() => toast({ title: "Mitigation Deployed", description: "Auto-assignment rules updated to address SLA risks." })}>
                                         Deploy Mitigation <ArrowUpRight size={14} />
                                     </Button>
                                 </div>
@@ -283,7 +285,7 @@ const HelpdeskReportsPage = () => {
                                 </div>
                                 <h5 className="text-[11px] font-black text-slate-800 uppercase tracking-widest">Monthly Ops Summary</h5>
                                 <p className="text-[10px] font-medium text-slate-500 leading-relaxed italic px-4">Generate a full PDF report of this month's support performance for the CEO's review.</p>
-                                <Button variant="outline" className="h-9 w-full rounded-xl border-indigo-200 text-indigo-600 text-[10px] font-bold uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all">Generate Summary</Button>
+                                <Button variant="outline" className="h-9 w-full rounded-xl border-indigo-200 text-indigo-600 text-[10px] font-bold uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all" onClick={() => toast({ title: "Generating", description: "PDF summary report is being compiled..." })}>Generate Summary</Button>
                             </div>
                         </div>
                     </div>

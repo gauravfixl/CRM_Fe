@@ -239,7 +239,7 @@ const ExpenseReportsPage = () => {
                                 </Button>
                                 <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={(e) => {
                                     e.stopPropagation();
-                                    handleExportCSV(report.title, ['Field', 'Value'], [['Report', report.title]]);
+                                    handleExportCSV(report.title, ['ID', 'Employee', 'Category', 'Amount', 'Date', 'Status'], claims.map(c => [c.id, c.employeeName, c.category, c.amount.toString(), c.date, c.status]));
                                 }}>
                                     <Download className="h-3 w-3" /> Download
                                 </Button>
@@ -302,7 +302,7 @@ const ExpenseReportsPage = () => {
 
             {/* Report Preview Dialog */}
             <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
-                <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+                <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto border-2 border-slate-200">
                     <DialogHeader>
                         <DialogTitle>{reports.find(r => r.key === activeReport)?.title || 'Report'}</DialogTitle>
                         <DialogDescription>Period: {dateFrom} to {dateTo}</DialogDescription>
@@ -472,7 +472,7 @@ const ExpenseReportsPage = () => {
                     <DialogFooter>
                         <Button variant="outline" size="sm" className="gap-1.5" onClick={() => {
                             const reportConfig = reports.find(r => r.key === activeReport);
-                            if (reportConfig) handleExportCSV(reportConfig.title, ['Field', 'Value'], [['Report', reportConfig.title]]);
+                            if (reportConfig) handleExportCSV(reportConfig.title, ['ID', 'Employee', 'Category', 'Amount', 'Date', 'Status'], claims.map(c => [c.id, c.employeeName, c.category, c.amount.toString(), c.date, c.status]));
                         }}>
                             <Download className="h-4 w-4" /> Export CSV
                         </Button>

@@ -8,14 +8,79 @@ import { ArrowLeft, Building2, Globe, User, Save, MapPin } from "lucide-react"
 import { toast } from "sonner"
 import { useAppStore } from "@/lib/store"
 import { addNewFirm } from "@/hooks/firmHooks"
-import { SmallCard } from "@/components/custom/SmallCard"
 import { CustomButton } from "@/components/custom/CustomButton"
 import { CustomInput } from "@/components/custom/CustomInput"
 import { CustomLabel } from "@/components/custom/CustomLabel"
 import CountryStateCityDropdown from "@/components/custom/CountryStateCityDropDown"
-import { Breadcrumb } from "@/components/custom/CustomBreadCrumb"
-import { FlatCard } from "@/components/custom/FlatCard"
 import SubHeader from "@/components/custom/SubHeader"
+import { FlatCard } from "@/components/custom/FlatCard"
+import { PhoneInputWithCountryCode } from "@/components/custom/PhoneInputWithCountryCode"
+
+// --- Validation helpers ---
+const isValidEmail = (v: string) => /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(v)
+const isValidUrl = (v: string) => /^(https?:\/\/)?([\w-]+\.)+[\w-]{2,}(\/\S*)?$/.test(v)
+const isValidGST = (v: string) => /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(v.toUpperCase())
+const isValidCIN = (v: string) => /^[A-Z]{1}[0-9]{5}[A-Z]{2}[0-9]{4}[A-Z]{3}[0-9]{6}$/.test(v.toUpperCase())
+const isValidTIN = (v: string) => /^[0-9]{11}$/.test(v)
+const isValidUIN = (v: string) => /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}[A-Z]{1}[0-9A-Z]{1}$/.test(v.toUpperCase())
+const isValidPinCode = (v: string | number) => /^[0-9]{4,10}$/.test(String(v))
+
+// --- Format hints ---
+const FORMAT_HINTS: Record<string, string> = {
+  FirmName: "Minimum 3 characters, e.g. Fixl Solutions Pvt Ltd",
+  email: "Valid email format, e.g. contact@company.com",
+  phone: "Select country code and enter digits",
+  invoicePrefix: "Short prefix for invoices, e.g. FIXL, INV",
+  website: "Optional — e.g. https://www.company.com",
+  gst_no: "15-character GST number, e.g. 22AAAAA0000A1Z5",
+  address1: "Street address / Building name",
+  address2: "Optional — Floor, Suite, Area",
+  pinCode: "Postal / ZIP code (4–10 digits)",
+  "contactPerson.name": "Full name, e.g. Rajesh Kumar",
+  "contactPerson.email": "Valid email, e.g. rajesh@company.com",
+  "contactPerson.phone": "Select country code and enter digits",
+  "contactPerson.mobile": "Select country code and enter digits",
+  "contactPerson.altPhone": "Optional alternate phone number",
+  "contactPerson.altMobile": "Optional alternate mobile number",
+  "contactPerson.address1": "Street address",
+  "contactPerson.address2": "Optional — Area / Landmark",
+  "contactPerson.city": "City name",
+  "contactPerson.state": "State name",
+  "contactPerson.country": "Country name",
+  "contactPerson.pinCode": "Postal / ZIP code (4–10 digits)",
+  uin: "Optional — 15-character UIN, e.g. 22AAAAA0000A1U5",
+  tinNo: "11-digit Tax Identification Number",
+  cinNo: "21-character Company Identification Number, e.g. U12345MH2020PTC123456",
+}
+
+// --- Field label mapping ---
+const FIELD_LABELS: Record<string, string> = {
+  FirmName: "Firm Name",
+  email: "Email",
+  phone: "Phone",
+  invoicePrefix: "Invoice Prefix",
+  website: "Website",
+  gst_no: "GST Number",
+  address1: "Address Line 1",
+  address2: "Address Line 2",
+  pinCode: "Pin Code",
+  name: "Contact Name",
+  "contactPerson.name": "Contact Name",
+  "contactPerson.email": "Contact Email",
+  "contactPerson.phone": "Contact Phone",
+  "contactPerson.mobile": "Contact Mobile",
+  "contactPerson.altPhone": "Alternate Phone",
+  "contactPerson.altMobile": "Alternate Mobile",
+  "contactPerson.address1": "Address Line 1",
+  "contactPerson.address2": "Address Line 2",
+  "contactPerson.city": "City",
+  "contactPerson.state": "State",
+  "contactPerson.country": "Country",
+  "contactPerson.pinCode": "Pin Code",
+  uin: "UIN (Unique Identification Number)",
+  tinNo: "TIN (Tax Identification Number)",
+  cinNo: "CIN (Company Identification Number)",
+}
 
 export default function AddFirmPage() {
   const params = useParams()
@@ -31,9 +96,9 @@ export default function AddFirmPage() {
     email: "",
     phone: "",
     invoicePrefix: "",
-    add: { address1: "", address2: "", city: "", state: "", country: "", pinCode: 0 },
+    add: { address1: "", address2: "", city: "", state: "", country: "", pinCode: "" },
     contactPerson: {
-      name: "", email: "", address1: "", address2: "", city: "", state: "", pinCode: 0,
+      name: "", email: "", address1: "", address2: "", city: "", state: "", pinCode: "",
       country: "", phone: "", mobile: "", altPhone: "", altMobile: ""
     },
     website: "", gst_no: "", logo: "", uin: "", tinNo: "", cinNo: ""
@@ -44,57 +109,103 @@ export default function AddFirmPage() {
     setOrgName(storedOrg)
   }, [])
 
-  // --- Logic for input handling ---
+  // --- Input handling ---
   const handleInputChange = (field: string, value: any, nested: string | null = null) => {
-    const phoneFields = ["phone", "mobile", "altPhone", "altMobile"]
-    if (phoneFields.includes(field)) value = value.replace(/[^0-9+]/g, "")
-
     if (nested) {
       setFormData(prev => ({
         ...prev,
         [nested]: { ...((prev as any)[nested]), [field]: value }
       }))
+      setErrors(prev => {
+        const updated = { ...prev }
+        delete updated[`${nested}.${field}`]
+        delete updated[field]
+        return updated
+      })
     } else {
       setFormData(prev => ({ ...prev, [field]: value }))
+      setErrors(prev => {
+        const updated = { ...prev }
+        delete updated[field]
+        return updated
+      })
     }
-
-    setErrors(prev => ({ ...prev, [field]: "" }))
   }
 
+  // --- Validation per step ---
   const validateStep = () => {
-    const newErrors: Record<string, string> = {}
+    const e: Record<string, string> = {}
+
     if (step === 1) {
-      if (!formData.FirmName) newErrors.FirmName = "Firm Name is required."
-      if (!formData.email || !/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = "Valid email required."
-      if (!formData.phone) newErrors.phone = "Phone is required."
-      if (!formData.invoicePrefix) newErrors.invoicePrefix = "Invoice prefix is required."
-      if (!formData.gst_no) newErrors.gst_no = "GST No is required."
+      if (!formData.FirmName.trim()) e.FirmName = "Firm Name is required."
+      else if (formData.FirmName.trim().length < 3) e.FirmName = "Firm Name must be at least 3 characters."
+
+      if (!formData.email.trim()) e.email = "Email is required."
+      else if (!isValidEmail(formData.email)) e.email = "Enter a valid email (e.g. contact@company.com)."
+
+      if (!formData.phone.trim()) e.phone = "Phone number is required."
+      else if (formData.phone.replace(/[^0-9]/g, "").length < 7) e.phone = "Enter a valid phone number with country code."
+
+      if (!formData.invoicePrefix.trim()) e.invoicePrefix = "Invoice Prefix is required."
+      else if (formData.invoicePrefix.trim().length > 10) e.invoicePrefix = "Invoice Prefix should be max 10 characters."
+
+      if (!formData.gst_no.trim()) e.gst_no = "GST Number is required."
+      else if (!isValidGST(formData.gst_no)) e.gst_no = "Enter a valid 15-character GST number (e.g. 22AAAAA0000A1Z5)."
+
+      if (formData.website.trim() && !isValidUrl(formData.website)) e.website = "Enter a valid URL (e.g. https://company.com)."
     }
+
     if (step === 2) {
-      if (!formData.add.address1) newErrors.address1 = "Address 1 required."
-      if (!formData.add.city) newErrors.city = "City required."
-      if (!formData.add.state) newErrors.state = "State required."
-      if (!formData.add.country) newErrors.country = "Country required."
-      if (!formData.add.pinCode) newErrors.pinCode = "Pin Code required."
+      if (!formData.add.address1.trim()) e["add.address1"] = "Address Line 1 is required."
+      if (!formData.add.country) e["add.country"] = "Country is required."
+      if (!formData.add.state) e["add.state"] = "State is required."
+      if (!formData.add.city) e["add.city"] = "City is required."
+      if (!formData.add.pinCode) e["add.pinCode"] = "Pin Code is required."
+      else if (!isValidPinCode(formData.add.pinCode)) e["add.pinCode"] = "Enter a valid Pin Code (4–10 digits)."
     }
+
+    if (step === 3) {
+      // All optional, but validate format if provided
+      const cp = formData.contactPerson
+      if (cp.email && !isValidEmail(cp.email)) e["contactPerson.email"] = "Enter a valid email."
+      if (cp.phone && cp.phone.replace(/[^0-9]/g, "").length < 7) e["contactPerson.phone"] = "Enter a valid phone number."
+      if (cp.mobile && cp.mobile.replace(/[^0-9]/g, "").length < 7) e["contactPerson.mobile"] = "Enter a valid mobile number."
+      if (cp.pinCode && !isValidPinCode(cp.pinCode)) e["contactPerson.pinCode"] = "Enter a valid Pin Code."
+    }
+
     if (step === 4) {
-      if (!formData.tinNo) newErrors.tinNo = "TIN No required."
-      if (!formData.cinNo) newErrors.cinNo = "CIN No required."
+      if (!formData.tinNo.trim()) e.tinNo = "TIN Number is required."
+      else if (!isValidTIN(formData.tinNo)) e.tinNo = "Enter a valid 11-digit TIN number."
+
+      if (!formData.cinNo.trim()) e.cinNo = "CIN Number is required."
+      else if (!isValidCIN(formData.cinNo)) e.cinNo = "Enter a valid 21-character CIN (e.g. U12345MH2020PTC123456)."
+
+      if (formData.uin.trim() && !isValidUIN(formData.uin)) e.uin = "Enter a valid 15-character UIN."
     }
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
+
+    setErrors(e)
+    return Object.keys(e).length === 0
   }
 
-  const handleNext = () => {
-    if (validateStep()) setStep(prev => prev + 1)
-  }
+  const handleNext = () => { if (validateStep()) setStep(prev => prev + 1) }
   const handleBack = () => setStep(prev => prev - 1)
 
   const handleSubmit = async () => {
     if (!validateStep()) return
     setIsLoading(true)
     try {
-      const response = await addNewFirm(formData)
+      const submitData = {
+        ...formData,
+        add: {
+          ...formData.add,
+          pinCode: Number(formData.add.pinCode) || 0,
+        },
+        contactPerson: {
+          ...formData.contactPerson,
+          pinCode: formData.contactPerson.pinCode ? Number(formData.contactPerson.pinCode) : undefined,
+        },
+      }
+      const response = await addNewFirm(submitData)
       addFirm(response.data)
       toast.success("Firm added successfully!")
       router.push(`/${orgName}/modules/firm-management/firms`)
@@ -105,7 +216,6 @@ export default function AddFirmPage() {
     }
   }
 
-  // Step titles
   const stepTitles = [
     { title: "Basic Info", description: "Firm details", icon: Building2 },
     { title: "Address", description: "Location info", icon: MapPin },
@@ -113,16 +223,62 @@ export default function AddFirmPage() {
     { title: "Compliance", description: "Legal numbers", icon: Globe },
   ]
 
-  // Required fields mapping
-  const requiredFields = {
-    step1: ["FirmName", "email", "phone", "invoicePrefix", "gst_no"],
-    step2: ["address1", "city", "state", "country", "pinCode"],
-    step4: ["tinNo", "cinNo"],
-  }
   const breadcrumbItems = [
     { label: "All Firms", href: `/${params.orgName}/modules/firm-management/firms` },
-    { label: "Add", href: `/${params.orgId}/modules/firm-management/firms/add` },
+    { label: "Add", href: `/${params.orgName}/modules/firm-management/firms/add` },
   ]
+
+  // --- Reusable field renderer ---
+  const renderField = (
+    field: string,
+    value: string,
+    nested: string | null,
+    required: boolean,
+    options?: { type?: string; maxLength?: number }
+  ) => {
+    const errorKey = nested ? `${nested}.${field}` : field
+    const hintKey = nested ? `${nested}.${field}` : field
+    const labelKey = nested ? `${nested}.${field}` : field
+
+    return (
+      <div key={field}>
+        <CustomLabel>
+          {FIELD_LABELS[labelKey] || FIELD_LABELS[field] || field}
+          {required && <span className="text-red-500 ml-0.5">*</span>}
+        </CustomLabel>
+        <CustomInput
+          value={value}
+          type={options?.type || "text"}
+          maxLength={options?.maxLength}
+          onChange={(e) => handleInputChange(field, e.target.value, nested)}
+          placeholder={`Enter ${FIELD_LABELS[labelKey] || FIELD_LABELS[field] || field}`}
+          className={errors[errorKey] ? "border-red-400 focus:ring-red-500/20 focus:border-red-500" : ""}
+        />
+        <p className="text-[11px] text-zinc-400 mt-0.5">{FORMAT_HINTS[hintKey] || FORMAT_HINTS[field] || ""}</p>
+        {errors[errorKey] && <p className="text-red-500 text-xs mt-0.5">{errors[errorKey]}</p>}
+      </div>
+    )
+  }
+
+  // --- Reusable phone field renderer ---
+  const renderPhoneField = (field: string, value: string, nested: string | null, required: boolean) => {
+    const errorKey = nested ? `${nested}.${field}` : field
+    const labelKey = nested ? `${nested}.${field}` : field
+
+    return (
+      <div key={field}>
+        <CustomLabel>
+          {FIELD_LABELS[labelKey] || FIELD_LABELS[field] || field}
+          {required && <span className="text-red-500 ml-0.5">*</span>}
+        </CustomLabel>
+        <PhoneInputWithCountryCode
+          value={value}
+          onChange={(val) => handleInputChange(field, val, nested)}
+          error={errors[errorKey]}
+        />
+      </div>
+    )
+  }
 
   return (
     <>
@@ -131,10 +287,8 @@ export default function AddFirmPage() {
         breadcrumbItems={breadcrumbItems}
       />
 
-
       <div className="p-6 z-10 bg-zinc-50/50 min-h-screen">
         <div className="max-w-4xl mx-auto">
-          {/* Header */}
 
           {/* Stepper */}
           <div className="mb-8">
@@ -147,19 +301,16 @@ export default function AddFirmPage() {
 
                 return (
                   <div key={stepNumber} className="flex-1 flex items-start">
-                    {/* Left part: Icon/Number */}
                     <div
                       className={`w-12 h-12 rounded-full flex items-center justify-center mr-3
-            ${isCompleted ? "bg-primary text-white" :
+                        ${isCompleted ? "bg-primary text-white" :
                           isActive ? "bg-accent text-accent-foreground" :
                             "bg-muted text-muted-foreground"}`}
                     >
                       <Icon size={20} />
                     </div>
-
-                    {/* Right part: Title & Description */}
                     <div className="flex flex-col">
-                      <p className={` font-semibold text-xs ${isActive ? "text-foreground" : "text-muted-foreground"}`}>
+                      <p className={`font-semibold text-xs ${isActive ? "text-foreground" : "text-muted-foreground"}`}>
                         {stepInfo.title}
                       </p>
                       <p className="text-xs text-muted-foreground">{stepInfo.description}</p>
@@ -169,8 +320,6 @@ export default function AddFirmPage() {
               })}
             </div>
 
-
-            {/* Progress bar */}
             <div className="flex items-center space-x-2 mt-2">
               {[1, 2, 3, 4].map(s => (
                 <div key={s} className={`flex-1 h-2 rounded-full ${step >= s ? "bg-primary" : "bg-border"}`} />
@@ -179,50 +328,27 @@ export default function AddFirmPage() {
           </div>
 
           {/* Form Steps */}
-          <div className="h-[50vh]    ">
-            <FlatCard className="shadow-xl border-0 bg-card/80 backdrop-blur-sm   overflow-hidden overflow-y-auto hide-scrollbar ">
+          <div className="h-[50vh]">
+            <FlatCard className="shadow-xl border-0 bg-card/80 backdrop-blur-sm overflow-hidden overflow-y-auto hide-scrollbar">
               <div className="p-3 py-2 space-y-2">
-                {/* Step 1 */}
+
+                {/* Step 1 — Basic Info */}
                 {step === 1 && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {["FirmName", "email", "phone", "invoicePrefix", "website", "gst_no"].map(field => (
-                      <div key={field}>
-                        <CustomLabel>
-                          {field}
-                          {requiredFields.step1.includes(field) && <span className="text-red-500"> *</span>}
-                        </CustomLabel>
-                        <CustomInput
-                          value={(formData as any)[field]}
-                          onChange={(e) => handleInputChange(field, e.target.value)}
-                          placeholder={`Enter ${field}`}
-                        />
-                        {errors[field] && <p className="text-red-500 text-sm">{errors[field]}</p>}
-                      </div>
-                    ))}
+                    {renderField("FirmName", formData.FirmName, null, true)}
+                    {renderField("email", formData.email, null, true, { type: "email" })}
+                    {renderPhoneField("phone", formData.phone, null, true)}
+                    {renderField("invoicePrefix", formData.invoicePrefix, null, true, { maxLength: 10 })}
+                    {renderField("website", formData.website, null, false)}
+                    {renderField("gst_no", formData.gst_no, null, true, { maxLength: 15 })}
                   </div>
                 )}
 
-                {/* Step 2 */}
+                {/* Step 2 — Address */}
                 {step === 2 && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <CustomLabel>
-                        Address 1 {requiredFields.step2.includes("address1") && <span className="text-red-500"> *</span>}
-                      </CustomLabel>
-                      <CustomInput
-                        value={formData.add.address1}
-                        onChange={(e) => handleInputChange("address1", e.target.value, "add")}
-                      />
-                      {errors.address1 && <p className="text-red-500 text-sm">{errors.address1}</p>}
-                    </div>
-
-                    <div>
-                      <CustomLabel>Address 2</CustomLabel>
-                      <CustomInput
-                        value={formData.add.address2}
-                        onChange={(e) => handleInputChange("address2", e.target.value, "add")}
-                      />
-                    </div>
+                    {renderField("address1", formData.add.address1, "add", true)}
+                    {renderField("address2", formData.add.address2, "add", false)}
 
                     <div className="col-span-2">
                       <CountryStateCityDropdown
@@ -232,51 +358,48 @@ export default function AddFirmPage() {
                         countryName="country" stateName="state" cityName="city"
                         handleChange={(e) => handleInputChange(e.target.name, e.target.value, "add")}
                       />
+                      {(errors["add.country"] || errors["add.state"] || errors["add.city"]) && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-1">
+                          {errors["add.country"] && <p className="text-red-500 text-xs">{errors["add.country"]}</p>}
+                          {errors["add.state"] && <p className="text-red-500 text-xs">{errors["add.state"]}</p>}
+                          {errors["add.city"] && <p className="text-red-500 text-xs">{errors["add.city"]}</p>}
+                        </div>
+                      )}
                     </div>
 
-                    <div>
-                      <CustomLabel>
-                        Pin Code {requiredFields.step2.includes("pinCode") && <span className="text-red-500"> *</span>}
-                      </CustomLabel>
-                      <CustomInput
-                        value={formData.add.pinCode}
-                        onChange={(e) => handleInputChange("pinCode", Number(e.target.value), "add")}
-                      />
-                      {errors.pinCode && <p className="text-red-500 text-sm">{errors.pinCode}</p>}
-                    </div>
+                    {renderField("pinCode", String(formData.add.pinCode), "add", true, { maxLength: 10 })}
                   </div>
                 )}
 
-                {/* Step 3 */}
+                {/* Step 3 — Contact Person (all optional) */}
                 {step === 3 && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {Object.keys(formData.contactPerson).map(field => (
-                      <CustomInput
-                        key={field}
-                        label={field}
-                        value={(formData.contactPerson as any)[field]}
-                        onChange={(e) => handleInputChange(field, e.target.value, "contactPerson")}
-                      />
-                    ))}
+                  <div className="space-y-4">
+                    <p className="text-xs text-zinc-500 bg-zinc-100 px-3 py-2 rounded-md">
+                      All fields in this step are optional. Fill in only if a contact person is available.
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {renderField("name", formData.contactPerson.name, "contactPerson", false)}
+                      {renderField("email", formData.contactPerson.email, "contactPerson", false, { type: "email" })}
+                      {renderPhoneField("phone", formData.contactPerson.phone, "contactPerson", false)}
+                      {renderPhoneField("mobile", formData.contactPerson.mobile, "contactPerson", false)}
+                      {renderPhoneField("altPhone", formData.contactPerson.altPhone, "contactPerson", false)}
+                      {renderPhoneField("altMobile", formData.contactPerson.altMobile, "contactPerson", false)}
+                      {renderField("address1", formData.contactPerson.address1, "contactPerson", false)}
+                      {renderField("address2", formData.contactPerson.address2, "contactPerson", false)}
+                      {renderField("city", formData.contactPerson.city, "contactPerson", false)}
+                      {renderField("state", formData.contactPerson.state, "contactPerson", false)}
+                      {renderField("country", formData.contactPerson.country, "contactPerson", false)}
+                      {renderField("pinCode", String(formData.contactPerson.pinCode), "contactPerson", false, { maxLength: 10 })}
+                    </div>
                   </div>
                 )}
 
-                {/* Step 4 */}
+                {/* Step 4 — Compliance */}
                 {step === 4 && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {["uin", "tinNo", "cinNo"].map(field => (
-                      <div key={field}>
-                        <CustomLabel>
-                          {field}
-                          {requiredFields.step4.includes(field) && <span className="text-red-500"> *</span>}
-                        </CustomLabel>
-                        <CustomInput
-                          value={(formData as any)[field]}
-                          onChange={(e) => handleInputChange(field, e.target.value)}
-                        />
-                        {errors[field] && <p className="text-red-500 text-sm">{errors[field]}</p>}
-                      </div>
-                    ))}
+                    {renderField("uin", formData.uin, null, false, { maxLength: 15 })}
+                    {renderField("tinNo", formData.tinNo, null, true, { maxLength: 11 })}
+                    {renderField("cinNo", formData.cinNo, null, true, { maxLength: 21 })}
                   </div>
                 )}
 

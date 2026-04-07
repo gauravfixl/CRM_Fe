@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
     UserX,
     RotateCcw,
@@ -9,7 +9,8 @@ import {
     AlertOctagon,
     ShieldAlert,
     Ban,
-    History
+    History,
+    Loader2
 } from "lucide-react";
 import SubHeader from "@/components/custom/SubHeader";
 import { CustomButton } from "@/components/custom/CustomButton";
@@ -29,40 +30,81 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { fetchUsersApi, updateOrgUser, deleteOrgUser } from "@/modules/crm/organizations/hooks/orgHooks";
 
-const initialDeactivated = [
-    {
-        id: "du-1",
-        name: "Michael Scott",
-        email: "michael.s@dundermifflin.com",
-        role: "Regional Manager",
-        deactivatedAt: "Jan 12, 2024",
-        reason: "Termination",
-        avatar: "MS"
-    },
-    {
-        id: "du-2",
-        name: "Dwight Schrute",
-        email: "dwight.s@dundermifflin.com",
-        role: "Assistant to the RM",
-        deactivatedAt: "Feb 01, 2024",
-        reason: "Security Policy Violation",
-        avatar: "DS"
-    },
-];
+interface DeactivatedUser {
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+    deactivatedAt: string;
+    reason: string;
+    avatar: string;
+}
 
 export default function DeactivatedUsersPage() {
-    const [users, setUsers] = useState(initialDeactivated);
+    const [users, setUsers] = useState<DeactivatedUser[]>([]);
     const [searchQuery, setSearchQuery] = useState("");
+    const [loading, setLoading] = useState(true);
+    const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-    const handleRestore = (id: string, name: string) => {
-        setUsers(prev => prev.filter(u => u.id !== id));
-        toast.success(`${name} has been restored to active status.`);
+    const loadDeactivatedUsers = useCallback(async () => {
+        try {
+            setLoading(true);
+            const data = await fetchUsersApi();
+            const allUsers = Array.isArray(data) ? data : data?.users ?? [];
+            const deactivated: DeactivatedUser[] = allUsers
+                .filter((u: any) => u.orgActive === false)
+                .map((u: any) => ({
+                    id: u._id,
+                    name: `${u.firstName || ""} ${u.lastName || ""}`.trim() || "Unknown",
+                    email: u.email || "",
+                    role: u.role || "Member",
+                    deactivatedAt: u.joinedAt
+                        ? new Date(u.joinedAt).toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })
+                        : "N/A",
+                    reason: "Deactivated",
+                    avatar: u.avatar || `${(u.firstName?.[0] || "").toUpperCase()}${(u.lastName?.[0] || "").toUpperCase()}`,
+                }));
+            setUsers(deactivated);
+        } catch (error) {
+            console.error("Failed to fetch deactivated users:", error);
+            toast.error("Failed to load deactivated users.");
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        loadDeactivatedUsers();
+    }, [loadDeactivatedUsers]);
+
+    const handleRestore = async (id: string, name: string) => {
+        try {
+            setActionLoading(id);
+            await updateOrgUser(id, { orgActive: true });
+            toast.success(`${name} has been restored to active status.`);
+            await loadDeactivatedUsers();
+        } catch (error) {
+            console.error("Failed to restore user:", error);
+            toast.error("Failed to restore user. Please try again.");
+        } finally {
+            setActionLoading(null);
+        }
     };
 
-    const handlePermanentDelete = (id: string) => {
-        setUsers(prev => prev.filter(u => u.id !== id));
-        toast.error("User data permanently purged.");
+    const handlePermanentDelete = async (id: string) => {
+        try {
+            setActionLoading(id);
+            await deleteOrgUser(id);
+            toast.error("User data permanently purged.");
+            await loadDeactivatedUsers();
+        } catch (error) {
+            console.error("Failed to delete user:", error);
+            toast.error("Failed to delete user. Please try again.");
+        } finally {
+            setActionLoading(null);
+        }
     };
 
     return (
@@ -100,7 +142,12 @@ export default function DeactivatedUsersPage() {
 
                 {/* LIST */}
                 <div className="grid gap-4">
-                    {users.length > 0 ? (
+                    {loading ? (
+                        <div className="flex flex-col items-center justify-center py-20 bg-white/50 dark:bg-zinc-900/50 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-3xl">
+                            <Loader2 className="w-8 h-8 text-zinc-400 animate-spin mb-4" />
+                            <p className="text-zinc-500 font-medium text-sm">Loading deactivated users...</p>
+                        </div>
+                    ) : users.length > 0 ? (
                         users
                             .filter(u => u.name.toLowerCase().includes(searchQuery.toLowerCase()))
                             .map((user) => (
@@ -134,9 +181,10 @@ export default function DeactivatedUsersPage() {
                                         <div className="flex items-center gap-3 w-full md:w-auto justify-end pt-4 md:pt-0">
                                             <CustomButton
                                                 className="h-10 px-6 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl gap-2 shadow-xl border-0"
+                                                disabled={actionLoading === user.id}
                                                 onClick={() => handleRestore(user.id, user.name)}
                                             >
-                                                <RotateCcw className="w-4 h-4" /> Restore Status
+                                                {actionLoading === user.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCcw className="w-4 h-4" />} Restore Status
                                             </CustomButton>
 
                                             <AlertDialog>
@@ -179,7 +227,8 @@ export default function DeactivatedUsersPage() {
                                         </div>
                                     </div>
                                 </Card>
-                            ))) : (
+                            ))
+                    ) : (
                         <div className="flex flex-col items-center justify-center py-20 bg-white/50 dark:bg-zinc-900/50 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-3xl">
                             <div className="h-16 w-16 bg-emerald-50 dark:bg-emerald-900/20 rounded-full flex items-center justify-center mb-4">
                                 <ShieldAlert className="w-8 h-8 text-emerald-500" />

@@ -151,7 +151,13 @@ const BulkLettersPage = () => {
                     </div>
                 </div>
                 <div className="flex gap-3">
-                    <Button variant="outline" className="font-bold border-slate-200" onClick={() => toast({ title: "Batch Download", description: "Downloading all generated letters as ZIP..." })}>
+                    <Button variant="outline" className="font-bold border-slate-200" onClick={() => {
+                        const csv = "Employee,Letter Type,Generated Date,Status\n" + mockLetters.map(l => `${l.employee},${l.letterType},${l.generatedDate},${l.status}`).join("\n");
+                        const blob = new Blob([csv], { type: "text/csv" });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement("a"); a.href = url; a.download = "bulk_letters_export.csv"; a.click(); URL.revokeObjectURL(url);
+                        toast({ title: "Exported", description: "Bulk letters data exported as CSV." });
+                    }}>
                         <Archive size={16} className="mr-2 text-slate-400" /> Download ZIP
                     </Button>
                 </div>
@@ -280,8 +286,8 @@ const BulkLettersPage = () => {
                                             <TableCell>{statusBadge(l.status)}</TableCell>
                                             <TableCell className="text-right">
                                                 <div className="flex justify-end gap-1">
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400" title="Preview"><Eye size={14} /></Button>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400" title="Download"><Download size={14} /></Button>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400" title="Preview" onClick={() => setPreviewLetter(l)}><Eye size={14} /></Button>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400" title="Download" onClick={() => toast({ title: "Downloading", description: `Letter for ${l.employee} is being downloaded.` })}><Download size={14} /></Button>
                                                     <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400" title="Send" onClick={() => toast({ title: "Sent", description: `Letter sent to ${l.employee} via email.` })}>
                                                         <Mail size={14} />
                                                     </Button>
@@ -298,7 +304,7 @@ const BulkLettersPage = () => {
 
             {/* Preview Dialog */}
             <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
-                <DialogContent className="max-w-lg">
+                <DialogContent className="max-w-lg border-2 border-slate-200">
                     <DialogHeader>
                         <DialogTitle>Letter Preview</DialogTitle>
                         <DialogDescription>{selectedTemplate} Letter for {previewEmployee?.name}</DialogDescription>

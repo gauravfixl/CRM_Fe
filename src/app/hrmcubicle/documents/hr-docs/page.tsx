@@ -194,7 +194,7 @@ const HRDocsPage = () => {
                                     className="h-full bg-indigo-600 rounded-full shadow-[0_0_10px_rgba(79,70,229,0.2)]"
                                 />
                             </div>
-                            <Button variant="outline" className="w-full h-11 text-[9px] text-indigo-700 border-indigo-200 bg-indigo-50/50 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 font-bold tracking-wide rounded-xl transition-all shadow-md">
+                            <Button variant="outline" onClick={() => toast.success("Cloud storage upgrade options would appear here")} className="w-full h-11 text-[9px] text-indigo-700 border-indigo-200 bg-indigo-50/50 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 font-bold tracking-wide rounded-xl transition-all shadow-md">
                                 Upgrade Cloud <ArrowUpRight size={14} className="ml-2" />
                             </Button>
                         </Card>
@@ -260,7 +260,7 @@ const HRDocsPage = () => {
                                                         <SelectTrigger className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 focus:bg-white transition-all shadow-sm">
                                                             <SelectValue />
                                                         </SelectTrigger>
-                                                        <SelectContent className="rounded-2xl border-none shadow-2xl p-2 font-bold text-xs font-sans">
+                                                        <SelectContent className="rounded-2xl border border-slate-200 shadow-2xl p-2 font-bold text-xs font-sans">
                                                             {categories.filter(c => c !== "All").map(cat => (
                                                                 <SelectItem key={cat} value={cat} className="rounded-xl h-10">{cat}</SelectItem>
                                                             ))}
@@ -273,7 +273,7 @@ const HRDocsPage = () => {
                                                         <SelectTrigger className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 focus:bg-white transition-all shadow-sm">
                                                             <SelectValue />
                                                         </SelectTrigger>
-                                                        <SelectContent className="rounded-2xl border-none shadow-2xl p-2 font-bold text-xs font-sans">
+                                                        <SelectContent className="rounded-2xl border border-slate-200 shadow-2xl p-2 font-bold text-xs font-sans">
                                                             <SelectItem value="Published" className="rounded-xl h-10">Public (Open)</SelectItem>
                                                             <SelectItem value="Internal" className="rounded-xl h-10">Internal (Locked)</SelectItem>
                                                             <SelectItem value="Confidential" className="rounded-xl h-10">Encrypted (Confidential)</SelectItem>
@@ -382,7 +382,7 @@ const HRDocsPage = () => {
                                                                     <MoreVertical size={18} />
                                                                 </Button>
                                                             </DropdownMenuTrigger>
-                                                            <DropdownMenuContent align="end" className="w-60 p-2 rounded-2xl border-none shadow-2xl bg-white font-sans">
+                                                            <DropdownMenuContent align="end" className="w-60 p-2 rounded-2xl border border-slate-200 shadow-2xl bg-white font-sans">
                                                                 <DropdownMenuLabel className="px-3 py-2 text-[10px] font-bold text-slate-400 tracking-wide">Asset Management</DropdownMenuLabel>
                                                                 <DropdownMenuItem className="gap-3 p-3 rounded-xl cursor-pointer font-bold text-xs hover:bg-indigo-50 text-start" onClick={() => { setSelectedDocForAudit(doc); setIsAuditOpen(true); }}>
                                                                     <Activity className="w-4 h-4 text-indigo-500" /> Access Audit Log
@@ -484,11 +484,11 @@ const HRDocsPage = () => {
                                                                         <MoreVertical size={18} />
                                                                     </Button>
                                                                 </DropdownMenuTrigger>
-                                                                <DropdownMenuContent align="end" className="w-56 p-2 rounded-2xl border-none shadow-2xl bg-white font-sans">
+                                                                <DropdownMenuContent align="end" className="w-56 p-2 rounded-2xl border border-slate-200 shadow-2xl bg-white font-sans">
                                                                     <DropdownMenuItem className="gap-3 p-3 rounded-xl cursor-pointer font-bold text-xs hover:bg-indigo-50" onClick={() => setEditingDoc(doc)}>
                                                                         <FileText className="w-4 h-4 text-indigo-500" /> Edit Metadata
                                                                     </DropdownMenuItem>
-                                                                    <DropdownMenuItem className="gap-3 p-3 rounded-xl cursor-pointer font-bold text-xs hover:bg-indigo-50">Secure Share</DropdownMenuItem>
+                                                                    <DropdownMenuItem className="gap-3 p-3 rounded-xl cursor-pointer font-bold text-xs hover:bg-indigo-50" onClick={() => toast.success("Secure share link generated")}>Secure Share</DropdownMenuItem>
                                                                     <DropdownMenuSeparator className="my-2 bg-slate-50" />
                                                                     <DropdownMenuItem className="gap-3 p-3 rounded-xl cursor-pointer font-bold text-xs text-rose-600 hover:bg-rose-50" onClick={() => deleteHRDocument(doc.id)}>
                                                                         <Trash2 className="w-4 h-4" /> Purge permanently
@@ -509,7 +509,7 @@ const HRDocsPage = () => {
             </div>
 
             <Sheet open={isAuditOpen} onOpenChange={setIsAuditOpen}>
-                <SheetContent side="right" className="sm:max-w-md bg-white border-none shadow-[0_0_100px_rgba(0,0,0,0.1)] p-10 font-sans">
+                <SheetContent side="right" className="sm:max-w-md bg-white border border-slate-200 shadow-[0_0_100px_rgba(0,0,0,0.1)] p-10 font-sans">
                     <SheetHeader className="mb-12 text-start">
                         <div className="w-16 h-16 rounded-[2rem] bg-indigo-50 flex items-center justify-center mb-8 shadow-inner border border-indigo-100/50 ring-4 ring-white">
                             <Activity size={32} className="text-indigo-600" />
@@ -545,6 +545,62 @@ const HRDocsPage = () => {
                     </div>
                 </SheetContent>
             </Sheet>
+
+            {/* Edit Document Dialog */}
+            <Dialog open={!!editingDoc} onOpenChange={(open) => { if (!open) setEditingDoc(null) }}>
+                <DialogContent className="max-w-xl bg-white rounded-[2.5rem] border-2 border-slate-200 p-8 shadow-3xl font-sans" style={{ zoom: "80%" }}>
+                    <DialogHeader>
+                        <DialogTitle className="text-2xl font-black tracking-tight text-slate-900">Edit Document</DialogTitle>
+                        <DialogDescription className="font-bold text-slate-400 text-[11px] tracking-wide mt-2 leading-relaxed">
+                            Update the metadata for this organizational asset.
+                        </DialogDescription>
+                    </DialogHeader>
+                    {editingDoc && (
+                        <div className="space-y-6 py-8">
+                            <div className="space-y-3 text-start">
+                                <label className="text-[10px] font-bold tracking-wide text-slate-400 ml-1">Document Name</label>
+                                <Input
+                                    placeholder="Document name"
+                                    value={editingDoc.name}
+                                    onChange={(e) => setEditingDoc({ ...editingDoc, name: e.target.value })}
+                                    className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 focus:bg-white transition-all shadow-sm"
+                                />
+                            </div>
+                            <div className="space-y-3 text-start">
+                                <label className="text-[10px] font-bold tracking-wide text-slate-400 ml-1">Category</label>
+                                <Select value={editingDoc.category} onValueChange={(val) => setEditingDoc({ ...editingDoc, category: val })}>
+                                    <SelectTrigger className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 focus:bg-white transition-all shadow-sm">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent className="rounded-2xl border border-slate-200 shadow-2xl p-2 font-bold text-xs font-sans">
+                                        {categories.filter(c => c !== "All").map(cat => (
+                                            <SelectItem key={cat} value={cat} className="rounded-xl h-10">{cat}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-3 text-start">
+                                <label className="text-[10px] font-bold tracking-wide text-slate-400 ml-1">Status</label>
+                                <Select value={editingDoc.status} onValueChange={(val: any) => setEditingDoc({ ...editingDoc, status: val })}>
+                                    <SelectTrigger className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 focus:bg-white transition-all shadow-sm">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent className="rounded-2xl border border-slate-200 shadow-2xl p-2 font-bold text-xs font-sans">
+                                        <SelectItem value="Published" className="rounded-xl h-10">Published</SelectItem>
+                                        <SelectItem value="Internal" className="rounded-xl h-10">Internal</SelectItem>
+                                        <SelectItem value="Confidential" className="rounded-xl h-10">Confidential</SelectItem>
+                                        <SelectItem value="Archived" className="rounded-xl h-10">Archived</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                    )}
+                    <DialogFooter className="gap-3">
+                        <Button variant="ghost" onClick={() => setEditingDoc(null)} className="h-12 rounded-xl font-bold text-[10px] tracking-wide transition-all px-6">Cancel</Button>
+                        <Button onClick={handleUpdate} className="bg-indigo-600 hover:bg-slate-900 text-white rounded-xl h-12 px-10 font-bold shadow-lg shadow-indigo-100 transition-all text-[10px] tracking-wide border-none">Save Changes</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 };

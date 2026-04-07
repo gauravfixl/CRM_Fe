@@ -23,10 +23,12 @@ import { Button } from "@/shared/components/ui/button";
 import { Badge } from "@/shared/components/ui/badge";
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
 import { useHelpdeskStore } from "@/shared/data/helpdesk-store";
+import { useToast } from "@/shared/components/ui/use-toast";
 import { motion } from "framer-motion";
 
 const HelpdeskDashboard = () => {
     const router = useRouter();
+    const { toast } = useToast();
     const { tickets, agents } = useHelpdeskStore();
 
     const stats = {
@@ -60,10 +62,10 @@ const HelpdeskDashboard = () => {
                     </div>
                 </div>
                 <div className="flex items-center gap-3">
-                    <Button variant="outline" className="h-10 border-slate-200 text-slate-600 font-bold px-4 gap-2 text-xs uppercase tracking-widest bg-white hover:bg-slate-50">
+                    <Button variant="outline" className="h-10 border-slate-200 text-slate-600 font-bold px-4 gap-2 text-xs uppercase tracking-widest bg-white hover:bg-slate-50" onClick={() => router.push("/hrmcubicle/helpdesk/reports")}>
                         <History size={16} /> History
                     </Button>
-                    <Button className="h-10 bg-rose-600 hover:bg-rose-700 text-white font-bold px-6 gap-2 text-xs uppercase tracking-widest shadow-lg shadow-rose-200">
+                    <Button className="h-10 bg-rose-600 hover:bg-rose-700 text-white font-bold px-6 gap-2 text-xs uppercase tracking-widest shadow-lg shadow-rose-200" onClick={() => toast({ title: "Exporting", description: "Helpdesk intelligence report being generated..." })}>
                         <TrendingUp size={16} /> Export Intel
                     </Button>
                 </div>
@@ -74,21 +76,21 @@ const HelpdeskDashboard = () => {
                     {/* Primary Stats Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                         {[
-                            { label: "Incoming Queue", val: stats.open, sub: "Action Required", icon: Inbox, color: "text-indigo-600", bg: "bg-indigo-50" },
-                            { label: "Active Resolve", val: stats.inProgress, sub: "Work in Progress", icon: Clock, color: "text-amber-600", bg: "bg-amber-50" },
-                            { label: "Success Rate", val: `${Math.round((stats.resolved / stats.total) * 100)}%`, sub: "Closed vs Total", icon: CheckCircle2, color: "text-emerald-600", bg: "bg-emerald-50" },
-                            { label: "SLA Breaches", val: stats.breached, sub: "Critical Attention", icon: AlertCircle, color: "text-rose-600", bg: "bg-rose-50" },
+                            { label: "Incoming Queue", val: stats.open, sub: "Action Required", icon: Inbox, cardBg: "bg-[#CB9DF0]" },
+                            { label: "Active Resolve", val: stats.inProgress, sub: "Work in Progress", icon: Clock, cardBg: "bg-[#F0C1E1]" },
+                            { label: "Success Rate", val: `${Math.round((stats.resolved / stats.total) * 100)}%`, sub: "Closed vs Total", icon: CheckCircle2, cardBg: "bg-[#FFF9BF]" },
+                            { label: "SLA Breaches", val: stats.breached, sub: "Critical Attention", icon: AlertCircle, cardBg: "bg-[#FDDBBB]" },
                         ].map((stat, i) => (
                             <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
-                                <Card className="border-none shadow-sm bg-white overflow-hidden group hover:shadow-xl transition-all duration-300">
+                                <Card className={`border-none shadow-sm ${stat.cardBg} overflow-hidden group hover:shadow-xl transition-all duration-300`}>
                                     <CardContent className="p-6">
                                         <div className="flex justify-between items-start">
                                             <div className="space-y-1">
-                                                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">{stat.label}</p>
-                                                <h2 className={`text-2xl font-bold ${stat.color}`}>{stat.val}</h2>
-                                                <p className="text-[11px] font-bold text-slate-400">{stat.sub}</p>
+                                                <p className="text-[11px] font-bold text-slate-700 uppercase tracking-widest">{stat.label}</p>
+                                                <h2 className="text-2xl font-bold text-slate-900">{stat.val}</h2>
+                                                <p className="text-[11px] font-bold text-slate-600">{stat.sub}</p>
                                             </div>
-                                            <div className={`h-11 w-11 ${stat.bg} ${stat.color} rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform`}>
+                                            <div className="h-11 w-11 bg-white/30 text-slate-800 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform backdrop-blur-sm">
                                                 <stat.icon size={22} />
                                             </div>
                                         </div>
