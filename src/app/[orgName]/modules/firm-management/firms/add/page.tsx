@@ -489,9 +489,6 @@ export default function AddFirmPage() {
                       {renderField("name", formData.contactPerson.name, "contactPerson", false)}
                       {renderField("email", formData.contactPerson.email, "contactPerson", false, { type: "email" })}
                       {renderPhoneField("phone", formData.contactPerson.phone, "contactPerson", false)}
-                      {renderPhoneField("mobile", formData.contactPerson.mobile, "contactPerson", false)}
-                      {renderPhoneField("altPhone", formData.contactPerson.altPhone, "contactPerson", false)}
-                      {renderPhoneField("altMobile", formData.contactPerson.altMobile, "contactPerson", false)}
                       {renderField("address1", formData.contactPerson.address1, "contactPerson", false)}
                       {renderField("address2", formData.contactPerson.address2, "contactPerson", false)}
                       {renderField("city", formData.contactPerson.city, "contactPerson", false)}
