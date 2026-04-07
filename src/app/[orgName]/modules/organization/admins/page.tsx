@@ -40,6 +40,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "sonner"
 import { fetchUsersApi, createOrgInvite, updateOrgUser, deleteOrgUser, getAllOrgInvites } from "@/modules/crm/organizations/hooks/orgHooks"
+import { getAllFirmsList } from "@/hooks/firmHooks"
 
 const roleMap: Record<string, string> = {
     ADMIN: "Super Admin",
@@ -63,6 +64,77 @@ export default function FirmAdminsPage() {
 
     const [isEditOpen, setIsEditOpen] = useState(false)
     const [selectedAdmin, setSelectedAdmin] = useState<any>(null)
+
+    // Invite form state
+    const [inviteForm, setInviteForm] = useState({ name: "", email: "", firmId: "", role: "FIRM_ADMIN" })
+    const [inviteErrors, setInviteErrors] = useState<Record<string, string>>({})
+    const [inviteTouched, setInviteTouched] = useState<Record<string, boolean>>({})
+    const [firms, setFirms] = useState<any[]>([])
+    const [firmsLoading, setFirmsLoading] = useState(false)
+
+    // Firm-level roles
+    const firmRoles = [
+        { value: "FIRM_ADMIN", label: "Firm Admin", desc: "Full access to manage the firm" },
+        { value: "FIRM_MANAGER", label: "Firm Manager", desc: "Manage operations, no settings access" },
+        { value: "FIRM_ACCOUNTANT", label: "Firm Accountant", desc: "Manage invoices & financial data" },
+        { value: "FIRM_VIEWER", label: "Firm Viewer", desc: "Read-only access to firm data" },
+    ]
+
+    // Validation helpers
+    const validateName = (value: string) => {
+        if (!value.trim()) return "Name is required"
+        if (value.trim().length < 2) return "Name must be at least 2 characters"
+        if (value.trim().length > 50) return "Name must be under 50 characters"
+        if (!/^[a-zA-Z\s]+$/.test(value.trim())) return "Name can only contain letters and spaces"
+        return ""
+    }
+
+    const validateEmail = (value: string) => {
+        if (!value.trim()) return "Email is required"
+        if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(value.trim())) return "Please enter a valid email address"
+        return ""
+    }
+
+    const validateFirm = (value: string) => {
+        if (!value) return "Please select a firm"
+        return ""
+    }
+
+    const handleInviteFieldChange = (field: string, value: string) => {
+        setInviteForm(prev => ({ ...prev, [field]: value }))
+        setInviteTouched(prev => ({ ...prev, [field]: true }))
+
+        // Real-time validation
+        let error = ""
+        if (field === "name") error = validateName(value)
+        else if (field === "email") error = validateEmail(value)
+        else if (field === "firmId") error = validateFirm(value)
+
+        setInviteErrors(prev => ({ ...prev, [field]: error }))
+    }
+
+    const handleInviteBlur = (field: string) => {
+        setInviteTouched(prev => ({ ...prev, [field]: true }))
+        let error = ""
+        if (field === "name") error = validateName(inviteForm.name)
+        else if (field === "email") error = validateEmail(inviteForm.email)
+        else if (field === "firmId") error = validateFirm(inviteForm.firmId)
+        setInviteErrors(prev => ({ ...prev, [field]: error }))
+    }
+
+    // Fetch firms for dropdown
+    const fetchFirms = async () => {
+        try {
+            setFirmsLoading(true)
+            const res = await getAllFirmsList()
+            const firmData = res?.data?.data || res?.data || []
+            setFirms(Array.isArray(firmData) ? firmData : [])
+        } catch (err) {
+            console.error("Failed to fetch firms:", err)
+        } finally {
+            setFirmsLoading(false)
+        }
+    }
 
     const handleExport = () => {
         const csvContent = [
@@ -181,6 +253,7 @@ export default function FirmAdminsPage() {
 
     useEffect(() => {
         fetchAdmins()
+        fetchFirms()
     }, [])
 
     const filteredAdmins = admins.filter(admin =>
@@ -190,25 +263,42 @@ export default function FirmAdminsPage() {
 
     const handleInviteAdmin = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault()
-        const formData = new FormData(e.currentTarget)
-        const name = formData.get("fullName") as string
-        const email = formData.get("email") as string
-        const role = formData.get("role") as string
 
-        if (!name || !email) return toast.error("All fields are required")
+        // Validate all fields
+        const nameError = validateName(inviteForm.name)
+        const emailError = validateEmail(inviteForm.email)
+        const firmError = validateFirm(inviteForm.firmId)
 
-        const apiRole = roleReverseMap[role] || "SUB_ADMIN"
+        const allErrors = { name: nameError, email: emailError, firmId: firmError }
+        setInviteErrors(allErrors)
+        setInviteTouched({ name: true, email: true, firmId: true, role: true })
+
+        // Check if any errors
+        if (nameError || emailError || firmError) {
+            toast.error("Please fix the errors in the form")
+            return
+        }
+
+        const selectedFirm = firms.find((f: any) => (f._id || f.id) === inviteForm.firmId)
 
         toast.promise(
-            createOrgInvite({ email, role: apiRole }),
+            createOrgInvite({
+                email: inviteForm.email.trim(),
+                role: inviteForm.role,
+                name: inviteForm.name.trim(),
+                firmId: inviteForm.firmId,
+            }),
             {
-                loading: "Sending encryption keys and invite link...",
+                loading: "Sending invite...",
                 success: () => {
                     setIsInviteOpen(false)
+                    setInviteForm({ name: "", email: "", firmId: "", role: "FIRM_ADMIN" })
+                    setInviteErrors({})
+                    setInviteTouched({})
                     fetchAdmins()
-                    return `Invitation transmitted to ${email}`
+                    return `Invitation sent to ${inviteForm.email} for ${selectedFirm?.FirmName || "firm"}`
                 },
-                error: "Failed to send invitation."
+                error: (err: any) => err?.response?.data?.message || "Failed to send invitation."
             }
         )
     }
@@ -226,51 +316,135 @@ export default function FirmAdminsPage() {
                         <Download className="w-4 h-4" />
                         Export Ledger
                     </Button>
-                    <Dialog open={isInviteOpen} onOpenChange={setIsInviteOpen}>
+                    <Dialog open={isInviteOpen} onOpenChange={(open) => {
+                        setIsInviteOpen(open)
+                        if (!open) {
+                            setInviteForm({ name: "", email: "", firmId: "", role: "FIRM_ADMIN" })
+                            setInviteErrors({})
+                            setInviteTouched({})
+                        }
+                    }}>
                         <DialogTrigger asChild>
                             <Button className="h-9 bg-primary hover:bg-primary/90 text-white gap-2 font-medium px-6 shadow-sm rounded-md">
                                 <UserPlus className="w-4 h-4" />
                                 Invite Firm Admin
                             </Button>
                         </DialogTrigger>
-                        <DialogContent className="sm:max-w-[450px] p-0 overflow-hidden border-none rounded-xl shadow-xl">
+                        <DialogContent className="sm:max-w-[480px] p-0 overflow-hidden border-none rounded-xl shadow-xl">
                             <div className="bg-primary p-6 text-white relative">
                                 <Shield className="absolute right-6 top-6 w-12 h-12 text-white/10" />
                                 <DialogHeader>
-                                    <DialogTitle className="text-xl font-semibold text-white">Access Provisioning</DialogTitle>
+                                    <DialogTitle className="text-xl font-semibold text-white">Invite Firm Admin</DialogTitle>
                                     <DialogDescription className="text-white/80 text-sm mt-1">
-                                        Grant administrative privileges to a new institutional identity.
+                                        Grant administrative privileges to manage a specific firm.
                                     </DialogDescription>
                                 </DialogHeader>
                             </div>
                             <form onSubmit={handleInviteAdmin} className="p-6 space-y-5 bg-white">
                                 <div className="space-y-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="fullName" className="text-sm font-medium text-gray-700">Full Legal Name</Label>
-                                        <Input id="fullName" name="fullName" placeholder="e.g. Alexander Pierce" className="h-10 rounded-md bg-white border-gray-200" />
+                                    {/* Full Name */}
+                                    <div className="space-y-1.5">
+                                        <Label htmlFor="fullName" className="text-sm font-medium text-gray-700">
+                                            Full Name <span className="text-red-500">*</span>
+                                        </Label>
+                                        <Input
+                                            id="fullName"
+                                            placeholder="e.g. Vikram Singh"
+                                            value={inviteForm.name}
+                                            onChange={(e) => handleInviteFieldChange("name", e.target.value)}
+                                            onBlur={() => handleInviteBlur("name")}
+                                            className={`h-10 rounded-md bg-white ${inviteTouched.name && inviteErrors.name ? "border-red-400 focus-visible:ring-red-400" : "border-gray-200"}`}
+                                        />
+                                        {inviteTouched.name && inviteErrors.name && (
+                                            <p className="text-xs text-red-500 mt-1">{inviteErrors.name}</p>
+                                        )}
                                     </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="email" className="text-sm font-medium text-gray-700">Corporate Email</Label>
-                                        <Input id="email" name="email" type="email" placeholder="alex@firm.com" className="h-10 rounded-md bg-white border-gray-200" />
+
+                                    {/* Email */}
+                                    <div className="space-y-1.5">
+                                        <Label htmlFor="inviteEmail" className="text-sm font-medium text-gray-700">
+                                            Email Address <span className="text-red-500">*</span>
+                                        </Label>
+                                        <Input
+                                            id="inviteEmail"
+                                            type="email"
+                                            placeholder="e.g. vikram@company.com"
+                                            value={inviteForm.email}
+                                            onChange={(e) => handleInviteFieldChange("email", e.target.value)}
+                                            onBlur={() => handleInviteBlur("email")}
+                                            className={`h-10 rounded-md bg-white ${inviteTouched.email && inviteErrors.email ? "border-red-400 focus-visible:ring-red-400" : "border-gray-200"}`}
+                                        />
+                                        {inviteTouched.email && inviteErrors.email && (
+                                            <p className="text-xs text-red-500 mt-1">{inviteErrors.email}</p>
+                                        )}
                                     </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="role" className="text-sm font-medium text-gray-700">Administrative Role</Label>
-                                        <Select name="role" defaultValue="Org Admin">
-                                            <SelectTrigger className="h-10 rounded-md bg-white border-gray-200">
+
+                                    {/* Select Firm */}
+                                    <div className="space-y-1.5">
+                                        <Label htmlFor="firmSelect" className="text-sm font-medium text-gray-700">
+                                            Assign to Firm <span className="text-red-500">*</span>
+                                        </Label>
+                                        <Select
+                                            value={inviteForm.firmId}
+                                            onValueChange={(val) => handleInviteFieldChange("firmId", val)}
+                                        >
+                                            <SelectTrigger
+                                                id="firmSelect"
+                                                className={`h-10 rounded-md bg-white ${inviteTouched.firmId && inviteErrors.firmId ? "border-red-400" : "border-gray-200"}`}
+                                            >
+                                                <SelectValue placeholder={firmsLoading ? "Loading firms..." : "Select a firm"} />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {firms.length === 0 ? (
+                                                    <div className="px-3 py-2 text-sm text-gray-500">
+                                                        {firmsLoading ? "Loading..." : "No firms found. Create a firm first."}
+                                                    </div>
+                                                ) : (
+                                                    firms.map((firm: any) => (
+                                                        <SelectItem key={firm._id || firm.id} value={firm._id || firm.id}>
+                                                            {firm.FirmName || firm.name}
+                                                        </SelectItem>
+                                                    ))
+                                                )}
+                                            </SelectContent>
+                                        </Select>
+                                        {inviteTouched.firmId && inviteErrors.firmId && (
+                                            <p className="text-xs text-red-500 mt-1">{inviteErrors.firmId}</p>
+                                        )}
+                                    </div>
+
+                                    {/* Firm Role */}
+                                    <div className="space-y-1.5">
+                                        <Label htmlFor="firmRole" className="text-sm font-medium text-gray-700">
+                                            Firm Role <span className="text-red-500">*</span>
+                                        </Label>
+                                        <Select
+                                            value={inviteForm.role}
+                                            onValueChange={(val) => handleInviteFieldChange("role", val)}
+                                        >
+                                            <SelectTrigger id="firmRole" className="h-10 rounded-md bg-white border-gray-200">
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="Super Admin">Super Admin (Full Access)</SelectItem>
-                                                <SelectItem value="Org Admin">Org Admin (Management)</SelectItem>
-                                                <SelectItem value="Compliance Officer">Compliance Officer</SelectItem>
-                                                <SelectItem value="Billing Admin">Billing Admin</SelectItem>
+                                                {firmRoles.map((r) => (
+                                                    <SelectItem key={r.value} value={r.value}>
+                                                        <div className="flex flex-col">
+                                                            <span>{r.label}</span>
+                                                            <span className="text-xs text-gray-400">{r.desc}</span>
+                                                        </div>
+                                                    </SelectItem>
+                                                ))}
                                             </SelectContent>
                                         </Select>
                                     </div>
                                 </div>
-                                <div className="pt-4 flex items-center justify-between">
-                                    <p className="text-xs text-gray-500 max-w-[200px]">MFA invitation will be sent to the provided email.</p>
-                                    <Button type="submit" className="bg-primary hover:bg-primary/90 text-white px-6 font-medium h-10 rounded-md shadow-sm">
+                                <div className="pt-4 flex items-center justify-between border-t border-gray-100">
+                                    <p className="text-xs text-gray-500 max-w-[200px]">An invitation email will be sent to the provided address.</p>
+                                    <Button
+                                        type="submit"
+                                        disabled={!!(inviteErrors.name || inviteErrors.email || inviteErrors.firmId)}
+                                        className="bg-primary hover:bg-primary/90 text-white px-6 font-medium h-10 rounded-md shadow-sm disabled:opacity-50"
+                                    >
                                         Send Invite
                                     </Button>
                                 </div>
