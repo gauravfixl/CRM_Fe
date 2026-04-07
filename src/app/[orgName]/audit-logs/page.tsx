@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useMemo } from "react"
+import React, { useState, useMemo, useEffect, useCallback } from "react"
 import {
     Search,
     Download,
@@ -13,6 +13,8 @@ import {
     UserCog,
     ChevronLeft,
     ChevronRight,
+    Loader2,
+    Trash2,
 } from "lucide-react"
 import { Button } from "@/shared/components/ui/button"
 import { Input } from "@/shared/components/ui/input"
@@ -26,6 +28,8 @@ import {
     TableRow,
 } from "@/shared/components/ui/table"
 import { showSuccess } from "@/shared/utils/toast"
+import { toast } from "sonner"
+import { getAllModuleActivities, getActivitiesByModule, deleteActivity } from "@/hooks/activityHooks"
 
 interface AuditEvent {
     id: string
@@ -38,29 +42,74 @@ interface AuditEvent {
     module?: string
 }
 
-const allEvents: AuditEvent[] = [
-    { id: "1", timestamp: "Apr 02, 2026 02:23 PM", activity: "User Login", category: "Authentication", user: "admin@company.com", ip: "192.168.1.100", status: "Success" },
-    { id: "2", timestamp: "Apr 02, 2026 02:15 PM", activity: "Role Updated", category: "Configuration", user: "hr.manager@company.com", ip: "192.168.1.105", status: "Success", module: "HRM" },
-    { id: "3", timestamp: "Apr 02, 2026 01:58 PM", activity: "Failed Login Attempt", category: "Security", user: "unknown@external.com", ip: "45.33.22.11", status: "Failed" },
-    { id: "4", timestamp: "Apr 02, 2026 01:45 PM", activity: "Permission Changed", category: "Admin Action", user: "admin@company.com", ip: "192.168.1.100", status: "Success", module: "IAM" },
-    { id: "5", timestamp: "Apr 02, 2026 01:30 PM", activity: "Data Export", category: "Data", user: "analyst@company.com", ip: "192.168.1.112", status: "Success", module: "Analytics" },
-    { id: "6", timestamp: "Apr 02, 2026 01:12 PM", activity: "API Key Generated", category: "Security", user: "dev@company.com", ip: "192.168.1.108", status: "Success" },
-    { id: "7", timestamp: "Apr 02, 2026 12:55 PM", activity: "Firm Created", category: "Firm Event", user: "admin@company.com", ip: "192.168.1.100", status: "Success", module: "Organization" },
-    { id: "8", timestamp: "Apr 02, 2026 12:40 PM", activity: "Module Disabled", category: "Admin Action", user: "admin@company.com", ip: "192.168.1.100", status: "Success", module: "Finance" },
-    { id: "9", timestamp: "Apr 02, 2026 12:22 PM", activity: "Bulk Delete", category: "Data", user: "admin@company.com", ip: "192.168.1.100", status: "Warning", module: "CRM" },
-    { id: "10", timestamp: "Apr 02, 2026 12:05 PM", activity: "Suspicious IP Blocked", category: "Security", user: "system", ip: "103.45.67.89", status: "Alert" },
-    { id: "11", timestamp: "Apr 02, 2026 11:48 AM", activity: "Firm Settings Updated", category: "Firm Event", user: "firm.admin@company.com", ip: "192.168.1.115", status: "Success", module: "Organization" },
-    { id: "12", timestamp: "Apr 02, 2026 11:30 AM", activity: "User Deactivated", category: "Admin Action", user: "admin@company.com", ip: "192.168.1.100", status: "Success", module: "IAM" },
-    { id: "13", timestamp: "Apr 02, 2026 11:15 AM", activity: "User Login", category: "Authentication", user: "sales@company.com", ip: "10.0.0.55", status: "Success" },
-    { id: "14", timestamp: "Apr 02, 2026 10:58 AM", activity: "Firm User Invited", category: "Firm Event", user: "firm.admin@company.com", ip: "192.168.1.115", status: "Success", module: "Organization" },
-    { id: "15", timestamp: "Apr 02, 2026 10:40 AM", activity: "Backup Triggered", category: "Data", user: "admin@company.com", ip: "192.168.1.100", status: "Success" },
-    { id: "16", timestamp: "Apr 02, 2026 10:25 AM", activity: "Org Policy Updated", category: "Admin Action", user: "admin@company.com", ip: "192.168.1.100", status: "Success", module: "Policies" },
-    { id: "17", timestamp: "Apr 02, 2026 10:10 AM", activity: "Password Reset", category: "Authentication", user: "user@company.com", ip: "192.168.1.130", status: "Success" },
-    { id: "18", timestamp: "Apr 02, 2026 09:55 AM", activity: "Firm Archived", category: "Firm Event", user: "admin@company.com", ip: "192.168.1.100", status: "Warning", module: "Organization" },
-]
+// Maps API activity type to a display category
+const activityToCategory = (activity: string): AuditEvent["category"] => {
+    switch (activity) {
+        case "create": return "Data"
+        case "update": return "Configuration"
+        case "delete": return "Admin Action"
+        default: return "Data"
+    }
+}
+
+// Maps API activity type to a display status
+const activityToStatus = (activity: string): AuditEvent["status"] => {
+    switch (activity) {
+        case "delete": return "Warning"
+        default: return "Success"
+    }
+}
+
+// Maps API activity type to a readable label
+const activityToLabel = (activity: string, module: string): string => {
+    const mod = module.charAt(0).toUpperCase() + module.slice(1)
+    switch (activity) {
+        case "create": return `${mod} Created`
+        case "update": return `${mod} Updated`
+        case "delete": return `${mod} Deleted`
+        default: return `${mod} ${activity}`
+    }
+}
+
+// Format date to display string
+const formatDate = (dateStr: string): string => {
+    const date = new Date(dateStr)
+    return date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "2-digit",
+        year: "numeric",
+    }) + " " + date.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+    })
+}
+
+// Map a raw API activity to our AuditEvent interface
+const mapApiActivity = (item: any): AuditEvent => ({
+    id: item._id,
+    timestamp: formatDate(item.createdAt),
+    activity: activityToLabel(item.activity, item.module),
+    category: activityToCategory(item.activity),
+    user: item.userId?.email || item.userId?.name || "System",
+    ip: item.userId?.lastLoginIp || "-",
+    status: activityToStatus(item.activity),
+    module: item.module?.charAt(0).toUpperCase() + item.module?.slice(1),
+})
 
 const categories = ["All", "Authentication", "Configuration", "Security", "Data", "Admin Action", "Firm Event"] as const
 type CategoryFilter = (typeof categories)[number]
+
+// Map category filter to API module name for server-side filtering
+const categoryToModule: Record<string, string | null> = {
+    "All": null,
+    "Data": null,
+    "Configuration": null,
+    "Admin Action": null,
+    "Authentication": "user",
+    "Security": "user",
+    "Firm Event": "firm",
+}
 
 const categoryIcons: Record<AuditEvent["category"], React.ReactNode> = {
     Authentication: <LogIn size={16} />,
@@ -102,6 +151,39 @@ export default function AuditLogsPage() {
     const [searchQuery, setSearchQuery] = useState("")
     const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("All")
     const [currentPage, setCurrentPage] = useState(1)
+    const [allEvents, setAllEvents] = useState<AuditEvent[]>([])
+    const [loading, setLoading] = useState(true)
+    const [deletingId, setDeletingId] = useState<string | null>(null)
+
+    const fetchActivities = useCallback(async () => {
+        setLoading(true)
+        try {
+            const data = await getAllModuleActivities(1, 100)
+            const mapped = data.map(mapApiActivity)
+            setAllEvents(mapped)
+        } catch (err: any) {
+            toast.error(err?.response?.data?.message || "Failed to fetch audit logs")
+        } finally {
+            setLoading(false)
+        }
+    }, [])
+
+    useEffect(() => {
+        fetchActivities()
+    }, [fetchActivities])
+
+    const handleDelete = async (id: string) => {
+        setDeletingId(id)
+        try {
+            await deleteActivity(id)
+            setAllEvents((prev) => prev.filter((e) => e.id !== id))
+            showSuccess("Audit event deleted successfully")
+        } catch (err: any) {
+            toast.error(err?.response?.data?.message || "Failed to delete audit event")
+        } finally {
+            setDeletingId(null)
+        }
+    }
 
     const filteredEvents = useMemo(() => {
         return allEvents.filter((event) => {
@@ -115,7 +197,7 @@ export default function AuditLogsPage() {
                 categoryFilter === "All" || event.category === categoryFilter
             return matchesSearch && matchesCategory
         })
-    }, [searchQuery, categoryFilter])
+    }, [searchQuery, categoryFilter, allEvents])
 
     // Reset page when filters change
     const handleCategoryChange = (cat: CategoryFilter) => {
@@ -156,6 +238,14 @@ export default function AuditLogsPage() {
         Data: allEvents.filter((e) => e.category === "Data").length,
         "Admin Action": adminActions,
         "Firm Event": firmEvents,
+    }
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+        )
     }
 
     return (
@@ -274,6 +364,7 @@ export default function AuditLogsPage() {
                                 <TableHead className="text-xs font-semibold text-zinc-600">Initiated By</TableHead>
                                 <TableHead className="text-xs font-semibold text-zinc-600">IP Address</TableHead>
                                 <TableHead className="text-xs font-semibold text-zinc-600">Status</TableHead>
+                                <TableHead className="w-[60px] text-xs font-semibold text-zinc-600"></TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -315,11 +406,26 @@ export default function AuditLogsPage() {
                                                 {event.status}
                                             </span>
                                         </TableCell>
+                                        <TableCell>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="h-7 w-7 p-0 text-zinc-400 hover:text-red-600"
+                                                onClick={() => handleDelete(event.id)}
+                                                disabled={deletingId === event.id}
+                                            >
+                                                {deletingId === event.id ? (
+                                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                ) : (
+                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                )}
+                                            </Button>
+                                        </TableCell>
                                     </TableRow>
                                 ))
                             ) : (
                                 <TableRow>
-                                    <TableCell colSpan={6} className="text-center py-16">
+                                    <TableCell colSpan={7} className="text-center py-16">
                                         <div className="flex flex-col items-center gap-3">
                                             <Activity size={40} className="text-zinc-300" />
                                             <p className="text-sm font-medium text-zinc-500">No audit events found</p>

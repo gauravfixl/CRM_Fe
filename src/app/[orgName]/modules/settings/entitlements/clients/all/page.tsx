@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { useParams } from "next/navigation"
 import {
     Search,
@@ -20,7 +20,8 @@ import {
     TrendingUp,
     Mail,
     Phone,
-    MapPin
+    MapPin,
+    Loader2
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -59,11 +60,14 @@ import {
 } from "@/components/ui/select"
 import { SmallCard, SmallCardContent, SmallCardHeader } from "@/shared/components/custom/SmallCard"
 import { toast } from "sonner"
+import { getAllClients, createClient, deleteClient } from "@/hooks/clientHooks"
 
 export default function MasterClientViewPage() {
     const params = useParams()
     const [searchQuery, setSearchQuery] = useState("")
     const [isLoading, setIsLoading] = useState(false)
+    const [isFetching, setIsFetching] = useState(true)
+    const [clients, setClients] = useState<any[]>([])
     const [showNewClientDialog, setShowNewClientDialog] = useState(false)
     const [showDetailsDialog, setShowDetailsDialog] = useState(false)
     const [selectedClient, setSelectedClient] = useState<any>(null)
@@ -79,27 +83,69 @@ export default function MasterClientViewPage() {
         manager: ""
     })
 
-    const handleAction = (msg: string) => {
-        setIsLoading(true)
-        setTimeout(() => {
-            setIsLoading(false)
-            toast.success(msg)
-        }, 1000)
+    const fetchClients = async () => {
+        try {
+            setIsFetching(true)
+            const response = await getAllClients()
+            const data = response?.data?.data || response?.data || []
+            const activeClients = Array.isArray(data)
+                ? data.filter((c: any) => !c.isDeleted && !c.deleted)
+                : []
+            setClients(activeClients.map((c: any) => ({
+                id: c._id,
+                name: c.clientFirmName || c.name || "",
+                email: c.email || "",
+                phone: c.phone || "",
+                address: c.address || "",
+                contactPerson: c.contactPerson || "",
+                status: c.status || "ACTIVE",
+                tier: c.tier || "Standard",
+                revenue: c.revenue || "$0",
+                manager: c.contactPerson || "Unassigned",
+                stage: c.stage || "Active",
+            })))
+        } catch (error: any) {
+            toast.error(error?.response?.data?.message || "Failed to fetch clients")
+        } finally {
+            setIsFetching(false)
+        }
     }
 
-    const handleCreateClient = () => {
+    useEffect(() => {
+        fetchClients()
+    }, [])
+
+    const handleAction = async (msg: string) => {
+        setIsLoading(true)
+        await fetchClients()
+        setIsLoading(false)
+        toast.success(msg)
+    }
+
+    const handleCreateClient = async () => {
         if (!newClient.name || !newClient.email) {
             toast.error("Please fill in required fields")
             return
         }
 
         setIsLoading(true)
-        setTimeout(() => {
-            setIsLoading(false)
+        try {
+            await createClient({
+                clientFirmName: newClient.name,
+                email: newClient.email,
+                phone: newClient.phone,
+                address: newClient.address,
+                contactPerson: newClient.manager,
+            })
             toast.success(`Client "${newClient.name}" created successfully`)
             setShowNewClientDialog(false)
             setNewClient({ name: "", email: "", phone: "", address: "", tier: "Standard", manager: "" })
-        }, 1000)
+            await fetchClients()
+        } catch (error: any) {
+            toast.error(error?.response?.data?.message || "Failed to create client")
+        } finally {
+            setIsLoading(false)
+        }
     }
 
     const handleViewDetails = (client: any) => {
@@ -107,8 +153,14 @@ export default function MasterClientViewPage() {
         setShowDetailsDialog(true)
     }
 
-    const handleArchiveClient = (name: string) => {
-        toast.success(`${name} archived successfully`)
+    const handleArchiveClient = async (client: any) => {
+        try {
+            await deleteClient(client.id)
+            toast.success(`${client.name} archived successfully`)
+            await fetchClients()
+        } catch (error: any) {
+            toast.error(error?.response?.data?.message || "Failed to archive client")
+        }
     }
 
     const handleExport = () => {
@@ -126,57 +178,6 @@ export default function MasterClientViewPage() {
         URL.revokeObjectURL(url)
         toast.success("Client data exported successfully")
     }
-
-    const clients = [
-        {
-            id: "1",
-            name: "Acme Corporation",
-            email: "contact@acme.com",
-            phone: "+1 (555) 123-4567",
-            address: "123 Business St, NY",
-            status: "ACTIVE",
-            tier: "Enterprise",
-            revenue: "$125,000",
-            manager: "John Doe",
-            stage: "Onboarding"
-        },
-        {
-            id: "2",
-            name: "GlobalSoft Inc",
-            email: "info@globalsoft.com",
-            phone: "+1 (555) 234-5678",
-            address: "456 Tech Ave, CA",
-            status: "ACTIVE",
-            tier: "Premium",
-            revenue: "$82,500",
-            manager: "Sarah J.",
-            stage: "Active"
-        },
-        {
-            id: "3",
-            name: "Skyline Organization",
-            email: "admin@skyline.org",
-            phone: "+1 (555) 345-6789",
-            address: "789 Corporate Blvd, TX",
-            status: "AT-RISK",
-            tier: "Standard",
-            revenue: "$45,000",
-            manager: "Emma W.",
-            stage: "At-Risk"
-        },
-        {
-            id: "4",
-            name: "BankTech Solutions",
-            email: "support@banktech.io",
-            phone: "+1 (555) 456-7890",
-            address: "321 Finance Dr, IL",
-            status: "DORMANT",
-            tier: "Enterprise",
-            revenue: "$0",
-            manager: "Unassigned",
-            stage: "Dormant"
-        },
-    ]
 
     const filteredClients = clients.filter(client => {
         const matchesSearch = client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -232,8 +233,8 @@ export default function MasterClientViewPage() {
                         <Users className="w-4 h-4 text-white" />
                     </SmallCardHeader>
                     <SmallCardContent className="px-4 pb-4">
-                        <p className="text-xl font-semibold text-white">1,247</p>
-                        <p className="text-[10px] text-white">89 active accounts</p>
+                        <p className="text-xl font-semibold text-white">{clients.length}</p>
+                        <p className="text-[10px] text-white">{clients.filter(c => c.status === "ACTIVE").length} active accounts</p>
                     </SmallCardContent>
                 </SmallCard>
 
@@ -319,6 +320,11 @@ export default function MasterClientViewPage() {
             </div>
 
             {/* MASTER DATA TABLE */}
+            {isFetching ? (
+                <div className="flex items-center justify-center py-20">
+                    <Loader2 className="w-6 h-6 animate-spin text-zinc-400" />
+                </div>
+            ) : (
             <div className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
                 <Table>
                     <TableHeader className="bg-zinc-50/50">
@@ -369,7 +375,7 @@ export default function MasterClientViewPage() {
                                             <DropdownMenuItem onClick={() => handleViewDetails(client)} className="text-xs font-medium cursor-pointer">View Details</DropdownMenuItem>
                                             <DropdownMenuItem onClick={() => toast.info(`Transferring ${client.name}`)} className="text-xs font-medium cursor-pointer">Transfer Manager</DropdownMenuItem>
                                             <DropdownMenuSeparator />
-                                            <DropdownMenuItem onClick={() => handleArchiveClient(client.name)} className="text-xs font-medium text-rose-600 cursor-pointer">Archive Client</DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => handleArchiveClient(client)} className="text-xs font-medium text-rose-600 cursor-pointer">Archive Client</DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
                                 </TableCell>
@@ -378,13 +384,14 @@ export default function MasterClientViewPage() {
                     </TableBody>
                 </Table>
                 <div className="px-4 py-3 border-t border-zinc-100 flex items-center justify-between bg-zinc-50/30">
-                    <p className="text-[10px] text-zinc-400 font-medium">Showing {filteredClients.length} of 1,247 records</p>
+                    <p className="text-[10px] text-zinc-400 font-medium">Showing {filteredClients.length} of {clients.length} records</p>
                     <div className="flex gap-2">
                         <Button variant="ghost" size="sm" className="h-7 text-[10px] font-medium transition-colors" disabled>Prev</Button>
                         <Button variant="ghost" size="sm" className="h-7 text-[10px] font-medium text-blue-600 hover:text-blue-700 transition-colors">Next</Button>
                     </div>
                 </div>
             </div>
+            )}
 
             {/* NEW CLIENT DIALOG */}
             <Dialog open={showNewClientDialog} onOpenChange={setShowNewClientDialog}>

@@ -1,7 +1,7 @@
 "use client"
 
-import React, { useState, useMemo } from "react"
-import { Activity, Users, Eye, Clock, Search, Download } from "lucide-react"
+import React, { useState, useMemo, useEffect, useCallback } from "react"
+import { Activity, Users, Eye, Clock, Search, Download, Loader2 } from "lucide-react"
 import { Button } from "@/shared/components/ui/button"
 import { Input } from "@/shared/components/ui/input"
 import { Badge } from "@/shared/components/ui/badge"
@@ -14,6 +14,8 @@ import {
     TableRow,
 } from "@/shared/components/ui/table"
 import { showSuccess } from "@/shared/utils/toast"
+import { toast } from "sonner"
+import { getAllModuleActivities } from "@/hooks/activityHooks"
 
 interface ActivityLog {
     id: string
@@ -26,18 +28,56 @@ interface ActivityLog {
     location: string
 }
 
-const activityData: ActivityLog[] = [
-    { id: "1", timestamp: "Mar 27, 2026 10:23 AM", user: "John Doe", initials: "JD", action: "Page View", resource: "/dashboard/overview", ip: "192.168.1.101", location: "Mumbai, IN" },
-    { id: "2", timestamp: "Mar 27, 2026 10:18 AM", user: "Sarah Wilson", initials: "SW", action: "Create", resource: "/leads/new", ip: "192.168.1.105", location: "Delhi, IN" },
-    { id: "3", timestamp: "Mar 27, 2026 10:12 AM", user: "Mike Chen", initials: "MC", action: "Update", resource: "/contacts/1234", ip: "10.0.0.55", location: "Bangalore, IN" },
-    { id: "4", timestamp: "Mar 27, 2026 10:05 AM", user: "Emily Brown", initials: "EB", action: "Delete", resource: "/tasks/5678", ip: "192.168.1.112", location: "Pune, IN" },
-    { id: "5", timestamp: "Mar 27, 2026 09:55 AM", user: "Raj Patel", initials: "RP", action: "Export", resource: "/reports/monthly", ip: "192.168.1.108", location: "Chennai, IN" },
-    { id: "6", timestamp: "Mar 27, 2026 09:42 AM", user: "John Doe", initials: "JD", action: "Login", resource: "/auth/login", ip: "192.168.1.101", location: "Mumbai, IN" },
-    { id: "7", timestamp: "Mar 27, 2026 09:30 AM", user: "Priya Sharma", initials: "PS", action: "Update", resource: "/deals/9012", ip: "10.0.0.42", location: "Hyderabad, IN" },
-    { id: "8", timestamp: "Mar 27, 2026 09:15 AM", user: "Alex Kumar", initials: "AK", action: "Page View", resource: "/settings/profile", ip: "192.168.1.120", location: "Kolkata, IN" },
-]
+// Map API activity type to display action
+const mapActivityToAction = (activity: string): string => {
+    switch (activity) {
+        case "create": return "Create"
+        case "update": return "Update"
+        case "delete": return "Delete"
+        default: return activity.charAt(0).toUpperCase() + activity.slice(1)
+    }
+}
 
-const actionTypes = ["All", "Page View", "Create", "Update", "Delete", "Export", "Login"]
+// Get initials from a name string
+const getInitials = (name: string): string => {
+    return name
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2)
+}
+
+// Format date to display string
+const formatDate = (dateStr: string): string => {
+    const date = new Date(dateStr)
+    return date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "2-digit",
+        year: "numeric",
+    }) + " " + date.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+    })
+}
+
+// Map raw API activity to our ActivityLog interface
+const mapApiActivity = (item: any): ActivityLog => {
+    const userName = item.userId?.name || item.userId?.email || "System"
+    return {
+        id: item._id,
+        timestamp: formatDate(item.createdAt),
+        user: userName,
+        initials: getInitials(userName),
+        action: mapActivityToAction(item.activity),
+        resource: `/${item.module}${item.description ? " - " + item.description : ""}`,
+        ip: item.userId?.lastLoginIp || "-",
+        location: "-",
+    }
+}
+
+const actionTypes = ["All", "Create", "Update", "Delete"]
 
 const actionBadgeClasses: Record<string, string> = {
     "Page View": "bg-zinc-100 text-zinc-700 border-zinc-200",
@@ -51,6 +91,25 @@ const actionBadgeClasses: Record<string, string> = {
 export default function ActivityLogsPage() {
     const [search, setSearch] = useState("")
     const [actionFilter, setActionFilter] = useState("All")
+    const [activityData, setActivityData] = useState<ActivityLog[]>([])
+    const [loading, setLoading] = useState(true)
+
+    const fetchActivities = useCallback(async () => {
+        setLoading(true)
+        try {
+            const data = await getAllModuleActivities(1, 100)
+            const mapped = data.map(mapApiActivity)
+            setActivityData(mapped)
+        } catch (err: any) {
+            toast.error(err?.response?.data?.message || "Failed to fetch activity logs")
+        } finally {
+            setLoading(false)
+        }
+    }, [])
+
+    useEffect(() => {
+        fetchActivities()
+    }, [fetchActivities])
 
     const filteredData = useMemo(() => {
         return activityData.filter((item) => {
@@ -66,18 +125,18 @@ export default function ActivityLogsPage() {
 
             return matchesSearch && matchesAction
         })
-    }, [search, actionFilter])
+    }, [search, actionFilter, activityData])
 
     const uniqueUsersToday = useMemo(() => {
         const users = new Set(activityData.map((item) => item.user))
         return users.size
-    }, [])
+    }, [activityData])
 
     const totalActions = activityData.length
 
     const pageViews = useMemo(() => {
         return activityData.filter((item) => item.action === "Page View").length
-    }, [])
+    }, [activityData])
 
     const handleExport = () => {
         showSuccess("Activity logs exported successfully")
@@ -87,6 +146,14 @@ export default function ActivityLogsPage() {
         const currentIndex = actionTypes.indexOf(actionFilter)
         const nextIndex = (currentIndex + 1) % actionTypes.length
         setActionFilter(actionTypes[nextIndex])
+    }
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+        )
     }
 
     return (

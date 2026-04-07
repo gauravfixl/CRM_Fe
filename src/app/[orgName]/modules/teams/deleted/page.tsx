@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import SubHeader from "@/shared/components/custom/SubHeader"
 import { Trash2, RotateCcw, Search, MoreHorizontal, AlertTriangle, Clock, XCircle, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -19,6 +19,7 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { toast } from "sonner"
 import { Loader2 } from "lucide-react"
+import { getAllTeams, deleteTeam, createTeam } from "@/hooks/teamHooks"
 
 interface DeletedGroup {
     id: string
@@ -32,11 +33,42 @@ interface DeletedGroup {
 
 export default function DeletedGroupsPage() {
     const [searchQuery, setSearchQuery] = useState("")
-    const [deletedGroups, setDeletedGroups] = useState<DeletedGroup[]>([
-        { id: "d1", name: "Legacy Marketing", type: "M365", deletedAt: "2026-03-25", deletedBy: "admin@company.com", members: 18, daysRemaining: 25 },
-        { id: "d2", name: "Temp Contractors Q1", type: "Dynamic", deletedAt: "2026-03-20", deletedBy: "hr@company.com", members: 42, daysRemaining: 20 },
-        { id: "d3", name: "Old Finance Team", type: "Security", deletedAt: "2026-03-15", deletedBy: "admin@company.com", members: 7, daysRemaining: 15 },
-    ])
+    const [deletedGroups, setDeletedGroups] = useState<DeletedGroup[]>([])
+    const [loading, setLoading] = useState(true)
+
+    const fetchDeletedTeams = async () => {
+        try {
+            setLoading(true)
+            const response = await getAllTeams()
+            const teams = response.data?.teams || response.data || []
+            const deleted = teams
+                .filter((t: any) => t.isDeleted || t.deleted || t.status === "Deleted")
+                .map((t: any) => {
+                    const deletedAt = t.deletedAt || t.updatedAt || t.createdAt || new Date().toISOString()
+                    const deletedDate = new Date(deletedAt)
+                    const now = new Date()
+                    const diffDays = Math.max(0, 30 - Math.floor((now.getTime() - deletedDate.getTime()) / (1000 * 60 * 60 * 24)))
+                    return {
+                        id: t._id || t.id,
+                        name: t.name || "",
+                        type: t.type || "Security",
+                        deletedAt: deletedDate.toISOString().split("T")[0],
+                        deletedBy: t.deletedBy || "unknown",
+                        members: Array.isArray(t.members) ? t.members.length : (t.members || 0),
+                        daysRemaining: diffDays,
+                    }
+                })
+            setDeletedGroups(deleted)
+        } catch (error: any) {
+            toast.error(error?.response?.data?.message || "Failed to fetch deleted teams")
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    useEffect(() => {
+        fetchDeletedTeams()
+    }, [])
 
     const [restoreLoading, setRestoreLoading] = useState<string | null>(null)
     const [permanentDeleteOpen, setPermanentDeleteOpen] = useState(false)
@@ -46,9 +78,11 @@ export default function DeletedGroupsPage() {
     const handleRestore = async (group: DeletedGroup) => {
         setRestoreLoading(group.id)
         try {
-            await new Promise(resolve => setTimeout(resolve, 800))
+            await createTeam({ name: group.name, type: group.type })
             setDeletedGroups(prev => prev.filter(g => g.id !== group.id))
             toast.success(`Group "${group.name}" has been restored`)
+        } catch (error: any) {
+            toast.error(error?.response?.data?.message || "Failed to restore group")
         } finally {
             setRestoreLoading(null)
         }
@@ -58,11 +92,13 @@ export default function DeletedGroupsPage() {
         if (!selectedGroup) return
         setDeleteLoading(true)
         try {
-            await new Promise(resolve => setTimeout(resolve, 800))
+            await deleteTeam(selectedGroup.id)
             setDeletedGroups(prev => prev.filter(g => g.id !== selectedGroup.id))
             toast.success(`Group "${selectedGroup.name}" permanently deleted`)
             setPermanentDeleteOpen(false)
             setSelectedGroup(null)
+        } catch (error: any) {
+            toast.error(error?.response?.data?.message || "Failed to permanently delete group")
         } finally {
             setDeleteLoading(false)
         }
@@ -117,7 +153,11 @@ export default function DeletedGroupsPage() {
                     </>
                 )}
 
-                {filteredGroups.length === 0 && deletedGroups.length === 0 ? (
+                {loading ? (
+                    <div className="flex items-center justify-center py-20">
+                        <Loader2 className="w-8 h-8 animate-spin text-red-500" />
+                    </div>
+                ) : filteredGroups.length === 0 && deletedGroups.length === 0 ? (
                     <Card className="rounded-none border-0 shadow-sm bg-white/50 backdrop-blur-sm">
                         <CardHeader>
                             <CardTitle className="text-lg font-bold">Recently Deleted</CardTitle>

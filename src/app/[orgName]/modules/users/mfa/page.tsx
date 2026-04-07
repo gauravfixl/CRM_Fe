@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
     ShieldCheck,
     ShieldAlert,
@@ -15,7 +15,8 @@ import {
 import { CustomButton } from "@/components/custom/CustomButton"
 import SubHeader from "@/components/custom/SubHeader"
 import { Badge } from "@/components/ui/badge"
-import { showSuccess, showWarning } from "@/utils/toast"
+import { showSuccess, showWarning, showError } from "@/utils/toast"
+import { fetchUsersApi, updateOrgUser } from "@/modules/crm/organizations/hooks/orgHooks"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -23,15 +24,66 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
+type MfaUser = {
+    id: string
+    name: string
+    email: string
+    status: "Enabled" | "Disabled"
+    method: string
+    strength: string
+}
+
+const mapApiUserToMfaUser = (apiUser: any): MfaUser => {
+    const name = [apiUser.firstName, apiUser.lastName].filter(Boolean).join(" ") || "Unknown"
+    const status = apiUser.twoFAEnabled ? "Enabled" : "Disabled"
+    const method = apiUser.twoFAEnabled ? "Authenticator app" : "None"
+    const strength = apiUser.twoFAEnabled ? "Strong" : "Weak"
+    return { id: apiUser._id, name, email: apiUser.email || "", status, method, strength }
+}
+
 export default function MFAEnrollmentPage() {
     const [searchQuery, setSearchQuery] = useState("")
     const [statusFilter, setStatusFilter] = useState<"All" | "Enabled" | "Disabled">("All")
+    const [users, setUsers] = useState<MfaUser[]>([])
+    const [loading, setLoading] = useState(true)
 
-    const users = [
-        { id: "m1", name: "David Miller", email: "d.miller@enterprise.io", status: "Enabled", method: "Authenticator app", strength: "Strong" },
-        { id: "m2", name: "Samantha Reed", email: "sreed@fixl.com", status: "Disabled", method: "None", strength: "Weak" },
-        { id: "m3", name: "Liam Wilson", email: "liam.w@external.org", status: "Enabled", method: "Sms / text", strength: "Strong" },
-    ]
+    const loadUsers = async () => {
+        try {
+            setLoading(true)
+            const res = await fetchUsersApi()
+            const data = res?.data || res || []
+            const usersArray = Array.isArray(data) ? data : data.users ? data.users : []
+            setUsers(usersArray.map(mapApiUserToMfaUser))
+        } catch (err: any) {
+            showError(err?.response?.data?.message || "Failed to load MFA data")
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    useEffect(() => {
+        loadUsers()
+    }, [])
+
+    const handleResetMfa = async (user: MfaUser) => {
+        try {
+            await updateOrgUser(user.id, { twoFAEnabled: false })
+            showSuccess(`Mfa reset initiated for ${user.name}`)
+            await loadUsers()
+        } catch (err: any) {
+            showError(err?.response?.data?.message || "Failed to reset MFA")
+        }
+    }
+
+    const handleDisableMfa = async (user: MfaUser) => {
+        try {
+            await updateOrgUser(user.id, { twoFAEnabled: false })
+            showWarning(`Mfa disabled for ${user.name}`)
+            await loadUsers()
+        } catch (err: any) {
+            showError(err?.response?.data?.message || "Failed to disable MFA")
+        }
+    }
 
     const filteredUsers = users.filter((u) => {
         const matchesSearch =
@@ -77,17 +129,17 @@ export default function MFAEnrollmentPage() {
                     </div>
                     <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-none p-5">
                         <p className="text-xs text-gray-600">App authenticator</p>
-                        <p className="text-xl font-semibold text-gray-900 dark:text-zinc-100">42</p>
+                        <p className="text-xl font-semibold text-gray-900 dark:text-zinc-100">{users.filter((u) => u.method === "Authenticator app").length}</p>
                         <p className="text-[10px] text-gray-500">Using authenticator apps</p>
                     </div>
                     <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-none p-5">
                         <p className="text-xs text-gray-600">Security keys</p>
-                        <p className="text-xl font-semibold text-gray-900 dark:text-zinc-100">12</p>
+                        <p className="text-xl font-semibold text-gray-900 dark:text-zinc-100">0</p>
                         <p className="text-[10px] text-gray-500">Hardware key enrolled</p>
                     </div>
                     <div className="bg-white dark:bg-zinc-900 border border-red-200 dark:border-red-800 rounded-none p-5">
                         <p className="text-xs text-red-600">Not enrolled</p>
-                        <p className="text-xl font-semibold text-red-600">3</p>
+                        <p className="text-xl font-semibold text-red-600">{users.filter((u) => u.status === "Disabled").length}</p>
                         <p className="text-[10px] text-red-400">Requires attention</p>
                     </div>
                 </div>
@@ -133,7 +185,20 @@ export default function MFAEnrollmentPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
-                                {filteredUsers.map((user) => (
+                                {loading ? (
+                                    <tr>
+                                        <td colSpan={5} className="p-4 py-12 text-center">
+                                            <p className="text-sm text-gray-500">Loading MFA data...</p>
+                                        </td>
+                                    </tr>
+                                ) : filteredUsers.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={5} className="p-4 py-12 text-center">
+                                            <ShieldCheck className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                                            <p className="text-sm text-gray-500">No users found</p>
+                                        </td>
+                                    </tr>
+                                ) : filteredUsers.map((user) => (
                                     <tr key={user.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
                                         <td className="p-4">
                                             <div className="flex items-center gap-3">
@@ -190,12 +255,12 @@ export default function MFAEnrollmentPage() {
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end" className="rounded-none">
                                                     <DropdownMenuItem
-                                                        onClick={() => showSuccess(`Mfa reset initiated for ${user.name}`)}
+                                                        onClick={() => handleResetMfa(user)}
                                                     >
                                                         Reset mfa
                                                     </DropdownMenuItem>
                                                     <DropdownMenuItem
-                                                        onClick={() => showWarning(`Mfa disabled for ${user.name}`)}
+                                                        onClick={() => handleDisableMfa(user)}
                                                     >
                                                         Disable mfa
                                                     </DropdownMenuItem>

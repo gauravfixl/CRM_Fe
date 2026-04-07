@@ -824,6 +824,19 @@ export const updateAppraisal = async (appraisalId: string, data: Record<string, 
     }
 };
 
+export const deleteAppraisal = async (appraisalId: string) => {
+    try {
+        const response = await axios.delete(`/performance/appraisal/${appraisalId}`);
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error deleting appraisal:", err);
+            showError(err?.response?.data?.message || "Failed to delete appraisal");
+        }
+        throw err;
+    }
+};
+
 export const getAllGoals = async () => {
     try {
         const response = await axios.get("/performance/goals/all");
@@ -1058,6 +1071,74 @@ export const disableShift = async (id: string) => {
         if (err?.response?.status !== 401) {
             console.error("Error disabling shift:", err);
             showError(err?.response?.data?.message || "Failed to disable shift");
+        }
+        throw err;
+    }
+};
+
+// ==================== SALARY CONFIGURATION APIs ====================
+
+export const getSalaryConfigs = async (params?: { status?: string }) => {
+    try {
+        const response = await axios.get("/payroll/salary-config/all", { params });
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error fetching salary configurations:", err);
+        }
+        throw err;
+    }
+};
+
+export const createSalaryConfig = async (data: {
+    employee: string;
+    salaryType: string;
+    base: number;
+    components: Array<{
+        key: string;
+        label: string;
+        type: "EARNING" | "DEDUCTION";
+        mode: "AMOUNT" | "PERCENT";
+        value: number;
+        isTaxable: boolean;
+        sequence?: number;
+    }>;
+    effectiveFrom: string;
+    currency?: string;
+}) => {
+    try {
+        const response = await axios.post("/payroll/salary-config/", data);
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error creating salary configuration:", err);
+            showError(err?.response?.data?.error || "Failed to create salary configuration");
+        }
+        throw err;
+    }
+};
+
+export const updateSalaryConfig = async (id: string, data: Record<string, any>) => {
+    try {
+        const response = await axios.patch(`/payroll/salary-config/${id}`, data);
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error updating salary configuration:", err);
+            showError(err?.response?.data?.error || "Failed to update salary configuration");
+        }
+        throw err;
+    }
+};
+
+export const deactivateSalaryConfig = async (id: string) => {
+    try {
+        const response = await axios.delete(`/payroll/salary-config/${id}`);
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error deactivating salary configuration:", err);
+            showError(err?.response?.data?.error || "Failed to deactivate salary configuration");
         }
         throw err;
     }

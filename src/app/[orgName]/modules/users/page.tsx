@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import {
   Users,
   UserPlus,
@@ -37,7 +37,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu"
-import { showSuccess, showWarning } from "@/utils/toast"
+import { showSuccess, showWarning, showError } from "@/utils/toast"
+import { fetchUsersApi, updateOrgUser, deleteOrgUser } from "@/modules/crm/organizations/hooks/orgHooks"
 
 type Role = "Admin" | "Manager" | "Developer" | "Member"
 type Status = "Active" | "Pending" | "Suspended"
@@ -56,16 +57,20 @@ interface User {
 const ROLES: Role[] = ["Admin", "Manager", "Developer", "Member"]
 const STATUSES: Status[] = ["Active", "Pending", "Suspended"]
 
-const initialUsers: User[] = [
-  { id: "1", name: "Sarah Miller", email: "sarah.m@fixlsolutions.com", role: "Admin", status: "Active", mfa: "Enabled", joined: "Oct 12, 2024" },
-  { id: "2", name: "Robert Wilson", email: "robert.w@fixlsolutions.com", role: "Manager", status: "Active", mfa: "Enabled", joined: "Oct 15, 2024" },
-  { id: "3", name: "Elena Kostic", email: "elena.k@fixlsolutions.com", role: "Developer", status: "Active", mfa: "Disabled", joined: "Nov 01, 2024" },
-  { id: "4", name: "James Chen", email: "james.c@fixlsolutions.com", role: "Manager", status: "Pending", mfa: "Disabled", joined: "Jan 10, 2025" },
-  { id: "5", name: "Maria Garcia", email: "maria.g@fixlsolutions.com", role: "Member", status: "Active", mfa: "Enabled", joined: "Feb 22, 2025" },
-]
+const mapApiUserToUser = (apiUser: any): User => {
+  const name = [apiUser.firstName, apiUser.lastName].filter(Boolean).join(" ") || "Unknown"
+  const role: Role = ROLES.includes(apiUser.role) ? apiUser.role : "Member"
+  const status: Status = apiUser.orgActive === true ? "Active" : apiUser.orgActive === false ? "Suspended" : "Pending"
+  const mfa: MFA = apiUser.twoFAEnabled ? "Enabled" : "Disabled"
+  const joined = apiUser.joinedAt
+    ? new Date(apiUser.joinedAt).toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })
+    : "N/A"
+  return { id: apiUser._id, name, email: apiUser.email || "", role, status, mfa, joined }
+}
 
 export default function AllUsersPage() {
-  const [users, setUsers] = useState<User[]>(initialUsers)
+  const [users, setUsers] = useState<User[]>([])
+  const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [roleFilter, setRoleFilter] = useState<"All" | Role>("All")
   const [statusFilter, setStatusFilter] = useState<"All" | Status>("All")
@@ -75,6 +80,24 @@ export default function AllUsersPage() {
   const [editOpen, setEditOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
+
+  const loadUsers = async () => {
+    try {
+      setLoading(true)
+      const res = await fetchUsersApi()
+      const data = res?.data || res || []
+      const usersArray = Array.isArray(data) ? data : data.users ? data.users : []
+      setUsers(usersArray.map(mapApiUserToUser))
+    } catch (err: any) {
+      showError(err?.response?.data?.message || "Failed to load users")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadUsers()
+  }, [])
 
   // Form states
   const [formName, setFormName] = useState("")
@@ -144,23 +167,31 @@ export default function AllUsersPage() {
     showSuccess(`Invitation sent to ${newUser.email}`)
   }
 
-  const handleEdit = () => {
+  const handleEdit = async () => {
     if (!selectedUser) return
     if (!formName.trim() || !formEmail.trim()) {
       showWarning("Please fill in all fields")
       return
     }
-    setUsers((prev) =>
-      prev.map((u) =>
-        u.id === selectedUser.id
-          ? { ...u, name: formName.trim(), email: formEmail.trim(), role: formRole }
-          : u
+    try {
+      const nameParts = formName.trim().split(" ")
+      const firstName = nameParts[0]
+      const lastName = nameParts.slice(1).join(" ")
+      await updateOrgUser(selectedUser.id, { firstName, lastName, email: formEmail.trim(), role: formRole })
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.id === selectedUser.id
+            ? { ...u, name: formName.trim(), email: formEmail.trim(), role: formRole }
+            : u
+        )
       )
-    )
-    setEditOpen(false)
-    setSelectedUser(null)
-    resetForm()
-    showSuccess("User updated successfully")
+      setEditOpen(false)
+      setSelectedUser(null)
+      resetForm()
+      showSuccess("User updated successfully")
+    } catch (err: any) {
+      showError(err?.response?.data?.message || "Failed to update user")
+    }
   }
 
   const openEditModal = (user: User) => {
@@ -171,25 +202,40 @@ export default function AllUsersPage() {
     setEditOpen(true)
   }
 
-  const handleChangeRole = (user: User) => {
+  const handleChangeRole = async (user: User) => {
     const idx = ROLES.indexOf(user.role)
     const nextRole = ROLES[(idx + 1) % ROLES.length]
-    setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, role: nextRole } : u)))
-    showSuccess(`${user.name} role changed to ${nextRole}`)
+    try {
+      await updateOrgUser(user.id, { role: nextRole })
+      setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, role: nextRole } : u)))
+      showSuccess(`${user.name} role changed to ${nextRole}`)
+    } catch (err: any) {
+      showError(err?.response?.data?.message || "Failed to change role")
+    }
   }
 
-  const handleToggleStatus = (user: User) => {
+  const handleToggleStatus = async (user: User) => {
     const newStatus: Status = user.status === "Active" ? "Suspended" : "Active"
-    setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, status: newStatus } : u)))
-    showSuccess(`${user.name} is now ${newStatus}`)
+    try {
+      await updateOrgUser(user.id, { orgActive: newStatus === "Active" })
+      setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, status: newStatus } : u)))
+      showSuccess(`${user.name} is now ${newStatus}`)
+    } catch (err: any) {
+      showError(err?.response?.data?.message || "Failed to update status")
+    }
   }
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!selectedUser) return
-    setUsers((prev) => prev.filter((u) => u.id !== selectedUser.id))
-    setDeleteOpen(false)
-    showSuccess(`${selectedUser.name} has been deleted`)
-    setSelectedUser(null)
+    try {
+      await deleteOrgUser(selectedUser.id)
+      setUsers((prev) => prev.filter((u) => u.id !== selectedUser.id))
+      setDeleteOpen(false)
+      showSuccess(`${selectedUser.name} has been deleted`)
+      setSelectedUser(null)
+    } catch (err: any) {
+      showError(err?.response?.data?.message || "Failed to delete user")
+    }
   }
 
   const openDeleteConfirm = (user: User) => {
@@ -339,7 +385,13 @@ export default function AllUsersPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {filteredUsers.length === 0 ? (
+                {loading ? (
+                  <tr>
+                    <td colSpan={5} className="px-4 py-12 text-center">
+                      <p className="text-sm text-gray-500">Loading users...</p>
+                    </td>
+                  </tr>
+                ) : filteredUsers.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="px-4 py-12 text-center">
                       <div className="flex flex-col items-center gap-2">
