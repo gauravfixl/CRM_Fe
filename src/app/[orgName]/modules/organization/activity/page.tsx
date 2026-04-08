@@ -344,7 +344,7 @@ export default function OrgActivityPage() {
                                     <h3 className="text-lg font-bold text-slate-900">No activities found</h3>
                                     <p className="text-sm text-slate-500 max-w-xs">We couldn't find any activity matching your current filters or search query.</p>
                                 </div>
-                                <Button variant="outline" size="sm" onClick={() => setSearchQuery("")}>Clear Search</Button>
+                                <CustomButton variant="outline" size="sm" onClick={() => setSearchQuery("")}>Clear Search</CustomButton>
                             </div>
                         )}
                     </div>
