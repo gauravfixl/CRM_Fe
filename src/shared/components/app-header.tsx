@@ -158,6 +158,7 @@ export function AppHeader({ setSidebarOpen }: { setSidebarOpen?: React.Dispatch<
     localStorage.removeItem("orgToken");
     localStorage.removeItem("orgID");
     localStorage.removeItem("orgName");
+    sessionStorage.clear(); // Clear firm form drafts and any other temporary data
     window.location.href = "/auth/signin";
   };
   const viewOrgInvites = () => {
