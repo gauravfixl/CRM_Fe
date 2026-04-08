@@ -124,7 +124,8 @@ export default function FirmsPage() {
   }, [setFirms, showLoader, hideLoader])
 
   const totalFirms = activeFirms.length
-  const activeFirmsCount = activeFirms.filter(f => f.status === "Active").length
+  // Count based on the actual status field (defaulting to Active if not set)
+  const activeFirmsCount = activeFirms.filter(f => !f.status || f.status === "Active").length
   const inactiveFirms = activeFirms.filter(f => f.status === "Inactive").length
   const totalEmployees = activeFirms.reduce((sum, firm) => sum + (firm.employeeCount || 0), 0)
   const router = useRouter()
@@ -190,7 +191,7 @@ export default function FirmsPage() {
               <SmallCardTitle className="text-sm font-medium">Active Firms</SmallCardTitle>
             </SmallCardHeader>
             <SmallCardContent>
-              <div className="text-2xl font-bold text-green-600">{activeFirmsCount}</div>
+              <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{activeFirmsCount}</div>
               <p className="text-xs text-muted-foreground">Currently operating</p>
             </SmallCardContent>
           </SmallCard>
@@ -199,7 +200,7 @@ export default function FirmsPage() {
               <SmallCardTitle className="text-sm font-medium">Inactive Firms</SmallCardTitle>
             </SmallCardHeader>
             <SmallCardContent>
-              <div className="text-2xl font-bold text-red-600">{inactiveFirms}</div>
+              <div className="text-2xl font-bold text-red-600 dark:text-red-400">{inactiveFirms}</div>
               <p className="text-xs text-muted-foreground">Not operating</p>
             </SmallCardContent>
           </SmallCard>
@@ -209,7 +210,7 @@ export default function FirmsPage() {
               <Users className="h-4 w-4 text-muted-foreground" />
             </SmallCardHeader>
             <SmallCardContent>
-              <div className="text-2xl font-bold">{totalEmployees}</div>
+              <div className="text-2xl font-bold text-foreground">{totalEmployees}</div>
               <p className="text-xs text-muted-foreground">Across all firms</p>
             </SmallCardContent>
           </SmallCard>
@@ -217,14 +218,14 @@ export default function FirmsPage() {
 
 
 
-        <FlatCard className="all-firms-directory-card">
+        <FlatCard className="all-firms-directory-card border-border bg-card">
 
-          <FlatCardHeader>
+          <FlatCardHeader className="border-b border-border">
             <div className="flex flex-row justify-between items-center w-full">
               {/* Left: Title + Description */}
               <div>
-                <FlatCardTitle>Firm Directory</FlatCardTitle>
-                <FlatCardDescription className="pt-1">
+                <FlatCardTitle className="text-foreground">Firm Directory</FlatCardTitle>
+                <FlatCardDescription className="pt-1 text-muted-foreground">
                   Complete overview of all registered firms
                 </FlatCardDescription>
               </div>
@@ -232,12 +233,12 @@ export default function FirmsPage() {
               {/* Right: Search input */}
               <div className="flex items-center space-x-2">
                 <div className="relative max-w-sm w-full md:w-auto">
-                  {/* <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /> */}
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <CustomInput
                     placeholder="Search firms..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
+                    className="pl-10 bg-background border-border text-foreground focus-visible:ring-primary"
                   />
                 </div>
               </div>
@@ -245,10 +246,10 @@ export default function FirmsPage() {
           </FlatCardHeader>
 
 
-          <FlatCardContent>
+          <FlatCardContent className="p-0">
             {currentFirms.length > 0 ? (
               <CustomTable className="all-firms-table">
-                <CustomTableHeader className="all-firms-table-head">
+                <CustomTableHeader className="all-firms-table-head bg-muted/30">
                   <CustomTableRow>
                     <CustomTableHead>Firm Name</CustomTableHead>
                     <CustomTableHead>Contact Email</CustomTableHead>
@@ -265,14 +266,14 @@ export default function FirmsPage() {
                   {currentFirms.map((firm) => {
                     const address = firm.add || { city: "", state: "", country: "" }
                     return (
-                      <CustomTableRow key={firm._id}>
-                        <CustomTableCell>{firm.FirmName}</CustomTableCell>
-                        <CustomTableCell>{firm.email || "-"}</CustomTableCell>
-                        <CustomTableCell>{firm.gst_no || "-"}</CustomTableCell>
-                        <CustomTableCell>
+                      <CustomTableRow key={firm._id} className="hover:bg-muted/50 border-border">
+                        <CustomTableCell className="text-foreground font-medium">{firm.FirmName}</CustomTableCell>
+                        <CustomTableCell className="text-muted-foreground">{firm.email || "-"}</CustomTableCell>
+                        <CustomTableCell className="text-muted-foreground">{firm.gst_no || "-"}</CustomTableCell>
+                        <CustomTableCell className="text-muted-foreground">
                           {address.city}, {address.state}, {address.country}
                         </CustomTableCell>
-                        <CustomTableCell>
+                        <CustomTableCell className="text-muted-foreground">
                           {firm.phone ? firm.phone.replace(/^\+91-?/, "") : "-"}
                         </CustomTableCell>
                         <CustomTableCell>
@@ -281,7 +282,7 @@ export default function FirmsPage() {
                               href={firm.website}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-blue-600 underline"
+                              className="text-primary hover:underline font-medium"
                             >
                               {truncateWebsite(firm.website)}
                             </a>
@@ -291,14 +292,13 @@ export default function FirmsPage() {
                         </CustomTableCell>
                         <CustomTableCell>
                           <div className="flex flex-col gap-1 w-24">
-                             <div className="flex items-center justify-between text-[10px] font-semibold tracking-wider uppercase">
-                                <span className={firm.status === 'Active' ? 'text-emerald-600' : 'text-blue-600'}>
-                                  {firm.status === 'Active' ? 'Complete' : 'Pending'}
+                             <div className="flex items-center justify-between text-[9px] font-bold tracking-widest uppercase">
+                                <span className={(!firm.status || firm.status === 'Active') ? "text-emerald-600 dark:text-emerald-400" : "text-amber-500 dark:text-amber-400"}>
+                                  {firm.status || 'Active'}
                                 </span>
-                                {firm.status !== 'Active' && <span className="text-slate-400 font-bold">2/5</span>}
                              </div>
-                             <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                                <div className={`h-full rounded-full transition-all ${firm.status === 'Active' ? 'bg-emerald-500 w-full' : 'bg-blue-500 w-2/5'}`} />
+                             <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                                <div className={`h-full rounded-full transition-all duration-500 ${(!firm.status || firm.status === 'Active') ? 'bg-emerald-500 w-full' : 'bg-amber-500 w-1/3'}`} />
                              </div>
                           </div>
                         </CustomTableCell>

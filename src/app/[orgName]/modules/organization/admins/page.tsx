@@ -304,15 +304,15 @@ export default function FirmAdminsPage() {
     }
 
     return (
-        <div className="flex flex-col h-full w-full bg-slate-50/50 p-6 space-y-6 overflow-y-auto font-outfit">
+        <div className="flex flex-col h-full w-full bg-background p-6 space-y-6 overflow-y-auto font-outfit">
             {/* HEADER */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-xl font-semibold text-gray-900">Firm Administrators</h1>
-                    <p className="text-sm text-gray-600 mt-1">Manage institutional level identities and their global access privileges.</p>
+                    <h1 className="text-xl font-semibold text-foreground">Firm Administrators</h1>
+                    <p className="text-sm text-muted-foreground mt-1">Manage institutional level identities and their global access privileges.</p>
                 </div>
                 <div className="flex gap-3">
-                    <Button variant="outline" className="h-9 gap-2 border-gray-200 font-medium" onClick={handleExport}>
+                    <Button variant="outline" className="h-9 gap-2 border-border font-medium bg-card text-foreground" onClick={handleExport}>
                         <Download className="w-4 h-4" />
                         Export Ledger
                     </Button>
@@ -330,8 +330,8 @@ export default function FirmAdminsPage() {
                                 Invite Firm Admin
                             </Button>
                         </DialogTrigger>
-                        <DialogContent className="sm:max-w-[480px] p-0 overflow-hidden border-none rounded-xl shadow-xl">
-                            <div className="bg-primary p-6 text-white relative">
+                        <DialogContent className="sm:max-w-[480px] p-0 overflow-hidden border border-border bg-card rounded-xl shadow-xl">
+                            <div className="bg-primary p-6 text-primary-foreground relative">
                                 <Shield className="absolute right-6 top-6 w-12 h-12 text-white/10" />
                                 <DialogHeader>
                                     <DialogTitle className="text-xl font-semibold text-white">Invite Firm Admin</DialogTitle>
@@ -340,12 +340,12 @@ export default function FirmAdminsPage() {
                                     </DialogDescription>
                                 </DialogHeader>
                             </div>
-                            <form onSubmit={handleInviteAdmin} className="p-6 space-y-5 bg-white">
+                            <form onSubmit={handleInviteAdmin} className="p-6 space-y-5 bg-card">
                                 <div className="space-y-4">
                                     {/* Full Name */}
                                     <div className="space-y-1.5">
-                                        <Label htmlFor="fullName" className="text-sm font-medium text-gray-700">
-                                            Full Name <span className="text-red-500">*</span>
+                                        <Label htmlFor="fullName" className="text-sm font-medium text-muted-foreground">
+                                            Full Name <span className="text-destructive font-bold">*</span>
                                         </Label>
                                         <Input
                                             id="fullName"
@@ -353,17 +353,17 @@ export default function FirmAdminsPage() {
                                             value={inviteForm.name}
                                             onChange={(e) => handleInviteFieldChange("name", e.target.value)}
                                             onBlur={() => handleInviteBlur("name")}
-                                            className={`h-10 rounded-md bg-white ${inviteTouched.name && inviteErrors.name ? "border-red-400 focus-visible:ring-red-400" : "border-gray-200"}`}
+                                            className={`h-10 rounded-md bg-background border-border text-foreground outline-none focus-visible:ring-primary ${inviteTouched.name && inviteErrors.name ? "border-destructive focus-visible:ring-destructive" : ""}`}
                                         />
                                         {inviteTouched.name && inviteErrors.name && (
-                                            <p className="text-xs text-red-500 mt-1">{inviteErrors.name}</p>
+                                            <p className="text-xs text-destructive mt-1 font-medium">{inviteErrors.name}</p>
                                         )}
                                     </div>
 
                                     {/* Email */}
                                     <div className="space-y-1.5">
-                                        <Label htmlFor="inviteEmail" className="text-sm font-medium text-gray-700">
-                                            Email Address <span className="text-red-500">*</span>
+                                        <Label htmlFor="inviteEmail" className="text-sm font-medium text-muted-foreground">
+                                            Email Address <span className="text-destructive font-bold">*</span>
                                         </Label>
                                         <Input
                                             id="inviteEmail"
@@ -372,10 +372,10 @@ export default function FirmAdminsPage() {
                                             value={inviteForm.email}
                                             onChange={(e) => handleInviteFieldChange("email", e.target.value)}
                                             onBlur={() => handleInviteBlur("email")}
-                                            className={`h-10 rounded-md bg-white ${inviteTouched.email && inviteErrors.email ? "border-red-400 focus-visible:ring-red-400" : "border-gray-200"}`}
+                                            className={`h-10 rounded-md bg-background border-border text-foreground outline-none focus-visible:ring-primary ${inviteTouched.email && inviteErrors.email ? "border-destructive focus-visible:ring-destructive" : ""}`}
                                         />
                                         {inviteTouched.email && inviteErrors.email && (
-                                            <p className="text-xs text-red-500 mt-1">{inviteErrors.email}</p>
+                                            <p className="text-xs text-destructive mt-1 font-medium">{inviteErrors.email}</p>
                                         )}
                                     </div>
 
@@ -452,102 +452,108 @@ export default function FirmAdminsPage() {
                         </DialogContent>
                     </Dialog>
                 </div>
-            </div>
-
-            {/* QUICK STATS */}
+                        {/* QUICK STATS */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <SmallCard className="border bg-gradient-to-r from-primary/70 to-primary text-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
-                    <SmallCardContent className="p-4">
+                <SmallCard className="border-none bg-primary/10 text-primary shadow-sm rounded-xl overflow-hidden">
+                    <SmallCardContent className="p-4 bg-transparent">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-white text-xs opacity-80">Total Admins</p>
-                                <p className="text-white text-xl font-semibold mt-1">{admins.length}</p>
-                                <p className="text-white text-[10px] mt-1">Global Scope</p>
+                                <p className="text-xs font-bold uppercase tracking-wider opacity-70">Total Admins</p>
+                                <p className="text-2xl font-black mt-1 text-primary">{admins.length}</p>
+                                <p className="text-[10px] font-medium opacity-60">Global Scope</p>
                             </div>
-                            <Users className="w-5 h-5 text-white" />
+                            <div className="h-10 w-10 bg-primary/10 rounded-full flex items-center justify-center">
+                                <Users className="w-5 h-5" />
+                            </div>
                         </div>
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                <SmallCard className="border border-border bg-card shadow-sm rounded-xl overflow-hidden">
                     <SmallCardContent className="p-4">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-gray-600 text-xs">Active Seats</p>
-                                <p className="text-xl font-semibold text-gray-900 mt-1">{admins.filter(a => a.status === 'Active').length}</p>
-                                <p className="text-green-600 text-[10px] mt-1">Verified identities</p>
+                                <p className="text-muted-foreground text-xs font-bold uppercase tracking-wider">Active Seats</p>
+                                <p className="text-2xl font-black text-foreground mt-1">{admins.filter(a => a.status === 'Active').length}</p>
+                                <p className="text-emerald-500 text-[10px] font-bold mt-1 uppercase tracking-tighter">Verified identities</p>
                             </div>
-                            <ShieldCheck className="w-5 h-5 text-primary" />
+                            <div className="h-10 w-10 bg-emerald-500/10 rounded-full flex items-center justify-center text-emerald-500">
+                                <ShieldCheck className="w-5 h-5" />
+                            </div>
                         </div>
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                <SmallCard className="border border-border bg-card shadow-sm rounded-xl overflow-hidden">
                     <SmallCardContent className="p-4">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-gray-600 text-xs">Pending Keys</p>
-                                <p className="text-xl font-semibold text-gray-900 mt-1">{admins.filter(a => a.status === 'Pending').length}</p>
-                                <p className="text-amber-600 text-[10px] mt-1">Awaiting MFA sync</p>
+                                <p className="text-muted-foreground text-xs font-bold uppercase tracking-wider">Pending Keys</p>
+                                <p className="text-2xl font-black text-foreground mt-1">{admins.filter(a => a.status === 'Pending').length}</p>
+                                <p className="text-amber-500 text-[10px] font-bold mt-1 uppercase tracking-tighter">Awaiting MFA sync</p>
                             </div>
-                            <Lock className="w-5 h-5 text-primary" />
+                            <div className="h-10 w-10 bg-amber-500/10 rounded-full flex items-center justify-center text-amber-500">
+                                <Lock className="w-5 h-5" />
+                            </div>
                         </div>
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                <SmallCard className="border border-border bg-card shadow-sm rounded-xl overflow-hidden">
                     <SmallCardContent className="p-4">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-gray-600 text-xs">Global Roles</p>
-                                <p className="text-xl font-semibold text-gray-900 mt-1">4</p>
-                                <p className="text-blue-600 text-[10px] mt-1">Hierarchical Levels</p>
+                                <p className="text-muted-foreground text-xs font-bold uppercase tracking-wider">Global Roles</p>
+                                <p className="text-2xl font-black text-foreground mt-1">4</p>
+                                <p className="text-blue-500 text-[10px] font-bold mt-1 uppercase tracking-tighter">Hierarchical Levels</p>
                             </div>
-                            <Shield className="w-5 h-5 text-primary" />
+                            <div className="h-10 w-10 bg-blue-500/10 rounded-full flex items-center justify-center text-blue-500">
+                                <Shield className="w-5 h-5" />
+                            </div>
                         </div>
                     </SmallCardContent>
                 </SmallCard>
-            </div>
+            </div>    </div>
 
             {/* FILTER BAR */}
-            <div className="flex items-center gap-4 bg-white p-2 rounded-lg border border-gray-200 shadow-sm mt-2">
+            <div className="flex items-center gap-4 bg-muted/30 p-2 rounded-xl border border-border shadow-sm mt-2 focus-within:border-primary/50 transition-colors group">
                 <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
                     <Input
                         placeholder="Search admins by name or email..."
-                        className="pl-10 h-9 border-none bg-transparent focus-visible:ring-0 text-sm font-medium"
+                        className="pl-10 h-9 border-none bg-transparent focus-visible:ring-0 text-sm font-medium text-foreground placeholder:text-muted-foreground/60"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                     />
                 </div>
-                <Separator orientation="vertical" className="h-6 bg-gray-200" />
-                <Button variant="ghost" className="h-9 text-xs font-semibold gap-2 text-gray-600">
+                <Separator orientation="vertical" className="h-6 bg-border" />
+                <Button variant="ghost" className="h-9 text-xs font-bold gap-2 text-muted-foreground hover:text-foreground">
                     <Filter className="w-4 h-4" />
                     Filter Roles
                 </Button>
             </div>
 
             {/* ADMINS TABLE */}
-            <Card className="border-gray-200 shadow-sm overflow-hidden bg-white">
-                <CardHeader className="border-b border-gray-100 bg-white flex flex-row items-center justify-between p-4">
+            <Card className="border-border shadow-md overflow-hidden bg-card rounded-xl">
+                <CardHeader className="border-b border-border bg-card flex flex-row items-center justify-between p-4">
                     <div>
-                        <CardTitle className="text-base font-semibold text-gray-900">Administrative Directory</CardTitle>
-                        <CardDescription className="text-sm text-gray-500 mt-1">List of all identities with organizational override capabilities.</CardDescription>
+                        <CardTitle className="text-base font-bold text-foreground">Administrative Directory</CardTitle>
+                        <CardDescription className="text-sm text-muted-foreground mt-1">List of all identities with organizational override capabilities.</CardDescription>
                     </div>
                 </CardHeader>
                 <CardContent className="p-0">
                     <div className="overflow-x-auto">
                         <table className="w-full text-left">
-                            <thead className="bg-gray-50/50 border-b border-gray-100">
+                            <thead className="bg-muted/50 border-b border-border">
                                 <tr>
-                                    <th className="px-6 py-3 text-xs font-semibold text-gray-500">Identity Details</th>
-                                    <th className="px-4 py-3 text-xs font-semibold text-gray-500">Global Role</th>
-                                    <th className="px-4 py-3 text-xs font-semibold text-gray-500">Status</th>
-                                    <th className="px-4 py-3 text-xs font-semibold text-gray-500">Last Observed</th>
-                                    <th className="px-6 py-3 text-xs font-semibold text-gray-500 text-right">Actions</th>
+                                    <th className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">Identity Details</th>
+                                    <th className="px-4 py-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">Global Role</th>
+                                    <th className="px-4 py-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">Status</th>
+                                    <th className="px-4 py-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">Last Observed</th>
+                                    <th className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-muted-foreground text-right">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-100">
+                            <tbody className="divide-y divide-border">
                                 {loading && (
                                     Array.from({ length: 4 }).map((_, i) => (
                                         <tr key={`skeleton-${i}`} className="animate-pulse">
@@ -568,44 +574,44 @@ export default function FirmAdminsPage() {
                                     ))
                                 )}
                                 {!loading && filteredAdmins.map((admin) => (
-                                    <tr key={admin.id} className="hover:bg-gray-50/50 transition-colors group">
+                                    <tr key={admin.id} className="hover:bg-muted/30 transition-colors group">
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
-                                                <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-primary shadow-sm transition-colors">
+                                                <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-primary shadow-sm group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300">
                                                     <User className="w-4 h-4" />
                                                 </div>
                                                 <div>
-                                                    <p className="text-sm font-semibold text-gray-900">{admin.name}</p>
-                                                    <p className="text-xs text-gray-500 mt-0.5">{admin.email}</p>
+                                                    <p className="text-sm font-bold text-foreground">{admin.name}</p>
+                                                    <p className="text-xs text-muted-foreground mt-0.5">{admin.email}</p>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-4 py-4 text-sm font-medium text-gray-700">
+                                        <td className="px-4 py-4 text-sm font-semibold text-foreground/80">
                                             {admin.role}
                                         </td>
                                         <td className="px-4 py-4">
-                                            <Badge className={`text-xs font-medium px-2 py-0.5 rounded-full border-none ${admin.status === 'Active' ? 'bg-green-100 text-green-700 hover:bg-green-100' : 'bg-amber-100 text-amber-700 hover:bg-amber-100'
+                                            <Badge className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-md border-none ${admin.status === 'Active' ? 'bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20' : 'bg-amber-500/10 text-amber-600 hover:bg-amber-500/20'
                                                 }`}>
                                                 {admin.status}
                                             </Badge>
                                         </td>
-                                        <td className="px-4 py-4 text-sm text-gray-500">
+                                        <td className="px-4 py-4 text-sm text-muted-foreground font-medium">
                                             {admin.lastActive}
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-gray-600 transition-colors">
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground transition-colors">
                                                         <MoreVertical className="w-4 h-4" />
                                                     </Button>
                                                 </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end" className="w-48 bg-white z-50">
-                                                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                                    <DropdownMenuSeparator />
-                                                    <DropdownMenuItem onClick={() => handleEditRole(admin)} className="cursor-pointer font-medium">
+                                                <DropdownMenuContent align="end" className="w-48 bg-card text-foreground border-border z-50">
+                                                    <DropdownMenuLabel className="text-xs font-black uppercase tracking-widest opacity-50">Actions</DropdownMenuLabel>
+                                                    <DropdownMenuSeparator className="bg-border" />
+                                                    <DropdownMenuItem onClick={() => handleEditRole(admin)} className="cursor-pointer font-bold text-xs uppercase tracking-wider focus:bg-primary focus:text-primary-foreground">
                                                         Edit Role
                                                     </DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={() => handleRevokeAccess(admin)} className="cursor-pointer font-medium text-red-600 focus:text-red-700">
+                                                    <DropdownMenuItem onClick={() => handleRevokeAccess(admin)} className="cursor-pointer font-bold text-xs uppercase tracking-wider text-destructive focus:bg-destructive focus:text-destructive-foreground">
                                                         Revoke Access
                                                     </DropdownMenuItem>
                                                 </DropdownMenuContent>
@@ -616,10 +622,10 @@ export default function FirmAdminsPage() {
                             </tbody>
                         </table>
                         {!loading && filteredAdmins.length === 0 && (
-                            <div className="p-16 flex flex-col items-center justify-center text-center">
-                                <SearchX className="w-10 h-10 text-gray-300 mb-3" />
-                                <p className="text-sm font-semibold text-gray-900">No identities found</p>
-                                <p className="text-sm text-gray-500 mt-1">Try refining your search terms.</p>
+                            <div className="p-16 flex flex-col items-center justify-center text-center bg-card">
+                                <SearchX className="w-12 h-12 text-muted-foreground/30 mb-4" />
+                                <p className="text-sm font-black text-foreground uppercase tracking-widest">No identities found</p>
+                                <p className="text-xs text-muted-foreground mt-1">Try refining your search terms.</p>
                             </div>
                         )}
                     </div>
@@ -628,8 +634,8 @@ export default function FirmAdminsPage() {
 
             {/* Edit Role Dialog */}
             <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-                <DialogContent className="sm:max-w-[450px] p-0 border-none rounded-xl shadow-xl overflow-hidden bg-white">
-                    <div className="bg-primary p-6 text-white relative">
+                <DialogContent className="sm:max-w-[450px] p-0 border border-border rounded-xl shadow-xl overflow-hidden bg-card text-foreground">
+                    <div className="bg-primary p-6 text-primary-foreground relative">
                         <Shield className="absolute right-6 top-6 w-12 h-12 text-white/10" />
                         <DialogHeader>
                             <DialogTitle className="text-xl font-semibold text-white">Edit Access Privileges</DialogTitle>
@@ -638,37 +644,37 @@ export default function FirmAdminsPage() {
                             </DialogDescription>
                         </DialogHeader>
                     </div>
-                    <form onSubmit={submitEditRole} className="p-6 space-y-5 flex flex-col items-stretch">
+                    <form onSubmit={submitEditRole} className="p-6 space-y-5 flex flex-col items-stretch bg-card">
                         <div className="space-y-4">
                             <div className="space-y-2">
-                                <Label className="text-sm font-medium text-gray-700">Identity Details</Label>
-                                <div className="p-3 bg-gray-50 rounded-md border border-gray-100 flex items-center gap-3">
+                                <Label className="text-sm font-medium text-muted-foreground uppercase tracking-widest text-[10px]">Identity Details</Label>
+                                <div className="p-3 bg-muted/30 rounded-md border border-border flex items-center gap-3">
                                     <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
                                         <User className="w-4 h-4" />
                                     </div>
                                     <div>
-                                        <p className="text-sm font-bold text-gray-900">{selectedAdmin?.name}</p>
-                                        <p className="text-xs text-gray-500">{selectedAdmin?.email}</p>
+                                        <p className="text-sm font-bold text-foreground">{selectedAdmin?.name}</p>
+                                        <p className="text-xs text-muted-foreground">{selectedAdmin?.email}</p>
                                     </div>
                                 </div>
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="edit-role" className="text-sm font-medium text-gray-700">Administrative Role</Label>
+                                <Label htmlFor="edit-role" className="text-sm font-medium text-muted-foreground uppercase tracking-widest text-[10px]">Administrative Role</Label>
                                 <Select name="role" defaultValue={selectedAdmin?.role || "Org Admin"}>
-                                    <SelectTrigger id="edit-role" className="h-10 rounded-md bg-white border-gray-200">
+                                    <SelectTrigger id="edit-role" className="h-10 rounded-md bg-background text-foreground border-border">
                                         <SelectValue />
                                     </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="Org Admin">Org Admin (Management)</SelectItem>
-                                        <SelectItem value="Compliance Officer">Compliance Officer</SelectItem>
-                                        <SelectItem value="Billing Admin">Billing Admin</SelectItem>
+                                    <SelectContent className="bg-card text-foreground border-border">
+                                        <SelectItem value="Org Admin" className="font-bold text-xs uppercase tracking-wider">Org Admin (Management)</SelectItem>
+                                        <SelectItem value="Compliance Officer" className="font-bold text-xs uppercase tracking-wider">Compliance Officer</SelectItem>
+                                        <SelectItem value="Billing Admin" className="font-bold text-xs uppercase tracking-wider">Billing Admin</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
                         </div>
-                        <div className="col-span-full pt-4 flex justify-end gap-3 mt-auto">
-                            <Button type="button" variant="outline" className="h-10 rounded-md whitespace-nowrap px-6 shrink-0" onClick={() => setIsEditOpen(false)}>Cancel</Button>
-                            <Button type="submit" className="bg-primary hover:bg-primary/90 text-white font-medium h-10 rounded-md px-6 shadow-sm whitespace-nowrap shrink-0">Save Changes</Button>
+                        <div className="col-span-full pt-4 flex justify-end gap-3 mt-auto border-t border-border">
+                            <Button type="button" variant="outline" className="h-10 rounded-md whitespace-nowrap px-6 shrink-0 border-border hover:bg-muted text-foreground" onClick={() => setIsEditOpen(false)}>Cancel</Button>
+                            <Button type="submit" className="bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase tracking-widest text-[11px] h-10 rounded-md px-6 shadow-lg whitespace-nowrap shrink-0">Save Changes</Button>
                         </div>
                     </form>
                 </DialogContent>

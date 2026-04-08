@@ -149,10 +149,8 @@ const EditFirmPage = () => {
   return (
     <>
       <SubHeader title="Edit Firm" breadcrumbItems={breadcrumbItems}></SubHeader>
-      <div className="p-6 -mt-24 z-10 ">
-
-
-        <FlatCard className="overflow-y-auto h-[60vh] hide-scrollbar bg-white ">
+      <div className="p-6 -mt-12 z-10 pb-20">
+        <FlatCard className="shadow-xl bg-card border-none">
           <FlatCardHeader>
 
             <FlatCardTitle className="edit-firm-form ">Edit Firm: {firm?.FirmName}</FlatCardTitle>
@@ -168,7 +166,6 @@ const EditFirmPage = () => {
                   { field: "phone", label: "Phone", required: true },
                   { field: "email", label: "Email", required: true },
                   { field: "gst_no", label: "GST No", required: true },
-                  { field: "tinNo", label: "TIN No" },
                   { field: "cinNo", label: "CIN No" },
                   { field: "uin", label: "UIN" }
                 ].map(({ field, label, required }) => (

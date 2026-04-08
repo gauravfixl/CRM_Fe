@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 export default function OrgProfilePage() {
     return (
-        <div className="flex flex-col min-h-screen bg-transparent">
+        <div className="flex flex-col min-h-screen bg-background">
             <SubHeader
                 title="Organization Profile"
                 breadcrumbItems={[
@@ -20,7 +20,7 @@ export default function OrgProfilePage() {
                     { label: "Profile", href: "/modules/organization/profile" }
                 ]}
                 rightControls={
-                    <Button className="h-8 gap-2 rounded-none bg-indigo-600 hover:bg-indigo-700 text-white font-bold uppercase tracking-widest text-[10px]">
+                    <Button className="h-8 gap-2 rounded-none bg-primary hover:bg-primary/90 text-primary-foreground font-bold uppercase tracking-widest text-[10px]">
                         <Save className="w-3.5 h-3.5" />
                         Save Changes
                     </Button>
@@ -28,24 +28,24 @@ export default function OrgProfilePage() {
             />
 
             <div className="flex-1 p-6 pt-0 space-y-6">
-                <Card className="rounded-none border-0 shadow-sm bg-white/50 backdrop-blur-sm">
-                    <CardHeader>
-                        <CardTitle className="text-lg font-bold">General Information</CardTitle>
-                        <CardDescription>Official details about your registered organization.</CardDescription>
+                <Card className="rounded-xl border border-border shadow-sm bg-card">
+                    <CardHeader className="border-b border-border/50 pb-4">
+                        <CardTitle className="text-lg font-bold text-foreground">General Information</CardTitle>
+                        <CardDescription className="text-muted-foreground">Official details about your registered organization.</CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-6">
+                    <CardContent className="pt-6 space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
-                                <Label>Organization Name</Label>
-                                <Input defaultValue="Acme Corp Global" className="rounded-none" />
+                                <Label className="text-foreground">Organization Name</Label>
+                                <Input defaultValue="Acme Corp Global" className="rounded-md border-border bg-background text-foreground" />
                             </div>
                             <div className="space-y-2">
-                                <Label>Industry</Label>
+                                <Label className="text-foreground">Industry</Label>
                                 <Select defaultValue="tech">
-                                    <SelectTrigger className="rounded-none">
+                                    <SelectTrigger className="rounded-md border-border bg-background text-foreground">
                                         <SelectValue placeholder="Select industry" />
                                     </SelectTrigger>
-                                    <SelectContent>
+                                    <SelectContent className="bg-card border-border">
                                         <SelectItem value="tech">Technology & Services</SelectItem>
                                         <SelectItem value="fin">Finance</SelectItem>
                                         <SelectItem value="health">Healthcare</SelectItem>
@@ -53,51 +53,51 @@ export default function OrgProfilePage() {
                                 </Select>
                             </div>
                             <div className="space-y-2 md:col-span-2">
-                                <Label>Description</Label>
-                                <Textarea className="rounded-none h-24" placeholder="Brief description of your organization..." />
+                                <Label className="text-foreground">Description</Label>
+                                <Textarea className="rounded-md border-border bg-background text-foreground h-24" placeholder="Brief description of your organization..." />
                             </div>
                             <div className="space-y-2">
-                                <Label>Tax ID / EIN</Label>
-                                <Input placeholder="XX-XXXXXXX" className="rounded-none font-mono" />
+                                <Label className="text-foreground">Tax ID / EIN</Label>
+                                <Input placeholder="XX-XXXXXXX" className="rounded-md border-border bg-background text-foreground font-mono" />
                             </div>
                             <div className="space-y-2">
-                                <Label>Website</Label>
-                                <Input placeholder="https://example.com" className="rounded-none" />
+                                <Label className="text-foreground">Website</Label>
+                                <Input placeholder="https://example.com" className="rounded-md border-border bg-background text-foreground" />
                             </div>
                         </div>
                     </CardContent>
                 </Card>
 
-                <Card className="rounded-none border-0 shadow-sm bg-white/50 backdrop-blur-sm">
-                    <CardHeader>
-                        <CardTitle className="text-lg font-bold">Contact Details</CardTitle>
-                        <CardDescription>Primary contact information for billing and support.</CardDescription>
+                <Card className="rounded-xl border border-border shadow-sm bg-card">
+                    <CardHeader className="border-b border-border/50 pb-4">
+                        <CardTitle className="text-lg font-bold text-foreground">Contact Details</CardTitle>
+                        <CardDescription className="text-muted-foreground">Primary contact information for billing and support.</CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-6">
+                    <CardContent className="pt-6 space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
-                                <Label>Primary Email</Label>
-                                <Input type="email" placeholder="admin@acme.com" className="rounded-none" />
+                                <Label className="text-foreground">Primary Email</Label>
+                                <Input type="email" placeholder="admin@acme.com" className="rounded-md border-border bg-background text-foreground" />
                             </div>
                             <div className="space-y-2">
-                                <Label>Phone Number</Label>
-                                <Input type="tel" placeholder="+1 (555) 000-0000" className="rounded-none" />
+                                <Label className="text-foreground">Phone Number</Label>
+                                <Input type="tel" placeholder="+1 (555) 000-0000" className="rounded-md border-border bg-background text-foreground" />
                             </div>
                             <div className="space-y-2 md:col-span-2">
-                                <Label>Address</Label>
-                                <Input placeholder="123 Corporate Blvd" className="rounded-none" />
+                                <Label className="text-foreground">Address</Label>
+                                <Input placeholder="123 Corporate Blvd" className="rounded-md border-border bg-background text-foreground" />
                             </div>
                             <div className="space-y-2">
-                                <Label>City</Label>
-                                <Input placeholder="Metropolis" className="rounded-none" />
+                                <Label className="text-foreground">City</Label>
+                                <Input placeholder="Metropolis" className="rounded-md border-border bg-background text-foreground" />
                             </div>
                             <div className="space-y-2">
-                                <Label>Country</Label>
+                                <Label className="text-foreground">Country</Label>
                                 <Select defaultValue="us">
-                                    <SelectTrigger className="rounded-none">
+                                    <SelectTrigger className="rounded-md border-border bg-background text-foreground">
                                         <SelectValue placeholder="Select country" />
                                     </SelectTrigger>
-                                    <SelectContent>
+                                    <SelectContent className="bg-card border-border">
                                         <SelectItem value="us">United States</SelectItem>
                                         <SelectItem value="uk">United Kingdom</SelectItem>
                                         <SelectItem value="in">India</SelectItem>
