@@ -23,7 +23,7 @@ const CustomTableHeader = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <thead
     ref={ref}
-    className={cn("[&_tr]:border-b border-gray-200 bg-gray-50 text-gray-600 uppercase tracking-wider text-xs", className)}
+    className={cn("[&_tr]:border-b border-border bg-muted/50 text-muted-foreground uppercase tracking-wider text-xs", className)}
     {...props}
   />
 ));
@@ -50,7 +50,7 @@ const CustomTableRow = React.forwardRef<
   <tr
     ref={ref}
     className={cn(
-      "border-b border-gray-200 transition-colors hover:bg-gray-100 data-[state=selected]:bg-gray-200",
+      "border-b border-border transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted",
       className
     )}
     {...props}
@@ -66,7 +66,7 @@ const CustomTableHead = React.forwardRef<
   <th
     ref={ref}
     className={cn(
-      "h-8 px-2 text-left font-semibold align-middle text-gray-700 [&:has([role=checkbox])]:pr-0",
+      "h-8 px-2 text-left font-semibold align-middle text-zinc-700 dark:text-zinc-300 [&:has([role=checkbox])]:pr-0",
       className
     )}
     {...props}
@@ -81,7 +81,7 @@ const CustomTableCell = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <td
     ref={ref}
-    className={cn("px-2 py-1 align-middle text-gray-800 [&:has([role=checkbox])]:pr-0", className)}
+    className={cn("px-2 py-1 align-middle text-zinc-900 dark:text-zinc-100 [&:has([role=checkbox])]:pr-0", className)}
     {...props}
   />
 ));
@@ -95,7 +95,7 @@ const CustomTableFooter = React.forwardRef<
   <tfoot
     ref={ref}
     className={cn(
-      "border-t border-gray-200 bg-gray-50 font-medium text-xs [&>tr]:last:border-b-0",
+      "border-t border-border bg-muted/50 font-medium text-xs [&>tr]:last:border-b-0",
       className
     )}
     {...props}
@@ -110,7 +110,7 @@ const CustomTableCaption = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <caption
     ref={ref}
-    className={cn("mt-2 text-xs text-gray-500", className)}
+    className={cn("mt-2 text-xs text-muted-foreground", className)}
     {...props}
   />
 ));
