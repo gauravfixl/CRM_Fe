@@ -6,8 +6,7 @@ export const dynamic = "force-dynamic";
 
 export const fetchCache = "default-no-store";
 
-const BACKEND_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
+const BACKEND_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api").replace(/\/$/, "");
 
 // Headers that should NOT be forwarded to the backend
 const SKIP_REQUEST_HEADERS = new Set([
@@ -31,6 +30,27 @@ async function proxy(
       headers.set(key, value);
     }
   });
+
+  // --- Robust Header-to-Cookie Bridging ---
+  // If the frontend sent a token in headers, ensure it's also in the cookies.
+  // This is critical because the backend middleware specifically looks for the '_fxl_1A2B3C' cookie.
+  let tokenHeader = req.headers.get("org-token") || req.headers.get("token") || "";
+  
+  // Also check Authorization header
+  if (!tokenHeader) {
+    const authHeader = req.headers.get("authorization") || "";
+    if (authHeader.startsWith("Bearer ")) {
+      tokenHeader = authHeader.substring(7);
+    }
+  }
+
+  const currentCookie = req.headers.get("cookie") || "";
+
+  if (tokenHeader && !currentCookie.includes("_fxl_1A2B3C")) {
+    const fxlCookie = `_fxl_1A2B3C=${tokenHeader}`;
+    const newCookie = currentCookie ? `${currentCookie}; ${fxlCookie}` : fxlCookie;
+    headers.set("cookie", newCookie);
+  }
 
   // Ensure the backend sees the real client IP for fingerprint matching
   const clientIp =

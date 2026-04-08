@@ -47,18 +47,17 @@ export default function OrgOverviewPage() {
                 const usersRes = await axiosInstance.get(
                     "/organization/users/all?page=1&limit=1"
                 );
-                setTotalUsers(usersRes?.data?.pagination?.total ?? null);
+                setTotalUsers(usersRes?.data?.pagination?.total ?? 0);
             } catch (e) {
-                setTotalUsers(null);
+                setTotalUsers(0);
             }
 
             try {
-                const firmsRes = await getAllFirms();
-                const firms = firmsRes?.data?.data ?? [];
-                const active = Array.isArray(firms) ? firms.filter((f: any) => !f.isDeleted).length : 0;
-                setActiveFirms(active);
+                const firmsRes = await axiosInstance.get("/firm/getAllFirm");
+                const firms = firmsRes?.data?.firms ?? [];
+                setActiveFirms(Array.isArray(firms) ? firms.length : 0);
             } catch (e) {
-                setActiveFirms(null);
+                setActiveFirms(0);
             }
 
             try {
@@ -214,7 +213,7 @@ export default function OrgOverviewPage() {
                             <CustomButton 
                                 variant="outline" 
                                 className="w-full bg-white dark:bg-zinc-900 border-indigo-100 dark:border-zinc-800 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-700 font-bold rounded-xl justify-start px-4 h-11 border transition-all active:scale-[0.98]" 
-                                onClick={() => router.push(`/${orgName}/modules/firm-management/firms/add`)}
+                                onClick={() => router.push(`/${orgName}/modules/organization/units`)}
                             >
                                 <Building2 className="w-4 h-4 mr-2" /> Register New Firm
                             </CustomButton>

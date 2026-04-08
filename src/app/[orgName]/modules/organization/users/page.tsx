@@ -9,10 +9,29 @@ import {
     ShieldCheck,
     UserPlus,
     Mail,
-    Download
+    Download,
+    Plus,
+    Loader2,
+    ShieldCheck as RoleIcon,
+    AtSign
 } from "lucide-react";
 import SubHeader from "@/components/custom/SubHeader";
 import { CustomButton } from "@/components/custom/CustomButton";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -41,9 +60,91 @@ export default function UsersListPage() {
     const [searchQuery, setSearchQuery] = useState("");
     const [loading, setLoading] = useState(false);
     const [users, setUsers] = useState<OrgUser[]>([]);
+    
+    // Form and Dialog State
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [isInviting, setIsInviting] = useState(false);
+    const [inviteData, setInviteData] = useState({
+        name: "",
+        email: "",
+        role: ""
+    });
+    const [roles, setRoles] = useState<{name: string, id: string}[]>([]);
 
-    const handleInvite = () => {
-        toast.info("Redirecting to invite flow...");
+    useEffect(() => {
+        const fetchRoles = async () => {
+            try {
+                const res = await axiosInstance.get("/role-permission/all?scope=sc-org");
+                // The roles might be encrypted or nested based on other pages logic
+                // But for now we try to get a basic list
+                const data = res?.data?.permissions || res?.data?.roles || [];
+                // Simple extraction for the dropdown
+                if (Array.isArray(data)) {
+                    setRoles(data.map((r: any) => ({ name: r.name, id: r.role || r.name })));
+                }
+            } catch (e) {
+                console.error("Failed to load roles", e);
+            }
+        };
+        fetchRoles();
+    }, []);
+
+    const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const val = e.target.value;
+        // Validation: No numbers allowed in name
+        if (/\d/.test(val)) {
+            toast.error("Name should not contain numbers");
+            return;
+        }
+        setInviteData({ ...inviteData, name: val });
+    };
+
+    const handleInviteSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        
+        // Comprehensive Validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        
+        if (!inviteData.name?.trim()) {
+            toast.error("Please enter a full name");
+            return;
+        }
+
+        if (/\d/.test(inviteData.name)) {
+            toast.error("Name should not contain numbers");
+            return;
+        }
+
+        if (!inviteData.email?.trim()) {
+            toast.error("Please enter an email address");
+            return;
+        }
+
+        if (!emailRegex.test(inviteData.email)) {
+            toast.error("Please enter a valid email address");
+            return;
+        }
+
+        if (!inviteData.role) {
+            toast.error("Please select an assigned role");
+            return;
+        }
+
+        setIsInviting(true);
+        try {
+            await axiosInstance.post("/organization/createInvite", {
+                email: inviteData.email.trim(),
+                role: inviteData.role,
+                name: inviteData.name.trim() 
+            });
+            toast.success(`Invitation sent successfully to ${inviteData.email}`);
+            setIsDialogOpen(false);
+            setInviteData({ name: "", email: "", role: "" });
+        } catch (err: any) {
+            toast.error(err?.response?.data?.message || "Failed to send invitation");
+        } finally {
+            setIsInviting(false);
+        }
     };
 
     useEffect(() => {
@@ -88,13 +189,95 @@ export default function UsersListPage() {
                         <CustomButton variant="outline" className="rounded-xl h-10 px-4 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 font-semibold" onClick={() => toast.success("CSV export started")}>
                             <Download className="w-4 h-4 mr-2" /> Export CSV
                         </CustomButton>
-                        <CustomButton
-                            className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl h-10 px-6 font-semibold shadow-xl border-0"
-                            onClick={handleInvite}
-                        >
-                            <UserPlus className="w-4 h-4 mr-2" />
-                            Add User
-                        </CustomButton>
+                        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                            <DialogTrigger asChild>
+                                <CustomButton
+                                    className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl h-10 px-6 font-semibold shadow-xl border-0"
+                                >
+                                    <UserPlus className="w-4 h-4 mr-2" />
+                                    Add User
+                                </CustomButton>
+                            </DialogTrigger>
+                            <DialogContent className="sm:max-w-[450px] rounded-3xl border-0 shadow-2xl p-0 overflow-hidden bg-white dark:bg-zinc-950">
+                                <div className="h-2 bg-indigo-600 w-full" />
+                                <div className="p-6 sm:p-8 space-y-6">
+                                    <DialogHeader>
+                                        <DialogTitle className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white flex items-center gap-2">
+                                            <UserPlus className="w-6 h-6 text-indigo-600" />
+                                            Add New User
+                                        </DialogTitle>
+                                        <DialogDescription className="font-medium text-zinc-500">
+                                            Invite a new member to join your organization team.
+                                        </DialogDescription>
+                                    </DialogHeader>
+
+                                    <form onSubmit={handleInviteSubmit} className="space-y-5">
+                                        <div className="space-y-2">
+                                            <label className="text-xs uppercase font-bold text-zinc-500 tracking-wider">Full Name</label>
+                                            <div className="relative">
+                                                <Users className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
+                                                <Input 
+                                                    placeholder="John Doe" 
+                                                    className="pl-11 rounded-xl h-12 bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 font-medium"
+                                                    value={inviteData.name}
+                                                    onChange={handleNameChange}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <label className="text-xs uppercase font-bold text-zinc-500 tracking-wider">Email Address <span className="text-red-500">*</span></label>
+                                            <div className="relative">
+                                                <AtSign className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
+                                                <Input 
+                                                    type="email"
+                                                    required
+                                                    placeholder="john@example.com" 
+                                                    className="pl-11 rounded-xl h-12 bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 font-medium"
+                                                    value={inviteData.email}
+                                                    onChange={(e) => setInviteData({ ...inviteData, email: e.target.value })}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <label className="text-xs uppercase font-bold text-zinc-500 tracking-wider">Assigned Role <span className="text-red-500">*</span></label>
+                                            <Select value={inviteData.role} onValueChange={(val) => setInviteData({ ...inviteData, role: val })}>
+                                                <SelectTrigger className="rounded-xl h-12 bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 font-medium">
+                                                    <div className="flex items-center gap-2">
+                                                        <RoleIcon className="h-4 w-4 text-zinc-400" />
+                                                        <SelectValue placeholder="Select a role" />
+                                                    </div>
+                                                </SelectTrigger>
+                                                <SelectContent className="rounded-2xl border-zinc-200 dark:border-zinc-800 shadow-xl">
+                                                    {roles.map((role) => (
+                                                        <SelectItem key={role.id} value={role.id} className="font-medium focus:bg-indigo-50 dark:focus:bg-indigo-950/20">
+                                                            {role.name}
+                                                        </SelectItem>
+                                                    ))}
+                                                    {roles.length === 0 && (
+                                                        <div className="p-4 text-center text-xs text-zinc-500">No roles found</div>
+                                                    )}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        <div className="pt-4 flex gap-3">
+                                            <CustomButton type="button" variant="ghost" className="flex-1 rounded-xl h-12 font-bold" onClick={() => setIsDialogOpen(false)}>
+                                                Cancel
+                                            </CustomButton>
+                                            <CustomButton 
+                                                type="submit" 
+                                                disabled={isInviting}
+                                                className="flex-[2] bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl h-12 shadow-lg shadow-indigo-200 dark:shadow-none transition-all active:scale-95"
+                                            >
+                                                {isInviting ? <Loader2 className="w-5 h-5 animate-spin" /> : "Send Invitation"}
+                                            </CustomButton>
+                                        </div>
+                                    </form>
+                                </div>
+                            </DialogContent>
+                        </Dialog>
                     </div>
                 }
             />

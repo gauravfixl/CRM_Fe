@@ -91,7 +91,14 @@ export default function DepartmentsPage() {
     )
 
     const handleCreate = async () => {
-        if (!newItem.name) return toast.error("Please fill the department name")
+        if (!newItem.name.trim()) return toast.error("Please fill the department name")
+        
+        const nameRegex = /^[a-zA-Z\s]+$/;
+        if (!nameRegex.test(newItem.name.trim())) {
+            toast.error("Department name should not contain numbers or special characters")
+            return
+        }
+
         setIsLoading(true)
         try {
             await createDepartment({ name: newItem.name, description: newItem.description })
@@ -107,7 +114,14 @@ export default function DepartmentsPage() {
     }
 
     const handleUpdate = async () => {
-        if (!editItem || !editItem.name) return toast.error("Please fill the department name")
+        if (!editItem || !editItem.name.trim()) return toast.error("Please fill the department name")
+
+        const nameRegex = /^[a-zA-Z\s]+$/;
+        if (!nameRegex.test(editItem.name.trim())) {
+            toast.error("Department name should not contain numbers or special characters")
+            return
+        }
+
         setIsLoading(true)
         try {
             await updateDepartment(editItem._id, {

@@ -53,11 +53,22 @@ export default function AdministrativeUnitsPage() {
     )
 
     const handleCreate = () => {
-        if (!formName.trim()) return
+        if (!formName.trim()) {
+            toast.error("Unit name is required")
+            return
+        }
+
+        // Name validation (no numbers)
+        const nameRegex = /^[a-zA-Z\s]+$/;
+        if (!nameRegex.test(formName.trim())) {
+            toast.error("Unit name should not contain numbers or special characters")
+            return
+        }
+
         const newUnit = {
             id: `au${Date.now()}`,
-            name: formName,
-            focus: formFocus || "General",
+            name: formName.trim(),
+            focus: formFocus.trim() || "General",
             members: 0,
             admins: 0,
             status: "Active",
@@ -70,10 +81,21 @@ export default function AdministrativeUnitsPage() {
     }
 
     const handleEdit = () => {
-        if (!selectedUnit || !formName.trim()) return
-        setUnits(units.map((u) => u.id === selectedUnit.id ? { ...u, name: formName, focus: formFocus } : u))
+        if (!selectedUnit || !formName.trim()) {
+            toast.error("Unit name is required")
+            return
+        }
+
+        // Name validation (no numbers)
+        const nameRegex = /^[a-zA-Z\s]+$/;
+        if (!nameRegex.test(formName.trim())) {
+            toast.error("Unit name should not contain numbers or special characters")
+            return
+        }
+
+        setUnits(units.map((u) => u.id === selectedUnit.id ? { ...u, name: formName.trim(), focus: formFocus.trim() } : u))
         setEditOpen(false)
-        toast.success(`Unit "${formName}" updated successfully`)
+        toast.success(`Unit "${formName.trim()}" updated successfully`)
     }
 
     const handleDelete = () => {

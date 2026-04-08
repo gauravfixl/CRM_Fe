@@ -1677,7 +1677,7 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
                                       setIsSubCollapsed(false);
                                       showLoader();
                                     }}
-                                    className={`text-xs font-light flex items-center gap-3 w-full hover:text-blue-600 dark:hover:text-blue-400 rounded-md transition-colors ${isCollapsed ? 'justify-center p-2' : 'p-3'
+                                    className={`text-xs font-light flex items-center gap-3 w-full hover:text-primary dark:hover:text-primary rounded-md transition-colors ${isCollapsed ? 'justify-center p-2' : 'p-3'
                                       }`}
                                     title={subItem.title}
                                   >
@@ -1712,8 +1712,8 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
                                         }}
                                         className={`text-[11px] font-light flex items-center gap-2 p-2 rounded-md transition-colors 
                                           ${isNestedActive
-                                            ? "text-blue-600 font-medium bg-blue-50/50 dark:bg-blue-900/20"
-                                            : "text-zinc-500 hover:text-blue-600 hover:bg-zinc-50 dark:hover:bg-zinc-900"
+                                            ? "text-primary font-medium bg-primary/10 dark:bg-primary/20"
+                                            : "text-zinc-500 hover:text-primary hover:bg-zinc-50 dark:hover:bg-zinc-900"
                                           }`}
                                       >
                                         <nestedItem.icon className="h-3 w-3" />
@@ -1796,7 +1796,7 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
                           onClick={() => showLoader()}
                           className={`flex items-center gap-3 rounded-md text-xs font-light transition-all duration-200
                             ${isActive
-                              ? "bg-blue-600 text-white font-medium shadow-md"
+                              ? "bg-primary text-white font-medium shadow-md"
                               : "text-zinc-600 hover:text-foreground dark:hover:text-zinc-300 hover:bg-zinc-100/50 dark:hover:bg-zinc-800/50"
                             }
                                 ${isSubCollapsed ? "justify-center p-2.5 mx-1" : "px-3 py-2"}

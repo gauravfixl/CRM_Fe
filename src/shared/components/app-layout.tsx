@@ -13,6 +13,7 @@ import { useLoaderStore } from '@/lib/loaderStore'
 import { ProtectedRoute } from './custom/ProtectedRoute'
 import { usePermissionLoader } from '@/shared/hooks/use-permission-loader'
 import { useAuthStore } from '@/lib/useAuthStore'
+import { BrandingProvider } from './BrandingProvider'
 
 /**
  * Routes that don't require authentication layout
@@ -150,39 +151,41 @@ export function AppLayout({ children, leftPanel: propLeftPanel, rightPanel: prop
   }
 
   return (
-    <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
-      <SupportAccessProvider>
-        <div className="flex flex-col w-full h-screen overflow-hidden bg-background">
-          <AppHeader setSidebarOpen={setSidebarOpen} />
+    <BrandingProvider>
+      <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
+        <SupportAccessProvider>
+          <div className="flex flex-col w-full h-screen overflow-hidden bg-background">
+            <AppHeader setSidebarOpen={setSidebarOpen} />
 
-          <div className="flex flex-1 pt-[63px] overflow-hidden">
-            <AppSidebar open={sidebarOpen} setOpen={setSidebarOpen} />
+            <div className="flex flex-1 pt-[63px] overflow-hidden">
+              <AppSidebar open={sidebarOpen} setOpen={setSidebarOpen} />
 
-            {leftPanel && (
-              <aside className="hidden lg:block w-72 p-4 border-r border-border overflow-y-auto h-full bg-white dark:bg-zinc-950 flex-shrink-0">
-                {leftPanel}
-              </aside>
-            )}
+              {leftPanel && (
+                <aside className="hidden lg:block w-72 p-4 border-r border-border overflow-y-auto h-full bg-white dark:bg-zinc-950 flex-shrink-0">
+                  {leftPanel}
+                </aside>
+              )}
 
-            <SidebarInset className="flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-transparent">
-              <div ref={scrollContainerRef} className={`flex-1 flex flex-col gap-4 h-full relative z-0 isolate ${pathname?.endsWith('/dashboard') ? 'overflow-hidden p-0' : 'overflow-auto p-4'}`}>
-                <LoaderWrapper />
-                <div className="min-w-0 w-full flex-1 flex flex-col">
-                  <ProtectedRoute>
-                    {children}
-                  </ProtectedRoute>
+              <SidebarInset className="flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-transparent">
+                <div ref={scrollContainerRef} className={`flex-1 flex flex-col gap-4 h-full relative z-0 isolate ${pathname?.endsWith('/dashboard') ? 'overflow-hidden p-0' : 'overflow-auto p-4'}`}>
+                  <LoaderWrapper />
+                  <div className="min-w-0 w-full flex-1 flex flex-col">
+                    <ProtectedRoute>
+                      {children}
+                    </ProtectedRoute>
+                  </div>
                 </div>
-              </div>
-            </SidebarInset>
+              </SidebarInset>
 
-            {rightPanel && (
-              <aside className="hidden xl:block w-72 p-4 border-l border-border overflow-y-auto max-h-screen bg-white dark:bg-zinc-950 flex-shrink-0">
-                {rightPanel}
-              </aside>
-            )}
+              {rightPanel && (
+                <aside className="hidden xl:block w-72 p-4 border-l border-border overflow-y-auto max-h-screen bg-white dark:bg-zinc-950 flex-shrink-0">
+                  {rightPanel}
+                </aside>
+              )}
+            </div>
           </div>
-        </div>
-      </SupportAccessProvider>
-    </SidebarProvider>
+        </SupportAccessProvider>
+      </SidebarProvider>
+    </BrandingProvider>
   )
 }

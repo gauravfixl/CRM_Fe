@@ -45,8 +45,23 @@ export function CreateGroupModal({ open, onOpenChange, defaultType, onGroupCreat
             toast.error("Group name is required")
             return
         }
+        
+        // Name validation (no numbers)
+        const nameRegex = /^[a-zA-Z\s]+$/;
+        if (!nameRegex.test(formData.name.trim())) {
+            toast.error("Group name should not contain numbers or special characters")
+            return
+        }
+
         if (!formData.owner.trim()) {
             toast.error("Group owner is required")
+            return
+        }
+
+        // Email validation for owner
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(formData.owner.trim())) {
+            toast.error("Please enter a valid owner email address")
             return
         }
 
@@ -130,7 +145,7 @@ export function CreateGroupModal({ open, onOpenChange, defaultType, onGroupCreat
 
                         <div>
                             <Label>Group Type *</Label>
-                            <Select value={formData.type} onValueChange={(v) => setFormData({ ...formData, type: v })}>
+                            <Select value={formData.type} onValueChange={(v: "Security" | "M365" | "Dynamic") => setFormData({ ...formData, type: v })}>
                                 <SelectTrigger className="rounded-none h-10">
                                     <SelectValue />
                                 </SelectTrigger>

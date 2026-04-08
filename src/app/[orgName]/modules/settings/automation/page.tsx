@@ -119,10 +119,20 @@ export default function WorkflowAutomationPage() {
     // --- Create ---
     const handleCreate = () => {
         const errors: { name?: string; trigger?: string } = {};
-        if (!newWorkflow.name.trim()) errors.name = "Workflow name is required";
+        const sanitizedName = newWorkflow.name.trim();
+
+        if (!sanitizedName) {
+            errors.name = "Workflow name is required";
+        } else if (/\d/.test(sanitizedName)) {
+            errors.name = "Workflow name cannot contain numbers";
+        }
+
         if (!newWorkflow.trigger) errors.trigger = "Trigger event is required";
         setFormErrors(errors);
-        if (Object.keys(errors).length > 0) return;
+        if (Object.keys(errors).length > 0) {
+            showWarning(errors.name || "Please fill in all required fields");
+            return;
+        }
 
         const created = {
             id: Date.now().toString(),
@@ -160,10 +170,20 @@ export default function WorkflowAutomationPage() {
     const handleEdit = () => {
         if (!editWorkflow) return;
         const errors: { name?: string; trigger?: string } = {};
-        if (!editWorkflow.name.trim()) errors.name = "Workflow name is required";
+        const sanitizedName = editWorkflow.name.trim();
+
+        if (!sanitizedName) {
+            errors.name = "Workflow name is required";
+        } else if (/\d/.test(sanitizedName)) {
+            errors.name = "Workflow name cannot contain numbers";
+        }
+
         if (!editWorkflow.trigger) errors.trigger = "Trigger event is required";
         setEditFormErrors(errors);
-        if (Object.keys(errors).length > 0) return;
+        if (Object.keys(errors).length > 0) {
+            showWarning(errors.name || "Please fill in all required fields");
+            return;
+        }
 
         setWorkflows(prev => prev.map(wf =>
             wf.id === editWorkflow.id

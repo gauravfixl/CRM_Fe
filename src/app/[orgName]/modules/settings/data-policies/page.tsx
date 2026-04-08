@@ -121,12 +121,20 @@ export default function DataPoliciesPage() {
 
     const handleCreate = () => {
         const errors: FormErrors = {};
-        if (!newPolicy.name.trim()) errors.name = "Policy name is required";
+        const sanitizedName = newPolicy.name.trim();
+
+        if (!sanitizedName) {
+            errors.name = "Policy name is required";
+        } else if (/\d/.test(sanitizedName)) {
+            errors.name = "Policy name cannot contain numbers";
+        }
+
         if (!newPolicy.type) errors.type = "Policy type is required";
         if (!newPolicy.enforcement) errors.enforcement = "Enforcement level is required";
 
         if (Object.keys(errors).length > 0) {
             setFormErrors(errors);
+            showWarning(errors.name || "Please fill in all required fields");
             return;
         }
 
@@ -163,12 +171,20 @@ export default function DataPoliciesPage() {
 
     const handleEdit = () => {
         const errors: FormErrors = {};
-        if (!editPolicy.name.trim()) errors.name = "Policy name is required";
+        const sanitizedName = editPolicy.name.trim();
+
+        if (!sanitizedName) {
+            errors.name = "Policy name is required";
+        } else if (/\d/.test(sanitizedName)) {
+            errors.name = "Policy name cannot contain numbers";
+        }
+
         if (!editPolicy.type) errors.type = "Policy type is required";
         if (!editPolicy.enforcement) errors.enforcement = "Enforcement level is required";
 
         if (Object.keys(errors).length > 0) {
             setEditFormErrors(errors);
+            showWarning(errors.name || "Please fill in all required fields");
             return;
         }
 

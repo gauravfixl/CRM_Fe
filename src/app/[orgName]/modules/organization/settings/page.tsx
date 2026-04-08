@@ -91,12 +91,41 @@ export default function OrgProfilePage() {
     };
 
     const handleSave = async () => {
+        // Validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const phoneRegex = /^\+?[\d\s-]{10,}$/;
+
+        if (!orgName.trim()) {
+            toast.error("Organization Name is required");
+            return;
+        }
+
+        if (/\d/.test(orgName)) {
+            toast.error("Organization Name should not contain numbers");
+            return;
+        }
+
+        if (contactName && /\d/.test(contactName)) {
+            toast.error("Contact person name should not contain numbers");
+            return;
+        }
+
+        if (contactEmail && !emailRegex.test(contactEmail)) {
+            toast.error("Please enter a valid email address");
+            return;
+        }
+
+        if (contactPhone && !phoneRegex.test(contactPhone)) {
+            toast.error("Please enter a valid phone number");
+            return;
+        }
+
         try {
             await axiosInstance.patch("/organization/update/details", {
-                name: orgName,
-                contactEmail,
-                contactPhone,
-                contactName,
+                name: orgName.trim(),
+                contactEmail: contactEmail.trim(),
+                contactPhone: contactPhone.trim(),
+                contactName: contactName.trim(),
                 address: builtAddress || streetAddress,
                 orgCountry: country,
             });

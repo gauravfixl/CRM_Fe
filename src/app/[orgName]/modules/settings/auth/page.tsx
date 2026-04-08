@@ -18,7 +18,8 @@ import {
     Fingerprint,
     Cpu,
     ExternalLink,
-    Search
+    Search,
+    Loader2
 } from "lucide-react"
 import { CustomButton } from "@/components/custom/CustomButton"
 import SubHeader from "@/components/custom/SubHeader"
@@ -35,6 +36,20 @@ export default function AuthenticationSettingsPage() {
         passwordless: true,
         conditional: true
     })
+    const [isSaving, setIsSaving] = useState(false)
+
+    const handleSave = async () => {
+        setIsSaving(true)
+        try {
+            // Simulated backend save
+            await new Promise(resolve => setTimeout(resolve, 1200))
+            toast.success("Identity configuration synchronized successfully")
+        } catch (error) {
+            toast.error("Failed to sync configuration")
+        } finally {
+            setIsSaving(false)
+        }
+    }
 
     const authMethods = [
         {
@@ -93,8 +108,17 @@ export default function AuthenticationSettingsPage() {
                         <CustomButton variant="outline" className="rounded-xl h-10 px-4 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 font-bold" onClick={() => toast.info("Security reports coming soon")}>
                             Security Reports
                         </CustomButton>
-                        <CustomButton className="bg-zinc-900 text-white hover:bg-zinc-800 rounded-xl h-10 px-6 font-semibold text-sm shadow-xl border-0" onClick={() => toast.success("Configuration saved successfully")}>
-                            Save Configuration
+                        <CustomButton 
+                            className="bg-zinc-900 text-white hover:bg-zinc-800 rounded-xl h-10 px-6 font-semibold text-sm shadow-xl border-0" 
+                            onClick={handleSave}
+                            disabled={isSaving}
+                        >
+                            {isSaving ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                    Saving...
+                                </>
+                            ) : "Save Configuration"}
                         </CustomButton>
                     </div>
                 }

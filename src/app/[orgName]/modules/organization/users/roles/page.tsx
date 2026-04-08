@@ -112,32 +112,75 @@ export default function RolesPage() {
     const handleCreateRole = async (e: React.FormEvent) => {
         e.preventDefault();
         const roleName = roleNameRef.current?.value?.trim();
-        if (!roleName) return;
+        
+        // Validation
+        if (!roleName) {
+            toast.error("Please enter a role name");
+            return;
+        }
+
+        if (/\d/.test(roleName)) {
+            toast.error("Role name should not contain numbers");
+            return;
+        }
+
+        if (roleName.length < 3) {
+            toast.error("Role name should be at least 3 characters");
+            return;
+        }
 
         // Read switch states from data-state attribute
         const manageUsers = manageUsersRef.current?.getAttribute("data-state") === "checked";
         const viewBilling = viewBillingRef.current?.getAttribute("data-state") === "checked";
         const editSettings = editSettingsRef.current?.getAttribute("data-state") === "checked";
 
-        const permissions: string[] = [];
-        if (manageUsers) permissions.push("users");
-        if (viewBilling) permissions.push("billing");
-        if (editSettings) permissions.push("settings");
+        // Must have at least one permission
+        if (!manageUsers && !viewBilling && !editSettings) {
+            toast.error("Please select at least one capability");
+            return;
+        }
+
+        // Format permissions for the backend: array of { module, actions }
+        const permissions: any[] = [];
+        
+        if (manageUsers) {
+            permissions.push({
+                module: "organization",
+                actions: ["VIEW_ORG_USER", "UPDATE_ORG_USER", "DELETE_ORG_USER", "SEND_INVITATION"]
+            });
+        }
+        
+        if (viewBilling) {
+            permissions.push({
+                module: "invoice",
+                actions: ["VIEW_INVOICE", "GENERATE_REPORT"]
+            });
+        }
+        
+        if (editSettings) {
+            permissions.push({
+                module: "organization",
+                actions: ["EDIT_ORGANIZATION"]
+            });
+        }
 
         setCreating(true);
         try {
+            // Backend expects 'name' and 'role' (slug)
             await addRole({
-                roleName,
+                name: roleName,
+                role: roleName.toLowerCase().replace(/\s+/g, '-'), 
                 permissions,
                 scope: "sc-org",
                 isCustom: true,
+                description: `Custom role for ${roleName}`
             });
             toast.success("New role created successfully.");
             setDialogOpen(false);
             await fetchRoles();
         } catch (error) {
             console.error("Error creating role:", error);
-            toast.error("Failed to create role.");
+            toast.error("Failed to create role. Ensure all fields are valid.");
         } finally {
             setCreating(false);
         }

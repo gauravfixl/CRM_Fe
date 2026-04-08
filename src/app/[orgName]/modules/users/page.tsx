@@ -38,7 +38,7 @@ import {
   DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu"
 import { showSuccess, showWarning, showError } from "@/utils/toast"
-import { fetchUsersApi, updateOrgUser, deleteOrgUser } from "@/modules/crm/organizations/hooks/orgHooks"
+import { fetchUsersApi, updateOrgUser, deleteOrgUser, createOrgInvite } from "@/modules/crm/organizations/hooks/orgHooks"
 
 type Role = "Admin" | "Manager" | "Developer" | "Member"
 type Status = "Active" | "Pending" | "Suspended"
@@ -147,48 +147,81 @@ export default function AllUsersPage() {
     setFormRole("Member")
   }
 
-  const handleInvite = () => {
+  const handleInvite = async () => {
+    // 1. Basic empty check
     if (!formName.trim() || !formEmail.trim()) {
       showWarning("Please fill in all fields")
       return
     }
-    const newUser: User = {
-      id: String(Date.now()),
-      name: formName.trim(),
-      email: formEmail.trim(),
-      role: formRole,
-      status: "Pending",
-      mfa: "Disabled",
-      joined: new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }),
+
+    // 2. Name validation (no numbers)
+    const nameRegex = /^[a-zA-Z\s]+$/;
+    if (!nameRegex.test(formName.trim())) {
+      showWarning("Name should not contain numbers or special characters")
+      return
     }
-    setUsers((prev) => [...prev, newUser])
-    setInviteOpen(false)
-    resetForm()
-    showSuccess(`Invitation sent to ${newUser.email}`)
+
+    // 3. Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formEmail.trim())) {
+      showWarning("Please enter a valid email address")
+      return
+    }
+
+    try {
+      setLoading(true)
+      await createOrgInvite({
+        email: formEmail.trim(),
+        role: formRole
+      })
+      
+      setInviteOpen(false)
+      resetForm()
+      showSuccess(`Invitation sent to ${formEmail.trim()}`)
+      
+      // Optionally reload users or just depend on the status being 'Pending' when re-fetched
+      loadUsers()
+    } catch (err: any) {
+      showError(err?.response?.data?.message || "Failed to send invitation")
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleEdit = async () => {
     if (!selectedUser) return
+    
+    // 1. Basic empty check
     if (!formName.trim() || !formEmail.trim()) {
       showWarning("Please fill in all fields")
       return
     }
+
+    // 2. Name validation (no numbers)
+    const nameRegex = /^[a-zA-Z\s]+$/;
+    if (!nameRegex.test(formName.trim())) {
+      showWarning("Name should not contain numbers or special characters")
+      return
+    }
+
+    // 3. Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formEmail.trim())) {
+      showWarning("Please enter a valid email address")
+      return
+    }
+
     try {
       const nameParts = formName.trim().split(" ")
       const firstName = nameParts[0]
       const lastName = nameParts.slice(1).join(" ")
       await updateOrgUser(selectedUser.id, { firstName, lastName, email: formEmail.trim(), role: formRole })
-      setUsers((prev) =>
-        prev.map((u) =>
-          u.id === selectedUser.id
-            ? { ...u, name: formName.trim(), email: formEmail.trim(), role: formRole }
-            : u
-        )
-      )
+      
       setEditOpen(false)
       setSelectedUser(null)
       resetForm()
       showSuccess("User updated successfully")
+      loadUsers()
     } catch (err: any) {
       showError(err?.response?.data?.message || "Failed to update user")
     }

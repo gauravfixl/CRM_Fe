@@ -60,7 +60,7 @@ import {
 } from "@/components/ui/select"
 import { SmallCard, SmallCardContent, SmallCardHeader } from "@/shared/components/custom/SmallCard"
 import { toast } from "sonner"
-import { getAllClients, createClient, deleteClient } from "@/hooks/clientHooks"
+import { getAllClients, addClient, deleteClient } from "@/hooks/clientHooks"
 
 export default function MasterClientViewPage() {
     const params = useParams()
@@ -123,14 +123,37 @@ export default function MasterClientViewPage() {
     }
 
     const handleCreateClient = async () => {
-        if (!newClient.name || !newClient.email) {
-            toast.error("Please fill in required fields")
+        const nameRegex = /^[a-zA-Z\s]+$/;
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        if (!newClient.name.trim()) {
+            toast.error("Client name is required")
+            return
+        }
+
+        if (!nameRegex.test(newClient.name.trim())) {
+            toast.error("Client name should not contain numbers or special characters")
+            return
+        }
+
+        if (!newClient.email.trim()) {
+            toast.error("Email is required")
+            return
+        }
+
+        if (!emailRegex.test(newClient.email.trim())) {
+            toast.error("Please enter a valid email address")
+            return
+        }
+
+        if (newClient.manager.trim() && !nameRegex.test(newClient.manager.trim())) {
+            toast.error("Account manager name should not contain numbers")
             return
         }
 
         setIsLoading(true)
         try {
-            await createClient({
+            await addClient({
                 clientFirmName: newClient.name,
                 email: newClient.email,
                 phone: newClient.phone,
@@ -342,7 +365,7 @@ export default function MasterClientViewPage() {
                                 <TableCell className="px-4 py-3">
                                     <div className="flex items-center gap-3">
                                         <div className="w-8 h-8 rounded-lg bg-zinc-100 flex items-center justify-center text-[10px] font-semibold text-zinc-600 border border-zinc-200 transition-transform group-hover:scale-110">
-                                            {client.manager === 'Unassigned' ? '?' : client.manager.split(' ').map(n => n[0]).join('')}
+                                            {client.manager === 'Unassigned' ? '?' : client.manager.split(' ').map((n: string) => n[0]).join('')}
                                         </div>
                                         <div className="flex flex-col">
                                             <span className="text-xs font-semibold text-zinc-900">{client.name}</span>
