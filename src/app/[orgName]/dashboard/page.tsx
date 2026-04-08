@@ -108,7 +108,7 @@ export default function DashboardPage() {
   return (
     <div className="relative h-[90vh] overflow-hidden organization-dashboard font-outfit">
       {/* Fixed Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/50 via-white to-primary/20 pointer-events-none z-0 bg-fixed" />
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/50 via-white dark:via-zinc-950 to-primary/20 pointer-events-none z-0 bg-fixed" />
 
       {/* Scrollable Content */}
       <div className="absolute inset-0 overflow-y-auto hide-scrollbar z-10">
@@ -119,8 +119,8 @@ export default function DashboardPage() {
                 <Sparkles className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h6 className="text-sm font-semibold text-white tracking-tight normal-case">Organisation Dashboard</h6>
-                <p className="text-xs font-medium text-white/80">Welcome Back! Here's What's Happening Today.</p>
+                <h6 className="text-sm font-semibold text-zinc-900 dark:text-white tracking-tight normal-case">Organisation Dashboard</h6>
+                <p className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Welcome Back! Here's What's Happening Today.</p>
               </div>
             </div>
           </div>
@@ -141,39 +141,39 @@ export default function DashboardPage() {
               </SmallCardContent>
             </SmallCard>
 
-            <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+            <SmallCard className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
               <SmallCardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-gray-600 text-xs">Organizations</p>
-                    <p className="text-xl font-semibold text-gray-900 mt-1">{organizations?.length || 0}</p>
-                    <p className="text-green-600 text-[10px] mt-1">+3 New This Week</p>
+                    <p className="text-zinc-600 dark:text-zinc-400 text-xs">Organizations</p>
+                    <p className="text-xl font-semibold text-zinc-900 dark:text-white mt-1">{organizations?.length || 0}</p>
+                    <p className="text-green-600 dark:text-green-400 text-[10px] mt-1">+3 New This Week</p>
                   </div>
                   <Building2 className="w-5 h-5 text-primary" />
                 </div>
               </SmallCardContent>
             </SmallCard>
 
-            <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+            <SmallCard className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
               <SmallCardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-gray-600 text-xs">Active Sessions</p>
-                    <p className="text-xl font-semibold text-gray-900 mt-1">1,234</p>
-                    <p className="text-blue-600 text-[10px] mt-1">+8% Increase</p>
+                    <p className="text-zinc-600 dark:text-zinc-400 text-xs">Active Sessions</p>
+                    <p className="text-xl font-semibold text-zinc-900 dark:text-white mt-1">1,234</p>
+                    <p className="text-blue-600 dark:text-blue-400 text-[10px] mt-1">+8% Increase</p>
                   </div>
                   <Activity className="w-5 h-5 text-primary" />
                 </div>
               </SmallCardContent>
             </SmallCard>
 
-            <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+            <SmallCard className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
               <SmallCardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-gray-600 text-xs">Growth Rate</p>
-                    <p className="text-xl font-semibold text-gray-900 mt-1">24.5%</p>
-                    <p className="text-green-600 text-[10px] mt-1">Above Target</p>
+                    <p className="text-zinc-600 dark:text-zinc-400 text-xs">Growth Rate</p>
+                    <p className="text-xl font-semibold text-zinc-900 dark:text-white mt-1">24.5%</p>
+                    <p className="text-green-600 dark:text-green-400 text-[10px] mt-1">Above Target</p>
                   </div>
                   <TrendingUp className="w-5 h-5 text-primary" />
                 </div>
@@ -181,9 +181,9 @@ export default function DashboardPage() {
             </SmallCard>
           </div>
 
-          <div className="bg-white rounded-xl shadow-md border p-4">
+          <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-md border border-zinc-200 dark:border-zinc-800 p-4">
             <div className="flex items-center justify-between mb-4">
-              <p className="text-base font-medium text-gray-900">Performance Metrics</p>
+              <p className="text-base font-medium text-zinc-900 dark:text-white">Performance Metrics</p>
               <Badge variant="secondary" className="bg-primary/10 text-primary text-xs px-2 py-0.5">Live Data</Badge>
             </div>
             <StatsCards />
@@ -191,21 +191,21 @@ export default function DashboardPage() {
 
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mt-4">
             {[
-              { title: "Manage Users", desc: "Add, Edit, Or Remove User Accounts", icon: Users, color: "bg-blue-500", from: "from-blue-50", to: "to-indigo-50" },
-              { title: "Organizations", desc: "Configure Organization Settings", icon: Building2, color: "bg-green-500", from: "from-green-50", to: "to-emerald-50" },
-              { title: "System Settings", desc: "Configure System Preferences", icon: Settings, color: "bg-purple-500", from: "from-purple-50", to: "to-violet-50" },
+              { title: "Manage Users", desc: "Add, Edit, Or Remove User Accounts", icon: Users, color: "bg-blue-500", from: "from-blue-50 dark:from-blue-950/20", to: "to-indigo-50 dark:to-indigo-950/20" },
+              { title: "Organizations", desc: "Configure Organization Settings", icon: Building2, color: "bg-green-500", from: "from-green-50 dark:from-green-950/20", to: "to-emerald-50 dark:to-emerald-950/20" },
+              { title: "System Settings", desc: "Configure System Preferences", icon: Settings, color: "bg-purple-500", from: "from-purple-50 dark:from-purple-950/20", to: "to-violet-50 dark:to-violet-950/20" },
             ].map((item, i) => (
-              <SmallCard key={i} className={`border bg-gradient-to-br ${item.from} ${item.to} hover:shadow-md transition-all duration-200 cursor-pointer`}>
+              <SmallCard key={i} className={`border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 bg-gradient-to-br ${item.from} ${item.to} hover:shadow-md transition-all duration-200 cursor-pointer`}>
                 <SmallCardContent className="p-4">
                   <div className="flex items-center space-x-3">
                     <div className={`w-10 h-10 rounded-lg ${item.color} flex items-center justify-center`}>
                       <item.icon className="w-5 h-5 text-white" />
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-sm font-semibold text-gray-900">{item.title}</h3>
-                      <p className="text-sm text-gray-600 mt-0.5">{item.desc}</p>
+                      <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">{item.title}</h3>
+                      <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-0.5">{item.desc}</p>
                     </div>
-                    <ChevronRight className="w-4 h-4 text-gray-400" />
+                    <ChevronRight className="w-4 h-4 text-zinc-400" />
                   </div>
                 </SmallCardContent>
               </SmallCard>
