@@ -20,9 +20,9 @@ import { PhoneInputWithCountryCode } from "@/components/custom/PhoneInputWithCou
 const isValidEmail = (v: string) => /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(v)
 const isValidUrl = (v: string) => /^(https?:\/\/)?([\w-]+\.)+[\w-]{2,}(\/\S*)?$/.test(v)
 const isValidGST = (v: string) => /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(v.toUpperCase())
-const isValidCIN = (v: string) => /^[A-Z]{1}[0-9]{5}[A-Z]{2}[0-9]{4}[A-Z]{3}[0-9]{6}$/.test(v.toUpperCase())
-const isValidTIN = (v: string) => /^[0-9]{11}$/.test(v)
-const isValidUIN = (v: string) => /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}[A-Z]{1}[0-9A-Z]{1}$/.test(v.toUpperCase())
+const isValidCIN = (v: string) => v.trim().length >= 5 && v.trim().length <= 25
+const isValidTIN = (v: string) => v.trim().length >= 5 && v.trim().length <= 25
+const isValidUIN = (v: string) => v.trim().length >= 5 && v.trim().length <= 25
 const isValidPinCode = (v: string | number) => /^[0-9]{4,10}$/.test(String(v))
 
 // --- Real-time input sanitization ---
@@ -83,17 +83,17 @@ const sanitizeInput = (field: string, value: string, nested: string | null): str
     case "contactPerson.country":
       return value.replace(/[^a-zA-Z\s\-]/g, "")
 
-    // TIN — digits only, max 11
+    // TIN — alphanumeric only, auto uppercase, max 25
     case "tinNo":
-      return value.replace(/[^0-9]/g, "").slice(0, 11)
+      return value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase().slice(0, 25)
 
-    // CIN — alphanumeric only, auto uppercase, max 21
+    // CIN — alphanumeric only, auto uppercase, max 25
     case "cinNo":
-      return value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase().slice(0, 21)
+      return value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase().slice(0, 25)
 
-    // UIN — alphanumeric only, auto uppercase, max 15
+    // UIN — alphanumeric only, auto uppercase, max 25
     case "uin":
-      return value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase().slice(0, 15)
+      return value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase().slice(0, 25)
 
     default:
       return value
@@ -123,9 +123,9 @@ const FORMAT_HINTS: Record<string, string> = {
   "contactPerson.state": "Only letters, spaces, hyphens (e.g. Maharashtra)",
   "contactPerson.country": "Only letters, spaces, hyphens (e.g. India)",
   "contactPerson.pinCode": "Only digits allowed (4–10 digits)",
-  uin: "Optional — 15-character alphanumeric UIN (e.g. 22AAAAA0000A1U5)",
-  tinNo: "Only 11 digits allowed (e.g. 12345678901)",
-  cinNo: "21-character alphanumeric CIN (e.g. U12345MH2020PTC123456)",
+  uin: "Optional — alphanumeric UIN (e.g. UIN7894561563)",
+  tinNo: "Alphanumeric TIN (e.g. TIN123456745)",
+  cinNo: "Alphanumeric CIN (e.g. CINL12345KA2020PTC12666)",
 }
 
 // --- Field label mapping ---
@@ -182,6 +182,7 @@ export default function AddFirmPage() {
   const [orgName, setOrgName] = useState("")
 
   const [formData, setFormData] = useState(DEFAULT_FORM)
+  const [isLoaded, setIsLoaded] = useState(false)
 
   // Restore form data & step from sessionStorage on mount
   useEffect(() => {
@@ -195,15 +196,22 @@ export default function AddFirmPage() {
         if (parsed.formData) setFormData(parsed.formData)
         if (parsed.step) setStep(parsed.step)
       }
-    } catch {}
+    } catch (e) {
+      console.error("Failed to load form draft", e)
+    } finally {
+      setIsLoaded(true)
+    }
   }, [])
 
   // Persist form data & step to sessionStorage on every change
   useEffect(() => {
+    if (!isLoaded) return // Don't overwrite storage with default state before loading
     try {
       sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ formData, step }))
-    } catch {}
-  }, [formData, step])
+    } catch (e) {
+      console.error("Failed to save form draft", e)
+    }
+  }, [formData, step, isLoaded])
 
   // --- Input handling with real-time sanitization ---
   const handleInputChange = (field: string, value: any, nested: string | null = null) => {
@@ -274,12 +282,12 @@ export default function AddFirmPage() {
 
     if (step === 4) {
       if (!formData.tinNo.trim()) e.tinNo = "TIN Number is required."
-      else if (!isValidTIN(formData.tinNo)) e.tinNo = "Enter a valid 11-digit TIN number."
+      else if (!isValidTIN(formData.tinNo)) e.tinNo = "Enter a valid TIN number."
 
       if (!formData.cinNo.trim()) e.cinNo = "CIN Number is required."
-      else if (!isValidCIN(formData.cinNo)) e.cinNo = "Enter a valid 21-character CIN (e.g. U12345MH2020PTC123456)."
+      else if (!isValidCIN(formData.cinNo)) e.cinNo = "Enter a valid CIN number."
 
-      if (formData.uin.trim() && !isValidUIN(formData.uin)) e.uin = "Enter a valid 15-character UIN."
+      if (formData.uin.trim() && !isValidUIN(formData.uin)) e.uin = "Enter a valid UIN number."
     }
 
     setErrors(e)
@@ -436,8 +444,8 @@ export default function AddFirmPage() {
           </div>
 
           {/* Form Steps */}
-          <div className="h-[50vh]">
-            <FlatCard className="shadow-xl border-0 bg-card/80 backdrop-blur-sm overflow-hidden overflow-y-auto hide-scrollbar">
+          <div className="pb-20">
+            <FlatCard className="shadow-xl border-0 bg-card/80 backdrop-blur-sm">
               <div className="p-3 py-2 space-y-2">
 
                 {/* Step 1 — Basic Info */}
