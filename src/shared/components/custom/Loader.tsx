@@ -3,7 +3,7 @@ import React from "react";
 
 const Loader: React.FC = () => {
   return (
-    <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-white/60 backdrop-blur-md transition-all">
+    <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-background/50 backdrop-blur-sm transition-all">
       <div className="relative">
         {/* Outer Orbit */}
         <motion.div

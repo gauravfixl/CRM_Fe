@@ -154,7 +154,7 @@ export function AppLayout({ children, leftPanel: propLeftPanel, rightPanel: prop
     <BrandingProvider>
       <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
         <SupportAccessProvider>
-          <div className="flex flex-col w-full h-screen overflow-hidden bg-background">
+          <div className="flex flex-col w-full h-[100dvh] overflow-hidden bg-background">
             <AppHeader setSidebarOpen={setSidebarOpen} />
 
             <div className="flex flex-1 pt-[63px] overflow-hidden">
@@ -166,9 +166,9 @@ export function AppLayout({ children, leftPanel: propLeftPanel, rightPanel: prop
                 </aside>
               )}
 
-              <SidebarInset className="flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-transparent">
+              <SidebarInset className="flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-transparent relative isolate">
+                <LoaderWrapper />
                 <div ref={scrollContainerRef} className={`flex-1 flex flex-col gap-4 h-full relative z-0 isolate ${pathname?.endsWith('/dashboard') ? 'overflow-hidden p-0' : 'overflow-auto p-4'}`}>
-                  <LoaderWrapper />
                   <div className="min-w-0 w-full flex-1 flex flex-col">
                     <ProtectedRoute>
                       {children}

@@ -403,7 +403,7 @@ export default function AddFirmPage() {
         breadcrumbItems={breadcrumbItems}
       />
 
-      <div className="p-6 z-10 bg-zinc-50/50 min-h-screen">
+      <div className="p-6 z-10 bg-background min-h-screen">
         <div className="max-w-4xl mx-auto">
 
           {/* Stepper */}
@@ -490,7 +490,7 @@ export default function AddFirmPage() {
                 {/* Step 3 — Contact Person (all optional) */}
                 {step === 3 && (
                   <div className="space-y-4">
-                    <p className="text-xs text-zinc-500 bg-zinc-100 px-3 py-2 rounded-md">
+                    <p className="text-xs text-muted-foreground bg-muted px-3 py-2 rounded-md">
                       All fields in this step are optional. Fill in only if a contact person is available.
                     </p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
