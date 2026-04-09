@@ -1018,6 +1018,7 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
   const [isSubCollapsed, setIsSubCollapsed] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<string[]>(["CRM SYSTEM"]); // CRM SYSTEM open by default
   const [expandedSubItems, setExpandedSubItems] = useState<string[]>([]);
+  const [pendingPathname, setPendingPathname] = useState<string | null>(null);
 
   const [orgName, setOrgName] = useState("")
   const [currentUser, setCurrentUser] = useState<any>(null)
@@ -1088,6 +1089,7 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
   // Sync expanded states with current path
   useEffect(() => {
     if (!pathname) return;
+    setPendingPathname(null);
 
     finalSidebarGroups.forEach(group => {
       group.items.forEach((item: SidebarNavItem) => {
@@ -1451,39 +1453,41 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
 
   // Determine Active Module based on Path AND Active Category
   const activeModule = useMemo(() => {
+    const activePath = pendingPathname || pathname;
+    
     // If we are in CALENDAR category, return specialized module name
     if (activeCategory === "CALENDAR") return "Calendar";
 
     // Admin Governance Drill-downs
     if (activeCategory === "IDENTITY & ACCESS") {
-      if (pathname?.includes("/modules/users")) return "UsersAdmin";
-      if (pathname?.includes("/modules/teams")) return "GroupsAdmin";
-      if (pathname?.includes("/modules/administration/roles")) return "RolesAdmin";
-      if (pathname?.includes("/modules/administration/permissions")) return "RolesAdmin";
-      if (pathname?.includes("/modules/administration/units")) return "RolesAdmin";
-      if (pathname?.includes("/modules/administration/security-baseline")) return "RolesAdmin";
-      if (pathname?.includes("/modules/administration/reviews")) return "RolesAdmin";
-      if (pathname?.includes("/modules/settings/auth")) return "AuthAdmin";
+      if (activePath?.includes("/modules/users")) return "UsersAdmin";
+      if (activePath?.includes("/modules/teams")) return "GroupsAdmin";
+      if (activePath?.includes("/modules/administration/roles")) return "RolesAdmin";
+      if (activePath?.includes("/modules/administration/permissions")) return "RolesAdmin";
+      if (activePath?.includes("/modules/administration/units")) return "RolesAdmin";
+      if (activePath?.includes("/modules/administration/security-baseline")) return "RolesAdmin";
+      if (activePath?.includes("/modules/administration/reviews")) return "RolesAdmin";
+      if (activePath?.includes("/modules/settings/auth")) return "AuthAdmin";
     }
 
     // Modules & Entitlements Governance - Detected independently of activeCategory for robustness
-    if (pathname?.includes("/modules/settings/entitlements/leads")) return "LeadGov";
-    if (pathname?.includes("/modules/settings/entitlements/clients")) return "ClientGov";
-    if (pathname?.includes("/modules/settings/entitlements/projects")) return "ProjectGov";
-    if (pathname?.includes("/modules/settings/entitlements/accounting")) return "AccountingGov";
-    if (pathname?.includes("/modules/settings/entitlements/hrm")) return "HrmGov";
-    if (pathname?.includes("/modules/settings/entitlements/automations")) return "AutomationGov";
-    if (pathname?.includes("/modules/settings/entitlements/campaigns")) return "CampaignGov";
-    if (pathname?.includes("/modules/settings/entitlements/pipeline")) return "PipelineGov";
+    if (activePath?.includes("/modules/settings/entitlements/leads")) return "LeadGov";
+    if (activePath?.includes("/modules/settings/entitlements/clients")) return "ClientGov";
+    if (activePath?.includes("/modules/settings/entitlements/projects")) return "ProjectGov";
+    if (activePath?.includes("/modules/settings/entitlements/accounting")) return "AccountingGov";
+    if (activePath?.includes("/modules/settings/entitlements/hrm")) return "HrmGov";
+    if (activePath?.includes("/modules/settings/entitlements/automations")) return "AutomationGov";
+    if (activePath?.includes("/modules/settings/entitlements/campaigns")) return "CampaignGov";
+    if (activePath?.includes("/modules/settings/entitlements/pipeline")) return "PipelineGov";
 
     // Organization Granular Drill-down
-    if (pathname?.includes("/modules/organization/overview") || pathname?.includes("/modules/organization/onboarding")) return "OrgOverview";
-    if (pathname?.includes("/modules/firm-management/firms/deleted") || pathname?.includes("/modules/organization/trash")) return "OrgRecycleBin";
-    if (pathname?.includes("/modules/firm-management/firms") || pathname?.includes("/modules/organization/firms") || pathname.includes("/modules/organization/create") || pathname?.includes("/modules/organization/admins") || pathname?.includes("/modules/organization/access")) return "OrgFirms";
-    if (pathname?.includes("/modules/organization/branding")) return "OrgBranding";
-    if (pathname?.includes("/modules/organization/settings")) return "OrgSettings";
-    if (pathname?.includes("/modules/organization/users")) return "OrgUsers";
-    if (pathname?.includes("/modules/organization/policies")) return "OrgPolicies";
+    if (activePath?.includes("/modules/organization/overview") || activePath?.includes("/modules/organization/onboarding")) return "OrgOverview";
+    if (activePath?.includes("/modules/firm-management/firms/deleted") || activePath?.includes("/modules/organization/trash")) return "OrgRecycleBin";
+    if (activePath?.includes("/modules/firm-management/firms") || activePath?.includes("/modules/organization/firms") || activePath?.includes("/modules/organization/create") || activePath?.includes("/modules/organization/admins") || activePath?.includes("/modules/organization/access")) return "OrgFirms";
+    if (activePath?.includes("/modules/organization/branding")) return "OrgBranding";
+    if (activePath?.includes("/modules/organization/settings")) return "OrgSettings";
+    if (activePath?.includes("/modules/organization/users")) return "OrgUsers";
+    if (activePath?.includes("/modules/organization/policies")) return "OrgPolicies";
     // Fallback if just clicked organization but not a specific page yet (unlikely if strictly routed)
     if (activeCategory === "ORGANIZATION") return "OrgOverview";
 
@@ -1491,14 +1495,14 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
     if (activeCategory !== "CRM SYSTEM") return null;
 
     // Check most specific paths first to avoid false matches
-    if (pathname?.includes("/modules/crm/campaigns")) return "Campaigns";
-    if (pathname?.includes("/modules/crm/pipeline")) return "Pipeline";
-    if (pathname?.includes("/modules/crm/clients")) return "Clients";
-    if (pathname?.includes("/modules/crm/deals")) return "Deals";
-    if (pathname?.includes("/modules/crm/leads")) return "Leads";
+    if (activePath?.includes("/modules/crm/campaigns")) return "Campaigns";
+    if (activePath?.includes("/modules/crm/pipeline")) return "Pipeline";
+    if (activePath?.includes("/modules/crm/clients")) return "Clients";
+    if (activePath?.includes("/modules/crm/deals")) return "Deals";
+    if (activePath?.includes("/modules/crm/leads")) return "Leads";
     // Add logic for other modules if they need drill-down
     return null;
-  }, [pathname, activeCategory]);
+  }, [pendingPathname, pathname, activeCategory]);
 
   // Synchronously compute active category from pathname to avoid effect delay
   const activeCategoryFromPath = useMemo(() => {
@@ -1592,6 +1596,7 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
       if (currentOrg && !group.url.startsWith("/hrmcubicle")) {
         finalUrl = `/${currentOrg}${group.url.startsWith("/") ? "" : "/"}${group.url}`;
       }
+      setPendingPathname(finalUrl);
       router.push(finalUrl);
       showLoader();
     }
@@ -1673,6 +1678,7 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
                                     href={subItem.url}
                                     prefetch={true}
                                     onClick={() => {
+                                      setPendingPathname(subItem.url);
                                       setActiveCategory(group.title);
                                       setIsSubCollapsed(false);
                                       showLoader();
@@ -1706,6 +1712,7 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
                                         href={nestedItem.url}
                                         prefetch={true}
                                         onClick={() => {
+                                          setPendingPathname(nestedItem.url);
                                           setActiveCategory(group.title);
                                           setIsSubCollapsed(false);
                                           showLoader();
@@ -1793,7 +1800,10 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
                           key={item.title}
                           href={item.url}
                           prefetch={true}
-                          onClick={() => showLoader()}
+                          onClick={() => {
+                            setPendingPathname(item.url);
+                            showLoader();
+                          }}
                           className={`flex items-center gap-3 rounded-md text-xs font-light transition-all duration-200
                             ${isActive
                               ? "bg-primary text-white font-medium shadow-md"

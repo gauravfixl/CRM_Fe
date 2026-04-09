@@ -183,34 +183,34 @@ export default function MasterLeadViewPage() {
     }
 
     return (
-        <div className="flex flex-col gap-6 p-6 min-h-screen bg-[#fafafa]">
+        <div className="flex flex-col gap-6 p-6 min-h-screen bg-background">
             {/* PAGE HEADER */}
             <div className="flex flex-col gap-1">
-                <div className="flex items-center gap-2 text-[10px] font-medium text-zinc-400">
+                <div className="flex items-center gap-2 text-[10px] font-medium text-muted-foreground">
                     <span>Organization</span>
                     <span>/</span>
                     <span>Governance</span>
                     <span>/</span>
-                    <span className="text-zinc-900 font-semibold">Master Leads</span>
+                    <span className="text-foreground font-semibold">Master Leads</span>
                 </div>
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mt-2">
                     <div>
-                        <h1 className="text-xl font-semibold text-zinc-900 tracking-tight">Lead Management</h1>
-                        <p className="text-xs text-zinc-500 font-medium">Track and optimize your sales pipelines organization-wide.</p>
+                        <h1 className="text-xl font-semibold text-foreground tracking-tight">Lead Management</h1>
+                        <p className="text-xs text-muted-foreground font-medium">Track and optimize your sales pipelines organization-wide.</p>
                     </div>
                     <div className="flex items-center gap-2">
                         <Button
                             variant="outline"
                             disabled={isLoading || isFetching}
                             onClick={handleRefresh}
-                            className="h-8 rounded-md border-zinc-200 text-xs font-medium bg-white px-3 shadow-sm active:scale-95"
+                            className="h-8 rounded-md text-xs font-medium px-3 shadow-sm active:scale-95"
                         >
                             <RefreshCcw className={`w-3.5 h-3.5 mr-2 ${isLoading || isFetching ? 'animate-spin' : ''}`} />
                             Refresh
                         </Button>
                         <Button
                             onClick={() => router.push(`/${params.orgName}/modules/settings/entitlements/leads/add`)}
-                            className="h-8 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium px-3 shadow-sm active:scale-95"
+                            className="h-8 rounded-md bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-medium px-3 shadow-sm active:scale-95"
                         >
                             <UserPlus className="w-3.5 h-3.5 mr-2" />
                             New Lead
@@ -236,43 +236,43 @@ export default function MasterLeadViewPage() {
                 </SmallCard>
 
                 {/* WHITE CARD */}
-                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                <SmallCard className="border bg-card shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
                     <SmallCardContent className="p-4">
                         <div className="flex flex-row items-start justify-between">
                             <div>
-                                <p className="text-xs text-gray-600">Qualified</p>
-                                <p className="text-xl font-semibold text-gray-900 mt-1">{isFetching ? "..." : stats.qualified.toLocaleString()}</p>
-                                <p className="text-[10px] text-gray-500">All systems operational</p>
+                                <p className="text-xs text-muted-foreground">Qualified</p>
+                                <p className="text-xl font-semibold text-foreground mt-1">{isFetching ? "..." : stats.qualified.toLocaleString()}</p>
+                                <p className="text-[10px] text-muted-foreground">All systems operational</p>
                             </div>
-                            <Target className="w-4 h-4 text-gray-400" />
+                            <Target className="w-4 h-4 text-muted-foreground" />
                         </div>
                     </SmallCardContent>
                 </SmallCard>
 
                 {/* WHITE CARD */}
-                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                <SmallCard className="border bg-card shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
                     <SmallCardContent className="p-4">
                         <div className="flex flex-row items-start justify-between">
                             <div>
-                                <p className="text-xs text-gray-600">Pipeline Value</p>
-                                <p className="text-xl font-semibold text-gray-900 mt-1">{isFetching ? "..." : stats.pipelineValue}</p>
-                                <p className="text-[10px] text-gray-500">{isFetching ? "Loading" : `${stats.highPriority} high priority`}</p>
+                                <p className="text-xs text-muted-foreground">Pipeline Value</p>
+                                <p className="text-xl font-semibold text-foreground mt-1">{isFetching ? "..." : stats.pipelineValue}</p>
+                                <p className="text-[10px] text-muted-foreground">{isFetching ? "Loading" : `${stats.highPriority} high priority`}</p>
                             </div>
-                            <PieChart className="w-4 h-4 text-gray-400" />
+                            <PieChart className="w-4 h-4 text-muted-foreground" />
                         </div>
                     </SmallCardContent>
                 </SmallCard>
 
                 {/* WHITE CARD */}
-                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                <SmallCard className="border bg-card shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
                     <SmallCardContent className="p-4">
                         <div className="flex flex-row items-start justify-between">
                             <div>
-                                <p className="text-xs text-gray-600">Win Rate</p>
-                                <p className="text-xl font-semibold text-gray-900 mt-1">{isFetching ? "..." : `${stats.winRate}%`}</p>
-                                <p className="text-[10px] text-gray-500">Across all firms</p>
+                                <p className="text-xs text-muted-foreground">Win Rate</p>
+                                <p className="text-xl font-semibold text-foreground mt-1">{isFetching ? "..." : `${stats.winRate}%`}</p>
+                                <p className="text-[10px] text-muted-foreground">Across all firms</p>
                             </div>
-                            <LayoutDashboard className="w-4 h-4 text-gray-400" />
+                            <LayoutDashboard className="w-4 h-4 text-muted-foreground" />
                         </div>
                     </SmallCardContent>
                 </SmallCard>
@@ -281,10 +281,10 @@ export default function MasterLeadViewPage() {
             {/* SEARCH AND FILTERS */}
             <div className="flex flex-col md:flex-row items-center gap-2 mt-2">
                 <div className="relative flex-1 group">
-                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-400" />
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
                     <Input
                         placeholder="Search leads..."
-                        className="pl-8 h-9 bg-white border-zinc-200 rounded-md text-xs font-medium focus:ring-1 focus:ring-blue-100 transition-all shadow-sm"
+                        className="pl-8 h-9 rounded-md text-xs font-medium focus:ring-1 focus:ring-primary/20 transition-all shadow-sm"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                     />
@@ -293,7 +293,7 @@ export default function MasterLeadViewPage() {
                     <Button
                         variant="outline"
                         onClick={() => toast.info("Filter panel coming soon")}
-                        className="h-9 border-zinc-200 text-zinc-600 bg-white font-medium px-4 rounded-md shadow-sm hover:bg-zinc-50 text-xs"
+                        className="h-9 font-medium px-4 rounded-md shadow-sm text-xs"
                     >
                         <Filter className="w-3.5 h-3.5 mr-2" />
                         Filters
@@ -301,7 +301,7 @@ export default function MasterLeadViewPage() {
                     <Button
                         variant="outline"
                         onClick={() => handleAction("Lead data exported successfully")}
-                        className="h-9 border-zinc-200 text-blue-600 bg-white font-medium px-4 rounded-md shadow-sm hover:bg-zinc-50 text-xs"
+                        className="h-9 text-primary font-medium px-4 rounded-md shadow-sm text-xs"
                     >
                         <Download className="w-3.5 h-3.5 mr-2" />
                         Export
@@ -310,15 +310,15 @@ export default function MasterLeadViewPage() {
             </div>
 
             {/* MASTER DATA TABLE */}
-            <div className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
+            <div className="bg-card rounded-xl border shadow-sm overflow-hidden">
                 <Table>
-                    <TableHeader className="bg-zinc-50/50">
+                    <TableHeader className="bg-muted/50">
                         <TableRow>
-                            <TableHead className="py-3 px-4 text-[11px] font-medium text-gray-500">Identity</TableHead>
-                            <TableHead className="py-3 text-[11px] font-medium text-gray-500">Stage</TableHead>
-                            <TableHead className="py-3 text-[11px] font-medium text-gray-500">Company</TableHead>
-                            <TableHead className="py-3 text-[11px] font-medium text-gray-500">Value</TableHead>
-                            <TableHead className="py-3 text-right pr-4 text-[11px] font-medium text-gray-500">Actions</TableHead>
+                            <TableHead className="py-3 px-4 text-[11px] font-medium text-muted-foreground">Identity</TableHead>
+                            <TableHead className="py-3 text-[11px] font-medium text-muted-foreground">Stage</TableHead>
+                            <TableHead className="py-3 text-[11px] font-medium text-muted-foreground">Company</TableHead>
+                            <TableHead className="py-3 text-[11px] font-medium text-muted-foreground">Value</TableHead>
+                            <TableHead className="py-3 text-right pr-4 text-[11px] font-medium text-muted-foreground">Actions</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -326,15 +326,15 @@ export default function MasterLeadViewPage() {
                             <TableRow>
                                 <TableCell colSpan={5} className="py-12 text-center">
                                     <div className="flex flex-col items-center gap-2">
-                                        <Loader2 className="w-5 h-5 animate-spin text-zinc-400" />
-                                        <span className="text-xs text-zinc-400 font-medium">Loading leads...</span>
+                                        <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                                        <span className="text-xs text-muted-foreground font-medium">Loading leads...</span>
                                     </div>
                                 </TableCell>
                             </TableRow>
                         ) : filteredLeads.length === 0 ? (
                             <TableRow>
                                 <TableCell colSpan={5} className="py-12 text-center">
-                                    <span className="text-xs text-zinc-400 font-medium">
+                                    <span className="text-xs text-muted-foreground font-medium">
                                         {searchQuery ? "No leads match your search." : "No leads found."}
                                     </span>
                                 </TableCell>
@@ -343,38 +343,38 @@ export default function MasterLeadViewPage() {
                             filteredLeads.map((lead) => {
                                 const owner = getLeadOwner(lead)
                                 return (
-                                    <TableRow key={lead._id} className="hover:bg-zinc-50/50 transition-colors group">
+                                    <TableRow key={lead._id} className="hover:bg-muted/50 transition-colors group">
                                         <TableCell className="py-3 px-4">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-lg bg-zinc-100 flex items-center justify-center text-[10px] font-semibold text-zinc-600 border border-zinc-200 transition-transform group-hover:scale-110">
+                                                <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-[10px] font-semibold text-muted-foreground border transition-transform group-hover:scale-110">
                                                     {owner === 'Unassigned' ? '?' : owner.split(' ').map(n => n[0]).join('')}
                                                 </div>
                                                 <div className="flex flex-col">
-                                                    <span className="text-xs font-medium text-zinc-900">{getLeadTitle(lead)}</span>
-                                                    <span className="text-[10px] text-zinc-400 font-medium">{getLeadEmail(lead)}</span>
+                                                    <span className="text-xs font-medium text-foreground">{getLeadTitle(lead)}</span>
+                                                    <span className="text-[10px] text-muted-foreground font-medium">{getLeadEmail(lead)}</span>
                                                 </div>
                                             </div>
                                         </TableCell>
                                         <TableCell className="py-3">
                                             <div className="flex items-center gap-1.5">
-                                                <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)]" />
-                                                <span className="text-xs font-medium text-zinc-700">{lead.stage}</span>
+                                                <div className="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_8px_rgba(59,130,246,0.6)]" />
+                                                <span className="text-xs font-medium text-foreground">{lead.stage}</span>
                                             </div>
                                         </TableCell>
                                         <TableCell className="py-3">
-                                            <span className="text-[11px] font-medium text-zinc-500">{getLeadCompany(lead)}</span>
+                                            <span className="text-[11px] font-medium text-muted-foreground">{getLeadCompany(lead)}</span>
                                         </TableCell>
                                         <TableCell className="py-3">
-                                            <span className="text-xs font-semibold text-zinc-900">{formatEstimatedValue(lead.estimatedValue)}</span>
+                                            <span className="text-xs font-semibold text-foreground">{formatEstimatedValue(lead.estimatedValue)}</span>
                                         </TableCell>
                                         <TableCell className="py-3 text-right pr-4">
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" className="h-7 w-7 p-0 hover:bg-zinc-100 rounded-md">
-                                                        <MoreHorizontal className="h-4 w-4 text-zinc-400" />
+                                                    <Button variant="ghost" className="h-7 w-7 p-0 rounded-md">
+                                                        <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
                                                     </Button>
                                                 </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end" className="w-48 shadow-xl border-zinc-100">
+                                                <DropdownMenuContent align="end" className="w-48 shadow-xl">
                                                     <DropdownMenuItem onClick={() => handleAction("Integrity verification complete")} className="text-xs font-medium">Verify Integrity</DropdownMenuItem>
                                                     <DropdownMenuItem onClick={() => handleAction("Ownership transfer initiated")} className="text-xs font-medium">Transfer Ownership</DropdownMenuItem>
                                                     <DropdownMenuSeparator />
@@ -388,13 +388,13 @@ export default function MasterLeadViewPage() {
                         )}
                     </TableBody>
                 </Table>
-                <div className="px-4 py-3 border-t border-zinc-100 flex items-center justify-between bg-zinc-50/30">
-                    <p className="text-[10px] text-zinc-400 font-medium">
+                <div className="px-4 py-3 border-t flex items-center justify-between bg-muted/30">
+                    <p className="text-[10px] text-muted-foreground font-medium">
                         Showing {filteredLeads.length} of {pagination?.total || leads.length} records
                     </p>
                     <div className="flex gap-2">
                         <Button variant="ghost" size="sm" className="h-7 text-[10px] font-medium transition-colors" disabled>Prev</Button>
-                        <Button variant="ghost" size="sm" onClick={() => toast.info("Loading next page...")} className="h-7 text-[10px] font-medium text-blue-600 hover:text-blue-700 transition-colors">Next</Button>
+                        <Button variant="ghost" size="sm" onClick={() => toast.info("Loading next page...")} className="h-7 text-[10px] font-medium text-primary hover:text-primary/80 transition-colors">Next</Button>
                     </div>
                 </div>
             </div>
