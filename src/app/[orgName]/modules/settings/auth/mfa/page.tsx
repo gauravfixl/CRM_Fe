@@ -11,10 +11,33 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogClose } from "@/components/ui/dialog"
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from "@/components/ui/sheet"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Copy, Download, RefreshCw } from "lucide-react"
 
 export default function MFASetupPage() {
     const [searchQuery, setSearchQuery] = useState("")
     const [enforced, setEnforced] = useState(true)
+    const [isRecoveryCodesOpen, setIsRecoveryCodesOpen] = useState(false)
+    const [isAddFactorOpen, setIsAddFactorOpen] = useState(false)
+    const [isConfigureOpen, setIsConfigureOpen] = useState(false)
+    const [selectedMethod, setSelectedMethod] = useState<any>(null)
+    const [isSaving, setIsSaving] = useState(false)
+
+    const handleSave = () => {
+        setIsSaving(true)
+        setTimeout(() => {
+            setIsSaving(false)
+            toast.success("MFA configuration preserved")
+        }, 1000)
+    }
+
+    const recoveryCodes = [
+        "4922-1029", "8821-0092", "3341-9921", "1029-4451",
+        "5521-1102", "9901-2231", "4410-8821", "7712-4410"
+    ]
 
     const methods = [
         { id: "1", name: "Authenticator app", type: "Security app", status: "Recommended", icon: ShieldCheck, hardware: false, popularity: "85%" },
@@ -33,11 +56,15 @@ export default function MFASetupPage() {
                 ]}
                 rightControls={
                     <div className="flex gap-2">
-                        <CustomButton variant="outline" className="rounded-xl h-10 px-4 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 font-bold" onClick={() => toast.info("Downloading recovery codes")}>
+                        <CustomButton variant="outline" className="rounded-xl h-10 px-4 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 font-bold" onClick={() => setIsRecoveryCodesOpen(true)}>
                             Recovery codes
                         </CustomButton>
-                        <CustomButton className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl h-10 px-6 font-semibold text-xs tracking-wide shadow-xl border-0" onClick={() => toast.success("MFA configuration preserved")}>
-                            Save settings
+                        <CustomButton 
+                            className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl h-10 px-6 font-semibold text-xs tracking-wide shadow-xl border-0" 
+                            onClick={handleSave}
+                            disabled={isSaving}
+                        >
+                            {isSaving ? "Saving..." : "Save settings"}
                         </CustomButton>
                     </div>
                 }
@@ -117,7 +144,7 @@ export default function MFASetupPage() {
                                     }`}>
                                     <method.icon className="w-6 h-6" />
                                 </div>
-                                <CustomButton variant="ghost" size="icon" className="text-zinc-400 rounded-xl" onClick={() => toast.info(`Options for ${method.name}`)}>
+                                <CustomButton variant="ghost" size="icon" className="text-zinc-400 rounded-xl" onClick={() => { setSelectedMethod(method); setIsConfigureOpen(true); }}>
                                     <MoreVertical className="w-4 h-4" />
                                 </CustomButton>
                             </CardHeader>
@@ -150,7 +177,7 @@ export default function MFASetupPage() {
                                         <Smartphone className="h-5 w-5 text-zinc-300" />
                                         <Mail className="h-5 w-5 text-zinc-300" />
                                     </div>
-                                    <CustomButton variant="ghost" className="h-10 text-xs text-zinc-500 font-semibold tracking-wide hover:text-indigo-600 group-hover:translate-x-1 transition-transform" onClick={() => toast.info(`Configuring ${method.name}`)}>
+                                    <CustomButton variant="ghost" className="h-10 text-xs text-zinc-500 font-semibold tracking-wide hover:text-indigo-600 group-hover:translate-x-1 transition-transform" onClick={() => { setSelectedMethod(method); setIsConfigureOpen(true); }}>
                                         Configure Factor <ChevronRight className="w-4 h-4 ml-1" />
                                     </CustomButton>
                                 </div>
@@ -158,7 +185,7 @@ export default function MFASetupPage() {
                         </Card>
                     ))}
 
-                    <div className="border-4 border-dashed border-zinc-100 dark:border-zinc-800 p-8 flex flex-col items-center justify-center text-center space-y-6 hover:border-indigo-500/20 transition-all cursor-pointer group bg-zinc-50/10 dark:bg-zinc-900/10 rounded-3xl" onClick={() => toast.info("Opening factor addition wizard")}>
+                    <div className="border-4 border-dashed border-zinc-100 dark:border-zinc-800 p-8 flex flex-col items-center justify-center text-center space-y-6 hover:border-indigo-500/20 transition-all cursor-pointer group bg-zinc-50/10 dark:bg-zinc-900/10 rounded-3xl" onClick={() => setIsAddFactorOpen(true)}>
                         <div className="h-20 w-20 rounded-full bg-zinc-50 dark:bg-zinc-900 flex items-center justify-center group-hover:rotate-90 transition-transform duration-500 shadow-sm border border-zinc-100 dark:border-zinc-800">
                             <Plus className="w-10 h-10 text-zinc-200 group-hover:text-indigo-500" />
                         </div>
@@ -169,6 +196,127 @@ export default function MFASetupPage() {
                     </div>
                 </div>
             </div>
+
+            {/* Recovery Codes Dialog */}
+            <Dialog open={isRecoveryCodesOpen} onOpenChange={setIsRecoveryCodesOpen}>
+                <DialogContent className="sm:max-w-md rounded-3xl border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
+                    <DialogHeader>
+                        <DialogTitle className="text-2xl font-bold tracking-tight">Recovery Codes</DialogTitle>
+                        <DialogDescription className="text-zinc-500 font-medium">
+                            Store these safely. They allow access if you lose your primary MFA device.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-6">
+                        <div className="grid grid-cols-2 gap-3 bg-zinc-50 dark:bg-zinc-900/50 p-6 rounded-2xl border border-zinc-100 dark:border-zinc-800 font-mono text-sm tracking-widest text-zinc-600 dark:text-zinc-400">
+                            {recoveryCodes.map((code) => (
+                                <div key={code} className="flex items-center justify-center py-2 bg-white dark:bg-zinc-900 rounded-lg border border-zinc-100 dark:border-zinc-800 shadow-sm">
+                                    {code}
+                                </div>
+                            ))}
+                        </div>
+                        <div className="flex gap-2 mt-4">
+                            <CustomButton variant="outline" className="flex-1 rounded-xl h-11" onClick={() => { navigator.clipboard.writeText(recoveryCodes.join("\n")); toast.success("Codes copied to clipboard"); }}>
+                                <Copy className="w-4 h-4 mr-2" /> Copy
+                            </CustomButton>
+                            <CustomButton variant="outline" className="flex-1 rounded-xl h-11" onClick={() => toast.success("Downloading as PDF...")}>
+                                <Download className="w-4 h-4 mr-2" /> Download
+                            </CustomButton>
+                            <CustomButton variant="outline" className="rounded-xl h-11" onClick={() => toast.info("Regenerating codes...")}>
+                                <RefreshCw className="w-4 h-4" />
+                            </CustomButton>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <CustomButton className="bg-zinc-900 text-white hover:bg-zinc-800 rounded-xl w-full" onClick={() => setIsRecoveryCodesOpen(false)}>I have saved these codes</CustomButton>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Configure Factor Sheet */}
+            <Sheet open={isConfigureOpen} onOpenChange={setIsConfigureOpen}>
+                <SheetContent className="sm:max-w-md border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
+                    <SheetHeader>
+                        <SheetTitle className="text-2xl font-bold tracking-tight">Configure {selectedMethod?.name}</SheetTitle>
+                        <SheetDescription className="text-zinc-500 font-medium">
+                            Adjust security parameters for this verification method.
+                        </SheetDescription>
+                    </SheetHeader>
+                    <div className="py-8 space-y-8">
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                                <Label className="font-bold">Status</Label>
+                                <Badge className="bg-emerald-50 text-emerald-600 border-0">ACTIVE</Badge>
+                            </div>
+                            <Separator className="bg-zinc-50 dark:bg-zinc-800" />
+                            <div className="space-y-4">
+                                <h4 className="text-xs font-bold uppercase tracking-widest text-zinc-400">User Experience</h4>
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-sm font-medium">Allow "Remember Device"</span>
+                                        <Switch defaultChecked />
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-sm font-medium">Require Biometrics</span>
+                                        <Switch defaultChecked />
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="space-y-4 pt-4">
+                                <h4 className="text-xs font-bold uppercase tracking-widest text-zinc-400">Security Strength</h4>
+                                <Select defaultValue="high">
+                                    <SelectTrigger className="rounded-xl h-11 border-zinc-200">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent className="rounded-xl border-zinc-100">
+                                        <SelectItem value="low">Standard Verification</SelectItem>
+                                        <SelectItem value="high">Hardware Attestation Required</SelectItem>
+                                        <SelectItem value="critical">Strict Device Binding</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                    </div>
+                    <SheetFooter>
+                        <CustomButton className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl w-full h-12" onClick={() => { toast.success("Factor configuration updated"); setIsConfigureOpen(false); }}>Save Changes</CustomButton>
+                    </SheetFooter>
+                </SheetContent>
+            </Sheet>
+
+            {/* Add New Factor Sheet */}
+            <Sheet open={isAddFactorOpen} onOpenChange={setIsAddFactorOpen}>
+                <SheetContent className="sm:max-w-lg border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
+                    <SheetHeader>
+                        <SheetTitle className="text-2xl font-bold tracking-tight">Provision New Factor</SheetTitle>
+                        <SheetDescription className="text-zinc-500 font-medium">
+                            Expand your authentication surface by adding a new verification method.
+                        </SheetDescription>
+                    </SheetHeader>
+                    <div className="py-8 space-y-6">
+                        <div className="grid grid-cols-1 gap-4">
+                            {[
+                                { name: "Microsoft Authenticator", icon: ShieldCheck, desc: "Notification-based approval & TOTP" },
+                                { name: "YubiKey / FIDO2", icon: Key, desc: "Physical security keys for hardware auth" },
+                                { name: "Corporate Email", icon: Mail, desc: "OTP delivered to verified company address" },
+                            ].map((f) => (
+                                <div key={f.name} className="p-4 rounded-2xl border border-zinc-100 dark:border-zinc-800 hover:border-indigo-500 hover:bg-indigo-50/30 transition-all cursor-pointer group">
+                                    <div className="flex items-center gap-4">
+                                        <div className="h-10 w-10 rounded-xl bg-zinc-50 dark:bg-zinc-900 flex items-center justify-center text-zinc-400 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                                            <f.icon className="w-5 h-5" />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-bold">{f.name}</p>
+                                            <p className="text-xs text-zinc-500 font-medium">{f.desc}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                    <SheetFooter>
+                        <CustomButton variant="outline" className="rounded-xl w-full" onClick={() => setIsAddFactorOpen(false)}>Cancel</CustomButton>
+                    </SheetFooter>
+                </SheetContent>
+            </Sheet>
         </div>
     )
 }

@@ -12,11 +12,32 @@ import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
 import { Slider } from "@/components/ui/slider"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogClose } from "@/components/ui/dialog"
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from "@/components/ui/sheet"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Textarea } from "@/components/ui/textarea"
 
 export default function PasswordPolicyPage() {
     const [searchQuery, setSearchQuery] = useState("")
     const [complex, setComplex] = useState(true)
     const [minLength, setMinLength] = useState([12])
+    const [isTesterOpen, setIsTesterOpen] = useState(false)
+    const [isPublishOpen, setIsPublishOpen] = useState(false)
+    const [isEditRuleOpen, setIsEditRuleOpen] = useState(false)
+    const [isAddRuleOpen, setIsAddRuleOpen] = useState(false)
+    const [selectedRule, setSelectedRule] = useState<any>(null)
+    const [testPassword, setTestPassword] = useState("")
+    const [isPublishing, setIsPublishing] = useState(false)
+
+    const handlePublish = () => {
+        setIsPublishing(true)
+        setTimeout(() => {
+            setIsPublishing(false)
+            toast.success("Password policies published to directory")
+            setIsPublishOpen(false)
+        }, 1500)
+    }
 
     const rules = [
         { id: "1", name: "Complexity requirements", type: "Character set", status: "Enforced", icon: KeyRound, description: "Passwords must contain uppercase, lowercase, numbers, and special characters.", severity: "High" },
@@ -35,10 +56,10 @@ export default function PasswordPolicyPage() {
                 ]}
                 rightControls={
                     <div className="flex gap-2">
-                        <CustomButton variant="outline" className="rounded-xl h-10 px-4 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 font-semibold" onClick={() => toast.info("Testing password strength logic")}>
+                        <CustomButton variant="outline" className="rounded-xl h-10 px-4 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 font-semibold" onClick={() => setIsTesterOpen(true)}>
                             Policy tester
                         </CustomButton>
-                        <CustomButton className="bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 hover:opacity-90 rounded-xl h-10 px-6 font-semibold text-xs tracking-wide shadow-xl border-0" onClick={() => toast.success("Password policies published to directory")}>
+                        <CustomButton className="bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 hover:opacity-90 rounded-xl h-10 px-6 font-semibold text-xs tracking-wide shadow-xl border-0" onClick={() => setIsPublishOpen(true)}>
                             Publish changes
                         </CustomButton>
                     </div>
@@ -124,7 +145,7 @@ export default function PasswordPolicyPage() {
                                     }`}>
                                     <rule.icon className="w-6 h-6" />
                                 </div>
-                                <CustomButton variant="ghost" size="icon" className="text-zinc-400 rounded-xl" onClick={() => toast.info(`Options for ${rule.name}`)}>
+                                <CustomButton variant="ghost" size="icon" className="text-zinc-400 rounded-xl" onClick={() => { setSelectedRule(rule); setIsEditRuleOpen(true); }}>
                                     <MoreHorizontal className="w-4 h-4" />
                                 </CustomButton>
                             </CardHeader>
@@ -155,7 +176,7 @@ export default function PasswordPolicyPage() {
                                         <History className="h-5 w-5 text-zinc-300" />
                                         <Terminal className="h-5 w-5 text-zinc-300" />
                                     </div>
-                                    <CustomButton variant="ghost" className="h-10 text-xs text-zinc-500 font-semibold tracking-wide hover:text-zinc-900 dark:hover:text-white group-hover:translate-x-1 transition-transform" onClick={() => toast.info(`Modifying logic for ${rule.name}`)}>
+                                    <CustomButton variant="ghost" className="h-10 text-xs text-zinc-500 font-semibold tracking-wide hover:text-zinc-900 dark:hover:text-white group-hover:translate-x-1 transition-transform" onClick={() => { setSelectedRule(rule); setIsEditRuleOpen(true); }}>
                                         Edit rule <ChevronRight className="w-4 h-4 ml-1" />
                                     </CustomButton>
                                 </div>
@@ -163,7 +184,7 @@ export default function PasswordPolicyPage() {
                         </Card>
                     ))}
 
-                    <div className="border-4 border-dashed border-zinc-100 dark:border-zinc-800 p-8 flex flex-col items-center justify-center text-center space-y-6 hover:border-zinc-500/20 transition-all cursor-pointer group bg-zinc-50/10 dark:bg-zinc-900/10 rounded-3xl" onClick={() => toast.info("Opening rule creation wizard")}>
+                    <div className="border-4 border-dashed border-zinc-100 dark:border-zinc-800 p-8 flex flex-col items-center justify-center text-center space-y-6 hover:border-zinc-500/20 transition-all cursor-pointer group bg-zinc-50/10 dark:bg-zinc-900/10 rounded-3xl" onClick={() => setIsAddRuleOpen(true)}>
                         <div className="h-20 w-20 rounded-full bg-zinc-50 dark:bg-zinc-900 flex items-center justify-center group-hover:rotate-90 transition-transform duration-500 shadow-sm border border-zinc-100 dark:border-zinc-800">
                             <Plus className="w-10 h-10 text-zinc-200 group-hover:text-zinc-950 dark:group-hover:text-white" />
                         </div>
@@ -174,6 +195,139 @@ export default function PasswordPolicyPage() {
                     </div>
                 </div>
             </div>
+
+            {/* Modals & Sheets */}
+
+            {/* Policy Tester Dialog */}
+            <Dialog open={isTesterOpen} onOpenChange={setIsTesterOpen}>
+                <DialogContent className="sm:max-w-md rounded-3xl border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
+                    <DialogHeader>
+                        <DialogTitle className="text-2xl font-bold tracking-tight italic">Policy Strength Tester</DialogTitle>
+                        <DialogDescription className="text-zinc-500 font-medium italic">Verify your current policy against a sample password.</DialogDescription>
+                    </DialogHeader>
+                    <div className="py-6 space-y-4">
+                        <div className="space-y-2">
+                            <Label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Password to Test</Label>
+                            <Input 
+                                type="password" 
+                                placeholder="Enter a password..." 
+                                className="rounded-xl h-11 border-zinc-200"
+                                value={testPassword}
+                                onChange={(e) => setTestPassword(e.target.value)}
+                            />
+                        </div>
+                        <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 space-y-3">
+                            <h4 className="text-xs font-bold uppercase tracking-widest">Enforcement Result</h4>
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between text-[11px] font-bold">
+                                    <span className="text-zinc-500 italic">Complexity Check</span>
+                                    <span className={testPassword.length > 8 ? "text-emerald-500" : "text-red-500"}>
+                                        {testPassword.length > 8 ? "PASSED" : "FAILED"}
+                                    </span>
+                                </div>
+                                <div className="flex items-center justify-between text-[11px] font-bold">
+                                    <span className="text-zinc-500 italic">熵 (Entropy) Score</span>
+                                    <span className="text-zinc-900 dark:text-white">Medium</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* Publish Confirmation Dialog */}
+            <Dialog open={isPublishOpen} onOpenChange={setIsPublishOpen}>
+                <DialogContent className="sm:max-w-md rounded-3xl border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
+                    <DialogHeader className="text-center items-center">
+                        <div className="h-16 w-16 bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 rounded-2xl flex items-center justify-center font-bold mb-4 shadow-sm">
+                            <ShieldCheck className="w-8 h-8" />
+                        </div>
+                        <DialogTitle className="text-xl font-bold tracking-tight">Sync Policy to Directory?</DialogTitle>
+                        <DialogDescription className="text-zinc-500 font-medium italic">
+                            All identities will be immediately subject to the new requirements. Multi-tenant synchronization will take approximately 120 seconds.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="sm:justify-center gap-2 mt-4">
+                        <CustomButton variant="outline" className="rounded-xl px-8" onClick={() => setIsPublishOpen(false)}>Review again</CustomButton>
+                        <CustomButton className="bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 rounded-xl px-8" onClick={handlePublish} disabled={isPublishing}>
+                            {isPublishing ? "Syncing..." : "Publish to Prod"}
+                        </CustomButton>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Edit Rule Sheet */}
+            <Sheet open={isEditRuleOpen} onOpenChange={setIsEditRuleOpen}>
+                <SheetContent className="sm:max-w-md border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
+                    <SheetHeader>
+                        <SheetTitle className="text-2xl font-bold tracking-tight italic">Rule: {selectedRule?.name}</SheetTitle>
+                        <SheetDescription className="text-zinc-500 font-medium italic">Modify the enforcement logic for this directive.</SheetDescription>
+                    </SheetHeader>
+                    <div className="py-8 space-y-6">
+                        <div className="space-y-4">
+                            <h4 className="text-xs font-bold uppercase tracking-widest text-zinc-400">Directive Logic</h4>
+                            <Textarea 
+                                defaultValue={selectedRule?.description}
+                                className="rounded-xl min-h-[100px] border-zinc-200 focus:ring-zinc-900 italic font-medium"
+                            />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Importance</Label>
+                                <Select defaultValue={selectedRule?.severity}>
+                                    <SelectTrigger className="rounded-xl h-11 border-zinc-200">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent className="rounded-xl">
+                                        <SelectItem value="Low">Low</SelectItem>
+                                        <SelectItem value="Medium">Medium</SelectItem>
+                                        <SelectItem value="High">High</SelectItem>
+                                        <SelectItem value="Critical">Critical</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Status</Label>
+                                <div className="flex items-center gap-2 h-11">
+                                    <Switch defaultChecked={selectedRule?.status === 'Enforced'} />
+                                    <span className="text-xs font-bold">Active</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </SheetContent>
+            </Sheet>
+
+            {/* Add Rule Sheet */}
+            <Sheet open={isAddRuleOpen} onOpenChange={setIsAddRuleOpen}>
+                <SheetContent className="sm:max-w-md border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
+                    <SheetHeader>
+                        <SheetTitle className="text-2xl font-bold tracking-tight italic">New Security Directive</SheetTitle>
+                        <SheetDescription className="text-zinc-500 font-medium italic">Create a custom credential requirement.</SheetDescription>
+                    </SheetHeader>
+                    <div className="py-8 space-y-6">
+                        <div className="space-y-2">
+                            <Label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Rule Name</Label>
+                            <Input placeholder="e.g. Reject common phrases" className="rounded-xl h-11 border-zinc-200 font-bold" />
+                        </div>
+                        <div className="space-y-2">
+                            <Label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Directive Type</Label>
+                            <Select>
+                                <SelectTrigger className="rounded-xl h-11 border-zinc-200 font-bold">
+                                    <SelectValue placeholder="Select type" />
+                                </SelectTrigger>
+                                <SelectContent className="rounded-xl">
+                                    <SelectItem value="set">Character Set</SelectItem>
+                                    <SelectItem value="age">Max Age</SelectItem>
+                                    <SelectItem value="hist">History Reuse</SelectItem>
+                                    <SelectItem value="block">Blacklist Matching</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <CustomButton className="w-full h-12 bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 rounded-xl font-bold tracking-[0.2em] text-[10px]" onClick={() => { toast.success("Directive added to draft"); setIsAddRuleOpen(false); }}>COMMIT RULE</CustomButton>
+                    </div>
+                </SheetContent>
+            </Sheet>
         </div>
     )
 }

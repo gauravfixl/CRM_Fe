@@ -12,10 +12,46 @@ import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogClose } from "@/components/ui/dialog"
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from "@/components/ui/sheet"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 export default function ConditionalAccessPage() {
     const [searchQuery, setSearchQuery] = useState("")
     const [globalBlock, setGlobalBlock] = useState(false)
+    const [isNewPolicyOpen, setIsNewPolicyOpen] = useState(false)
+    const [isSimulatorOpen, setIsSimulatorOpen] = useState(false)
+    const [isEditOpen, setIsEditOpen] = useState(false)
+    const [isLogsOpen, setIsLogsOpen] = useState(false)
+    const [isManageLogicOpen, setIsManageLogicOpen] = useState(false)
+    const [selectedPolicy, setSelectedPolicy] = useState<any>(null)
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+
+    const [newPolicy, setNewPolicy] = useState({
+        name: "",
+        type: "Location-based",
+        description: "",
+        severity: "Medium",
+        status: "Active"
+    })
+
+    const handleCreatePolicy = () => {
+        toast.success(`Policy "${newPolicy.name}" created successfully`)
+        setIsNewPolicyOpen(false)
+        setNewPolicy({ name: "", type: "Location-based", description: "", severity: "Medium", status: "Active" })
+    }
+
+    const handleUpdatePolicy = () => {
+        toast.success(`Policy "${selectedPolicy?.name}" updated`)
+        setIsEditOpen(false)
+    }
+
+    const handleDeletePolicy = () => {
+        toast.success(`Policy "${selectedPolicy?.name}" removed`)
+        setIsDeleteDialogOpen(false)
+    }
 
     const policies = [
         { id: "1", name: "Block risky countries", type: "Location-based", status: "Active", icon: Globe, description: "Block all authentication attempts from sanctioned or high-risk regions.", severity: "Critical" },
@@ -34,10 +70,10 @@ export default function ConditionalAccessPage() {
                 ]}
                 rightControls={
                     <div className="flex gap-2">
-                        <CustomButton variant="outline" className="rounded-xl h-10 px-4 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 font-bold" onClick={() => toast.info("Simulating policy outcomes")}>
+                        <CustomButton variant="outline" className="rounded-xl h-10 px-4 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 font-bold" onClick={() => setIsSimulatorOpen(true)}>
                             Policy simulator
                         </CustomButton>
-                        <CustomButton className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl h-10 px-6 font-semibold text-xs tracking-wide shadow-xl border-0" onClick={() => toast.success("Conditional policies updated")}>
+                        <CustomButton className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl h-10 px-6 font-semibold text-xs tracking-wide shadow-xl border-0" onClick={() => setIsNewPolicyOpen(true)}>
                             New policy
                         </CustomButton>
                     </div>
@@ -126,10 +162,10 @@ export default function ConditionalAccessPage() {
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end" className="rounded-xl p-2 min-w-[160px] shadow-2xl border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900">
                                         <DropdownMenuLabel className="text-xs font-semibold tracking-wide py-2 px-3 text-zinc-400">Policy Management</DropdownMenuLabel>
-                                        <DropdownMenuItem className="text-xs font-semibold py-3 flex items-center gap-3 cursor-pointer rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800" onClick={() => toast.info(`Editing ${policy.name}`)}><Edit3 className="w-4 h-4 text-zinc-400" /> Edit rules</DropdownMenuItem>
-                                        <DropdownMenuItem className="text-xs font-semibold py-3 flex items-center gap-3 cursor-pointer rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800" onClick={() => toast.info(`Viewing analytics for ${policy.name}`)}><Activity className="w-4 h-4 text-zinc-400" /> Evaluation logs</DropdownMenuItem>
+                                        <DropdownMenuItem className="text-xs font-semibold py-3 flex items-center gap-3 cursor-pointer rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800" onClick={() => { setSelectedPolicy(policy); setIsEditOpen(true); }}><Edit3 className="w-4 h-4 text-zinc-400" /> Edit rules</DropdownMenuItem>
+                                        <DropdownMenuItem className="text-xs font-semibold py-3 flex items-center gap-3 cursor-pointer rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800" onClick={() => { setSelectedPolicy(policy); setIsLogsOpen(true); }}><Activity className="w-4 h-4 text-zinc-400" /> Evaluation logs</DropdownMenuItem>
                                         <DropdownMenuSeparator className="bg-zinc-50 dark:bg-zinc-800 my-1" />
-                                        <DropdownMenuItem className="text-xs font-semibold py-3 flex items-center gap-3 cursor-pointer rounded-lg text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20" onClick={() => toast.error(`Deleting ${policy.name}`)}><Trash2 className="w-4 h-4" /> Remove policy</DropdownMenuItem>
+                                        <DropdownMenuItem className="text-xs font-semibold py-3 flex items-center gap-3 cursor-pointer rounded-lg text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20" onClick={() => { setSelectedPolicy(policy); setIsDeleteDialogOpen(true); }}><Trash2 className="w-4 h-4" /> Remove policy</DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                             </CardHeader>
@@ -160,7 +196,7 @@ export default function ConditionalAccessPage() {
                                         <Globe className="h-5 w-5 text-zinc-300" />
                                         <MapPin className="h-5 w-5 text-zinc-300" />
                                     </div>
-                                    <CustomButton variant="ghost" className="h-10 text-xs text-zinc-500 font-semibold tracking-wide hover:text-emerald-600 group-hover:translate-x-1 transition-transform" onClick={() => toast.info(`Managing rules for ${policy.name}`)}>
+                                    <CustomButton variant="ghost" className="h-10 text-xs text-zinc-500 font-semibold tracking-wide hover:text-emerald-600 group-hover:translate-x-1 transition-transform" onClick={() => { setSelectedPolicy(policy); setIsManageLogicOpen(true); }}>
                                         Manage Logic <ChevronRight className="w-4 h-4 ml-1" />
                                     </CustomButton>
                                 </div>
@@ -168,7 +204,7 @@ export default function ConditionalAccessPage() {
                         </Card>
                     ))}
 
-                    <div className="border-4 border-dashed border-zinc-100 dark:border-zinc-800 p-8 flex flex-col items-center justify-center text-center space-y-6 hover:border-emerald-500/20 transition-all cursor-pointer group bg-zinc-50/10 dark:bg-zinc-900/10 rounded-3xl" onClick={() => toast.info("Opening policy creation wizard")}>
+                    <div className="border-4 border-dashed border-zinc-100 dark:border-zinc-800 p-8 flex flex-col items-center justify-center text-center space-y-6 hover:border-emerald-500/20 transition-all cursor-pointer group bg-zinc-50/10 dark:bg-zinc-900/10 rounded-3xl" onClick={() => setIsNewPolicyOpen(true)}>
                         <div className="h-20 w-20 rounded-full bg-zinc-50 dark:bg-zinc-900 flex items-center justify-center group-hover:rotate-90 transition-transform duration-500 shadow-sm border border-zinc-100 dark:border-zinc-800">
                             <Plus className="w-10 h-10 text-zinc-200 group-hover:text-emerald-500" />
                         </div>
@@ -179,6 +215,208 @@ export default function ConditionalAccessPage() {
                     </div>
                 </div>
             </div>
+
+            {/* Modals & Sheets */}
+            
+            {/* New Policy Sheet */}
+            <Sheet open={isNewPolicyOpen} onOpenChange={setIsNewPolicyOpen}>
+                <SheetContent className="sm:max-w-md border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
+                    <SheetHeader>
+                        <SheetTitle className="text-2xl font-bold tracking-tight">Create New Policy</SheetTitle>
+                        <SheetDescription className="text-zinc-500 font-medium">
+                            Define a new conditional access rule to secure your organization.
+                        </SheetDescription>
+                    </SheetHeader>
+                    <div className="py-6 space-y-6">
+                        <div className="space-y-2">
+                            <Label className="text-xs font-bold uppercase tracking-wider text-zinc-400">Policy Name</Label>
+                            <Input 
+                                placeholder="e.g. Block non-compliant devices" 
+                                className="rounded-xl h-11 border-zinc-200 focus:ring-emerald-500"
+                                value={newPolicy.name}
+                                onChange={(e) => setNewPolicy({...newPolicy, name: e.target.value})}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label className="text-xs font-bold uppercase tracking-wider text-zinc-400">Condition Type</Label>
+                            <Select value={newPolicy.type} onValueChange={(v) => setNewPolicy({...newPolicy, type: v})}>
+                                <SelectTrigger className="rounded-xl h-11 border-zinc-200">
+                                    <SelectValue placeholder="Select type" />
+                                </SelectTrigger>
+                                <SelectContent className="rounded-xl border-zinc-100">
+                                    <SelectItem value="Location-based">Location-based</SelectItem>
+                                    <SelectItem value="Role-based">Role-based</SelectItem>
+                                    <SelectItem value="Device-health">Device-health</SelectItem>
+                                    <SelectItem value="Risk-based">Risk-based</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label className="text-xs font-bold uppercase tracking-wider text-zinc-400">Description</Label>
+                            <Textarea 
+                                placeholder="Explain the intent of this policy..." 
+                                className="rounded-xl min-h-[100px] border-zinc-200 focus:ring-emerald-500"
+                                value={newPolicy.description}
+                                onChange={(e) => setNewPolicy({...newPolicy, description: e.target.value})}
+                            />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label className="text-xs font-bold uppercase tracking-wider text-zinc-400">Severity</Label>
+                                <Select value={newPolicy.severity} onValueChange={(v) => setNewPolicy({...newPolicy, severity: v})}>
+                                    <SelectTrigger className="rounded-xl h-11 border-zinc-200">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent className="rounded-xl border-zinc-100">
+                                        <SelectItem value="Low">Low</SelectItem>
+                                        <SelectItem value="Medium">Medium</SelectItem>
+                                        <SelectItem value="High">High</SelectItem>
+                                        <SelectItem value="Critical">Critical</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label className="text-xs font-bold uppercase tracking-wider text-zinc-400">Initial Status</Label>
+                                <div className="flex items-center gap-3 h-11">
+                                    <Switch checked={newPolicy.status === "Active"} onCheckedChange={(v) => setNewPolicy({...newPolicy, status: v ? "Active" : "Paused"})} />
+                                    <span className="text-sm font-semibold">{newPolicy.status}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <SheetFooter className="gap-2 sm:gap-0">
+                        <CustomButton variant="outline" className="rounded-xl" onClick={() => setIsNewPolicyOpen(false)}>Cancel</CustomButton>
+                        <CustomButton className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-8" onClick={handleCreatePolicy}>Create Policy</CustomButton>
+                    </SheetFooter>
+                </SheetContent>
+            </Sheet>
+
+            {/* Policy Simulator Dialog */}
+            <Dialog open={isSimulatorOpen} onOpenChange={setIsSimulatorOpen}>
+                <DialogContent className="sm:max-w-[600px] rounded-3xl border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
+                    <DialogHeader>
+                        <DialogTitle className="text-2xl font-bold tracking-tight flex items-center gap-2">
+                            <Cpu className="w-6 h-6 text-emerald-600" />
+                            Policy Simulator
+                        </DialogTitle>
+                        <DialogDescription className="text-zinc-500 font-medium">
+                            Test how your policies would react to specific authentication signals.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-6 space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Identity</Label>
+                                <Input placeholder="User principal name..." className="rounded-xl border-zinc-200" />
+                            </div>
+                            <div className="space-y-2">
+                                <Label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Location</Label>
+                                <Input placeholder="Country or IP address..." className="rounded-xl border-zinc-200" />
+                            </div>
+                        </div>
+                        <div className="bg-zinc-50 dark:bg-zinc-900/50 p-6 rounded-2xl border border-zinc-100 dark:border-zinc-800">
+                            <h4 className="text-sm font-bold mb-3 flex items-center gap-2">
+                                <Zap className="w-4 h-4 text-emerald-500" />
+                                Predicted Outcome
+                            </h4>
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between text-xs">
+                                    <span className="text-zinc-500 font-medium">Result:</span>
+                                    <Badge className="bg-emerald-50 text-emerald-600 border-0 font-bold">ALLOW WITH MFA</Badge>
+                                </div>
+                                <div className="flex items-center justify-between text-xs">
+                                    <span className="text-zinc-500 font-medium">Matched Policies:</span>
+                                    <span className="font-bold">2 Rules</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <CustomButton className="bg-zinc-900 text-white hover:bg-zinc-800 rounded-xl w-full" onClick={() => setIsSimulatorOpen(false)}>Run Simulation</CustomButton>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Evaluation Logs Sheet */}
+            <Sheet open={isLogsOpen} onOpenChange={setIsLogsOpen}>
+                <SheetContent className="sm:max-w-xl border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 overflow-y-auto">
+                    <SheetHeader>
+                        <SheetTitle className="text-2xl font-bold tracking-tight">Evaluation Logs: {selectedPolicy?.name}</SheetTitle>
+                        <SheetDescription className="text-zinc-500 font-medium">
+                            Recent enforcement events triggered by this policy.
+                        </SheetDescription>
+                    </SheetHeader>
+                    <div className="py-8 space-y-4">
+                        {[1, 2, 3, 4, 5].map((i) => (
+                            <div key={i} className="p-4 rounded-2xl border border-zinc-100 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors">
+                                <div className="flex items-center justify-between mb-2">
+                                    <span className="text-xs font-bold text-zinc-400 uppercase tracking-tighter">Apr 10, 2024 • 14:2{i} PM</span>
+                                    <Badge className="bg-red-50 text-red-600 border-0 text-[10px] uppercase font-bold px-2">Blocked</Badge>
+                                </div>
+                                <p className="text-sm font-bold">Attempted login from Restricted IP</p>
+                                <p className="text-xs text-zinc-500 mt-1 font-medium">User: alex.m@company.com <span className="mx-2">•</span> IP: 45.12.33.{i}</p>
+                            </div>
+                        ))}
+                    </div>
+                </SheetContent>
+            </Sheet>
+
+            {/* Manage Logic Sheet */}
+            <Sheet open={isManageLogicOpen} onOpenChange={setIsManageLogicOpen}>
+                <SheetContent className="sm:max-w-lg border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
+                    <SheetHeader>
+                        <SheetTitle className="text-2xl font-bold tracking-tight">Manage Logic: {selectedPolicy?.name}</SheetTitle>
+                        <SheetDescription className="text-zinc-500 font-medium">
+                            Configure the underlying rules and signals for this policy.
+                        </SheetDescription>
+                    </SheetHeader>
+                    <div className="py-8 space-y-6">
+                        <div className="p-6 rounded-3xl border-2 border-emerald-500/10 bg-emerald-500/5 space-y-4">
+                            <div className="flex items-center justify-between">
+                                <h4 className="font-bold text-emerald-900 dark:text-emerald-400">Assignments</h4>
+                                <Badge className="bg-emerald-600 text-white border-0">3 Selected</Badge>
+                            </div>
+                            <p className="text-xs text-emerald-700/70 font-medium">This policy applies to "All Users" excluding the "Break-glass" group.</p>
+                            <CustomButton size="sm" variant="outline" className="h-8 text-[10px] font-bold uppercase tracking-widest border-emerald-200 text-emerald-700">Modify Groups</CustomButton>
+                        </div>
+                        <div className="p-6 rounded-3xl border border-zinc-100 dark:border-zinc-800 space-y-4">
+                            <h4 className="font-bold">Conditions</h4>
+                            <div className="space-y-3">
+                                {['Device Platform', 'Location', 'Client App'].map((c) => (
+                                    <div key={c} className="flex items-center justify-between py-2 border-b border-zinc-50 dark:border-zinc-800 last:border-0">
+                                        <span className="text-xs font-bold text-zinc-500">{c}</span>
+                                        <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 border-zinc-200">Any</Badge>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                    <SheetFooter>
+                        <CustomButton className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl w-full h-12" onClick={() => { toast.success("Policy logic updated"); setIsManageLogicOpen(false); }}>Update Enforcement Logic</CustomButton>
+                    </SheetFooter>
+                </SheetContent>
+            </Sheet>
+
+            {/* Delete Confirmation Dialog */}
+            <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                <DialogContent className="sm:max-w-[400px] rounded-3xl border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
+                    <DialogHeader className="items-center text-center">
+                        <div className="h-16 w-16 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center mb-4">
+                            <AlertTriangle className="w-8 h-8" />
+                        </div>
+                        <DialogTitle className="text-xl font-bold tracking-tight">Remove Policy?</DialogTitle>
+                        <DialogDescription className="text-zinc-500 font-medium mt-2">
+                            This will permanently delete the policy <strong>{selectedPolicy?.name}</strong>. This action cannot be undone and may impact security enforcement.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="sm:justify-center gap-2 mt-4">
+                        <DialogClose asChild>
+                            <CustomButton variant="outline" className="rounded-xl px-6">Cancel</CustomButton>
+                        </DialogClose>
+                        <CustomButton className="bg-red-600 hover:bg-red-700 text-white rounded-xl px-6" onClick={handleDeletePolicy}>Remove Permanently</CustomButton>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }
