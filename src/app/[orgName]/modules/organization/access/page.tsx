@@ -55,17 +55,17 @@ export default function ModuleAccessPage() {
     }
 
     return (
-        <div className="flex flex-col h-full w-full bg-slate-50/50 p-6 space-y-6 overflow-y-auto font-outfit">
+        <div className="flex flex-col h-full w-full bg-background p-6 space-y-6 overflow-y-auto font-outfit">
             {/* HEADER */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight text-slate-900">Module Access</h1>
-                    <p className="text-sm text-slate-500 mt-1">Configure global application availability and feature access control.</p>
+                    <h1 className="text-2xl font-bold tracking-tight text-foreground">Module Access</h1>
+                    <p className="text-sm text-muted-foreground mt-1">Configure global application availability and feature access control.</p>
                 </div>
                 <div className="flex gap-3">
                     <Dialog>
                         <DialogTrigger asChild>
-                            <Button variant="outline" className="h-9 gap-2 border-slate-200">
+                            <Button variant="outline" className="h-9 gap-2 border-border">
                                 <Info className="w-4 h-4" />
                                 Usage Reports
                             </Button>
@@ -78,17 +78,17 @@ export default function ModuleAccessPage() {
                                 </DialogDescription>
                             </DialogHeader>
                             <div className="space-y-4 py-4">
-                                <div className="flex justify-between items-center text-sm border-b pb-3 border-slate-100"><p className="font-medium text-slate-900">CRM Suite assigned to Firm A</p><span className="text-slate-500 text-xs">2 mins ago</span></div>
-                                <div className="flex justify-between items-center text-sm border-b pb-3 border-slate-100"><p className="font-medium text-slate-900">Accounting disabled globally</p><span className="text-slate-500 text-xs">1 hour ago</span></div>
-                                <div className="flex justify-between items-center text-sm border-b pb-3 border-slate-100"><p className="font-medium text-slate-900">HRM firm limit reached (8/12)</p><span className="text-slate-500 text-xs">Yesterday</span></div>
-                                <div className="flex justify-between items-center text-sm border-b pb-3 border-slate-100"><p className="font-medium text-slate-900">Project Management auto-enabled</p><span className="text-slate-500 text-xs">2 days ago</span></div>
+                                <div className="flex justify-between items-center text-sm border-b pb-3 border-border/50"><p className="font-medium text-foreground">CRM Suite assigned to Firm A</p><span className="text-muted-foreground text-xs">2 mins ago</span></div>
+                                <div className="flex justify-between items-center text-sm border-b pb-3 border-border/50"><p className="font-medium text-foreground">Accounting disabled globally</p><span className="text-muted-foreground text-xs">1 hour ago</span></div>
+                                <div className="flex justify-between items-center text-sm border-b pb-3 border-border/50"><p className="font-medium text-foreground">HRM firm limit reached (8/12)</p><span className="text-muted-foreground text-xs">Yesterday</span></div>
+                                <div className="flex justify-between items-center text-sm border-b pb-3 border-border/50"><p className="font-medium text-foreground">Project Management auto-enabled</p><span className="text-muted-foreground text-xs">2 days ago</span></div>
                             </div>
                         </DialogContent>
                     </Dialog>
 
                     <Sheet>
                         <SheetTrigger asChild>
-                            <Button className="h-9 bg-blue-600 hover:bg-blue-700 text-white gap-2 font-bold shadow-sm">
+                            <Button className="h-9 bg-blue-600 hover:bg-blue-700 text-primary-foreground gap-2 font-bold shadow-sm">
                                 <Settings className="w-4 h-4" />
                                 Configure Defaults
                             </Button>
@@ -116,14 +116,14 @@ export default function ModuleAccessPage() {
                                 <div className="flex items-center justify-between">
                                     <div className="space-y-0.5">
                                         <Label>Auto-assign to new firms</Label>
-                                        <p className="text-xs text-slate-500">Automatically grant core modules.</p>
+                                        <p className="text-xs text-muted-foreground">Automatically grant core modules.</p>
                                     </div>
                                     <Switch defaultChecked={true} />
                                 </div>
                                 <div className="flex items-center justify-between">
                                     <div className="space-y-0.5">
                                         <Label>Allow Firm Overrides</Label>
-                                        <p className="text-xs text-slate-500">Let firms buy add-ons.</p>
+                                        <p className="text-xs text-muted-foreground">Let firms buy add-ons.</p>
                                     </div>
                                     <Switch defaultChecked={true} />
                                 </div>
@@ -140,25 +140,25 @@ export default function ModuleAccessPage() {
 
             {/* QUICK STATS */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <SmallCard className="border bg-gradient-to-r from-primary/70 to-primary text-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                <SmallCard className="border bg-gradient-to-r from-primary/70 to-primary text-primary-foreground shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
                     <SmallCardContent className="p-4">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-white text-xs opacity-80">Active Solutions</p>
-                                <p className="text-white text-xl font-semibold mt-1">5/6</p>
-                                <p className="text-white text-[10px] mt-1 flex items-center gap-1">Current Enterprise Portfolio</p>
+                                <p className="text-primary-foreground text-xs opacity-80">Active Solutions</p>
+                                <p className="text-primary-foreground text-xl font-semibold mt-1">5/6</p>
+                                <p className="text-primary-foreground text-[10px] mt-1 flex items-center gap-1">Current Enterprise Portfolio</p>
                             </div>
-                            <Package className="w-5 h-5 text-white" />
+                            <Package className="w-5 h-5 text-primary-foreground" />
                         </div>
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                <SmallCard className="border bg-card shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
                     <SmallCardContent className="p-4">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-gray-600 text-xs">Firms With Custom Sets</p>
-                                <p className="text-xl font-semibold text-gray-900 mt-1">4</p>
+                                <p className="text-muted-foreground text-xs">Firms With Custom Sets</p>
+                                <p className="text-xl font-semibold text-foreground mt-1">4</p>
                                 <p className="text-blue-600 text-[10px] mt-1 flex items-center gap-1"><Info className="w-3 h-3" /> Specific overrides active</p>
                             </div>
                             <Building2 className="w-5 h-5 text-primary" />
@@ -166,12 +166,12 @@ export default function ModuleAccessPage() {
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                <SmallCard className="border bg-card shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
                     <SmallCardContent className="p-4">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-gray-600 text-xs">Org-Wide Enforced</p>
-                                <p className="text-xl font-semibold text-gray-900 mt-1">2</p>
+                                <p className="text-muted-foreground text-xs">Org-Wide Enforced</p>
+                                <p className="text-xl font-semibold text-foreground mt-1">2</p>
                                 <p className="text-emerald-600 text-[10px] mt-1 flex items-center gap-1"><Lock className="w-3 h-3" /> Security & Core</p>
                             </div>
                             <Lock className="w-5 h-5 text-primary" />
@@ -179,12 +179,12 @@ export default function ModuleAccessPage() {
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                <SmallCard className="border bg-card shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
                     <SmallCardContent className="p-4">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-gray-600 text-xs">Module Health</p>
-                                <p className="text-xl font-semibold text-gray-900 mt-1">Stable</p>
+                                <p className="text-muted-foreground text-xs">Module Health</p>
+                                <p className="text-xl font-semibold text-foreground mt-1">Stable</p>
                                 <p className="text-emerald-600 text-[10px] mt-1 flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> All APIs operational</p>
                             </div>
                             <Activity className="w-5 h-5 text-primary" />
@@ -196,11 +196,11 @@ export default function ModuleAccessPage() {
             {/* MODULE GRID */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-12">
                 {moduleList.map((mod) => (
-                    <Card key={mod.id} className={`overflow-hidden border transition-all duration-300 ${mod.status ? 'bg-white shadow-md hover:shadow-lg transform hover:-translate-y-1 border-primary/20' : 'bg-slate-50 shadow-sm opacity-75 grayscale-[0.3] border-slate-200'}`}>
+                    <Card key={mod.id} className={`overflow-hidden border transition-all duration-300 ${mod.status ? 'bg-card shadow-md hover:shadow-lg transform hover:-translate-y-1 border-primary/20' : 'bg-muted shadow-sm opacity-75 grayscale-[0.3] border-border'}`}>
                         <CardHeader className="p-5 pb-3">
                             <div className="flex items-center justify-between mb-3">
-                                <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${mod.status ? 'bg-primary/10' : 'bg-slate-200'}`}>
-                                    <mod.icon className={`w-5 h-5 ${mod.status ? 'text-primary' : 'text-slate-500'}`} />
+                                <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${mod.status ? 'bg-primary/10' : 'bg-muted'}`}>
+                                    <mod.icon className={`w-5 h-5 ${mod.status ? 'text-primary' : 'text-muted-foreground'}`} />
                                 </div>
                                 <div className="flex items-center gap-3">
                                     {mod.status && (
@@ -217,35 +217,35 @@ export default function ModuleAccessPage() {
                                 </div>
                             </div>
                             <div className="flex flex-col">
-                                <CardTitle className="text-base font-semibold text-gray-900 flex items-center gap-2">
+                                <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
                                     {mod.name}
-                                    {mod.tier === 'Core' && <Badge className="bg-slate-100 text-slate-500 hover:bg-slate-200 text-[9px] font-semibold uppercase tracking-wider px-1.5 py-0">Core</Badge>}
+                                    {mod.tier === 'Core' && <Badge className="bg-slate-100 text-muted-foreground hover:bg-muted text-[9px] font-semibold uppercase tracking-wider px-1.5 py-0">Core</Badge>}
                                 </CardTitle>
-                                <CardDescription className="text-sm text-gray-600 mt-1">
+                                <CardDescription className="text-sm text-muted-foreground mt-1">
                                     {mod.description}
                                 </CardDescription>
                             </div>
                         </CardHeader>
-                        <CardContent className="px-5 py-3 border-t border-slate-100 bg-slate-50/50 mt-2 space-y-3">
+                        <CardContent className="px-5 py-3 border-t border-border/50 bg-background mt-2 space-y-3">
                             <div className="flex items-center justify-between">
-                                <span className="text-[11px] font-medium text-gray-500 uppercase tracking-wider">Usage Statistics</span>
-                                <span className="text-xs font-semibold text-gray-900">{mod.usage}</span>
+                                <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Usage Statistics</span>
+                                <span className="text-xs font-semibold text-foreground">{mod.usage}</span>
                             </div>
                             <div className="flex items-center justify-between pt-1">
                                 <div className="flex flex-col">
-                                    <span className="text-[11px] font-medium text-gray-500 uppercase tracking-wider mb-0.5">Tier</span>
+                                    <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-0.5">Tier</span>
                                     <span className="text-xs font-semibold text-primary">{mod.tier}</span>
                                 </div>
                                 <div className="flex flex-col text-right">
-                                    <span className="text-[11px] font-medium text-gray-500 uppercase tracking-wider mb-0.5">API Status</span>
+                                    <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-0.5">API Status</span>
                                     <span className={`text-xs font-semibold ${mod.status ? 'text-emerald-600' : 'text-slate-400'}`}>Operational</span>
                                 </div>
                             </div>
                         </CardContent>
-                        <CardFooter className="p-0 border-t border-slate-100">
+                        <CardFooter className="p-0 border-t border-border/50">
                             <Sheet>
                                 <SheetTrigger asChild>
-                                    <Button variant="ghost" className="w-full text-xs font-semibold text-gray-600 hover:text-primary hover:bg-primary/5 h-10 gap-2 rounded-none transition-colors">
+                                    <Button variant="ghost" className="w-full text-xs font-semibold text-muted-foreground hover:text-primary hover:bg-primary/5 h-10 gap-2 rounded-none transition-colors">
                                         Manage Config <ChevronRight className="w-3.5 h-3.5" />
                                     </Button>
                                 </SheetTrigger>
@@ -272,14 +272,14 @@ export default function ModuleAccessPage() {
                                         <div className="flex items-center justify-between">
                                             <div className="space-y-0.5">
                                                 <Label>Firm Allocation Limit</Label>
-                                                <p className="text-xs text-slate-500">Max firms allowed to use this.</p>
+                                                <p className="text-xs text-muted-foreground">Max firms allowed to use this.</p>
                                             </div>
                                             <Input type="number" defaultValue={mod.usage.includes('/') ? parseInt(mod.usage.split('/')[1]) : 12} className="w-24 text-right"/>
                                         </div>
                                         <div className="flex items-center justify-between">
                                             <div className="space-y-0.5">
                                                 <Label>Allow Firm Overrides</Label>
-                                                <p className="text-xs text-slate-500">Firms can upgrade this module.</p>
+                                                <p className="text-xs text-muted-foreground">Firms can upgrade this module.</p>
                                             </div>
                                             <Switch defaultChecked={true} />
                                         </div>

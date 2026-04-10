@@ -11,10 +11,19 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogClose } from "@/components/ui/dialog"
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from "@/components/ui/sheet"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { History, LayoutGrid, ShieldAlert as ShieldIcon } from "lucide-react"
 
 export default function LoginRestrictionsPage() {
     const [searchQuery, setSearchQuery] = useState("")
     const [active, setActive] = useState(true)
+    const [isLogsOpen, setIsLogsOpen] = useState(false)
+    const [isAddOpen, setIsAddOpen] = useState(false)
+    const [isEditOpen, setIsEditOpen] = useState(false)
+    const [selectedRes, setSelectedRes] = useState<any>(null)
 
     const restrictions = [
         { id: "1", name: "IP range whitelist", type: "Network", status: "Active", icon: Globe, description: "Only allow logins from corporate HQ and trusted VPN ranges.", severity: "Critical" },
@@ -33,10 +42,10 @@ export default function LoginRestrictionsPage() {
                 ]}
                 rightControls={
                     <div className="flex gap-2">
-                        <CustomButton variant="outline" className="rounded-xl h-10 px-4 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 font-bold" onClick={() => toast.info("Viewing restriction audit logs")}>
+                        <CustomButton variant="outline" className="rounded-xl h-10 px-4 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 font-bold" onClick={() => setIsLogsOpen(true)}>
                             Restriction logs
                         </CustomButton>
-                        <CustomButton className="bg-red-600 hover:bg-red-700 text-white rounded-xl h-10 px-6 font-semibold text-xs tracking-wide shadow-xl border-0" onClick={() => toast.success("Restriction policies updated")}>
+                        <CustomButton className="bg-red-600 hover:bg-red-700 text-white rounded-xl h-10 px-6 font-semibold text-xs tracking-wide shadow-xl border-0" onClick={() => setIsAddOpen(true)}>
                             Add restriction
                         </CustomButton>
                     </div>
@@ -117,7 +126,7 @@ export default function LoginRestrictionsPage() {
                                     }`}>
                                     <res.icon className="w-6 h-6" />
                                 </div>
-                                <CustomButton variant="ghost" size="icon" className="text-zinc-400 rounded-xl" onClick={() => toast.info(`Options for ${res.name}`)}>
+                                <CustomButton variant="ghost" size="icon" className="text-zinc-400 rounded-xl" onClick={() => { setSelectedRes(res); setIsEditOpen(true); }}>
                                     <MoreHorizontal className="w-4 h-4" />
                                 </CustomButton>
                             </CardHeader>
@@ -148,7 +157,7 @@ export default function LoginRestrictionsPage() {
                                         <Globe className="h-5 w-5 text-zinc-300" />
                                         <Clock className="h-5 w-5 text-zinc-300" />
                                     </div>
-                                    <CustomButton variant="ghost" className="h-10 text-xs text-zinc-500 font-semibold tracking-wide hover:text-red-600 group-hover:translate-x-1 transition-transform" onClick={() => toast.info(`Defining bounds for ${res.name}`)}>
+                                    <CustomButton variant="ghost" className="h-10 text-xs text-zinc-500 font-semibold tracking-wide hover:text-red-600 group-hover:translate-x-1 transition-transform" onClick={() => { setSelectedRes(res); setIsEditOpen(true); }}>
                                         Edit Boundary <ChevronRight className="w-4 h-4 ml-1" />
                                     </CustomButton>
                                 </div>
@@ -156,7 +165,7 @@ export default function LoginRestrictionsPage() {
                         </Card>
                     ))}
 
-                    <div className="border-4 border-dashed border-zinc-100 dark:border-zinc-800 p-8 flex flex-col items-center justify-center text-center space-y-6 hover:border-red-500/20 transition-all cursor-pointer group bg-zinc-50/10 dark:bg-zinc-900/10 rounded-3xl" onClick={() => toast.info("Opening restriction creation wizard")}>
+                    <div className="border-4 border-dashed border-zinc-100 dark:border-zinc-800 p-8 flex flex-col items-center justify-center text-center space-y-6 hover:border-red-500/20 transition-all cursor-pointer group bg-zinc-50/10 dark:bg-zinc-900/10 rounded-3xl" onClick={() => setIsAddOpen(true)}>
                         <div className="h-20 w-20 rounded-full bg-zinc-50 dark:bg-zinc-900 flex items-center justify-center group-hover:rotate-90 transition-transform duration-500 shadow-sm border border-zinc-100 dark:border-zinc-800">
                             <Plus className="w-10 h-10 text-zinc-200 group-hover:text-red-500" />
                         </div>
@@ -167,6 +176,115 @@ export default function LoginRestrictionsPage() {
                     </div>
                 </div>
             </div>
+
+            {/* Modals & Sheets */}
+
+            {/* Restriction Logs Sheet */}
+            <Sheet open={isLogsOpen} onOpenChange={setIsLogsOpen}>
+                <SheetContent className="sm:max-w-xl border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
+                    <SheetHeader>
+                        <SheetTitle className="text-2xl font-bold tracking-tight italic flex items-center gap-2">
+                            <History className="w-6 h-6 text-red-600" />
+                            Restriction Enforcement Logs
+                        </SheetTitle>
+                        <SheetDescription className="text-zinc-500 font-medium italic">Recent events where access was restricted based on policies.</SheetDescription>
+                    </SheetHeader>
+                    <div className="py-8 space-y-4">
+                        {[
+                            { user: "j.doe@example.com", reason: "IP Range Mismatch", time: "2 min ago", location: "Mumbai, IN", status: "Blocked" },
+                            { user: "admin@fixl.solutions", reason: "After Hours Access", time: "45 min ago", location: "San Francisco, US", status: "Blocked" },
+                            { user: "m.smith@corp.com", reason: "Unmanaged Device", time: "3 hours ago", location: "London, UK", status: "Challenged" },
+                        ].map((log, i) => (
+                            <div key={i} className="p-4 rounded-2xl border border-zinc-100 dark:border-zinc-800 flex items-center justify-between hover:bg-zinc-50 transition-colors">
+                                <div className="space-y-1">
+                                    <p className="text-sm font-bold text-zinc-900 dark:text-white">{log.user}</p>
+                                    <div className="flex items-center gap-2 text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
+                                        <span>{log.reason}</span>
+                                        <span>•</span>
+                                        <span>{log.location}</span>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <Badge className="bg-red-50 text-red-600 border-0 mb-1">{log.status}</Badge>
+                                    <p className="text-[10px] font-medium text-zinc-400">{log.time}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </SheetContent>
+            </Sheet>
+
+            {/* New Boundary Sheet */}
+            <Sheet open={isAddOpen} onOpenChange={setIsAddOpen}>
+                <SheetContent className="sm:max-w-md border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
+                    <SheetHeader>
+                        <SheetTitle className="text-2xl font-bold tracking-tight italic">New Login Gate</SheetTitle>
+                        <SheetDescription className="text-zinc-500 font-medium italic">Establish a new access perimeter.</SheetDescription>
+                    </SheetHeader>
+                    <div className="py-8 space-y-6">
+                        <div className="space-y-2">
+                            <Label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Boundary Name</Label>
+                            <Input placeholder="e.g. Asia-Pacific Offices" className="rounded-xl h-11 border-zinc-200 font-bold" />
+                        </div>
+                        <div className="space-y-2">
+                            <Label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Gate Type</Label>
+                            <Select>
+                                <SelectTrigger className="rounded-xl h-11 border-zinc-200 font-bold">
+                                    <SelectValue placeholder="Select type" />
+                                </SelectTrigger>
+                                <SelectContent className="rounded-xl">
+                                    <SelectItem value="ip">IP Range / CIDR</SelectItem>
+                                    <SelectItem value="time">Time Window</SelectItem>
+                                    <SelectItem value="geo">Geographic Region</SelectItem>
+                                    <SelectItem value="device">Device Serial/ID</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="p-6 rounded-2xl bg-zinc-900 text-white space-y-4">
+                            <h4 className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">
+                                <ShieldIcon className="w-3 h-3" /> Security Impact
+                            </h4>
+                            <p className="text-xs font-medium text-zinc-400 leading-relaxed italic">
+                                Adding an IP-based gate will immediately terminate all active sessions outside the specified ranges.
+                            </p>
+                            <CustomButton className="w-full bg-white text-zinc-900 hover:bg-zinc-200 rounded-xl font-bold text-xs tracking-widest h-10" onClick={() => { toast.success("Boundary established"); setIsAddOpen(false); }}>DEPLOY GATE</CustomButton>
+                        </div>
+                    </div>
+                </SheetContent>
+            </Sheet>
+
+            {/* Edit Boundary Sheet */}
+            <Sheet open={isEditOpen} onOpenChange={setIsEditOpen}>
+                <SheetContent className="sm:max-w-md border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
+                    <SheetHeader>
+                        <SheetTitle className="text-2xl font-bold tracking-tight">{selectedRes?.name}</SheetTitle>
+                        <SheetDescription className="text-zinc-500 font-medium italic">Adjust the enforcement logic for this perimeter.</SheetDescription>
+                    </SheetHeader>
+                    <div className="py-8 space-y-6 text-left">
+                        <div className="space-y-3">
+                            <Label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Enforcement Tier</Label>
+                            <div className="grid grid-cols-2 gap-2">
+                                <div className="p-3 rounded-xl border border-zinc-200 bg-white flex flex-col gap-1 cursor-pointer hover:border-red-500 transition-colors">
+                                    <span className="text-xs font-bold">Block</span>
+                                    <span className="text-[10px] text-zinc-400 italic">Disallow access</span>
+                                </div>
+                                <div className="p-3 rounded-xl border-2 border-zinc-900 bg-zinc-50 flex flex-col gap-1 cursor-pointer">
+                                    <span className="text-xs font-bold">Challenge</span>
+                                    <span className="text-[10px] text-zinc-400 italic">Step-up MFA</span>
+                                </div>
+                            </div>
+                        </div>
+                        <Separator className="bg-zinc-50 dark:bg-zinc-800" />
+                        <div className="flex items-center justify-between">
+                            <div className="space-y-0.5">
+                                <Label className="text-sm font-bold">Audit Mode Only</Label>
+                                <p className="text-[10px] text-zinc-400 italic">Log violations without blocking</p>
+                            </div>
+                            <Switch />
+                        </div>
+                    </div>
+                </SheetContent>
+            </Sheet>
         </div>
     )
 }

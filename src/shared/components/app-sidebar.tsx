@@ -1598,7 +1598,6 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
       }
       setPendingPathname(finalUrl);
       router.push(finalUrl);
-      showLoader();
     }
   };
 
@@ -1623,7 +1622,7 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
   return (
     <>
       {/* PRIMARY SIDEBAR - Categories & Inline Dropdowns */}
-      <Sidebar collapsible="icon" {...props} className="mt-[63px] h-[calc(100svh-63px)] border-r bg-white dark:bg-zinc-950 z-30">
+      <Sidebar collapsible="icon" {...props} className="border-r bg-white dark:bg-zinc-950 z-30">
         <SidebarHeader className="h-0 p-0 m-0" />
         <SidebarContent className="bg-white dark:bg-zinc-950 pt-2 hover-scroll">
           <SidebarMenu>
@@ -1678,10 +1677,7 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
                                     href={subItem.url}
                                     prefetch={true}
                                     onClick={() => {
-                                      setPendingPathname(subItem.url);
-                                      setActiveCategory(group.title);
                                       setIsSubCollapsed(false);
-                                      showLoader();
                                     }}
                                     className={`text-xs font-light flex items-center gap-3 w-full hover:text-primary dark:hover:text-primary rounded-md transition-colors ${isCollapsed ? 'justify-center p-2' : 'p-3'
                                       }`}
@@ -1712,10 +1708,7 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
                                         href={nestedItem.url}
                                         prefetch={true}
                                         onClick={() => {
-                                          setPendingPathname(nestedItem.url);
-                                          setActiveCategory(group.title);
                                           setIsSubCollapsed(false);
-                                          showLoader();
                                         }}
                                         className={`text-[11px] font-light flex items-center gap-2 p-2 rounded-md transition-colors 
                                           ${isNestedActive
@@ -1802,7 +1795,6 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
                           prefetch={true}
                           onClick={() => {
                             setPendingPathname(item.url);
-                            showLoader();
                           }}
                           className={`flex items-center gap-3 rounded-md text-xs font-light transition-all duration-200
                             ${isActive

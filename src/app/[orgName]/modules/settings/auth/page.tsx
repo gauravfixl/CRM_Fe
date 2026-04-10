@@ -28,6 +28,10 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { Input } from "@/components/ui/input"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogClose } from "@/components/ui/dialog"
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from "@/components/ui/sheet"
+import { Label } from "@/components/ui/label"
+import { BarChart3, Shield, Globe, Terminal, FileText, SearchCode } from "lucide-react"
 
 export default function AuthenticationSettingsPage() {
     const [methods, setMethods] = useState({
@@ -37,6 +41,11 @@ export default function AuthenticationSettingsPage() {
         conditional: true
     })
     const [isSaving, setIsSaving] = useState(false)
+    const [isReportsOpen, setIsReportsOpen] = useState(false)
+    const [isQuickConfigOpen, setIsQuickConfigOpen] = useState(false)
+    const [isInvestigateOpen, setIsInvestigateOpen] = useState(false)
+    const [selectedMethod, setSelectedMethod] = useState<any>(null)
+    const [selectedLog, setSelectedLog] = useState<any>(null)
 
     const handleSave = async () => {
         setIsSaving(true)
@@ -105,7 +114,7 @@ export default function AuthenticationSettingsPage() {
                 ]}
                 rightControls={
                     <div className="flex gap-2">
-                        <CustomButton variant="outline" className="rounded-xl h-10 px-4 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 font-bold" onClick={() => toast.info("Security reports coming soon")}>
+                        <CustomButton variant="outline" className="rounded-xl h-10 px-4 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 font-bold" onClick={() => setIsReportsOpen(true)}>
                             Security Reports
                         </CustomButton>
                         <CustomButton 
@@ -200,7 +209,7 @@ export default function AuthenticationSettingsPage() {
                                     <div className="flex items-center gap-4">
                                         <Badge className="bg-zinc-50 dark:bg-zinc-800 text-zinc-500 border-0 rounded-xl text-xs font-semibold px-2 py-1">Identity Policy</Badge>
                                     </div>
-                                    <CustomButton variant="ghost" className="h-10 text-xs text-zinc-500 font-semibold hover:text-indigo-600 group-hover:translate-x-1 transition-transform" onClick={() => toast.info(`Opening ${method.name} configuration`)}>
+                                    <CustomButton variant="ghost" className="h-10 text-xs text-zinc-500 font-semibold hover:text-indigo-600 group-hover:translate-x-1 transition-transform" onClick={() => { setSelectedMethod(method); setIsQuickConfigOpen(true); }}>
                                         Configuration <ChevronRight className="w-4 h-4 ml-1" />
                                     </CustomButton>
                                 </div>
@@ -224,7 +233,7 @@ export default function AuthenticationSettingsPage() {
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-400" />
                                 <Input placeholder="Filter entries..." className="pl-9 h-9 w-48 text-xs rounded-xl border-zinc-200" />
                             </div>
-                            <CustomButton variant="outline" className="h-9 rounded-xl text-xs font-semibold border-zinc-200 bg-white dark:bg-zinc-950" onClick={() => toast.info("Opening full logs")}>
+                            <CustomButton variant="outline" className="h-9 rounded-xl text-xs font-semibold border-zinc-200 bg-white dark:bg-zinc-950" onClick={() => toast.info("Opening full audit logs...")}>
                                 Full Logs
                             </CustomButton>
                         </div>
@@ -251,7 +260,7 @@ export default function AuthenticationSettingsPage() {
                                     </div>
                                     <div className="text-right">
                                         <span className="text-xs font-medium text-zinc-400 block">{log.time}</span>
-                                        <CustomButton variant="ghost" size="sm" className="h-8 px-2 text-xs font-medium text-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => toast.info(`Investigating: ${log.action}`)}>
+                                        <CustomButton variant="ghost" size="sm" className="h-8 px-2 text-xs font-medium text-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => { setSelectedLog(log); setIsInvestigateOpen(true); }}>
                                             Investigate
                                         </CustomButton>
                                     </div>
@@ -262,6 +271,131 @@ export default function AuthenticationSettingsPage() {
                 </Card>
 
             </div>
+
+            {/* Modals & Sheets */}
+
+            {/* Security Reports Dialog */}
+            <Dialog open={isReportsOpen} onOpenChange={setIsReportsOpen}>
+                <DialogContent className="sm:max-w-[700px] rounded-3xl border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
+                    <DialogHeader>
+                        <DialogTitle className="text-2xl font-bold tracking-tight flex items-center gap-2">
+                            <BarChart3 className="w-6 h-6 text-indigo-600" />
+                            Security Insight Reports
+                        </DialogTitle>
+                        <DialogDescription className="text-zinc-500 font-medium">
+                            Synthesized analytics for your organization's identity posture.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-6 grid grid-cols-2 gap-4">
+                        {[
+                            { title: "Successful Logins", value: "48.2k", trend: "+12%", bg: "bg-emerald-50 text-emerald-600", icon: Shield },
+                            { title: "Blocked Attempts", value: "1.2k", trend: "-5%", bg: "bg-red-50 text-red-600", icon: Lock },
+                            { title: "Active Sessions", value: "842", trend: "+2%", bg: "bg-blue-50 text-blue-600", icon: Monitor },
+                            { title: "Global Reach", value: "14 Countries", trend: "0%", bg: "bg-amber-50 text-amber-600", icon: Globe },
+                        ].map((s) => (
+                            <div key={s.title} className="p-4 rounded-2xl border border-zinc-100 dark:border-zinc-800 flex items-start justify-between">
+                                <div>
+                                    <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1">{s.title}</p>
+                                    <p className="text-2xl font-black italic">{s.value}</p>
+                                    <span className={`text-[10px] font-bold mt-1 inline-block ${s.trend.startsWith('+') ? 'text-emerald-500' : 'text-red-500'}`}>{s.trend} than last period</span>
+                                </div>
+                                <div className={`h-10 w-10 rounded-xl flex items-center justify-center ${s.bg}`}>
+                                    <s.icon className="w-5 h-5" />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    <DialogFooter>
+                        <CustomButton variant="outline" className="rounded-xl flex-1" onClick={() => setIsReportsOpen(false)}>Close</CustomButton>
+                        <CustomButton className="bg-indigo-600 text-white hover:bg-indigo-700 rounded-xl flex-1">Download PDF Report</CustomButton>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Quick Config Sheet */}
+            <Sheet open={isQuickConfigOpen} onOpenChange={setIsQuickConfigOpen}>
+                <SheetContent className="sm:max-w-md border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
+                    <SheetHeader>
+                        <SheetTitle className="text-2xl font-bold tracking-tight flex items-center gap-2">
+                            {selectedMethod?.icon && <selectedMethod.icon className={`w-6 h-6 ${selectedMethod.color}`} />}
+                            {selectedMethod?.name}
+                        </SheetTitle>
+                        <SheetDescription className="text-zinc-500 font-medium">Quick security configuration.</SheetDescription>
+                    </SheetHeader>
+                    <div className="py-8 space-y-6">
+                        <div className="p-6 rounded-2xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 space-y-4">
+                            <h4 className="text-xs font-bold uppercase tracking-widest text-zinc-400">Enforcement Tier</h4>
+                            <div className="grid grid-cols-1 gap-2">
+                                {["Standard Enforcement", "Strict (All Users)", "Custom Selection"].map((tier) => (
+                                    <div key={tier} className="p-3 rounded-xl border border-zinc-200 bg-white flex items-center justify-between cursor-pointer hover:border-indigo-500 transition-colors group">
+                                        <span className="text-sm font-bold">{tier}</span>
+                                        <div className="h-4 w-4 rounded-full border-2 border-zinc-200 group-hover:border-indigo-600"></div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                        <div className="space-y-4">
+                            <h4 className="text-xs font-bold uppercase tracking-widest text-zinc-400">Policy Rules</h4>
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-sm font-medium">Auto-renew tokens</span>
+                                    <Switch defaultChecked />
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <span className="text-sm font-medium">Allow legacy clients</span>
+                                    <Switch />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <SheetFooter>
+                        <CustomButton className="bg-zinc-900 text-white hover:bg-zinc-800 rounded-xl w-full h-12" onClick={() => { toast.success("Policy tier updated"); setIsQuickConfigOpen(false); }}>Update Policy</CustomButton>
+                    </SheetFooter>
+                </SheetContent>
+            </Sheet>
+
+            {/* Investigate Log Sheet */}
+            <Sheet open={isInvestigateOpen} onOpenChange={setIsInvestigateOpen}>
+                <SheetContent className="sm:max-w-xl border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
+                    <SheetHeader>
+                        <SheetTitle className="text-2xl font-bold tracking-tight flex items-center gap-2">
+                            <Terminal className="w-6 h-6 text-orange-600" />
+                            Incident Investigation
+                        </SheetTitle>
+                        <SheetDescription className="text-zinc-500 font-medium">Detailed forensics for the selected authentication event.</SheetDescription>
+                    </SheetHeader>
+                    <div className="py-8 space-y-6 text-left">
+                        <div className={`p-6 rounded-2xl border-2 ${selectedLog?.severity === 'critical' ? 'border-red-500 bg-red-50/10' : 'border-orange-500 bg-orange-50/10'} space-y-2`}>
+                            <h4 className="text-lg font-black italic uppercase tracking-tighter">{selectedLog?.action}</h4>
+                            <p className="text-xs font-bold opacity-70 italic">{selectedLog?.details}</p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-1">
+                                <Label className="text-[10px] font-black uppercase text-zinc-400">Timestamp</Label>
+                                <p className="text-sm font-bold font-mono">2024-04-10T14:42:01Z</p>
+                            </div>
+                            <div className="space-y-1">
+                                <Label className="text-[10px] font-black uppercase text-zinc-400">Request ID</Label>
+                                <p className="text-sm font-bold font-mono">req_88a29b20</p>
+                            </div>
+                        </div>
+                        <div className="space-y-4 pt-4 border-t border-zinc-100 dark:border-zinc-800">
+                            <h4 className="text-xs font-bold uppercase tracking-widest">Available Actions</h4>
+                            <div className="grid grid-cols-2 gap-2">
+                                <CustomButton variant="outline" className="flex items-center gap-2 h-11 rounded-xl">
+                                    <FileText className="w-4 h-4" /> Export Evidence
+                                </CustomButton>
+                                <CustomButton variant="outline" className="flex items-center gap-2 h-11 rounded-xl">
+                                    <SearchCode className="w-4 h-4" /> Similar Events
+                                </CustomButton>
+                                <CustomButton className="col-span-2 bg-red-600 hover:bg-red-700 text-white h-11 rounded-xl font-bold text-xs tracking-widest">
+                                    BLOCK USER ACCOUNT IMMEDIATELY
+                                </CustomButton>
+                            </div>
+                        </div>
+                    </div>
+                </SheetContent>
+            </Sheet>
         </div>
     )
 }

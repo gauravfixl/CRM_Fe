@@ -11,10 +11,20 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogClose } from "@/components/ui/dialog"
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from "@/components/ui/sheet"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { BookOpen, Shield, Globe, MousePointer2 } from "lucide-react"
 
 export default function PasswordlessSecurityPage() {
     const [searchQuery, setSearchQuery] = useState("")
     const [isExperimental, setIsExperimental] = useState(true)
+    const [isGuideOpen, setIsGuideOpen] = useState(false)
+    const [isEnableAllOpen, setIsEnableAllOpen] = useState(false)
+    const [isPolicyControlOpen, setIsPolicyControlOpen] = useState(false)
+    const [isNewTechOpen, setIsNewTechOpen] = useState(false)
+    const [selectedTech, setSelectedTech] = useState<any>(null)
 
     const technologies = [
         { id: "1", name: "FIDO2 security keys", type: "Hardware factor", status: "Active", icon: Key, description: "Use physical USB or NFC keys to sign in without passwords.", security: "Highest" },
@@ -33,10 +43,10 @@ export default function PasswordlessSecurityPage() {
                 ]}
                 rightControls={
                     <div className="flex gap-2">
-                        <CustomButton variant="outline" className="rounded-xl h-10 px-4 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 font-bold" onClick={() => toast.info("Opening FIDO2 registration guide")}>
+                        <CustomButton variant="outline" className="rounded-xl h-10 px-4 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 font-bold" onClick={() => setIsGuideOpen(true)}>
                             Setup guide
                         </CustomButton>
-                        <CustomButton className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white rounded-xl h-10 px-6 font-semibold text-xs tracking-wide shadow-xl border-0" onClick={() => toast.success("Passwordless policies published")}>
+                        <CustomButton className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white rounded-xl h-10 px-6 font-semibold text-xs tracking-wide shadow-xl border-0" onClick={() => setIsEnableAllOpen(true)}>
                             Enable globally
                         </CustomButton>
                     </div>
@@ -117,7 +127,7 @@ export default function PasswordlessSecurityPage() {
                                     }`}>
                                     <tech.icon className="w-6 h-6" />
                                 </div>
-                                <CustomButton variant="ghost" size="icon" className="text-zinc-400 rounded-xl" onClick={() => toast.info(`Managing ${tech.name}`)}>
+                                <CustomButton variant="ghost" size="icon" className="text-zinc-400 rounded-xl" onClick={() => { setSelectedTech(tech); setIsPolicyControlOpen(true); }}>
                                     <MoreHorizontal className="w-4 h-4" />
                                 </CustomButton>
                             </CardHeader>
@@ -144,7 +154,7 @@ export default function PasswordlessSecurityPage() {
                                         <Laptop className="h-5 w-5 text-zinc-300" />
                                         <Smartphone className="h-5 w-5 text-zinc-300" />
                                     </div>
-                                    <CustomButton variant="ghost" className="h-10 text-xs text-zinc-500 font-semibold tracking-wide hover:text-violet-600 group-hover:translate-x-1 transition-transform" onClick={() => toast.info(`Opening registration settings for ${tech.name}`)}>
+                                    <CustomButton variant="ghost" className="h-10 text-xs text-zinc-500 font-semibold tracking-wide hover:text-violet-600 group-hover:translate-x-1 transition-transform" onClick={() => { setSelectedTech(tech); setIsPolicyControlOpen(true); }}>
                                         Policy Control <ChevronRight className="w-4 h-4 ml-1" />
                                     </CustomButton>
                                 </div>
@@ -152,7 +162,7 @@ export default function PasswordlessSecurityPage() {
                         </Card>
                     ))}
 
-                    <div className="border-4 border-dashed border-zinc-100 dark:border-zinc-800 p-8 flex flex-col items-center justify-center text-center space-y-6 hover:border-violet-500/20 transition-all cursor-pointer group bg-zinc-50/10 dark:bg-zinc-900/10 rounded-3xl" onClick={() => toast.info("Opening passwordless tech wizard")}>
+                    <div className="border-4 border-dashed border-zinc-100 dark:border-zinc-800 p-8 flex flex-col items-center justify-center text-center space-y-6 hover:border-violet-500/20 transition-all cursor-pointer group bg-zinc-50/10 dark:bg-zinc-900/10 rounded-3xl" onClick={() => setIsNewTechOpen(true)}>
                         <div className="h-20 w-20 rounded-full bg-zinc-50 dark:bg-zinc-900 flex items-center justify-center group-hover:rotate-90 transition-transform duration-500 shadow-sm border border-zinc-100 dark:border-zinc-800">
                             <Plus className="w-10 h-10 text-zinc-200 group-hover:text-violet-500" />
                         </div>
@@ -163,6 +173,125 @@ export default function PasswordlessSecurityPage() {
                     </div>
                 </div>
             </div>
+
+            {/* Modals & Sheets */}
+
+            {/* Setup Guide Dialog */}
+            <Dialog open={isGuideOpen} onOpenChange={setIsGuideOpen}>
+                <DialogContent className="sm:max-w-2xl rounded-3xl border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
+                    <DialogHeader>
+                        <DialogTitle className="text-2xl font-bold tracking-tight flex items-center gap-3">
+                            <BookOpen className="w-6 h-6 text-violet-600" />
+                            Passwordless Deployment Guide
+                        </DialogTitle>
+                    </DialogHeader>
+                    <div className="py-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-4">
+                            <h4 className="font-bold text-sm uppercase tracking-widest text-zinc-400">Step 1: Prerequisites</h4>
+                            <p className="text-xs font-medium text-zinc-500 leading-relaxed italic">
+                                Ensure your users are on compliant OS versions (Windows 10+, macOS Monterey+) and have biometric hardware available.
+                            </p>
+                            <Badge className="bg-emerald-50 text-emerald-600 border-0 font-bold px-2">VERIFIED</Badge>
+                        </div>
+                        <div className="space-y-4">
+                            <h4 className="font-bold text-sm uppercase tracking-widest text-zinc-400">Step 2: Registration</h4>
+                            <p className="text-xs font-medium text-zinc-500 leading-relaxed italic">
+                                Users will be prompted to register their first passkey during their next sign-in once enabled globally.
+                            </p>
+                            <Badge className="bg-indigo-50 text-indigo-600 border-0 font-bold px-2">PENDING</Badge>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* Enable Globally Confirmation */}
+            <Dialog open={isEnableAllOpen} onOpenChange={setIsEnableAllOpen}>
+                <DialogContent className="sm:max-w-md rounded-3xl border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
+                    <DialogHeader className="text-center items-center">
+                        <div className="h-16 w-16 bg-violet-50 text-violet-600 rounded-full flex items-center justify-center mb-4">
+                            <Shield className="w-8 h-8" />
+                        </div>
+                        <DialogTitle className="text-xl font-bold tracking-tight">Enable Passwordless Globally?</DialogTitle>
+                        <DialogDescription className="text-zinc-500 font-medium">
+                            This will allow all users in your organization to replace their passwords with FIDO2/Passkey credentials.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="sm:justify-center gap-2 mt-4">
+                        <CustomButton variant="outline" className="rounded-xl px-8" onClick={() => setIsEnableAllOpen(false)}>Not yet</CustomButton>
+                        <CustomButton className="bg-violet-600 hover:bg-violet-700 text-white rounded-xl px-8" onClick={() => { toast.success("Passwordless enabled for all tenants"); setIsEnableAllOpen(false); }}>Enable Now</CustomButton>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Policy Control Sheet */}
+            <Sheet open={isPolicyControlOpen} onOpenChange={setIsPolicyControlOpen}>
+                <SheetContent className="sm:max-w-md border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
+                    <SheetHeader>
+                        <SheetTitle className="text-2xl font-bold tracking-tight">Policy: {selectedTech?.name}</SheetTitle>
+                        <SheetDescription className="text-zinc-500 font-medium">Configure enforcement rules for this technology.</SheetDescription>
+                    </SheetHeader>
+                    <div className="py-8 space-y-8">
+                        <div className="space-y-4">
+                            <h4 className="text-xs font-bold uppercase tracking-widest text-zinc-400">Assignment</h4>
+                            <Select defaultValue="all">
+                                <SelectTrigger className="rounded-xl h-11 border-zinc-200">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent className="rounded-xl">
+                                    <SelectItem value="all">All Licensed Users</SelectItem>
+                                    <SelectItem value="it">Security & IT Groups Only</SelectItem>
+                                    <SelectItem value="custom">Scoped Users (Selected)</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-4">
+                            <h4 className="text-xs font-bold uppercase tracking-widest text-zinc-400">Required States</h4>
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-sm font-medium">Hardware Boot Verification</span>
+                                    <Switch defaultChecked />
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <span className="text-sm font-medium">TPM 2.0 Enforcement</span>
+                                    <Switch />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </SheetContent>
+            </Sheet>
+
+            {/* New Tech Registration Sheet */}
+            <Sheet open={isNewTechOpen} onOpenChange={setIsNewTechOpen}>
+                <SheetContent className="sm:max-w-lg border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
+                    <SheetHeader>
+                        <SheetTitle className="text-2xl font-bold tracking-tight italic">Onboard Passwordless Tech</SheetTitle>
+                        <SheetDescription className="text-zinc-500 font-medium italic italic">Register a new authentication standard for your identities.</SheetDescription>
+                    </SheetHeader>
+                    <div className="py-8 space-y-6">
+                        <div className="p-6 rounded-3xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 text-center space-y-4 group cursor-pointer hover:border-violet-500/50 transition-colors">
+                            <div className="h-16 w-16 mx-auto bg-white dark:bg-zinc-950 rounded-2xl flex items-center justify-center border border-zinc-200 group-hover:rotate-12 transition-transform">
+                                <Globe className="w-8 h-8 text-violet-500" />
+                            </div>
+                            <div>
+                                <h4 className="text-lg font-bold">Standard WebAuthn</h4>
+                                <p className="text-xs text-zinc-500 font-medium mt-1">Cross-platform browser-based biometrics</p>
+                            </div>
+                            <CustomButton className="bg-violet-600 text-white rounded-xl h-10 w-full font-bold text-xs tracking-widest">PROVISION</CustomButton>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="p-4 rounded-2xl border border-zinc-100 dark:border-zinc-800 space-y-2 hover:bg-zinc-50 transition-colors cursor-pointer">
+                                <KeyRound className="w-5 h-5 text-indigo-600" />
+                                <p className="text-xs font-bold leading-tight">YubiHSM Management</p>
+                            </div>
+                            <div className="p-4 rounded-2xl border border-zinc-100 dark:border-zinc-800 space-y-2 hover:bg-zinc-50 transition-colors cursor-pointer">
+                                <MousePointer2 className="w-5 h-5 text-violet-600" />
+                                <p className="text-xs font-bold leading-tight">Passkey Manager</p>
+                            </div>
+                        </div>
+                    </div>
+                </SheetContent>
+            </Sheet>
         </div>
     )
 }
