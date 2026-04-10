@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import React, { useState, useEffect } from "react"
 import {
@@ -40,20 +40,21 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "sonner"
 import { fetchUsersApi, createOrgInvite, updateOrgUser, deleteOrgUser, getAllOrgInvites } from "@/modules/crm/organizations/hooks/orgHooks"
-import { getAllFirmsList } from "@/hooks/firmHooks"
+import { getAllFirmsList, getAllFirms } from "@/hooks/firmHooks"
+import { axiosInstance } from "@/lib/axios"
 
 const roleMap: Record<string, string> = {
-    ADMIN: "Super Admin",
-    SUB_ADMIN: "Org Admin",
-    MANAGER: "Compliance Officer",
-    BILLING: "Billing Admin",
+    SuperAdmin: "Super Admin",
+    OrgAdmin: "Org Admin",
+    SalesManager: "Sales Manager",
+    FinanceManager: "Finance Manager",
 }
 
 const roleReverseMap: Record<string, string> = {
-    "Super Admin": "ADMIN",
-    "Org Admin": "SUB_ADMIN",
-    "Compliance Officer": "MANAGER",
-    "Billing Admin": "BILLING",
+    "Super Admin": "SuperAdmin",
+    "Org Admin": "OrgAdmin",
+    "Sales Manager": "SalesManager",
+    "Finance Manager": "FinanceManager",
 }
 
 export default function FirmAdminsPage() {
@@ -72,12 +73,11 @@ export default function FirmAdminsPage() {
     const [firms, setFirms] = useState<any[]>([])
     const [firmsLoading, setFirmsLoading] = useState(false)
 
-    // Firm-level roles
+    // Firm-level roles (Mapped to backend roles)
     const firmRoles = [
-        { value: "FIRM_ADMIN", label: "Firm Admin", desc: "Full access to manage the firm" },
-        { value: "FIRM_MANAGER", label: "Firm Manager", desc: "Manage operations, no settings access" },
-        { value: "FIRM_ACCOUNTANT", label: "Firm Accountant", desc: "Manage invoices & financial data" },
-        { value: "FIRM_VIEWER", label: "Firm Viewer", desc: "Read-only access to firm data" },
+        { value: "OrgAdmin", label: "Firm Admin", desc: "Full access to manage the firm" },
+        { value: "SalesManager", label: "Firm Manager", desc: "Manage operations, no settings access" },
+        { value: "FinanceManager", label: "Firm Accountant", desc: "Manage invoices & financial data" },
     ]
 
     // Validation helpers
@@ -126,11 +126,30 @@ export default function FirmAdminsPage() {
     const fetchFirms = async () => {
         try {
             setFirmsLoading(true)
-            const res = await getAllFirmsList()
-            const firmData = res?.data?.data || res?.data || []
-            setFirms(Array.isArray(firmData) ? firmData : [])
-        } catch (err) {
+            const res = await axiosInstance.get("/firm/getAllFirm")
+            console.log("Firms API Response:", res.data)
+            
+            let fetchedFirms = []
+            if (res.data && Array.isArray(res.data.firms)) {
+                fetchedFirms = res.data.firms
+            } else if (res.data && Array.isArray(res.data.data)) {
+                fetchedFirms = res.data.data
+            } else if (Array.isArray(res.data)) {
+                fetchedFirms = res.data
+            }
+
+            if (fetchedFirms.length === 0) {
+                // Fallback to getFirmList if getAllFirm is empty
+                const resList = await axiosInstance.get("/firm/getFirmList")
+                if (resList.data && Array.isArray(resList.data.firms)) {
+                    fetchedFirms = resList.data.firms
+                }
+            }
+
+            setFirms(fetchedFirms)
+        } catch (err: any) {
             console.error("Failed to fetch firms:", err)
+            toast.error("Failed to load firms. Please refresh the page.")
         } finally {
             setFirmsLoading(false)
         }
@@ -215,45 +234,54 @@ export default function FirmAdminsPage() {
     const fetchAdmins = async () => {
         try {
             setLoading(true)
-            const [usersData, invitesRes] = await Promise.all([
-                fetchUsersApi(),
-                getAllOrgInvites().catch(() => ({ data: [] })),
-            ])
-
-            const users = usersData?.users || usersData || []
-            const activeAdmins = (Array.isArray(users) ? users : []).map((user: any) => ({
+            // Fetch users directlly with axiosInstance
+            const usersRes = await axiosInstance.get("/organization/users/all")
+            const usersData = usersRes?.data
+            const users = usersData?.users || (Array.isArray(usersData) ? usersData : [])
+            
+            const activeAdmins = users.map((user: any) => ({
                 id: user.memberId || user._id,
-                name: user.name || [user.firstName, user.lastName].filter(Boolean).join(" ") || "ΓÇö",
+                name: user.name || [user.firstName, user.lastName].filter(Boolean).join(" ") || "—",
                 email: user.email,
                 role: roleMap[user.role] || user.role,
                 status: user.orgActive === false ? "Inactive" : "Active",
-                lastActive: user.joinedAt ? new Date(user.joinedAt).toLocaleDateString() : "ΓÇö",
+                lastActive: user.joinedAt ? new Date(user.joinedAt).toLocaleDateString() : "—",
                 avatar: user.avatar,
             }))
 
-            const invitesData = invitesRes?.data
-            const invites = Array.isArray(invitesData) ? invitesData : invitesData?.invites || []
-            const pendingInvites = invites.map((invite: any) => ({
-                id: invite._id || invite.id || `INV-${invite.email}`,
-                name: invite.name || invite.email?.split("@")[0] || "ΓÇö",
-                email: invite.email,
-                role: roleMap[invite.role] || invite.role || "Org Admin",
-                status: "Pending",
-                lastActive: "Never",
-            }))
+            // Fetch invites separately to handle partial failures
+            let pendingInvites: any[] = []
+            try {
+                const invitesRes = await axiosInstance.get("/organization/all/Invite")
+                const invitesData = invitesRes?.data
+                const invites = invitesData?.invitations || (Array.isArray(invitesData) ? invitesData : [])
+                pendingInvites = invites.map((invite: any) => ({
+                    id: invite._id || invite.id || `INV-${invite.email}`,
+                    name: invite.name || invite.email?.split("@")[0] || "—",
+                    email: invite.email,
+                    role: roleMap[invite.role] || invite.role || "Org Admin",
+                    status: "Pending",
+                    lastActive: "Never",
+                }))
+            } catch (err) {
+                console.error("Failed to fetch invites:", err)
+            }
 
             setAdmins([...activeAdmins, ...pendingInvites])
-        } catch (error) {
-            console.error("Failed to fetch admins:", error)
-            toast.error("Failed to load admins.")
+        } catch (err: any) {
+            console.error("Failed to fetch admins:", err)
+            toast.error("Failed to load administrator accounts.")
         } finally {
             setLoading(false)
         }
     }
 
     useEffect(() => {
-        fetchAdmins()
-        fetchFirms()
+        const loadInitialData = async () => {
+            await fetchAdmins()
+            await fetchFirms()
+        }
+        loadInitialData()
     }, [])
 
     const filteredAdmins = admins.filter(admin =>
@@ -304,15 +332,15 @@ export default function FirmAdminsPage() {
     }
 
     return (
-        <div className="flex flex-col h-full w-full bg-slate-50/50 p-6 space-y-6 overflow-y-auto font-outfit">
+        <div className="flex flex-col h-full w-full bg-background p-6 space-y-6 overflow-y-auto font-outfit">
             {/* HEADER */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-xl font-semibold text-gray-900">Firm Administrators</h1>
-                    <p className="text-sm text-gray-600 mt-1">Manage institutional level identities and their global access privileges.</p>
+                    <h1 className="text-xl font-semibold text-foreground">Firm Administrators</h1>
+                    <p className="text-sm text-muted-foreground mt-1">Manage institutional level identities and their global access privileges.</p>
                 </div>
                 <div className="flex gap-3">
-                    <Button variant="outline" className="h-9 gap-2 border-gray-200 font-medium" onClick={handleExport}>
+                    <Button variant="outline" className="h-9 gap-2 border-border font-medium" onClick={handleExport}>
                         <Download className="w-4 h-4" />
                         Export Ledger
                     </Button>
@@ -325,26 +353,26 @@ export default function FirmAdminsPage() {
                         }
                     }}>
                         <DialogTrigger asChild>
-                            <Button className="h-9 bg-primary hover:bg-primary/90 text-white gap-2 font-medium px-6 shadow-sm rounded-md">
+                            <Button className="h-9 bg-primary hover:bg-primary/90 text-primary-foreground gap-2 font-medium px-6 shadow-sm rounded-md">
                                 <UserPlus className="w-4 h-4" />
                                 Invite Firm Admin
                             </Button>
                         </DialogTrigger>
-                        <DialogContent className="sm:max-w-[480px] p-0 overflow-hidden border-none rounded-xl shadow-xl">
-                            <div className="bg-primary p-6 text-white relative">
-                                <Shield className="absolute right-6 top-6 w-12 h-12 text-white/10" />
+                        <DialogContent className="sm:max-w-[480px] p-0 overflow-hidden border-transparent rounded-xl shadow-xl">
+                            <div className="bg-primary p-6 text-primary-foreground relative">
+                                <Shield className="absolute right-6 top-6 w-12 h-12 text-primary-foreground/10" />
                                 <DialogHeader>
-                                    <DialogTitle className="text-xl font-semibold text-white">Invite Firm Admin</DialogTitle>
-                                    <DialogDescription className="text-white/80 text-sm mt-1">
+                                    <DialogTitle className="text-xl font-semibold text-primary-foreground">Invite Firm Admin</DialogTitle>
+                                    <DialogDescription className="text-primary-foreground/80 text-sm mt-1">
                                         Grant administrative privileges to manage a specific firm.
                                     </DialogDescription>
                                 </DialogHeader>
                             </div>
-                            <form onSubmit={handleInviteAdmin} className="p-6 space-y-5 bg-white">
+                            <form onSubmit={handleInviteAdmin} className="p-6 space-y-5 bg-card">
                                 <div className="space-y-4">
                                     {/* Full Name */}
                                     <div className="space-y-1.5">
-                                        <Label htmlFor="fullName" className="text-sm font-medium text-gray-700">
+                                        <Label htmlFor="fullName" className="text-sm font-medium text-foreground/80">
                                             Full Name <span className="text-red-500">*</span>
                                         </Label>
                                         <Input
@@ -353,7 +381,7 @@ export default function FirmAdminsPage() {
                                             value={inviteForm.name}
                                             onChange={(e) => handleInviteFieldChange("name", e.target.value)}
                                             onBlur={() => handleInviteBlur("name")}
-                                            className={`h-10 rounded-md bg-white ${inviteTouched.name && inviteErrors.name ? "border-red-400 focus-visible:ring-red-400" : "border-gray-200"}`}
+                                            className={`h-10 rounded-md bg-card ${inviteTouched.name && inviteErrors.name ? "border-red-400 focus-visible:ring-red-400" : "border-border"}`}
                                         />
                                         {inviteTouched.name && inviteErrors.name && (
                                             <p className="text-xs text-red-500 mt-1">{inviteErrors.name}</p>
@@ -362,7 +390,7 @@ export default function FirmAdminsPage() {
 
                                     {/* Email */}
                                     <div className="space-y-1.5">
-                                        <Label htmlFor="inviteEmail" className="text-sm font-medium text-gray-700">
+                                        <Label htmlFor="inviteEmail" className="text-sm font-medium text-foreground/80">
                                             Email Address <span className="text-red-500">*</span>
                                         </Label>
                                         <Input
@@ -372,7 +400,7 @@ export default function FirmAdminsPage() {
                                             value={inviteForm.email}
                                             onChange={(e) => handleInviteFieldChange("email", e.target.value)}
                                             onBlur={() => handleInviteBlur("email")}
-                                            className={`h-10 rounded-md bg-white ${inviteTouched.email && inviteErrors.email ? "border-red-400 focus-visible:ring-red-400" : "border-gray-200"}`}
+                                            className={`h-10 rounded-md bg-card ${inviteTouched.email && inviteErrors.email ? "border-red-400 focus-visible:ring-red-400" : "border-border"}`}
                                         />
                                         {inviteTouched.email && inviteErrors.email && (
                                             <p className="text-xs text-red-500 mt-1">{inviteErrors.email}</p>
@@ -381,7 +409,7 @@ export default function FirmAdminsPage() {
 
                                     {/* Select Firm */}
                                     <div className="space-y-1.5">
-                                        <Label htmlFor="firmSelect" className="text-sm font-medium text-gray-700">
+                                        <Label htmlFor="firmSelect" className="text-sm font-medium text-foreground/80">
                                             Assign to Firm <span className="text-red-500">*</span>
                                         </Label>
                                         <Select
@@ -390,13 +418,13 @@ export default function FirmAdminsPage() {
                                         >
                                             <SelectTrigger
                                                 id="firmSelect"
-                                                className={`h-10 rounded-md bg-white ${inviteTouched.firmId && inviteErrors.firmId ? "border-red-400" : "border-gray-200"}`}
+                                                className={`h-10 rounded-md bg-card ${inviteTouched.firmId && inviteErrors.firmId ? "border-red-400" : "border-border"}`}
                                             >
                                                 <SelectValue placeholder={firmsLoading ? "Loading firms..." : "Select a firm"} />
                                             </SelectTrigger>
                                             <SelectContent>
                                                 {firms.length === 0 ? (
-                                                    <div className="px-3 py-2 text-sm text-gray-500">
+                                                    <div className="px-3 py-2 text-sm text-muted-foreground">
                                                         {firmsLoading ? "Loading..." : "No firms found. Create a firm first."}
                                                     </div>
                                                 ) : (
@@ -415,14 +443,14 @@ export default function FirmAdminsPage() {
 
                                     {/* Firm Role */}
                                     <div className="space-y-1.5">
-                                        <Label htmlFor="firmRole" className="text-sm font-medium text-gray-700">
+                                        <Label htmlFor="firmRole" className="text-sm font-medium text-foreground/80">
                                             Firm Role <span className="text-red-500">*</span>
                                         </Label>
                                         <Select
                                             value={inviteForm.role}
                                             onValueChange={(val) => handleInviteFieldChange("role", val)}
                                         >
-                                            <SelectTrigger id="firmRole" className="h-10 rounded-md bg-white border-gray-200">
+                                            <SelectTrigger id="firmRole" className="h-10 rounded-md bg-card border-border">
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
@@ -430,7 +458,7 @@ export default function FirmAdminsPage() {
                                                     <SelectItem key={r.value} value={r.value}>
                                                         <div className="flex flex-col">
                                                             <span>{r.label}</span>
-                                                            <span className="text-xs text-gray-400">{r.desc}</span>
+                                                            <span className="text-xs text-muted-foreground/70">{r.desc}</span>
                                                         </div>
                                                     </SelectItem>
                                                 ))}
@@ -438,12 +466,12 @@ export default function FirmAdminsPage() {
                                         </Select>
                                     </div>
                                 </div>
-                                <div className="pt-4 flex items-center justify-between border-t border-gray-100">
-                                    <p className="text-xs text-gray-500 max-w-[200px]">An invitation email will be sent to the provided address.</p>
+                                <div className="pt-4 flex items-center justify-between border-t border-border/50">
+                                    <p className="text-xs text-muted-foreground max-w-[200px]">An invitation email will be sent to the provided address.</p>
                                     <Button
                                         type="submit"
                                         disabled={!!(inviteErrors.name || inviteErrors.email || inviteErrors.firmId)}
-                                        className="bg-primary hover:bg-primary/90 text-white px-6 font-medium h-10 rounded-md shadow-sm disabled:opacity-50"
+                                        className="bg-primary hover:bg-primary/90 text-primary-foreground px-6 font-medium h-10 rounded-md shadow-sm disabled:opacity-50"
                                     >
                                         Send Invite
                                     </Button>
@@ -456,25 +484,25 @@ export default function FirmAdminsPage() {
 
             {/* QUICK STATS */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <SmallCard className="border bg-gradient-to-r from-primary/70 to-primary text-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                <SmallCard className="border bg-gradient-to-r from-primary/70 to-primary text-primary-foreground shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
                     <SmallCardContent className="p-4">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-white text-xs opacity-80">Total Admins</p>
-                                <p className="text-white text-xl font-semibold mt-1">{admins.length}</p>
-                                <p className="text-white text-[10px] mt-1">Global Scope</p>
+                                <p className="text-primary-foreground text-xs opacity-80">Total Admins</p>
+                                <p className="text-primary-foreground text-xl font-semibold mt-1">{admins.length}</p>
+                                <p className="text-primary-foreground text-[10px] mt-1">Global Scope</p>
                             </div>
-                            <Users className="w-5 h-5 text-white" />
+                            <Users className="w-5 h-5 text-primary-foreground" />
                         </div>
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                <SmallCard className="border bg-card shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
                     <SmallCardContent className="p-4">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-gray-600 text-xs">Active Seats</p>
-                                <p className="text-xl font-semibold text-gray-900 mt-1">{admins.filter(a => a.status === 'Active').length}</p>
+                                <p className="text-muted-foreground text-xs">Active Seats</p>
+                                <p className="text-xl font-semibold text-foreground mt-1">{admins.filter(a => a.status === 'Active').length}</p>
                                 <p className="text-green-600 text-[10px] mt-1">Verified identities</p>
                             </div>
                             <ShieldCheck className="w-5 h-5 text-primary" />
@@ -482,12 +510,12 @@ export default function FirmAdminsPage() {
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                <SmallCard className="border bg-card shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
                     <SmallCardContent className="p-4">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-gray-600 text-xs">Pending Keys</p>
-                                <p className="text-xl font-semibold text-gray-900 mt-1">{admins.filter(a => a.status === 'Pending').length}</p>
+                                <p className="text-muted-foreground text-xs">Pending Keys</p>
+                                <p className="text-xl font-semibold text-foreground mt-1">{admins.filter(a => a.status === 'Pending').length}</p>
                                 <p className="text-amber-600 text-[10px] mt-1">Awaiting MFA sync</p>
                             </div>
                             <Lock className="w-5 h-5 text-primary" />
@@ -495,12 +523,12 @@ export default function FirmAdminsPage() {
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                <SmallCard className="border bg-card shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
                     <SmallCardContent className="p-4">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-gray-600 text-xs">Global Roles</p>
-                                <p className="text-xl font-semibold text-gray-900 mt-1">4</p>
+                                <p className="text-muted-foreground text-xs">Global Roles</p>
+                                <p className="text-xl font-semibold text-foreground mt-1">4</p>
                                 <p className="text-blue-600 text-[10px] mt-1">Hierarchical Levels</p>
                             </div>
                             <Shield className="w-5 h-5 text-primary" />
@@ -510,41 +538,41 @@ export default function FirmAdminsPage() {
             </div>
 
             {/* FILTER BAR */}
-            <div className="flex items-center gap-4 bg-white p-2 rounded-lg border border-gray-200 shadow-sm mt-2">
+            <div className="flex items-center gap-4 bg-card p-2 rounded-lg border border-border shadow-sm mt-2">
                 <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/70" />
                     <Input
                         placeholder="Search admins by name or email..."
-                        className="pl-10 h-9 border-none bg-transparent focus-visible:ring-0 text-sm font-medium"
+                        className="pl-10 h-9 border-transparent bg-transparent focus-visible:ring-0 text-sm font-medium"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                     />
                 </div>
-                <Separator orientation="vertical" className="h-6 bg-gray-200" />
-                <Button variant="ghost" className="h-9 text-xs font-semibold gap-2 text-gray-600">
+                <Separator orientation="vertical" className="h-6 bg-muted" />
+                <Button variant="ghost" className="h-9 text-xs font-semibold gap-2 text-muted-foreground">
                     <Filter className="w-4 h-4" />
                     Filter Roles
                 </Button>
             </div>
 
             {/* ADMINS TABLE */}
-            <Card className="border-gray-200 shadow-sm overflow-hidden bg-white">
-                <CardHeader className="border-b border-gray-100 bg-white flex flex-row items-center justify-between p-4">
+            <Card className="border-border shadow-sm overflow-hidden bg-card">
+                <CardHeader className="border-b border-border/50 bg-card flex flex-row items-center justify-between p-4">
                     <div>
-                        <CardTitle className="text-base font-semibold text-gray-900">Administrative Directory</CardTitle>
-                        <CardDescription className="text-sm text-gray-500 mt-1">List of all identities with organizational override capabilities.</CardDescription>
+                        <CardTitle className="text-base font-semibold text-foreground">Administrative Directory</CardTitle>
+                        <CardDescription className="text-sm text-muted-foreground mt-1">List of all identities with organizational override capabilities.</CardDescription>
                     </div>
                 </CardHeader>
                 <CardContent className="p-0">
                     <div className="overflow-x-auto">
                         <table className="w-full text-left">
-                            <thead className="bg-gray-50/50 border-b border-gray-100">
+                            <thead className="bg-muted/30 border-b border-border/50">
                                 <tr>
-                                    <th className="px-6 py-3 text-xs font-semibold text-gray-500">Identity Details</th>
-                                    <th className="px-4 py-3 text-xs font-semibold text-gray-500">Global Role</th>
-                                    <th className="px-4 py-3 text-xs font-semibold text-gray-500">Status</th>
-                                    <th className="px-4 py-3 text-xs font-semibold text-gray-500">Last Observed</th>
-                                    <th className="px-6 py-3 text-xs font-semibold text-gray-500 text-right">Actions</th>
+                                    <th className="px-6 py-3 text-xs font-semibold text-muted-foreground">Identity Details</th>
+                                    <th className="px-4 py-3 text-xs font-semibold text-muted-foreground">Global Role</th>
+                                    <th className="px-4 py-3 text-xs font-semibold text-muted-foreground">Status</th>
+                                    <th className="px-4 py-3 text-xs font-semibold text-muted-foreground">Last Observed</th>
+                                    <th className="px-6 py-3 text-xs font-semibold text-muted-foreground text-right">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">
@@ -553,53 +581,53 @@ export default function FirmAdminsPage() {
                                         <tr key={`skeleton-${i}`} className="animate-pulse">
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="h-9 w-9 rounded-full bg-gray-200" />
+                                                    <div className="h-9 w-9 rounded-full bg-muted" />
                                                     <div className="space-y-2">
-                                                        <div className="h-3 w-28 bg-gray-200 rounded" />
+                                                        <div className="h-3 w-28 bg-muted rounded" />
                                                         <div className="h-2.5 w-36 bg-gray-100 rounded" />
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="px-4 py-4"><div className="h-3 w-20 bg-gray-200 rounded" /></td>
-                                            <td className="px-4 py-4"><div className="h-5 w-14 bg-gray-200 rounded-full" /></td>
-                                            <td className="px-4 py-4"><div className="h-3 w-16 bg-gray-200 rounded" /></td>
-                                            <td className="px-6 py-4 text-right"><div className="h-6 w-6 bg-gray-200 rounded ml-auto" /></td>
+                                            <td className="px-4 py-4"><div className="h-3 w-20 bg-muted rounded" /></td>
+                                            <td className="px-4 py-4"><div className="h-5 w-14 bg-muted rounded-full" /></td>
+                                            <td className="px-4 py-4"><div className="h-3 w-16 bg-muted rounded" /></td>
+                                            <td className="px-6 py-4 text-right"><div className="h-6 w-6 bg-muted rounded ml-auto" /></td>
                                         </tr>
                                     ))
                                 )}
                                 {!loading && filteredAdmins.map((admin) => (
-                                    <tr key={admin.id} className="hover:bg-gray-50/50 transition-colors group">
+                                    <tr key={admin.id} className="hover:bg-muted/30 transition-colors group">
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
                                                 <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-primary shadow-sm transition-colors">
                                                     <User className="w-4 h-4" />
                                                 </div>
                                                 <div>
-                                                    <p className="text-sm font-semibold text-gray-900">{admin.name}</p>
-                                                    <p className="text-xs text-gray-500 mt-0.5">{admin.email}</p>
+                                                    <p className="text-sm font-semibold text-foreground">{admin.name}</p>
+                                                    <p className="text-xs text-muted-foreground mt-0.5">{admin.email}</p>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-4 py-4 text-sm font-medium text-gray-700">
+                                        <td className="px-4 py-4 text-sm font-medium text-foreground/80">
                                             {admin.role}
                                         </td>
                                         <td className="px-4 py-4">
-                                            <Badge className={`text-xs font-medium px-2 py-0.5 rounded-full border-none ${admin.status === 'Active' ? 'bg-green-100 text-green-700 hover:bg-green-100' : 'bg-amber-100 text-amber-700 hover:bg-amber-100'
+                                            <Badge className={`text-xs font-medium px-2 py-0.5 rounded-full border-transparent ${admin.status === 'Active' ? 'bg-green-100 text-green-700 hover:bg-green-100' : 'bg-amber-100 text-amber-700 hover:bg-amber-100'
                                                 }`}>
                                                 {admin.status}
                                             </Badge>
                                         </td>
-                                        <td className="px-4 py-4 text-sm text-gray-500">
+                                        <td className="px-4 py-4 text-sm text-muted-foreground">
                                             {admin.lastActive}
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-gray-600 transition-colors">
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground/70 hover:text-muted-foreground transition-colors">
                                                         <MoreVertical className="w-4 h-4" />
                                                     </Button>
                                                 </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end" className="w-48 bg-white z-50">
+                                                <DropdownMenuContent align="end" className="w-48 bg-card z-50">
                                                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                                     <DropdownMenuSeparator />
                                                     <DropdownMenuItem onClick={() => handleEditRole(admin)} className="cursor-pointer font-medium">
@@ -618,8 +646,8 @@ export default function FirmAdminsPage() {
                         {!loading && filteredAdmins.length === 0 && (
                             <div className="p-16 flex flex-col items-center justify-center text-center">
                                 <SearchX className="w-10 h-10 text-gray-300 mb-3" />
-                                <p className="text-sm font-semibold text-gray-900">No identities found</p>
-                                <p className="text-sm text-gray-500 mt-1">Try refining your search terms.</p>
+                                <p className="text-sm font-semibold text-foreground">No identities found</p>
+                                <p className="text-sm text-muted-foreground mt-1">Try refining your search terms.</p>
                             </div>
                         )}
                     </div>
@@ -628,12 +656,12 @@ export default function FirmAdminsPage() {
 
             {/* Edit Role Dialog */}
             <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-                <DialogContent className="sm:max-w-[450px] p-0 border-none rounded-xl shadow-xl overflow-hidden bg-white">
-                    <div className="bg-primary p-6 text-white relative">
-                        <Shield className="absolute right-6 top-6 w-12 h-12 text-white/10" />
+                <DialogContent className="sm:max-w-[450px] p-0 border-transparent rounded-xl shadow-xl overflow-hidden bg-card">
+                    <div className="bg-primary p-6 text-primary-foreground relative">
+                        <Shield className="absolute right-6 top-6 w-12 h-12 text-primary-foreground/10" />
                         <DialogHeader>
-                            <DialogTitle className="text-xl font-semibold text-white">Edit Access Privileges</DialogTitle>
-                            <DialogDescription className="text-white/80 text-sm mt-1">
+                            <DialogTitle className="text-xl font-semibold text-primary-foreground">Edit Access Privileges</DialogTitle>
+                            <DialogDescription className="text-primary-foreground/80 text-sm mt-1">
                                 Update the administrative role for this identity.
                             </DialogDescription>
                         </DialogHeader>
@@ -641,21 +669,21 @@ export default function FirmAdminsPage() {
                     <form onSubmit={submitEditRole} className="p-6 space-y-5 flex flex-col items-stretch">
                         <div className="space-y-4">
                             <div className="space-y-2">
-                                <Label className="text-sm font-medium text-gray-700">Identity Details</Label>
-                                <div className="p-3 bg-gray-50 rounded-md border border-gray-100 flex items-center gap-3">
+                                <Label className="text-sm font-medium text-foreground/80">Identity Details</Label>
+                                <div className="p-3 bg-muted/50 rounded-md border border-border/50 flex items-center gap-3">
                                     <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
                                         <User className="w-4 h-4" />
                                     </div>
                                     <div>
-                                        <p className="text-sm font-bold text-gray-900">{selectedAdmin?.name}</p>
-                                        <p className="text-xs text-gray-500">{selectedAdmin?.email}</p>
+                                        <p className="text-sm font-bold text-foreground">{selectedAdmin?.name}</p>
+                                        <p className="text-xs text-muted-foreground">{selectedAdmin?.email}</p>
                                     </div>
                                 </div>
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="edit-role" className="text-sm font-medium text-gray-700">Administrative Role</Label>
+                                <Label htmlFor="edit-role" className="text-sm font-medium text-foreground/80">Administrative Role</Label>
                                 <Select name="role" defaultValue={selectedAdmin?.role || "Org Admin"}>
-                                    <SelectTrigger id="edit-role" className="h-10 rounded-md bg-white border-gray-200">
+                                    <SelectTrigger id="edit-role" className="h-10 rounded-md bg-card border-border">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -668,7 +696,7 @@ export default function FirmAdminsPage() {
                         </div>
                         <div className="col-span-full pt-4 flex justify-end gap-3 mt-auto">
                             <Button type="button" variant="outline" className="h-10 rounded-md whitespace-nowrap px-6 shrink-0" onClick={() => setIsEditOpen(false)}>Cancel</Button>
-                            <Button type="submit" className="bg-primary hover:bg-primary/90 text-white font-medium h-10 rounded-md px-6 shadow-sm whitespace-nowrap shrink-0">Save Changes</Button>
+                            <Button type="submit" className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium h-10 rounded-md px-6 shadow-sm whitespace-nowrap shrink-0">Save Changes</Button>
                         </div>
                     </form>
                 </DialogContent>
