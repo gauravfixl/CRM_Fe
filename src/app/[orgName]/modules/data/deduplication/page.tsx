@@ -132,8 +132,8 @@ export default function DeduplicationPage() {
             {/* Stats */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div className="bg-gradient-to-r from-primary/70 to-primary text-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 p-6 rounded-xl">
-                    <p className="text-xs opacity-80">Total Duplicates</p>
-                    <h2 className="text-xl font-semibold">{totalDuplicates}</h2>
+                    <p className="text-xs font-semibold text-white">Total Duplicates</p>
+                    <h2 className="text-xl font-semibold text-white">{totalDuplicates}</h2>
                     <p className="text-[10px] mt-1 opacity-80">Across all modules</p>
                 </div>
 
