@@ -1622,9 +1622,9 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
   return (
     <>
       {/* PRIMARY SIDEBAR - Categories & Inline Dropdowns */}
-      <Sidebar collapsible="icon" {...props} className="border-r bg-white dark:bg-zinc-950 z-30">
+      <Sidebar collapsible="icon" {...props} className="border-r bg-white dark:bg-zinc-950 z-30 !top-[63px]">
         <SidebarHeader className="h-0 p-0 m-0" />
-        <SidebarContent className="bg-white dark:bg-zinc-950 pt-2 hover-scroll">
+        <SidebarContent className="bg-white dark:bg-zinc-950 pt-4 hover-scroll">
           <SidebarMenu>
             {finalSidebarGroups.map((group) => {
               const isActive = activeCategory === group.title;
