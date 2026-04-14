@@ -168,7 +168,7 @@ export function AppLayout({ children, leftPanel: propLeftPanel, rightPanel: prop
 
               <SidebarInset className="flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-transparent relative isolate">
                 <LoaderWrapper />
-                <div ref={scrollContainerRef} className={`flex-1 flex flex-col gap-4 h-full relative z-0 isolate ${pathname?.endsWith('/dashboard') ? 'overflow-hidden p-0' : 'overflow-auto p-4'}`}>
+                <div ref={scrollContainerRef} className={`flex-1 flex flex-col gap-2 sm:gap-4 h-full relative z-0 isolate ${pathname?.endsWith('/dashboard') ? 'overflow-hidden p-0' : 'overflow-auto p-2 sm:p-4'}`}>
                   <div className="min-w-0 w-full flex-1 flex flex-col">
                     <ProtectedRoute>
                       {children}

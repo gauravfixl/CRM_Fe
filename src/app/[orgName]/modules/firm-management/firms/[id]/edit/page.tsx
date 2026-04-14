@@ -18,6 +18,8 @@ import { useLoaderStore } from '@/lib/loaderStore'
 import { Breadcrumb } from '@/components/custom/CustomBreadCrumb'
 import { useSearchParams } from 'next/navigation'
 import SubHeader from '@/components/custom/SubHeader'
+const isValidGST = (v: string) => /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[0-9A-Z]{1}Z[0-9A-Z]{1}$/.test(v.toUpperCase())
+
 const EditFirmPage = () => {
   const searchParams = useSearchParams()
   const from = searchParams.get("from") || "firms"
@@ -93,6 +95,8 @@ const EditFirmPage = () => {
       if (!firm.email || !/\S+@\S+\.\S+/.test(firm.email)) newErrors.email = "Valid email is required."
       if (!firm.phone) newErrors.phone = "Phone is required."
       if (!firm.gst_no) newErrors.gst_no = "GST No is required."
+      else if (!isValidGST(firm.gst_no)) newErrors.gst_no = "Invalid GST number format (15 characters: State code, PAN, Entity code, 'Z', Check digit)."
+
     }
 
     if (step === 2) {
@@ -176,7 +180,10 @@ const EditFirmPage = () => {
                       value={(firm as any)?.[field] || ''}
                       onChange={handleChange}
                       type={field === "phone" ? "text" : undefined} // top-level phone as string
+                      placeholder={field === "gst_no" ? "22AAAAA0000A1Z5" : undefined}
+                      maxLength={field === "gst_no" ? 15 : undefined}
                     />
+                    {field === "gst_no" && <p className="text-[11px] text-zinc-400 mt-0.5">15-digit alphanumeric GSTIN (e.g., 08ABCDE1234F1Z8)</p>}
                     {errors[field] && <p className="text-red-500 text-sm">{errors[field]}</p>}
                   </div>
                 ))}

@@ -83,10 +83,11 @@ async function proxy(
   // Make the proxied request
   const upstream = await fetch(url, init);
 
-  // Build response, forwarding all headers including Set-Cookie
+  // Build response headers, forwarding everything EXCEPT set-cookie
+  // (set-cookie needs special handling — see below)
   const resHeaders = new Headers();
   upstream.headers.forEach((value, key) => {
-    // Forward every header – especially Set-Cookie
+    if (key.toLowerCase() === "set-cookie") return;
     resHeaders.append(key, value);
   });
 
@@ -97,11 +98,73 @@ async function proxy(
   resHeaders.delete("content-encoding");
   resHeaders.delete("content-length"); // length changed after decompression
 
+  // --- Set-Cookie forwarding (critical) ---
+  // Node's fetch combines multiple Set-Cookie headers into one comma-joined
+  // string when iterated normally. Use getSetCookie() to get them as an array,
+  // then rewrite each one to work on the vercel.app origin:
+  //   - strip Domain=... (backend may set it to its own domain)
+  //   - force Path=/
+  //   - keep SameSite=None; Secure (required for same-origin HTTPS usage)
+  const setCookies =
+    typeof (upstream.headers as any).getSetCookie === "function"
+      ? (upstream.headers as any).getSetCookie()
+      : [];
+
+  for (const cookieStr of setCookies) {
+    const rewritten = rewriteSetCookie(cookieStr);
+    resHeaders.append("set-cookie", rewritten);
+  }
+
   return new NextResponse(upstream.body, {
     status: upstream.status,
     statusText: upstream.statusText,
     headers: resHeaders,
   });
+}
+
+/**
+ * Rewrite a Set-Cookie value so the browser will accept it on the frontend origin.
+ * - Removes any Domain=... attribute (backend's domain won't match vercel.app)
+ * - Ensures Path=/
+ * - Ensures SameSite=None; Secure (needed because the backend marks cookies HttpOnly
+ *   and our frontend runs on HTTPS)
+ */
+function rewriteSetCookie(cookieStr: string): string {
+  const parts = cookieStr.split(";").map((p) => p.trim()).filter(Boolean);
+  if (parts.length === 0) return cookieStr;
+
+  const [nameValue, ...attrs] = parts;
+  const kept: string[] = [];
+  let hasPath = false;
+  let hasSameSite = false;
+  let hasSecure = false;
+
+  for (const attr of attrs) {
+    const lower = attr.toLowerCase();
+    if (lower.startsWith("domain=")) continue; // drop domain
+    if (lower.startsWith("path=")) {
+      hasPath = true;
+      kept.push("Path=/");
+      continue;
+    }
+    if (lower.startsWith("samesite=")) {
+      hasSameSite = true;
+      kept.push("SameSite=None");
+      continue;
+    }
+    if (lower === "secure") {
+      hasSecure = true;
+      kept.push("Secure");
+      continue;
+    }
+    kept.push(attr);
+  }
+
+  if (!hasPath) kept.push("Path=/");
+  if (!hasSameSite) kept.push("SameSite=None");
+  if (!hasSecure) kept.push("Secure");
+
+  return [nameValue, ...kept].join("; ");
 }
 
 export const GET = proxy;

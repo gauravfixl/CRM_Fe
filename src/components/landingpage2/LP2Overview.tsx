@@ -70,7 +70,7 @@ export default function LP2Overview() {
 
   return (
     <section id="overview" className="bg-white py-16">
-      <div ref={ref} className="mx-auto max-w-[1400px] px-8">
+      <div ref={ref} className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <motion.p
           custom={0}

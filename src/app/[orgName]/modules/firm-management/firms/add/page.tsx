@@ -19,9 +19,11 @@ import { PhoneInputWithCountryCode } from "@/components/custom/PhoneInputWithCou
 // --- Validation helpers (for submit/next step) ---
 const isValidEmail = (v: string) => /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(v)
 const isValidUrl = (v: string) => /^(https?:\/\/)?([\w-]+\.)+[\w-]{2,}(\/\S*)?$/.test(v)
-const isValidGST = (v: string) => /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(v.toUpperCase())
-const isValidCIN = (v: string) => v.trim().length >= 5 && v.trim().length <= 25
-const isValidTIN = (v: string) => v.trim().length >= 5 && v.trim().length <= 25
+const isValidGST = (v: string) => /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[0-9A-Z]{1}Z[0-9A-Z]{1}$/.test(v.toUpperCase())
+// CIN: exactly 21 chars — L/U + 5 digits + 2 letters + 4 digits + 3 letters + 6 digits
+const isValidCIN = (v: string) => /^[LU][0-9]{5}[A-Z]{2}[0-9]{4}[A-Z]{3}[0-9]{6}$/.test(v.trim())
+// TIN: exactly 11 digits
+const isValidTIN = (v: string) => /^[0-9]{11}$/.test(v.trim())
 const isValidUIN = (v: string) => v.trim().length >= 5 && v.trim().length <= 25
 const isValidPinCode = (v: string | number) => /^[0-9]{4,10}$/.test(String(v))
 
@@ -83,13 +85,13 @@ const sanitizeInput = (field: string, value: string, nested: string | null): str
     case "contactPerson.country":
       return value.replace(/[^a-zA-Z\s\-]/g, "")
 
-    // TIN — alphanumeric only, auto uppercase, max 25
+    // TIN — digits only, exactly 11
     case "tinNo":
-      return value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase().slice(0, 25)
+      return value.replace(/[^0-9]/g, "").slice(0, 11)
 
-    // CIN — alphanumeric only, auto uppercase, max 25
+    // CIN — alphanumeric only, auto uppercase, exactly 21
     case "cinNo":
-      return value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase().slice(0, 25)
+      return value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase().slice(0, 21)
 
     // UIN — alphanumeric only, auto uppercase, max 25
     case "uin":
@@ -107,7 +109,7 @@ const FORMAT_HINTS: Record<string, string> = {
   phone: "Select country code and enter digits",
   invoicePrefix: "Only uppercase letters & numbers (e.g. FIXL, INV01)",
   website: "Optional — e.g. https://www.company.com",
-  gst_no: "15-character alphanumeric GST (e.g. 22AAAAA0000A1Z5)",
+  gst_no: "15-digit alphanumeric GSTIN (e.g., 08ABCDE1234F1Z8)",
   address1: "Letters, numbers, spaces, commas, dots, hyphens (e.g. Tower B, Cyber Hub)",
   address2: "Optional — Floor, Suite, Area (e.g. Sector 24, Gurugram)",
   pinCode: "Only digits allowed (4–10 digits, e.g. 122002)",
@@ -124,8 +126,8 @@ const FORMAT_HINTS: Record<string, string> = {
   "contactPerson.country": "Only letters, spaces, hyphens (e.g. India)",
   "contactPerson.pinCode": "Only digits allowed (4–10 digits)",
   uin: "Optional — alphanumeric UIN (e.g. UIN7894561563)",
-  tinNo: "Alphanumeric TIN (e.g. TIN123456745)",
-  cinNo: "Alphanumeric CIN (e.g. CINL12345KA2020PTC12666)",
+  tinNo: "Exactly 11 digits — first 2 are state code (e.g. 27123456789)",
+  cinNo: "Exactly 21 characters — format: L/U + 5 digits + 2 letters + 4 digits + 3 letters + 6 digits (e.g. L17110MH1973PLC019786)",
 }
 
 // --- Field label mapping ---
@@ -257,7 +259,7 @@ export default function AddFirmPage() {
       else if (formData.invoicePrefix.trim().length > 10) e.invoicePrefix = "Invoice Prefix should be max 10 characters."
 
       if (!formData.gst_no.trim()) e.gst_no = "GST Number is required."
-      else if (!isValidGST(formData.gst_no)) e.gst_no = "Enter a valid 15-character GST number (e.g. 22AAAAA0000A1Z5)."
+      else if (!isValidGST(formData.gst_no)) e.gst_no = "Invalid GST number format (15 characters: State code, PAN, Entity code, 'Z', Check digit)."
 
       if (formData.website.trim() && !isValidUrl(formData.website)) e.website = "Enter a valid URL (e.g. https://company.com)."
     }
@@ -282,10 +284,10 @@ export default function AddFirmPage() {
 
     if (step === 4) {
       if (!formData.tinNo.trim()) e.tinNo = "TIN Number is required."
-      else if (!isValidTIN(formData.tinNo)) e.tinNo = "Enter a valid TIN number."
+      else if (!isValidTIN(formData.tinNo)) e.tinNo = "TIN must be exactly 11 digits (e.g. 27123456789)."
 
       if (!formData.cinNo.trim()) e.cinNo = "CIN Number is required."
-      else if (!isValidCIN(formData.cinNo)) e.cinNo = "Enter a valid CIN number."
+      else if (!isValidCIN(formData.cinNo)) e.cinNo = "CIN must be 21 chars in format L/U + 5 digits + 2 letters + 4 digits + 3 letters + 6 digits (e.g. L17110MH1973PLC019786)."
 
       if (formData.uin.trim() && !isValidUIN(formData.uin)) e.uin = "Enter a valid UIN number."
     }
@@ -350,7 +352,7 @@ export default function AddFirmPage() {
     value: string,
     nested: string | null,
     required: boolean,
-    options?: { type?: string; maxLength?: number }
+    options?: { type?: string; maxLength?: number; placeholder?: string }
   ) => {
     const errorKey = nested ? `${nested}.${field}` : field
     const hintKey = nested ? `${nested}.${field}` : field
@@ -367,7 +369,7 @@ export default function AddFirmPage() {
           type={options?.type || "text"}
           maxLength={options?.maxLength}
           onChange={(e) => handleInputChange(field, e.target.value, nested)}
-          placeholder={`Enter ${FIELD_LABELS[labelKey] || FIELD_LABELS[field] || field}`}
+          placeholder={options?.placeholder || `Enter ${FIELD_LABELS[labelKey] || FIELD_LABELS[field] || field}`}
           className={errors[errorKey] ? "border-red-400 focus:ring-red-500/20 focus:border-red-500" : ""}
         />
         <p className="text-[11px] text-zinc-400 mt-0.5">{FORMAT_HINTS[hintKey] || FORMAT_HINTS[field] || ""}</p>
@@ -456,7 +458,7 @@ export default function AddFirmPage() {
                     {renderPhoneField("phone", formData.phone, null, true)}
                     {renderField("invoicePrefix", formData.invoicePrefix, null, true, { maxLength: 10 })}
                     {renderField("website", formData.website, null, false)}
-                    {renderField("gst_no", formData.gst_no, null, true, { maxLength: 15 })}
+                    {renderField("gst_no", formData.gst_no, null, true, { maxLength: 15, placeholder: "22AAAAA0000A1Z5" })}
                   </div>
                 )}
 

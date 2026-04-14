@@ -1011,8 +1011,16 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
   const params = useParams() as { workspaceId?: string; orgName?: string }
   const pathname = usePathname();
   const router = useRouter();
-  const { state: sidebarState } = useSidebar();
+  const { state: sidebarState, isMobile, setOpenMobile } = useSidebar();
   const { showLoader } = useLoaderStore();
+
+  // Auto-close the mobile sidebar on route change
+  useEffect(() => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
 
   const [activeCategory, setActiveCategory] = useState<string>("DASHBOARD");
   const [isSubCollapsed, setIsSubCollapsed] = useState(false);
@@ -1622,7 +1630,7 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
   return (
     <>
       {/* PRIMARY SIDEBAR - Categories & Inline Dropdowns */}
-      <Sidebar collapsible="icon" {...props} className="border-r bg-white dark:bg-zinc-950 z-30 !top-[63px]">
+      <Sidebar collapsible="icon" {...props} className="border-r bg-white dark:bg-zinc-950 z-30 md:!top-[63px]">
         <SidebarHeader className="h-0 p-0 m-0" />
         <SidebarContent className="bg-white dark:bg-zinc-950 pt-4 hover-scroll">
           <SidebarMenu>
@@ -1737,11 +1745,71 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
               );
             })}
           </SidebarMenu>
+
+          {/* MOBILE: Inline sub-sidebar (drill-down) content inside the drawer */}
+          {isMobile && finalSubSidebarGroups.length > 0 && (
+            <div className="mt-2 border-t border-border pt-3 px-2 pb-6">
+              <h4 className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider mb-3 px-2">
+                {activeModule === "LeadGov" ? "Lead Management" :
+                  activeModule === "ClientGov" ? "Client Management" :
+                    activeModule === "ProjectGov" ? "Project Management" :
+                      activeModule === "AccountingGov" ? "Accounting" :
+                        activeModule === "HrmGov" ? "HRM" :
+                          activeModule === "AutomationGov" ? "Automations" :
+                            activeModule === "UsersAdmin" ? "Users Management" :
+                              activeModule === "GroupsAdmin" ? "Groups & Teams" :
+                                activeModule === "RolesAdmin" ? "Roles & Permissions" :
+                                  activeModule === "AuthAdmin" ? "Authentication" :
+                                    activeModule === "Leads" ? "Leads" :
+                                      activeModule === "Deals" ? "Deals / Opportunities" :
+                                        activeModule === "Pipeline" ? "Sales Pipeline" :
+                                          activeModule === "Clients" ? "Clients / Accounts" :
+                                            activeModule === "Campaigns" ? "Campaigns" :
+                                              activeModule === "Calendar" ? "Calendar" :
+                                                activeModule === "OrgOverview" ? "Organization Overview" :
+                                                  activeModule === "OrgFirms" ? "Business Units" :
+                                                    activeModule === "OrgRecycleBin" ? "Firm Recycle Bin" :
+                                                      activeModule === "OrgBranding" ? "Branding & Theme" :
+                                                        activeModule === "OrgSettings" ? "Organization Settings" :
+                                                          activeModule === "OrgUsers" ? "Org Admins" :
+                                                            activeModule === "OrgPolicies" ? "Org Policies" :
+                                                              activeModule ? activeModule.toUpperCase() : activeCategory}
+              </h4>
+              <div className="space-y-4">
+                {finalSubSidebarGroups.map((group, idx) => (
+                  <div key={idx} className="px-2">
+                    <h5 className="text-[10px] font-black text-zinc-400 mb-2 px-2 uppercase tracking-[0.2em]">{group.group}</h5>
+                    <div className="space-y-1">
+                      {group.items.map((item) => {
+                        const isActive = pathname === item.url;
+                        return (
+                          <Link
+                            key={item.title}
+                            href={item.url}
+                            prefetch={true}
+                            onClick={() => { setOpenMobile(false); }}
+                            className={`flex items-center gap-3 rounded-md text-xs font-light transition-all duration-200 px-3 py-2.5
+                              ${isActive
+                                ? "bg-primary text-white font-medium shadow-md"
+                                : "text-zinc-600 hover:text-foreground dark:hover:text-zinc-300 hover:bg-zinc-100/60 dark:hover:bg-zinc-800/60"
+                              }`}
+                          >
+                            <item.icon className={`h-4 w-4 flex-shrink-0 ${isActive ? "text-white" : getIconColor(item.title).icon}`} />
+                            <span className="truncate">{item.title}</span>
+                          </Link>
+                        )
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </SidebarContent>
         <SidebarRail />
       </Sidebar>
 
-      {/* SECONDARY SIDEBAR - Module Drill-down or Category List */}
+      {/* SECONDARY SIDEBAR - Module Drill-down or Category List (DESKTOP ONLY) */}
       {finalSubSidebarGroups.length > 0 && (
         <aside className={`h-full border-r border-border bg-zinc-50 dark:bg-zinc-900 flex-shrink-0 relative hover-scroll hidden md:flex flex-col transition-all duration-300 ${isSubCollapsed ? "w-[60px]" : "w-64"}`}>
           <div className={`p-4 border-b border-border flex items-center sticky top-0 bg-inherit z-10 ${isSubCollapsed ? "justify-center" : "justify-between"}`}>

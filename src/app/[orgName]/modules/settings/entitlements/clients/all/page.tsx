@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
-import { useParams } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import {
     Search,
     Filter,
@@ -60,28 +60,19 @@ import {
 } from "@/components/ui/select"
 import { SmallCard, SmallCardContent, SmallCardHeader } from "@/shared/components/custom/SmallCard"
 import { toast } from "sonner"
-import { getAllClients, addClient, deleteClient } from "@/hooks/clientHooks"
+import { getAllClients, deleteClient } from "@/hooks/clientHooks"
 
 export default function MasterClientViewPage() {
     const params = useParams()
+    const router = useRouter()
+    const orgName = params?.orgName as string
     const [searchQuery, setSearchQuery] = useState("")
     const [isLoading, setIsLoading] = useState(false)
     const [isFetching, setIsFetching] = useState(true)
     const [clients, setClients] = useState<any[]>([])
-    const [showNewClientDialog, setShowNewClientDialog] = useState(false)
     const [showDetailsDialog, setShowDetailsDialog] = useState(false)
     const [selectedClient, setSelectedClient] = useState<any>(null)
     const [statusFilter, setStatusFilter] = useState<"All" | "Active" | "Inactive">("All")
-
-    // New Client Form State
-    const [newClient, setNewClient] = useState({
-        name: "",
-        email: "",
-        phone: "",
-        address: "",
-        tier: "Standard",
-        manager: ""
-    })
 
     const fetchClients = async () => {
         try {
@@ -120,55 +111,6 @@ export default function MasterClientViewPage() {
         await fetchClients()
         setIsLoading(false)
         toast.success(msg)
-    }
-
-    const handleCreateClient = async () => {
-        const nameRegex = /^[a-zA-Z\s]+$/;
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-        if (!newClient.name.trim()) {
-            toast.error("Client name is required")
-            return
-        }
-
-        if (!nameRegex.test(newClient.name.trim())) {
-            toast.error("Client name should not contain numbers or special characters")
-            return
-        }
-
-        if (!newClient.email.trim()) {
-            toast.error("Email is required")
-            return
-        }
-
-        if (!emailRegex.test(newClient.email.trim())) {
-            toast.error("Please enter a valid email address")
-            return
-        }
-
-        if (newClient.manager.trim() && !nameRegex.test(newClient.manager.trim())) {
-            toast.error("Account manager name should not contain numbers")
-            return
-        }
-
-        setIsLoading(true)
-        try {
-            await addClient({
-                clientFirmName: newClient.name,
-                email: newClient.email,
-                phone: newClient.phone,
-                address: newClient.address,
-                contactPerson: newClient.manager,
-            })
-            toast.success(`Client "${newClient.name}" created successfully`)
-            setShowNewClientDialog(false)
-            setNewClient({ name: "", email: "", phone: "", address: "", tier: "Standard", manager: "" })
-            await fetchClients()
-        } catch (error: any) {
-            toast.error(error?.response?.data?.message || "Failed to create client")
-        } finally {
-            setIsLoading(false)
-        }
     }
 
     const handleViewDetails = (client: any) => {
@@ -238,7 +180,7 @@ export default function MasterClientViewPage() {
                             Refresh
                         </Button>
                         <Button
-                            onClick={() => setShowNewClientDialog(true)}
+                            onClick={() => router.push(`/${orgName}/modules/settings/entitlements/clients/add`)}
                             className="h-8 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium px-3 shadow-sm active:scale-95"
                         >
                             <UserCheck className="w-3.5 h-3.5 mr-2" />
@@ -416,100 +358,6 @@ export default function MasterClientViewPage() {
             </div>
             )}
 
-            {/* NEW CLIENT DIALOG */}
-            <Dialog open={showNewClientDialog} onOpenChange={setShowNewClientDialog}>
-                <DialogContent className="sm:max-w-[500px] rounded-xl p-5">
-                    <DialogHeader>
-                        <DialogTitle className="text-sm font-semibold">Create New Client</DialogTitle>
-                        <DialogDescription className="text-[10px] text-zinc-500">
-                            Add a new client account to your organization.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                        <div className="grid gap-2">
-                            <Label htmlFor="name" className="text-xs font-medium text-zinc-700">Client Name *</Label>
-                            <Input
-                                id="name"
-                                placeholder="Enter client name"
-                                value={newClient.name}
-                                onChange={(e) => setNewClient({ ...newClient, name: e.target.value })}
-                                className="h-9 rounded-lg"
-                            />
-                        </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="email" className="text-xs font-medium text-zinc-700">Email Address *</Label>
-                            <div className="relative">
-                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
-                                <Input
-                                    id="email"
-                                    type="email"
-                                    placeholder="client@example.com"
-                                    value={newClient.email}
-                                    onChange={(e) => setNewClient({ ...newClient, email: e.target.value })}
-                                    className="h-9 pl-10 rounded-lg"
-                                />
-                            </div>
-                        </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="phone" className="text-xs font-medium text-zinc-700">Phone Number</Label>
-                            <div className="relative">
-                                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
-                                <Input
-                                    id="phone"
-                                    placeholder="+1 (555) 000-0000"
-                                    value={newClient.phone}
-                                    onChange={(e) => setNewClient({ ...newClient, phone: e.target.value })}
-                                    className="h-9 pl-10 rounded-lg"
-                                />
-                            </div>
-                        </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="address" className="text-xs font-medium text-zinc-700">Address</Label>
-                            <div className="relative">
-                                <MapPin className="absolute left-3 top-3 w-4 h-4 text-zinc-400" />
-                                <Input
-                                    id="address"
-                                    placeholder="123 Business St, City, State"
-                                    value={newClient.address}
-                                    onChange={(e) => setNewClient({ ...newClient, address: e.target.value })}
-                                    className="h-9 pl-10 rounded-lg"
-                                />
-                            </div>
-                        </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="tier" className="text-xs font-medium text-zinc-700">Client Tier</Label>
-                            <Select value={newClient.tier} onValueChange={(value) => setNewClient({ ...newClient, tier: value })}>
-                                <SelectTrigger className="h-9 rounded-lg">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="Standard">Standard</SelectItem>
-                                    <SelectItem value="Premium">Premium</SelectItem>
-                                    <SelectItem value="Enterprise">Enterprise</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="manager" className="text-xs font-medium text-zinc-700">Account Manager</Label>
-                            <Input
-                                id="manager"
-                                placeholder="Assign account manager"
-                                value={newClient.manager}
-                                onChange={(e) => setNewClient({ ...newClient, manager: e.target.value })}
-                                className="h-9 rounded-lg"
-                            />
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setShowNewClientDialog(false)} className="h-8 text-xs font-medium rounded-lg">
-                            Cancel
-                        </Button>
-                        <Button onClick={handleCreateClient} disabled={isLoading} className="h-8 text-xs font-medium rounded-lg bg-blue-600 hover:bg-blue-700">
-                            {isLoading ? "Creating..." : "Create Client"}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
 
             {/* CLIENT DETAILS DIALOG */}
             <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>

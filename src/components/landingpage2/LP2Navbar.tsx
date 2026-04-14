@@ -270,11 +270,11 @@ export default function LP2Navbar() {
   return (
     <nav
       ref={navRef}
-      className="absolute top-0 left-0 right-0 z-50 bg-white border-b border-[#E5E5E5]"
+      className={`fixed top-0 left-0 right-0 z-50 bg-white border-b border-[#E5E5E5] transition-shadow duration-300 ${scrolled ? "shadow-md" : ""}`}
     >
-      <div className="mx-auto px-4 lg:px-8 h-14 flex items-center justify-between relative">
+      <div className="mx-auto px-3 sm:px-4 lg:px-8 h-14 flex items-center justify-between relative">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 shrink-0 ml-6">
+        <Link href="/" className="flex items-center gap-2 shrink-0 lg:ml-6">
           <img
             src="/images/cubicleweb.png"
             alt="CubicleERP"
@@ -469,7 +469,7 @@ export default function LP2Navbar() {
             transition={{ duration: 0.3 }}
             className="lg:hidden overflow-hidden bg-white border-t border-[#E5E5E5]"
           >
-            <div className="max-w-[1280px] mx-auto px-6 py-4 flex flex-col gap-1">
+            <div className="max-w-[1280px] mx-auto px-4 sm:px-6 py-4 flex flex-col gap-1 max-h-[calc(100vh-3.5rem)] overflow-y-auto">
               {/* Products accordion */}
               <div>
                 <button
