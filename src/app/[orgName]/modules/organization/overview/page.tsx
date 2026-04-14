@@ -28,47 +28,80 @@ export default function OrgOverviewPage() {
     const router = useRouter();
     const params = useParams() as { orgName?: string };
     const orgName = params.orgName || "default";
-    const [org, setOrg] = useState<any>(null);
-    const [totalUsers, setTotalUsers] = useState<number | null>(null);
-    const [activeFirms, setActiveFirms] = useState<number | null>(null);
-    const [billingPlan, setBillingPlan] = useState<any>(null);
+    const readCache = <T,>(key: string): T | null => {
+        if (typeof window === "undefined") return null;
+        try {
+            const raw = localStorage.getItem(key);
+            return raw ? (JSON.parse(raw) as T) : null;
+        } catch {
+            return null;
+        }
+    };
+    const writeCache = (key: string, value: unknown) => {
+        if (typeof window === "undefined") return;
+        try {
+            localStorage.setItem(key, JSON.stringify(value));
+        } catch {
+            /* ignore */
+        }
+    };
+
+    const [org, setOrg] = useState<any>(() => {
+        const cached = readCache<any>("orgOverview:org");
+        if (cached) return cached;
+        if (typeof window !== "undefined") {
+            const name = localStorage.getItem("orgName");
+            if (name) return { name };
+        }
+        return null;
+    });
+    const [totalUsers, setTotalUsers] = useState<number | null>(() =>
+        readCache<number>("orgOverview:totalUsers")
+    );
+    const [activeFirms, setActiveFirms] = useState<number | null>(() =>
+        readCache<number>("orgOverview:activeFirms")
+    );
+    const [billingPlan, setBillingPlan] = useState<any>(() =>
+        readCache<any>("orgOverview:billingPlan")
+    );
 
     useEffect(() => {
-        const load = async () => {
-            try {
-                const orgRes = await getOrgDetails();
-                setOrg(orgRes?.data?.organization ?? null);
-            } catch (e) {
-                // ignore, keep placeholders
-            }
+        // Fire all requests in parallel so the slowest one (not the sum) bounds load time.
+        getOrgDetails()
+            .then((orgRes) => {
+                const orgData = orgRes?.data?.organization ?? null;
+                setOrg(orgData);
+                if (orgData) writeCache("orgOverview:org", orgData);
+            })
+            .catch(() => { /* keep cached */ });
 
-            try {
-                // backend returns pagination.total for org users
-                const usersRes = await axiosInstance.get(
-                    "/organization/users/all?page=1&limit=1"
-                );
-                setTotalUsers(usersRes?.data?.pagination?.total ?? 0);
-            } catch (e) {
-                setTotalUsers(0);
-            }
+        axiosInstance
+            .get("/organization/users/all?page=1&limit=1")
+            .then((usersRes) => {
+                const total = usersRes?.data?.pagination?.total ?? 0;
+                setTotalUsers(total);
+                writeCache("orgOverview:totalUsers", total);
+            })
+            .catch(() => setTotalUsers((prev) => prev ?? 0));
 
-            try {
-                const firmsRes = await axiosInstance.get("/firm/getAllFirm");
+        axiosInstance
+            .get("/firm/getAllFirm")
+            .then((firmsRes) => {
                 const firms = firmsRes?.data?.firms ?? [];
-                setActiveFirms(Array.isArray(firms) ? firms.length : 0);
-            } catch (e) {
-                setActiveFirms(0);
-            }
+                const count = Array.isArray(firms) ? firms.length : 0;
+                setActiveFirms(count);
+                writeCache("orgOverview:activeFirms", count);
+            })
+            .catch(() => setActiveFirms((prev) => prev ?? 0));
 
-            try {
-                const billingRes = await axiosInstance.get("/OrgBilling/current-plan");
-                setBillingPlan(billingRes?.data?.currentPlan ?? null);
-            } catch (e) {
-                setBillingPlan(null);
-            }
-        };
-
-        load();
+        axiosInstance
+            .get("/OrgBilling/current-plan")
+            .then((billingRes) => {
+                const plan = billingRes?.data?.currentPlan ?? null;
+                setBillingPlan(plan);
+                if (plan) writeCache("orgOverview:billingPlan", plan);
+            })
+            .catch(() => { /* keep cached */ });
     }, []);
 
     return (
@@ -92,8 +125,11 @@ export default function OrgOverviewPage() {
                 <div className="relative z-10 space-y-6">
                     <div className="space-y-1">
                         <p className="text-white/60 text-[10px] font-bold uppercase tracking-widest">Enterprise Management</p>
-                        <h1 className="text-4xl font-black tracking-tight text-white drop-shadow-xl">
-                            {org?.name ?? "Acme Corporation"}
+                        <h1
+                            className="text-4xl font-black tracking-tight text-white drop-shadow-xl min-h-[40px]"
+                            suppressHydrationWarning
+                        >
+                            {org?.name ?? ""}
                         </h1>
                     </div>
                     
@@ -118,7 +154,7 @@ export default function OrgOverviewPage() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-white text-xs opacity-80">Total Users</p>
-                                <p className="text-white text-xl font-semibold mt-1">
+                                <p className="text-white text-xl font-semibold mt-1" suppressHydrationWarning>
                                     {totalUsers !== null ? totalUsers.toLocaleString() : "—"}
                                 </p>
                                 <p className="text-white text-[10px] mt-1">+12.5% growth</p>
@@ -132,7 +168,7 @@ export default function OrgOverviewPage() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-gray-600 text-xs">Active Firms</p>
-                                <p className="text-xl font-semibold text-gray-900 mt-1">
+                                <p className="text-xl font-semibold text-gray-900 mt-1" suppressHydrationWarning>
                                     {activeFirms !== null ? activeFirms : "—"}
                                 </p>
                                 <p className="text-gray-600 text-[10px] mt-1">Across 3 regions</p>
