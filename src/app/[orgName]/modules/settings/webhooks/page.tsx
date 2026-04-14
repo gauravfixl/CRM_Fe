@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
     Webhook,
     Plus,
@@ -15,6 +15,7 @@ import {
     AlertTriangle,
     CheckCircle,
     Key,
+    Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
@@ -36,7 +37,13 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu";
-import { showSuccess, showWarning } from "@/shared/utils/toast";
+import { showSuccess, showWarning, showError } from "@/shared/utils/toast";
+import {
+    listWebhooks,
+    createWebhook as apiCreateWebhook,
+    updateWebhook as apiUpdateWebhook,
+    deleteWebhook as apiDeleteWebhook,
+} from "@/hooks/orgAdminHooks";
 
 interface WebhookItem {
     id: string;
@@ -88,12 +95,48 @@ export default function WebhooksPage() {
     const [editWebhook, setEditWebhook] = useState<WebhookForm & { id: string }>({ id: "", ...emptyForm });
     const [editFormErrors, setEditFormErrors] = useState<FormErrors>({});
 
-    const [webhooks, setWebhooks] = useState<WebhookItem[]>([
-        { id: "1", name: "Order Notification", url: "https://api.example.com/webhooks/orders", events: ["order.created", "order.updated"], lastTriggered: "5 mins ago", status: "Active", failures: 0 },
-        { id: "2", name: "User Sync", url: "https://crm.example.com/hooks/users", events: ["user.created", "user.deleted"], lastTriggered: "1 hour ago", status: "Active", failures: 2 },
-        { id: "3", name: "Payment Gateway", url: "https://payments.example.com/callback", events: ["payment.completed"], lastTriggered: "30 mins ago", status: "Active", failures: 0 },
-        { id: "4", name: "Slack Alerts", url: "https://hooks.slack.com/services/T00/B00/xxx", events: ["alert.triggered"], lastTriggered: "2 hours ago", status: "Paused", failures: 5 },
-    ]);
+    const [webhooks, setWebhooks] = useState<WebhookItem[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [submitting, setSubmitting] = useState(false);
+
+    // Normalize a backend webhook record into our WebhookItem shape
+    const normalizeWebhook = (raw: any): WebhookItem => {
+        const id = raw?._id || raw?.id || "";
+        const lastTriggeredRaw = raw?.lastTriggered || raw?.lastTriggeredAt || raw?.updatedAt;
+        const lastTriggered = lastTriggeredRaw
+            ? new Date(lastTriggeredRaw).toLocaleString()
+            : "Never";
+        return {
+            id,
+            name: raw?.name || "—",
+            url: raw?.url || "",
+            events: Array.isArray(raw?.events) ? raw.events : [],
+            lastTriggered,
+            status: raw?.status === "Paused" || raw?.enabled === false ? "Paused" : "Active",
+            failures: typeof raw?.failures === "number" ? raw.failures : 0,
+            secret: raw?.secret,
+        };
+    };
+
+    const fetchWebhooks = async () => {
+        try {
+            setLoading(true);
+            const res = await listWebhooks();
+            const data = res?.data?.webhooks || res?.data?.data || res?.data || [];
+            const list = Array.isArray(data) ? data : [];
+            setWebhooks(list.map(normalizeWebhook));
+        } catch (err: any) {
+            console.error("Failed to load webhooks:", err);
+            showError(err?.response?.data?.message || "Failed to load webhooks");
+            setWebhooks([]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchWebhooks();
+    }, []);
 
     const filteredWebhooks = useMemo(() => {
         return webhooks.filter((wh) => {
@@ -122,29 +165,33 @@ export default function WebhooksPage() {
         return errors;
     };
 
-    const handleCreate = () => {
+    const handleCreate = async () => {
         const errors = validateForm(newWebhook);
         if (Object.keys(errors).length > 0) {
             setFormErrors(errors);
             return;
         }
 
-        const created: WebhookItem = {
-            id: Date.now().toString(),
-            name: newWebhook.name.trim(),
-            url: newWebhook.url.trim(),
-            events: newWebhook.events,
-            lastTriggered: "Never",
-            status: "Active",
-            failures: 0,
-            secret: newWebhook.secret || undefined,
-        };
-
-        setWebhooks((prev) => [...prev, created]);
-        setShowCreateModal(false);
-        setNewWebhook({ ...emptyForm });
-        setFormErrors({});
-        showSuccess(`Webhook "${created.name}" created successfully`);
+        try {
+            setSubmitting(true);
+            const payload = {
+                name: newWebhook.name.trim(),
+                url: newWebhook.url.trim(),
+                events: newWebhook.events,
+                ...(newWebhook.secret ? { secret: newWebhook.secret } : {}),
+            };
+            await apiCreateWebhook(payload);
+            showSuccess(`Webhook "${payload.name}" created successfully`);
+            setShowCreateModal(false);
+            setNewWebhook({ ...emptyForm });
+            setFormErrors({});
+            await fetchWebhooks();
+        } catch (err: any) {
+            console.error("Create webhook failed:", err);
+            showError(err?.response?.data?.message || "Failed to create webhook");
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     const openEdit = (wh: WebhookItem) => {
@@ -159,50 +206,64 @@ export default function WebhooksPage() {
         setShowEditModal(true);
     };
 
-    const handleEdit = () => {
+    const handleEdit = async () => {
         const errors = validateForm(editWebhook);
         if (Object.keys(errors).length > 0) {
             setEditFormErrors(errors);
             return;
         }
 
-        setWebhooks((prev) =>
-            prev.map((wh) =>
-                wh.id === editWebhook.id
-                    ? {
-                          ...wh,
-                          name: editWebhook.name.trim(),
-                          url: editWebhook.url.trim(),
-                          events: editWebhook.events,
-                          secret: editWebhook.secret || undefined,
-                      }
-                    : wh
-            )
-        );
-        setShowEditModal(false);
-        setEditFormErrors({});
-        showSuccess(`Webhook "${editWebhook.name}" updated successfully`);
+        try {
+            setSubmitting(true);
+            const payload = {
+                name: editWebhook.name.trim(),
+                url: editWebhook.url.trim(),
+                events: editWebhook.events,
+                ...(editWebhook.secret ? { secret: editWebhook.secret } : {}),
+            };
+            await apiUpdateWebhook(editWebhook.id, payload);
+            showSuccess(`Webhook "${payload.name}" updated successfully`);
+            setShowEditModal(false);
+            setEditFormErrors({});
+            await fetchWebhooks();
+        } catch (err: any) {
+            console.error("Update webhook failed:", err);
+            showError(err?.response?.data?.message || "Failed to update webhook");
+        } finally {
+            setSubmitting(false);
+        }
     };
 
-    const deleteWebhook = (id: string) => {
+    const handleDeleteWebhook = async (id: string) => {
         const wh = webhooks.find((w) => w.id === id);
         if (!wh) return;
         const confirmed = window.confirm(
             `Are you sure you want to delete "${wh.name}"? This action cannot be undone.`
         );
         if (!confirmed) return;
-        setWebhooks((prev) => prev.filter((w) => w.id !== id));
-        showWarning(`Webhook "${wh.name}" deleted`);
+        try {
+            await apiDeleteWebhook(id);
+            showWarning(`Webhook "${wh.name}" deleted`);
+            await fetchWebhooks();
+        } catch (err: any) {
+            console.error("Delete webhook failed:", err);
+            showError(err?.response?.data?.message || "Failed to delete webhook");
+        }
     };
 
-    const toggleStatus = (id: string) => {
-        setWebhooks((prev) =>
-            prev.map((wh) =>
-                wh.id === id
-                    ? { ...wh, status: wh.status === "Active" ? "Paused" : "Active" }
-                    : wh
-            )
-        );
+    const toggleStatus = async (id: string) => {
+        const wh = webhooks.find((w) => w.id === id);
+        if (!wh) return;
+        const newStatus = wh.status === "Active" ? "Paused" : "Active";
+        try {
+            await apiUpdateWebhook(id, { status: newStatus, enabled: newStatus === "Active" });
+            setWebhooks((prev) =>
+                prev.map((w) => (w.id === id ? { ...w, status: newStatus } : w))
+            );
+        } catch (err: any) {
+            console.error("Toggle webhook failed:", err);
+            showError(err?.response?.data?.message || "Failed to update webhook status");
+        }
     };
 
     const testWebhook = (wh: WebhookItem) => {
@@ -348,13 +409,22 @@ export default function WebhooksPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-zinc-100">
-                            {filteredWebhooks.length === 0 ? (
+                            {loading ? (
+                                <tr>
+                                    <td colSpan={6} className="px-6 py-16 text-center">
+                                        <div className="flex flex-col items-center gap-3">
+                                            <Loader2 size={32} className="text-primary animate-spin" />
+                                            <p className="text-sm font-bold text-gray-500">Loading webhooks...</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ) : filteredWebhooks.length === 0 ? (
                                 <tr>
                                     <td colSpan={6} className="px-6 py-16 text-center">
                                         <div className="flex flex-col items-center gap-3">
                                             <Webhook size={40} className="text-zinc-300" />
                                             <p className="text-sm font-bold text-gray-500">No webhooks found</p>
-                                            <p className="text-xs text-gray-400">Try adjusting your search or filter criteria.</p>
+                                            <p className="text-xs text-gray-400">Create your first webhook to get started.</p>
                                         </div>
                                     </td>
                                 </tr>
@@ -430,7 +500,7 @@ export default function WebhooksPage() {
                                                     </DropdownMenuItem>
                                                     <DropdownMenuSeparator className="my-2" />
                                                     <DropdownMenuItem
-                                                        onClick={() => deleteWebhook(wh.id)}
+                                                        onClick={() => handleDeleteWebhook(wh.id)}
                                                         className="text-sm p-2 text-red-600 focus:bg-red-600 focus:text-white flex items-center gap-2 cursor-pointer"
                                                     >
                                                         <Trash2 size={14} /> Delete
@@ -506,9 +576,10 @@ export default function WebhooksPage() {
                         </Button>
                         <Button
                             onClick={handleCreate}
-                            className="bg-primary hover:bg-primary/90 rounded-none text-sm px-6 h-9 shadow-md shadow-primary/20"
+                            disabled={submitting}
+                            className="bg-primary hover:bg-primary/90 rounded-none text-sm px-6 h-9 shadow-md shadow-primary/20 disabled:opacity-60"
                         >
-                            Create Webhook
+                            {submitting ? (<><Loader2 size={14} className="animate-spin mr-2" /> Creating...</>) : "Create Webhook"}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -570,9 +641,10 @@ export default function WebhooksPage() {
                         </Button>
                         <Button
                             onClick={handleEdit}
-                            className="bg-primary hover:bg-primary/90 rounded-none text-sm px-6 h-9 shadow-md shadow-primary/20"
+                            disabled={submitting}
+                            className="bg-primary hover:bg-primary/90 rounded-none text-sm px-6 h-9 shadow-md shadow-primary/20 disabled:opacity-60"
                         >
-                            Save Changes
+                            {submitting ? (<><Loader2 size={14} className="animate-spin mr-2" /> Saving...</>) : "Save Changes"}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

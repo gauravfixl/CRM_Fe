@@ -36,3 +36,38 @@ export const updateBillingPlan = async (id, formData) => {
   const response = await axios.patch(url, formData);
   return response;
 };
+
+/* ------------------------ ORG BILLING (added) ------------------------ */
+
+/**
+ * Fetches the current plan for the active organization.
+ */
+export const getCurrentPlan = async () => {
+  const response = await axios.get("/OrgBilling/current-plan");
+  return response;
+};
+
+/**
+ * Fetches billing history for the active organization.
+ */
+export const getBillingHistory = async () => {
+  const response = await axios.get("/OrgBilling/history");
+  return response;
+};
+
+/**
+ * Fetches all platform billing plans (for upgrade/compare views).
+ */
+export const getAllPlans = async () => {
+  const response = await axios.get("/billingplan/all");
+  return response;
+};
+
+/**
+ * Fetches a single billing plan by ID.
+ * @param {string} planId - Billing plan ID.
+ */
+export const getPlanById = async (planId) => {
+  const response = await axios.get(`/billingplan/${planId}`);
+  return response;
+};

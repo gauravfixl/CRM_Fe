@@ -113,20 +113,20 @@ export default function DashboardPage() {
       {/* Scrollable Content */}
       <div className="absolute inset-0 overflow-y-auto hide-scrollbar z-10">
         <div className="backdrop-blur-sm sticky top-0 z-20">
-          <div className="flex items-center justify-between p-6">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-primary/70 to-primary flex items-center justify-center">
+          <div className="flex items-center justify-between p-3 sm:p-6">
+            <div className="flex items-center space-x-3 min-w-0">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-r from-primary/70 to-primary flex items-center justify-center flex-shrink-0">
                 <Sparkles className="w-5 h-5 text-white" />
               </div>
-              <div>
-                <h6 className="text-sm font-semibold text-zinc-900 dark:text-white tracking-tight normal-case">Organisation Dashboard</h6>
-                <p className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Welcome Back! Here's What's Happening Today.</p>
+              <div className="min-w-0">
+                <h6 className="text-sm font-semibold text-zinc-900 dark:text-white tracking-tight normal-case truncate">Organisation Dashboard</h6>
+                <p className="text-[11px] sm:text-xs font-medium text-zinc-600 dark:text-zinc-400 truncate">Welcome Back! Here's What's Happening Today.</p>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="flex-1 space-y-4 p-4 md:p-8">
+        <div className="flex-1 space-y-4 p-3 sm:p-4 md:p-8">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <SmallCard className="border bg-gradient-to-r from-primary/70 to-primary text-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
               <SmallCardContent className="p-4">
