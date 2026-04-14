@@ -146,18 +146,6 @@ export default function LP2TabNavigation() {
               )
             })}
           </div>
-
-          {/* CTA button (hidden on small phones to save space) */}
-          <button
-            className="
-              hidden sm:inline-flex shrink-0 bg-[#1A1A1A] text-white
-              px-4 lg:px-5 py-2 text-[12px] lg:text-[13px] font-semibold rounded-sm
-              hover:bg-[#333] transition-colors duration-150
-              cursor-pointer ml-2 lg:ml-6
-            "
-          >
-            Try for free
-          </button>
         </div>
       </nav>
     </>

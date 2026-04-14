@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useParams } from "next/navigation"
 import { Badge } from "@/components/ui/badge"
 import { StatsCards } from "@/components/dashboard/stats-cards"
 import { userById, getRoles } from "@/hooks/userHooks"
@@ -21,6 +22,11 @@ export default function DashboardPage() {
   const [singleUser, setSingleUser] = useState<any>(null)
   const organizations = useAuthStore((state) => state.organizations)
   const setOrganizations = useAuthStore((state) => state.setOrganizations)
+  const singleOrg = useAuthStore((state) => state.singleOrg)
+  const params = useParams() as { orgName?: string }
+  // Count derives from URL scope: being on /[orgName]/dashboard guarantees 1 org.
+  // Falls back to store data if route param is ever missing.
+  const orgCount = params?.orgName ? 1 : (singleOrg ? 1 : (organizations?.length ?? 0))
   const [selectedModule, setSelectedModule] = useState("")
   const { setSingleOrganization } = useAuthStore.getState()
 
@@ -145,9 +151,9 @@ export default function DashboardPage() {
               <SmallCardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-zinc-600 dark:text-zinc-400 text-xs">Organizations</p>
-                    <p className="text-xl font-semibold text-zinc-900 dark:text-white mt-1">{organizations?.length || 0}</p>
-                    <p className="text-green-600 dark:text-green-400 text-[10px] mt-1">+3 New This Week</p>
+                    <p className="text-zinc-600 dark:text-zinc-400 text-xs">Organization</p>
+                    <p className="text-xl font-semibold text-zinc-900 dark:text-white mt-1">{orgCount}</p>
+                    <p className="text-green-600 dark:text-green-400 text-[10px] mt-1">Your organization</p>
                   </div>
                   <Building2 className="w-5 h-5 text-primary" />
                 </div>
