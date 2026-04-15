@@ -79,20 +79,21 @@ export default function LP2NextSteps() {
           initial={{ opacity: 0, y: 20 }}
           animate={mainInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.7 }}
+          className="text-center"
         >
           <motion.div
-            className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-blue-50 border border-blue-100 mb-3"
+            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-50 border border-blue-100 mb-5"
             initial={{ opacity: 0, scale: 0.9 }}
             animate={mainInView ? { opacity: 1, scale: 1 } : {}}
             transition={{ duration: 0.5 }}
           >
-            <Rocket size={10} className="text-[#0067B8]" />
-            <span className="text-[8px] font-black text-[#0067B8] tracking-[0.2em] uppercase">
+            <Rocket size={12} className="text-[#0067B8]" />
+            <span className="text-xs font-bold text-[#0067B8] tracking-widest uppercase">
               Next Steps
             </span>
           </motion.div>
 
-          <h2 className="text-2xl lg:text-[2rem] font-bold leading-tight text-[#1A1A1A]">
+          <h2 className="text-3xl lg:text-[2.75rem] font-bold leading-tight text-[#1A1A1A]">
             Get started with{" "}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600">
               Cubicle

@@ -22,6 +22,13 @@ import { CustomButton } from "@/components/custom/CustomButton";
 import { CustomInput } from "@/components/custom/CustomInput";
 import { CustomLabel } from "@/components/custom/CustomLabel";
 import {
+  PhoneCountryInput,
+  DEFAULT_COUNTRY_ISO,
+  findCountry,
+  validatePhoneForCountry,
+  expectedLengthHint,
+} from "@/components/custom/PhoneCountryInput";
+import {
   CustomSelect,
   CustomSelectTrigger,
   CustomSelectValue,
@@ -192,6 +199,8 @@ export default function EntitlementAddLeadPage() {
   const [clients, setClients] = useState<any[]>([]);
   const [noteDraft, setNoteDraft] = useState("");
   const [tagDraft, setTagDraft] = useState("");
+  const [contactPhoneIso, setContactPhoneIso] = useState(DEFAULT_COUNTRY_ISO);
+  const [clientPhoneIso, setClientPhoneIso] = useState(DEFAULT_COUNTRY_ISO);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -269,13 +278,13 @@ export default function EntitlementAddLeadPage() {
         e.contactName =
           "Only letters, spaces, dot, hyphen and apostrophe (2-100 chars)";
 
-      if (!c.email.trim())
-        e.contactEmail = "Contact email is required";
-      else if (!RX.email.test(c.email.trim()))
+      if (c.email.trim() && !RX.email.test(c.email.trim()))
         e.contactEmail = "Enter a valid email (e.g. name@company.com)";
 
-      if (c.phone && !RX.phone.test(c.phone.trim()))
-        e.contactPhone = "Phone must be 10 to 15 digits, no spaces";
+      if (c.phone.trim()) {
+        const phoneErr = validatePhoneForCountry(contactPhoneIso, c.phone);
+        if (phoneErr) e.contactPhone = phoneErr;
+      }
 
       if (c.company && c.company.length > 200)
         e.contactCompany = "Company name too long (max 200 chars)";
@@ -299,9 +308,10 @@ export default function EntitlementAddLeadPage() {
       else if (!RX.email.test(cl.email.trim()))
         e.clientEmail = "Enter a valid email";
 
-      if (!cl.phone.trim()) e.clientPhone = "Phone number is required";
-      else if (!RX.phone.test(cl.phone.trim()))
-        e.clientPhone = "Phone must be 10 to 15 digits";
+      {
+        const phoneErr = validatePhoneForCountry(clientPhoneIso, cl.phone);
+        if (phoneErr) e.clientPhone = phoneErr;
+      }
 
       if (!cl.address.country.trim()) e.country = "Country is required";
       else if (!/^[a-zA-Z\s.'-]{2,60}$/.test(cl.address.country.trim()))
@@ -405,8 +415,11 @@ export default function EntitlementAddLeadPage() {
 
       contact: {
         name: formData.contact.name.trim(),
-        email: formData.contact.email.trim(),
-        phone: formData.contact.phone.trim() || undefined,
+        email: formData.contact.email.trim() || undefined,
+        phone: formData.contact.phone.trim()
+          ? findCountry(contactPhoneIso).dial.replace("+", "") +
+            formData.contact.phone.trim()
+          : undefined,
         company: formData.contact.company.trim() || undefined,
         position: formData.contact.position.trim() || undefined,
 
@@ -422,7 +435,9 @@ export default function EntitlementAddLeadPage() {
           firstName: formData.contact.client.firstName.trim(),
           lastName: formData.contact.client.lastName.trim(),
           email: formData.contact.client.email.trim(),
-          phone: formData.contact.client.phone.trim(),
+          phone:
+            findCountry(clientPhoneIso).dial.replace("+", "") +
+            formData.contact.client.phone.trim(),
           address: addressBlock,
         },
       },
@@ -733,8 +748,7 @@ export default function EntitlementAddLeadPage() {
 
                     <Field
                       label="Communication Email"
-                      required
-                      hint="Valid email (e.g. name@company.com)"
+                      hint="Optional — valid email (e.g. name@company.com)"
                       error={errors.contactEmail}
                     >
                       <CustomInput
@@ -751,18 +765,17 @@ export default function EntitlementAddLeadPage() {
 
                     <Field
                       label="Phone Number"
-                      hint="10-15 digits only, no spaces (e.g. 9876543210)"
+                      hint={expectedLengthHint(contactPhoneIso)}
                       error={errors.contactPhone}
                     >
-                      <CustomInput
-                        placeholder="9876543210"
+                      <PhoneCountryInput
                         value={formData.contact.phone}
-                        onChange={(e) => setContact("phone", e.target.value)}
-                        className={
-                          errors.contactPhone
-                            ? "border-red-400"
-                            : "bg-zinc-50/50"
-                        }
+                        countryIso={contactPhoneIso}
+                        hasError={!!errors.contactPhone}
+                        onChange={(national, iso) => {
+                          setContactPhoneIso(iso);
+                          setContact("phone", national);
+                        }}
                       />
                     </Field>
 
@@ -915,18 +928,17 @@ export default function EntitlementAddLeadPage() {
                       <Field
                         label="Contact Number"
                         required
-                        hint="10-15 digits only, no spaces"
+                        hint={expectedLengthHint(clientPhoneIso)}
                         error={errors.clientPhone}
                       >
-                        <CustomInput
-                          placeholder="9876543217"
+                        <PhoneCountryInput
                           value={formData.contact.client.phone}
-                          onChange={(e) => setClient("phone", e.target.value)}
-                          className={
-                            errors.clientPhone
-                              ? "border-red-400"
-                              : "bg-zinc-50/50"
-                          }
+                          countryIso={clientPhoneIso}
+                          hasError={!!errors.clientPhone}
+                          onChange={(national, iso) => {
+                            setClientPhoneIso(iso);
+                            setClient("phone", national);
+                          }}
                         />
                       </Field>
 
@@ -1323,7 +1335,11 @@ export default function EntitlementAddLeadPage() {
                           />
                           <Row
                             label="Phone"
-                            value={formData.contact.client.phone}
+                            value={
+                              formData.contact.client.phone
+                                ? `${findCountry(clientPhoneIso).dial} ${formData.contact.client.phone}`
+                                : "—"
+                            }
                           />
                           <Row
                             label="Country"

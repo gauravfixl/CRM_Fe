@@ -72,21 +72,26 @@ export default function LP2Overview() {
     <section id="overview" className="bg-white py-16">
       <div ref={ref} className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <motion.p
+        <motion.div
           custom={0}
           variants={titleVariants}
           initial="hidden"
           animate={inView ? "visible" : "hidden"}
-          className="text-center text-xs font-semibold uppercase tracking-widest text-[#0067B8]"
+          className="flex justify-center"
         >
-          OVERVIEW
-        </motion.p>
+          <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-50 border border-blue-100 mb-5">
+            <span className="w-2 h-2 rounded-full bg-[#0067B8]" />
+            <span className="text-xs tracking-widest font-bold uppercase text-[#0067B8]">
+              Overview
+            </span>
+          </span>
+        </motion.div>
         <motion.h2
           custom={1}
           variants={titleVariants}
           initial="hidden"
           animate={inView ? "visible" : "hidden"}
-          className="mt-3 text-center text-3xl font-semibold leading-tight text-[#1A1A1A] lg:text-[2.5rem]"
+          className="text-center text-3xl lg:text-[2.75rem] font-bold leading-tight text-[#1A1A1A]"
         >
           Transform how work gets done with AI&nbsp;agents
         </motion.h2>
@@ -95,7 +100,7 @@ export default function LP2Overview() {
           variants={titleVariants}
           initial="hidden"
           animate={inView ? "visible" : "hidden"}
-          className="mx-auto mt-3 max-w-3xl text-center text-base text-[#505050]"
+          className="mx-auto mt-4 max-w-3xl text-center text-base text-[#6B6B6B] leading-relaxed"
         >
           Connect teams, processes, and data across your entire organization to
           create exceptional customer experiences and operational agility.

@@ -55,13 +55,16 @@ export default function LP2SecurityTrust() {
           animate={isVisible ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.6 }}
         >
-          <span className="text-[#0067B8] text-[10px] uppercase tracking-widest font-semibold">
-            Security & Compliance
+          <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-50 border border-blue-100 mb-5">
+            <span className="w-2 h-2 rounded-full bg-[#0067B8]" />
+            <span className="text-[#0067B8] text-xs uppercase tracking-widest font-bold">
+              Security &amp; Compliance
+            </span>
           </span>
-          <h2 className="mt-2 text-[28px] lg:text-[34px] font-semibold text-[#1A1A1A] leading-tight">
+          <h2 className="text-3xl lg:text-[2.75rem] font-bold text-[#1A1A1A] leading-tight">
             Enterprise-grade security you can trust
           </h2>
-          <p className="mt-3 text-[#505050] text-base max-w-2xl mx-auto">
+          <p className="mt-4 text-[#6B6B6B] text-base max-w-2xl mx-auto leading-relaxed">
             Your data protection is our top priority. We maintain the highest standards of security and compliance.
           </p>
         </motion.div>

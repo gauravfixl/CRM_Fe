@@ -29,21 +29,6 @@ export default function LP2TabNavigation() {
   const [currentBgColor, setCurrentBgColor] = useState("#FFFFFF")
   const naturalTop = useRef<number | null>(null)
 
-  // Auto-scroll the tab strip so the active tab is centered in view
-  useEffect(() => {
-    if (!activeSection) return
-    const activeBtn = tabButtonRefs.current[activeSection]
-    const container = tabsScrollRef.current
-    if (!activeBtn || !container) return
-
-    const btnCenter = activeBtn.offsetLeft + activeBtn.offsetWidth / 2
-    const target = btnCenter - container.clientWidth / 2
-    container.scrollTo({
-      left: Math.max(0, target),
-      behavior: "smooth",
-    })
-  }, [activeSection])
-
   useEffect(() => {
     // Calculate the natural position of this tab bar in the page
     const calcTop = () => {
@@ -86,6 +71,14 @@ export default function LP2TabNavigation() {
 
     const top = el.getBoundingClientRect().top + window.scrollY - SCROLL_OFFSET
     window.scrollTo({ top, behavior: "smooth" })
+
+    const activeBtn = tabButtonRefs.current[sectionId]
+    const container = tabsScrollRef.current
+    if (activeBtn && container) {
+      const btnCenter = activeBtn.offsetLeft + activeBtn.offsetWidth / 2
+      const target = btnCenter - container.clientWidth / 2
+      container.scrollTo({ left: Math.max(0, target), behavior: "smooth" })
+    }
   }, [])
 
   return (

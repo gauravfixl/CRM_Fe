@@ -148,33 +148,31 @@ export default function LP2CustomerStories() {
           initial={{ opacity: 0, y: 30 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.7 }}
-          className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-16"
+          className="text-center mb-16"
         >
-          <div>
-            <motion.div
-              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-50 border border-blue-100 mb-5"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={inView ? { opacity: 1, scale: 1 } : {}}
-              transition={{ duration: 0.5 }}
-            >
-              <Star size={12} className="text-[#0067B8] fill-[#0067B8]" />
-              <span className="text-[10px] font-black text-[#0067B8] tracking-[0.2em] uppercase">
-                Customer Stories
-              </span>
-            </motion.div>
+          <motion.div
+            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-50 border border-blue-100 mb-5"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={inView ? { opacity: 1, scale: 1 } : {}}
+            transition={{ duration: 0.5 }}
+          >
+            <Star size={12} className="text-[#0067B8] fill-[#0067B8]" />
+            <span className="text-xs tracking-widest font-bold uppercase text-[#0067B8]">
+              Customer Stories
+            </span>
+          </motion.div>
 
-            <h2 className="text-3xl lg:text-[2.75rem] font-bold text-[#1A1A1A] leading-tight">
-              How customers{" "}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-purple-600 to-violet-600">
-                innovate with Cubicle
-              </span>
-            </h2>
-          </div>
+          <h2 className="text-3xl lg:text-[2.75rem] font-bold text-[#1A1A1A] leading-tight">
+            How customers{" "}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-purple-600 to-violet-600">
+              innovate with Cubicle
+            </span>
+          </h2>
 
           <motion.button
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#0067B8] text-white font-semibold text-sm hover:bg-[#005DA6] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg group shrink-0 self-start md:self-auto"
-            initial={{ opacity: 0, x: 20 }}
-            animate={inView ? { opacity: 1, x: 0 } : {}}
+            className="mt-6 inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#0067B8] text-white font-semibold text-sm hover:bg-[#005DA6] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg group"
+            initial={{ opacity: 0, y: 10 }}
+            animate={inView ? { opacity: 1, y: 0 } : {}}
             transition={{ delay: 0.3 }}
           >
             Explore all stories
