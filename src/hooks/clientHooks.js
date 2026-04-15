@@ -34,6 +34,9 @@ export const createClient = async (form) => {
   return response;
 };
 
+// Alias used by the multi-step onboarding wizard.
+export const addClient = createClient;
+
 /**
  * Updates a client by ID.
  * @param {string} id - Client ID.

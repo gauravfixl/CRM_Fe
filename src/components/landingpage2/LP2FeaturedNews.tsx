@@ -145,33 +145,31 @@ export default function LP2FeaturedNews() {
           initial={{ opacity: 0, y: 20 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.5 }}
-          className="flex flex-col sm:flex-row sm:items-end justify-between mb-14 gap-4"
+          className="text-center mb-14"
         >
-          <div>
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={inView ? { opacity: 1, x: 0 } : {}}
-              transition={{ duration: 0.4, delay: 0.1 }}
-              className="flex items-center gap-2 mb-4"
-            >
-              <div className="h-px w-8 bg-[#0067B8]" />
-              <span className="text-xs tracking-[0.2em] text-[#0067B8] font-semibold uppercase">
-                Featured News
-              </span>
-            </motion.div>
-            <h2 className="text-3xl lg:text-[2.75rem] font-bold text-[#1A1A1A] leading-tight">
-              What&apos;s new and{" "}
-              <span className="bg-gradient-to-r from-[#0067B8] to-[#5C2D91] bg-clip-text text-transparent">
-                notable
-              </span>
-            </h2>
-            <p className="text-[#6B7280] text-[15px] mt-3 max-w-lg">
-              Stay updated with the latest product releases, insights, and stories from CubicleERP.
-            </p>
-          </div>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={inView ? { opacity: 1, scale: 1 } : {}}
+            transition={{ duration: 0.4, delay: 0.1 }}
+            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-50 border border-blue-100 mb-5"
+          >
+            <div className="w-2 h-2 rounded-full bg-[#0067B8]" />
+            <span className="text-xs tracking-widest text-[#0067B8] font-bold uppercase">
+              Featured News
+            </span>
+          </motion.div>
+          <h2 className="text-3xl lg:text-[2.75rem] font-bold text-[#1A1A1A] leading-tight">
+            What&apos;s new and{" "}
+            <span className="bg-gradient-to-r from-[#0067B8] to-[#5C2D91] bg-clip-text text-transparent">
+              notable
+            </span>
+          </h2>
+          <p className="text-base text-[#6B6B6B] mt-4 max-w-2xl mx-auto leading-relaxed">
+            Stay updated with the latest product releases, insights, and stories from CubicleERP.
+          </p>
 
           {/* Navigation arrows - desktop */}
-          <div className="hidden sm:flex items-center gap-2">
+          <div className="hidden sm:flex items-center justify-center gap-2 mt-6">
             <button
               onClick={() => scroll("left")}
               disabled={!canScrollLeft}
