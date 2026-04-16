@@ -102,46 +102,54 @@ export default function ClientLifecyclePage() {
             {/* LIFECYCLE STATS */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <SmallCard className="bg-gradient-to-r from-primary/70 to-primary border-none text-white rounded-xl shadow-sm">
-                    <SmallCardHeader className="flex flex-row items-center justify-between pb-1 px-4 pt-4">
-                        <p className="text-xs text-white font-medium">Health Index</p>
-                        <Activity className="w-4 h-4 text-white" />
-                    </SmallCardHeader>
-                    <SmallCardContent className="px-4 pb-4">
-                        <p className="text-xl font-semibold text-white">8.4 / 10</p>
-                        <p className="text-[10px] text-white">Positive Retention Trend</p>
+                    <SmallCardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-xs text-white font-medium">Health Index</p>
+                                <p className="text-xl font-semibold text-white mt-1">8.4 / 10</p>
+                                <p className="text-[10px] text-white mt-1">Positive Retention Trend</p>
+                            </div>
+                            <Activity className="w-4 h-4 text-white" />
+                        </div>
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="border bg-white shadow-sm rounded-xl p-4">
-                    <SmallCardHeader className="flex flex-row items-center justify-between pb-1 px-4 pt-4">
-                        <p className="text-xs text-slate-500 font-medium">Expansion Opps</p>
-                        <Target className="w-4 h-4 text-emerald-500" />
-                    </SmallCardHeader>
-                    <SmallCardContent className="px-4 pb-4">
-                        <p className="text-xl font-semibold text-zinc-900">$142,500</p>
-                        <p className="text-[10px] text-zinc-400 font-medium">+12% from last month</p>
+                <SmallCard className="border bg-white shadow-sm rounded-xl">
+                    <SmallCardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-xs text-slate-500 font-medium">Expansion Opps</p>
+                                <p className="text-xl font-semibold text-zinc-900 mt-1">$142,500</p>
+                                <p className="text-[10px] text-zinc-400 font-medium mt-1">+12% from last month</p>
+                            </div>
+                            <Target className="w-4 h-4 text-emerald-500" />
+                        </div>
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="border bg-white shadow-sm rounded-xl p-4">
-                    <SmallCardHeader className="flex flex-row items-center justify-between pb-1 px-4 pt-4">
-                        <p className="text-xs text-slate-500 font-medium">Churn Exposure</p>
-                        <UserMinus className="w-4 h-4 text-rose-500" />
-                    </SmallCardHeader>
-                    <SmallCardContent className="px-4 pb-4">
-                        <p className="text-xl font-semibold text-zinc-900">08 Partners</p>
-                        <p className="text-[10px] text-zinc-400 font-medium">Immediate Action Required</p>
+                <SmallCard className="border bg-white shadow-sm rounded-xl">
+                    <SmallCardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-xs text-slate-500 font-medium">Churn Exposure</p>
+                                <p className="text-xl font-semibold text-zinc-900 mt-1">08 Partners</p>
+                                <p className="text-[10px] text-zinc-400 font-medium mt-1">Immediate Action Required</p>
+                            </div>
+                            <UserMinus className="w-4 h-4 text-rose-500" />
+                        </div>
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="border bg-white shadow-sm rounded-xl p-4">
-                    <SmallCardHeader className="flex flex-row items-center justify-between pb-1 px-4 pt-4">
-                        <p className="text-xs text-slate-500 font-medium">Engagement Rate</p>
-                        <Clock className="w-4 h-4 text-zinc-300" />
-                    </SmallCardHeader>
-                    <SmallCardContent className="px-4 pb-4">
-                        <p className="text-xl font-semibold text-zinc-900">92%</p>
-                        <p className="text-[10px] text-zinc-400 font-medium">Avg Response time: 2.4h</p>
+                <SmallCard className="border bg-white shadow-sm rounded-xl">
+                    <SmallCardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-xs text-slate-500 font-medium">Engagement Rate</p>
+                                <p className="text-xl font-semibold text-zinc-900 mt-1">92%</p>
+                                <p className="text-[10px] text-zinc-400 font-medium mt-1">Avg Response time: 2.4h</p>
+                            </div>
+                            <Clock className="w-4 h-4 text-zinc-300" />
+                        </div>
                     </SmallCardContent>
                 </SmallCard>
             </div>
