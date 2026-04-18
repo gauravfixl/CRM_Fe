@@ -182,6 +182,115 @@ const data = {
     { value: "99.5%", label: "Email delivery rate" },
     { value: "2.5x", label: "Average ROI improvement" },
   ],
+
+  capabilities: [
+    {
+      title: "AI-Powered Content Optimization",
+      description:
+        "Harness artificial intelligence to write better subject lines, optimize send times, and personalize email body content for every recipient. The AI engine learns from your audience's engagement patterns to continuously improve campaign performance.",
+      keyPoints: [
+        "AI subject line generator produces multiple variants ranked by predicted open rate based on your audience's history",
+        "Smart send-time optimization delivers each email at the hour when that specific contact is most likely to engage",
+        "Dynamic content blocks swap images, copy, and CTAs based on recipient attributes like location, purchase history, or engagement score",
+        "Predictive send scoring estimates the expected open and click rates before you hit send, so you can iterate before launching",
+      ],
+    },
+    {
+      title: "Advanced Deliverability Management",
+      description:
+        "Protect your sender reputation and maximize inbox placement with enterprise-grade deliverability tools. From authentication protocols to real-time blacklist monitoring, CubicleERP ensures your emails land where they belong.",
+      keyPoints: [
+        "Automated SPF, DKIM, and DMARC configuration with one-click domain verification and ongoing health monitoring",
+        "Dedicated IP pools with gradual warm-up schedules for new senders to build reputation safely",
+        "Real-time blacklist monitoring alerts you immediately if any sending IP appears on a major blocklist",
+      ],
+    },
+    {
+      title: "Behavioral Trigger Engine",
+      description:
+        "Go beyond basic automation with a trigger engine that responds to real-time user behavior across your website, app, and email interactions. Every action a contact takes can initiate a precisely timed, contextually relevant email sequence.",
+      keyPoints: [
+        "Track website page visits, product views, and cart activity to trigger contextual follow-up emails within minutes",
+        "Score contacts in real time based on engagement velocity and route high-intent leads to sales immediately",
+        "Re-engagement triggers automatically activate win-back sequences when contacts go dormant for a configurable period",
+        "Event-based branching lets a single automation adapt its path based on whether a contact opens, clicks, purchases, or ignores",
+      ],
+    },
+    {
+      title: "Multi-Channel Campaign Orchestration",
+      description:
+        "Coordinate email campaigns alongside SMS, push notifications, and in-app messages from a single workflow canvas. Deliver a unified experience across every touchpoint without juggling separate tools.",
+      keyPoints: [
+        "Unified workflow builder supports email, SMS, WhatsApp, and push notification steps in a single automation",
+        "Channel preference detection automatically routes messages to the channel each contact engages with most",
+        "Cross-channel attribution reports show the combined impact of coordinated campaigns across all touchpoints",
+      ],
+    },
+  ],
+
+  integrations: [
+    { name: "Shopify", category: "E-commerce" },
+    { name: "WordPress", category: "CMS" },
+    { name: "Salesforce", category: "CRM" },
+    { name: "Google Analytics", category: "Analytics" },
+    { name: "Zapier", category: "Automation" },
+    { name: "Slack", category: "Communication" },
+    { name: "WooCommerce", category: "E-commerce" },
+    { name: "Stripe", category: "Payments" },
+    { name: "Facebook Ads", category: "Advertising" },
+    { name: "Google Ads", category: "Advertising" },
+    { name: "Typeform", category: "Forms" },
+    { name: "Calendly", category: "Scheduling" },
+  ],
+
+  testimonials: [
+    {
+      quote:
+        "We switched from Mailchimp to CubicleERP Email Marketing and saw our open rates jump from 18% to 31% within the first month. The AI send-time optimization and native CRM integration make a massive difference when you are targeting the right people at the right time.",
+      author: "Michelle Torres",
+      role: "Head of Growth Marketing",
+      company: "BrightPath Education",
+      metric: "72% increase in email open rates",
+    },
+    {
+      quote:
+        "Our abandoned cart recovery sequence now runs completely on autopilot and recovers 12% of abandoned carts. That is an extra $180K in revenue per quarter that we were leaving on the table before CubicleERP.",
+      author: "Ryan Caldwell",
+      role: "E-commerce Manager",
+      company: "Urban Essentials Co.",
+      metric: "$180K recovered per quarter from abandoned carts",
+    },
+    {
+      quote:
+        "The A/B testing and analytics are leagues ahead of what we had before. We test everything -- subject lines, send times, content layout -- and our click-through rates have improved by 45% over six months of continuous optimization.",
+      author: "Lina Bergstrom",
+      role: "Digital Marketing Director",
+      company: "ScandiStyle Interiors",
+      metric: "45% improvement in click-through rates",
+    },
+  ],
+
+  comparisons: [
+    { feature: "Email personalization", traditional: "First name merge tags", cubicleErp: "AI-driven dynamic content" },
+    { feature: "Send optimization", traditional: "Pick a single send time", cubicleErp: "Per-contact optimal timing" },
+    { feature: "Audience segmentation", traditional: "Static list imports", cubicleErp: "Dynamic real-time segments" },
+    { feature: "Campaign testing", traditional: "Manual A/B split", cubicleErp: "Auto-optimizing multivariate" },
+    { feature: "Revenue attribution", traditional: "UTM-based estimates", cubicleErp: "Direct per-email tracking" },
+    { feature: "CRM integration", traditional: "Third-party connectors", cubicleErp: "Native bidirectional sync" },
+  ],
+
+  subNavItems: [
+    { label: "Overview", sectionId: "hero" },
+    { label: "Features", sectionId: "features" },
+    { label: "Capabilities", sectionId: "capabilities" },
+    { label: "Benefits", sectionId: "benefits" },
+    { label: "Integrations", sectionId: "integrations" },
+    { label: "Use Cases", sectionId: "use-cases" },
+    { label: "FAQs", sectionId: "faqs" },
+    { label: "CRM", href: "/explore/crm" },
+    { label: "Automation", href: "/explore/automation" },
+    { label: "Analytics", href: "/explore/analytics" },
+  ],
 }
 
 export default function EmailMarketingPage() {

@@ -176,6 +176,113 @@ const data = {
     { value: "2x", label: "Client lifetime value" },
     { value: "30%", label: "Less admin overhead" },
   ],
+  capabilities: [
+    {
+      title: "Client Health Scoring",
+      description:
+        "Automatically calculate a dynamic health score for every client based on a weighted combination of engagement frequency, satisfaction survey results, support ticket volume, contract renewal proximity, and revenue trends. Health scores update in real time, giving account managers an instant read on relationship strength and churn risk.",
+      keyPoints: [
+        "Composite scoring model combining engagement, satisfaction, and revenue signals",
+        "Configurable weight allocation so you prioritize the metrics that matter most",
+        "Automatic alerts and escalation workflows when scores drop below thresholds",
+        "Historical health score trending to identify gradual relationship deterioration",
+      ],
+    },
+    {
+      title: "Onboarding Orchestration",
+      description:
+        "Design structured onboarding programs with milestone-based templates that ensure every new client receives a consistent, thorough introduction to your product or service. Track completion rates, identify stalled onboardings, and automate reminders so clients reach their first value milestone as quickly as possible.",
+      keyPoints: [
+        "Reusable onboarding templates with customizable milestones and checklists",
+        "Automated task assignments and deadline reminders for your delivery team",
+        "Client-facing progress tracker visible in the self-service portal",
+        "Time-to-value analytics measuring how quickly clients reach key milestones",
+      ],
+    },
+    {
+      title: "Revenue and Expansion Intelligence",
+      description:
+        "Surface upsell and cross-sell opportunities by analyzing client usage data, contract headroom, and satisfaction trends. CubicleERP identifies clients who are ready for expansion and provides account managers with data-backed recommendations for the right conversation at the right time.",
+      keyPoints: [
+        "Expansion opportunity scoring based on usage patterns and contract terms",
+        "Automated alerts when clients approach plan limits or contract caps",
+        "Revenue forecasting by account with renewal probability estimates",
+        "Account plan templates for strategic growth conversations",
+      ],
+    },
+    {
+      title: "Multi-Stakeholder Relationship Mapping",
+      description:
+        "Map the complete organizational structure of each client account, identifying decision makers, influencers, champions, and end users. Track individual relationships with each stakeholder and ensure your team maintains active engagement with the people who drive retention and expansion decisions.",
+      keyPoints: [
+        "Organizational chart visualization with role and influence tagging",
+        "Stakeholder engagement tracking with last-contact date monitoring",
+        "Champion risk alerts when key contacts leave or change roles",
+        "Multi-threaded relationship health view per account",
+      ],
+    },
+  ],
+  integrations: [
+    { name: "Salesforce", category: "CRM" },
+    { name: "HubSpot", category: "CRM" },
+    { name: "Zendesk", category: "Support" },
+    { name: "Intercom", category: "Communication" },
+    { name: "Slack", category: "Communication" },
+    { name: "Gmail", category: "Email" },
+    { name: "Microsoft Outlook", category: "Email" },
+    { name: "Calendly", category: "Scheduling" },
+    { name: "Zoom", category: "Video Conferencing" },
+    { name: "DocuSign", category: "Contract Management" },
+    { name: "Stripe", category: "Payments" },
+    { name: "Jira", category: "Project Management" },
+  ],
+  testimonials: [
+    {
+      quote:
+        "CubicleERP Client Management gave us a complete view of every client relationship for the first time. Our account managers can see health scores, communication history, and contract status in one place. Client retention has improved significantly since we adopted the platform.",
+      author: "Catherine Blake",
+      role: "VP of Client Success",
+      company: "Pinnacle Advisory Group",
+      metric: "45% improvement in client retention rate",
+    },
+    {
+      quote:
+        "The client portal has been a game-changer for us. Our clients can track project progress, access documents, and submit requests without emailing us. It reduced our inbound support volume dramatically and our clients love the transparency.",
+      author: "Rajesh Iyer",
+      role: "Managing Director",
+      company: "Stratton Digital Agency",
+      metric: "60% reduction in client support emails",
+    },
+    {
+      quote:
+        "We identified three at-risk enterprise accounts through the health scoring system that we would have lost without it. The early warning gave us time to intervene, and all three renewed their contracts for another year.",
+      author: "Emma Lindqvist",
+      role: "Head of Account Management",
+      company: "CloudBridge SaaS",
+      metric: "Saved 3 enterprise accounts worth $420K ARR",
+    },
+  ],
+  comparisons: [
+    { feature: "Client Health Tracking", traditional: "Gut feeling and guesswork", cubicleErp: "Data-driven health scores" },
+    { feature: "Communication History", traditional: "Scattered across inboxes", cubicleErp: "Unified searchable timeline" },
+    { feature: "Contract Management", traditional: "File folders or shared drives", cubicleErp: "Centralized with alerts" },
+    { feature: "Client Portal", traditional: "Not available", cubicleErp: "Branded self-service portal" },
+    { feature: "Onboarding", traditional: "Ad-hoc manual process", cubicleErp: "Structured milestone tracking" },
+    { feature: "Expansion Insights", traditional: "Reactive, rep-dependent", cubicleErp: "Proactive AI suggestions" },
+  ],
+  subNavItems: [
+    { label: "Overview", sectionId: "hero" },
+    { label: "Features", sectionId: "features" },
+    { label: "Capabilities", sectionId: "capabilities" },
+    { label: "Benefits", sectionId: "benefits" },
+    { label: "Integrations", sectionId: "integrations" },
+    { label: "How It Works", sectionId: "how-it-works" },
+    { label: "Use Cases", sectionId: "use-cases" },
+    { label: "FAQs", sectionId: "faqs" },
+    { label: "CRM", href: "/explore/crm" },
+    { label: "Client Portal", href: "/explore/client-portal" },
+    { label: "Helpdesk", href: "/explore/helpdesk" },
+  ],
 }
 
 export default function ClientManagementPage() {

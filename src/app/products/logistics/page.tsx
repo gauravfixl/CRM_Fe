@@ -177,6 +177,109 @@ const data = {
         { value: "25%", label: "Average cost reduction" },
         { value: "99.97%", label: "Platform uptime SLA" },
     ],
+    capabilities: [
+        {
+            title: "Predictive Logistics & Demand Planning",
+            description:
+                "Leverage historical shipment data, seasonal patterns, and market indicators to forecast delivery volumes, plan fleet capacity, and pre-position resources before demand materializes — transforming your operation from reactive to predictive.",
+            keyPoints: [
+                "Machine-learning demand forecasting with accuracy improvement over time",
+                "Seasonal and event-driven capacity planning for peak periods",
+                "Proactive resource allocation based on predicted volume by region and lane",
+                "What-if scenario modeling for fleet expansion and depot placement decisions",
+            ],
+        },
+        {
+            title: "Cross-Border & Multi-Modal Freight Management",
+            description:
+                "Orchestrate complex international shipments that span road, rail, ocean, and air with unified documentation, customs compliance, and handoff tracking that maintains visibility across every leg of the journey.",
+            keyPoints: [
+                "Automated customs documentation and trade compliance screening",
+                "Multi-modal shipment planning with carrier selection optimization",
+                "Real-time container and cargo tracking across international transit points",
+                "Currency conversion, duty estimation, and landed cost calculation",
+            ],
+        },
+        {
+            title: "Last-Mile Delivery Excellence",
+            description:
+                "Optimize the most expensive and customer-visible segment of the delivery chain with purpose-built tools for urban routing, delivery slot management, and customer communication that turn last-mile logistics into a competitive advantage.",
+            keyPoints: [
+                "Customer self-scheduling with real-time delivery window availability",
+                "Driver proximity matching for same-day and on-demand delivery requests",
+                "Automated customer notifications with live ETA updates and driver tracking links",
+                "Failed delivery workflows with instant rescheduling and locker redirect options",
+            ],
+        },
+        {
+            title: "Fleet Maintenance & Lifecycle Management",
+            description:
+                "Extend vehicle lifespan and prevent costly breakdowns with preventive maintenance scheduling, parts inventory tracking, and total cost of ownership analytics that optimize your fleet investment over its full lifecycle.",
+            keyPoints: [
+                "Mileage and hours-based preventive maintenance scheduling with automated alerts",
+                "Parts inventory management with reorder points and vendor pricing comparison",
+                "Vehicle lifecycle cost tracking including fuel, maintenance, insurance, and depreciation",
+            ],
+        },
+    ],
+    integrations: [
+        { name: "Samsara", category: "Telematics" },
+        { name: "Geotab", category: "Fleet Tracking" },
+        { name: "SAP TM", category: "Transport Management" },
+        { name: "Shopify", category: "E-Commerce" },
+        { name: "QuickBooks", category: "Accounting" },
+        { name: "Stripe", category: "Payments" },
+        { name: "Slack", category: "Communication" },
+        { name: "Google Maps Platform", category: "Mapping" },
+        { name: "Twilio", category: "Customer Notifications" },
+        { name: "Power BI", category: "Business Intelligence" },
+        { name: "Descartes", category: "Customs & Compliance" },
+        { name: "project44", category: "Supply Chain Visibility" },
+    ],
+    testimonials: [
+        {
+            quote: "Route optimization alone saved us over $1.2 million in fuel costs in the first year. The AI recalculates routes dynamically throughout the day, and our drivers actually prefer it because they spend less time stuck in traffic.",
+            author: "Marcus Jefferson",
+            role: "VP of Fleet Operations",
+            company: "RapidShip Logistics",
+            metric: "$1.2M saved in fuel costs annually",
+        },
+        {
+            quote: "Our customers used to call constantly asking where their deliveries were. After implementing CubicleERP's real-time tracking and automated notifications, inbound tracking inquiries dropped by 70% and our NPS score went from 34 to 61.",
+            author: "Elena Petrova",
+            role: "Customer Experience Director",
+            company: "NorthStar Distribution",
+            metric: "70% reduction in tracking inquiries",
+        },
+        {
+            quote: "Managing compliance across 300 vehicles and 400 drivers was a full-time job for two people. CubicleERP automates license tracking, maintenance scheduling, and hours-of-service monitoring so we stay compliant without the administrative burden.",
+            author: "Tom Bradley",
+            role: "Operations Manager",
+            company: "Continental Freight Services",
+            metric: "100% compliance audit pass rate",
+        },
+    ],
+    comparisons: [
+        { feature: "Route Planning", traditional: "Manual, static routes", cubicleErp: "AI-optimized, dynamic" },
+        { feature: "Shipment Tracking", traditional: "Phone calls & emails", cubicleErp: "Real-time GPS tracking" },
+        { feature: "Fleet Maintenance", traditional: "Reactive, breakdown-driven", cubicleErp: "Predictive, scheduled" },
+        { feature: "Delivery Proof", traditional: "Paper signatures", cubicleErp: "Digital with photos" },
+        { feature: "Freight Costing", traditional: "Spreadsheet calculations", cubicleErp: "Automated rate engine" },
+        { feature: "Driver Management", traditional: "Paper logs & files", cubicleErp: "Digital scorecards" },
+    ],
+    subNavItems: [
+        { label: "Overview", sectionId: "hero" },
+        { label: "Features", sectionId: "features" },
+        { label: "Capabilities", sectionId: "capabilities" },
+        { label: "Benefits", sectionId: "benefits" },
+        { label: "Integrations", sectionId: "integrations" },
+        { label: "How It Works", sectionId: "how-it-works" },
+        { label: "Use Cases", sectionId: "use-cases" },
+        { label: "FAQs", sectionId: "faqs" },
+        { label: "Manufacturing", href: "/products/manufacturing" },
+        { label: "Retail", href: "/products/retail" },
+        { label: "Enterprise", href: "/products/enterprise" },
+    ],
 }
 
 export default function LogisticsPage() {

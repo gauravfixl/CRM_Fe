@@ -73,7 +73,7 @@ export default function LP2NextSteps() {
         }} />
       </div>
 
-      <div className="relative mx-auto max-w-[1180px] px-6">
+      <div className="relative mx-auto max-w-[1280px] px-6">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}

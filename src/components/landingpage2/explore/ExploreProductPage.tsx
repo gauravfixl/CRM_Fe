@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import Link from "next/link"
 import Image from "next/image"
@@ -8,7 +8,11 @@ import {
   ArrowRight,
   CheckCircle2,
   ChevronDown,
+  ChevronRight,
   Sparkles,
+  Quote,
+  Link2,
+  XCircle,
   type LucideIcon,
 } from "lucide-react"
 import LP2Navbar from "../LP2Navbar"
@@ -43,6 +47,32 @@ interface UseCase {
   highlights: string[]
 }
 
+interface Capability {
+  title: string
+  description: string
+  keyPoints: string[]
+  image?: string
+}
+
+interface Integration {
+  name: string
+  category: string
+}
+
+interface Testimonial {
+  quote: string
+  author: string
+  role: string
+  company: string
+  metric?: string
+}
+
+interface Comparison {
+  feature: string
+  traditional: string
+  cubicleErp: string
+}
+
 export interface ProductPageData {
   name: string
   tagline: string
@@ -58,6 +88,21 @@ export interface ProductPageData {
   useCases: UseCase[]
   faqs: FAQ[]
   stats: { value: string; label: string }[]
+  capabilities?: Capability[]
+  integrations?: Integration[]
+  testimonials?: Testimonial[]
+  comparisons?: Comparison[]
+  subNavItems?: { label: string; href?: string; sectionId?: string }[]
+  subHeader?: {
+    breadcrumb: string
+    breadcrumbHref: string
+    tabs: {
+      label: string
+      href?: string
+      isOverview?: boolean
+      dropdown?: { label: string; href: string; description?: string }[]
+    }[]
+  }
 }
 
 const stagger = {
@@ -98,6 +143,23 @@ export default function ExploreProductPage({ data }: { data: ProductPageData }) 
   const v = data.variant || 1
   const Icon = data.icon
   const [openFaq, setOpenFaq] = useState<number | null>(null)
+  const [openDropdown, setOpenDropdown] = useState<number | null>(null)
+  const [isSubHeaderSticky, setIsSubHeaderSticky] = useState(false)
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsSubHeaderSticky(window.scrollY > 80)
+    }
+    window.addEventListener("scroll", handleScroll, { passive: true })
+    return () => window.removeEventListener("scroll", handleScroll)
+  }, [])
+
+  useEffect(() => {
+    if (openDropdown === null) return
+    const close = () => setOpenDropdown(null)
+    document.addEventListener("click", close)
+    return () => document.removeEventListener("click", close)
+  }, [openDropdown])
 
   return (
     <main
@@ -106,8 +168,84 @@ export default function ExploreProductPage({ data }: { data: ProductPageData }) 
     >
       <LP2Navbar />
 
+      {/* ===================== SUB-HEADER (SAP-style) ===================== */}
+      {data.subHeader && (
+        <div
+          className={`w-full bg-white border-b z-40 transition-all duration-300 fixed left-0 right-0 shadow-md ${isSubHeaderSticky ? "top-14 opacity-100 translate-y-0" : "-top-20 opacity-0 -translate-y-full"}`}
+          style={{ borderColor: "#E5E5E5" }}
+        >
+          {/* Breadcrumb + Product name + Tabs - single compact row */}
+          <div className="max-w-[1200px] mx-auto px-6">
+            <div className="flex items-center gap-1 text-[11px] pt-1.5 pb-0">
+              <Link href={data.subHeader.breadcrumbHref} className="hover:underline" style={{ color: data.color }}>
+                &larr; {data.subHeader.breadcrumb}
+              </Link>
+            </div>
+            <div className="flex items-center gap-5">
+              <span className="text-[13px] font-bold text-[#1A1A1A] whitespace-nowrap pr-1 shrink-0">{data.name}</span>
+              <nav className="flex items-center gap-0.5">
+                {data.subHeader.tabs.map((tab, idx) => (
+                  <div key={tab.label} className="relative">
+                    {tab.dropdown ? (
+                      <>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setOpenDropdown(openDropdown === idx ? null : idx) }}
+                          className="flex items-center gap-1 px-3 py-1.5 text-[12px] font-medium whitespace-nowrap transition-colors duration-150 hover:text-[#1A1A1A] border-b-2"
+                          style={{
+                            color: openDropdown === idx ? data.color : "#555",
+                            borderColor: openDropdown === idx ? data.color : "transparent",
+                          }}
+                        >
+                          {tab.label}
+                          <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${openDropdown === idx ? "rotate-180" : ""}`} />
+                        </button>
+                        {openDropdown === idx && (
+                          <div className="absolute top-full left-0 mt-0 w-64 bg-white rounded-lg shadow-xl border border-gray-100 py-2 z-50" onClick={(e) => e.stopPropagation()}>
+                            {tab.dropdown.map((item) => (
+                              <Link
+                                key={item.label}
+                                href={item.href}
+                                className="block px-4 py-2.5 text-sm text-[#333] hover:bg-gray-50 transition-colors"
+                              >
+                                <span className="font-medium">{item.label}</span>
+                                {item.description && <span className="block text-xs text-[#737373] mt-0.5">{item.description}</span>}
+                              </Link>
+                            ))}
+                          </div>
+                        )}
+                      </>
+                    ) : tab.href ? (
+                      <Link
+                        href={tab.href}
+                        className="px-3 py-1.5 text-[12px] font-medium whitespace-nowrap transition-colors duration-150 hover:text-[#1A1A1A] border-b-2 block"
+                        style={{
+                          color: tab.isOverview ? data.color : "#555",
+                          borderColor: tab.isOverview ? data.color : "transparent",
+                        }}
+                      >
+                        {tab.label}
+                      </Link>
+                    ) : (
+                      <span
+                        className="px-3 py-1.5 text-[12px] font-medium whitespace-nowrap border-b-2 block cursor-default"
+                        style={{
+                          color: tab.isOverview ? data.color : "#555",
+                          borderColor: tab.isOverview ? data.color : "transparent",
+                        }}
+                      >
+                        {tab.label}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </nav>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ===================== HERO (unified for all variants) ===================== */}
-      <section className="relative overflow-hidden pt-28 pb-24">
+      <section id="hero" className={`relative overflow-hidden pb-12 ${data.subHeader ? "pt-16" : "pt-24"}`}>
         {/* Background image */}
         {data.heroImage && (
           <div
@@ -116,44 +254,44 @@ export default function ExploreProductPage({ data }: { data: ProductPageData }) 
           />
         )}
         {/* Subtle dark overlay — no product color, just dark for readability */}
-        <div className="absolute inset-0" style={{ background: "linear-gradient(160deg, rgba(10,15,30,0.55) 0%, rgba(10,15,30,0.45) 50%, rgba(10,15,30,0.35) 100%)" }} />
+        <div className="absolute inset-0" style={{ background: "linear-gradient(160deg, rgba(10,15,30,0.6) 0%, rgba(10,15,30,0.5) 50%, rgba(10,15,30,0.4) 100%)" }} />
         {/* Bottom fade */}
-        <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.3) 0%, transparent 40%)" }} />
+        <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.25) 0%, transparent 40%)" }} />
 
         <div className="relative z-[2] max-w-[1200px] mx-auto px-6">
-          <div className={`flex flex-col ${v === 2 || v === 4 ? "lg:flex-row items-center gap-14" : ""}`}>
+          <div className={`flex flex-col ${v === 2 || v === 4 ? "lg:flex-row items-center gap-8" : ""}`}>
             <motion.div variants={stagger} initial="hidden" animate="visible" className={v === 2 || v === 4 ? "flex-1" : "max-w-3xl"}>
               {/* Badge */}
-              <motion.div variants={fadeUp} className="flex items-center gap-3 mb-6">
-                <div className="w-14 h-14 rounded-2xl bg-white/15 backdrop-blur-md flex items-center justify-center border border-white/25">
-                  <Icon className="w-7 h-7 text-white" />
+              <motion.div variants={fadeUp} className="flex items-center gap-2.5 mb-4">
+                <div className="w-10 h-10 rounded-xl bg-white/15 backdrop-blur-md flex items-center justify-center border border-white/25">
+                  <Icon className="w-5 h-5 text-white" />
                 </div>
-                <span className="text-sm font-semibold tracking-wider text-white/80">CubicleERP {data.name}</span>
+                <span className="text-xs font-semibold tracking-wider text-white/80">CubicleERP {data.name}</span>
               </motion.div>
 
               {/* Tagline */}
-              <motion.h1 variants={fadeUp} className="text-4xl lg:text-[3.25rem] font-bold text-white leading-tight" style={{ textShadow: "0 2px 16px rgba(0,0,0,0.3)" }}>{data.tagline}</motion.h1>
+              <motion.h1 variants={fadeUp} className="text-2xl lg:text-[2.5rem] font-bold text-white leading-tight" style={{ textShadow: "0 2px 16px rgba(0,0,0,0.3)" }}>{data.tagline}</motion.h1>
 
               {/* Description */}
-              <motion.p variants={fadeUp} className="mt-5 text-lg text-white/80 leading-relaxed max-w-2xl" style={{ textShadow: "0 1px 6px rgba(0,0,0,0.2)" }}>{data.description}</motion.p>
+              <motion.p variants={fadeUp} className="mt-3 text-sm lg:text-[15px] text-white/80 leading-relaxed max-w-2xl" style={{ textShadow: "0 1px 6px rgba(0,0,0,0.2)" }}>{data.description}</motion.p>
 
               {/* CTA Buttons */}
-              <motion.div variants={fadeUp} className="mt-8 flex flex-wrap gap-4">
-                <Link href="/auth/signup" className="group inline-flex items-center gap-2 bg-white px-7 py-3.5 rounded-lg text-[15px] font-semibold transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl" style={{ color: data.color }}>
-                  Start free trial <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+              <motion.div variants={fadeUp} className="mt-5 flex flex-wrap gap-3">
+                <Link href="/auth/signup" className="group inline-flex items-center gap-2 bg-white px-5 py-2.5 rounded-lg text-[13px] font-semibold transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl" style={{ color: data.color }}>
+                  Start free trial <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
                 </Link>
-                <Link href="/pricing" className="inline-flex items-center px-7 py-3.5 rounded-lg text-[15px] font-semibold border-2 border-white/50 text-white transition-all duration-300 hover:bg-white/10 hover:-translate-y-0.5 backdrop-blur-sm">View pricing</Link>
+                <Link href="/pricing" className="inline-flex items-center px-5 py-2.5 rounded-lg text-[13px] font-semibold border-2 border-white/50 text-white transition-all duration-300 hover:bg-white/10 hover:-translate-y-0.5 backdrop-blur-sm">View pricing</Link>
               </motion.div>
             </motion.div>
 
             {/* Right side stats grid for v2 and v4 */}
             {(v === 2 || v === 4) && (
               <motion.div variants={scaleIn} initial="hidden" animate="visible" className="flex-shrink-0">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-3">
                   {data.stats.map((s, i) => (
-                    <motion.div key={s.label} className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-5 text-center min-w-[140px]" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 + i * 0.1 }} whileHover={{ scale: 1.05, backgroundColor: "rgba(255,255,255,0.2)" }}>
-                      <div className="text-2xl font-bold text-white">{s.value}</div>
-                      <div className="text-xs text-white/60 mt-1">{s.label}</div>
+                    <motion.div key={s.label} className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-3.5 text-center min-w-[120px]" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 + i * 0.1 }} whileHover={{ scale: 1.05, backgroundColor: "rgba(255,255,255,0.2)" }}>
+                      <div className="text-xl font-bold text-white">{s.value}</div>
+                      <div className="text-[10px] text-white/60 mt-0.5">{s.label}</div>
                     </motion.div>
                   ))}
                 </div>
@@ -185,8 +323,9 @@ export default function ExploreProductPage({ data }: { data: ProductPageData }) 
       )}
 
       {/* ===================== FEATURES ===================== */}
+      <div id="features" />
       {v === 1 && (
-        <section className="py-20 relative overflow-hidden" style={{ backgroundColor: `${data.color}05` }}>
+        <section className="py-14 relative overflow-hidden" style={{ backgroundColor: `${data.color}05` }}>
           {/* Decorative background elements */}
           <div className="absolute top-20 right-0 w-[400px] h-[400px] rounded-full opacity-[0.05]" style={{ background: `radial-gradient(circle, ${data.color}, transparent)` }} />
           <div className="absolute bottom-20 left-0 w-[300px] h-[300px] rounded-full opacity-[0.05]" style={{ background: `radial-gradient(circle, ${data.color}, transparent)` }} />
@@ -198,17 +337,17 @@ export default function ExploreProductPage({ data }: { data: ProductPageData }) 
               <motion.h2 variants={fadeUp} className="mt-4 text-3xl lg:text-4xl font-bold text-[#1A1A1A]">Everything you need in one place</motion.h2>
               <motion.div variants={fadeUp} className="mx-auto mt-4 h-1 w-16 rounded-full" style={{ backgroundColor: data.color }} />
             </motion.div>
-            <motion.div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }}>
+            <motion.div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }}>
               {data.features.map((f, i) => {
                 const FIcon = f.icon
                 return (
-                  <motion.div key={f.title} variants={fadeUp} className="group relative p-7 rounded-2xl border hover:border-transparent transition-all duration-400 hover:-translate-y-2" style={{ backgroundColor: `${data.color}08`, borderColor: `${data.color}20` }} whileHover={{ boxShadow: `0 20px 40px ${data.color}15` }}>
-                    <div className="absolute top-0 left-0 w-full h-1 rounded-t-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ background: `linear-gradient(to right, ${data.color}, ${darken(data.color, 30)})` }} />
-                    <div className="w-14 h-14 rounded-xl flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3" style={{ background: `linear-gradient(135deg, ${data.color}20, ${data.color}10)` }}>
-                      <FIcon className="w-7 h-7" style={{ color: data.color }} />
+                  <motion.div key={f.title} variants={fadeUp} className="group relative p-5 rounded-xl border hover:border-transparent transition-all duration-400 hover:-translate-y-1" style={{ backgroundColor: `${data.color}08`, borderColor: `${data.color}20` }} whileHover={{ boxShadow: `0 12px 30px ${data.color}15` }}>
+                    <div className="absolute top-0 left-0 w-full h-0.5 rounded-t-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ background: `linear-gradient(to right, ${data.color}, ${darken(data.color, 30)})` }} />
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center mb-3 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3" style={{ background: `linear-gradient(135deg, ${data.color}20, ${data.color}10)` }}>
+                      <FIcon className="w-5 h-5" style={{ color: data.color }} />
                     </div>
-                    <h3 className="text-lg font-semibold text-[#1A1A1A] mb-2">{f.title}</h3>
-                    <p className="text-sm text-[#505050] leading-relaxed">{f.description}</p>
+                    <h3 className="text-[15px] font-semibold text-[#1A1A1A] mb-1">{f.title}</h3>
+                    <p className="text-xs text-[#505050] leading-relaxed">{f.description}</p>
                   </motion.div>
                 )
               })}
@@ -218,27 +357,27 @@ export default function ExploreProductPage({ data }: { data: ProductPageData }) 
       )}
 
       {v === 2 && (
-        <section className="py-20 relative overflow-hidden" style={{ backgroundColor: data.lightColor }}>
+        <section className="py-14 relative overflow-hidden" style={{ backgroundColor: data.lightColor }}>
           <div className="absolute top-0 left-0 w-full h-full opacity-50" style={{ background: `radial-gradient(ellipse at top right, ${data.color}08, transparent 60%)` }} />
           <div className="max-w-[1200px] mx-auto px-6 relative">
             <motion.div variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }} className="text-center mb-14">
               <motion.span variants={fadeUp} className="inline-flex items-center gap-2 text-sm font-semibold tracking-wider px-4 py-1.5 rounded-full" style={{ color: data.color, backgroundColor: `${data.color}12` }}>Core Features</motion.span>
               <motion.h2 variants={fadeUp} className="mt-4 text-3xl lg:text-4xl font-bold text-[#1A1A1A]">Built for modern teams</motion.h2>
             </motion.div>
-            <div className="space-y-6">
+            <div className="space-y-3">
               {data.features.map((f, i) => {
                 const FIcon = f.icon
                 const isEven = i % 2 === 0
                 return (
                   <motion.div key={f.title} variants={isEven ? fadeLeft : fadeRight} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.3 }}
-                    className={`flex flex-col md:flex-row items-center gap-8 p-8 rounded-2xl bg-white/80 backdrop-blur-sm shadow-sm hover:shadow-xl transition-all duration-300 border border-white/50 ${!isEven ? "md:flex-row-reverse" : ""}`}
-                    style={{ borderLeft: isEven ? `4px solid ${data.color}` : undefined, borderRight: !isEven ? `4px solid ${data.color}` : undefined }}>
-                    <motion.div className="w-20 h-20 rounded-2xl flex items-center justify-center shrink-0 shadow-md" style={{ background: `linear-gradient(135deg, ${data.color}, ${darken(data.color, 30)})` }} whileHover={{ scale: 1.1, rotate: 5 }}>
-                      <FIcon className="w-9 h-9 text-white" />
+                    className={`flex flex-col md:flex-row items-center gap-5 p-5 rounded-xl bg-white/80 backdrop-blur-sm shadow-sm hover:shadow-lg transition-all duration-300 border border-white/50 ${!isEven ? "md:flex-row-reverse" : ""}`}
+                    style={{ borderLeft: isEven ? `3px solid ${data.color}` : undefined, borderRight: !isEven ? `3px solid ${data.color}` : undefined }}>
+                    <motion.div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 shadow-sm" style={{ background: `linear-gradient(135deg, ${data.color}, ${darken(data.color, 30)})` }} whileHover={{ scale: 1.1, rotate: 5 }}>
+                      <FIcon className="w-6 h-6 text-white" />
                     </motion.div>
                     <div className={`flex-1 ${!isEven ? "md:text-right" : ""}`}>
-                      <h3 className="text-xl font-bold text-[#1A1A1A] mb-2">{f.title}</h3>
-                      <p className="text-[15px] text-[#505050] leading-relaxed">{f.description}</p>
+                      <h3 className="text-base font-bold text-[#1A1A1A] mb-1">{f.title}</h3>
+                      <p className="text-sm text-[#505050] leading-relaxed">{f.description}</p>
                     </div>
                   </motion.div>
                 )
@@ -305,7 +444,62 @@ export default function ExploreProductPage({ data }: { data: ProductPageData }) 
         </section>
       )}
 
+      {/* ===================== CAPABILITIES DEEP DIVE ===================== */}
+      {data.capabilities && data.capabilities.length > 0 && (
+        <section id="capabilities" className="py-14 relative overflow-hidden bg-white">
+          <div className="max-w-[1200px] mx-auto px-6">
+            <motion.div variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }} className="text-center mb-10">
+              <motion.span variants={fadeUp} className="inline-flex items-center gap-2 text-sm font-semibold tracking-wider px-4 py-1.5 rounded-full" style={{ color: data.color, backgroundColor: `${data.color}10` }}>
+                In-Depth Look
+              </motion.span>
+              <motion.h2 variants={fadeUp} className="mt-3 text-2xl lg:text-3xl font-bold text-[#1A1A1A]">Explore core capabilities</motion.h2>
+              <motion.p variants={fadeUp} className="mt-2 text-sm text-[#505050] max-w-2xl mx-auto">Discover how each capability is designed to solve real business challenges and deliver measurable outcomes.</motion.p>
+            </motion.div>
+            <div className="space-y-10">
+              {data.capabilities.map((cap, i) => (
+                <motion.div key={cap.title} variants={i % 2 === 0 ? fadeLeft : fadeRight} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }}
+                  className={`flex flex-col ${i % 2 === 0 ? "lg:flex-row" : "lg:flex-row-reverse"} items-center gap-8`}>
+                  <div className="flex-1">
+                    <div className="inline-flex items-center gap-2 mb-3">
+                      <div className="w-7 h-7 rounded-md flex items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: data.color }}>{String(i + 1).padStart(2, "0")}</div>
+                      <span className="text-[10px] font-semibold tracking-wider uppercase" style={{ color: data.color }}>Capability</span>
+                    </div>
+                    <h3 className="text-xl font-bold text-[#1A1A1A] mb-2">{cap.title}</h3>
+                    <p className="text-sm text-[#505050] leading-relaxed mb-4">{cap.description}</p>
+                    <ul className="space-y-2">
+                      {cap.keyPoints.map((point) => (
+                        <li key={point} className="flex items-start gap-2 text-sm text-[#505050]">
+                          <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" style={{ color: data.color }} />
+                          <span>{point}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div className="lg:w-[38%] w-full shrink-0">
+                    <div className="relative rounded-xl overflow-hidden aspect-[3/2]">
+                      {cap.image ? (
+                        <Image src={cap.image} alt={cap.title} fill className="object-cover" unoptimized />
+                      ) : (
+                        <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, ${data.color}15, ${data.color}08)` }}>
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="w-16 h-16 rounded-xl flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${data.color}25, ${data.color}10)` }}>
+                              <Icon className="w-8 h-8" style={{ color: data.color }} />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      <div className="absolute bottom-0 left-0 right-0 h-0.5" style={{ background: `linear-gradient(to right, ${data.color}, ${darken(data.color, 30)})` }} />
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* ===================== BENEFITS ===================== */}
+      <div id="benefits" />
       {v === 1 && (
         <section className="py-20 relative overflow-hidden" style={{ background: `linear-gradient(180deg, ${data.lightColor} 0%, ${data.lightColor}40 100%)` }}>
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] rounded-full opacity-[0.04]" style={{ background: `radial-gradient(circle, ${data.color}, transparent)` }} />
@@ -407,7 +601,35 @@ export default function ExploreProductPage({ data }: { data: ProductPageData }) 
         </section>
       )}
 
+      {/* ===================== INTEGRATION ECOSYSTEM ===================== */}
+      {data.integrations && data.integrations.length > 0 && (
+        <section id="integrations" className="py-20 relative overflow-hidden" style={{ backgroundColor: `${data.color}04` }}>
+          <div className="absolute top-0 left-0 w-full h-px" style={{ background: `linear-gradient(to right, transparent, ${data.color}25, transparent)` }} />
+          <div className="max-w-[1200px] mx-auto px-6">
+            <motion.div variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }} className="text-center mb-14">
+              <motion.span variants={fadeUp} className="inline-flex items-center gap-2 text-sm font-semibold tracking-wider px-4 py-1.5 rounded-full" style={{ color: data.color, backgroundColor: `${data.color}10` }}>
+                <Link2 className="w-3.5 h-3.5" /> Integrations
+              </motion.span>
+              <motion.h2 variants={fadeUp} className="mt-4 text-3xl lg:text-4xl font-bold text-[#1A1A1A]">Works with your favorite tools</motion.h2>
+              <motion.p variants={fadeUp} className="mt-3 text-[#505050] max-w-2xl mx-auto">Seamlessly connect with the tools your team already uses. No data silos, no context switching.</motion.p>
+            </motion.div>
+            <motion.div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4" variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true }}>
+              {data.integrations.map((integration) => (
+                <motion.div key={integration.name} variants={scaleIn} className="group flex flex-col items-center gap-2 p-5 rounded-xl border transition-all duration-300 hover:shadow-lg hover:-translate-y-1" style={{ backgroundColor: `${data.color}06`, borderColor: `${data.color}15` }}>
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center transition-transform group-hover:scale-110" style={{ background: `linear-gradient(135deg, ${data.color}20, ${data.color}08)` }}>
+                    <Link2 className="w-5 h-5" style={{ color: data.color }} />
+                  </div>
+                  <span className="text-sm font-semibold text-[#1A1A1A] text-center">{integration.name}</span>
+                  <span className="text-xs text-[#737373]">{integration.category}</span>
+                </motion.div>
+              ))}
+            </motion.div>
+          </div>
+        </section>
+      )}
+
       {/* ===================== HOW IT WORKS ===================== */}
+      <div id="how-it-works" />
       {(v === 1 || v === 3) && (
         <section className="py-20 relative overflow-hidden" style={{ backgroundColor: v === 1 ? "white" : `${data.color}04` }}>
           <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[200px] h-[400px] opacity-[0.03] rounded-full" style={{ background: `radial-gradient(circle, ${data.color}, transparent)` }} />
@@ -487,7 +709,7 @@ export default function ExploreProductPage({ data }: { data: ProductPageData }) 
       )}
 
       {/* ===================== USE CASES ===================== */}
-      <section className="py-20 relative overflow-hidden" style={{ backgroundColor: v === 2 ? `${data.color}04` : v === 4 ? `${data.color}05` : v === 1 ? `${data.color}06` : `${data.color}05` }}>
+      <section id="use-cases" className="py-20 relative overflow-hidden" style={{ backgroundColor: v === 2 ? `${data.color}04` : v === 4 ? `${data.color}05` : v === 1 ? `${data.color}06` : `${data.color}05` }}>
         <div className="absolute top-0 left-0 w-full h-px" style={{ background: `linear-gradient(to right, transparent, ${data.color}20, transparent)` }} />
         <div className="max-w-[1200px] mx-auto px-6 relative">
           <motion.div variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }}>
@@ -516,8 +738,80 @@ export default function ExploreProductPage({ data }: { data: ProductPageData }) 
         </div>
       </section>
 
+      {/* ===================== TESTIMONIALS ===================== */}
+      {data.testimonials && data.testimonials.length > 0 && (
+        <section id="testimonials" className="py-20 relative overflow-hidden bg-white">
+          <div className="absolute top-0 right-0 w-[400px] h-[400px] rounded-full opacity-[0.04]" style={{ background: `radial-gradient(circle, ${data.color}, transparent)` }} />
+          <div className="max-w-[1200px] mx-auto px-6 relative">
+            <motion.div variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }} className="text-center mb-14">
+              <motion.span variants={fadeUp} className="inline-flex items-center gap-2 text-sm font-semibold tracking-wider px-4 py-1.5 rounded-full" style={{ color: data.color, backgroundColor: `${data.color}10` }}>
+                Customer Stories
+              </motion.span>
+              <motion.h2 variants={fadeUp} className="mt-4 text-3xl lg:text-4xl font-bold text-[#1A1A1A]">Trusted by teams worldwide</motion.h2>
+            </motion.div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {data.testimonials.map((t) => (
+                <motion.div key={t.author} variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} className="group p-7 rounded-2xl border transition-all duration-300 hover:shadow-xl hover:-translate-y-1 relative" style={{ backgroundColor: `${data.color}05`, borderColor: `${data.color}15` }}>
+                  <Quote className="w-8 h-8 mb-4 opacity-30" style={{ color: data.color }} />
+                  <p className="text-[15px] text-[#333] leading-relaxed mb-6 italic">&ldquo;{t.quote}&rdquo;</p>
+                  {t.metric && (
+                    <div className="mb-4 px-3 py-2 rounded-lg inline-block" style={{ backgroundColor: `${data.color}10` }}>
+                      <span className="text-sm font-bold" style={{ color: data.color }}>{t.metric}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-3 pt-4 border-t" style={{ borderColor: `${data.color}15` }}>
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white" style={{ background: `linear-gradient(135deg, ${data.color}, ${darken(data.color, 25)})` }}>
+                      {t.author.split(" ").map(n => n[0]).join("")}
+                    </div>
+                    <div>
+                      <div className="text-sm font-semibold text-[#1A1A1A]">{t.author}</div>
+                      <div className="text-xs text-[#737373]">{t.role}, {t.company}</div>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ===================== COMPARISON TABLE ===================== */}
+      {data.comparisons && data.comparisons.length > 0 && (
+        <section id="comparison" className="py-20 relative overflow-hidden" style={{ backgroundColor: `${data.color}06` }}>
+          <div className="max-w-[1000px] mx-auto px-6">
+            <motion.div variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }} className="text-center mb-14">
+              <motion.span variants={fadeUp} className="inline-flex items-center gap-2 text-sm font-semibold tracking-wider px-4 py-1.5 rounded-full" style={{ color: data.color, backgroundColor: `${data.color}10` }}>
+                Compare
+              </motion.span>
+              <motion.h2 variants={fadeUp} className="mt-4 text-3xl lg:text-4xl font-bold text-[#1A1A1A]">The CubicleERP advantage</motion.h2>
+              <motion.p variants={fadeUp} className="mt-3 text-[#505050] max-w-2xl mx-auto">See how CubicleERP {data.name} compares to traditional approaches and legacy tools.</motion.p>
+            </motion.div>
+            <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} className="rounded-2xl overflow-hidden border shadow-sm" style={{ borderColor: `${data.color}20` }}>
+              <div className="grid grid-cols-3 text-center text-sm font-semibold" style={{ backgroundColor: data.color }}>
+                <div className="p-4 text-white/80">Feature</div>
+                <div className="p-4 text-white/60">Traditional Tools</div>
+                <div className="p-4 text-white">CubicleERP</div>
+              </div>
+              {data.comparisons.map((c, i) => (
+                <div key={c.feature} className="grid grid-cols-3 text-center text-sm border-b last:border-b-0" style={{ backgroundColor: i % 2 === 0 ? `${data.color}04` : "white", borderColor: `${data.color}10` }}>
+                  <div className="p-4 font-medium text-[#1A1A1A] text-left pl-6">{c.feature}</div>
+                  <div className="p-4 text-[#737373] flex items-center justify-center gap-2">
+                    <XCircle className="w-4 h-4 text-red-400 shrink-0" />
+                    <span>{c.traditional}</span>
+                  </div>
+                  <div className="p-4 flex items-center justify-center gap-2" style={{ color: data.color }}>
+                    <CheckCircle2 className="w-4 h-4 shrink-0" />
+                    <span className="font-medium">{c.cubicleErp}</span>
+                  </div>
+                </div>
+              ))}
+            </motion.div>
+          </div>
+        </section>
+      )}
+
       {/* ===================== FAQs ===================== */}
-      <section className="py-20 relative" style={{ backgroundColor: v === 1 ? data.lightColor : `${data.color}04` }}>
+      <section id="faqs" className="py-20 relative" style={{ backgroundColor: v === 1 ? data.lightColor : `${data.color}04` }}>
         <div className="max-w-[800px] mx-auto px-6">
           <motion.div variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }}>
             <div className="text-center mb-14">

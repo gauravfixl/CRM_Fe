@@ -182,6 +182,115 @@ const data = {
     { value: "256-bit", label: "AES encryption standard" },
     { value: "Unlimited", label: "Cloud storage on paid plans" },
   ],
+
+  capabilities: [
+    {
+      title: "Intelligent Document Classification",
+      description:
+        "Let AI automatically categorize, tag, and route incoming documents based on their content. The classification engine recognizes document types like invoices, contracts, receipts, and correspondence, then applies the appropriate metadata and filing rules without manual intervention.",
+      keyPoints: [
+        "Pre-trained models recognize 50+ common business document types out of the box with 95%+ accuracy",
+        "Custom training lets you teach the system to recognize industry-specific or proprietary document formats",
+        "Auto-tagging extracts key entities like vendor names, invoice amounts, contract dates, and PO numbers from document content",
+        "Smart routing sends classified documents directly to the right team, folder, or approval workflow",
+      ],
+    },
+    {
+      title: "Document Workflow Automation",
+      description:
+        "Build end-to-end document workflows that handle review, approval, signing, and archival automatically. From purchase order approvals to contract renewals, every step is tracked and every stakeholder is notified at the right time.",
+      keyPoints: [
+        "Visual workflow designer lets you map multi-step approval chains with parallel and sequential routing",
+        "Conditional routing sends documents to different approvers based on amount, department, document type, or any custom field",
+        "Deadline enforcement with automatic escalation ensures documents never sit in someone's queue indefinitely",
+      ],
+    },
+    {
+      title: "Advanced OCR and Data Extraction",
+      description:
+        "Transform paper documents and scanned images into searchable, structured data. The OCR engine handles handwritten text, low-quality scans, and multi-language documents, extracting key fields that feed directly into your business systems.",
+      keyPoints: [
+        "Process scanned invoices, receipts, and forms with 99% character-level accuracy across 40+ languages",
+        "Template-free extraction identifies and captures key-value pairs without pre-defining field locations",
+        "Extracted data flows directly into CubicleERP modules like Finance, CRM, and Inventory for automated processing",
+        "Batch processing handles thousands of pages per hour for large-scale digitization projects",
+      ],
+    },
+    {
+      title: "Retention Policy and Compliance Engine",
+      description:
+        "Enforce document lifecycle policies automatically to meet regulatory requirements. Define how long each document type must be retained, when it should be reviewed, and when it can be safely disposed of, all with complete audit trails.",
+      keyPoints: [
+        "Configure retention schedules by document type, department, or regulatory framework (GDPR, HIPAA, SOX)",
+        "Automated disposition workflows notify stakeholders before documents are archived or permanently deleted",
+        "Legal hold functionality preserves documents involved in litigation or investigations, overriding normal retention rules",
+      ],
+    },
+  ],
+
+  integrations: [
+    { name: "Google Drive", category: "Storage" },
+    { name: "Microsoft OneDrive", category: "Storage" },
+    { name: "Dropbox", category: "Storage" },
+    { name: "Slack", category: "Communication" },
+    { name: "Microsoft 365", category: "Productivity" },
+    { name: "Google Workspace", category: "Productivity" },
+    { name: "DocuSign", category: "E-Signatures" },
+    { name: "Adobe Acrobat", category: "Document Tools" },
+    { name: "SharePoint", category: "Storage" },
+    { name: "Zapier", category: "Automation" },
+    { name: "Notion", category: "Productivity" },
+    { name: "Box", category: "Storage" },
+  ],
+
+  testimonials: [
+    {
+      quote:
+        "Our legal team was drowning in contract versions scattered across email, shared drives, and desktops. CubicleERP Documents gave us a single source of truth with version history, and our contract review cycle time dropped from 12 days to 3.",
+      author: "Katherine Lawson",
+      role: "General Counsel",
+      company: "Apex Financial Services",
+      metric: "75% faster contract review cycles",
+    },
+    {
+      quote:
+        "We digitized 15 years of paper records in under two months using the bulk scan and OCR features. Now any employee can find a document in seconds instead of spending 20 minutes in the file room. It has been transformational for our operations.",
+      author: "Rajesh Patel",
+      role: "Chief Operating Officer",
+      company: "MedCore Health Systems",
+      metric: "15 years of records digitized in 2 months",
+    },
+    {
+      quote:
+        "During our last SOC 2 audit, the auditors were impressed that we could produce any document's complete access and edit history in under a minute. CubicleERP Documents made compliance something we barely think about instead of a quarterly fire drill.",
+      author: "Elena Vasquez",
+      role: "Compliance Director",
+      company: "TrustBridge Insurance",
+      metric: "Audit preparation time reduced by 90%",
+    },
+  ],
+
+  comparisons: [
+    { feature: "Document search", traditional: "Folder browsing only", cubicleErp: "Full-text search with OCR" },
+    { feature: "Version management", traditional: "Manual file renaming", cubicleErp: "Automatic version history" },
+    { feature: "Collaboration", traditional: "Email attachments back and forth", cubicleErp: "Real-time co-editing" },
+    { feature: "Security", traditional: "Shared folder permissions", cubicleErp: "Granular role-based access" },
+    { feature: "Compliance", traditional: "Manual audit log tracking", cubicleErp: "Automated retention policies" },
+    { feature: "Signatures", traditional: "Print, sign, scan, email", cubicleErp: "Built-in e-signatures" },
+  ],
+
+  subNavItems: [
+    { label: "Overview", sectionId: "hero" },
+    { label: "Features", sectionId: "features" },
+    { label: "Capabilities", sectionId: "capabilities" },
+    { label: "Benefits", sectionId: "benefits" },
+    { label: "Integrations", sectionId: "integrations" },
+    { label: "Use Cases", sectionId: "use-cases" },
+    { label: "FAQs", sectionId: "faqs" },
+    { label: "Project Management", href: "/explore/project-management" },
+    { label: "Client Portal", href: "/explore/client-portal" },
+    { label: "Automation", href: "/explore/automation" },
+  ],
 }
 
 export default function DocumentsPage() {

@@ -174,6 +174,112 @@ const data = {
     { value: "3x", label: "Faster invoice generation" },
     { value: "200+", label: "Consulting firms onboarded" },
   ],
+  capabilities: [
+    {
+      title: "Knowledge Management & Deliverable Library",
+      description:
+        "Build an institutional knowledge base that captures methodologies, frameworks, deliverable templates, and lessons learned from every engagement. New consultants ramp up faster, proposals leverage proven approaches, and your firm avoids reinventing the wheel on every project.",
+      keyPoints: [
+        "Searchable deliverable repository organized by industry, service line, and engagement type",
+        "Methodology and framework library with version control and contributor attribution",
+        "Engagement retrospective workflows that capture lessons learned and best practices",
+        "Template starter kits for common deliverable types reducing project setup time by 60%",
+      ],
+    },
+    {
+      title: "Skills Inventory & Talent Development",
+      description:
+        "Maintain a detailed skills inventory across your consultant bench so managers can match the right expertise to every engagement. Track certifications, training completions, and career development goals to invest in your people and reduce costly turnover.",
+      keyPoints: [
+        "Consultant skill profiles with proficiency levels, certifications, and project experience",
+        "Skills-based search for staffing engagements that require specific domain expertise",
+        "Certification tracking with renewal reminders and professional development budgets",
+        "Career path modeling with mentorship assignments and promotion readiness indicators",
+      ],
+    },
+    {
+      title: "Client Value Measurement & Impact Tracking",
+      description:
+        "Demonstrate the tangible value your firm delivers by tracking engagement outcomes, client KPI improvements, and return on consulting investment. Use impact data to strengthen client relationships, justify premium pricing, and build compelling case studies for business development.",
+      keyPoints: [
+        "Engagement outcome tracking with baseline vs. post-engagement KPI comparison",
+        "Client satisfaction scoring with automated survey distribution and trend analysis",
+        "Value realization dashboards that quantify ROI delivered to each client",
+        "Case study generation from engagement data for proposals and marketing collateral",
+      ],
+    },
+    {
+      title: "Multi-Practice Firm Governance",
+      description:
+        "For firms with multiple practice areas, geographies, or partner groups, CubicleERP provides governance frameworks that balance firm-wide standards with practice-level autonomy. Partners get practice P&L visibility while firm leadership sees the consolidated picture.",
+      keyPoints: [
+        "Practice-level P&L reporting with firm-wide consolidation and allocation rules",
+        "Partner compensation modeling tied to origination, delivery, and management metrics",
+        "Conflict-of-interest checking across client relationships and engagement histories",
+        "Firm-wide policy enforcement with practice-specific workflow customization",
+      ],
+    },
+  ],
+  integrations: [
+    { name: "Jira", category: "Project Management" },
+    { name: "Azure DevOps", category: "Development" },
+    { name: "Slack", category: "Communication" },
+    { name: "Microsoft 365", category: "Productivity" },
+    { name: "QuickBooks", category: "Accounting" },
+    { name: "Xero", category: "Accounting" },
+    { name: "Salesforce", category: "CRM" },
+    { name: "DocuSign", category: "e-Signatures" },
+    { name: "Expensify", category: "Expense Management" },
+    { name: "NetSuite", category: "ERP" },
+    { name: "Harvest", category: "Time Tracking" },
+    { name: "Google Workspace", category: "Productivity" },
+  ],
+  testimonials: [
+    {
+      quote:
+        "We were losing an estimated 12% of billable hours to poor time tracking and manual processes. Within two months of deploying CubicleERP, our timesheet compliance hit 98% and we recovered over $300K in previously leaked annual revenue.",
+      author: "Katherine Wells",
+      role: "Managing Partner",
+      company: "Stratton Advisory Group",
+      metric: "$300K in recovered annual revenue",
+    },
+    {
+      quote:
+        "The resource planning module changed how we staff engagements. We can see consultant availability three months out, match skills to requirements instantly, and our bench time dropped from 18% to under 7%. That directly improved our firm profitability.",
+      author: "David Okafor",
+      role: "Director of Operations",
+      company: "Apex Consulting Partners",
+      metric: "Bench time reduced from 18% to 7%",
+    },
+    {
+      quote:
+        "Our partners used to spend hours every month reconciling project profitability in spreadsheets. Now every engagement has a live P&L dashboard that updates as consultants log time and expenses. We make pricing decisions based on real data, not estimates.",
+      author: "Michelle Torres",
+      role: "Chief Financial Officer",
+      company: "Ridgeline Management Consulting",
+      metric: "Real-time engagement profitability visibility",
+    },
+  ],
+  comparisons: [
+    { feature: "Time tracking to billing", traditional: "Manual transfer", cubicleErp: "Automatic flow" },
+    { feature: "Resource planning", traditional: "Spreadsheet-based", cubicleErp: "Visual calendar view" },
+    { feature: "Engagement profitability", traditional: "Monthly manual calc", cubicleErp: "Real-time dashboards" },
+    { feature: "Utilization tracking", traditional: "Lagging reports", cubicleErp: "Live per-consultant" },
+    { feature: "Proposal management", traditional: "Email and folders", cubicleErp: "Structured pipeline" },
+    { feature: "Multi-model billing", traditional: "Complex workarounds", cubicleErp: "Native support" },
+  ],
+  subNavItems: [
+    { label: "Overview", sectionId: "hero" },
+    { label: "Features", sectionId: "features" },
+    { label: "Capabilities", sectionId: "capabilities" },
+    { label: "Benefits", sectionId: "benefits" },
+    { label: "Integrations", sectionId: "integrations" },
+    { label: "Use Cases", sectionId: "use-cases" },
+    { label: "FAQs", sectionId: "faqs" },
+    { label: "Agencies", href: "/products/agencies" },
+    { label: "Legal", href: "/products/legal" },
+    { label: "Enterprise", href: "/products/enterprise" },
+  ],
 }
 
 export default function ConsultingFirmsPage() {

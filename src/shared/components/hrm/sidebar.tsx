@@ -314,7 +314,7 @@ const hrmNavigation = [
         ]
     },
     {
-        title: "Admin",
+        title: "Settings",
         url: "#",
         icon: <span className="text-xl">⚙️</span>,
         items: [

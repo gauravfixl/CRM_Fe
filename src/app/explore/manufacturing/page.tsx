@@ -175,6 +175,111 @@ const data = {
     { value: "30%", label: "Reduction in downtime" },
     { value: "20%", label: "Lower scrap rates" },
   ],
+  capabilities: [
+    {
+      title: "Advanced BOM and Routing Management",
+      description:
+        "Build and maintain complex, multi-level Bills of Materials with revision control, engineering change order tracking, and alternative component definitions. Define detailed routing sequences that specify the exact operations, work centers, setup times, and run times required to produce each product.",
+      keyPoints: [
+        "Multi-level BOM nesting with unlimited depth for complex assemblies",
+        "Engineering change order workflow with approval and effective date control",
+        "Alternative component and substitute material definitions for flexibility",
+        "Routing-level costing with operation-specific labor and overhead rates",
+      ],
+    },
+    {
+      title: "Real-Time Shop Floor Execution",
+      description:
+        "Equip your production floor with a tablet-optimized interface that allows operators to clock into operations, report output quantities, log scrap and rework, and record quality inspection results. Every action updates the production schedule and inventory in real time, giving management instant visibility into work-in-progress status.",
+      keyPoints: [
+        "Tablet-friendly shop floor terminal with simplified operator interface",
+        "Real-time WIP tracking with operation-level progress reporting",
+        "Scrap and rework logging with reason code classification",
+        "Digital work instructions and technical drawings at each workstation",
+      ],
+    },
+    {
+      title: "Material Requirements Planning (MRP)",
+      description:
+        "Run MRP calculations that analyze your sales orders, forecasts, current inventory, and lead times to generate precise procurement and production recommendations. The system determines what to make, what to buy, and when — ensuring materials arrive just in time to meet production schedules without excess holding costs.",
+      keyPoints: [
+        "Net requirements computation considering on-hand stock and open orders",
+        "Automatic generation of planned production and purchase orders",
+        "Lead time offsetting to ensure materials arrive when operations need them",
+        "Configurable planning horizons with frozen and flexible scheduling zones",
+      ],
+    },
+    {
+      title: "Quality Management System",
+      description:
+        "Embed quality control directly into your manufacturing process with inspection checkpoints at receiving, in-process, and final stages. Define quality plans with specific parameters, tolerances, and sampling rules. Non-conforming materials trigger automated disposition workflows for rework, scrap, or return to supplier.",
+      keyPoints: [
+        "Configurable inspection plans with statistical sampling methods",
+        "In-process quality checkpoints integrated into production routing",
+        "Non-conformance management with root cause analysis tracking",
+        "Certificate of Analysis generation for outbound quality documentation",
+      ],
+    },
+  ],
+  integrations: [
+    { name: "AutoCAD", category: "Design" },
+    { name: "SolidWorks", category: "Design" },
+    { name: "SAP", category: "ERP" },
+    { name: "Siemens Opcenter", category: "MES" },
+    { name: "QuickBooks", category: "Accounting" },
+    { name: "Power BI", category: "Analytics" },
+    { name: "Slack", category: "Communication" },
+    { name: "Jira", category: "Project Management" },
+    { name: "Zebra Printers", category: "Labeling" },
+    { name: "Google Sheets", category: "Productivity" },
+  ],
+  testimonials: [
+    {
+      quote:
+        "CubicleERP Manufacturing transformed our production planning. We went from a whiteboard-and-spreadsheet approach to a fully digital system that schedules work orders, tracks WIP, and updates inventory automatically. Our on-time delivery rate has improved dramatically.",
+      author: "Robert Chen",
+      role: "Plant Manager",
+      company: "Precision Components Ltd.",
+      metric: "25% increase in on-time delivery",
+    },
+    {
+      quote:
+        "The quality control module alone justified the investment. We embedded inspection checkpoints into every routing, and our defect escape rate dropped to near zero. Our biggest customer noticed the improvement and increased their order volume.",
+      author: "Anita Sharma",
+      role: "Quality Director",
+      company: "TechFab Industries",
+      metric: "90% reduction in customer-reported defects",
+    },
+    {
+      quote:
+        "MRP planning used to take our team an entire week to compute manually. Now the system runs it overnight and we have accurate purchase and production recommendations waiting for us every morning. It has completely changed how we operate.",
+      author: "Klaus Weber",
+      role: "Director of Operations",
+      company: "Alpine Manufacturing GmbH",
+      metric: "85% reduction in planning cycle time",
+    },
+  ],
+  comparisons: [
+    { feature: "Production Scheduling", traditional: "Whiteboards and spreadsheets", cubicleErp: "Automated capacity planning" },
+    { feature: "BOM Management", traditional: "Static documents", cubicleErp: "Version-controlled digital BOMs" },
+    { feature: "Shop Floor Tracking", traditional: "Paper-based reporting", cubicleErp: "Real-time digital tracking" },
+    { feature: "Quality Control", traditional: "Manual inspection logs", cubicleErp: "Integrated QC checkpoints" },
+    { feature: "Material Planning", traditional: "Manual MRP spreadsheets", cubicleErp: "Automated MRP engine" },
+    { feature: "Costing", traditional: "Estimated after production", cubicleErp: "Real-time actual costing" },
+  ],
+  subNavItems: [
+    { label: "Overview", sectionId: "hero" },
+    { label: "Features", sectionId: "features" },
+    { label: "Capabilities", sectionId: "capabilities" },
+    { label: "Benefits", sectionId: "benefits" },
+    { label: "Integrations", sectionId: "integrations" },
+    { label: "How It Works", sectionId: "how-it-works" },
+    { label: "Use Cases", sectionId: "use-cases" },
+    { label: "FAQs", sectionId: "faqs" },
+    { label: "Supply Chain", href: "/explore/scm" },
+    { label: "Inventory", href: "/explore/inventory" },
+    { label: "Automation", href: "/explore/automation" },
+  ],
 }
 
 export default function ManufacturingPage() {

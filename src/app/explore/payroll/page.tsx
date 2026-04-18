@@ -176,6 +176,111 @@ const data = {
     { value: "100%", label: "Statutory compliance coverage" },
     { value: "Zero", label: "Manual calculation errors" },
   ],
+  capabilities: [
+    {
+      title: "Intelligent Tax Engine",
+      description:
+        "CubicleERP Payroll includes a deeply configurable tax computation engine that adapts to your jurisdiction's regulations automatically. It handles progressive tax brackets, exemption declarations, rebates, and surcharges with precision, recalculating in real time whenever employee declarations or government rules change.",
+      keyPoints: [
+        "Automatic tax slab updates when government regulations change",
+        "Employee investment declaration portal with proof-of-submission tracking",
+        "Support for multiple tax regimes including old and new frameworks",
+        "Real-time TDS projection visible to employees throughout the year",
+      ],
+    },
+    {
+      title: "Multi-Entity Payroll Consolidation",
+      description:
+        "Run payroll independently for each legal entity, branch, or subsidiary while maintaining a consolidated view across your entire organization. Each entity can have its own salary structures, statutory configurations, and pay schedules, yet leadership gets unified cost analytics and compliance dashboards.",
+      keyPoints: [
+        "Entity-specific salary structures and compliance rules",
+        "Consolidated payroll cost reporting across all entities",
+        "Inter-company transfer handling with automatic salary adjustments",
+        "Multi-currency payroll for international subsidiaries",
+      ],
+    },
+    {
+      title: "Advanced Earnings and Deductions Framework",
+      description:
+        "Go beyond basic salary components with a flexible framework that supports unlimited custom earnings and deduction types. Configure complex rules such as variable pay tied to KPIs, shift differentials, retroactive adjustments, loan EMI deductions, and arrears computation — all processed automatically each cycle.",
+      keyPoints: [
+        "Variable pay calculations linked to performance management data",
+        "Retroactive pay adjustments with automatic arrears computation",
+        "Loan and advance management with EMI deduction scheduling",
+        "Shift differential and overtime premium rule configuration",
+      ],
+    },
+    {
+      title: "Payroll Audit and Reconciliation",
+      description:
+        "Every payroll run generates a detailed audit trail that records who approved what, when changes were made, and how each figure was calculated. Built-in reconciliation tools compare current payroll against previous periods, flag anomalies, and provide variance reports that satisfy both internal auditors and external regulators.",
+      keyPoints: [
+        "Period-over-period variance analysis with drill-down capability",
+        "Complete audit log of every payroll change and approval",
+        "Automated anomaly detection for unusual salary fluctuations",
+        "Audit-ready statutory reports generated with a single click",
+      ],
+    },
+  ],
+  integrations: [
+    { name: "QuickBooks", category: "Accounting" },
+    { name: "Xero", category: "Accounting" },
+    { name: "BambooHR", category: "HR Management" },
+    { name: "Slack", category: "Communication" },
+    { name: "ADP", category: "Payroll Services" },
+    { name: "Gusto", category: "Payroll Services" },
+    { name: "Microsoft Teams", category: "Communication" },
+    { name: "Google Workspace", category: "Productivity" },
+    { name: "SAP SuccessFactors", category: "HR Management" },
+    { name: "Stripe", category: "Payments" },
+  ],
+  testimonials: [
+    {
+      quote:
+        "Switching to CubicleERP Payroll cut our monthly processing time from three days to under two hours. Our finance team finally has time for strategic work instead of chasing spreadsheet errors every pay cycle.",
+      author: "Rebecca Thornton",
+      role: "CFO",
+      company: "Meridian Consulting Group",
+      metric: "92% reduction in payroll processing time",
+    },
+    {
+      quote:
+        "We operate across four states with different statutory requirements, and CubicleERP handles every jurisdiction without us having to worry about compliance gaps. The automated filing alerts alone have saved us from penalties twice.",
+      author: "Darshan Mehta",
+      role: "Head of HR",
+      company: "NovaTech Industries",
+      metric: "100% statutory filing compliance since adoption",
+    },
+    {
+      quote:
+        "Our employees love the self-service portal. HR used to field dozens of payslip and tax document requests every month. Now that number is practically zero, and employee satisfaction scores for HR services have gone through the roof.",
+      author: "Linda Kowalski",
+      role: "HR Director",
+      company: "BrightPath Education",
+      metric: "85% reduction in HR payroll-related queries",
+    },
+  ],
+  comparisons: [
+    { feature: "Salary Calculation", traditional: "Manual spreadsheets", cubicleErp: "Fully automated" },
+    { feature: "Tax Compliance", traditional: "Periodic manual updates", cubicleErp: "Auto-updated rules" },
+    { feature: "Payslip Distribution", traditional: "Email or print", cubicleErp: "Self-service portal" },
+    { feature: "Attendance Integration", traditional: "Manual data import", cubicleErp: "Real-time sync" },
+    { feature: "Year-End Processing", traditional: "Weeks of reconciliation", cubicleErp: "One-click generation" },
+    { feature: "Multi-Entity Support", traditional: "Separate systems", cubicleErp: "Unified platform" },
+  ],
+  subNavItems: [
+    { label: "Overview", sectionId: "hero" },
+    { label: "Features", sectionId: "features" },
+    { label: "Capabilities", sectionId: "capabilities" },
+    { label: "Benefits", sectionId: "benefits" },
+    { label: "Integrations", sectionId: "integrations" },
+    { label: "How It Works", sectionId: "how-it-works" },
+    { label: "Use Cases", sectionId: "use-cases" },
+    { label: "FAQs", sectionId: "faqs" },
+    { label: "HRM", href: "/explore/hrm" },
+    { label: "Time Tracking", href: "/explore/time-tracking" },
+    { label: "Finance", href: "/explore/finance" },
+  ],
 }
 
 export default function PayrollPage() {
