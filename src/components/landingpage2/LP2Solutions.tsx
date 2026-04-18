@@ -561,6 +561,51 @@ export default function LP2Solutions() {
                 </motion.div>
               )
             })}
+
+            {/* Dot indicators */}
+            <div className="flex items-center justify-center gap-2.5 mt-6">
+              {accordionData.map((_, index) => {
+                const isActive = activeIndex === index
+                const color = accentColors[index]
+                const isAutoRotating = inView && !isHovered && !isManuallyInteracted
+                return (
+                  <button
+                    key={index}
+                    onClick={() => toggle(index)}
+                    className="relative flex items-center justify-center"
+                    aria-label={`Go to ${accordionData[index].title}`}
+                  >
+                    <motion.div
+                      className="rounded-full overflow-hidden"
+                      animate={{
+                        width: isActive ? 28 : 10,
+                        height: 10,
+                        backgroundColor: isActive ? color + "30" : "#D1D5DB",
+                      }}
+                      whileHover={{
+                        backgroundColor: isActive ? color + "30" : color + "50",
+                        scale: 1.15,
+                      }}
+                      transition={{ duration: 0.3, ease: "easeInOut" }}
+                    >
+                      {isActive && (
+                        <motion.div
+                          className="h-full rounded-full"
+                          style={{ backgroundColor: color }}
+                          initial={{ width: "0%" }}
+                          animate={{ width: isAutoRotating ? "100%" : "100%" }}
+                          transition={{
+                            duration: isAutoRotating ? 4.5 : 0.3,
+                            ease: isAutoRotating ? "linear" : "easeOut",
+                          }}
+                          key={`${activeIndex}-${isAutoRotating}`}
+                        />
+                      )}
+                    </motion.div>
+                  </button>
+                )
+              })}
+            </div>
           </div>
 
           {/* Right — Visual (60%) */}

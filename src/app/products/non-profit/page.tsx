@@ -172,6 +172,109 @@ const data = {
         { value: "60K+", label: "Volunteers coordinated" },
         { value: "99.9%", label: "Platform uptime guarantee" },
     ],
+    capabilities: [
+        {
+            title: "Donor Intelligence & Prospect Research",
+            description:
+                "Go beyond basic donor records with predictive analytics and wealth screening tools that identify your highest-potential supporters, model giving propensity, and surface upgrade opportunities across your entire donor base.",
+            keyPoints: [
+                "Predictive giving models that score donors by likelihood to upgrade, lapse, or make a major gift",
+                "Wealth screening integration to estimate capacity and philanthropic interests",
+                "Prospect pipeline management with cultivation stage tracking and moves management",
+                "Automated donor segmentation based on giving patterns, engagement, and demographics",
+            ],
+        },
+        {
+            title: "Multi-Channel Fundraising Automation",
+            description:
+                "Orchestrate coordinated fundraising campaigns across email, direct mail, social media, events, and peer-to-peer channels from a single command center with automated workflows that nurture donors through every stage of the giving journey.",
+            keyPoints: [
+                "Drip campaign automation with personalized content based on donor segment and giving history",
+                "A/B testing for subject lines, messaging, and ask amounts to optimize conversion rates",
+                "Social media fundraising integration with Facebook, Instagram, and TikTok giving tools",
+                "Real-time campaign performance dashboards with cost-per-dollar-raised analysis",
+            ],
+        },
+        {
+            title: "Program Outcomes & Theory of Change Tracking",
+            description:
+                "Map your organization's theory of change directly into the platform and track quantifiable outcomes at every level — from individual beneficiary progress to population-level impact indicators — to demonstrate the true effect of your work.",
+            keyPoints: [
+                "Customizable logic model frameworks linking activities to outputs to outcomes",
+                "Beneficiary tracking with longitudinal data collection and progress monitoring",
+                "Automated impact report generation aligned with grantor reporting requirements",
+                "Benchmark comparisons against sector-level outcome standards",
+            ],
+        },
+        {
+            title: "Financial Stewardship & Fund Accounting",
+            description:
+                "Maintain the highest standards of financial accountability with purpose-built fund accounting that tracks every dollar from donation receipt through program expenditure, ensuring full transparency for donors, boards, and auditors.",
+            keyPoints: [
+                "Restricted, temporarily restricted, and unrestricted fund segregation with automated controls",
+                "Real-time budget-to-actual tracking by program, grant, and cost center",
+                "Automated Form 990 preparation assistance and audit schedule generation",
+            ],
+        },
+    ],
+    integrations: [
+        { name: "Mailchimp", category: "Email Marketing" },
+        { name: "Constant Contact", category: "Email Marketing" },
+        { name: "QuickBooks", category: "Accounting" },
+        { name: "Stripe", category: "Payment Processing" },
+        { name: "PayPal", category: "Payment Processing" },
+        { name: "Eventbrite", category: "Event Management" },
+        { name: "Salesforce NPSP", category: "CRM" },
+        { name: "Google Workspace", category: "Productivity" },
+        { name: "Slack", category: "Communication" },
+        { name: "Canva", category: "Design" },
+        { name: "GuideStar", category: "Nonprofit Data" },
+        { name: "Facebook Fundraisers", category: "Social Fundraising" },
+    ],
+    testimonials: [
+        {
+            quote: "CubicleERP gave us a complete picture of every donor for the first time. We moved from generic year-end appeals to personalized outreach, and our donor retention rate jumped from 41% to 63% within one fiscal year.",
+            author: "Rebecca Thornton",
+            role: "Director of Development",
+            company: "Horizon Community Foundation",
+            metric: "22-point increase in donor retention",
+        },
+        {
+            quote: "Grant reporting used to consume two full weeks every quarter. Now we generate compliant reports in minutes because every expenditure is already tagged to the correct fund and program. Our program officers can focus on impact instead of spreadsheets.",
+            author: "David Okafor",
+            role: "Grants Manager",
+            company: "Global Health Initiative",
+            metric: "85% reduction in reporting time",
+        },
+        {
+            quote: "Coordinating 400 volunteers across 12 annual events was a logistical nightmare before CubicleERP. The self-service portal and automated shift reminders cut our no-show rate in half and freed our staff to focus on the mission.",
+            author: "Maria Santos",
+            role: "Volunteer Programs Director",
+            company: "City Youth Alliance",
+            metric: "50% reduction in volunteer no-shows",
+        },
+    ],
+    comparisons: [
+        { feature: "Donor Management", traditional: "Spreadsheets & mail merge", cubicleErp: "Unified CRM platform" },
+        { feature: "Fundraising Campaigns", traditional: "Manual tracking", cubicleErp: "Automated, multi-channel" },
+        { feature: "Grant Reporting", traditional: "Manual data gathering", cubicleErp: "One-click generation" },
+        { feature: "Volunteer Coordination", traditional: "Email chains & sign-ups", cubicleErp: "Self-service portal" },
+        { feature: "Impact Measurement", traditional: "Annual manual surveys", cubicleErp: "Real-time dashboards" },
+        { feature: "Fund Accounting", traditional: "Generic accounting tools", cubicleErp: "Purpose-built, compliant" },
+    ],
+    subNavItems: [
+        { label: "Overview", sectionId: "hero" },
+        { label: "Features", sectionId: "features" },
+        { label: "Capabilities", sectionId: "capabilities" },
+        { label: "Benefits", sectionId: "benefits" },
+        { label: "Integrations", sectionId: "integrations" },
+        { label: "How It Works", sectionId: "how-it-works" },
+        { label: "Use Cases", sectionId: "use-cases" },
+        { label: "FAQs", sectionId: "faqs" },
+        { label: "Education", href: "/products/education" },
+        { label: "Healthcare", href: "/products/healthcare" },
+        { label: "Agencies", href: "/products/agencies" },
+    ],
 }
 
 export default function NonProfitPage() {

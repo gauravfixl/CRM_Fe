@@ -176,6 +176,108 @@ const data = {
         { value: "Zero", label: "Missed court deadlines reported" },
         { value: "99.9%", label: "Platform uptime guaranteed" },
     ],
+    capabilities: [
+        {
+            title: "Intelligent Legal Research & Knowledge Management",
+            description:
+                "Centralize your firm's collective knowledge — precedent briefs, clause libraries, research memos, and institutional expertise — into a searchable repository that accelerates legal work and reduces duplication of effort across practice groups.",
+            keyPoints: [
+                "Full-text search across all documents, emails, and case notes with Boolean and proximity operators",
+                "AI-assisted research suggestions based on matter type, jurisdiction, and legal issues",
+                "Precedent bank with clause-level tagging for rapid brief and contract assembly",
+                "Knowledge contribution workflows that capture attorney insights during matter closure",
+            ],
+        },
+        {
+            title: "Advanced Litigation Management",
+            description:
+                "Manage complex litigation matters with specialized tools for discovery tracking, deposition scheduling, exhibit management, and trial preparation that keep large legal teams coordinated under tight deadlines.",
+            keyPoints: [
+                "Discovery request and response tracking with privilege log generation",
+                "Deposition scheduling with witness preparation checklists and transcript indexing",
+                "Trial preparation boards with exhibit organization and timeline visualization",
+                "Litigation hold management with automated custodian notifications and compliance tracking",
+            ],
+        },
+        {
+            title: "Client Portal & Self-Service",
+            description:
+                "Empower clients with a branded, secure portal where they can view matter status, access shared documents, approve invoices, and communicate with their legal team without phone calls or email chains.",
+            keyPoints: [
+                "Real-time matter status dashboards accessible 24/7 from any device",
+                "Secure document sharing with granular permission controls and download tracking",
+                "Online invoice review, approval, and payment processing",
+                "Appointment scheduling and secure messaging with read-receipt confirmation",
+            ],
+        },
+        {
+            title: "Firm Performance & Profitability Analytics",
+            description:
+                "Gain deep insight into your firm's financial health with analytics that go beyond standard billing reports to reveal profitability drivers, utilization patterns, and growth opportunities across every dimension of your practice.",
+            keyPoints: [
+                "Attorney utilization and realization rate analysis by practice area and seniority",
+                "Matter profitability scoring with cost-to-revenue breakdown",
+                "Client concentration and revenue diversity risk assessment",
+            ],
+        },
+    ],
+    integrations: [
+        { name: "Microsoft 365", category: "Productivity" },
+        { name: "Google Workspace", category: "Productivity" },
+        { name: "LexisNexis", category: "Legal Research" },
+        { name: "Westlaw", category: "Legal Research" },
+        { name: "DocuSign", category: "E-Signature" },
+        { name: "QuickBooks", category: "Accounting" },
+        { name: "Clio", category: "Practice Management" },
+        { name: "NetDocuments", category: "Document Management" },
+        { name: "Slack", category: "Communication" },
+        { name: "Zoom", category: "Video Conferencing" },
+        { name: "LawPay", category: "Legal Payments" },
+        { name: "Zapier", category: "Workflow Automation" },
+    ],
+    testimonials: [
+        {
+            quote: "Since adopting CubicleERP, our firm has not missed a single court deadline. The rules-based calendaring engine automatically calculates every downstream date and the cascading reminders give us complete peace of mind across all jurisdictions.",
+            author: "Katherine Reynolds",
+            role: "Managing Partner",
+            company: "Reynolds & Associates LLP",
+            metric: "Zero missed deadlines in 18 months",
+        },
+        {
+            quote: "Our collected revenue increased by over 30% in the first year because attorneys finally capture all their billable time. The passive time tracking and mobile entry tools eliminated the end-of-day guesswork that was costing us thousands each month.",
+            author: "Michael Torres",
+            role: "Director of Finance",
+            company: "Meridian Legal Group",
+            metric: "32% increase in collected revenue",
+        },
+        {
+            quote: "Conflict checks that used to take our intake team half a day now complete in seconds. The automated screening against historical clients and adverse parties has dramatically reduced our ethical risk exposure and accelerated new-matter setup.",
+            author: "Anita Patel",
+            role: "Chief Operating Officer",
+            company: "Stonebridge Law Partners",
+            metric: "95% faster conflict checking",
+        },
+    ],
+    comparisons: [
+        { feature: "Time Tracking", traditional: "Manual end-of-day entry", cubicleErp: "Passive, real-time capture" },
+        { feature: "Conflict Checking", traditional: "Spreadsheet lookups", cubicleErp: "Instant automated screening" },
+        { feature: "Court Deadlines", traditional: "Manual calendar entry", cubicleErp: "Rules-based auto-calculation" },
+        { feature: "Document Assembly", traditional: "Copy-paste from templates", cubicleErp: "Automated merge fields" },
+        { feature: "Trust Accounting", traditional: "Separate ledger software", cubicleErp: "Built-in, compliant" },
+    ],
+    subNavItems: [
+        { label: "Overview", sectionId: "hero" },
+        { label: "Features", sectionId: "features" },
+        { label: "Capabilities", sectionId: "capabilities" },
+        { label: "Benefits", sectionId: "benefits" },
+        { label: "Integrations", sectionId: "integrations" },
+        { label: "How It Works", sectionId: "how-it-works" },
+        { label: "Use Cases", sectionId: "use-cases" },
+        { label: "FAQs", sectionId: "faqs" },
+        { label: "Consulting Firms", href: "/products/consulting-firms" },
+        { label: "Agencies", href: "/products/agencies" },
+        { label: "Enterprise", href: "/products/enterprise" },
+    ],
 }
 
 export default function LegalPage() {

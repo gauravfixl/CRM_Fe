@@ -175,6 +175,113 @@ const data = {
     { value: "1 Platform", label: "For online & offline sales" },
     { value: "50%", label: "Less admin work" },
   ],
+  capabilities: [
+    {
+      title: "Omnichannel Order Management",
+      description:
+        "Centralize every order from your website, POS terminals, marketplace listings, and phone sales into a single order management hub. Each order follows a unified fulfillment workflow regardless of its origin, giving your operations team one place to manage picking, packing, shipping, and returns.",
+      keyPoints: [
+        "Unified order queue aggregating web, POS, and marketplace sales",
+        "Configurable fulfillment workflows with automated status updates",
+        "Split shipment and partial fulfillment handling for complex orders",
+        "Customer order tracking page with real-time shipping status",
+      ],
+    },
+    {
+      title: "Dynamic Pricing and Promotions Engine",
+      description:
+        "Create sophisticated pricing rules that adapt to customer segments, purchase volumes, time windows, and inventory levels. Run flash sales, bundle deals, tiered discounts, and loyalty reward redemptions across all your sales channels from a single configuration interface.",
+      keyPoints: [
+        "Customer-segment-specific pricing tiers for retail, wholesale, and VIP",
+        "Time-bound promotional campaigns with automatic activation and expiry",
+        "Bundle and kit pricing with dynamic component margin calculations",
+        "Coupon code engine with usage limits, minimum order values, and exclusions",
+      ],
+    },
+    {
+      title: "Multi-Store and Multi-Location Architecture",
+      description:
+        "Operate multiple online storefronts and physical retail locations from a single CubicleERP instance. Each store can have its own branding, product catalog subset, pricing rules, and tax configuration while sharing a common inventory pool and back-office operations layer.",
+      keyPoints: [
+        "Independent storefronts with unique domains, branding, and catalogs",
+        "Location-specific tax rules and payment gateway configurations",
+        "Shared inventory pool with location-based stock allocation",
+        "Consolidated reporting across all stores with per-location drill-down",
+      ],
+    },
+    {
+      title: "Customer Loyalty and Retention",
+      description:
+        "Build and manage loyalty programs that reward repeat customers with points, discounts, and exclusive offers. Track customer lifetime value, purchase frequency, and engagement patterns to deliver targeted campaigns that increase retention and average order value across all channels.",
+      keyPoints: [
+        "Points-based loyalty program with flexible earning and redemption rules",
+        "Customer segmentation based on purchase behavior and lifetime value",
+        "Automated win-back campaigns for lapsed customers",
+        "Unified loyalty balance visible at both POS checkout and online cart",
+      ],
+    },
+  ],
+  integrations: [
+    { name: "Stripe", category: "Payments" },
+    { name: "PayPal", category: "Payments" },
+    { name: "Shopify", category: "E-Commerce" },
+    { name: "WooCommerce", category: "E-Commerce" },
+    { name: "Amazon", category: "Marketplace" },
+    { name: "Google Shopping", category: "Marketplace" },
+    { name: "Mailchimp", category: "Email Marketing" },
+    { name: "ShipStation", category: "Shipping" },
+    { name: "QuickBooks", category: "Accounting" },
+    { name: "Google Analytics", category: "Analytics" },
+    { name: "Meta Ads", category: "Advertising" },
+    { name: "Klaviyo", category: "Marketing Automation" },
+  ],
+  testimonials: [
+    {
+      quote:
+        "We used to run our online store and three retail locations on completely separate systems. Inventory mismatches were constant. Since moving to CubicleERP, we have a single source of truth and have not oversold a product once.",
+      author: "Sarah Mitchell",
+      role: "Director of Operations",
+      company: "UrbanCraft Home Goods",
+      metric: "Zero overselling incidents since launch",
+    },
+    {
+      quote:
+        "The POS system is remarkably fast and intuitive. Our checkout staff were trained in under an hour, and our average transaction time has dropped significantly. Customers notice the difference during peak hours.",
+      author: "Tom Alvarez",
+      role: "Store Manager",
+      company: "Freshfield Organics",
+      metric: "40% faster average checkout time",
+    },
+    {
+      quote:
+        "Running promotions used to require coordination between three different tools. Now we set it up once in CubicleERP and it applies everywhere — online, in-store, and on our wholesale portal. The time savings are enormous.",
+      author: "Nina Johansson",
+      role: "Head of Marketing",
+      company: "Nordic Apparel Co.",
+      metric: "75% less time managing cross-channel promotions",
+    },
+  ],
+  comparisons: [
+    { feature: "Inventory Sync", traditional: "Delayed batch updates", cubicleErp: "Real-time across channels" },
+    { feature: "POS Setup", traditional: "Expensive hardware lock-in", cubicleErp: "Browser-based, any device" },
+    { feature: "Online Store", traditional: "Separate platform needed", cubicleErp: "Built-in and connected" },
+    { feature: "Promotions", traditional: "Per-channel configuration", cubicleErp: "Single setup, all channels" },
+    { feature: "Payment Reconciliation", traditional: "Manual end-of-day", cubicleErp: "Automatic ledger posting" },
+    { feature: "Customer Data", traditional: "Fragmented across systems", cubicleErp: "Unified customer profile" },
+  ],
+  subNavItems: [
+    { label: "Overview", sectionId: "hero" },
+    { label: "Features", sectionId: "features" },
+    { label: "Capabilities", sectionId: "capabilities" },
+    { label: "Benefits", sectionId: "benefits" },
+    { label: "Integrations", sectionId: "integrations" },
+    { label: "How It Works", sectionId: "how-it-works" },
+    { label: "Use Cases", sectionId: "use-cases" },
+    { label: "FAQs", sectionId: "faqs" },
+    { label: "Inventory", href: "/explore/inventory" },
+    { label: "Supply Chain", href: "/explore/scm" },
+    { label: "Analytics", href: "/explore/analytics" },
+  ],
 }
 
 export default function EcommercePage() {

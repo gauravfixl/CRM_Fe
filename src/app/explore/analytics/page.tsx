@@ -182,6 +182,115 @@ const data = {
     { value: "200+", label: "Chart types available" },
     { value: "Real-time", label: "Data updates" },
   ],
+
+  capabilities: [
+    {
+      title: "Advanced Data Modeling",
+      description:
+        "Build sophisticated data models that combine metrics from multiple business units into a unified analytical layer. CubicleERP Analytics supports star schemas, snowflake schemas, and custom calculated measures that update in real time as underlying data changes.",
+      keyPoints: [
+        "Create calculated fields with 100+ built-in functions including running totals, period-over-period comparisons, and statistical aggregations",
+        "Define reusable metric definitions that ensure consistent calculations across every dashboard and report in your organization",
+        "Model complex many-to-many relationships between data sources without writing SQL, using our visual relationship mapper",
+        "Schedule data model refreshes or trigger them on-demand to balance freshness with compute efficiency",
+      ],
+    },
+    {
+      title: "Embedded Analytics & White-Labeling",
+      description:
+        "Embed interactive dashboards and reports directly into your own products, client portals, or internal applications. Full white-labeling support lets you match your brand identity while delivering CubicleERP's analytics engine under the hood.",
+      keyPoints: [
+        "Embed dashboards via iframe or our JavaScript SDK with row-level security applied per viewer",
+        "Customize colors, fonts, logos, and loading screens to match your application's design system",
+        "Support multi-tenant embedding where each client sees only their own data with zero configuration per tenant",
+      ],
+    },
+    {
+      title: "Natural Language Querying",
+      description:
+        "Let any team member ask questions in plain English and get instant chart-based answers. The AI query engine interprets natural language, maps it to your data model, and generates the appropriate visualization automatically.",
+      keyPoints: [
+        "Ask questions like 'Show me revenue by region for Q4' and get an instant interactive chart",
+        "The engine learns your company's terminology and metric definitions over time for increasingly accurate results",
+        "Suggested follow-up questions guide users to deeper insights they may not have thought to explore",
+        "All AI-generated queries can be saved as standard dashboard widgets for ongoing monitoring",
+      ],
+    },
+    {
+      title: "Collaborative Analytics Workspace",
+      description:
+        "Turn analytics from a solo activity into a team sport. Shared workspaces let analysts co-author dashboards, leave contextual comments on specific data points, and publish curated data stories for executive consumption.",
+      keyPoints: [
+        "Real-time co-editing lets multiple analysts build and refine dashboards simultaneously without conflicts",
+        "Annotate specific data points with context, explanations, or action items visible to all viewers",
+        "Publish narrative-driven data stories that combine charts, text, and images into a guided analytical journey",
+      ],
+    },
+  ],
+
+  integrations: [
+    { name: "Google Analytics", category: "Analytics" },
+    { name: "Salesforce", category: "CRM" },
+    { name: "Stripe", category: "Payments" },
+    { name: "Slack", category: "Communication" },
+    { name: "Google Sheets", category: "Productivity" },
+    { name: "Microsoft Power BI", category: "Analytics" },
+    { name: "Snowflake", category: "Data Warehouse" },
+    { name: "PostgreSQL", category: "Database" },
+    { name: "HubSpot", category: "Marketing" },
+    { name: "Shopify", category: "E-commerce" },
+    { name: "Tableau", category: "Analytics" },
+    { name: "Amazon Redshift", category: "Data Warehouse" },
+  ],
+
+  testimonials: [
+    {
+      quote:
+        "Before CubicleERP Analytics, our monthly reporting took two full-time analysts an entire week. Now the same reports are generated automatically every Monday morning, and they are more accurate than anything we produced manually.",
+      author: "Sarah Chen",
+      role: "VP of Business Intelligence",
+      company: "Meridian Retail Group",
+      metric: "80% reduction in reporting time",
+    },
+    {
+      quote:
+        "The predictive analytics module flagged a customer churn trend three months before it would have hit our radar. We launched a retention campaign early and saved over $2M in annual recurring revenue.",
+      author: "David Okonkwo",
+      role: "Chief Revenue Officer",
+      company: "CloudScale Technologies",
+      metric: "$2M ARR saved through early churn detection",
+    },
+    {
+      quote:
+        "We replaced four separate BI tools with CubicleERP Analytics and cut our analytics spend by 60%. The unified platform means every department finally works from the same source of truth instead of arguing over conflicting numbers.",
+      author: "Priya Mehta",
+      role: "Director of Operations",
+      company: "NovaCraft Industries",
+      metric: "60% reduction in analytics tool spend",
+    },
+  ],
+
+  comparisons: [
+    { feature: "Dashboard creation", traditional: "Days of development", cubicleErp: "Minutes with drag-and-drop" },
+    { feature: "Data source connections", traditional: "Manual ETL pipelines", cubicleErp: "100+ pre-built connectors" },
+    { feature: "Predictive analytics", traditional: "Requires data science team", cubicleErp: "Built-in ML models" },
+    { feature: "Report distribution", traditional: "Manual email attachments", cubicleErp: "Automated scheduling" },
+    { feature: "Cross-department data", traditional: "Siloed spreadsheets", cubicleErp: "Unified data platform" },
+    { feature: "Natural language queries", traditional: "Not available", cubicleErp: "Ask in plain English" },
+  ],
+
+  subNavItems: [
+    { label: "Overview", sectionId: "hero" },
+    { label: "Features", sectionId: "features" },
+    { label: "Capabilities", sectionId: "capabilities" },
+    { label: "Benefits", sectionId: "benefits" },
+    { label: "Integrations", sectionId: "integrations" },
+    { label: "Use Cases", sectionId: "use-cases" },
+    { label: "FAQs", sectionId: "faqs" },
+    { label: "CRM", href: "/explore/crm" },
+    { label: "Finance", href: "/explore/finance" },
+    { label: "Inventory", href: "/explore/inventory" },
+  ],
 }
 
 export default function AnalyticsPage() {

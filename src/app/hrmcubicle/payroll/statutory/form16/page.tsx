@@ -19,12 +19,28 @@ import {
     IndianRupee,
     CalendarDays,
     AlertTriangle,
+    FileSignature,
+    Shield,
+    AlertCircle,
+    Send,
+    Award,
+    ReceiptText,
+    Plus,
+    MoreHorizontal,
+    Edit as EditIcon,
+    Trash2,
+    Signature,
+    ScanLine,
+    X,
 } from "lucide-react"
 import { Card, CardContent } from "@/shared/components/ui/card"
 import { Button } from "@/shared/components/ui/button"
 import { Badge } from "@/shared/components/ui/badge"
 import { ScrollArea } from "@/shared/components/ui/scroll-area"
 import { Input } from "@/shared/components/ui/input"
+import { Textarea } from "@/shared/components/ui/textarea"
+import { Checkbox } from "@/shared/components/ui/checkbox"
+import { Label } from "@/shared/components/ui/label"
 import {
     Dialog,
     DialogContent,
@@ -40,19 +56,217 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/shared/components/ui/select"
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/shared/components/ui/dropdown-menu"
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/shared/components/ui/tooltip"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs"
 import { useToast } from "@/shared/components/ui/use-toast"
-import { useStatutoryStore, Form16Record } from "@/shared/data/statutory-store"
+import { useStatutoryStore, Form16Record, Form16DigitalSign } from "@/shared/data/statutory-store"
 import { cn } from "@/lib/utils"
+
+const formatINR = (n: number) => '₹' + Math.round(n || 0).toLocaleString('en-IN')
 
 const Form16Page = () => {
     const router = useRouter()
     const { toast } = useToast()
-    const { form16Records, form24QRecords, updateForm16Record, updateForm24QRecord } = useStatutoryStore()
+    const {
+        form16Records,
+        form24QRecords,
+        form16Signatures,
+        updateForm16Record,
+        updateForm24QRecord,
+        addForm16Signature,
+        updateForm16Signature,
+        deleteForm16Signature,
+        submitToTraces,
+        bulkSubmitToTraces,
+    } = useStatutoryStore()
     const [activeTab, setActiveTab] = useState("form16")
     const [search, setSearch] = useState("")
     const [statusFilter, setStatusFilter] = useState("all")
     const [previewRecord, setPreviewRecord] = useState<Form16Record | null>(null)
+
+    // Round 2 — Digital signatures & TRACES state
+    const [selectedSigIds, setSelectedSigIds] = useState<string[]>([])
+    const [signDialogOpen, setSignDialogOpen] = useState(false)
+    const [form12BaDialogOpen, setForm12BaDialogOpen] = useState(false)
+    const [tracesConfirmSig, setTracesConfirmSig] = useState<Form16DigitalSign | null>(null)
+    const [tracesDetailSig, setTracesDetailSig] = useState<Form16DigitalSign | null>(null)
+    const [bulkResult, setBulkResult] = useState<{ submitted: number; acknowledged: number; rejected: number } | null>(null)
+    const [viewSig, setViewSig] = useState<Form16DigitalSign | null>(null)
+
+    // Sign Form 16 dialog fields
+    const [signForm, setSignForm] = useState({
+        form16Id: "",
+        signedBy: "HR Director",
+        signedByDesignation: "HR Director",
+        signatureCertSerial: "",
+        form12BaGenerated: false,
+        form12BaPerks: 0,
+    })
+
+    // Form 12BA dialog fields
+    const [perksForm, setPerksForm] = useState({
+        form16Id: "",
+        perksValue: 0,
+        perksDescription: "",
+    })
+
+    const resetSignForm = () => setSignForm({
+        form16Id: "",
+        signedBy: "HR Director",
+        signedByDesignation: "HR Director",
+        signatureCertSerial: "",
+        form12BaGenerated: false,
+        form12BaPerks: 0,
+    })
+
+    const resetPerksForm = () => setPerksForm({
+        form16Id: "",
+        perksValue: 0,
+        perksDescription: "",
+    })
+
+    // Counts for signature stats
+    const sigStats = useMemo(() => {
+        const signedIds = new Set(form16Signatures.map(s => s.form16Id))
+        const notSigned = form16Records.filter(r => !signedIds.has(r.id)).length
+        const notSubmitted = form16Signatures.filter(s => s.tracesStatus === "Not Submitted").length
+        const submitted = form16Signatures.filter(s => s.tracesStatus === "Submitted").length
+        const acknowledged = form16Signatures.filter(s => s.tracesStatus === "Acknowledged").length
+        return { notSigned, notSubmitted, submitted, acknowledged }
+    }, [form16Records, form16Signatures])
+
+    const form12BaRows = useMemo(
+        () => form16Signatures.filter(s => s.form12BaGenerated === true),
+        [form16Signatures]
+    )
+
+    // Records available to sign (no existing signature for same fiscal year)
+    const signableRecords = useMemo(() => {
+        return form16Records.filter(r => {
+            return !form16Signatures.some(s => s.employeeId === r.employeeId && s.fiscalYear === r.fiscalYear)
+        })
+    }, [form16Records, form16Signatures])
+
+    const tracesBadgeColor = (s: Form16DigitalSign["tracesStatus"]) => {
+        switch (s) {
+            case "Not Submitted": return "bg-rose-50 text-rose-600"
+            case "Submitted": return "bg-amber-50 text-amber-600"
+            case "Acknowledged": return "bg-emerald-50 text-emerald-600"
+            case "Rejected": return "bg-rose-50 text-rose-600"
+            default: return "bg-slate-50 text-slate-500"
+        }
+    }
+
+    const toggleSelectSig = (id: string) => {
+        setSelectedSigIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
+    }
+
+    const toggleSelectAllSigs = () => {
+        if (selectedSigIds.length === form16Signatures.length) setSelectedSigIds([])
+        else setSelectedSigIds(form16Signatures.map(s => s.id))
+    }
+
+    const handleSubmitSignForm = () => {
+        const rec = form16Records.find(r => r.id === signForm.form16Id)
+        if (!rec) {
+            toast({ title: "Select employee", description: "Please choose a Form 16 record.", variant: "destructive" })
+            return
+        }
+        addForm16Signature({
+            form16Id: rec.id,
+            employeeId: rec.employeeId,
+            employeeName: rec.employeeName,
+            fiscalYear: rec.fiscalYear,
+            signedBy: signForm.signedBy,
+            signedByDesignation: signForm.signedByDesignation,
+            signatureCertSerial: signForm.signatureCertSerial || `DSC-${Math.random().toString(36).slice(2, 10).toUpperCase()}`,
+            signedDate: new Date().toISOString().split("T")[0],
+            tracesStatus: "Not Submitted",
+            form12BaGenerated: signForm.form12BaGenerated,
+            form12BaPerks: signForm.form12BaGenerated ? signForm.form12BaPerks : undefined,
+        })
+        toast({ title: "Form 16 signed", description: `Digital signature recorded for ${rec.employeeName}.` })
+        resetSignForm()
+        setSignDialogOpen(false)
+    }
+
+    const handleSubmitPerksForm = () => {
+        const rec = form16Records.find(r => r.id === perksForm.form16Id)
+        if (!rec) {
+            toast({ title: "Select employee", description: "Please select a Form 16 record.", variant: "destructive" })
+            return
+        }
+        const existing = form16Signatures.find(s => s.employeeId === rec.employeeId && s.fiscalYear === rec.fiscalYear)
+        if (existing) {
+            updateForm16Signature(existing.id, {
+                form12BaGenerated: true,
+                form12BaPerks: perksForm.perksValue,
+            })
+        } else {
+            addForm16Signature({
+                form16Id: rec.id,
+                employeeId: rec.employeeId,
+                employeeName: rec.employeeName,
+                fiscalYear: rec.fiscalYear,
+                signedBy: "HR Director",
+                signedByDesignation: "HR Director",
+                signatureCertSerial: `DSC-${Math.random().toString(36).slice(2, 10).toUpperCase()}`,
+                signedDate: new Date().toISOString().split("T")[0],
+                tracesStatus: "Not Submitted",
+                form12BaGenerated: true,
+                form12BaPerks: perksForm.perksValue,
+            })
+        }
+        toast({ title: "Form 12BA generated", description: `Perquisite declaration created for ${rec.employeeName}.` })
+        resetPerksForm()
+        setForm12BaDialogOpen(false)
+    }
+
+    const handleConfirmSingleTraces = () => {
+        if (!tracesConfirmSig) return
+        const { ackNumber } = submitToTraces(tracesConfirmSig.id)
+        toast({ title: "Submitted to TRACES", description: `Ack #: ${ackNumber}` })
+        setTracesConfirmSig(null)
+    }
+
+    const handleBulkTracesSubmit = () => {
+        if (selectedSigIds.length === 0) return
+        const res = bulkSubmitToTraces(selectedSigIds)
+        const rejected = Math.max(0, res.submitted - res.acknowledged)
+        setBulkResult({ submitted: res.submitted, acknowledged: res.acknowledged, rejected })
+        setSelectedSigIds([])
+    }
+
+    const handleRegenerateSignature = (sig: Form16DigitalSign) => {
+        updateForm16Signature(sig.id, {
+            signatureCertSerial: `DSC-${Math.random().toString(36).slice(2, 10).toUpperCase()}`,
+            signedDate: new Date().toISOString().split("T")[0],
+        })
+        toast({ title: "Regenerated", description: `New signature issued for ${sig.employeeName}.` })
+    }
+
+    const handleDeleteSignature = (sig: Form16DigitalSign) => {
+        deleteForm16Signature(sig.id)
+        toast({ title: "Deleted", description: `Signature for ${sig.employeeName} removed.` })
+    }
+
+    const handleResubmitTraces = (sig: Form16DigitalSign) => {
+        const { ackNumber } = submitToTraces(sig.id)
+        toast({ title: "Resubmitted", description: `New TRACES ack: ${ackNumber}` })
+        setTracesDetailSig(null)
+    }
 
     // Form 12BB mock data
     const form12BBData = [
@@ -189,6 +403,9 @@ const Form16Page = () => {
                             </TabsTrigger>
                             <TabsTrigger value="form12bb" className="rounded-lg text-xs font-bold px-6 py-2.5 data-[state=active]:bg-[#8B5CF6] data-[state=active]:text-white">
                                 <FileDown size={14} className="mr-2" /> Form 12BB
+                            </TabsTrigger>
+                            <TabsTrigger value="dsc-traces" className="rounded-lg text-xs font-bold px-6 py-2.5 data-[state=active]:bg-[#8B5CF6] data-[state=active]:text-white">
+                                <FileSignature size={14} className="mr-2" /> Digital Signatures & TRACES
                             </TabsTrigger>
                         </TabsList>
 
@@ -416,9 +633,264 @@ const Form16Page = () => {
                                 </CardContent>
                             </Card>
                         </TabsContent>
+
+                        {/* Digital Signatures & TRACES Tab */}
+                        <TabsContent value="dsc-traces" className="mt-6 space-y-6">
+                            <div className="p-4 rounded-xl bg-[#8B5CF6]/5 border border-[#8B5CF6]/20 flex items-start gap-3">
+                                <Shield size={18} className="text-[#8B5CF6] flex-shrink-0 mt-0.5" />
+                                <div>
+                                    <p className="text-xs font-bold text-[#8B5CF6]">Digital Signatures & TRACES Submission</p>
+                                    <p className="text-[10px] text-[#8B5CF6]/70 mt-0.5">Apply Class-3 DSC on Form 16, submit acknowledgements to TRACES portal, and manage Form 12BA perquisite declarations.</p>
+                                </div>
+                            </div>
+
+                            {/* Section A — Signature status stat cards */}
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                                {[
+                                    { label: "Not Signed", val: sigStats.notSigned.toString(), icon: AlertCircle, color: "text-rose-500", bg: "bg-rose-50" },
+                                    { label: "Signed / Not Submitted", val: sigStats.notSubmitted.toString(), icon: FileSignature, color: "text-amber-500", bg: "bg-amber-50" },
+                                    { label: "Submitted to TRACES", val: sigStats.submitted.toString(), icon: Send, color: "text-indigo-500", bg: "bg-indigo-50" },
+                                    { label: "Acknowledged", val: sigStats.acknowledged.toString(), icon: CheckCircle2, color: "text-emerald-500", bg: "bg-emerald-50" },
+                                ].map((stat, i) => (
+                                    <Card key={i} className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden hover:shadow-md transition-all">
+                                        <CardContent className="p-5">
+                                            <div className="flex justify-between items-start mb-4">
+                                                <div className={`h-10 w-10 ${stat.bg} ${stat.color} rounded-xl flex items-center justify-center`}>
+                                                    <stat.icon size={20} />
+                                                </div>
+                                                <Badge variant="outline" className="font-bold text-[9px] text-slate-400 border-slate-100 bg-slate-50">FY 2025-26</Badge>
+                                            </div>
+                                            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">{stat.label}</p>
+                                            <p className="text-2xl font-bold text-slate-900 tracking-tight">{stat.val}</p>
+                                        </CardContent>
+                                    </Card>
+                                ))}
+                            </div>
+
+                            {/* Section B — Digital signature table */}
+                            <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+                                <CardContent className="p-0">
+                                    <div className="p-5 border-b border-slate-100 flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <h3 className="text-sm font-bold text-slate-900">Form 16 digital signatures</h3>
+                                            <Badge variant="outline" className="text-[9px] font-bold text-slate-400 border-slate-100">{form16Signatures.length} total</Badge>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <Button
+                                                variant="outline"
+                                                className="h-9 border-slate-200 rounded-lg font-bold text-[11px] gap-2 px-4 shadow-sm hover:bg-slate-50 text-slate-600 disabled:opacity-50"
+                                                disabled={selectedSigIds.length === 0}
+                                                onClick={handleBulkTracesSubmit}
+                                            >
+                                                <Send size={12} /> Bulk TRACES submit ({selectedSigIds.length})
+                                            </Button>
+                                            <Button
+                                                className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-lg h-9 px-4 font-bold text-[11px] shadow-lg shadow-[#8B5CF6]/20 border-none gap-2"
+                                                onClick={() => { resetSignForm(); setSignDialogOpen(true) }}
+                                            >
+                                                <Signature size={12} /> Sign Form 16
+                                            </Button>
+                                        </div>
+                                    </div>
+                                    <ScrollArea className="max-h-[460px]">
+                                        <table className="w-full">
+                                            <thead className="sticky top-0 bg-slate-50 z-10">
+                                                <tr>
+                                                    <th className="px-4 py-3 text-left w-10">
+                                                        <Checkbox
+                                                            checked={form16Signatures.length > 0 && selectedSigIds.length === form16Signatures.length}
+                                                            onCheckedChange={toggleSelectAllSigs}
+                                                        />
+                                                    </th>
+                                                    {["Employee", "Fiscal Year", "Signed By", "Signed Date", "Cert Serial", "TRACES", "Ack #", "Form 12BA", "Actions"].map((h) => (
+                                                        <th key={h} className="text-[10px] font-bold text-slate-400 px-4 py-3 text-left uppercase tracking-wider">{h}</th>
+                                                    ))}
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {form16Signatures.length === 0 && (
+                                                    <tr>
+                                                        <td colSpan={10} className="px-4 py-10 text-center text-xs text-slate-400">
+                                                            No signatures yet. Click "Sign Form 16" to get started.
+                                                        </td>
+                                                    </tr>
+                                                )}
+                                                {form16Signatures.map((sig) => (
+                                                    <tr key={sig.id} className={cn("border-b border-slate-50 hover:bg-slate-50/50 transition-colors", selectedSigIds.includes(sig.id) && "bg-[#8B5CF6]/5")}>
+                                                        <td className="px-4 py-3">
+                                                            <Checkbox
+                                                                checked={selectedSigIds.includes(sig.id)}
+                                                                onCheckedChange={() => toggleSelectSig(sig.id)}
+                                                            />
+                                                        </td>
+                                                        <td className="px-4 py-3">
+                                                            <p className="text-xs font-bold text-slate-700">{sig.employeeName}</p>
+                                                            <p className="text-[10px] text-slate-400">{sig.employeeId}</p>
+                                                        </td>
+                                                        <td className="px-4 py-3 text-xs text-slate-600">{sig.fiscalYear}</td>
+                                                        <td className="px-4 py-3">
+                                                            <p className="text-xs font-bold text-slate-700">{sig.signedBy}</p>
+                                                            <p className="text-[10px] text-slate-400">{sig.signedByDesignation}</p>
+                                                        </td>
+                                                        <td className="px-4 py-3 text-xs text-slate-500">{sig.signedDate}</td>
+                                                        <td className="px-4 py-3">
+                                                            <TooltipProvider>
+                                                                <Tooltip>
+                                                                    <TooltipTrigger asChild>
+                                                                        <span className="text-[10px] font-mono text-slate-500 cursor-help">
+                                                                            {sig.signatureCertSerial ? `${sig.signatureCertSerial.slice(0, 10)}…` : "-"}
+                                                                        </span>
+                                                                    </TooltipTrigger>
+                                                                    <TooltipContent>
+                                                                        <p className="font-mono text-[10px]">{sig.signatureCertSerial || "Not assigned"}</p>
+                                                                    </TooltipContent>
+                                                                </Tooltip>
+                                                            </TooltipProvider>
+                                                        </td>
+                                                        <td className="px-4 py-3">
+                                                            <Badge className={cn("border-none text-[10px] font-semibold px-2 py-0.5", tracesBadgeColor(sig.tracesStatus))}>{sig.tracesStatus}</Badge>
+                                                        </td>
+                                                        <td className="px-4 py-3">
+                                                            {sig.tracesAckNumber ? (
+                                                                <button
+                                                                    className="text-[10px] font-mono text-[#8B5CF6] hover:underline"
+                                                                    onClick={() => setTracesDetailSig(sig)}
+                                                                >
+                                                                    {sig.tracesAckNumber}
+                                                                </button>
+                                                            ) : (
+                                                                <span className="text-[10px] text-slate-400">-</span>
+                                                            )}
+                                                        </td>
+                                                        <td className="px-4 py-3">
+                                                            <Badge className={cn(
+                                                                "border-none text-[10px] font-semibold px-2 py-0.5",
+                                                                sig.form12BaGenerated ? "bg-emerald-50 text-emerald-600" : "bg-slate-50 text-slate-500"
+                                                            )}>
+                                                                {sig.form12BaGenerated ? "Yes" : "No"}
+                                                            </Badge>
+                                                        </td>
+                                                        <td className="px-4 py-3">
+                                                            <DropdownMenu>
+                                                                <DropdownMenuTrigger asChild>
+                                                                    <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg text-slate-400 hover:text-[#8B5CF6]">
+                                                                        <MoreHorizontal size={14} />
+                                                                    </Button>
+                                                                </DropdownMenuTrigger>
+                                                                <DropdownMenuContent align="end" className="w-48 rounded-xl">
+                                                                    <DropdownMenuItem onClick={() => setViewSig(sig)} className="text-xs gap-2">
+                                                                        <Eye size={12} /> View details
+                                                                    </DropdownMenuItem>
+                                                                    {sig.tracesStatus === "Not Submitted" && (
+                                                                        <DropdownMenuItem onClick={() => setTracesConfirmSig(sig)} className="text-xs gap-2 text-[#8B5CF6]">
+                                                                            <Send size={12} /> Submit to TRACES
+                                                                        </DropdownMenuItem>
+                                                                    )}
+                                                                    <DropdownMenuItem onClick={() => handleRegenerateSignature(sig)} className="text-xs gap-2">
+                                                                        <ScanLine size={12} /> Regenerate
+                                                                    </DropdownMenuItem>
+                                                                    <DropdownMenuSeparator />
+                                                                    <DropdownMenuItem onClick={() => handleDeleteSignature(sig)} className="text-xs gap-2 text-rose-500 focus:text-rose-600">
+                                                                        <Trash2 size={12} /> Delete
+                                                                    </DropdownMenuItem>
+                                                                </DropdownMenuContent>
+                                                            </DropdownMenu>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </ScrollArea>
+                                </CardContent>
+                            </Card>
+
+                            {/* Section C — Form 12BA perquisite declarations */}
+                            <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+                                <CardContent className="p-0">
+                                    <div className="p-5 border-b border-slate-100 flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div className="h-8 w-8 bg-emerald-50 rounded-lg flex items-center justify-center text-emerald-500">
+                                                <Award size={16} />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-sm font-bold text-slate-900">Form 12BA — Perquisite declarations</h3>
+                                                <p className="text-[10px] text-slate-400">Statement of perks, profits in lieu of salary & other benefits</p>
+                                            </div>
+                                        </div>
+                                        <Button
+                                            className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-lg h-9 px-4 font-bold text-[11px] shadow-lg shadow-[#8B5CF6]/20 border-none gap-2"
+                                            onClick={() => { resetPerksForm(); setForm12BaDialogOpen(true) }}
+                                        >
+                                            <Plus size={12} /> Generate Form 12BA
+                                        </Button>
+                                    </div>
+                                    <div className="p-4">
+                                        <table className="w-full">
+                                            <thead>
+                                                <tr className="border-b border-slate-100">
+                                                    {["Employee", "Fiscal Year", "Perks Value", "Status"].map((h) => (
+                                                        <th key={h} className="text-[10px] font-bold text-slate-400 px-3 py-3 text-left uppercase tracking-wider">{h}</th>
+                                                    ))}
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {form12BaRows.length === 0 && (
+                                                    <tr>
+                                                        <td colSpan={4} className="px-3 py-6 text-center text-xs text-slate-400">
+                                                            No Form 12BA declarations yet.
+                                                        </td>
+                                                    </tr>
+                                                )}
+                                                {form12BaRows.map((sig) => (
+                                                    <tr key={sig.id} className="border-b border-slate-50 last:border-none hover:bg-slate-50/50 transition-colors">
+                                                        <td className="px-3 py-3">
+                                                            <p className="text-xs font-bold text-slate-700">{sig.employeeName}</p>
+                                                            <p className="text-[10px] text-slate-400">{sig.employeeId}</p>
+                                                        </td>
+                                                        <td className="px-3 py-3 text-xs text-slate-600">{sig.fiscalYear}</td>
+                                                        <td className="px-3 py-3 text-xs font-bold text-[#8B5CF6]">{formatINR(sig.form12BaPerks || 0)}</td>
+                                                        <td className="px-3 py-3">
+                                                            <Badge className={cn("border-none text-[10px] font-semibold px-2 py-0.5", tracesBadgeColor(sig.tracesStatus))}>
+                                                                {sig.tracesStatus === "Not Submitted" ? "Signed" : sig.tracesStatus}
+                                                            </Badge>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
                     </Tabs>
                 </div>
             </div>
+
+            {/* Floating bulk action bar */}
+            {selectedSigIds.length > 0 && activeTab === "dsc-traces" && (
+                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-30 bg-white rounded-2xl border border-slate-200 shadow-xl shadow-slate-900/10 px-5 py-3 flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                        <div className="h-8 w-8 bg-[#8B5CF6]/10 rounded-lg flex items-center justify-center text-[#8B5CF6]">
+                            <FileSignature size={14} />
+                        </div>
+                        <p className="text-xs font-bold text-slate-700">{selectedSigIds.length} selected</p>
+                    </div>
+                    <div className="h-6 w-px bg-slate-200" />
+                    <Button
+                        className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-lg h-9 px-4 font-bold text-[11px] shadow-lg shadow-[#8B5CF6]/20 border-none gap-2"
+                        onClick={handleBulkTracesSubmit}
+                    >
+                        <Send size={12} /> Submit to TRACES
+                    </Button>
+                    <Button
+                        variant="outline"
+                        className="h-9 border-slate-200 rounded-lg font-bold text-[11px] gap-2 px-4 hover:bg-slate-50 text-slate-600"
+                        onClick={() => setSelectedSigIds([])}
+                    >
+                        <X size={12} /> Clear selection
+                    </Button>
+                </div>
+            )}
 
             {/* Form 16 Preview Dialog */}
             <Dialog open={!!previewRecord} onOpenChange={() => setPreviewRecord(null)}>
@@ -507,6 +979,388 @@ const Form16Page = () => {
                                 <Download size={12} /> Download
                             </Button>
                         )}
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Dialog 1: Sign Form 16 / Digital Signature */}
+            <Dialog open={signDialogOpen} onOpenChange={setSignDialogOpen}>
+                <DialogContent className="sm:max-w-[520px] rounded-2xl">
+                    <DialogHeader>
+                        <div className="flex items-center gap-3 mb-1">
+                            <div className="h-10 w-10 bg-[#8B5CF6]/10 rounded-xl flex items-center justify-center text-[#8B5CF6]">
+                                <Signature size={18} />
+                            </div>
+                            <div>
+                                <DialogTitle className="text-lg font-bold text-slate-900">Sign Form 16</DialogTitle>
+                                <DialogDescription className="text-xs text-slate-500">Apply Class-3 DSC on the employee's Form 16 certificate.</DialogDescription>
+                            </div>
+                        </div>
+                    </DialogHeader>
+                    <div className="space-y-4 py-2">
+                        <div className="space-y-1.5">
+                            <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Employee (Form 16)</Label>
+                            <Select value={signForm.form16Id} onValueChange={(v) => setSignForm(f => ({ ...f, form16Id: v }))}>
+                                <SelectTrigger className="h-10 rounded-lg border-slate-200 text-xs">
+                                    <SelectValue placeholder="Select Form 16 record" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {signableRecords.length === 0 && (
+                                        <div className="px-2 py-3 text-[10px] text-slate-400">All available Form 16 records are already signed.</div>
+                                    )}
+                                    {signableRecords.map(r => (
+                                        <SelectItem key={r.id} value={r.id} className="text-xs">
+                                            {r.employeeName} · {r.employeeId} · {r.fiscalYear}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        {signForm.form16Id && (
+                            <div className="p-3 rounded-lg bg-slate-50 border border-slate-100">
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Fiscal Year</p>
+                                <p className="text-xs font-bold text-slate-700">{form16Records.find(r => r.id === signForm.form16Id)?.fiscalYear}</p>
+                            </div>
+                        )}
+
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1.5">
+                                <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Signed By</Label>
+                                <Input
+                                    className="h-10 rounded-lg border-slate-200 text-xs"
+                                    value={signForm.signedBy}
+                                    onChange={(e) => setSignForm(f => ({ ...f, signedBy: e.target.value }))}
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Designation</Label>
+                                <Input
+                                    className="h-10 rounded-lg border-slate-200 text-xs"
+                                    value={signForm.signedByDesignation}
+                                    onChange={(e) => setSignForm(f => ({ ...f, signedByDesignation: e.target.value }))}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Signature Certificate Serial</Label>
+                            <Input
+                                className="h-10 rounded-lg border-slate-200 text-xs font-mono"
+                                placeholder="Auto-generate if blank"
+                                value={signForm.signatureCertSerial}
+                                onChange={(e) => setSignForm(f => ({ ...f, signatureCertSerial: e.target.value }))}
+                            />
+                        </div>
+
+                        <div className="p-3 rounded-xl bg-emerald-50/50 border border-emerald-100 space-y-2">
+                            <div className="flex items-center gap-2">
+                                <Checkbox
+                                    checked={signForm.form12BaGenerated}
+                                    onCheckedChange={(v) => setSignForm(f => ({ ...f, form12BaGenerated: !!v }))}
+                                />
+                                <Label className="text-xs font-bold text-emerald-700 cursor-pointer" onClick={() => setSignForm(f => ({ ...f, form12BaGenerated: !f.form12BaGenerated }))}>
+                                    Also generate Form 12BA (perquisites)
+                                </Label>
+                            </div>
+                            {signForm.form12BaGenerated && (
+                                <div className="space-y-1.5 pl-6">
+                                    <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Perks Value (INR)</Label>
+                                    <Input
+                                        type="number"
+                                        className="h-9 rounded-lg border-emerald-200 text-xs"
+                                        value={signForm.form12BaPerks || ""}
+                                        onChange={(e) => setSignForm(f => ({ ...f, form12BaPerks: Number(e.target.value) }))}
+                                    />
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" className="h-9 rounded-lg text-xs font-bold" onClick={() => setSignDialogOpen(false)}>Cancel</Button>
+                        <Button
+                            className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white h-9 rounded-lg text-xs font-bold shadow-lg shadow-[#8B5CF6]/20 gap-2"
+                            onClick={handleSubmitSignForm}
+                        >
+                            <Signature size={12} /> Apply signature
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Dialog 2: Bulk TRACES submit result */}
+            <Dialog open={!!bulkResult} onOpenChange={() => setBulkResult(null)}>
+                <DialogContent className="sm:max-w-[480px] rounded-2xl">
+                    <DialogHeader>
+                        <div className="flex items-center gap-3 mb-1">
+                            <div className="h-10 w-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-500">
+                                <Send size={18} />
+                            </div>
+                            <div>
+                                <DialogTitle className="text-lg font-bold text-slate-900">Bulk TRACES submission complete</DialogTitle>
+                                <DialogDescription className="text-xs text-slate-500">Forms dispatched to the TRACES portal.</DialogDescription>
+                            </div>
+                        </div>
+                    </DialogHeader>
+                    {bulkResult && (
+                        <div className="grid grid-cols-3 gap-3 py-2">
+                            <Card className="rounded-xl border-indigo-100 bg-indigo-50/50 border shadow-sm">
+                                <CardContent className="p-4 text-center">
+                                    <Send size={16} className="text-indigo-500 mx-auto mb-2" />
+                                    <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-wider">Submitted</p>
+                                    <p className="text-2xl font-bold text-indigo-700">{bulkResult.submitted}</p>
+                                </CardContent>
+                            </Card>
+                            <Card className="rounded-xl border-emerald-100 bg-emerald-50/50 border shadow-sm">
+                                <CardContent className="p-4 text-center">
+                                    <CheckCircle2 size={16} className="text-emerald-500 mx-auto mb-2" />
+                                    <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-wider">Acknowledged</p>
+                                    <p className="text-2xl font-bold text-emerald-700">{bulkResult.acknowledged}</p>
+                                </CardContent>
+                            </Card>
+                            <Card className={cn("rounded-xl border shadow-sm", bulkResult.rejected > 0 ? "border-rose-100 bg-rose-50/50" : "border-slate-100 bg-slate-50/50")}>
+                                <CardContent className="p-4 text-center">
+                                    <AlertCircle size={16} className={cn("mx-auto mb-2", bulkResult.rejected > 0 ? "text-rose-500" : "text-slate-400")} />
+                                    <p className={cn("text-[10px] font-bold uppercase tracking-wider", bulkResult.rejected > 0 ? "text-rose-500" : "text-slate-400")}>Pending/Rejected</p>
+                                    <p className={cn("text-2xl font-bold", bulkResult.rejected > 0 ? "text-rose-700" : "text-slate-600")}>{bulkResult.rejected}</p>
+                                </CardContent>
+                            </Card>
+                        </div>
+                    )}
+                    <DialogFooter>
+                        <Button
+                            className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white h-9 rounded-lg text-xs font-bold shadow-lg shadow-[#8B5CF6]/20"
+                            onClick={() => setBulkResult(null)}
+                        >
+                            Done
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Dialog 3: Single TRACES submit confirm */}
+            <Dialog open={!!tracesConfirmSig} onOpenChange={() => setTracesConfirmSig(null)}>
+                <DialogContent className="sm:max-w-[440px] rounded-2xl">
+                    <DialogHeader>
+                        <div className="flex items-center gap-3 mb-1">
+                            <div className="h-10 w-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-500">
+                                <Send size={18} />
+                            </div>
+                            <div>
+                                <DialogTitle className="text-lg font-bold text-slate-900">Submit to TRACES?</DialogTitle>
+                                <DialogDescription className="text-xs text-slate-500">This will dispatch the signed Form 16 to the TRACES portal.</DialogDescription>
+                            </div>
+                        </div>
+                    </DialogHeader>
+                    {tracesConfirmSig && (
+                        <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-2">
+                            <div className="flex justify-between text-xs">
+                                <span className="text-slate-500">Employee</span>
+                                <span className="font-bold text-slate-700">{tracesConfirmSig.employeeName}</span>
+                            </div>
+                            <div className="flex justify-between text-xs">
+                                <span className="text-slate-500">Employee ID</span>
+                                <span className="font-bold text-slate-700">{tracesConfirmSig.employeeId}</span>
+                            </div>
+                            <div className="flex justify-between text-xs">
+                                <span className="text-slate-500">Fiscal Year</span>
+                                <span className="font-bold text-slate-700">{tracesConfirmSig.fiscalYear}</span>
+                            </div>
+                            <div className="flex justify-between text-xs">
+                                <span className="text-slate-500">Signed By</span>
+                                <span className="font-bold text-slate-700">{tracesConfirmSig.signedBy}</span>
+                            </div>
+                        </div>
+                    )}
+                    <DialogFooter>
+                        <Button variant="outline" className="h-9 rounded-lg text-xs font-bold" onClick={() => setTracesConfirmSig(null)}>Cancel</Button>
+                        <Button
+                            className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white h-9 rounded-lg text-xs font-bold shadow-lg shadow-[#8B5CF6]/20 gap-2"
+                            onClick={handleConfirmSingleTraces}
+                        >
+                            <Send size={12} /> Confirm submit
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Dialog 4: Generate Form 12BA */}
+            <Dialog open={form12BaDialogOpen} onOpenChange={setForm12BaDialogOpen}>
+                <DialogContent className="sm:max-w-[480px] rounded-2xl">
+                    <DialogHeader>
+                        <div className="flex items-center gap-3 mb-1">
+                            <div className="h-10 w-10 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-500">
+                                <ReceiptText size={18} />
+                            </div>
+                            <div>
+                                <DialogTitle className="text-lg font-bold text-slate-900">Generate Form 12BA</DialogTitle>
+                                <DialogDescription className="text-xs text-slate-500">Statement of perquisites, profits in lieu of salary & other benefits.</DialogDescription>
+                            </div>
+                        </div>
+                    </DialogHeader>
+                    <div className="space-y-4 py-2">
+                        <div className="space-y-1.5">
+                            <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Employee</Label>
+                            <Select value={perksForm.form16Id} onValueChange={(v) => setPerksForm(f => ({ ...f, form16Id: v }))}>
+                                <SelectTrigger className="h-10 rounded-lg border-slate-200 text-xs">
+                                    <SelectValue placeholder="Select Form 16 record" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {form16Records.map(r => (
+                                        <SelectItem key={r.id} value={r.id} className="text-xs">
+                                            {r.employeeName} · {r.employeeId} · {r.fiscalYear}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        {perksForm.form16Id && (
+                            <div className="p-3 rounded-lg bg-slate-50 border border-slate-100">
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Fiscal Year</p>
+                                <p className="text-xs font-bold text-slate-700">{form16Records.find(r => r.id === perksForm.form16Id)?.fiscalYear}</p>
+                            </div>
+                        )}
+
+                        <div className="space-y-1.5">
+                            <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Perks Value (INR)</Label>
+                            <Input
+                                type="number"
+                                className="h-10 rounded-lg border-slate-200 text-xs"
+                                placeholder="0"
+                                value={perksForm.perksValue || ""}
+                                onChange={(e) => setPerksForm(f => ({ ...f, perksValue: Number(e.target.value) }))}
+                            />
+                            {perksForm.perksValue > 0 && (
+                                <p className="text-[10px] text-slate-500">{formatINR(perksForm.perksValue)}</p>
+                            )}
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Perks Description</Label>
+                            <Textarea
+                                className="rounded-lg border-slate-200 text-xs min-h-[84px]"
+                                placeholder="Company car, rent-free accommodation, stock options, etc."
+                                value={perksForm.perksDescription}
+                                onChange={(e) => setPerksForm(f => ({ ...f, perksDescription: e.target.value }))}
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" className="h-9 rounded-lg text-xs font-bold" onClick={() => setForm12BaDialogOpen(false)}>Cancel</Button>
+                        <Button
+                            className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white h-9 rounded-lg text-xs font-bold shadow-lg shadow-[#8B5CF6]/20 gap-2"
+                            onClick={handleSubmitPerksForm}
+                        >
+                            <ReceiptText size={12} /> Generate
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Dialog 5: TRACES status detail */}
+            <Dialog open={!!tracesDetailSig} onOpenChange={() => setTracesDetailSig(null)}>
+                <DialogContent className="sm:max-w-[480px] rounded-2xl">
+                    <DialogHeader>
+                        <div className="flex items-center gap-3 mb-1">
+                            <div className="h-10 w-10 bg-[#8B5CF6]/10 rounded-xl flex items-center justify-center text-[#8B5CF6]">
+                                <ScanLine size={18} />
+                            </div>
+                            <div>
+                                <DialogTitle className="text-lg font-bold text-slate-900">TRACES submission details</DialogTitle>
+                                <DialogDescription className="text-xs text-slate-500">Acknowledgement & portal status.</DialogDescription>
+                            </div>
+                        </div>
+                    </DialogHeader>
+                    {tracesDetailSig && (
+                        <div className="space-y-4 py-2">
+                            <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-2.5">
+                                <div className="flex justify-between text-xs">
+                                    <span className="text-slate-500">Employee</span>
+                                    <span className="font-bold text-slate-700">{tracesDetailSig.employeeName}</span>
+                                </div>
+                                <div className="flex justify-between text-xs">
+                                    <span className="text-slate-500">Fiscal Year</span>
+                                    <span className="font-bold text-slate-700">{tracesDetailSig.fiscalYear}</span>
+                                </div>
+                                <div className="flex justify-between text-xs">
+                                    <span className="text-slate-500">Ack Number</span>
+                                    <span className="font-mono font-bold text-[#8B5CF6]">{tracesDetailSig.tracesAckNumber || "-"}</span>
+                                </div>
+                                <div className="flex justify-between text-xs">
+                                    <span className="text-slate-500">Submitted Date</span>
+                                    <span className="font-bold text-slate-700">{tracesDetailSig.tracesSubmittedDate || "-"}</span>
+                                </div>
+                                <div className="flex justify-between text-xs items-center">
+                                    <span className="text-slate-500">Status</span>
+                                    <Badge className={cn("border-none text-[10px] font-semibold px-2 py-0.5", tracesBadgeColor(tracesDetailSig.tracesStatus))}>{tracesDetailSig.tracesStatus}</Badge>
+                                </div>
+                            </div>
+                            {tracesDetailSig.tracesStatus === "Rejected" && (
+                                <div className="p-3 rounded-xl bg-rose-50 border border-rose-100 flex items-start gap-2">
+                                    <AlertCircle size={14} className="text-rose-500 flex-shrink-0 mt-0.5" />
+                                    <p className="text-[10px] text-rose-600">This submission was rejected by TRACES. Review the DSC or data and resubmit.</p>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                    <DialogFooter>
+                        <Button variant="outline" className="h-9 rounded-lg text-xs font-bold" onClick={() => setTracesDetailSig(null)}>Close</Button>
+                        {tracesDetailSig?.tracesStatus === "Rejected" && (
+                            <Button
+                                className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white h-9 rounded-lg text-xs font-bold shadow-lg shadow-[#8B5CF6]/20 gap-2"
+                                onClick={() => tracesDetailSig && handleResubmitTraces(tracesDetailSig)}
+                            >
+                                <Send size={12} /> Resubmit
+                            </Button>
+                        )}
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* View signature details (bonus, opened from dropdown) */}
+            <Dialog open={!!viewSig} onOpenChange={() => setViewSig(null)}>
+                <DialogContent className="sm:max-w-[460px] rounded-2xl">
+                    <DialogHeader>
+                        <DialogTitle className="text-lg font-bold text-slate-900">Signature details</DialogTitle>
+                        <DialogDescription className="text-xs text-slate-500">Full certificate & submission info.</DialogDescription>
+                    </DialogHeader>
+                    {viewSig && (
+                        <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-2.5">
+                            <div className="flex justify-between text-xs">
+                                <span className="text-slate-500">Employee</span>
+                                <span className="font-bold text-slate-700">{viewSig.employeeName} ({viewSig.employeeId})</span>
+                            </div>
+                            <div className="flex justify-between text-xs">
+                                <span className="text-slate-500">Fiscal Year</span>
+                                <span className="font-bold text-slate-700">{viewSig.fiscalYear}</span>
+                            </div>
+                            <div className="flex justify-between text-xs">
+                                <span className="text-slate-500">Signed By</span>
+                                <span className="font-bold text-slate-700">{viewSig.signedBy} · {viewSig.signedByDesignation}</span>
+                            </div>
+                            <div className="flex justify-between text-xs">
+                                <span className="text-slate-500">Signed Date</span>
+                                <span className="font-bold text-slate-700">{viewSig.signedDate}</span>
+                            </div>
+                            <div className="flex justify-between text-xs">
+                                <span className="text-slate-500">Cert Serial</span>
+                                <span className="font-mono font-bold text-slate-700 text-[10px]">{viewSig.signatureCertSerial || "-"}</span>
+                            </div>
+                            <div className="flex justify-between text-xs items-center">
+                                <span className="text-slate-500">TRACES</span>
+                                <Badge className={cn("border-none text-[10px] font-semibold px-2 py-0.5", tracesBadgeColor(viewSig.tracesStatus))}>{viewSig.tracesStatus}</Badge>
+                            </div>
+                            {viewSig.form12BaGenerated && (
+                                <div className="flex justify-between text-xs">
+                                    <span className="text-slate-500">Form 12BA Perks</span>
+                                    <span className="font-bold text-emerald-600">{formatINR(viewSig.form12BaPerks || 0)}</span>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                    <DialogFooter>
+                        <Button variant="outline" className="h-9 rounded-lg text-xs font-bold" onClick={() => setViewSig(null)}>Close</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

@@ -177,6 +177,109 @@ const data = {
         { value: "45%", label: "Faster resolution times" },
         { value: "99.99%", label: "Platform uptime SLA" },
     ],
+    capabilities: [
+        {
+            title: "Revenue Operations & Subscription Intelligence",
+            description:
+                "Unify billing, revenue recognition, and financial analytics into a single revenue operations engine that gives finance and leadership teams real-time visibility into MRR movements, cohort performance, and unit economics.",
+            keyPoints: [
+                "Real-time MRR waterfall analysis showing new, expansion, contraction, and churned revenue",
+                "Cohort-based retention and expansion analytics by acquisition channel and plan tier",
+                "Revenue recognition automation compliant with ASC 606 and IFRS 15 standards",
+                "Dunning management with smart retry logic and pre-dunning engagement workflows",
+            ],
+        },
+        {
+            title: "Customer Lifecycle Orchestration",
+            description:
+                "Map and automate the entire customer journey from trial sign-up through onboarding, adoption, renewal, and expansion with data-driven playbooks that ensure consistent outcomes at every stage.",
+            keyPoints: [
+                "Automated onboarding sequences triggered by sign-up events with milestone tracking",
+                "Product adoption scoring based on feature usage depth and frequency",
+                "Renewal risk detection with automated CSM alerts and intervention playbooks",
+                "Expansion opportunity identification using usage patterns and firmographic signals",
+            ],
+        },
+        {
+            title: "Incident Response & Reliability Engineering",
+            description:
+                "Build a culture of operational excellence with structured incident management workflows, automated runbooks, and blameless post-incident analysis that continuously improve your service reliability.",
+            keyPoints: [
+                "Automated incident detection from monitoring alerts with severity classification",
+                "On-call rotation management with PagerDuty and Opsgenie integration",
+                "Runbook automation for common remediation steps like service restarts and scaling",
+                "Post-incident review templates with action item tracking and SLO impact analysis",
+            ],
+        },
+        {
+            title: "Product Analytics & Feature Adoption",
+            description:
+                "Understand how customers interact with your product at a granular level to inform roadmap decisions, identify churn signals, and discover upsell opportunities hidden in usage data.",
+            keyPoints: [
+                "Feature-level adoption funnels showing activation, engagement, and retention rates",
+                "Account-level usage dashboards correlating product engagement with revenue outcomes",
+                "Churn prediction models trained on behavioral signals and support interactions",
+            ],
+        },
+    ],
+    integrations: [
+        { name: "Stripe", category: "Billing & Payments" },
+        { name: "PagerDuty", category: "Incident Management" },
+        { name: "Datadog", category: "Monitoring" },
+        { name: "Slack", category: "Communication" },
+        { name: "Jira", category: "Project Management" },
+        { name: "GitHub", category: "Version Control" },
+        { name: "Salesforce", category: "CRM" },
+        { name: "Intercom", category: "Customer Messaging" },
+        { name: "Segment", category: "Customer Data Platform" },
+        { name: "AWS CloudWatch", category: "Cloud Monitoring" },
+        { name: "Zendesk", category: "Support" },
+        { name: "HubSpot", category: "Marketing" },
+    ],
+    testimonials: [
+        {
+            quote: "We consolidated five separate tools — ticketing, billing, monitoring, customer success, and analytics — into CubicleERP. Our team finally has a single view of each customer, and our average resolution time dropped by nearly half.",
+            author: "Jason Park",
+            role: "VP of Customer Operations",
+            company: "CloudSync Technologies",
+            metric: "45% faster ticket resolution",
+        },
+        {
+            quote: "The subscription billing module handled our migration from flat-rate to usage-based pricing seamlessly. We were terrified of billing errors during the transition, but CubicleERP processed over 10,000 invoices in the first month without a single discrepancy.",
+            author: "Samantha Webb",
+            role: "Director of Finance",
+            company: "DataPipe Analytics",
+            metric: "Zero billing errors during pricing migration",
+        },
+        {
+            quote: "Customer health scores changed the way our success team operates. Instead of reacting to cancellation requests, we now proactively reach out to at-risk accounts weeks in advance. Our net revenue retention went from 97% to 112% in two quarters.",
+            author: "Raj Krishnamurthy",
+            role: "Head of Customer Success",
+            company: "FormStack SaaS",
+            metric: "112% net revenue retention",
+        },
+    ],
+    comparisons: [
+        { feature: "Ticket Management", traditional: "Shared email inbox", cubicleErp: "Intelligent routing & SLA" },
+        { feature: "Subscription Billing", traditional: "Manual invoicing", cubicleErp: "Automated, usage-based" },
+        { feature: "Customer Health", traditional: "Gut feeling", cubicleErp: "Data-driven health scores" },
+        { feature: "Incident Response", traditional: "Ad-hoc Slack threads", cubicleErp: "Structured workflows" },
+        { feature: "Usage Analytics", traditional: "Custom SQL queries", cubicleErp: "Built-in dashboards" },
+        { feature: "Revenue Metrics", traditional: "Spreadsheet models", cubicleErp: "Real-time MRR/ARR" },
+    ],
+    subNavItems: [
+        { label: "Overview", sectionId: "hero" },
+        { label: "Features", sectionId: "features" },
+        { label: "Capabilities", sectionId: "capabilities" },
+        { label: "Benefits", sectionId: "benefits" },
+        { label: "Integrations", sectionId: "integrations" },
+        { label: "How It Works", sectionId: "how-it-works" },
+        { label: "Use Cases", sectionId: "use-cases" },
+        { label: "FAQs", sectionId: "faqs" },
+        { label: "Startups", href: "/products/startups" },
+        { label: "Enterprise", href: "/products/enterprise" },
+        { label: "Agencies", href: "/products/agencies" },
+    ],
 }
 
 export default function ITSaaSPage() {
