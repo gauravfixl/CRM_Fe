@@ -52,6 +52,8 @@ const TeamRequestsPage = () => {
     const [showDetails, setShowDetails] = useState(false);
     const [showBatch, setShowBatch] = useState(false);
     const [filterType, setFilterType] = useState("All Types");
+    const [searchTerm, setSearchTerm] = useState("");
+    const [batchRemark, setBatchRemark] = useState("");
 
     useEffect(() => {
         setMounted(true);
@@ -79,7 +81,11 @@ const TeamRequestsPage = () => {
     const filteredRequests = requests.filter(r => {
         const matchesTab = activeTab === "pending" ? r.status === "pending" : r.status !== "pending";
         const matchesType = filterType === "All Types" || r.type === filterType;
-        return matchesTab && matchesType;
+        const matchesSearch = searchTerm === "" ||
+            r.requester.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            r.detail.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            r.id.toLowerCase().includes(searchTerm.toLowerCase());
+        return matchesTab && matchesType && matchesSearch;
     });
 
     const pendingRequests = requests.filter(r => r.status === "pending");
@@ -114,7 +120,16 @@ const TeamRequestsPage = () => {
                         You have <Badge className="bg-amber-100 text-amber-700 border-none font-bold text-[9px] px-2 shadow-none">{pendingRequests.length} Pending</Badge> actions to review.
                     </div>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 flex-wrap">
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                        <Input
+                            placeholder="Search requests..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="pl-10 h-10 w-56 rounded-xl bg-white border border-slate-200 shadow-sm font-bold text-xs"
+                        />
+                    </div>
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="outline" className="rounded-xl border-none shadow-sm h-10 px-5 font-bold text-xs bg-white text-slate-600">
@@ -213,7 +228,10 @@ const TeamRequestsPage = () => {
                                                                 }}>
                                                                     <Inbox className="h-3.5 w-3.5 mr-2.5" /> Forward
                                                                 </DropdownMenuItem>
-                                                                <DropdownMenuItem className="p-2.5 rounded-lg font-bold text-[10px] tracking-widest text-slate-600 cursor-pointer focus:bg-rose-50 focus:text-rose-600" onClick={() => toast({ title: "Prioritized", description: `Request ${req.id} marked as critically urgent.` })}>
+                                                                <DropdownMenuItem className="p-2.5 rounded-lg font-bold text-[10px] tracking-widest text-slate-600 cursor-pointer focus:bg-rose-50 focus:text-rose-600" onClick={() => {
+                                                                    setRequests(requests.map(r => r.id === req.id ? { ...r, priority: "High" } : r));
+                                                                    toast({ title: "Prioritized", description: `Request ${req.id} marked as critically urgent.` });
+                                                                }}>
                                                                     <AlertCircle className="h-3.5 w-3.5 mr-2.5" /> Mark Urgent
                                                                 </DropdownMenuItem>
                                                             </DropdownMenuContent>
@@ -338,15 +356,33 @@ const TeamRequestsPage = () => {
                         </div>
                         <div className="space-y-2">
                             <Label className="font-bold text-[9px] uppercase tracking-widest text-slate-400 ml-1">Batch Remark</Label>
-                            <Textarea placeholder="Add a comment for all processed requests..." className="rounded-xl border border-slate-200 bg-slate-100/50 p-4 min-h-[100px] text-xs font-bold focus:bg-white shadow-inner" />
+                            <Textarea
+                                value={batchRemark}
+                                onChange={(e) => setBatchRemark(e.target.value)}
+                                placeholder="Add a comment for all processed requests..."
+                                className="rounded-xl border border-slate-200 bg-slate-100/50 p-4 min-h-[100px] text-xs font-bold focus:bg-white shadow-inner"
+                            />
                         </div>
                     </div>
                     <DialogFooter className="flex-col gap-3">
                         <Button className="w-full h-11 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold text-[11px] tracking-widest shadow-md border-none transition-all" onClick={() => {
+                            const count = requests.filter(r => r.status === 'pending').length;
                             setRequests(requests.map(r => r.status === 'pending' ? { ...r, status: 'approved' } : r));
-                            toast({ title: "Batch Approved", description: `All ${pendingRequests.length} pending requests have been approved.` });
+                            toast({ title: "Batch Approved", description: `${count} pending request(s) approved. ${batchRemark ? `Remark: ${batchRemark}` : ''}` });
                             setShowBatch(false);
+                            setBatchRemark("");
                         }}>Approve All Pending</Button>
+                        <Button className="w-full h-11 bg-rose-500 hover:bg-rose-600 text-white rounded-xl font-bold text-[11px] tracking-widest shadow-md border-none transition-all" onClick={() => {
+                            if (!batchRemark.trim() || batchRemark.trim().length < 5) {
+                                toast({ title: "Remark Required", description: "Rejection requires a remark (at least 5 characters).", variant: "destructive" });
+                                return;
+                            }
+                            const count = requests.filter(r => r.status === 'pending').length;
+                            setRequests(requests.map(r => r.status === 'pending' ? { ...r, status: 'rejected' } : r));
+                            toast({ title: "Batch Rejected", description: `${count} pending request(s) rejected. Remark: ${batchRemark}`, variant: "destructive" });
+                            setShowBatch(false);
+                            setBatchRemark("");
+                        }}>Reject All Pending</Button>
                         <Button variant="ghost" className="w-full h-11 rounded-xl font-bold text-[11px] tracking-widest text-slate-400 border-none" onClick={() => setShowBatch(false)}>Cancel</Button>
                     </DialogFooter>
                 </DialogContent>

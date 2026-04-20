@@ -1,7 +1,14 @@
 "use client"
 
-import React, { useMemo, useState } from "react"
+import React, { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
+import {
+    getAllEmployees,
+    getPendingLeaveRequests,
+    getAllAppraisals,
+    getAllGoals,
+    getHolidaysByYear,
+} from "@/modules/hrm/hooks/hrmHooks"
 import {
     Wallet,
     Users,
@@ -184,6 +191,152 @@ const PayrollDashboard = () => {
         href: "",
         color: "#8B5CF6",
     })
+
+    // ── Backend-backed live data (read-only augmentation) ──
+    const [backendData, setBackendData] = useState<{
+        employeesCount: number | null
+        pendingLeavesCount: number | null
+        pendingAppraisalsCount: number | null
+        activeGoalsCount: number | null
+        upcomingHolidays: Array<{ name: string; date: string; type?: string }>
+        loaded: {
+            employees: boolean
+            leaves: boolean
+            appraisals: boolean
+            goals: boolean
+            holidays: boolean
+        }
+    }>({
+        employeesCount: null,
+        pendingLeavesCount: null,
+        pendingAppraisalsCount: null,
+        activeGoalsCount: null,
+        upcomingHolidays: [],
+        loaded: {
+            employees: false,
+            leaves: false,
+            appraisals: false,
+            goals: false,
+            holidays: false,
+        },
+    })
+
+    useEffect(() => {
+        let cancelled = false
+        const run = async () => {
+            const extractArr = (res: any): any[] => {
+                const d = res?.data ?? res
+                if (Array.isArray(d)) return d
+                if (Array.isArray(d?.data)) return d.data
+                if (Array.isArray(d?.results)) return d.results
+                if (Array.isArray(d?.employees)) return d.employees
+                if (Array.isArray(d?.leaves)) return d.leaves
+                if (Array.isArray(d?.appraisals)) return d.appraisals
+                if (Array.isArray(d?.goals)) return d.goals
+                if (Array.isArray(d?.holidays)) return d.holidays
+                return []
+            }
+
+            const [empRes, leaveRes, apprRes, goalsRes, holRes] = await Promise.allSettled([
+                getAllEmployees(),
+                getPendingLeaveRequests(),
+                getAllAppraisals(),
+                getAllGoals(),
+                getHolidaysByYear("2026"),
+            ])
+
+            if (cancelled) return
+
+            setBackendData((prev) => {
+                const next = { ...prev, loaded: { ...prev.loaded } }
+
+                if (empRes.status === "fulfilled") {
+                    try {
+                        next.employeesCount = extractArr(empRes.value).length
+                    } catch (e) {
+                        console.warn("Payroll dashboard: employees parse failed", e)
+                    }
+                    next.loaded.employees = true
+                } else {
+                    console.warn("Payroll dashboard: getAllEmployees failed", empRes.reason)
+                    next.loaded.employees = true
+                }
+
+                if (leaveRes.status === "fulfilled") {
+                    try {
+                        next.pendingLeavesCount = extractArr(leaveRes.value).length
+                    } catch (e) {
+                        console.warn("Payroll dashboard: pending leaves parse failed", e)
+                    }
+                    next.loaded.leaves = true
+                } else {
+                    console.warn("Payroll dashboard: getPendingLeaveRequests failed", leaveRes.reason)
+                    next.loaded.leaves = true
+                }
+
+                if (apprRes.status === "fulfilled") {
+                    try {
+                        const arr = extractArr(apprRes.value)
+                        next.pendingAppraisalsCount = arr.filter(
+                            (a: any) => (a?.status ?? "").toString().toLowerCase() !== "completed"
+                        ).length
+                    } catch (e) {
+                        console.warn("Payroll dashboard: appraisals parse failed", e)
+                    }
+                    next.loaded.appraisals = true
+                } else {
+                    console.warn("Payroll dashboard: getAllAppraisals failed", apprRes.reason)
+                    next.loaded.appraisals = true
+                }
+
+                if (goalsRes.status === "fulfilled") {
+                    try {
+                        const arr = extractArr(goalsRes.value)
+                        next.activeGoalsCount = arr.filter(
+                            (g: any) => (g?.status ?? "").toString().toLowerCase() === "active"
+                        ).length
+                    } catch (e) {
+                        console.warn("Payroll dashboard: goals parse failed", e)
+                    }
+                    next.loaded.goals = true
+                } else {
+                    console.warn("Payroll dashboard: getAllGoals failed", goalsRes.reason)
+                    next.loaded.goals = true
+                }
+
+                if (holRes.status === "fulfilled") {
+                    try {
+                        const arr = extractArr(holRes.value)
+                        const todayMs = Date.now()
+                        next.upcomingHolidays = arr
+                            .map((h: any) => ({
+                                name: h?.name ?? h?.title ?? "Holiday",
+                                date: h?.date ?? h?.holidayDate ?? "",
+                                type: h?.type ?? h?.holidayType,
+                            }))
+                            .filter((h: any) => h.date && new Date(h.date).getTime() >= todayMs)
+                            .sort(
+                                (a: any, b: any) =>
+                                    new Date(a.date).getTime() - new Date(b.date).getTime()
+                            )
+                            .slice(0, 3)
+                    } catch (e) {
+                        console.warn("Payroll dashboard: holidays parse failed", e)
+                    }
+                    next.loaded.holidays = true
+                } else {
+                    console.warn("Payroll dashboard: getHolidaysByYear failed", holRes.reason)
+                    next.loaded.holidays = true
+                }
+
+                return next
+            })
+        }
+        run()
+        return () => {
+            cancelled = true
+        }
+    }, [])
 
     // ── Active run ─────────────────────────────────────────
     const defaultActive = useMemo(
@@ -396,9 +549,47 @@ const PayrollDashboard = () => {
     }, [reimbursementCategories, claims])
 
     // ── Alerts, widgets, quick actions ─────────────────────
+    // Derived alerts from backend signals (not persisted to store — read-only)
+    const derivedBackendAlerts = useMemo<DashboardAlert[]>(() => {
+        const out: DashboardAlert[] = []
+        const nowIso = new Date().toISOString()
+        if ((backendData.pendingLeavesCount ?? 0) > 5) {
+            out.push({
+                id: `derived-pending-leaves-${backendData.pendingLeavesCount}`,
+                severity: "info",
+                source: "Leave",
+                title: `${backendData.pendingLeavesCount} leave requests pending`,
+                description: "Review and approve outstanding leave requests.",
+                createdAt: nowIso,
+                link: "/hrmcubicle/leaves",
+                linkLabel: "Open leaves",
+            })
+        }
+        if ((backendData.pendingAppraisalsCount ?? 0) > 0) {
+            out.push({
+                id: `derived-pending-appraisals-${backendData.pendingAppraisalsCount}`,
+                severity: "info",
+                source: "Payroll",
+                title: `${backendData.pendingAppraisalsCount} appraisal${backendData.pendingAppraisalsCount === 1 ? "" : "s"} awaiting review`,
+                description: "Performance reviews are pending completion.",
+                createdAt: nowIso,
+                link: "/hrmcubicle/performance",
+                linkLabel: "Open performance",
+            })
+        }
+        return out
+    }, [backendData.pendingLeavesCount, backendData.pendingAppraisalsCount])
+
+    // Merge static (store) + derived (backend) alerts. Derived alerts have no
+    // persistence state and are appended so the static store remains untouched.
+    const mergedAlerts = useMemo<DashboardAlert[]>(
+        () => [...dashboardAlerts, ...derivedBackendAlerts],
+        [dashboardAlerts, derivedBackendAlerts]
+    )
+
     const activeAlerts = useMemo(
-        () => dashboardAlerts.filter((a) => !a.dismissed && !a.actionTaken),
-        [dashboardAlerts]
+        () => mergedAlerts.filter((a) => !a.dismissed && !a.actionTaken),
+        [mergedAlerts]
     )
     const filteredAlerts = useMemo(() => {
         if (alertFilter === "all") return activeAlerts
@@ -720,7 +911,7 @@ const PayrollDashboard = () => {
                                         <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
                                             Alert center
                                             <Badge className="bg-rose-100 text-rose-700 border-none text-[10px] font-bold">
-                                                {dashboardAlerts.filter((a) => !a.dismissed).length}
+                                                {mergedAlerts.filter((a) => !a.dismissed).length}
                                             </Badge>
                                         </CardTitle>
                                         <CardDescription className="text-[11px] font-semibold text-slate-500 mt-0.5">
@@ -862,6 +1053,105 @@ const PayrollDashboard = () => {
                                 icon={ShieldCheck}
                                 color={complianceScore >= 90 ? "#10B981" : complianceScore >= 70 ? "#F59E0B" : "#F43F5E"}
                             />
+                        </div>
+
+                        {/* ── Live backend KPIs ─────────────── */}
+                        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
+                            <HeroKpi
+                                label="Total employees"
+                                value={
+                                    backendData.employeesCount !== null
+                                        ? String(backendData.employeesCount)
+                                        : "—"
+                                }
+                                caption="Across organization"
+                                icon={Users}
+                                color="#6366F1"
+                                live
+                                loading={!backendData.loaded.employees}
+                            />
+                            <HeroKpi
+                                label="Pending leaves"
+                                value={
+                                    backendData.pendingLeavesCount !== null
+                                        ? String(backendData.pendingLeavesCount)
+                                        : "—"
+                                }
+                                caption="Awaiting approval"
+                                icon={CalendarClock}
+                                color="#EC4899"
+                                live
+                                loading={!backendData.loaded.leaves}
+                            />
+                            <HeroKpi
+                                label="Pending appraisals"
+                                value={
+                                    backendData.pendingAppraisalsCount !== null
+                                        ? String(backendData.pendingAppraisalsCount)
+                                        : "—"
+                                }
+                                caption="Not yet completed"
+                                icon={FileCheck2}
+                                color="#F59E0B"
+                                live
+                                loading={!backendData.loaded.appraisals}
+                            />
+                            <HeroKpi
+                                label="Active goals"
+                                value={
+                                    backendData.activeGoalsCount !== null
+                                        ? String(backendData.activeGoalsCount)
+                                        : "—"
+                                }
+                                caption="In progress"
+                                icon={TrendingUp}
+                                color="#10B981"
+                                live
+                                loading={!backendData.loaded.goals}
+                            />
+                            <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-md transition-all">
+                                <CardContent className="p-4">
+                                    <div className="flex justify-between items-start gap-2 mb-3">
+                                        <div className="h-10 w-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: "#F43F5E14", color: "#F43F5E" }}>
+                                            <Gift size={18} />
+                                        </div>
+                                        <div className="flex items-center gap-1 text-[9px] font-bold text-emerald-600">
+                                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                            <span>live</span>
+                                        </div>
+                                    </div>
+                                    <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Upcoming holidays</p>
+                                    {!backendData.loaded.holidays ? (
+                                        <p className="text-xl font-bold text-slate-900 opacity-50">…</p>
+                                    ) : backendData.upcomingHolidays.length === 0 ? (
+                                        <>
+                                            <p className="text-xl font-bold text-slate-900 tracking-tight">0</p>
+                                            <p className="text-[11px] font-medium text-slate-400 truncate mt-0.5">No upcoming in 2026</p>
+                                        </>
+                                    ) : (
+                                        <div className="mt-0.5 space-y-1">
+                                            {backendData.upcomingHolidays.map((h, i) => (
+                                                <div key={`${h.name}-${i}`} className="flex items-center justify-between gap-1.5 text-[11px]">
+                                                    <span className="font-semibold text-slate-800 truncate">{h.name}</span>
+                                                    <div className="flex items-center gap-1 shrink-0">
+                                                        <span className="text-[10px] font-medium text-slate-500">
+                                                            {new Date(h.date).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })}
+                                                        </span>
+                                                        {h.type && (
+                                                            <Badge className={cn(
+                                                                "border-none text-[9px] font-bold px-1.5 py-0",
+                                                                h.type === "National" ? "bg-rose-50 text-rose-600" : "bg-slate-100 text-slate-600"
+                                                            )}>
+                                                                {h.type}
+                                                            </Badge>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
                         </div>
 
                         {/* ── Active run + Pending actions ─────── */}
@@ -2155,6 +2445,8 @@ const HeroKpi = ({
     icon: Icon,
     color,
     trend,
+    live,
+    loading,
 }: {
     label: string
     value: string
@@ -2162,6 +2454,8 @@ const HeroKpi = ({
     icon: any
     color: string
     trend?: { direction: "up" | "down"; value: string }
+    live?: boolean
+    loading?: boolean
 }) => (
     <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-md transition-all">
         <CardContent className="p-4">
@@ -2169,16 +2463,29 @@ const HeroKpi = ({
                 <div className="h-10 w-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: `${color}14`, color }}>
                     <Icon size={18} />
                 </div>
-                {trend && (
-                    <div className={cn("flex items-center gap-0.5 text-[10px] font-bold",
-                        trend.direction === "up" ? "text-emerald-600" : "text-rose-600")}>
-                        {trend.direction === "up" ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
-                        <span>{trend.value}</span>
-                    </div>
-                )}
+                <div className="flex flex-col items-end gap-1">
+                    {live && (
+                        <div className="flex items-center gap-1 text-[9px] font-bold text-emerald-600">
+                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                            <span>live</span>
+                        </div>
+                    )}
+                    {trend && (
+                        <div className={cn("flex items-center gap-0.5 text-[10px] font-bold",
+                            trend.direction === "up" ? "text-emerald-600" : "text-rose-600")}>
+                            {trend.direction === "up" ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
+                            <span>{trend.value}</span>
+                        </div>
+                    )}
+                </div>
             </div>
             <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{label}</p>
-            <p className="text-xl font-bold text-slate-900 tracking-tight tabular-nums truncate">{value}</p>
+            <p className={cn(
+                "text-xl font-bold text-slate-900 tracking-tight tabular-nums truncate",
+                loading && "opacity-50"
+            )}>
+                {loading ? "…" : value}
+            </p>
             {caption && <p className="text-[11px] font-medium text-slate-400 truncate mt-0.5">{caption}</p>}
         </CardContent>
     </Card>

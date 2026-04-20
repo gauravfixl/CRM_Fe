@@ -118,21 +118,6 @@ const hrmNavigation = [
                 url: "/hrmcubicle/my-team/calendar",
                 icon: <span className="text-lg">🗓️</span>
             },
-            {
-                title: "On/Offboarding",
-                url: "/hrmcubicle/my-team/lifecycle",
-                icon: <span className="text-lg">🚀</span>
-            },
-            {
-                title: "Team Documents",
-                url: "/hrmcubicle/my-team/documents",
-                icon: <span className="text-lg">📂</span>
-            },
-            {
-                title: "Team Reports",
-                url: "/hrmcubicle/my-team/reports",
-                icon: <span className="text-lg">📑</span>
-            },
         ]
     },
     {
@@ -197,13 +182,9 @@ const hrmNavigation = [
             { title: "Leave", url: "/hrmcubicle/timeattend/leave", icon: <span className="text-lg">🌴</span> },
             { title: "Shift Allowance", url: "/hrmcubicle/timeattend/allowance", icon: <span className="text-lg">💵</span> },
             { title: "Approvals", url: "/hrmcubicle/timeattend/approvals", icon: <span className="text-lg">✔️</span> },
+            { title: "Comp-Off", url: "/hrmcubicle/timeattend/comp-off", icon: <span className="text-lg">🔄</span> },
             { title: "Reports", url: "/hrmcubicle/timeattend/reports", icon: <span className="text-lg">📊</span> },
             { title: "Settings", url: "/hrmcubicle/timeattend/settings", icon: <span className="text-lg">⚙️</span> },
-            { title: "Geo-fencing", url: "/hrmcubicle/timeattend/geofencing", icon: <span className="text-lg">📍</span> },
-            { title: "Biometric", url: "/hrmcubicle/timeattend/biometric", icon: <span className="text-lg">🔐</span> },
-            { title: "Comp-Off", url: "/hrmcubicle/timeattend/comp-off", icon: <span className="text-lg">🔄</span> },
-            { title: "Optional Holidays", url: "/hrmcubicle/timeattend/optional-holidays", icon: <span className="text-lg">🎌</span> },
-            { title: "Sandwich Rules", url: "/hrmcubicle/timeattend/sandwich-rules", icon: <span className="text-lg">🥪</span> },
         ]
     },
     {

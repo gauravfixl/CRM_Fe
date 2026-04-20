@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useMemo } from "react"
+import React, { useState, useMemo, useEffect } from "react"
 import {
     Layers,
     Plus,
@@ -94,6 +94,7 @@ import { ScrollArea } from "@/shared/components/ui/scroll-area"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/shared/components/ui/tooltip"
 import { useSalaryStore, type SalaryTemplate, type TemplateComponent } from "@/shared/data/salary-store"
 import { usePayrollStore } from "@/shared/data/payroll-store"
+import { getAllEmployees } from "@/modules/hrm/hooks/hrmHooks"
 import { motion, AnimatePresence } from "framer-motion"
 
 const formatINR = (amt: number) => `₹${Math.round(amt || 0).toLocaleString("en-IN")}`
@@ -177,19 +178,49 @@ export default function SalaryStructurePage() {
         computeCtcBreakdown,
     } = useSalaryStore()
     const payrollEmployees = usePayrollStore((s) => s.payrollEmployees)
+    const payRuns = usePayrollStore((s) => s.payRuns)
+    const applyTemplateToPayRunEmployees = usePayrollStore((s) => s.applyTemplateToPayRunEmployees)
     const { toast } = useToast()
 
-    // Unique employees by empCode
+    // ─ Backend employees (real data) ─
+    type BackendEmployee = { _id: string; employeeCode?: string; firstName?: string; lastName?: string; departmentId?: { name?: string } | string; positionId?: { name?: string } | string }
+    const [backendEmployees, setBackendEmployees] = useState<BackendEmployee[]>([])
+    useEffect(() => {
+        let cancelled = false
+        ;(async () => {
+            try {
+                const res: any = await getAllEmployees()
+                const list: BackendEmployee[] = res?.data?.employees ?? res?.data?.data?.employees ?? res?.data ?? []
+                if (!cancelled) setBackendEmployees(Array.isArray(list) ? list : [])
+            } catch {
+                // Silently ignore — fallback to store
+            }
+        })()
+        return () => { cancelled = true }
+    }, [])
+
+    // Unique employees by empCode — backend preferred, store as fallback
     const uniqueEmployees = useMemo(() => {
         const seen = new Set<string>()
         const out: { id: string; empCode: string; name: string; dept: string; designation: string }[] = []
+        // Backend employees first (real data)
+        for (const e of backendEmployees) {
+            const code = e.employeeCode ?? e._id
+            if (seen.has(code)) continue
+            const fullName = `${e.firstName ?? ""} ${e.lastName ?? ""}`.trim() || code
+            const dept = typeof e.departmentId === "object" && e.departmentId ? e.departmentId.name ?? "—" : "—"
+            const designation = typeof e.positionId === "object" && e.positionId ? e.positionId.name ?? "—" : "—"
+            seen.add(code)
+            out.push({ id: code, empCode: code, name: fullName, dept, designation })
+        }
+        // Fallback: store employees
         for (const e of payrollEmployees) {
             if (seen.has(e.empCode)) continue
             seen.add(e.empCode)
             out.push({ id: e.empCode, empCode: e.empCode, name: e.name, dept: e.dept, designation: e.designation })
         }
         return out
-    }, [payrollEmployees])
+    }, [payrollEmployees, backendEmployees])
 
     // ── UI state ───────────────────────────────────────────
     const [activeTab, setActiveTab] = useState("templates")
@@ -593,6 +624,41 @@ export default function SalaryStructurePage() {
         setAssignTargetId(null)
     }
 
+    // Apply template to active pay run (cross-page orchestration)
+    const handleApplyToPayRun = (templateId: string) => {
+        const tpl = templates.find((t) => t.id === templateId)
+        if (!tpl) return
+        if (!tpl.assignedEmployeeIds || tpl.assignedEmployeeIds.length === 0) {
+            toast({
+                title: "No assigned employees",
+                description: "Assign this template to employees first.",
+                variant: "destructive",
+            })
+            return
+        }
+        const activeRun = payRuns.find((r) => r.status === "Draft" || r.status === "Processing")
+        if (!activeRun) {
+            toast({
+                title: "No active pay run",
+                description: "Only Draft or Processing pay runs can accept template changes.",
+                variant: "destructive",
+            })
+            return
+        }
+        const { updated } = applyTemplateToPayRunEmployees(templateId, activeRun.id)
+        if (updated === 0) {
+            toast({
+                title: "No employees updated",
+                description: `None of the ${tpl.assignedEmployeeIds.length} assigned employees are in ${activeRun.month}.`,
+            })
+        } else {
+            toast({
+                title: `Template applied to ${updated}`,
+                description: `"${tpl.name}" rolled into ${activeRun.month}. Basic/HRA/PF/PT recomputed from CTC.`,
+            })
+        }
+    }
+
     // Assigned view handlers
     const openAssignedView = (id: string) => {
         setAssignedViewTargetId(id)
@@ -890,6 +956,9 @@ export default function SalaryStructurePage() {
                                                                     </DropdownMenuItem>
                                                                     <DropdownMenuItem onClick={() => openAssignedView(t.id)} className="cursor-pointer text-xs font-medium">
                                                                         <UserMinus size={13} className="mr-2" /> View assignments
+                                                                    </DropdownMenuItem>
+                                                                    <DropdownMenuItem onClick={() => handleApplyToPayRun(t.id)} className="cursor-pointer text-xs font-medium text-emerald-600 focus:text-emerald-600">
+                                                                        <Check size={13} className="mr-2" /> Apply to active pay run
                                                                     </DropdownMenuItem>
                                                                     <DropdownMenuSeparator />
                                                                     <DropdownMenuItem onClick={() => handleToggleActive(t)} className="cursor-pointer text-xs font-medium">

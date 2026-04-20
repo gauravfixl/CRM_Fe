@@ -39,6 +39,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/shared/components/ui/use-toast";
 import { useEngageStore, type Announcement, type EmployeeCelebration } from "@/shared/data/engage-store";
+import { required, minLength, maxLength, isFutureOrToday, runValidators } from "@/shared/utils/engage-validation";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/shared/components/ui/dialog";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
@@ -93,9 +94,30 @@ const AnnouncementsPage = () => {
     };
 
     const handleSave = () => {
-        if (!formData.title || !formData.content) {
-            toast({ title: "Keep it catchy!", description: "A headline and some buzz content is needed.", variant: "destructive" });
+        const titleError = runValidators(
+            required(formData.title, "title", "Title"),
+            minLength(formData.title ?? "", 3, "title", "Title"),
+            maxLength(formData.title ?? "", 120, "title", "Title")
+        );
+        if (titleError) {
+            toast({ title: "Invalid Title", description: titleError.message, variant: "destructive" });
             return;
+        }
+        const contentError = runValidators(
+            required(formData.content, "content", "Content"),
+            minLength(formData.content ?? "", 10, "content", "Content"),
+            maxLength(formData.content ?? "", 5000, "content", "Content")
+        );
+        if (contentError) {
+            toast({ title: "Invalid Content", description: contentError.message, variant: "destructive" });
+            return;
+        }
+        if (formData.status === "Scheduled") {
+            const scheduleError = isFutureOrToday(formData.scheduledDate ?? "", "scheduledDate", "Scheduled date");
+            if (scheduleError) {
+                toast({ title: "Invalid Schedule", description: scheduleError.message, variant: "destructive" });
+                return;
+            }
         }
 
         if (selectedAnn) {
@@ -278,13 +300,17 @@ const AnnouncementsPage = () => {
                                                         </Button>
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent align="end" className="rounded-xl p-1 shadow-xl border-none font-bold">
+                                                        <DropdownMenuItem onClick={() => { setSelectedAnn(ann); setFormData({ ...ann }); setIsDialogOpen(true); }}>
+                                                            <Edit size={12} className="mr-2" /> Edit
+                                                        </DropdownMenuItem>
                                                         <DropdownMenuItem onClick={() => updateAnnouncement(ann.id, { pinned: !ann.pinned })}>
                                                             <Pin size={12} className="mr-2" /> {ann.pinned ? 'Unpin' : 'Pin'}
                                                         </DropdownMenuItem>
                                                         <DropdownMenuItem onClick={() => updateAnnouncement(ann.id, { status: ann.status === 'Active' ? 'Archived' : 'Active' })}>
                                                             <Clock size={12} className="mr-2" /> {ann.status === 'Active' ? 'Archive' : 'Restore'}
                                                         </DropdownMenuItem>
-                                                        <DropdownMenuItem onClick={() => deleteAnnouncement(ann.id)} className="text-rose-500">
+                                                        <DropdownMenuSeparator />
+                                                        <DropdownMenuItem onClick={() => { deleteAnnouncement(ann.id); toast({ title: "Deleted", description: "Announcement removed." }); }} className="text-rose-500">
                                                             <Trash2 size={12} className="mr-2" /> Delete
                                                         </DropdownMenuItem>
                                                     </DropdownMenuContent>
@@ -354,8 +380,8 @@ const AnnouncementsPage = () => {
                                     <Megaphone size={32} />
                                 </div>
                                 <div>
-                                    <DialogTitle className="text-3xl font-bold tracking-tighter text-white">Create a Splash</DialogTitle>
-                                    <DialogDescription className="text-white/40 font-medium text-xs tracking-widest mt-2">&ldquo;Words that move the mission adelante&rdquo;</DialogDescription>
+                                    <DialogTitle className="text-3xl font-bold tracking-tighter text-white">{selectedAnn ? "Edit Announcement" : "Create a Splash"}</DialogTitle>
+                                    <DialogDescription className="text-white/40 font-medium text-xs tracking-widest mt-2">{selectedAnn ? "Update the broadcast" : "\u201CWords that move the mission adelante\u201D"}</DialogDescription>
                                 </div>
                             </div>
                         </DialogHeader>
@@ -372,9 +398,11 @@ const AnnouncementsPage = () => {
                                         <Input
                                             placeholder="Make it bold. Make it buzz."
                                             value={formData.title}
+                                            maxLength={120}
                                             onChange={e => setFormData({ ...formData, title: e.target.value })}
                                             className="h-16 border-slate-300 bg-slate-50/50 rounded-2xl px-6 font-black text-lg text-slate-900 focus:ring-4 focus:ring-indigo-50 transition-all shadow-inner"
                                         />
+                                        <p className="text-[10px] text-slate-400 font-bold ml-2">{(formData.title ?? "").length}/120</p>
                                     </div>
 
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -410,13 +438,98 @@ const AnnouncementsPage = () => {
                                     <Textarea
                                         placeholder="Tell the story..."
                                         value={formData.content}
+                                        maxLength={5000}
                                         onChange={e => setFormData({ ...formData, content: e.target.value })}
                                         className="flex-1 min-h-[160px] border-slate-300 bg-slate-50/50 rounded-[2rem] p-6 font-bold text-sm leading-relaxed focus:ring-4 focus:ring-indigo-50 resize-none shadow-inner"
                                     />
+                                    <p className="text-[10px] text-slate-400 font-bold ml-2">{(formData.content ?? "").length}/5000 • min 10</p>
                                 </div>
                             </div>
 
-                            {/* Bottom Section: Settings Switches */}
+                            {/* Target Audience */}
+                            <div className="p-8 bg-slate-50 rounded-[2.5rem] border border-slate-300 space-y-6 shadow-inner">
+                                <Label className="text-[10px] font-black text-slate-400 tracking-widest">Target Audience</Label>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div className="space-y-2">
+                                        <Label className="text-[10px] font-bold text-slate-400">Departments</Label>
+                                        <Select
+                                            value={formData.targetAudience?.departments?.[0] ?? "All"}
+                                            onValueChange={(v) => setFormData({ ...formData, targetAudience: { ...formData.targetAudience, departments: [v] } })}
+                                        >
+                                            <SelectTrigger className="h-11 bg-white rounded-xl"><SelectValue /></SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="All">All Departments</SelectItem>
+                                                <SelectItem value="Engineering">Engineering</SelectItem>
+                                                <SelectItem value="Sales">Sales</SelectItem>
+                                                <SelectItem value="HR">HR</SelectItem>
+                                                <SelectItem value="Finance">Finance</SelectItem>
+                                                <SelectItem value="Marketing">Marketing</SelectItem>
+                                                <SelectItem value="Product">Product</SelectItem>
+                                                <SelectItem value="Operations">Operations</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label className="text-[10px] font-bold text-slate-400">Locations</Label>
+                                        <Select
+                                            value={formData.targetAudience?.locations?.[0] ?? "All"}
+                                            onValueChange={(v) => setFormData({ ...formData, targetAudience: { ...formData.targetAudience, locations: [v] } })}
+                                        >
+                                            <SelectTrigger className="h-11 bg-white rounded-xl"><SelectValue /></SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="All">All Locations</SelectItem>
+                                                <SelectItem value="India">India</SelectItem>
+                                                <SelectItem value="USA">USA</SelectItem>
+                                                <SelectItem value="UK">UK</SelectItem>
+                                                <SelectItem value="Remote">Remote</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label className="text-[10px] font-bold text-slate-400">Roles</Label>
+                                        <Select
+                                            value={formData.targetAudience?.roles?.[0] ?? "All"}
+                                            onValueChange={(v) => setFormData({ ...formData, targetAudience: { ...formData.targetAudience, roles: [v] } })}
+                                        >
+                                            <SelectTrigger className="h-11 bg-white rounded-xl"><SelectValue /></SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="All">All Roles</SelectItem>
+                                                <SelectItem value="Manager">Managers</SelectItem>
+                                                <SelectItem value="IC">Individual Contributors</SelectItem>
+                                                <SelectItem value="Executive">Executives</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Status + Schedule */}
+                            <div className="p-8 bg-slate-50 rounded-[2.5rem] border border-slate-300 grid grid-cols-1 md:grid-cols-2 gap-6 shadow-inner">
+                                <div className="space-y-2">
+                                    <Label className="text-[10px] font-bold text-slate-400">Publication Status</Label>
+                                    <Select value={formData.status} onValueChange={(v) => setFormData({ ...formData, status: v })}>
+                                        <SelectTrigger className="h-12 bg-white rounded-xl"><SelectValue /></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="Active">Publish Now (Active)</SelectItem>
+                                            <SelectItem value="Scheduled">Schedule for Later</SelectItem>
+                                            <SelectItem value="Archived">Save to Archive</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                {formData.status === "Scheduled" && (
+                                    <div className="space-y-2">
+                                        <Label className="text-[10px] font-bold text-slate-400">Scheduled Date</Label>
+                                        <Input
+                                            type="date"
+                                            value={formData.scheduledDate ?? ""}
+                                            onChange={(e) => setFormData({ ...formData, scheduledDate: e.target.value })}
+                                            className="h-12 bg-white rounded-xl"
+                                        />
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Settings Switches */}
                             <div className="p-8 bg-slate-50 rounded-[2.5rem] border border-slate-300 grid grid-cols-1 md:grid-cols-2 gap-8 shadow-inner">
                                 <div className="flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
                                     <div className="space-y-1">
@@ -439,7 +552,7 @@ const AnnouncementsPage = () => {
                     <DialogFooter className="p-10 bg-slate-50 border-t border-slate-100 flex gap-4">
                         <Button variant="ghost" onClick={() => setIsDialogOpen(false)} className="h-14 px-8 font-black text-slate-400 text-[10px] tracking-wider hover:text-slate-600">Discard</Button>
                         <Button onClick={handleSave} className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-[1.5rem] h-14 px-12 font-black text-xs tracking-widest shadow-xl flex-1">
-                            Deploy Broadcast 🚀
+                            {selectedAnn ? "Save Changes" : "Deploy Broadcast 🚀"}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

@@ -3,7 +3,6 @@
 import React, { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  AlertTriangle,
   Download,
   Search,
   Plus,
@@ -13,13 +12,12 @@ import {
   CheckCircle2,
   XCircle,
   RefreshCw,
-  Calendar,
-  User,
-  FileText,
   Bell,
-  TrendingUp,
-  Target,
-  BarChart3,
+  Edit,
+  Trash2,
+  MoreVertical,
+  AlertCircle,
+  Loader2,
 } from "lucide-react";
 import { Card, CardContent } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
@@ -43,7 +41,42 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/shared/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/shared/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/shared/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { useEffect } from "react";
+import {
+  createImprovementPlan,
+  deleteImprovementPlan,
+  getAllEmployees,
+  getAllImprovementPlans,
+  updateImprovementPlan,
+} from "@/modules/hrm/hooks/hrmHooks";
+import {
+  firstError,
+  isAfter,
+  isFutureDate,
+  maxLength,
+  required,
+  type ValidationErrors,
+} from "@/shared/utils/validators";
+
+interface EmployeeOpt { id: string; label: string; name: string; empCode: string; department: string; }
 
 interface Milestone {
   title: string;
@@ -141,6 +174,27 @@ const statusConfig: Record<string, { color: string; bg: string; icon: React.Elem
   Terminated: { color: "text-red-700", bg: "bg-red-50", icon: XCircle },
 };
 
+const emptyPipForm = {
+  employeeId: "",           // backend ObjectId
+  employee: "",             // display name
+  employeeCode: "",
+  department: "",
+  startDate: "",
+  endDate: "",
+  goals: "",
+  reviewFrequency: "Bi-weekly",
+  manager: "",
+  areas: [] as string[],
+};
+
+// Frontend <-> Backend status mapping (backend enum: In Progress, Completed, Delayed)
+const toBackendStatus = (s: PIPRecord["status"]): "In Progress" | "Completed" | "Delayed" => {
+  if (s === "Completed") return "Completed";
+  if (s === "Terminated") return "Delayed";
+  if (s === "Extended") return "Delayed";
+  return "In Progress";
+};
+
 const PIPTrackingPage = () => {
   const { toast } = useToast();
   const [pips, setPips] = useState<PIPRecord[]>(mockPIPs);
@@ -148,14 +202,93 @@ const PIPTrackingPage = () => {
   const [statusFilter, setStatusFilter] = useState("All");
   const [expandedPip, setExpandedPip] = useState<string | null>(null);
   const [newPipOpen, setNewPipOpen] = useState(false);
+  const [editPip, setEditPip] = useState<PIPRecord | null>(null);
+  const [deletePip, setDeletePip] = useState<PIPRecord | null>(null);
+  const [milestonePip, setMilestonePip] = useState<PIPRecord | null>(null);
   const [reviewDialog, setReviewDialog] = useState<PIPRecord | null>(null);
   const [reviewNote, setReviewNote] = useState("");
   const [reviewRecommendation, setReviewRecommendation] = useState("Continue");
+  const [newMilestone, setNewMilestone] = useState<Milestone>({ title: "", dueDate: "", status: "Pending", notes: "" });
 
-  // New PIP form state
-  const [newPip, setNewPip] = useState({ employee: "", department: "", startDate: "", endDate: "", goals: "", reviewFrequency: "Bi-weekly", manager: "", areas: [] as string[] });
+  const [employees, setEmployees] = useState<EmployeeOpt[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [pipErrors, setPipErrors] = useState<ValidationErrors>({});
+  const [reviewErrors, setReviewErrors] = useState<ValidationErrors>({});
+  const [milestoneErrors, setMilestoneErrors] = useState<ValidationErrors>({});
+
+  // PIP form state (used for both new + edit)
+  const [newPip, setNewPip] = useState(emptyPipForm);
 
   const improvementOptions = ["Code Quality", "Communication", "Deadlines", "Attendance", "Performance", "Team Collaboration", "Documentation", "Process Compliance", "Sales Targets", "Client Follow-up"];
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      setLoading(true);
+      try {
+        const [pipRes, empRes] = await Promise.allSettled([getAllImprovementPlans(), getAllEmployees()]);
+        if (!mounted) return;
+        if (pipRes.status === "fulfilled") {
+          const rows = pipRes.value?.data?.plans ?? pipRes.value?.data?.data ?? [];
+          const mapped: PIPRecord[] = rows.map((p: any) => ({
+            id: String(p.id ?? p._id ?? ""),
+            employeeName: p.employee?.email || "Employee",
+            employeeId: p.employee?.employeeId || "-",
+            department: "",
+            manager: p.createdBy || "",
+            startDate: p.planDate ? new Date(p.planDate).toISOString().slice(0, 10) : "",
+            endDate: p.timeline ? new Date(p.timeline).toISOString().slice(0, 10) : "",
+            status: p.status === "Completed" ? "Completed" : p.status === "Delayed" ? "Extended" : "Active",
+            progress: 0,
+            improvementAreas: p.objectives || [],
+            goals: (p.actions || []).join(" • "),
+            reviewFrequency: "Bi-weekly",
+            milestones: [],
+            reviewNotes: [],
+          }));
+          if (mapped.length > 0) setPips((prev) => {
+            const byId = new Map(prev.map((x) => [x.id, x]));
+            mapped.forEach((m) => byId.set(m.id, { ...byId.get(m.id), ...m } as PIPRecord));
+            return Array.from(byId.values());
+          });
+        }
+        if (empRes.status === "fulfilled") {
+          const list = empRes.value?.data?.employees ?? empRes.value?.data?.data ?? [];
+          setEmployees(
+            list.map((e: any) => {
+              const name = e.personalInfo?.fullName || e.firstName || e.name || "";
+              return {
+                id: String(e._id ?? e.id ?? ""),
+                empCode: String(e.employeeId || ""),
+                department: e.department?.name || e.department || "",
+                name,
+                label: `${name} (${e.employeeId || e.personalInfo?.contact?.email || ""})`,
+              };
+            }).filter((e: EmployeeOpt) => e.id)
+          );
+        }
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    })();
+    return () => { mounted = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const validatePip = (): ValidationErrors => {
+    const e: ValidationErrors = {};
+    const emp = required(newPip.employee, "Employee");
+    if (emp) e.employee = emp;
+    const sd = firstError(required(newPip.startDate, "Start date"), isFutureDate(newPip.startDate, "Start date"));
+    if (!editPip && sd) e.startDate = sd;
+    const ed = firstError(required(newPip.endDate, "End date"), isAfter(newPip.endDate, newPip.startDate, "End date", "start date"));
+    if (ed) e.endDate = ed;
+    const g = firstError(required(newPip.goals, "Goals"), maxLength(newPip.goals, 1000, "Goals"));
+    if (g) e.goals = g;
+    if (newPip.areas.length === 0) e.areas = "Select at least one improvement area";
+    return e;
+  };
 
   const filtered = useMemo(() => {
     return pips.filter((p) => {
@@ -174,49 +307,220 @@ const PIPTrackingPage = () => {
 
   const upcomingReviews = pips.filter((p) => p.status === "Active" || p.status === "Extended").length;
 
-  const handleCreatePip = () => {
-    if (!newPip.employee || !newPip.startDate || !newPip.endDate) {
-      toast({ title: "Error", description: "Please fill all required fields.", variant: "destructive" });
+  const handleCreatePip = async () => {
+    const v = validatePip();
+    setPipErrors(v);
+    if (Object.keys(v).length > 0) {
+      toast({ title: "Validation failed", description: "Please correct the highlighted fields.", variant: "destructive" });
       return;
     }
-    const pip: PIPRecord = {
-      id: `PIP${String(pips.length + 1).padStart(3, "0")}`,
-      employeeName: newPip.employee, employeeId: `E${String(Math.floor(Math.random() * 100)).padStart(3, "0")}`,
-      department: newPip.department, manager: newPip.manager,
-      startDate: newPip.startDate, endDate: newPip.endDate,
-      status: "Active", progress: 0,
-      improvementAreas: newPip.areas, goals: newPip.goals,
-      reviewFrequency: newPip.reviewFrequency,
-      milestones: [], reviewNotes: [],
-    };
-    setPips([pip, ...pips]);
-    setNewPipOpen(false);
-    setNewPip({ employee: "", department: "", startDate: "", endDate: "", goals: "", reviewFrequency: "Bi-weekly", manager: "", areas: [] });
-    toast({ title: "PIP Created", description: `PIP created for ${pip.employeeName}.` });
+    setSaving(true);
+    try {
+      if (editPip) {
+        if (/^[a-f\d]{24}$/i.test(editPip.id)) {
+          try {
+            await updateImprovementPlan(editPip.id, {
+              objectives: newPip.areas,
+              actions: newPip.goals ? newPip.goals.split(" • ") : [],
+              timeline: newPip.endDate,
+              managerComments: newPip.manager,
+            });
+          } catch { /* local fallback */ }
+        }
+        setPips(pips.map((p) => (p.id === editPip.id ? {
+          ...p,
+          employeeName: newPip.employee,
+          department: newPip.department,
+          manager: newPip.manager,
+          startDate: newPip.startDate,
+          endDate: newPip.endDate,
+          goals: newPip.goals,
+          reviewFrequency: newPip.reviewFrequency,
+          improvementAreas: newPip.areas,
+        } : p)));
+        setEditPip(null);
+        setNewPipOpen(false);
+        setNewPip(emptyPipForm);
+        setPipErrors({});
+        toast({ title: "PIP Updated", description: `Saved changes for ${newPip.employee}.` });
+        return;
+      }
+
+      let backendId: string | null = null;
+      if (newPip.employeeId) {
+        try {
+          const res = await createImprovementPlan({
+            employee: newPip.employeeId,
+            objectives: newPip.areas,
+            actions: newPip.goals ? newPip.goals.split(" • ") : [],
+            timeline: newPip.endDate,
+            planDate: newPip.startDate,
+            managerComments: newPip.manager,
+          });
+          backendId = res?.data?.newPlan?._id ? String(res.data.newPlan._id) : null;
+        } catch { /* local fallback */ }
+      }
+
+      const pip: PIPRecord = {
+        id: backendId || `PIP${String(pips.length + 1).padStart(3, "0")}`,
+        employeeName: newPip.employee,
+        employeeId: newPip.employeeCode || `E${String(Math.floor(Math.random() * 900) + 100).padStart(3, "0")}`,
+        department: newPip.department,
+        manager: newPip.manager,
+        startDate: newPip.startDate,
+        endDate: newPip.endDate,
+        status: "Active",
+        progress: 0,
+        improvementAreas: newPip.areas,
+        goals: newPip.goals,
+        reviewFrequency: newPip.reviewFrequency,
+        milestones: [],
+        reviewNotes: [],
+      };
+      setPips([pip, ...pips]);
+      setNewPipOpen(false);
+      setNewPip(emptyPipForm);
+      setPipErrors({});
+      toast({ title: "PIP Created", description: `PIP created for ${pip.employeeName}.` });
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleReviewSubmit = () => {
-    if (!reviewDialog || !reviewNote) return;
-    setPips((prev) =>
-      prev.map((p) => {
-        if (p.id !== reviewDialog.id) return p;
-        const newNotes = [...p.reviewNotes, { date: new Date().toISOString().slice(0, 10), note: reviewNote, recommendation: reviewRecommendation }];
-        let newStatus = p.status;
-        let newProgress = p.progress;
-        if (reviewRecommendation === "Complete") { newStatus = "Completed"; newProgress = 100; }
-        if (reviewRecommendation === "Terminate") { newStatus = "Terminated"; }
-        if (reviewRecommendation === "Extend") { newStatus = "Extended"; }
-        return { ...p, reviewNotes: newNotes, status: newStatus as PIPRecord["status"], progress: newProgress };
-      })
-    );
-    setReviewDialog(null);
-    setReviewNote("");
-    setReviewRecommendation("Continue");
-    toast({ title: "Review Submitted", description: "PIP review has been recorded." });
+  const handleDeletePip = async () => {
+    if (!deletePip) return;
+    if (/^[a-f\d]{24}$/i.test(deletePip.id)) {
+      try { await deleteImprovementPlan(deletePip.id); } catch { /* proceed */ }
+    }
+    setPips(pips.filter((p) => p.id !== deletePip.id));
+    toast({ title: "PIP Removed", description: `${deletePip.employeeName}'s PIP record deleted.` });
+    setDeletePip(null);
+  };
+
+  const handleAddMilestone = () => {
+    if (!milestonePip) return;
+    const v: ValidationErrors = {};
+    const t = firstError(required(newMilestone.title, "Title"), maxLength(newMilestone.title, 200, "Title"));
+    if (t) v.title = t;
+    const d = required(newMilestone.dueDate, "Due date");
+    if (d) v.dueDate = d;
+    setMilestoneErrors(v);
+    if (Object.keys(v).length > 0) return;
+
+    setPips(pips.map((p) => (p.id === milestonePip.id ? { ...p, milestones: [...p.milestones, newMilestone] } : p)));
+    setMilestonePip({ ...milestonePip, milestones: [...milestonePip.milestones, newMilestone] });
+    setNewMilestone({ title: "", dueDate: "", status: "Pending", notes: "" });
+    setMilestoneErrors({});
+    toast({ title: "Milestone Added", description: `"${newMilestone.title}" tracked.` });
+  };
+
+  const handleUpdateMilestoneStatus = (idx: number, status: Milestone["status"]) => {
+    if (!milestonePip) return;
+    const updated = milestonePip.milestones.map((m, i) => (i === idx ? { ...m, status } : m));
+    const completedPct = Math.round((updated.filter((m) => m.status === "Completed").length / Math.max(updated.length, 1)) * 100);
+    setPips(pips.map((p) => (p.id === milestonePip.id ? { ...p, milestones: updated, progress: completedPct } : p)));
+    setMilestonePip({ ...milestonePip, milestones: updated, progress: completedPct });
+  };
+
+  const handleRemoveMilestone = (idx: number) => {
+    if (!milestonePip) return;
+    const updated = milestonePip.milestones.filter((_, i) => i !== idx);
+    const completedPct = updated.length === 0 ? 0 : Math.round((updated.filter((m) => m.status === "Completed").length / updated.length) * 100);
+    setPips(pips.map((p) => (p.id === milestonePip.id ? { ...p, milestones: updated, progress: completedPct } : p)));
+    setMilestonePip({ ...milestonePip, milestones: updated, progress: completedPct });
+  };
+
+  const handleReviewSubmit = async () => {
+    if (!reviewDialog) return;
+    const v: ValidationErrors = {};
+    const n = firstError(required(reviewNote, "Progress notes"), maxLength(reviewNote, 1000, "Notes"));
+    if (n) v.reviewNote = n;
+    setReviewErrors(v);
+    if (Object.keys(v).length > 0) return;
+
+    let newStatus = reviewDialog.status;
+    let newProgress = reviewDialog.progress;
+    if (reviewRecommendation === "Complete") { newStatus = "Completed"; newProgress = 100; }
+    if (reviewRecommendation === "Terminate") { newStatus = "Terminated"; }
+    if (reviewRecommendation === "Extend") { newStatus = "Extended"; }
+
+    setSaving(true);
+    try {
+      if (/^[a-f\d]{24}$/i.test(reviewDialog.id)) {
+        try {
+          await updateImprovementPlan(reviewDialog.id, {
+            status: toBackendStatus(newStatus),
+            managerComments: reviewNote,
+          });
+        } catch { /* local fallback */ }
+      }
+      setPips((prev) =>
+        prev.map((p) => {
+          if (p.id !== reviewDialog.id) return p;
+          const newNotes = [...p.reviewNotes, { date: new Date().toISOString().slice(0, 10), note: reviewNote, recommendation: reviewRecommendation }];
+          return { ...p, reviewNotes: newNotes, status: newStatus, progress: newProgress };
+        })
+      );
+      setReviewDialog(null);
+      setReviewNote("");
+      setReviewRecommendation("Continue");
+      setReviewErrors({});
+      toast({ title: "Review Submitted", description: "PIP review has been recorded." });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleExport = (pipId: string) => {
-    toast({ title: "Export Started", description: `PIP history for ${pipId} is being exported.` });
+    const pip = pips.find((p) => p.id === pipId);
+    if (!pip) return;
+    const text = [
+      `PIP REPORT: ${pip.id}`,
+      "=".repeat(50),
+      `Employee: ${pip.employeeName} (${pip.employeeId})`,
+      `Department: ${pip.department}`,
+      `Manager: ${pip.manager}`,
+      `Period: ${pip.startDate} → ${pip.endDate}`,
+      `Status: ${pip.status}    Progress: ${pip.progress}%`,
+      `Review Frequency: ${pip.reviewFrequency}`,
+      "",
+      "Improvement Areas:",
+      ...pip.improvementAreas.map((a) => ` - ${a}`),
+      "",
+      `Goals: ${pip.goals}`,
+      "",
+      "Milestones:",
+      ...pip.milestones.map((m) => ` - [${m.status}] ${m.title} (due ${m.dueDate}) ${m.notes ? `— ${m.notes}` : ""}`),
+      "",
+      "Review Notes:",
+      ...pip.reviewNotes.map((r) => ` - ${r.date} [${r.recommendation}] ${r.note}`),
+    ].join("\n");
+    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `PIP_${pip.id}_${pip.employeeName.replace(/\s/g, "_")}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast({ title: "Exported", description: `PIP history for ${pip.employeeName} downloaded.` });
+  };
+
+  const handleExportAll = () => {
+    const rows = [["ID", "Employee", "Dept", "Start", "End", "Status", "Progress", "Manager"]];
+    filtered.forEach((p) => rows.push([p.id, p.employeeName, p.department, p.startDate, p.endDate, p.status, `${p.progress}%`, p.manager]));
+    const csv = rows.map((r) => r.map((c) => `"${c}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `pip_tracker_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast({ title: "Bulk Export", description: `${filtered.length} PIP records exported.` });
   };
 
   const statCards = [
@@ -233,11 +537,15 @@ const PIPTrackingPage = () => {
           <h1 className="text-2xl font-bold text-slate-800">PIP Tracking</h1>
           <p className="text-slate-500 text-sm mt-1">Performance Improvement Plans management</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
+          {loading && <Loader2 className="w-4 h-4 animate-spin text-indigo-500" />}
           {upcomingReviews > 0 && (
             <Badge className="bg-amber-50 text-amber-700 border-amber-200 gap-1"><Bell className="w-3 h-3" /> {upcomingReviews} reviews due</Badge>
           )}
-          <Button onClick={() => setNewPipOpen(true)} className="gap-2 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white">
+          <Button variant="outline" onClick={handleExportAll} className="gap-2">
+            <Download className="w-4 h-4" /> Export All
+          </Button>
+          <Button onClick={() => { setEditPip(null); setNewPip(emptyPipForm); setPipErrors({}); setNewPipOpen(true); }} className="gap-2 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white">
             <Plus className="w-4 h-4" /> New PIP
           </Button>
         </div>
@@ -327,9 +635,50 @@ const PIPTrackingPage = () => {
                             {(pip.status === "Active" || pip.status === "Extended") && (
                               <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setReviewDialog(pip)}>Review</Button>
                             )}
-                            <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => handleExport(pip.id)}>
-                              <Download className="w-3.5 h-3.5" />
-                            </Button>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button size="sm" variant="ghost" className="h-7 w-7 p-0">
+                                  <MoreVertical className="w-3.5 h-3.5" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="rounded-xl p-1.5 w-48 font-bold shadow-2xl border-none">
+                                <DropdownMenuItem
+                                  className="rounded-lg text-[11px]"
+                                  onClick={() => {
+                                    setEditPip(pip);
+                                    setNewPip({
+                                      employeeId: pip.employeeId && /^[a-f\d]{24}$/i.test(pip.employeeId) ? pip.employeeId : "",
+                                      employee: pip.employeeName,
+                                      employeeCode: pip.employeeId,
+                                      department: pip.department,
+                                      startDate: pip.startDate,
+                                      endDate: pip.endDate,
+                                      goals: pip.goals,
+                                      reviewFrequency: pip.reviewFrequency,
+                                      manager: pip.manager,
+                                      areas: pip.improvementAreas,
+                                    });
+                                    setPipErrors({});
+                                    setNewPipOpen(true);
+                                  }}
+                                >
+                                  <Edit className="w-3.5 h-3.5 mr-2" /> Edit PIP
+                                </DropdownMenuItem>
+                                <DropdownMenuItem className="rounded-lg text-[11px]" onClick={() => setMilestonePip(pip)}>
+                                  <CheckCircle2 className="w-3.5 h-3.5 mr-2" /> Manage Milestones
+                                </DropdownMenuItem>
+                                <DropdownMenuItem className="rounded-lg text-[11px]" onClick={() => handleExport(pip.id)}>
+                                  <Download className="w-3.5 h-3.5 mr-2" /> Export History
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  className="rounded-lg text-[11px] text-rose-600 focus:bg-rose-50"
+                                  onClick={() => setDeletePip(pip)}
+                                >
+                                  <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </div>
                         </td>
                       </tr>
@@ -393,21 +742,56 @@ const PIPTrackingPage = () => {
         </CardContent>
       </Card>
 
-      {/* New PIP Dialog */}
-      <Dialog open={newPipOpen} onOpenChange={setNewPipOpen}>
+      {/* New / Edit PIP Dialog */}
+      <Dialog open={newPipOpen} onOpenChange={(open) => { setNewPipOpen(open); if (!open) { setEditPip(null); setNewPip(emptyPipForm); } }}>
         <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Create New PIP</DialogTitle>
-            <DialogDescription>Set up a Performance Improvement Plan for an employee</DialogDescription>
+            <DialogTitle>{editPip ? `Edit PIP — ${editPip.employeeName}` : "Create New PIP"}</DialogTitle>
+            <DialogDescription>{editPip ? "Update the plan details." : "Set up a Performance Improvement Plan for an employee"}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="grid grid-cols-2 gap-3">
-              <div><Label>Employee Name *</Label><Input value={newPip.employee} onChange={(e) => setNewPip({ ...newPip, employee: e.target.value })} /></div>
+              <div>
+                <Label>Employee *</Label>
+                {editPip ? (
+                  <Input value={newPip.employee} onChange={(e) => setNewPip({ ...newPip, employee: e.target.value })} className={pipErrors.employee ? "border-rose-400" : ""} />
+                ) : (
+                  <Select value={newPip.employeeId} onValueChange={(v) => {
+                    const emp = employees.find((e) => e.id === v);
+                    setNewPip({
+                      ...newPip,
+                      employeeId: v,
+                      employee: emp?.name || "",
+                      employeeCode: emp?.empCode || "",
+                      department: emp?.department || newPip.department,
+                    });
+                  }}>
+                    <SelectTrigger className={pipErrors.employee ? "border-rose-400" : ""}>
+                      <SelectValue placeholder={employees.length ? "Choose employee" : "Loading employees…"} />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-72 overflow-y-auto">
+                      {employees.length === 0 && <div className="px-3 py-2 text-xs text-slate-400 italic">No employees available</div>}
+                      {employees.map((e) => (
+                        <SelectItem key={e.id} value={e.id}>{e.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+                {pipErrors.employee && <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 mt-1"><AlertCircle size={10} /> {pipErrors.employee}</p>}
+              </div>
               <div><Label>Department</Label><Input value={newPip.department} onChange={(e) => setNewPip({ ...newPip, department: e.target.value })} /></div>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div><Label>Start Date *</Label><Input type="date" value={newPip.startDate} onChange={(e) => setNewPip({ ...newPip, startDate: e.target.value })} /></div>
-              <div><Label>End Date *</Label><Input type="date" value={newPip.endDate} onChange={(e) => setNewPip({ ...newPip, endDate: e.target.value })} /></div>
+              <div>
+                <Label>Start Date *</Label>
+                <Input type="date" value={newPip.startDate} onChange={(e) => setNewPip({ ...newPip, startDate: e.target.value })} className={pipErrors.startDate ? "border-rose-400" : ""} />
+                {pipErrors.startDate && <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 mt-1"><AlertCircle size={10} /> {pipErrors.startDate}</p>}
+              </div>
+              <div>
+                <Label>End Date *</Label>
+                <Input type="date" value={newPip.endDate} onChange={(e) => setNewPip({ ...newPip, endDate: e.target.value })} className={pipErrors.endDate ? "border-rose-400" : ""} />
+                {pipErrors.endDate && <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 mt-1"><AlertCircle size={10} /> {pipErrors.endDate}</p>}
+              </div>
             </div>
             <div><Label>Manager</Label><Input value={newPip.manager} onChange={(e) => setNewPip({ ...newPip, manager: e.target.value })} /></div>
             <div>
@@ -422,10 +806,11 @@ const PIPTrackingPage = () => {
               </Select>
             </div>
             <div>
-              <Label>Improvement Areas</Label>
-              <div className="flex flex-wrap gap-2 mt-1">
+              <Label>Improvement Areas *</Label>
+              <div className={cn("flex flex-wrap gap-2 mt-1 p-2 rounded border", pipErrors.areas ? "border-rose-400" : "border-transparent")}>
                 {improvementOptions.map((opt) => (
                   <button
+                    type="button"
                     key={opt}
                     onClick={() => setNewPip({ ...newPip, areas: newPip.areas.includes(opt) ? newPip.areas.filter((a) => a !== opt) : [...newPip.areas, opt] })}
                     className={cn("px-3 py-1 text-xs rounded-full border transition-colors", newPip.areas.includes(opt) ? "bg-[#8B5CF6] text-white border-[#8B5CF6]" : "bg-white text-slate-600 border-slate-200 hover:border-[#8B5CF6]")}
@@ -434,15 +819,109 @@ const PIPTrackingPage = () => {
                   </button>
                 ))}
               </div>
+              {pipErrors.areas && <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 mt-1"><AlertCircle size={10} /> {pipErrors.areas}</p>}
             </div>
-            <div><Label>Goals</Label><Textarea value={newPip.goals} onChange={(e) => setNewPip({ ...newPip, goals: e.target.value })} rows={3} /></div>
+            <div>
+              <Label>Goals *</Label>
+              <Textarea
+                maxLength={1000}
+                value={newPip.goals}
+                onChange={(e) => setNewPip({ ...newPip, goals: e.target.value })}
+                rows={3}
+                className={pipErrors.goals ? "border-rose-400" : ""}
+              />
+              <p className="text-[10px] text-slate-400 mt-0.5">{newPip.goals.length}/1000</p>
+              {pipErrors.goals && <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 mt-1"><AlertCircle size={10} /> {pipErrors.goals}</p>}
+            </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setNewPipOpen(false)}>Cancel</Button>
-            <Button onClick={handleCreatePip} className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white">Create PIP</Button>
+            <Button variant="outline" onClick={() => { setNewPipOpen(false); setEditPip(null); setNewPip(emptyPipForm); }} disabled={saving}>Cancel</Button>
+            <Button onClick={handleCreatePip} className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white gap-2" disabled={saving}>
+              {saving && <Loader2 className="w-3 h-3 animate-spin" />}
+              {saving ? "Saving..." : editPip ? "Save Changes" : "Create PIP"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Milestone Manager */}
+      <Dialog open={!!milestonePip} onOpenChange={(open) => { if (!open) { setMilestonePip(null); setNewMilestone({ title: "", dueDate: "", status: "Pending", notes: "" }); } }}>
+        <DialogContent className="sm:max-w-xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Milestones — {milestonePip?.employeeName}</DialogTitle>
+            <DialogDescription>Add, update status, or remove milestones. Progress updates automatically.</DialogDescription>
+          </DialogHeader>
+          <div className="py-2 space-y-3">
+            {(milestonePip?.milestones || []).length === 0 && (
+              <p className="text-xs text-slate-400 italic p-3 bg-slate-50 rounded">No milestones yet.</p>
+            )}
+            {(milestonePip?.milestones || []).map((m, i) => (
+              <div key={i} className="p-3 bg-slate-50 rounded-lg space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm font-bold text-slate-700">{m.title}</span>
+                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-rose-500" onClick={() => handleRemoveMilestone(i)}>
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+                <p className="text-xs text-slate-400">Due: {m.dueDate}{m.notes ? ` — ${m.notes}` : ""}</p>
+                <Select value={m.status} onValueChange={(v) => handleUpdateMilestoneStatus(i, v as Milestone["status"])}>
+                  <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Pending">Pending</SelectItem>
+                    <SelectItem value="In Progress">In Progress</SelectItem>
+                    <SelectItem value="Completed">Completed</SelectItem>
+                    <SelectItem value="Overdue">Overdue</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            ))}
+
+            <div className="mt-3 p-3 bg-indigo-50 rounded-lg space-y-2">
+              <Label className="text-[10px] uppercase tracking-widest text-indigo-600 font-bold">Add Milestone</Label>
+              <Input
+                maxLength={200}
+                placeholder="Title *"
+                value={newMilestone.title}
+                onChange={(e) => setNewMilestone({ ...newMilestone, title: e.target.value })}
+                className={milestoneErrors.title ? "border-rose-400" : ""}
+              />
+              {milestoneErrors.title && <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1"><AlertCircle size={10} /> {milestoneErrors.title}</p>}
+              <Input
+                type="date"
+                value={newMilestone.dueDate}
+                onChange={(e) => setNewMilestone({ ...newMilestone, dueDate: e.target.value })}
+                className={milestoneErrors.dueDate ? "border-rose-400" : ""}
+              />
+              {milestoneErrors.dueDate && <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1"><AlertCircle size={10} /> {milestoneErrors.dueDate}</p>}
+              <Input maxLength={500} placeholder="Notes (optional)" value={newMilestone.notes} onChange={(e) => setNewMilestone({ ...newMilestone, notes: e.target.value })} />
+              <Button className="w-full bg-[#8B5CF6] hover:bg-[#7C3AED] text-white" onClick={handleAddMilestone}>
+                <Plus className="w-3.5 h-3.5 mr-1" /> Add
+              </Button>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setMilestonePip(null)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deletePip} onOpenChange={(open) => { if (!open) setDeletePip(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this PIP?</AlertDialogTitle>
+            <AlertDialogDescription>
+              The PIP record for {deletePip?.employeeName} will be permanently removed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction className="bg-rose-600 hover:bg-rose-700 text-white" onClick={handleDeletePip}>
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Review Dialog */}
       <Dialog open={!!reviewDialog} onOpenChange={() => setReviewDialog(null)}>
@@ -454,7 +933,16 @@ const PIPTrackingPage = () => {
           <div className="space-y-4 py-2">
             <div>
               <Label>Progress Notes *</Label>
-              <Textarea value={reviewNote} onChange={(e) => setReviewNote(e.target.value)} rows={3} placeholder="Enter review notes..." />
+              <Textarea
+                maxLength={1000}
+                value={reviewNote}
+                onChange={(e) => setReviewNote(e.target.value)}
+                rows={3}
+                placeholder="Enter review notes..."
+                className={reviewErrors.reviewNote ? "border-rose-400" : ""}
+              />
+              <p className="text-[10px] text-slate-400 mt-0.5">{reviewNote.length}/1000</p>
+              {reviewErrors.reviewNote && <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 mt-1"><AlertCircle size={10} /> {reviewErrors.reviewNote}</p>}
             </div>
             <div>
               <Label>Recommendation</Label>
@@ -470,8 +958,11 @@ const PIPTrackingPage = () => {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setReviewDialog(null)}>Cancel</Button>
-            <Button onClick={handleReviewSubmit} className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white">Submit Review</Button>
+            <Button variant="outline" onClick={() => { setReviewDialog(null); setReviewErrors({}); }} disabled={saving}>Cancel</Button>
+            <Button onClick={handleReviewSubmit} className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white gap-2" disabled={saving}>
+              {saving && <Loader2 className="w-3 h-3 animate-spin" />}
+              {saving ? "Submitting..." : "Submit Review"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

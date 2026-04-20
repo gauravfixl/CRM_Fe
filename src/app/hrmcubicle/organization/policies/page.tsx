@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     FileText,
@@ -69,6 +69,41 @@ const PolicyCenterPage = () => {
         effectiveDate: new Date().toISOString().split('T')[0],
         description: ""
     });
+    const [uploadedFileName, setUploadedFileName] = useState<string>("");
+    const addFileInputRef = useRef<HTMLInputElement>(null);
+    const editFileInputRef = useRef<HTMLInputElement>(null);
+
+    const formatBytes = (bytes: number) => {
+        if (bytes < 1024) return `${bytes} B`;
+        if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+        return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+    };
+
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        if (file.size > 10 * 1024 * 1024) {
+            toast({ title: "File too large", description: "Policy document must be under 10 MB.", variant: "destructive" });
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = () => {
+            setFormData((prev) => ({
+                ...prev,
+                fileUrl: reader.result as string,
+                fileSize: formatBytes(file.size),
+            }));
+            setUploadedFileName(file.name);
+            toast({ title: "File ready", description: `${file.name} attached.` });
+        };
+        reader.readAsDataURL(file);
+        e.target.value = "";
+    };
+
+    const resetAddForm = () => {
+        setFormData({ title: "", category: "HR", version: "1.0", effectiveDate: new Date().toISOString().split('T')[0], description: "" });
+        setUploadedFileName("");
+    };
 
     const handleAddPolicy = () => {
         if (!formData.title || !formData.category) {
@@ -78,11 +113,11 @@ const PolicyCenterPage = () => {
         addPolicy({
             ...formData,
             lastUpdated: new Date().toISOString().split('T')[0],
-            fileSize: "0.0 MB"
+            fileSize: formData.fileSize || "0.0 MB"
         } as Omit<Policy, 'id'>);
         toast({ title: "Policy Added", description: `${formData.title} has been published.` });
         setIsAddDialogOpen(false);
-        setFormData({ title: "", category: "HR", version: "1.0", effectiveDate: new Date().toISOString().split('T')[0], description: "" });
+        resetAddForm();
     };
 
     const handleUpdatePolicy = () => {
@@ -313,14 +348,17 @@ const PolicyCenterPage = () => {
                                                     <span className="text-[10px] font-bold text-slate-500">{policy.fileSize || "1.2 MB"} • PDF</span>
                                                 </div>
                                                 <Button size="sm" className="h-8 rounded-lg bg-indigo-600 hover:bg-slate-900 text-white font-bold text-[10px] gap-2" onClick={() => {
-                                                    const content = `POLICY DOCUMENT\n\nTitle: ${policy.title}\nCategory: ${policy.category}\nVersion: ${policy.version}\nEffective Date: ${policy.effectiveDate}\nLast Updated: ${policy.lastUpdated}\n\nThis document contains the official policy guidelines for ${policy.title.toLowerCase()}.`;
-                                                    const blob = new Blob([content], { type: "text/plain" });
-                                                    const url = URL.createObjectURL(blob);
                                                     const link = document.createElement("a");
-                                                    link.href = url;
-                                                    link.download = `${policy.title.replace(/\s+/g, '_')}_v${policy.version}.txt`;
+                                                    if (policy.fileUrl) {
+                                                        link.href = policy.fileUrl;
+                                                        link.download = `${policy.title.replace(/\s+/g, '_')}_v${policy.version}`;
+                                                    } else {
+                                                        const content = `POLICY DOCUMENT\n\nTitle: ${policy.title}\nCategory: ${policy.category}\nVersion: ${policy.version}\nEffective Date: ${policy.effectiveDate}\nLast Updated: ${policy.lastUpdated}\n\n${policy.description || `This document contains the official policy guidelines for ${policy.title.toLowerCase()}.`}`;
+                                                        const blob = new Blob([content], { type: "text/plain" });
+                                                        link.href = URL.createObjectURL(blob);
+                                                        link.download = `${policy.title.replace(/\s+/g, '_')}_v${policy.version}.txt`;
+                                                    }
                                                     link.click();
-                                                    URL.revokeObjectURL(url);
                                                     toast({ title: "Downloaded", description: `${policy.title} document downloaded.` });
                                                 }}>
                                                     <Download size={14} /> Download
@@ -395,14 +433,43 @@ const PolicyCenterPage = () => {
                             />
                         </div>
 
+                        <div className="space-y-1.5">
+                            <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Description</Label>
+                            <Input
+                                className="rounded-lg h-10 bg-slate-50 border border-slate-300 font-medium px-4 text-xs focus:border-indigo-500 transition-colors"
+                                placeholder="Short summary (optional)"
+                                value={formData.description || ""}
+                                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                            />
+                        </div>
+
                         <div className="space-y-3 pt-2">
                             <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Document Upload</Label>
-                            <div className="border-2 border-dashed border-slate-200 rounded-[1.5rem] p-8 flex flex-col items-center justify-center bg-slate-50 hover:bg-indigo-50/30 hover:border-indigo-200 transition-all cursor-pointer group">
+                            <input
+                                ref={addFileInputRef}
+                                type="file"
+                                accept=".pdf,.doc,.docx,.txt,.md,application/pdf"
+                                onChange={handleFileSelect}
+                                className="hidden"
+                            />
+                            <div
+                                onClick={() => addFileInputRef.current?.click()}
+                                className="border-2 border-dashed border-slate-200 rounded-[1.5rem] p-8 flex flex-col items-center justify-center bg-slate-50 hover:bg-indigo-50/30 hover:border-indigo-200 transition-all cursor-pointer group"
+                            >
                                 <div className="h-12 w-12 bg-white rounded-full flex items-center justify-center shadow-sm border border-slate-100 mb-3 group-hover:scale-110 transition-transform">
                                     <Download size={20} className="text-indigo-600 rotate-180" />
                                 </div>
-                                <p className="text-xs font-bold text-slate-900">Click to upload policy PDF</p>
-                                <p className="text-[10px] text-slate-400 font-medium">Max size 10MB</p>
+                                {uploadedFileName ? (
+                                    <>
+                                        <p className="text-xs font-bold text-emerald-600">{uploadedFileName}</p>
+                                        <p className="text-[10px] text-slate-400 font-medium">{formData.fileSize} · Click to replace</p>
+                                    </>
+                                ) : (
+                                    <>
+                                        <p className="text-xs font-bold text-slate-900">Click to upload policy document</p>
+                                        <p className="text-[10px] text-slate-400 font-medium">PDF, DOC, DOCX, TXT · Max 10 MB</p>
+                                    </>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -414,7 +481,7 @@ const PolicyCenterPage = () => {
                         >
                             Publish Policy
                         </Button>
-                        <Button variant="outline" className="h-10 px-6 rounded-lg font-bold border-slate-300 text-slate-600 text-xs" onClick={() => setIsAddDialogOpen(false)}>
+                        <Button variant="outline" className="h-10 px-6 rounded-lg font-bold border-slate-300 text-slate-600 text-xs" onClick={() => { setIsAddDialogOpen(false); resetAddForm(); }}>
                             Cancel
                         </Button>
                     </DialogFooter>
@@ -478,6 +545,38 @@ const PolicyCenterPage = () => {
                                 onChange={(e) => setFormData({ ...formData, effectiveDate: e.target.value })}
                             />
                         </div>
+
+                        <div className="space-y-1.5">
+                            <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Description</Label>
+                            <Input
+                                className="rounded-lg h-10 bg-slate-50 border border-slate-300 font-medium px-4 text-xs focus:border-indigo-500 transition-colors"
+                                value={formData.description || ""}
+                                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                            />
+                        </div>
+
+                        <div className="space-y-3 pt-2">
+                            <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Replace Document (optional)</Label>
+                            <input
+                                ref={editFileInputRef}
+                                type="file"
+                                accept=".pdf,.doc,.docx,.txt,.md,application/pdf"
+                                onChange={handleFileSelect}
+                                className="hidden"
+                            />
+                            <div
+                                onClick={() => editFileInputRef.current?.click()}
+                                className="border-2 border-dashed border-slate-200 rounded-[1.5rem] p-5 flex items-center gap-3 bg-slate-50 hover:bg-indigo-50/30 hover:border-indigo-200 transition-all cursor-pointer"
+                            >
+                                <div className="h-10 w-10 bg-white rounded-full flex items-center justify-center shadow-sm border border-slate-100">
+                                    <FileText size={16} className="text-indigo-600" />
+                                </div>
+                                <div className="flex-1">
+                                    <p className="text-xs font-bold text-slate-900">{uploadedFileName || (formData.fileUrl ? "Current document" : "No file attached")}</p>
+                                    <p className="text-[10px] text-slate-400 font-medium">{formData.fileSize || ""} · Click to replace</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <DialogFooter className="gap-2 pt-6 border-t border-slate-200 sm:justify-end">
@@ -487,7 +586,7 @@ const PolicyCenterPage = () => {
                         >
                             Save Changes
                         </Button>
-                        <Button variant="outline" className="h-10 px-6 rounded-lg font-bold border-slate-300 text-slate-600 text-xs" onClick={() => setIsEditDialogOpen(false)}>
+                        <Button variant="outline" className="h-10 px-6 rounded-lg font-bold border-slate-300 text-slate-600 text-xs" onClick={() => { setIsEditDialogOpen(false); setUploadedFileName(""); }}>
                             Cancel
                         </Button>
                     </DialogFooter>

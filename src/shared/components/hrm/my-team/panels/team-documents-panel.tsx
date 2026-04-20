@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-    Folder,
     FileText,
     Search,
     Download,
@@ -12,41 +11,31 @@ import {
     MoreHorizontal,
     Plus,
     ShieldCheck,
-    Lock,
     History,
     FileCheck,
     Briefcase,
     Zap,
-    TrendingUp,
-    Filter,
     X,
-    FileCode,
     Archive,
-    Maximize2,
     RotateCw,
     ZoomIn,
     ZoomOut,
     Printer,
     FileUp,
     ChevronLeft,
-    ChevronRight,
-    Settings
+    ChevronRight
 } from "lucide-react";
 import {
     Dialog,
     DialogContent,
-    DialogHeader,
     DialogTitle,
-    DialogDescription,
-    DialogFooter
+    DialogDescription
 } from "@/shared/components/ui/dialog";
 import { Label } from "@/shared/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/shared/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Badge } from "@/shared/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/shared/components/ui/avatar";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/shared/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
 import {
     DropdownMenu,
@@ -56,7 +45,7 @@ import {
 } from "@/shared/components/ui/dropdown-menu";
 import { useToast } from "@/shared/components/ui/use-toast";
 
-const TeamDocumentsPage = () => {
+const TeamDocumentsPanel = () => {
     const { toast } = useToast();
     const [mounted, setMounted] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
@@ -98,7 +87,7 @@ const TeamDocumentsPage = () => {
         const matchesSearch = doc.name.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesCategory = !selectedCategory || doc.category === selectedCategory;
         const matchesType = fileTypeFilter === "all" || doc.format.toLowerCase() === fileTypeFilter.toLowerCase();
-        const matchesRecent = !isRecentOnly || (Date.now() - doc.timestamp < 7 * 24 * 60 * 60 * 1000); // Last 7 days
+        const matchesRecent = !isRecentOnly || (Date.now() - doc.timestamp < 7 * 24 * 60 * 60 * 1000);
         return matchesSearch && matchesCategory && matchesType && matchesRecent;
     });
 
@@ -133,225 +122,217 @@ const TeamDocumentsPage = () => {
         setDocuments([newDoc, ...documents]);
         setIsUploadOpen(false);
         setUploadedFile(null);
-        setSelectedUploadCategory("Handbooks"); // Reset to default
+        setSelectedUploadCategory("Handbooks");
         toast({ title: "File Uploaded", description: `${name} has been added to ${category}.` });
     };
 
     if (!mounted) return null;
 
     return (
-        <div className="flex flex-col min-h-screen bg-[#f8fafc] font-sans relative" style={{ zoom: "90%" }}>
-            <header className="py-2.5 px-8 bg-white border-b border-slate-100 sticky top-0 z-30 shadow-sm rounded-b-3xl">
-                <div className="max-w-[1600px] mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <div className="text-start">
-                        <h1 className="text-3xl font-bold tracking-tight text-slate-900 leading-none">Team Repository</h1>
-                        <p className="text-slate-500 font-semibold text-sm mt-2">Shared team assets, policy documents, and employee letters.</p>
+        <div className="space-y-8">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div className="text-start">
+                    <h2 className="text-2xl font-bold tracking-tight text-slate-900 leading-none">Team Repository</h2>
+                    <p className="text-slate-500 font-semibold text-xs mt-2">Shared team assets, policy documents, and employee letters.</p>
+                </div>
+                <div className="flex items-center gap-3">
+                    <Button
+                        variant={isRecentOnly ? "default" : "outline"}
+                        className={`rounded-xl h-11 border-none shadow-sm font-bold text-[10px] tracking-widest px-5 transition-all ${isRecentOnly ? 'bg-indigo-600 text-white' : 'bg-white text-slate-600'}`}
+                        onClick={() => setIsRecentOnly(!isRecentOnly)}
+                    >
+                        <History className="h-4 w-4 mr-2" /> RECENT FILES
+                    </Button>
+                    <Button
+                        className="bg-indigo-600 hover:bg-slate-900 text-white rounded-xl font-bold h-11 px-6 shadow-lg shadow-indigo-100 transition-all text-[10px] tracking-widest border-none"
+                        onClick={() => setIsUploadOpen(true)}
+                    >
+                        <Plus className="h-4 w-4 mr-2" /> UPLOAD DOCUMENT
+                    </Button>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {categories.map((f, i) => (
+                    <Card
+                        key={i}
+                        className={`min-w-[190px] border-2 shadow-sm transition-all cursor-pointer group rounded-[1.75rem] ${f.borderColor} ${selectedCategory === f.label ? 'ring-4 ring-indigo-500/10 bg-white translate-y-[-4px] shadow-xl' : `${f.cardBg} hover:bg-white hover:translate-y-[-2px] hover:shadow-lg`}`}
+                        onClick={() => setSelectedCategory(selectedCategory === f.label ? null : f.label)}
+                    >
+                        <CardContent className="p-5 text-start">
+                            <div className={`h-12 w-12 rounded-2xl mb-5 ${f.bg} flex items-center justify-center transition-transform group-hover:scale-110 duration-300`}>
+                                {React.cloneElement(f.icon as React.ReactElement, { size: 20, className: f.color })}
+                            </div>
+                            <div className="flex justify-between items-end">
+                                <div>
+                                    <h4 className="font-black text-slate-800 text-sm tracking-tight">{f.label}</h4>
+                                    <p className="text-[10px] font-black text-slate-400 tracking-widest mt-1.5 uppercase">
+                                        {documents.filter(d => d.category === f.label).length.toString().padStart(2, '0')} Resources
+                                    </p>
+                                </div>
+                                {selectedCategory === f.label ? (
+                                    <div className="h-6 w-6 rounded-full bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-200">
+                                        <FileCheck size={12} className="text-white" />
+                                    </div>
+                                ) : (
+                                    <div className="h-6 w-6 rounded-full bg-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all border border-slate-100">
+                                        <Plus size={12} className="text-slate-400" />
+                                    </div>
+                                )}
+                            </div>
+                        </CardContent>
+                    </Card>
+                ))}
+            </div>
+
+            <Card className="border-none shadow-sm overflow-hidden bg-white rounded-2xl border border-slate-100/50">
+                <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 bg-slate-50/10 p-6">
+                    <div className="relative w-full md:w-80">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                        <Input
+                            placeholder="Search files..."
+                            className="pl-10 h-10 rounded-xl border-none bg-slate-100/50 text-sm font-bold focus:bg-white transition-all shadow-inner"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
                     </div>
                     <div className="flex items-center gap-3">
-                        <Button
-                            variant={isRecentOnly ? "default" : "outline"}
-                            className={`rounded-xl h-11 border-none shadow-sm font-bold text-[10px] tracking-widest px-5 transition-all ${isRecentOnly ? 'bg-indigo-600 text-white' : 'bg-white text-slate-600'}`}
-                            onClick={() => setIsRecentOnly(!isRecentOnly)}
-                        >
-                            <History className="h-4 w-4 mr-2" /> RECENT FILES
-                        </Button>
-                        <Button
-                            className="bg-indigo-600 hover:bg-slate-900 text-white rounded-xl font-bold h-11 px-6 shadow-lg shadow-indigo-100 transition-all text-[10px] tracking-widest border-none"
-                            onClick={() => setIsUploadOpen(true)}
-                        >
-                            <Plus className="h-4 w-4 mr-2" /> UPLOAD DOCUMENT
-                        </Button>
+                        <Select value={fileTypeFilter} onValueChange={setFileTypeFilter}>
+                            <SelectTrigger className="w-[120px] h-10 border border-slate-200 shadow-sm rounded-xl font-bold text-xs bg-white text-slate-600">
+                                <SelectValue placeholder="Format" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-white border-none shadow-xl rounded-xl">
+                                <SelectItem value="all" className="text-xs font-bold py-2">All Formats</SelectItem>
+                                <SelectItem value="pdf" className="text-xs font-bold py-2">PDF Records</SelectItem>
+                                <SelectItem value="docx" className="text-xs font-bold py-2">Word Files</SelectItem>
+                                <SelectItem value="zip" className="text-xs font-bold py-2">Archives</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        {(selectedCategory || fileTypeFilter !== "all" || isRecentOnly) && (
+                            <Button variant="ghost" size="icon" className="h-10 w-10 text-rose-500 hover:bg-rose-50 rounded-xl" onClick={() => {
+                                setSelectedCategory(null);
+                                setFileTypeFilter("all");
+                                setIsRecentOnly(false);
+                            }}>
+                                <X size={16} />
+                            </Button>
+                        )}
                     </div>
-                </div>
-            </header>
-
-            <main className="p-8 max-w-[1600px] mx-auto w-full space-y-8">
-
-                {/* Folder shortcuts */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {categories.map((f, i) => (
-                        <Card
-                            key={i}
-                            className={`min-w-[190px] border-2 shadow-sm transition-all cursor-pointer group rounded-[1.75rem] ${f.borderColor} ${selectedCategory === f.label ? 'ring-4 ring-indigo-500/10 bg-white translate-y-[-4px] shadow-xl' : `${f.cardBg} hover:bg-white hover:translate-y-[-2px] hover:shadow-lg`}`}
-                            onClick={() => setSelectedCategory(selectedCategory === f.label ? null : f.label)}
-                        >
-                            <CardContent className="p-5 text-start">
-                                <div className={`h-12 w-12 rounded-2xl mb-5 ${f.bg} flex items-center justify-center transition-transform group-hover:scale-110 duration-300`}>
-                                    {React.cloneElement(f.icon as React.ReactElement, { size: 20, className: f.color })}
-                                </div>
-                                <div className="flex justify-between items-end">
-                                    <div>
-                                        <h4 className="font-black text-slate-800 text-sm tracking-tight">{f.label}</h4>
-                                        <p className="text-[10px] font-black text-slate-400 tracking-widest mt-1.5 uppercase">
-                                            {documents.filter(d => d.category === f.label).length.toString().padStart(2, '0')} Resources
-                                        </p>
-                                    </div>
-                                    {selectedCategory === f.label ? (
-                                        <div className="h-6 w-6 rounded-full bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-200">
-                                            <FileCheck size={12} className="text-white" />
-                                        </div>
-                                    ) : (
-                                        <div className="h-6 w-6 rounded-full bg-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all border border-slate-100">
-                                            <Plus size={12} className="text-slate-400" />
-                                        </div>
-                                    )}
-                                </div>
-                            </CardContent>
-                        </Card>
-                    ))}
-                </div>
-
-                <Card className="border-none shadow-sm overflow-hidden bg-white rounded-2xl border border-slate-100/50">
-                    <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 bg-slate-50/10 p-6">
-                        <div className="relative w-full md:w-80">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                            <Input
-                                placeholder="Search files..."
-                                className="pl-10 h-10 rounded-xl border-none bg-slate-100/50 text-sm font-bold focus:bg-white transition-all shadow-inner"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                            />
-                        </div>
-                        <div className="flex items-center gap-3">
-                            <Select value={fileTypeFilter} onValueChange={setFileTypeFilter}>
-                                <SelectTrigger className="w-[120px] h-10 border border-slate-200 shadow-sm rounded-xl font-bold text-xs bg-white text-slate-600">
-                                    <SelectValue placeholder="Format" />
-                                </SelectTrigger>
-                                <SelectContent className="bg-white border-none shadow-xl rounded-xl">
-                                    <SelectItem value="all" className="text-xs font-bold py-2">All Formats</SelectItem>
-                                    <SelectItem value="pdf" className="text-xs font-bold py-2">PDF Records</SelectItem>
-                                    <SelectItem value="docx" className="text-xs font-bold py-2">Word Files</SelectItem>
-                                    <SelectItem value="zip" className="text-xs font-bold py-2">Archives</SelectItem>
-                                </SelectContent>
-                            </Select>
-                            {(selectedCategory || fileTypeFilter !== "all" || isRecentOnly) && (
-                                <Button variant="ghost" size="icon" className="h-10 w-10 text-rose-500 hover:bg-rose-50 rounded-xl" onClick={() => {
-                                    setSelectedCategory(null);
-                                    setFileTypeFilter("all");
-                                    setIsRecentOnly(false);
-                                }}>
-                                    <X size={16} />
-                                </Button>
-                            )}
-                        </div>
-                    </CardHeader>
-                    <CardContent className="p-0">
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left">
-                                <thead>
-                                    <tr className="bg-slate-50/50 text-[10px] font-bold text-slate-400 tracking-widest border-b border-slate-100">
-                                        <th className="px-6 py-4">Document</th>
-                                        <th className="px-6 py-4">Category</th>
-                                        <th className="px-6 py-4 text-center">Owner</th>
-                                        <th className="px-6 py-4 text-center">Status</th>
-                                        <th className="px-6 py-4 text-right pr-12">Actions</th>
+                </CardHeader>
+                <CardContent className="p-0">
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left">
+                            <thead>
+                                <tr className="bg-slate-50/50 text-[10px] font-bold text-slate-400 tracking-widest border-b border-slate-100">
+                                    <th className="px-6 py-4">Document</th>
+                                    <th className="px-6 py-4">Category</th>
+                                    <th className="px-6 py-4 text-center">Owner</th>
+                                    <th className="px-6 py-4 text-center">Status</th>
+                                    <th className="px-6 py-4 text-right pr-12">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100/30">
+                                {filteredDocuments.length > 0 ? filteredDocuments.map((doc) => (
+                                    <tr key={doc.id} className="hover:bg-indigo-50/20 transition-colors group">
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-4">
+                                                <div className={`h-9 w-9 flex items-center justify-center rounded-xl shadow-sm border ${doc.format === 'PDF' ? 'bg-rose-50 text-rose-600 border-rose-100/30' :
+                                                    doc.format === 'DOCX' ? 'bg-blue-50 text-blue-600 border-blue-100/30' :
+                                                        'bg-indigo-50 text-indigo-600 border-indigo-100/30'
+                                                    }`}>
+                                                    {doc.format === 'ZIP' ? <Archive size={16} /> : <FileText size={16} />}
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-bold text-slate-800 leading-tight truncate max-w-[200px]">{doc.name}</p>
+                                                    <p className="text-[10px] text-slate-400 font-bold mt-1 tracking-tight">{doc.date} • {doc.size}</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <Badge className={`text-[9px] font-bold tracking-widest px-2.5 py-1 border-none shadow-none ${doc.category === 'Handbooks' ? 'bg-indigo-50 text-indigo-600' :
+                                                doc.category === 'Policies' ? 'bg-emerald-50 text-emerald-600' :
+                                                    doc.category === 'Templates' ? 'bg-amber-50 text-amber-600' :
+                                                        'bg-rose-50 text-rose-600'
+                                                } rounded-lg`}>
+                                                {doc.category}
+                                            </Badge>
+                                        </td>
+                                        <td className="px-6 py-4 text-center">
+                                            <span className="text-xs font-bold text-slate-600 tracking-tight">{doc.owner}</span>
+                                        </td>
+                                        <td className="px-6 py-4 text-center">
+                                            <div className="flex items-center justify-center gap-1.5 text-emerald-600 font-bold text-[9px] tracking-widest leading-none">
+                                                <ShieldCheck size={14} className="text-emerald-500" /> {doc.status}
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 text-right pr-6">
+                                            <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-8 w-8 rounded-lg hover:bg-white hover:shadow-sm text-slate-400 hover:text-indigo-600 border-none"
+                                                    onClick={() => {
+                                                        setSelectedFile(doc);
+                                                        setIsPreviewOpen(true);
+                                                    }}
+                                                >
+                                                    <Eye size={14} />
+                                                </Button>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-white hover:shadow-sm text-slate-400 hover:text-indigo-600 border-none" onClick={() => toast({ title: "Downloading", description: `Fetching ${doc.name} (${doc.size})` })}><Download size={14} /></Button>
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg border-none"><MoreHorizontal size={14} className="text-slate-300" /></Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end" className="rounded-xl p-1.5 border-none shadow-xl bg-white min-w-[160px]">
+                                                        <DropdownMenuItem className="p-2.5 rounded-lg font-bold text-[10px] tracking-widest text-slate-600 cursor-pointer focus:bg-indigo-50" onClick={() => {
+                                                            const shareableLink = `${window.location.origin}/hrmcubicle/my-team/members?doc=${doc.id}`;
+                                                            navigator.clipboard.writeText(shareableLink).then(() => {
+                                                                toast({ title: "Link Copied", description: `Shareable link for "${doc.name}" has been copied to your clipboard.` });
+                                                            });
+                                                        }}>
+                                                            <Share2 className="h-3.5 w-3.5 mr-2.5" /> Share Access
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem className="p-2.5 rounded-lg font-bold text-[10px] tracking-widest text-rose-600 cursor-pointer focus:bg-rose-50" onClick={() => {
+                                                            setDocuments(prev => prev.filter(d => d.id !== doc.id));
+                                                            toast({ title: "Archived", description: `"${doc.name}" has been moved to vault history.` });
+                                                        }}>
+                                                            <History className="h-3.5 w-3.5 mr-2.5" /> Archive
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </div>
+                                        </td>
                                     </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-100/30">
-                                    {filteredDocuments.length > 0 ? filteredDocuments.map((doc) => (
-                                        <tr key={doc.id} className="hover:bg-indigo-50/20 transition-colors group">
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center gap-4">
-                                                    <div className={`h-9 w-9 flex items-center justify-center rounded-xl shadow-sm border ${doc.format === 'PDF' ? 'bg-rose-50 text-rose-600 border-rose-100/30' :
-                                                        doc.format === 'DOCX' ? 'bg-blue-50 text-blue-600 border-blue-100/30' :
-                                                            'bg-indigo-50 text-indigo-600 border-indigo-100/30'
-                                                        }`}>
-                                                        {doc.format === 'ZIP' ? <Archive size={16} /> : <FileText size={16} />}
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-sm font-bold text-slate-800 leading-tight truncate max-w-[200px]">{doc.name}</p>
-                                                        <p className="text-[10px] text-slate-400 font-bold mt-1 tracking-tight">{doc.date} • {doc.size}</p>
-                                                    </div>
+                                )) : (
+                                    <tr>
+                                        <td colSpan={5} className="px-6 py-20 text-center">
+                                            <div className="flex flex-col items-center justify-center space-y-4">
+                                                <div className="h-16 w-16 bg-slate-50 flex items-center justify-center rounded-2xl text-slate-200">
+                                                    <Search size={32} />
                                                 </div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <Badge className={`text-[9px] font-bold tracking-widest px-2.5 py-1 border-none shadow-none ${doc.category === 'Handbooks' ? 'bg-indigo-50 text-indigo-600' :
-                                                    doc.category === 'Policies' ? 'bg-emerald-50 text-emerald-600' :
-                                                        doc.category === 'Templates' ? 'bg-amber-50 text-amber-600' :
-                                                            'bg-rose-50 text-rose-600'
-                                                    } rounded-lg`}>
-                                                    {doc.category}
-                                                </Badge>
-                                            </td>
-                                            <td className="px-6 py-4 text-center">
-                                                <span className="text-xs font-bold text-slate-600 tracking-tight">{doc.owner}</span>
-                                            </td>
-                                            <td className="px-6 py-4 text-center">
-                                                <div className="flex items-center justify-center gap-1.5 text-emerald-600 font-bold text-[9px] tracking-widest leading-none">
-                                                    <ShieldCheck size={14} className="text-emerald-500" /> {doc.status}
+                                                <div>
+                                                    <p className="font-bold text-slate-900">No documents found</p>
+                                                    <p className="text-[10px] font-bold text-slate-400 tracking-widest uppercase mt-1">Try adjusting your filters or search query</p>
                                                 </div>
-                                            </td>
-                                            <td className="px-6 py-4 text-right pr-6">
-                                                <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all">
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="h-8 w-8 rounded-lg hover:bg-white hover:shadow-sm text-slate-400 hover:text-indigo-600 border-none"
-                                                        onClick={() => {
-                                                            setSelectedFile(doc);
-                                                            setIsPreviewOpen(true);
-                                                        }}
-                                                    >
-                                                        <Eye size={14} />
-                                                    </Button>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-white hover:shadow-sm text-slate-400 hover:text-indigo-600 border-none" onClick={() => toast({ title: "Downloading", description: `Fetching ${doc.name} (${doc.size})` })}><Download size={14} /></Button>
-                                                    <DropdownMenu>
-                                                        <DropdownMenuTrigger asChild>
-                                                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg border-none"><MoreHorizontal size={14} className="text-slate-300" /></Button>
-                                                        </DropdownMenuTrigger>
-                                                        <DropdownMenuContent align="end" className="rounded-xl p-1.5 border-none shadow-xl bg-white min-w-[160px]">
-                                                            <DropdownMenuItem className="p-2.5 rounded-lg font-bold text-[10px] tracking-widest text-slate-600 cursor-pointer focus:bg-indigo-50" onClick={() => {
-                                                                const shareableLink = `${window.location.origin}/hrmcubicle/my-team/documents/shared/${doc.id}`;
-                                                                navigator.clipboard.writeText(shareableLink).then(() => {
-                                                                    toast({ title: "Link Copied", description: `Shareable link for "${doc.name}" has been copied to your clipboard.` });
-                                                                });
-                                                            }}>
-                                                                <Share2 className="h-3.5 w-3.5 mr-2.5" /> Share Access
-                                                            </DropdownMenuItem>
-                                                            <DropdownMenuItem className="p-2.5 rounded-lg font-bold text-[10px] tracking-widest text-rose-600 cursor-pointer focus:bg-rose-50" onClick={() => {
-                                                                setDocuments(prev => prev.filter(d => d.id !== doc.id));
-                                                                toast({ title: "Archived", description: `"${doc.name}" has been moved to vault history.` });
-                                                            }}>
-                                                                <History className="h-3.5 w-3.5 mr-2.5" /> Archive
-                                                            </DropdownMenuItem>
-                                                        </DropdownMenuContent>
-                                                    </DropdownMenu>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    )) : (
-                                        <tr>
-                                            <td colSpan={5} className="px-6 py-20 text-center">
-                                                <div className="flex flex-col items-center justify-center space-y-4">
-                                                    <div className="h-16 w-16 bg-slate-50 flex items-center justify-center rounded-2xl text-slate-200">
-                                                        <Search size={32} />
-                                                    </div>
-                                                    <div>
-                                                        <p className="font-bold text-slate-900">No documents found</p>
-                                                        <p className="text-[10px] font-bold text-slate-400 tracking-widest uppercase mt-1">Try adjusting your filters or search query</p>
-                                                    </div>
-                                                    <Button variant="outline" className="rounded-xl font-bold text-[10px] tracking-widest h-9 border-slate-200" onClick={() => {
-                                                        setSearchQuery("");
-                                                        setSelectedCategory(null);
-                                                        setFileTypeFilter("all");
-                                                        setIsRecentOnly(false);
-                                                    }}>Reset All Filters</Button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-                    </CardContent>
-                </Card>
-            </main>
+                                                <Button variant="outline" className="rounded-xl font-bold text-[10px] tracking-widest h-9 border-slate-200" onClick={() => {
+                                                    setSearchQuery("");
+                                                    setSelectedCategory(null);
+                                                    setFileTypeFilter("all");
+                                                    setIsRecentOnly(false);
+                                                }}>Reset All Filters</Button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </CardContent>
+            </Card>
 
-            {/* Upload Modal - Redesigned Horizontal Layout */}
             <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
                 <DialogContent className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-[3rem] border-none shadow-[0_50px_100px_-20px_rgba(0,0,0,0.25)] p-0 bg-white max-w-5xl w-[90vw] overflow-hidden z-[99999] ring-1 ring-slate-100">
                     <div className="flex flex-col md:flex-row min-h-[500px]">
-                        {/* Left Side: Configuration & Category */}
                         <div className="w-full md:w-[45%] p-10 bg-slate-50/50 border-r border-slate-100 flex flex-col">
                             <div className="mb-10">
                                 <div className="h-16 w-16 bg-indigo-600 text-white rounded-[1.5rem] flex items-center justify-center shadow-xl shadow-indigo-100 mb-6">
@@ -448,9 +429,7 @@ const TeamDocumentsPage = () => {
                             </form>
                         </div>
 
-                        {/* Right Side: Drag & Drop Area */}
                         <div className="flex-1 p-10 flex flex-col justify-center items-center relative overflow-hidden">
-                            {/* Visual background element */}
                             <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-50 rounded-full blur-3xl -mr-32 -mt-32 opacity-50" />
 
                             <input
@@ -524,12 +503,10 @@ const TeamDocumentsPage = () => {
                 </DialogContent>
             </Dialog>
 
-            {/* Enhanced Professional Preview Modal */}
             <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
                 <DialogContent className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-[2.5rem] border-none shadow-[0_0_100px_rgba(0,0,0,0.2)] p-0 bg-[#1e1e1e] max-w-7xl w-[95vw] h-[90vh] overflow-hidden flex flex-col z-[9999]">
                     {selectedFile && (
                         <>
-                            {/* PDF Viewer Header/Toolbar */}
                             <div className="h-16 bg-[#2d2d2d] border-b border-white/10 flex items-center justify-between px-6 shrink-0">
                                 <div className="flex items-center gap-4">
                                     <div className="h-10 w-10 flex items-center justify-center bg-rose-600 text-white rounded-xl shadow-lg">
@@ -564,9 +541,7 @@ const TeamDocumentsPage = () => {
                                 </div>
                             </div>
 
-                            {/* Viewer Body */}
                             <div className="flex-1 flex overflow-hidden">
-                                {/* Left Sidebar (Thumbnails) */}
                                 <div className="w-64 bg-[#252525] border-r border-white/5 p-4 flex flex-col gap-4 overflow-y-auto shrink-0 hidden lg:flex">
                                     <Label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] mb-2 px-2">Thumbnails</Label>
                                     {[1, 2, 3, 4, 5].map(i => (
@@ -584,20 +559,16 @@ const TeamDocumentsPage = () => {
                                     ))}
                                 </div>
 
-                                {/* Main Document Rendering Surface */}
                                 <div className="flex-1 bg-[#1e1e1e] overflow-auto p-12 flex justify-center custom-scrollbar">
-                                    {/* The Document Page */}
                                     <motion.div
                                         initial={{ opacity: 0, y: 30 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         className="relative w-full max-w-4xl min-h-[1400px] bg-white shadow-[0_40px_100px_rgba(0,0,0,0.5)] rounded-sm p-24 text-start font-serif"
                                     >
-                                        {/* Document Watermark */}
                                         <div className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden opacity-[0.03]">
                                             <h1 className="text-[12rem] font-black -rotate-45 select-none uppercase tracking-widest whitespace-nowrap">CONFIDENTIAL</h1>
                                         </div>
 
-                                        {/* Official Header */}
                                         <div className="flex justify-between items-start mb-24 border-b-2 border-slate-900 pb-8">
                                             <div>
                                                 <div className="h-16 w-16 bg-slate-900 rounded-2xl flex items-center justify-center text-white mb-6">
@@ -613,7 +584,6 @@ const TeamDocumentsPage = () => {
                                             </div>
                                         </div>
 
-                                        {/* Document Content Strategy */}
                                         <div className="space-y-12">
                                             <div className="space-y-6">
                                                 <h2 className="text-2xl font-bold text-slate-900 border-l-4 border-indigo-600 pl-6">{selectedFile.name.split('.')[0]}</h2>
@@ -691,4 +661,4 @@ const TeamDocumentsPage = () => {
     );
 };
 
-export default TeamDocumentsPage;
+export default TeamDocumentsPanel;

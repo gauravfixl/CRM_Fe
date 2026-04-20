@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useMemo, useRef } from "react"
+import React, { useState, useMemo, useRef, useEffect } from "react"
 import {
     TrendingUp,
     Plus,
@@ -92,6 +92,7 @@ import { useToast } from "@/shared/components/ui/use-toast"
 import { cn } from "@/lib/utils"
 import { useSalaryStore, type SalaryRevision, type RevisionApprovalStep, type RevisionLetter } from "@/shared/data/salary-store"
 import { usePayrollStore } from "@/shared/data/payroll-store"
+import { getAllAppraisals, getAllEmployees } from "@/modules/hrm/hooks/hrmHooks"
 import { motion, AnimatePresence } from "framer-motion"
 
 const formatINR = (amt: number) => `₹${Math.round(amt || 0).toLocaleString("en-IN")}`
@@ -146,6 +147,31 @@ const SalaryRevisionPage = () => {
         getRevisionBudgetSummary,
         revisionLetters,
     } = useSalaryStore()
+
+    // ─ Backend appraisals + employees (real data for linking) ─
+    type BackendAppraisal = { _id: string; employeeId?: string | { _id: string; firstName?: string; lastName?: string; employeeCode?: string }; period?: string; overallRating?: number; status?: string; reviewDate?: string }
+    type BackendEmployee = { _id: string; employeeCode?: string; firstName?: string; lastName?: string; departmentId?: { name?: string } | string }
+    const [backendAppraisals, setBackendAppraisals] = useState<BackendAppraisal[]>([])
+    const [backendEmployees, setBackendEmployees] = useState<BackendEmployee[]>([])
+    useEffect(() => {
+        let cancelled = false
+        ;(async () => {
+            try {
+                const [apRes, empRes]: any = await Promise.allSettled([getAllAppraisals(), getAllEmployees()]).then((r) =>
+                    r.map((x) => (x.status === "fulfilled" ? x.value : null))
+                )
+                const ap: BackendAppraisal[] = apRes?.data?.appraisals ?? apRes?.data?.data?.appraisals ?? apRes?.data ?? []
+                const emps: BackendEmployee[] = empRes?.data?.employees ?? empRes?.data?.data?.employees ?? empRes?.data ?? []
+                if (!cancelled) {
+                    setBackendAppraisals(Array.isArray(ap) ? ap : [])
+                    setBackendEmployees(Array.isArray(emps) ? emps : [])
+                }
+            } catch {
+                // Silently ignore — fallback to manual input
+            }
+        })()
+        return () => { cancelled = true }
+    }, [])
 
     // ── UI state ───────────────────────────────────────────
     const [activeTab, setActiveTab] = useState<"all" | "pending" | "approved" | "rejected">("all")
@@ -1139,8 +1165,32 @@ const SalaryRevisionPage = () => {
                                         <FormField label="Effective date" required>
                                             <Input type="date" value={form.effectiveDate} onChange={(e) => setForm({ ...form, effectiveDate: e.target.value })} className="h-10 text-sm font-medium" />
                                         </FormField>
-                                        <FormField label="Linked appraisal ID">
-                                            <Input value={form.linkedAppraisalId} onChange={(e) => setForm({ ...form, linkedAppraisalId: e.target.value })} className="h-10 text-sm font-medium" placeholder="APR-2026-001" />
+                                        <FormField label="Linked appraisal">
+                                            {backendAppraisals.length > 0 ? (
+                                                <Select
+                                                    value={form.linkedAppraisalId || "none"}
+                                                    onValueChange={(v) => setForm({ ...form, linkedAppraisalId: v === "none" ? "" : v })}
+                                                >
+                                                    <SelectTrigger className="h-10 text-sm"><SelectValue placeholder="Pick appraisal" /></SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="none">Not linked</SelectItem>
+                                                        {backendAppraisals
+                                                            .filter((a) => {
+                                                                // If the form has an employee selected, filter to that employee's appraisals
+                                                                if (!form.empCode) return true
+                                                                const aEmp = typeof a.employeeId === "object" ? a.employeeId : null
+                                                                return aEmp?.employeeCode === form.empCode
+                                                            })
+                                                            .map((a) => {
+                                                                const aEmp = typeof a.employeeId === "object" ? a.employeeId : null
+                                                                const label = `${a.period ?? "—"}${aEmp ? ` · ${aEmp.firstName ?? ""} ${aEmp.lastName ?? ""}`.trim() : ""}${a.overallRating ? ` · ${a.overallRating}★` : ""}`
+                                                                return <SelectItem key={a._id} value={a._id}>{label}</SelectItem>
+                                                            })}
+                                                    </SelectContent>
+                                                </Select>
+                                            ) : (
+                                                <Input value={form.linkedAppraisalId} onChange={(e) => setForm({ ...form, linkedAppraisalId: e.target.value })} className="h-10 text-sm font-medium" placeholder="APR-2026-001" />
+                                            )}
                                         </FormField>
                                     </div>
 

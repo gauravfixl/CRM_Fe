@@ -1,14 +1,12 @@
 "use client"
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/shared/components/ui/button";
 import { Badge } from "@/shared/components/ui/badge";
 import {
     CalendarClock,
     Plus,
     Clock,
-    Calendar,
-    Settings,
     Coffee,
     Moon,
     Sun,
@@ -16,13 +14,13 @@ import {
     Trash2,
     Edit2,
     CalendarDays,
-    MapPin,
     AlertCircle,
-    CheckCircle2
+    Search
 } from "lucide-react";
 import { useToast } from "@/shared/components/ui/use-toast";
 import { useAttendanceSettingsStore, type Shift, type AttendanceRule, type Holiday } from "@/shared/data/attendance-settings-store";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/shared/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/shared/components/ui/alert-dialog";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
@@ -30,9 +28,29 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
 import { Switch } from "@/shared/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/shared/components/ui/card";
+import { shiftsApi, holidaysApi, attendancePolicyApi, extractApiError } from "@/shared/api/settings-api";
+import { validateShift, validateAttendanceRule, validateHoliday, type ValidationErrors } from "@/shared/api/settings-validators";
+
+const deriveShiftType = (startTime: string): "morning" | "noon" | "night" => {
+    const hh = parseInt((startTime || "09:00").split(":")[0], 10);
+    if (hh >= 20 || hh < 5) return "night";
+    if (hh >= 12) return "noon";
+    return "morning";
+};
+
+const minutesBetween = (start: string, end: string): number => {
+    const [sh, sm] = start.split(":").map(Number);
+    const [eh, em] = end.split(":").map(Number);
+    let diff = eh * 60 + em - (sh * 60 + sm);
+    if (diff <= 0) diff += 24 * 60;
+    return diff;
+};
+
+const FieldError = ({ msg }: { msg?: string }) =>
+    msg ? <p className="text-[11px] text-rose-600 font-medium mt-1">{msg}</p> : null;
 
 const AttendanceRulesPage = () => {
-    const { shifts, rules, holidays, createShift, updateShift, deleteShift, createRule, updateRule, deleteRule, addHoliday, removeHoliday } = useAttendanceSettingsStore();
+    const { shifts, rules, holidays, createShift, updateShift, deleteShift, createRule, updateRule, deleteRule, addHoliday, updateHoliday, removeHoliday } = useAttendanceSettingsStore();
     const [activeTab, setActiveTab] = useState("shifts");
     const { toast } = useToast();
 
@@ -46,6 +64,100 @@ const AttendanceRulesPage = () => {
     const [currentRule, setCurrentRule] = useState<Partial<AttendanceRule>>({});
     const [currentHoliday, setCurrentHoliday] = useState<Partial<Holiday>>({});
 
+    // Search
+    const [shiftSearch, setShiftSearch] = useState("");
+    const [ruleSearch, setRuleSearch] = useState("");
+    const [holidaySearch, setHolidaySearch] = useState("");
+
+    // Delete confirmations
+    const [deleteTarget, setDeleteTarget] = useState<{ type: "shift" | "rule" | "holiday"; id: string; name: string } | null>(null);
+
+    // Validation errors per form
+    const [shiftErrors, setShiftErrors] = useState<ValidationErrors>({});
+    const [ruleErrors, setRuleErrors] = useState<ValidationErrors>({});
+    const [holidayErrors, setHolidayErrors] = useState<ValidationErrors>({});
+
+    const [isLoading, setIsLoading] = useState(false);
+
+    // Load from backend on mount
+    useEffect(() => {
+        let cancel = false;
+        const load = async () => {
+            setIsLoading(true);
+            try {
+                const [shiftsRes, holidaysRes] = await Promise.allSettled([
+                    shiftsApi.list(),
+                    holidaysApi.list(new Date().getFullYear()),
+                ]);
+
+                if (cancel) return;
+
+                if (shiftsRes.status === "fulfilled" && Array.isArray(shiftsRes.value.data)) {
+                    const mapped: Shift[] = shiftsRes.value.data.map(s => ({
+                        id: s._id,
+                        name: `${s.shiftType.charAt(0).toUpperCase() + s.shiftType.slice(1)} Shift`,
+                        startTime: s.startTime,
+                        endTime: s.endTime,
+                        workingHours: Math.round(minutesBetween(s.startTime, s.endTime) / 60 * 10) / 10,
+                        breakDuration: s.breakMinutes,
+                        isActive: s.isActive,
+                        applicableDays: [1, 2, 3, 4, 5],
+                    }));
+                    if (mapped.length) useAttendanceSettingsStore.setState({ shifts: mapped });
+                }
+
+                if (holidaysRes.status === "fulfilled" && Array.isArray(holidaysRes.value.data)) {
+                    const mapped: Holiday[] = holidaysRes.value.data.map(h => ({
+                        id: h._id,
+                        name: h.name,
+                        date: new Date(h.date).toISOString().split("T")[0],
+                        type: (h.type === "Optional" ? "Optional" : "National") as Holiday["type"],
+                    }));
+                    if (mapped.length) useAttendanceSettingsStore.setState({ holidays: mapped });
+                }
+            } catch {
+                // Silently fall back to local store
+            } finally {
+                if (!cancel) setIsLoading(false);
+            }
+        };
+        load();
+        return () => { cancel = true; };
+    }, []);
+
+    const filteredShifts = shifts.filter(s => s.name.toLowerCase().includes(shiftSearch.toLowerCase()));
+    const filteredRules = rules.filter(r =>
+        r.name.toLowerCase().includes(ruleSearch.toLowerCase()) ||
+        r.type.toLowerCase().includes(ruleSearch.toLowerCase())
+    );
+    const filteredHolidays = holidays.filter(h =>
+        h.name.toLowerCase().includes(holidaySearch.toLowerCase()) ||
+        h.type.toLowerCase().includes(holidaySearch.toLowerCase())
+    );
+
+    const confirmDelete = async () => {
+        if (!deleteTarget) return;
+        const { type, id, name } = deleteTarget;
+        if (type === "shift") {
+            deleteShift(id);
+            toast({ title: "Shift Deleted", description: `${name} removed from roster.`, variant: "destructive" });
+            try { await shiftsApi.remove(id); } catch (e) { toast({ title: "Backend Sync Failed", description: extractApiError(e, "Local change only."), variant: "destructive" }); }
+        } else if (type === "rule") {
+            deleteRule(id);
+            toast({ title: "Rule Deleted", description: `${name} policy removed.`, variant: "destructive" });
+        } else {
+            removeHoliday(id);
+            toast({ title: "Holiday Removed", description: `${name} removed from calendar.`, variant: "destructive" });
+            try { await holidaysApi.remove(id); } catch (e) { toast({ title: "Backend Sync Failed", description: extractApiError(e, "Local change only."), variant: "destructive" }); }
+        }
+        setDeleteTarget(null);
+    };
+
+    const handleEditHoliday = (holiday: Holiday) => {
+        setCurrentHoliday(holiday);
+        setHolidayDialogOpen(true);
+    };
+
     const handleEditShift = (shift: Shift) => {
         setCurrentShift(shift);
         setShiftDialogOpen(true);
@@ -56,16 +168,51 @@ const AttendanceRulesPage = () => {
         setShiftDialogOpen(true);
     };
 
-    const saveShift = () => {
-        if (!currentShift.name || !currentShift.startTime || !currentShift.endTime) return;
-        if (currentShift.id) {
-            updateShift(currentShift.id, currentShift);
-            toast({ title: "Shift Updated", description: "Work hours adjusted successfully." });
-        } else {
-            createShift(currentShift as Shift);
-            toast({ title: "New Shift Created", description: "Shift added to the roster." });
+    const saveShift = async () => {
+        const errs = validateShift(currentShift);
+        setShiftErrors(errs);
+        if (Object.keys(errs).length > 0) {
+            toast({ title: "Please fix the highlighted fields", variant: "destructive" });
+            return;
         }
-        setShiftDialogOpen(false);
+        const payload = {
+            shiftType: deriveShiftType(currentShift.startTime || "09:00"),
+            startTime: currentShift.startTime!,
+            endTime: currentShift.endTime!,
+            breakMinutes: Number(currentShift.breakDuration || 0),
+            halfDayAfterMinutes: Math.max(120, Math.floor(Number(currentShift.workingHours || 8) * 60 / 2)),
+            graceInMinutes: 0,
+            graceOutMinutes: 0,
+        };
+        try {
+            if (currentShift.id) {
+                const res = await shiftsApi.update(currentShift.id, payload);
+                updateShift(currentShift.id, currentShift);
+                toast({ title: "Shift Updated", description: "Saved to backend." });
+            } else {
+                const res = await shiftsApi.create(payload);
+                const newShift: Shift = {
+                    ...(currentShift as Shift),
+                    id: res.data?._id || `shift-${Date.now()}`,
+                };
+                useAttendanceSettingsStore.setState((s) => ({ shifts: [...s.shifts, newShift] }));
+                toast({ title: "Shift Created", description: "Saved to backend." });
+            }
+            setShiftDialogOpen(false);
+            setShiftErrors({});
+            setCurrentShift({});
+        } catch (e) {
+            // Fallback to local save
+            if (currentShift.id) {
+                updateShift(currentShift.id, currentShift);
+            } else {
+                createShift(currentShift as Shift);
+            }
+            setShiftDialogOpen(false);
+            setShiftErrors({});
+            setCurrentShift({});
+            toast({ title: "Saved Locally", description: extractApiError(e, "Backend unreachable — change kept locally."), variant: "destructive" });
+        }
     };
 
     const handleEditRule = (rule: AttendanceRule) => {
@@ -78,15 +225,39 @@ const AttendanceRulesPage = () => {
         setRuleDialogOpen(true);
     };
 
-    const saveRule = () => {
-        if (!currentRule.name) return;
+    const saveRule = async () => {
+        const errs = validateAttendanceRule(currentRule);
+        setRuleErrors(errs);
+        if (Object.keys(errs).length > 0) {
+            toast({ title: "Please fix the highlighted fields", variant: "destructive" });
+            return;
+        }
         if (currentRule.id) {
             updateRule(currentRule.id, currentRule);
         } else {
             createRule(currentRule as AttendanceRule);
         }
+        // Sync a best-effort attendance policy to backend (policy is singleton per org)
+        try {
+            const policyPayload = {
+                lateAllowedMinutes: currentRule.config?.gracePeriodMinutes ?? 0,
+                halfDayThresholdMinutes: (currentRule.config?.halfDayThresholdHours ?? 4) * 60,
+                absentThresholdMinutes: 240,
+                overtimeMinMinutes: 30,
+                allowEarlyPunch: true,
+                allowLatePunch: true,
+                sandwichLeaveRule: false,
+                allowBackdatedRegularization: true,
+                maxBackdateDays: 30,
+            };
+            await attendancePolicyApi.upsert(policyPayload);
+        } catch (e) {
+            // Not fatal — rule save still succeeds locally
+        }
         setRuleDialogOpen(false);
-        toast({ title: "Policy Updated", description: "Attendance rules synchronized." });
+        setRuleErrors({});
+        setCurrentRule({});
+        toast({ title: "Policy Updated", description: "Attendance rule saved." });
     };
 
     const handleNewHoliday = () => {
@@ -94,11 +265,43 @@ const AttendanceRulesPage = () => {
         setHolidayDialogOpen(true);
     };
 
-    const saveHoliday = () => {
-        if (!currentHoliday.name || !currentHoliday.date) return;
-        addHoliday(currentHoliday as Holiday);
+    const saveHoliday = async () => {
+        const errs = validateHoliday(currentHoliday);
+        setHolidayErrors(errs);
+        if (Object.keys(errs).length > 0) {
+            toast({ title: "Please fix the highlighted fields", variant: "destructive" });
+            return;
+        }
+        const backendType = currentHoliday.type === "Optional" ? "Optional" : "National";
+        const payload = {
+            name: currentHoliday.name!,
+            date: currentHoliday.date!,
+            type: backendType as "National" | "Optional",
+            isPaid: true,
+            isMandatory: backendType === "National",
+        };
+        try {
+            if (currentHoliday.id) {
+                const res = await holidaysApi.update(currentHoliday.id, payload);
+                updateHoliday(currentHoliday.id, currentHoliday);
+                toast({ title: "Holiday Updated", description: "Saved to backend." });
+            } else {
+                const res = await holidaysApi.create(payload);
+                const newHoliday: Holiday = { ...(currentHoliday as Holiday), id: res.data?._id || `h-${Date.now()}` };
+                useAttendanceSettingsStore.setState((s) => ({ holidays: [...s.holidays, newHoliday] }));
+                toast({ title: "Holiday Added", description: "Saved to backend." });
+            }
+        } catch (e) {
+            if (currentHoliday.id) {
+                updateHoliday(currentHoliday.id, currentHoliday);
+            } else {
+                addHoliday(currentHoliday as Holiday);
+            }
+            toast({ title: "Saved Locally", description: extractApiError(e, "Backend unreachable — change kept locally."), variant: "destructive" });
+        }
         setHolidayDialogOpen(false);
-        toast({ title: "Holiday Added", description: "Calendar updated." });
+        setHolidayErrors({});
+        setCurrentHoliday({});
     };
 
     const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -145,8 +348,21 @@ const AttendanceRulesPage = () => {
 
                 <ScrollArea className="flex-1 -mx-4 px-4 pb-10">
                     {/* Shifts Tab */}
-                    <TabsContent value="shifts" className="m-0 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                        {shifts.map(shift => (
+                    <TabsContent value="shifts" className="m-0 space-y-6">
+                        <div className="flex gap-4 items-center bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                            <div className="relative flex-1">
+                                <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                                <Input
+                                    placeholder="Search shifts by name..."
+                                    className="pl-9 bg-slate-50 border-slate-200"
+                                    value={shiftSearch}
+                                    onChange={(e) => setShiftSearch(e.target.value)}
+                                />
+                            </div>
+                            <div className="text-xs font-semibold text-slate-500">{filteredShifts.length} shifts</div>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                        {filteredShifts.map(shift => (
                             <Card key={shift.id} className="rounded-2xl border-slate-200 shadow-sm hover:shadow-md transition-all group relative overflow-hidden">
                                 <div className={`absolute top-0 left-0 w-1.5 h-full ${shift.isActive ? 'bg-emerald-500' : 'bg-slate-300'}`} />
                                 <CardHeader className="pb-2">
@@ -159,7 +375,7 @@ const AttendanceRulesPage = () => {
                                             <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-indigo-600" onClick={() => handleEditShift(shift)}>
                                                 <Edit2 size={14} />
                                             </Button>
-                                            <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-rose-600" onClick={() => deleteShift(shift.id)}>
+                                            <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-rose-600" onClick={() => setDeleteTarget({ type: "shift", id: shift.id, name: shift.name })}>
                                                 <Trash2 size={14} />
                                             </Button>
                                         </div>
@@ -191,11 +407,29 @@ const AttendanceRulesPage = () => {
                                 </CardContent>
                             </Card>
                         ))}
+                        </div>
+                        {filteredShifts.length === 0 && (
+                            <div className="text-center py-16 text-slate-400">
+                                <p className="font-bold">No shifts match your search.</p>
+                            </div>
+                        )}
                     </TabsContent>
 
                     {/* Policies Tab */}
                     <TabsContent value="policies" className="m-0 space-y-4">
-                        {rules.map(rule => (
+                        <div className="flex gap-4 items-center bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                            <div className="relative flex-1">
+                                <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                                <Input
+                                    placeholder="Search policies by name or type..."
+                                    className="pl-9 bg-slate-50 border-slate-200"
+                                    value={ruleSearch}
+                                    onChange={(e) => setRuleSearch(e.target.value)}
+                                />
+                            </div>
+                            <div className="text-xs font-semibold text-slate-500">{filteredRules.length} rules</div>
+                        </div>
+                        {filteredRules.map(rule => (
                             <div key={rule.id} className="bg-white rounded-xl border border-slate-200 p-6 flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm hover:shadow-md transition-all">
                                 <div className="flex items-center gap-6">
                                     <div className={`h-14 w-14 rounded-2xl flex items-center justify-center ${rule.type === 'Grace Period' ? 'bg-amber-100 text-amber-600' :
@@ -224,16 +458,33 @@ const AttendanceRulesPage = () => {
                                     <Button variant="outline" size="icon" onClick={() => handleEditRule(rule)} className="text-slate-400 hover:text-indigo-600">
                                         <Edit2 size={16} />
                                     </Button>
-                                    <Button variant="outline" size="icon" onClick={() => deleteRule(rule.id)} className="text-slate-400 hover:text-rose-600">
+                                    <Button variant="outline" size="icon" onClick={() => setDeleteTarget({ type: "rule", id: rule.id, name: rule.name })} className="text-slate-400 hover:text-rose-600">
                                         <Trash2 size={16} />
                                     </Button>
                                 </div>
                             </div>
                         ))}
+                        {filteredRules.length === 0 && (
+                            <div className="text-center py-16 text-slate-400">
+                                <p className="font-bold">No attendance policies match your search.</p>
+                            </div>
+                        )}
                     </TabsContent>
 
                     {/* Holidays Tab */}
-                    <TabsContent value="calendar" className="m-0">
+                    <TabsContent value="calendar" className="m-0 space-y-4">
+                        <div className="flex gap-4 items-center bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                            <div className="relative flex-1">
+                                <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                                <Input
+                                    placeholder="Search holidays..."
+                                    className="pl-9 bg-slate-50 border-slate-200"
+                                    value={holidaySearch}
+                                    onChange={(e) => setHolidaySearch(e.target.value)}
+                                />
+                            </div>
+                            <div className="text-xs font-semibold text-slate-500">{filteredHolidays.length} holidays</div>
+                        </div>
                         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                             <table className="w-full text-sm text-left">
                                 <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase text-xs">
@@ -245,7 +496,7 @@ const AttendanceRulesPage = () => {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
-                                    {holidays.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()).map(holiday => (
+                                    {filteredHolidays.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()).map(holiday => (
                                         <tr key={holiday.id} className="hover:bg-slate-50/50 transition-colors">
                                             <td className="px-6 py-4 font-bold text-slate-800 flex items-center gap-3">
                                                 <div className="h-8 w-8 rounded-lg bg-pink-50 flex items-center justify-center text-pink-500 font-bold text-xs">
@@ -262,7 +513,10 @@ const AttendanceRulesPage = () => {
                                                 </Badge>
                                             </td>
                                             <td className="px-6 py-4 text-right">
-                                                <Button variant="ghost" size="sm" onClick={() => removeHoliday(holiday.id)} className="text-slate-400 hover:text-rose-600">
+                                                <Button variant="ghost" size="sm" onClick={() => handleEditHoliday(holiday)} className="text-slate-400 hover:text-indigo-600 mr-1">
+                                                    <Edit2 size={14} />
+                                                </Button>
+                                                <Button variant="ghost" size="sm" onClick={() => setDeleteTarget({ type: "holiday", id: holiday.id, name: holiday.name })} className="text-slate-400 hover:text-rose-600">
                                                     <Trash2 size={16} />
                                                 </Button>
                                             </td>
@@ -270,10 +524,10 @@ const AttendanceRulesPage = () => {
                                     ))}
                                 </tbody>
                             </table>
-                            {holidays.length === 0 && (
+                            {filteredHolidays.length === 0 && (
                                 <div className="p-12 text-center text-slate-400">
                                     <CalendarDays size={48} className="mx-auto mb-4 opacity-20" />
-                                    <p className="font-medium">No holidays configured yet.</p>
+                                    <p className="font-medium">No holidays match your search.</p>
                                 </div>
                             )}
                         </div>
@@ -282,42 +536,48 @@ const AttendanceRulesPage = () => {
             </Tabs>
 
             {/* Shift Dialog */}
-            <Dialog open={shiftDialogOpen} onOpenChange={setShiftDialogOpen}>
+            <Dialog open={shiftDialogOpen} onOpenChange={(v) => { setShiftDialogOpen(v); if (!v) setCurrentShift({}); }}>
                 <DialogContent className="rounded-2xl border-none p-8 max-w-lg">
                     <DialogHeader>
-                        <DialogTitle className="text-xl font-bold">Configure Shift</DialogTitle>
+                        <DialogTitle className="text-xl font-bold">{currentShift.id ? "Edit Shift" : "Configure Shift"}</DialogTitle>
                         <DialogDescription>Set working hours and breaks.</DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-6 py-4">
                         <div className="grid gap-2">
-                            <Label>Shift Name</Label>
-                            <Input value={currentShift.name} onChange={e => setCurrentShift({ ...currentShift, name: e.target.value })} className="bg-slate-50" />
+                            <Label>Shift Name *</Label>
+                            <Input value={currentShift.name || ""} onChange={e => setCurrentShift({ ...currentShift, name: e.target.value })} className={`bg-slate-50 ${shiftErrors.name ? "border-rose-400" : ""}`} />
+                            <FieldError msg={shiftErrors.name} />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div className="grid gap-2">
-                                <Label>Start Time</Label>
-                                <Input type="time" value={currentShift.startTime} onChange={e => setCurrentShift({ ...currentShift, startTime: e.target.value })} className="bg-slate-50" />
+                                <Label>Start Time *</Label>
+                                <Input type="time" value={currentShift.startTime || ""} onChange={e => setCurrentShift({ ...currentShift, startTime: e.target.value })} className={`bg-slate-50 ${shiftErrors.startTime ? "border-rose-400" : ""}`} />
+                                <FieldError msg={shiftErrors.startTime} />
                             </div>
                             <div className="grid gap-2">
-                                <Label>End Time</Label>
-                                <Input type="time" value={currentShift.endTime} onChange={e => setCurrentShift({ ...currentShift, endTime: e.target.value })} className="bg-slate-50" />
+                                <Label>End Time *</Label>
+                                <Input type="time" value={currentShift.endTime || ""} onChange={e => setCurrentShift({ ...currentShift, endTime: e.target.value })} className={`bg-slate-50 ${shiftErrors.endTime ? "border-rose-400" : ""}`} />
+                                <FieldError msg={shiftErrors.endTime} />
                             </div>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div className="grid gap-2">
                                 <Label>Work Hours</Label>
-                                <Input type="number" value={currentShift.workingHours} onChange={e => setCurrentShift({ ...currentShift, workingHours: parseFloat(e.target.value) })} className="bg-slate-50" />
+                                <Input type="number" min="0" max="24" step="0.5" value={currentShift.workingHours ?? ""} onChange={e => setCurrentShift({ ...currentShift, workingHours: parseFloat(e.target.value) })} className={`bg-slate-50 ${shiftErrors.workingHours ? "border-rose-400" : ""}`} />
+                                <FieldError msg={shiftErrors.workingHours} />
                             </div>
                             <div className="grid gap-2">
                                 <Label>Break (Mins)</Label>
-                                <Input type="number" value={currentShift.breakDuration} onChange={e => setCurrentShift({ ...currentShift, breakDuration: parseInt(e.target.value) })} className="bg-slate-50" />
+                                <Input type="number" min="0" max="480" value={currentShift.breakDuration ?? ""} onChange={e => setCurrentShift({ ...currentShift, breakDuration: parseInt(e.target.value) })} className={`bg-slate-50 ${shiftErrors.breakDuration ? "border-rose-400" : ""}`} />
+                                <FieldError msg={shiftErrors.breakDuration} />
                             </div>
                         </div>
                         <div className="space-y-3">
-                            <Label>Applicable Days</Label>
+                            <Label>Applicable Days *</Label>
                             <div className="flex gap-2">
                                 {daysOfWeek.map((day, idx) => (
                                     <button
+                                        type="button"
                                         key={day}
                                         onClick={() => {
                                             const days = currentShift.applicableDays || [];
@@ -331,27 +591,35 @@ const AttendanceRulesPage = () => {
                                     </button>
                                 ))}
                             </div>
+                            <FieldError msg={shiftErrors.applicableDays} />
                         </div>
                     </div>
-                    <Button onClick={saveShift} className="bg-rose-600 text-white w-full h-12 rounded-xl font-bold">Save Shift Configuration</Button>
+                    <DialogFooter className="gap-2">
+                        <Button variant="outline" onClick={() => { setShiftDialogOpen(false); setCurrentShift({}); }}>Cancel</Button>
+                        <Button onClick={saveShift} className="bg-rose-600 hover:bg-rose-700 text-white font-bold">
+                            {currentShift.id ? "Save Changes" : "Create Shift"}
+                        </Button>
+                    </DialogFooter>
                 </DialogContent>
             </Dialog>
 
             {/* Rule Dialog */}
-            <Dialog open={ruleDialogOpen} onOpenChange={setRuleDialogOpen}>
+            <Dialog open={ruleDialogOpen} onOpenChange={(v) => { setRuleDialogOpen(v); if (!v) setCurrentRule({}); }}>
                 <DialogContent className="rounded-2xl border-none p-8 max-w-lg">
                     <DialogHeader>
-                        <DialogTitle className="text-xl font-bold">Policy Rule</DialogTitle>
+                        <DialogTitle className="text-xl font-bold">{currentRule.id ? "Edit Policy Rule" : "New Policy Rule"}</DialogTitle>
+                        <DialogDescription>Configure attendance rule parameters.</DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-6 py-4">
                         <div className="grid gap-2">
-                            <Label>Rule Name</Label>
-                            <Input value={currentRule.name} onChange={e => setCurrentRule({ ...currentRule, name: e.target.value })} className="bg-slate-50" />
+                            <Label>Rule Name *</Label>
+                            <Input value={currentRule.name || ""} onChange={e => setCurrentRule({ ...currentRule, name: e.target.value })} className={`bg-slate-50 ${ruleErrors.name ? "border-rose-400" : ""}`} />
+                            <FieldError msg={ruleErrors.name} />
                         </div>
                         <div className="grid gap-2">
-                            <Label>Rule Type</Label>
+                            <Label>Rule Type *</Label>
                             <Select value={currentRule.type} onValueChange={(val: any) => setCurrentRule({ ...currentRule, type: val })}>
-                                <SelectTrigger className="bg-slate-50"><SelectValue /></SelectTrigger>
+                                <SelectTrigger className={`bg-slate-50 ${ruleErrors.type ? "border-rose-400" : ""}`}><SelectValue /></SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="Grace Period">Grace Period</SelectItem>
                                     <SelectItem value="Late Mark">Late Mark</SelectItem>
@@ -359,62 +627,96 @@ const AttendanceRulesPage = () => {
                                     <SelectItem value="Half Day">Half Day</SelectItem>
                                 </SelectContent>
                             </Select>
+                            <FieldError msg={ruleErrors.type} />
                         </div>
 
                         {/* Dynamic Config Fields based on Type */}
                         {currentRule.type === 'Grace Period' && (
                             <div className="grid gap-2">
-                                <Label>Grace Minutes</Label>
-                                <Input type="number" value={currentRule.config?.gracePeriodMinutes || ''} onChange={e => setCurrentRule({ ...currentRule, config: { ...currentRule.config, gracePeriodMinutes: parseInt(e.target.value) } })} className="bg-slate-50" />
+                                <Label>Grace Minutes *</Label>
+                                <Input type="number" min="0" max="120" value={currentRule.config?.gracePeriodMinutes ?? ''} onChange={e => setCurrentRule({ ...currentRule, config: { ...currentRule.config, gracePeriodMinutes: parseInt(e.target.value) } })} className={`bg-slate-50 ${ruleErrors.gracePeriodMinutes ? "border-rose-400" : ""}`} />
+                                <FieldError msg={ruleErrors.gracePeriodMinutes} />
                             </div>
                         )}
                         {currentRule.type === 'Late Mark' && (
                             <div className="grid gap-2">
-                                <Label>Mark Late After (Minutes)</Label>
-                                <Input type="number" value={currentRule.config?.lateMarkAfterMinutes || ''} onChange={e => setCurrentRule({ ...currentRule, config: { ...currentRule.config, lateMarkAfterMinutes: parseInt(e.target.value) } })} className="bg-slate-50" />
+                                <Label>Mark Late After (Minutes) *</Label>
+                                <Input type="number" min="0" max="240" value={currentRule.config?.lateMarkAfterMinutes ?? ''} onChange={e => setCurrentRule({ ...currentRule, config: { ...currentRule.config, lateMarkAfterMinutes: parseInt(e.target.value) } })} className={`bg-slate-50 ${ruleErrors.lateMarkAfterMinutes ? "border-rose-400" : ""}`} />
+                                <FieldError msg={ruleErrors.lateMarkAfterMinutes} />
                             </div>
                         )}
                         {currentRule.type === 'Overtime' && (
                             <div className="grid gap-2">
-                                <Label>Pay Multiplier (e.g. 1.5)</Label>
-                                <Input type="number" step="0.1" value={currentRule.config?.overtimeMultiplier || ''} onChange={e => setCurrentRule({ ...currentRule, config: { ...currentRule.config, overtimeMultiplier: parseFloat(e.target.value) } })} className="bg-slate-50" />
+                                <Label>Pay Multiplier (e.g. 1.5) *</Label>
+                                <Input type="number" step="0.1" min="0" max="10" value={currentRule.config?.overtimeMultiplier ?? ''} onChange={e => setCurrentRule({ ...currentRule, config: { ...currentRule.config, overtimeMultiplier: parseFloat(e.target.value) } })} className={`bg-slate-50 ${ruleErrors.overtimeMultiplier ? "border-rose-400" : ""}`} />
+                                <FieldError msg={ruleErrors.overtimeMultiplier} />
                             </div>
                         )}
                     </div>
-                    <Button onClick={saveRule} className="bg-rose-600 text-white w-full h-12 rounded-xl font-bold">Save Policy</Button>
+                    <DialogFooter className="gap-2">
+                        <Button variant="outline" onClick={() => { setRuleDialogOpen(false); setCurrentRule({}); }}>Cancel</Button>
+                        <Button onClick={saveRule} className="bg-rose-600 hover:bg-rose-700 text-white font-bold">
+                            {currentRule.id ? "Save Changes" : "Create Rule"}
+                        </Button>
+                    </DialogFooter>
                 </DialogContent>
             </Dialog>
 
             {/* Holiday Dialog */}
-            <Dialog open={holidayDialogOpen} onOpenChange={setHolidayDialogOpen}>
+            <Dialog open={holidayDialogOpen} onOpenChange={(v) => { setHolidayDialogOpen(v); if (!v) setCurrentHoliday({}); }}>
                 <DialogContent className="rounded-2xl border-none p-8 max-w-lg">
                     <DialogHeader>
-                        <DialogTitle className="text-xl font-bold">Add Holiday</DialogTitle>
+                        <DialogTitle className="text-xl font-bold">{currentHoliday.id ? "Edit Holiday" : "Add Holiday"}</DialogTitle>
+                        <DialogDescription>Mark a non-working day on the calendar.</DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-6 py-4">
                         <div className="grid gap-2">
-                            <Label>Holiday Name</Label>
-                            <Input value={currentHoliday.name} onChange={e => setCurrentHoliday({ ...currentHoliday, name: e.target.value })} className="bg-slate-50" />
+                            <Label>Holiday Name *</Label>
+                            <Input value={currentHoliday.name || ""} onChange={e => setCurrentHoliday({ ...currentHoliday, name: e.target.value })} className={`bg-slate-50 ${holidayErrors.name ? "border-rose-400" : ""}`} />
+                            <FieldError msg={holidayErrors.name} />
                         </div>
                         <div className="grid gap-2">
-                            <Label>Date</Label>
-                            <Input type="date" value={currentHoliday.date} onChange={e => setCurrentHoliday({ ...currentHoliday, date: e.target.value })} className="bg-slate-50" />
+                            <Label>Date *</Label>
+                            <Input type="date" value={currentHoliday.date || ""} onChange={e => setCurrentHoliday({ ...currentHoliday, date: e.target.value })} className={`bg-slate-50 ${holidayErrors.date ? "border-rose-400" : ""}`} />
+                            <FieldError msg={holidayErrors.date} />
                         </div>
                         <div className="grid gap-2">
-                            <Label>Type</Label>
+                            <Label>Type *</Label>
                             <Select value={currentHoliday.type} onValueChange={(val: any) => setCurrentHoliday({ ...currentHoliday, type: val })}>
-                                <SelectTrigger className="bg-slate-50"><SelectValue /></SelectTrigger>
+                                <SelectTrigger className={`bg-slate-50 ${holidayErrors.type ? "border-rose-400" : ""}`}><SelectValue /></SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="National">National Holiday</SelectItem>
                                     <SelectItem value="Regional">Regional Holiday</SelectItem>
                                     <SelectItem value="Optional">Optional Holiday</SelectItem>
                                 </SelectContent>
                             </Select>
+                            <FieldError msg={holidayErrors.type} />
                         </div>
                     </div>
-                    <Button onClick={saveHoliday} className="bg-rose-600 text-white w-full h-12 rounded-xl font-bold">Add to Calendar</Button>
+                    <DialogFooter className="gap-2">
+                        <Button variant="outline" onClick={() => { setHolidayDialogOpen(false); setCurrentHoliday({}); }}>Cancel</Button>
+                        <Button onClick={saveHoliday} className="bg-rose-600 hover:bg-rose-700 text-white font-bold">
+                            {currentHoliday.id ? "Save Changes" : "Add to Calendar"}
+                        </Button>
+                    </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            {/* Delete Confirmation */}
+            <AlertDialog open={!!deleteTarget} onOpenChange={(v) => !v && setDeleteTarget(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete {deleteTarget?.type}?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            "{deleteTarget?.name}" will be permanently removed. This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction className="bg-rose-600 hover:bg-rose-700" onClick={confirmDelete}>Delete</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 };

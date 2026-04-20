@@ -22,6 +22,11 @@ import {
 } from "lucide-react";
 import { useToast } from "@/shared/components/ui/use-toast";
 import { useRolesStore, type Role, AVAILABLE_MODULES, type PermissionAction, type DataScope } from "@/shared/data/roles-store";
+import { rolesApi, extractApiError } from "@/shared/api/settings-api";
+import { validateRole, type ValidationErrors } from "@/shared/api/settings-validators";
+
+const FieldError = ({ msg }: { msg?: string }) =>
+    msg ? <p className="text-[11px] text-rose-600 font-medium mt-1">{msg}</p> : null;
 import { useTeamStore } from "@/shared/data/team-store"; // Integration with real employee data
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/shared/components/ui/dialog";
 import { Input } from "@/shared/components/ui/input";
@@ -58,6 +63,24 @@ const RolesPermissionsPage = () => {
     // Form State (mirrors the selected role for editing)
     const [formData, setFormData] = useState<Role | null>(null);
     const [selectedEmployeeToAdd, setSelectedEmployeeToAdd] = useState<string>("");
+    const [roleBackendIds, setRoleBackendIds] = useState<Record<string, string>>({});
+
+    // Hydrate roles from backend on mount
+    useEffect(() => {
+        let cancel = false;
+        (async () => {
+            try {
+                const res = await rolesApi.list();
+                if (cancel || !Array.isArray(res?.data)) return;
+                const bMap: Record<string, string> = {};
+                res.data.forEach((r: any) => { bMap[r._id] = r._id; });
+                setRoleBackendIds(bMap);
+            } catch {
+                // Silent fallback to mock
+            }
+        })();
+        return () => { cancel = true; };
+    }, []);
 
     // Initialize selection
     useEffect(() => {
@@ -74,8 +97,18 @@ const RolesPermissionsPage = () => {
         }
     }, [selectedRoleId, roles]);
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!formData || !selectedRoleId) return;
+
+        const errs = validateRole({
+            name: formData.name,
+            role: formData.type || "Custom",
+            permissions: formData.permissions as any,
+        });
+        if (Object.keys(errs).length > 0) {
+            toast({ title: "Please fix validation errors", description: Object.values(errs)[0], variant: "destructive" });
+            return;
+        }
 
         updateRole(selectedRoleId, {
             name: formData.name,
@@ -83,25 +116,49 @@ const RolesPermissionsPage = () => {
             approvalAuthorityLevel: formData.approvalAuthorityLevel
         });
         updatePermissions(selectedRoleId, formData.permissions);
-        
-        // Also update assignments if changed (logic typically handled separately but ensuring sync)
-        // Note: assignRole/unassignRole actions in store are transactional, so we use them directly in UI usually.
-        // But here we rely on the specific actions for member management.
-        
+
+        const backendId = roleBackendIds[selectedRoleId];
+        if (backendId) {
+            try {
+                await rolesApi.update(backendId, {
+                    name: formData.name,
+                    permissions: formData.permissions.map(p => ({
+                        module: p.module,
+                        actions: Object.entries(p.actions).filter(([, v]) => v).map(([k]) => k),
+                    })) as any,
+                });
+                toast({ title: "Changes Saved", description: "Role updated in backend." });
+                return;
+            } catch (e) {
+                toast({ title: "Saved Locally", description: extractApiError(e, "Backend sync failed."), variant: "destructive" });
+                return;
+            }
+        }
+
         toast({ title: "Changes Saved", description: "Role configuration has been updated successfully." });
     };
 
-    const handleDelete = () => {
-        if (selectedRoleId) {
-            deleteRole(selectedRoleId);
-            setIsDeleteDialogOpen(false);
-            setFormData(null);
-            setSelectedRoleId(roles[0]?.id || null);
-            toast({ title: "Role Deleted", description: "The role has been permanently removed." });
+    const handleDelete = async () => {
+        if (!selectedRoleId) return;
+        const backendId = roleBackendIds[selectedRoleId];
+        deleteRole(selectedRoleId);
+        setIsDeleteDialogOpen(false);
+        setFormData(null);
+        setSelectedRoleId(roles[0]?.id || null);
+        toast({ title: "Role Deleted", description: "The role has been permanently removed." });
+        if (backendId) {
+            try { await rolesApi.remove(backendId); } catch (e) {
+                toast({ title: "Backend Sync Failed", description: extractApiError(e), variant: "destructive" });
+            }
         }
     };
 
-    const handleCreate = (name: string, desc: string) => {
+    const handleCreate = async (name: string, desc: string) => {
+        const errs = validateRole({ name, role: "Custom", permissions: [{ module: "_placeholder", actions: [] }] });
+        if (Object.keys(errs).length > 0) {
+            toast({ title: "Please fix validation errors", description: Object.values(errs)[0], variant: "destructive" });
+            return false;
+        }
         createRole({
             name,
             description: desc,
@@ -115,8 +172,21 @@ const RolesPermissionsPage = () => {
                 fieldAccess: {}
             }))
         });
+        try {
+            const res = await rolesApi.create({
+                role: "Custom",
+                name,
+                permissions: [],
+            });
+            if (res.data?._id) {
+                setRoleBackendIds(prev => ({ ...prev, [res.data._id]: res.data._id }));
+            }
+        } catch (e) {
+            toast({ title: "Saved Locally", description: extractApiError(e, "Backend unreachable."), variant: "destructive" });
+        }
         setIsCreateDialogOpen(false);
         toast({ title: "Role Created", description: "New role added. Configure permissions now." });
+        return true;
     };
 
     const togglePermission = (moduleIndex: number, action: PermissionAction) => {
@@ -529,11 +599,24 @@ const RolesPermissionsPage = () => {
     );
 };
 
-const CreateRoleDialog = ({ open, onClose, onCreate }: { open: boolean; onClose: () => void; onCreate: (n: string, d: string) => void }) => {
+const CreateRoleDialog = ({ open, onClose, onCreate }: { open: boolean; onClose: () => void; onCreate: (n: string, d: string) => any }) => {
     const [name, setName] = useState("");
     const [desc, setDesc] = useState("");
+    const [errs, setErrs] = useState<{ name?: string }>({});
+
+    const handleSubmit = async () => {
+        const trimmed = name.trim();
+        if (!trimmed) { setErrs({ name: "Role name is required" }); return; }
+        if (trimmed.length < 2) { setErrs({ name: "Role name must be at least 2 characters" }); return; }
+        setErrs({});
+        const ok = await onCreate(trimmed, desc.trim());
+        if (ok !== false) {
+            setName(""); setDesc("");
+        }
+    };
+
     return (
-        <Dialog open={open} onOpenChange={onClose}>
+        <Dialog open={open} onOpenChange={(v) => { if (!v) { setName(""); setDesc(""); setErrs({}); } onClose(); }}>
             <DialogContent className="sm:max-w-md rounded-2xl border-none p-6">
                 <DialogHeader>
                     <DialogTitle className="text-xl font-bold">Create New Role</DialogTitle>
@@ -541,17 +624,24 @@ const CreateRoleDialog = ({ open, onClose, onCreate }: { open: boolean; onClose:
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                     <div className="space-y-2">
-                        <Label>Role Name</Label>
-                        <Input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Finance Auditor" />
+                        <Label>Role Name *</Label>
+                        <Input
+                            value={name}
+                            onChange={e => setName(e.target.value)}
+                            placeholder="e.g. Finance Auditor"
+                            maxLength={60}
+                            className={errs.name ? "border-rose-400" : ""}
+                        />
+                        <FieldError msg={errs.name} />
                     </div>
                     <div className="space-y-2">
                         <Label>Description</Label>
-                        <Input value={desc} onChange={e => setDesc(e.target.value)} placeholder="What is this role for?" />
+                        <Input value={desc} onChange={e => setDesc(e.target.value)} placeholder="What is this role for?" maxLength={200} />
                     </div>
                 </div>
                 <DialogFooter>
                     <Button variant="ghost" onClick={onClose}>Cancel</Button>
-                    <Button onClick={() => onCreate(name, desc)} className="bg-indigo-600 text-white hover:bg-indigo-700">Create Role</Button>
+                    <Button onClick={handleSubmit} className="bg-indigo-600 text-white hover:bg-indigo-700">Create Role</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
