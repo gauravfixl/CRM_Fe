@@ -73,23 +73,51 @@ const MyLeavePage = () => {
 
   const handleApply = () => {
     if (!leaveForm.startDate || !leaveForm.endDate || !leaveForm.reason) {
-      toast({ title: "Error", description: "All fields are required", variant: "destructive" });
+      toast({ title: "Missing fields", description: "All fields are required.", variant: "destructive" });
       return;
     }
 
     const start = new Date(leaveForm.startDate);
     const end = new Date(leaveForm.endDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+      toast({ title: "Invalid dates", description: "Please enter valid dates.", variant: "destructive" });
+      return;
+    }
+
+    if (start < today && leaveForm.type !== "Sick Leave") {
+      toast({ title: "Invalid start date", description: "Start date cannot be in the past (except Sick Leave).", variant: "destructive" });
+      return;
+    }
 
     if (end < start) {
-      toast({
-        title: "Invalid Dates",
-        description: "End date cannot be earlier than start date.",
-        variant: "destructive"
-      });
+      toast({ title: "Invalid dates", description: "End date cannot be earlier than start date.", variant: "destructive" });
+      return;
+    }
+
+    if (leaveForm.reason.trim().length < 10) {
+      toast({ title: "Reason too short", description: "Please provide at least 10 characters explaining the leave.", variant: "destructive" });
+      return;
+    }
+
+    if (leaveForm.reason.trim().length > 500) {
+      toast({ title: "Reason too long", description: "Please keep the reason under 500 characters.", variant: "destructive" });
       return;
     }
 
     const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+
+    // Balance check
+    const balance = leave.balances.find(b => b.type === leaveForm.type);
+    if (balance) {
+      const remaining = balance.total - balance.consumed;
+      if (days > remaining) {
+        toast({ title: "Insufficient balance", description: `You only have ${remaining} day(s) of ${leaveForm.type} remaining.`, variant: "destructive" });
+        return;
+      }
+    }
 
     (async () => {
       try {
@@ -171,6 +199,7 @@ const MyLeavePage = () => {
                   <Label>Start Date *</Label>
                   <Input
                     type="date"
+                    min={leaveForm.type === "Sick Leave" ? undefined : new Date().toISOString().split("T")[0]}
                     value={leaveForm.startDate}
                     onChange={e => setLeaveForm({ ...leaveForm, startDate: e.target.value })}
                     className="rounded-xl bg-slate-50 border border-slate-200 h-12"
@@ -180,6 +209,7 @@ const MyLeavePage = () => {
                   <Label>End Date *</Label>
                   <Input
                     type="date"
+                    min={leaveForm.startDate || undefined}
                     value={leaveForm.endDate}
                     onChange={e => setLeaveForm({ ...leaveForm, endDate: e.target.value })}
                     className="rounded-xl bg-slate-50 border border-slate-200 h-12"
@@ -187,13 +217,15 @@ const MyLeavePage = () => {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label>Reason *</Label>
+                <Label>Reason * (10-500 chars)</Label>
                 <Textarea
                   placeholder="Why are you taking leave?"
+                  maxLength={500}
                   value={leaveForm.reason}
                   onChange={e => setLeaveForm({ ...leaveForm, reason: e.target.value })}
                   className="rounded-xl bg-slate-50 border border-slate-200 min-h-[100px]"
                 />
+                <p className="text-[10px] text-slate-400">{leaveForm.reason.length}/500 chars</p>
               </div>
             </div>
             <DialogFooter>

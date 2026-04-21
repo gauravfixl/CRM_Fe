@@ -57,13 +57,56 @@ const hrmNavigation = [
         url: "#",
         icon: <span className="text-xl">👤</span>,
         items: [
-            { title: "My Profile", url: "/hrmcubicle/me", icon: <span className="text-lg">🆔</span> },
-            { title: "My Attendance", url: "/hrmcubicle/attendance", icon: <span className="text-lg">📅</span> },
-            { title: "My Leave", url: "/hrmcubicle/leave", icon: <span className="text-lg">🌴</span> },
-            { title: "My Finances", url: "/hrmcubicle/my-finances", icon: <span className="text-lg">💰</span> },
-            { title: "My Performance", url: "/hrmcubicle/performance", icon: <span className="text-lg">📈</span> },
-            { title: "My Documents", url: "/hrmcubicle/me/documents", icon: <span className="text-lg">📂</span> },
-            { title: "My Assets", url: "/hrmcubicle/me/assets", icon: <span className="text-lg">💻</span> },
+            {
+                title: "My Identity",
+                url: "#",
+                icon: <span className="text-lg">🪪</span>,
+                items: [
+                    { title: "My Profile", url: "/hrmcubicle/me", icon: <span className="text-base">🆔</span> },
+                    { title: "My Documents", url: "/hrmcubicle/me/documents", icon: <span className="text-base">📂</span> },
+                    { title: "My Assets", url: "/hrmcubicle/me/assets", icon: <span className="text-base">💻</span> },
+                ]
+            },
+            {
+                title: "My Time",
+                url: "#",
+                icon: <span className="text-lg">⏱️</span>,
+                items: [
+                    { title: "My Attendance", url: "/hrmcubicle/attendance", icon: <span className="text-base">📅</span> },
+                    { title: "My Leave", url: "/hrmcubicle/leave", icon: <span className="text-base">🌴</span> },
+                    { title: "My Holidays", url: "/hrmcubicle/me/holidays", icon: <span className="text-base">🎉</span> },
+                ]
+            },
+            {
+                title: "My Finance",
+                url: "#",
+                icon: <span className="text-lg">💰</span>,
+                items: [
+                    { title: "My Payslips", url: "/hrmcubicle/me/payslips", icon: <span className="text-base">🧾</span> },
+                    { title: "My Finances", url: "/hrmcubicle/my-finances", icon: <span className="text-base">💵</span> },
+                    { title: "My Expenses", url: "/hrmcubicle/me/expenses", icon: <span className="text-base">💳</span> },
+                    { title: "My Tax", url: "/hrmcubicle/me/tax", icon: <span className="text-base">📑</span> },
+                ]
+            },
+            {
+                title: "My Growth",
+                url: "#",
+                icon: <span className="text-lg">📈</span>,
+                items: [
+                    { title: "My Performance", url: "/hrmcubicle/performance", icon: <span className="text-base">📊</span> },
+                    { title: "My Goals", url: "/hrmcubicle/me/goals", icon: <span className="text-base">🎯</span> },
+                    { title: "My Training", url: "/hrmcubicle/me/training", icon: <span className="text-base">📚</span> },
+                ]
+            },
+            {
+                title: "My Support",
+                url: "#",
+                icon: <span className="text-lg">🎧</span>,
+                items: [
+                    { title: "My Helpdesk", url: "/hrmcubicle/me/helpdesk", icon: <span className="text-base">🎫</span> },
+                    { title: "My Announcements", url: "/hrmcubicle/me/announcements", icon: <span className="text-base">📢</span> },
+                ]
+            },
         ]
     },
     {
@@ -321,11 +364,20 @@ function SidebarComponent({ ...props }: React.ComponentProps<typeof ShadcnSideba
         return filterModuleSidebar(hrmNavigation, "hrm")
     }, [filterModuleSidebar])
 
+    // Recursively check if any descendant url matches current pathname
+    const isBranchActive = (node: any): boolean => {
+        if (node?.url && node.url !== "#" && pathname === node.url) return true;
+        if (Array.isArray(node?.items) && node.items.length > 0) {
+            return node.items.some((child: any) => isBranchActive(child));
+        }
+        return false;
+    };
+
     // Precalculate active states to avoid multiple scans during render
     const navWithActive = useMemo(() => {
         return filteredNavigation.map(item => ({
             ...item,
-            isActive: pathname === item.url || (item.items.length > 0 && item.items.some(sub => pathname === sub.url))
+            isActive: isBranchActive(item)
         }));
     }, [pathname, filteredNavigation]);
 

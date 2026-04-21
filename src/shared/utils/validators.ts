@@ -133,3 +133,125 @@ export const isUnique = (
 export const isFutureOrToday = (value: string, label = "Date"): string | null => {
     return isFutureDate(value, label);
 };
+
+/** Indian mobile: 10 digits starting with 6-9. Accepts optional +91 prefix. */
+export const isIndianMobile = (value: string, label = "Mobile number"): string | null => {
+    if (!value) return null;
+    const cleaned = value.replace(/\s+/g, "").replace(/^\+91/, "");
+    return /^[6-9]\d{9}$/.test(cleaned)
+        ? null
+        : `${label} must be a valid 10-digit Indian mobile number`;
+};
+
+/** PAN card: ABCDE1234F format (5 letters + 4 digits + 1 letter). */
+export const isPAN = (value: string, label = "PAN"): string | null => {
+    if (!value) return null;
+    return /^[A-Z]{5}[0-9]{4}[A-Z]$/.test(value.trim().toUpperCase())
+        ? null
+        : `${label} must be in format ABCDE1234F`;
+};
+
+/** IFSC code: 4 letters + 0 + 6 alphanumeric. */
+export const isIFSC = (value: string, label = "IFSC"): string | null => {
+    if (!value) return null;
+    return /^[A-Z]{4}0[A-Z0-9]{6}$/.test(value.trim().toUpperCase())
+        ? null
+        : `${label} must be 11 characters in format ABCD0123456`;
+};
+
+/** Aadhar: exactly 12 digits. */
+export const isAadhar = (value: string, label = "Aadhar"): string | null => {
+    if (!value) return null;
+    const cleaned = value.replace(/\s+/g, "");
+    return /^\d{12}$/.test(cleaned) ? null : `${label} must be exactly 12 digits`;
+};
+
+/** Bank account number: 9-18 digits. */
+export const isBankAccount = (value: string, label = "Account number"): string | null => {
+    if (!value) return null;
+    const cleaned = value.replace(/\s+/g, "");
+    return /^\d{9,18}$/.test(cleaned)
+        ? null
+        : `${label} must be 9-18 digits`;
+};
+
+/** Date that must not be in the future (e.g., expense date, attendance date). */
+export const isPastOrToday = (value: string, label = "Date"): string | null => {
+    if (!value) return null;
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return `${label} is not a valid date`;
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    return d > today ? `${label} cannot be in the future` : null;
+};
+
+/** Date that must be within the last N days (e.g., expense claim cutoff). */
+export const isWithinPastDays = (value: string, days: number, label = "Date"): string | null => {
+    if (!value) return null;
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return `${label} is not a valid date`;
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - days);
+    cutoff.setHours(0, 0, 0, 0);
+    return d < cutoff ? `${label} cannot be older than ${days} days` : null;
+};
+
+/** File extension whitelist check. Pass lowercase without dots, e.g. ['pdf','jpg','png']. */
+export const isValidFileType = (
+    fileName: string,
+    allowed: string[],
+    label = "File"
+): string | null => {
+    if (!fileName) return null;
+    const ext = fileName.split(".").pop()?.toLowerCase();
+    if (!ext) return `${label} must have a valid extension`;
+    return allowed.includes(ext)
+        ? null
+        : `${label} must be one of: ${allowed.map(e => "." + e).join(", ")}`;
+};
+
+/** File size check against bytes limit. Pass bytes (e.g., 10 * 1024 * 1024 for 10 MB). */
+export const isValidFileSize = (
+    sizeBytes: number,
+    maxBytes: number,
+    label = "File"
+): string | null => {
+    if (!sizeBytes) return null;
+    if (sizeBytes > maxBytes) {
+        const maxMB = (maxBytes / (1024 * 1024)).toFixed(1);
+        return `${label} exceeds max size of ${maxMB} MB`;
+    }
+    return null;
+};
+
+/** Time in HH:MM format. */
+export const isValidTime = (value: string, label = "Time"): string | null => {
+    if (!value) return null;
+    return /^([01]\d|2[0-3]):[0-5]\d$/.test(value)
+        ? null
+        : `${label} must be in HH:MM format`;
+};
+
+/** checkOut >= checkIn on same date. Both HH:MM. */
+export const isTimeAfter = (
+    checkOut: string,
+    checkIn: string,
+    label = "Check-out time",
+    otherLabel = "check-in time"
+): string | null => {
+    if (!checkOut || !checkIn) return null;
+    return checkOut <= checkIn ? `${label} must be after ${otherLabel}` : null;
+};
+
+/** Amount must be > 0 and optionally <= max. */
+export const isValidAmount = (
+    value: number | string,
+    options: { min?: number; max?: number; label?: string } = {}
+): string | null => {
+    const { min = 0.01, max, label = "Amount" } = options;
+    const n = typeof value === "string" ? parseFloat(value) : value;
+    if (Number.isNaN(n)) return `${label} must be a valid number`;
+    if (n < min) return `${label} must be at least ₹${min}`;
+    if (max !== undefined && n > max) return `${label} cannot exceed ₹${max.toLocaleString("en-IN")}`;
+    return null;
+};

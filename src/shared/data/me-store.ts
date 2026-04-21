@@ -160,6 +160,18 @@ export interface MeState {
         category: string;
         serial: string;
         assignedDate: string;
+        status?: string;
+        condition?: string;
+    }>;
+    holidays: Array<{
+        id: string;
+        name: string;
+        date: string;
+        day: string;
+        type: string;
+        location: string;
+        month: string;
+        status: "upcoming" | "past";
     }>;
     documents: Array<{
         id: string;
@@ -291,6 +303,7 @@ export const useMeStore = create<MeState>()(
                 { id: "ASST-0992", name: "Apple MacBook Pro M2", category: "Laptop", serial: "FVFHX21JQ059", assignedDate: "Jan 12, 2026" },
                 { id: "ASST-0412", name: "Dell 27\" 4K Monitor", category: "Monitors", serial: "CN-0DFJ2-3310", assignedDate: "Jan 15, 2026" },
             ],
+            holidays: [],
             documents: [
                 { id: 'd1', name: "Offer_Letter_FXL_2026.pdf", cat: "Company", date: "Jan 12, 2026", size: "1.2 MB" },
                 { id: 'd2', name: "Aadhar_Card_Verified.jpg", cat: "Personal", date: "Jan 13, 2026", size: "450 KB" },
@@ -331,7 +344,7 @@ export const useMeStore = create<MeState>()(
                 });
 
                 const today = new Date().toISOString().split("T")[0];
-                const todayLog = mappedLogs.find((l) => l.date === today);
+                const todayLog = mappedLogs.find((l: typeof mappedLogs[number]) => l.date === today);
                 const isCheckedIn = Boolean(todayLog?.checkIn) && !(todayLog?.checkOut);
 
                 set((state) => ({
@@ -421,7 +434,7 @@ export const useMeStore = create<MeState>()(
                 const leaveTypesRes = await getActiveLeaveTypes();
                 const leaveTypes = leaveTypesRes?.data?.data ?? [];
                 const match = leaveTypes.find(
-                    (t: any) => String(t?.name ?? "").toLowerCase() === String(req.type ?? "").toLowerCase()
+                    (t: any): t is { _id: string; name: string } => String(t?.name ?? "").toLowerCase() === String(req.type ?? "").toLowerCase()
                 );
 
                 if (!match?._id) {

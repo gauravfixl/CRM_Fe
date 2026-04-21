@@ -3,30 +3,22 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-    FileText,
     Info,
-    Key,
-    Headphones,
     Clock,
-    CheckCircle2,
-    XCircle,
     MessageSquare,
-    AlertCircle,
     ChevronRight,
     Search,
-    Filter,
-    ArrowRight,
     Send,
-    User,
-    Calendar,
-    Zap,
     LifeBuoy,
     Plane,
     CreditCard,
     Cpu,
     UserCog,
     MailCheck,
-    ArrowUpRight
+    ArrowUpRight,
+    Trash2,
+    Plus,
+    AlertTriangle
 } from "lucide-react";
 import { Card, CardContent } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
@@ -49,7 +41,7 @@ import { Label } from "@/shared/components/ui/label";
 
 const RequestsPage = () => {
     const { toast } = useToast();
-    const { requests, updateRequestStatus, addReplyToRequest, deleteRequest } = useInboxStore();
+    const { requests, updateRequestStatus, deleteRequest, addRequest, addReplyToRequest } = useInboxStore();
 
     const [selectedRequest, setSelectedRequest] = useState<Request | null>(null);
     const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
@@ -58,6 +50,102 @@ const RequestsPage = () => {
     const [searchQuery, setSearchQuery] = useState("");
     const [filterType, setFilterType] = useState<RequestType | 'All'>('All');
     const [filterStatus, setFilterStatus] = useState<RequestStatus | 'All'>('Open');
+
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [requestPendingDelete, setRequestPendingDelete] = useState<Request | null>(null);
+
+    const [isCreateOpen, setIsCreateOpen] = useState(false);
+    const [createForm, setCreateForm] = useState<{
+        fromName: string;
+        fromId: string;
+        subject: string;
+        message: string;
+        type: RequestType;
+        priority: 'Low' | 'Medium' | 'High';
+    }>({ fromName: "", fromId: "", subject: "", message: "", type: "Leave", priority: "Medium" });
+
+    const resetCreateForm = () => setCreateForm({ fromName: "", fromId: "", subject: "", message: "", type: "Leave", priority: "Medium" });
+
+    const fromNameTrimmed = createForm.fromName.trim();
+    const fromIdTrimmed = createForm.fromId.trim();
+    const subjectTrimmed = createForm.subject.trim();
+    const messageTrimmed = createForm.message.trim();
+
+    const fromNameError = createForm.fromName.length > 0
+        ? fromNameTrimmed.length < 2
+            ? "Name must be at least 2 characters."
+            : fromNameTrimmed.length > 60
+                ? "Name cannot exceed 60 characters."
+                : !/^[A-Za-z][A-Za-z\s.'-]*$/.test(fromNameTrimmed)
+                    ? "Use letters, spaces, apostrophes, dots or hyphens only."
+                    : ""
+        : "";
+
+    const fromIdError = fromIdTrimmed.length > 0 && fromIdTrimmed.length > 20
+        ? "Employee ID cannot exceed 20 characters."
+        : "";
+
+    const subjectError = createForm.subject.length > 0
+        ? subjectTrimmed.length < 5
+            ? "Subject must be at least 5 characters."
+            : subjectTrimmed.length > 100
+                ? "Subject cannot exceed 100 characters."
+                : ""
+        : "";
+
+    const messageError = createForm.message.length > 0
+        ? messageTrimmed.length < 10
+            ? "Message must be at least 10 characters."
+            : messageTrimmed.length > 500
+                ? "Message cannot exceed 500 characters."
+                : ""
+        : "";
+
+    const isCreateValid =
+        fromNameTrimmed.length >= 2 && fromNameTrimmed.length <= 60 && /^[A-Za-z][A-Za-z\s.'-]*$/.test(fromNameTrimmed) &&
+        fromIdTrimmed.length <= 20 &&
+        subjectTrimmed.length >= 5 && subjectTrimmed.length <= 100 &&
+        messageTrimmed.length >= 10 && messageTrimmed.length <= 500;
+
+    const handleCreateRequest = () => {
+        if (!isCreateValid) {
+            toast({ title: "Please fix the errors", description: "Make sure all required fields meet their rules.", variant: "destructive" });
+            return;
+        }
+        const avatar = fromNameTrimmed.split(/\s+/).map(s => s[0]).slice(0, 2).join('').toUpperCase() || 'NA';
+        addRequest({
+            type: createForm.type,
+            priority: createForm.priority,
+            subject: subjectTrimmed,
+            message: messageTrimmed,
+            from: {
+                id: fromIdTrimmed || `EMP-${Date.now().toString().slice(-4)}`,
+                name: fromNameTrimmed,
+                avatar
+            }
+        });
+        toast({ title: "Ticket Created", description: `New ${createForm.type} ticket logged for ${fromNameTrimmed}.` });
+        resetCreateForm();
+        setIsCreateOpen(false);
+    };
+
+    const replyTrimmed = reply.trim();
+    const replyError = reply.length > 0
+        ? replyTrimmed.length < 5
+            ? "Reply must be at least 5 characters."
+            : replyTrimmed.length > 1000
+                ? "Reply cannot exceed 1000 characters."
+                : ""
+        : "";
+    const isReplyValid = replyTrimmed.length >= 5 && replyTrimmed.length <= 1000;
+
+    const handleDeleteRequest = () => {
+        if (!requestPendingDelete) return;
+        deleteRequest(requestPendingDelete.id);
+        toast({ title: "Ticket Deleted", description: `Ticket from ${requestPendingDelete.from.name} has been removed.` });
+        setIsDeleteDialogOpen(false);
+        setRequestPendingDelete(null);
+    };
 
     const getTypeStyles = (type: RequestType) => {
         const styles = {
@@ -116,18 +204,26 @@ const RequestsPage = () => {
                         <p className="text-slate-500 text-sm font-medium">Tracking and resolving employee-initiated actions across all departments.</p>
                     </div>
 
-                    <div className="flex items-center gap-2 bg-slate-100/50 p-1 rounded-xl border border-slate-200">
-                        {['Open', 'In Progress', 'Resolved', 'All'].map(s => (
-                            <Button
-                                key={s}
-                                variant="ghost"
-                                size="sm"
-                                className={`rounded-lg font-bold text-xs h-9 px-4 transition-all ${filterStatus === s ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:bg-white/50'}`}
-                                onClick={() => setFilterStatus(s as any)}
-                            >
-                                {s}
-                            </Button>
-                        ))}
+                    <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2 bg-slate-100/50 p-1 rounded-xl border border-slate-200">
+                            {['Open', 'In Progress', 'Resolved', 'All'].map(s => (
+                                <Button
+                                    key={s}
+                                    variant="ghost"
+                                    size="sm"
+                                    className={`rounded-lg font-bold text-xs h-9 px-4 transition-all ${filterStatus === s ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:bg-white/50'}`}
+                                    onClick={() => setFilterStatus(s as any)}
+                                >
+                                    {s}
+                                </Button>
+                            ))}
+                        </div>
+                        <Button
+                            onClick={() => setIsCreateOpen(true)}
+                            className="rounded-xl font-bold text-xs h-10 px-4 gap-2 bg-slate-900 hover:bg-indigo-600 text-white shadow-lg"
+                        >
+                            <Plus size={16} /> New Ticket
+                        </Button>
                     </div>
                 </div>
             </header>
@@ -247,12 +343,23 @@ const RequestsPage = () => {
                                                                             </SelectContent>
                                                                         </Select>
                                                                     </div>
-                                                                    <Button
-                                                                        className="h-10 px-5 bg-slate-900 hover:bg-indigo-600 text-white rounded-xl font-bold text-xs transition-all gap-2 group/btn"
-                                                                        onClick={() => { setSelectedRequest(req); setIsDetailDialogOpen(true); }}
-                                                                    >
-                                                                        <MessageSquare size={14} /> Handle Request <ArrowUpRight size={14} className="group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-transform" />
-                                                                    </Button>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            size="icon"
+                                                                            className="h-10 w-10 rounded-xl text-slate-300 hover:text-rose-600 hover:bg-rose-50"
+                                                                            title="Delete ticket"
+                                                                            onClick={() => { setRequestPendingDelete(req); setIsDeleteDialogOpen(true); }}
+                                                                        >
+                                                                            <Trash2 size={14} />
+                                                                        </Button>
+                                                                        <Button
+                                                                            className="h-10 px-5 bg-slate-900 hover:bg-indigo-600 text-white rounded-xl font-bold text-xs transition-all gap-2 group/btn"
+                                                                            onClick={() => { setSelectedRequest(req); setIsDetailDialogOpen(true); }}
+                                                                        >
+                                                                            <MessageSquare size={14} /> Handle Request <ArrowUpRight size={14} className="group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-transform" />
+                                                                        </Button>
+                                                                    </div>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -269,7 +376,7 @@ const RequestsPage = () => {
             </main>
 
             {/* Response Portal Dialog */}
-            <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
+            <Dialog open={isDetailDialogOpen} onOpenChange={(open) => { setIsDetailDialogOpen(open); if (!open) setReply(""); }}>
                 <DialogContent className="bg-white rounded-[2.5rem] border-none p-10 max-w-2xl shadow-3xl">
                     <DialogHeader className="space-y-6">
                         <div className="flex items-center justify-between">
@@ -306,21 +413,28 @@ const RequestsPage = () => {
                             <div className="space-y-3">
                                 <div className="flex items-center justify-between px-1">
                                     <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2"><Send size={12} /> Communication Portal</Label>
-                                    <span className="text-[10px] text-slate-300 font-medium italic">Sent to employee's workspace instanly</span>
+                                    <div className="flex items-center gap-3">
+                                        <span className={`text-[10px] font-bold tabular-nums ${replyTrimmed.length > 1000 ? 'text-rose-500' : 'text-slate-300'}`}>{replyTrimmed.length}/1000</span>
+                                        <span className="text-[10px] text-slate-300 font-medium italic">Sent to employee's workspace instantly</span>
+                                    </div>
                                 </div>
                                 <Textarea
-                                    className="rounded-2xl bg-white border-slate-200 focus:border-indigo-500 min-h-[140px] p-5 font-medium text-sm transition-all shadow-inner"
+                                    className={`rounded-2xl bg-white focus:border-indigo-500 min-h-[140px] p-5 font-medium text-sm transition-all shadow-inner ${replyError ? 'border-rose-300' : 'border-slate-200'}`}
                                     placeholder="Draft your administrative response or action steps here..."
                                     value={reply}
+                                    maxLength={1100}
                                     onChange={(e) => setReply(e.target.value)}
+                                    aria-invalid={!!replyError}
                                 />
+                                {replyError && <p className="text-[11px] font-semibold text-rose-500 ml-1">{replyError}</p>}
                             </div>
                         </div>
                     )}
 
                     <DialogFooter className="gap-3 pt-6 border-t border-slate-50 sm:justify-start">
                         <Button
-                            className="flex-1 bg-slate-900 hover:bg-emerald-600 text-white rounded-2xl h-14 font-bold text-sm shadow-xl shadow-slate-200 transition-all flex gap-3 group"
+                            className="flex-1 bg-slate-900 hover:bg-emerald-600 text-white rounded-2xl h-14 font-bold text-sm shadow-xl shadow-slate-200 transition-all flex gap-3 group disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+                            disabled={!isReplyValid}
                             onClick={() => {
                                 if (selectedRequest) {
                                     if (!reply.trim()) {
@@ -336,7 +450,145 @@ const RequestsPage = () => {
                         >
                             <MailCheck size={18} className="group-hover:scale-110 transition-transform" /> Dispatch & Resolve Ticket
                         </Button>
-                        <Button variant="outline" className="h-14 px-8 rounded-2xl font-bold border-slate-200 text-slate-600" onClick={() => setIsDetailDialogOpen(false)}>Close Portal</Button>
+                        <Button variant="outline" className="h-14 px-8 rounded-2xl font-bold border-slate-200 text-slate-600" onClick={() => { setIsDetailDialogOpen(false); setReply(""); }}>Close Portal</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Create New Ticket Dialog */}
+            <Dialog open={isCreateOpen} onOpenChange={(open) => { setIsCreateOpen(open); if (!open) resetCreateForm(); }}>
+                <DialogContent className="bg-white rounded-3xl border-none p-10 max-w-2xl shadow-2xl">
+                    <DialogHeader className="space-y-4">
+                        <div className="h-12 w-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 mb-2">
+                            <Plus size={24} />
+                        </div>
+                        <DialogTitle className="text-2xl font-bold tracking-tight text-slate-900">Log a New Support Ticket</DialogTitle>
+                        <DialogDescription className="text-slate-500 font-medium">Raise a new request on behalf of an employee. It will be added to the queue as Open.</DialogDescription>
+                    </DialogHeader>
+
+                    <div className="py-4 space-y-5">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Employee Name *</Label>
+                                <Input
+                                    className={`rounded-2xl bg-slate-50 focus:bg-white h-12 font-medium px-4 ${fromNameError ? 'border-rose-300 focus:border-rose-400' : 'border-slate-200'}`}
+                                    placeholder="e.g. Priya Sharma"
+                                    value={createForm.fromName}
+                                    maxLength={80}
+                                    onChange={(e) => setCreateForm(f => ({ ...f, fromName: e.target.value }))}
+                                    aria-invalid={!!fromNameError}
+                                />
+                                {fromNameError && <p className="text-[11px] font-semibold text-rose-500 ml-1">{fromNameError}</p>}
+                            </div>
+                            <div className="space-y-2">
+                                <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Employee ID</Label>
+                                <Input
+                                    className={`rounded-2xl bg-slate-50 focus:bg-white h-12 font-medium px-4 ${fromIdError ? 'border-rose-300 focus:border-rose-400' : 'border-slate-200'}`}
+                                    placeholder="e.g. EMP006 (optional)"
+                                    value={createForm.fromId}
+                                    maxLength={25}
+                                    onChange={(e) => setCreateForm(f => ({ ...f, fromId: e.target.value }))}
+                                    aria-invalid={!!fromIdError}
+                                />
+                                {fromIdError && <p className="text-[11px] font-semibold text-rose-500 ml-1">{fromIdError}</p>}
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                                <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Subject *</Label>
+                                <span className={`text-[10px] font-bold tabular-nums ${subjectTrimmed.length > 100 ? 'text-rose-500' : 'text-slate-300'}`}>{subjectTrimmed.length}/100</span>
+                            </div>
+                            <Input
+                                className={`rounded-2xl bg-slate-50 focus:bg-white h-12 font-medium px-4 ${subjectError ? 'border-rose-300 focus:border-rose-400' : 'border-slate-200'}`}
+                                placeholder="Short headline for the ticket"
+                                value={createForm.subject}
+                                maxLength={120}
+                                onChange={(e) => setCreateForm(f => ({ ...f, subject: e.target.value }))}
+                                aria-invalid={!!subjectError}
+                            />
+                            {subjectError && <p className="text-[11px] font-semibold text-rose-500 ml-1">{subjectError}</p>}
+                        </div>
+
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                                <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Message *</Label>
+                                <span className={`text-[10px] font-bold tabular-nums ${messageTrimmed.length > 500 ? 'text-rose-500' : 'text-slate-300'}`}>{messageTrimmed.length}/500</span>
+                            </div>
+                            <Textarea
+                                className={`rounded-2xl bg-slate-50 focus:bg-white min-h-[110px] font-medium p-4 ${messageError ? 'border-rose-300 focus:border-rose-400' : 'border-slate-200'}`}
+                                placeholder="Describe the request in detail..."
+                                value={createForm.message}
+                                maxLength={550}
+                                onChange={(e) => setCreateForm(f => ({ ...f, message: e.target.value }))}
+                                aria-invalid={!!messageError}
+                            />
+                            {messageError && <p className="text-[11px] font-semibold text-rose-500 ml-1">{messageError}</p>}
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Type</Label>
+                                <Select value={createForm.type} onValueChange={(v) => setCreateForm(f => ({ ...f, type: v as RequestType }))}>
+                                    <SelectTrigger className="h-12 rounded-2xl bg-slate-50 border-slate-200 font-medium">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="Leave">Leave</SelectItem>
+                                        <SelectItem value="Attendance">Attendance</SelectItem>
+                                        <SelectItem value="Expense">Expense</SelectItem>
+                                        <SelectItem value="Asset">Asset</SelectItem>
+                                        <SelectItem value="Profile Update">Profile Update</SelectItem>
+                                        <SelectItem value="Letter">Letter</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Priority</Label>
+                                <Select value={createForm.priority} onValueChange={(v) => setCreateForm(f => ({ ...f, priority: v as 'Low' | 'Medium' | 'High' }))}>
+                                    <SelectTrigger className="h-12 rounded-2xl bg-slate-50 border-slate-200 font-medium">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="Low">Low</SelectItem>
+                                        <SelectItem value="Medium">Medium</SelectItem>
+                                        <SelectItem value="High">High</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <DialogFooter className="gap-3">
+                        <Button variant="outline" className="rounded-xl h-12 font-bold px-8" onClick={() => { setIsCreateOpen(false); resetCreateForm(); }}>Cancel</Button>
+                        <Button
+                            className="flex-1 bg-slate-900 hover:bg-indigo-600 text-white rounded-xl h-12 font-bold shadow-lg gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+                            onClick={handleCreateRequest}
+                            disabled={!isCreateValid}
+                        >
+                            <Plus size={16} /> Create Ticket
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Delete Confirmation Dialog */}
+            <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                <DialogContent className="bg-white rounded-3xl border-none p-10 max-w-md shadow-2xl">
+                    <DialogHeader className="space-y-4">
+                        <div className="h-12 w-12 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-600 mb-2">
+                            <AlertTriangle size={28} />
+                        </div>
+                        <DialogTitle className="text-2xl font-bold tracking-tight text-slate-900">Delete Ticket?</DialogTitle>
+                        <DialogDescription className="text-slate-500 font-medium">
+                            This will permanently remove "{requestPendingDelete?.subject}" from {requestPendingDelete?.from.name}. This action cannot be undone.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="gap-3 pt-4">
+                        <Button variant="outline" className="rounded-xl h-12 font-bold px-8" onClick={() => setIsDeleteDialogOpen(false)}>Cancel</Button>
+                        <Button className="flex-1 bg-rose-600 hover:bg-rose-700 text-white rounded-xl h-12 font-bold shadow-lg shadow-rose-100 gap-2" onClick={handleDeleteRequest}>
+                            <Trash2 size={16} /> Delete Permanently
+                        </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
