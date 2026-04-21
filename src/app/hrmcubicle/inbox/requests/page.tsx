@@ -41,11 +41,7 @@ import { Label } from "@/shared/components/ui/label";
 
 const RequestsPage = () => {
     const { toast } = useToast();
-<<<<<<< Updated upstream
-    const { requests, updateRequestStatus, deleteRequest } = useInboxStore();
-=======
-    const { requests, updateRequestStatus, addReplyToRequest, deleteRequest, addRequest } = useInboxStore();
->>>>>>> Stashed changes
+    const { requests, updateRequestStatus, deleteRequest, addRequest } = useInboxStore();
 
     const [selectedRequest, setSelectedRequest] = useState<Request | null>(null);
     const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
@@ -440,19 +436,11 @@ const RequestsPage = () => {
                             className="flex-1 bg-slate-900 hover:bg-emerald-600 text-white rounded-2xl h-14 font-bold text-sm shadow-xl shadow-slate-200 transition-all flex gap-3 group disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
                             disabled={!isReplyValid}
                             onClick={() => {
-<<<<<<< Updated upstream
                                 if (selectedRequest) {
                                     handleStatusUpdate(selectedRequest.id, 'Resolved');
                                     setIsDetailDialogOpen(false);
                                     setReply("");
                                 }
-=======
-                                if (!selectedRequest || !isReplyValid) return;
-                                addReplyToRequest(selectedRequest.id, replyTrimmed);
-                                handleStatusUpdate(selectedRequest.id, 'Resolved');
-                                setIsDetailDialogOpen(false);
-                                setReply("");
->>>>>>> Stashed changes
                             }}
                         >
                             <MailCheck size={18} className="group-hover:scale-110 transition-transform" /> Dispatch & Resolve Ticket
