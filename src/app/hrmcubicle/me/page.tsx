@@ -92,10 +92,24 @@ const ProfilePage = () => {
         });
     }, [user, bankDetails]);
 
-    const handleSaveProfile = (newData: any) => {
+    const handleSaveProfile = async (newData: any) => {
+        // Validate critical Indian formats before persisting
+        const { isPAN, isIFSC, isIndianMobile, isEmail, firstError } = await import("@/shared/utils/validators");
+        const err = firstError(
+            newData.personalEmail ? isEmail(newData.personalEmail, "Personal email") : null,
+            newData.mobile ? isIndianMobile(newData.mobile, "Mobile number") : null,
+            newData.emergencyMobile ? isIndianMobile(newData.emergencyMobile, "Emergency mobile") : null,
+            newData.pan ? isPAN(newData.pan, "PAN") : null,
+            newData.ifsc ? isIFSC(newData.ifsc, "IFSC") : null,
+        );
+        if (err) {
+            toast({ title: "Invalid input", description: err, variant: "destructive" });
+            return;
+        }
+
         setProfileData(newData);
-        // Sync to unified me store
-        updateUser({
+
+        const userPayload = {
             name: newData.name,
             avatar: newData.avatar,
             location: newData.location,
@@ -108,18 +122,36 @@ const ProfilePage = () => {
                 relationship: newData.emergencyRelationship,
                 mobile: newData.emergencyMobile
             }
-        });
-        updateBankDetails({
-            bankName: newData.bankName,
-            accountNo: newData.accountNo,
-            ifsc: newData.ifsc,
-            pan: newData.pan
-        });
+        };
 
-        toast({
-            title: "Registry Updated! 🚀",
-            description: "Your professional profile records have been synchronized successfully across the platform.",
-        });
+        try {
+            // Try API persistence
+            await updateMyProfile(userPayload as any);
+            updateBankDetails({
+                bankName: newData.bankName,
+                accountNo: newData.accountNo,
+                ifsc: newData.ifsc,
+                pan: newData.pan
+            });
+            toast({
+                title: "Profile updated",
+                description: "Your profile has been saved to the server.",
+            });
+        } catch {
+            // Fall back to local update only (offline / API failure)
+            updateUser(userPayload);
+            updateBankDetails({
+                bankName: newData.bankName,
+                accountNo: newData.accountNo,
+                ifsc: newData.ifsc,
+                pan: newData.pan
+            });
+            toast({
+                title: "Saved locally",
+                description: "Server unreachable — changes saved locally and will sync when online.",
+                variant: "destructive",
+            });
+        }
     };
 
     const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {

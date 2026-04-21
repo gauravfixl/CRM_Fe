@@ -1,14 +1,12 @@
 "use client";
 
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
   CheckCircle2,
   Bell,
   MessageSquare,
   ChevronRight,
-  Search,
-  Filter,
   ArrowUpRight,
   Star,
   Zap,
@@ -17,16 +15,44 @@ import {
 import { Card, CardContent } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
 import { Badge } from "@/shared/components/ui/badge";
-import { Input } from "@/shared/components/ui/input";
 import Link from 'next/link';
 import { useInboxStore } from "@/shared/data/inbox-store";
+import { useToast } from "@/shared/components/ui/use-toast";
+
+type TimeRange = 'today' | 'week' | 'all';
 
 const InboxOverviewPage = () => {
-  const { approvals, notifications, requests } = useInboxStore();
+  const { approvals, notifications, requests, bulkApprove } = useInboxStore();
+  const { toast } = useToast();
+  const [range, setRange] = useState<TimeRange>('today');
 
-  const pendingApprovalsCount = approvals.filter(a => a.status === 'Pending').length;
-  const unreadNotificationsCount = notifications.filter(n => !n.isRead).length;
-  const activeRequestsCount = requests.filter(r => r.status === 'Open' || r.status === 'In Progress').length;
+  const cutoff = useMemo(() => {
+    const now = Date.now();
+    if (range === 'today') return now - 24 * 60 * 60 * 1000;
+    if (range === 'week') return now - 7 * 24 * 60 * 60 * 1000;
+    return 0;
+  }, [range]);
+
+  const rangedApprovals = approvals.filter(a => new Date(a.requestedAt).getTime() >= cutoff);
+  const rangedNotifications = notifications.filter(n => new Date(n.timestamp).getTime() >= cutoff);
+  const rangedRequests = requests.filter(r => new Date(r.createdAt).getTime() >= cutoff);
+
+  const pendingApprovalsCount = rangedApprovals.filter(a => a.status === 'Pending').length;
+  const unreadNotificationsCount = rangedNotifications.filter(n => !n.isRead).length;
+  const activeRequestsCount = rangedRequests.filter(r => r.status === 'Open' || r.status === 'In Progress').length;
+
+  const handleAutoResolve = () => {
+    const lowPriorityPending = approvals.filter(a => a.status === 'Pending' && a.priority === 'Low').map(a => a.id);
+    if (lowPriorityPending.length === 0) {
+      toast({ title: "Nothing to auto-resolve", description: "No low-priority pending approvals found." });
+      return;
+    }
+    bulkApprove(lowPriorityPending, 'HR Admin (Auto)');
+    toast({
+      title: "Auto-Resolve Complete",
+      description: `${lowPriorityPending.length} low-priority request(s) approved automatically.`
+    });
+  };
 
   const sections = [
     {
@@ -78,9 +104,21 @@ const InboxOverviewPage = () => {
           <p className="text-slate-500 font-medium text-sm mt-2">Simplify your workflow. Manage all team interactions in one unified workspace.</p>
         </div>
         <div className="flex items-center bg-slate-100/50 p-1.5 rounded-xl border border-slate-200">
-          <Button variant="ghost" size="sm" className="rounded-lg font-bold text-xs h-9 px-4 text-slate-600 hover:bg-white hover:text-indigo-600 shadow-none transition-all">Today</Button>
-          <Button variant="ghost" size="sm" className="rounded-lg font-bold text-xs h-9 px-4 text-slate-600 hover:bg-white hover:text-indigo-600 shadow-none transition-all">This Week</Button>
-          <Button variant="secondary" size="sm" className="bg-white rounded-lg font-bold text-xs h-9 px-4 text-indigo-600 shadow-sm border border-slate-200">History</Button>
+          {([
+            { key: 'today', label: 'Today' },
+            { key: 'week', label: 'This Week' },
+            { key: 'all', label: 'History' }
+          ] as { key: TimeRange; label: string }[]).map(opt => (
+            <Button
+              key={opt.key}
+              variant="ghost"
+              size="sm"
+              onClick={() => setRange(opt.key)}
+              className={`rounded-lg font-bold text-xs h-9 px-4 shadow-none transition-all ${range === opt.key ? 'bg-white text-indigo-600 shadow-sm border border-slate-200' : 'text-slate-600 hover:bg-white hover:text-indigo-600'}`}
+            >
+              {opt.label}
+            </Button>
+          ))}
         </div>
       </div>
 
@@ -146,8 +184,11 @@ const InboxOverviewPage = () => {
                   <p className="text-slate-600 text-sm font-medium leading-relaxed">
                     Your productivity has increased by <span className="text-emerald-600 font-bold italic">24%</span> this week. Resolve your remaining items to achieve "Inbox Zero".
                   </p>
-                  <Button className="bg-slate-900 hover:bg-indigo-600 text-white gap-2 h-12 px-8 rounded-2xl font-bold transition-all shadow-lg hover:shadow-indigo-200">
-                    Auto-Resolve Suggestions <Zap size={16} />
+                  <Button
+                    onClick={handleAutoResolve}
+                    className="bg-slate-900 hover:bg-indigo-600 text-white gap-2 h-12 px-8 rounded-2xl font-bold transition-all shadow-lg hover:shadow-indigo-200"
+                  >
+                    Auto-Resolve Low-Priority <Zap size={16} />
                   </Button>
                 </div>
                 <div className="bg-indigo-600 relative overflow-hidden flex items-center justify-center p-10 min-h-[300px]">

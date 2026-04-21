@@ -14,28 +14,25 @@ import {
     MoreVertical,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/shared/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
     Dialog,
     DialogContent,
     DialogFooter,
 } from "@/shared/components/ui/dialog";
-import { Label } from "@/shared/components/ui/label";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/shared/components/ui/select";
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu";
+<<<<<<< Updated upstream
 import { showSuccess, showWarning } from "@/utils/toast";
+=======
+import { showSuccess, showError } from "@/utils/toast";
+import { getAllOrgInvites, createOrgInvite, declineOrgInvite } from "@/modules/crm/organizations/hooks/orgHooks";
+import { UserFormDialog } from "@/shared/components/rbac/UserFormDialog";
+>>>>>>> Stashed changes
 
 type Invitation = {
     id: string;
@@ -46,6 +43,7 @@ type Invitation = {
     expiry: string;
 };
 
+<<<<<<< Updated upstream
 const ROLES = ["Manager", "Contributor", "Member", "Viewer"] as const;
 
 const initialInvitations: Invitation[] = [
@@ -53,6 +51,38 @@ const initialInvitations: Invitation[] = [
     { id: "2", email: "tech.support@vendor.io", role: "Contributor", status: "Expired", sentDate: "Mar 26, 2026", expiry: "Expired" },
     { id: "3", email: "hr.lead@client.com", role: "Member", status: "Accepted", sentDate: "Mar 25, 2026", expiry: "N/A" },
 ];
+=======
+const mapApiInviteToInvitation = (inv: any): Invitation => {
+    const status: Invitation["status"] =
+        inv.status === "accepted" || inv.status === "Accepted"
+            ? "Accepted"
+            : inv.status === "expired" || inv.status === "Expired"
+            ? "Expired"
+            : "Pending";
+    const sentDate = inv.createdAt
+        ? new Date(inv.createdAt).toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })
+        : inv.sentDate || "N/A";
+    let expiry = "N/A";
+    if (status === "Expired") {
+        expiry = "Expired";
+    } else if (status === "Pending" && inv.expiresAt) {
+        const diff = new Date(inv.expiresAt).getTime() - Date.now();
+        if (diff <= 0) expiry = "Expired";
+        else if (diff < 3600000) expiry = `${Math.round(diff / 60000)}m left`;
+        else if (diff < 86400000) expiry = `${Math.round(diff / 3600000)}h left`;
+        else expiry = `${Math.round(diff / 86400000)}d left`;
+    }
+    return {
+        id: inv._id || inv.id || String(Date.now()),
+        email: inv.email || "",
+        role: inv.role || "Member",
+        status,
+        sentDate,
+        expiry,
+        token: inv.token || inv._id || "",
+    };
+};
+>>>>>>> Stashed changes
 
 export default function InvitationsPage() {
     const [invitations, setInvitations] = useState<Invitation[]>(initialInvitations);
@@ -60,8 +90,6 @@ export default function InvitationsPage() {
     const [createOpen, setCreateOpen] = useState(false);
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [deleteTarget, setDeleteTarget] = useState<Invitation | null>(null);
-    const [newEmail, setNewEmail] = useState("");
-    const [newRole, setNewRole] = useState("");
 
     const filtered = invitations.filter((inv) =>
         inv.email.toLowerCase().includes(searchQuery.toLowerCase())
@@ -73,6 +101,7 @@ export default function InvitationsPage() {
     const expired = invitations.filter((i) => i.status === "Expired").length;
     const acceptanceRate = totalSent > 0 ? Math.round((accepted / totalSent) * 100) : 0;
 
+<<<<<<< Updated upstream
     const handleCreate = () => {
         if (!newEmail || !newRole) {
             showWarning("Please fill in all fields");
@@ -95,6 +124,16 @@ export default function InvitationsPage() {
 
     const handleResend = (inv: Invitation) => {
         showSuccess(`Invitation resent to ${inv.email}`);
+=======
+    const handleResend = async (inv: Invitation) => {
+        try {
+            await createOrgInvite({ email: inv.email, role: inv.role });
+            showSuccess(`Invitation resent to ${inv.email}`);
+            await loadInvitations();
+        } catch (err: any) {
+            showError(err?.response?.data?.message || "Failed to resend invitation");
+        }
+>>>>>>> Stashed changes
     };
 
     const handleDelete = () => {
@@ -262,50 +301,12 @@ export default function InvitationsPage() {
                 </div>
             </div>
 
-            {/* Create Invite Dialog */}
-            <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-                <DialogContent className="max-w-md rounded-none p-0 overflow-hidden">
-                    <div className="bg-primary px-6 py-4">
-                        <h2 className="text-sm font-semibold text-white">Create invite</h2>
-                        <p className="text-xs text-white/70 mt-0.5">Send an invitation to join your organization</p>
-                    </div>
-                    <div className="px-6 py-4 space-y-4">
-                        <div className="space-y-2">
-                            <Label className="text-xs text-gray-700">Email address</Label>
-                            <Input
-                                type="email"
-                                placeholder="user@example.com"
-                                value={newEmail}
-                                onChange={(e) => setNewEmail(e.target.value)}
-                                className="rounded-none"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label className="text-xs text-gray-700">Role</Label>
-                            <Select value={newRole} onValueChange={setNewRole}>
-                                <SelectTrigger className="rounded-none">
-                                    <SelectValue placeholder="Select a role" />
-                                </SelectTrigger>
-                                <SelectContent className="rounded-none">
-                                    {ROLES.map((role) => (
-                                        <SelectItem key={role} value={role}>
-                                            {role}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </div>
-                    <DialogFooter className="px-6 py-4 border-t border-gray-100">
-                        <Button variant="outline" onClick={() => setCreateOpen(false)} className="rounded-none">
-                            Cancel
-                        </Button>
-                        <Button onClick={handleCreate} className="bg-primary hover:bg-primary/90 text-white rounded-none">
-                            Send invite
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            <UserFormDialog
+                open={createOpen}
+                onOpenChange={setCreateOpen}
+                mode="invite"
+                onSuccess={loadInvitations}
+            />
 
             {/* Delete Confirmation Dialog */}
             <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>

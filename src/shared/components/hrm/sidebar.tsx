@@ -57,13 +57,56 @@ const hrmNavigation = [
         url: "#",
         icon: <span className="text-xl">👤</span>,
         items: [
-            { title: "My Profile", url: "/hrmcubicle/me", icon: <span className="text-lg">🆔</span> },
-            { title: "My Attendance", url: "/hrmcubicle/attendance", icon: <span className="text-lg">📅</span> },
-            { title: "My Leave", url: "/hrmcubicle/leave", icon: <span className="text-lg">🌴</span> },
-            { title: "My Finances", url: "/hrmcubicle/my-finances", icon: <span className="text-lg">💰</span> },
-            { title: "My Performance", url: "/hrmcubicle/performance", icon: <span className="text-lg">📈</span> },
-            { title: "My Documents", url: "/hrmcubicle/me/documents", icon: <span className="text-lg">📂</span> },
-            { title: "My Assets", url: "/hrmcubicle/me/assets", icon: <span className="text-lg">💻</span> },
+            {
+                title: "My Identity",
+                url: "#",
+                icon: <span className="text-lg">🪪</span>,
+                items: [
+                    { title: "My Profile", url: "/hrmcubicle/me", icon: <span className="text-base">🆔</span> },
+                    { title: "My Documents", url: "/hrmcubicle/me/documents", icon: <span className="text-base">📂</span> },
+                    { title: "My Assets", url: "/hrmcubicle/me/assets", icon: <span className="text-base">💻</span> },
+                ]
+            },
+            {
+                title: "My Time",
+                url: "#",
+                icon: <span className="text-lg">⏱️</span>,
+                items: [
+                    { title: "My Attendance", url: "/hrmcubicle/attendance", icon: <span className="text-base">📅</span> },
+                    { title: "My Leave", url: "/hrmcubicle/leave", icon: <span className="text-base">🌴</span> },
+                    { title: "My Holidays", url: "/hrmcubicle/me/holidays", icon: <span className="text-base">🎉</span> },
+                ]
+            },
+            {
+                title: "My Finance",
+                url: "#",
+                icon: <span className="text-lg">💰</span>,
+                items: [
+                    { title: "My Payslips", url: "/hrmcubicle/me/payslips", icon: <span className="text-base">🧾</span> },
+                    { title: "My Finances", url: "/hrmcubicle/my-finances", icon: <span className="text-base">💵</span> },
+                    { title: "My Expenses", url: "/hrmcubicle/me/expenses", icon: <span className="text-base">💳</span> },
+                    { title: "My Tax", url: "/hrmcubicle/me/tax", icon: <span className="text-base">📑</span> },
+                ]
+            },
+            {
+                title: "My Growth",
+                url: "#",
+                icon: <span className="text-lg">📈</span>,
+                items: [
+                    { title: "My Performance", url: "/hrmcubicle/performance", icon: <span className="text-base">📊</span> },
+                    { title: "My Goals", url: "/hrmcubicle/me/goals", icon: <span className="text-base">🎯</span> },
+                    { title: "My Training", url: "/hrmcubicle/me/training", icon: <span className="text-base">📚</span> },
+                ]
+            },
+            {
+                title: "My Support",
+                url: "#",
+                icon: <span className="text-lg">🎧</span>,
+                items: [
+                    { title: "My Helpdesk", url: "/hrmcubicle/me/helpdesk", icon: <span className="text-base">🎫</span> },
+                    { title: "My Announcements", url: "/hrmcubicle/me/announcements", icon: <span className="text-base">📢</span> },
+                ]
+            },
         ]
     },
     {
@@ -340,11 +383,20 @@ function SidebarComponent({ ...props }: React.ComponentProps<typeof ShadcnSideba
         return filterModuleSidebar(hrmNavigation, "hrm")
     }, [filterModuleSidebar])
 
+    // Recursively check if any descendant url matches current pathname
+    const isBranchActive = (node: any): boolean => {
+        if (node?.url && node.url !== "#" && pathname === node.url) return true;
+        if (Array.isArray(node?.items) && node.items.length > 0) {
+            return node.items.some((child: any) => isBranchActive(child));
+        }
+        return false;
+    };
+
     // Precalculate active states to avoid multiple scans during render
     const navWithActive = useMemo(() => {
         return filteredNavigation.map(item => ({
             ...item,
-            isActive: pathname === item.url || (item.items.length > 0 && item.items.some(sub => pathname === sub.url))
+            isActive: isBranchActive(item)
         }));
     }, [pathname, filteredNavigation]);
 
@@ -375,6 +427,7 @@ function SidebarComponent({ ...props }: React.ComponentProps<typeof ShadcnSideba
                                             </CollapsibleTrigger>
                                             <CollapsibleContent className="transition-all duration-300 ease-in-out">
                                                 <SidebarMenuSub className="border-l-slate-200 ml-2">
+<<<<<<< Updated upstream
                                                     {item.items.map((subItem) => (
                                                         <SidebarMenuSubItem key={subItem.title}>
                                                             <SidebarMenuSubButton asChild isActive={pathname === subItem.url} className="text-slate-500 h-9 hover:text-slate-900 hover:bg-slate-100 rounded-md">
@@ -385,6 +438,58 @@ function SidebarComponent({ ...props }: React.ComponentProps<typeof ShadcnSideba
                                                             </SidebarMenuSubButton>
                                                         </SidebarMenuSubItem>
                                                     ))}
+=======
+                                                    {item.items.map((subItem: any) => {
+                                                        const hasNested = Array.isArray(subItem.items) && subItem.items.length > 0;
+                                                        const nestedActive = hasNested && subItem.items.some((leaf: any) => pathname === leaf.url);
+
+                                                        if (hasNested) {
+                                                            return (
+                                                                <Collapsible
+                                                                    key={subItem.title}
+                                                                    asChild
+                                                                    defaultOpen={nestedActive}
+                                                                    className="group/nested"
+                                                                >
+                                                                    <SidebarMenuSubItem>
+                                                                        <CollapsibleTrigger asChild>
+                                                                            <SidebarMenuSubButton isActive={nestedActive} className="text-slate-500 h-8 text-[12.5px] hover:text-slate-900 hover:bg-slate-100 rounded-md cursor-pointer">
+                                                                                <span className="shrink-0 text-[13px]">{subItem.icon}</span>
+                                                                                <span className="ml-1 truncate" title={subItem.title}>{subItem.title}</span>
+                                                                                <ChevronRight className="ml-auto w-3 h-3 text-slate-400 transition-transform duration-200 group-data-[state=open]/nested:rotate-90" />
+                                                                            </SidebarMenuSubButton>
+                                                                        </CollapsibleTrigger>
+                                                                        <CollapsibleContent className="transition-all duration-300 ease-in-out">
+                                                                            <SidebarMenuSub className="border-l-slate-200 ml-2 mr-0 pr-0">
+                                                                                {subItem.items.map((leaf: any) => (
+                                                                                    <SidebarMenuSubItem key={leaf.title}>
+                                                                                        <SidebarMenuSubButton asChild isActive={pathname === leaf.url} className="text-slate-500 h-8 text-[12px] hover:text-slate-900 hover:bg-slate-100 rounded-md">
+                                                                                            <Link href={leaf.url} prefetch={true} className="flex w-full items-center">
+                                                                                                <span className="shrink-0 text-[12px]">{leaf.icon}</span>
+                                                                                                <span className="ml-1 truncate" title={leaf.title}>{leaf.title}</span>
+                                                                                            </Link>
+                                                                                        </SidebarMenuSubButton>
+                                                                                    </SidebarMenuSubItem>
+                                                                                ))}
+                                                                            </SidebarMenuSub>
+                                                                        </CollapsibleContent>
+                                                                    </SidebarMenuSubItem>
+                                                                </Collapsible>
+                                                            )
+                                                        }
+
+                                                        return (
+                                                            <SidebarMenuSubItem key={subItem.title}>
+                                                                <SidebarMenuSubButton asChild isActive={pathname === subItem.url} className="text-slate-500 h-8 text-[12.5px] hover:text-slate-900 hover:bg-slate-100 rounded-md">
+                                                                    <Link href={subItem.url} prefetch={true} className="flex w-full items-center">
+                                                                        <span className="shrink-0 text-[13px]">{subItem.icon}</span>
+                                                                        <span className="ml-1 truncate" title={subItem.title}>{subItem.title}</span>
+                                                                    </Link>
+                                                                </SidebarMenuSubButton>
+                                                            </SidebarMenuSubItem>
+                                                        )
+                                                    })}
+>>>>>>> Stashed changes
                                                 </SidebarMenuSub>
                                             </CollapsibleContent>
                                         </SidebarMenuItem>

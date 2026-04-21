@@ -6,7 +6,6 @@ import {
   UserPlus,
   Search,
   MoreVertical,
-  Shield,
   Clock,
   Ban,
   Edit3,
@@ -23,39 +22,41 @@ import {
   DialogFooter,
 } from "@/shared/components/ui/dialog"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/shared/components/ui/select"
-import { Label } from "@/shared/components/ui/label"
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu"
+<<<<<<< Updated upstream
 import { showSuccess, showWarning } from "@/utils/toast"
+=======
+import { showSuccess, showError } from "@/utils/toast"
+import { fetchUsersApi, updateOrgUser, deleteOrgUser } from "@/modules/crm/organizations/hooks/orgHooks"
+import { UserFormDialog, splitName } from "@/shared/components/rbac/UserFormDialog"
+>>>>>>> Stashed changes
 
-type Role = "Admin" | "Manager" | "Developer" | "Member"
+type Role = string
 type Status = "Active" | "Pending" | "Suspended"
 type MFA = "Enabled" | "Disabled"
 
 interface User {
   id: string
+  firstName: string
+  lastName: string
   name: string
   email: string
   role: Role
+  roleId?: string
+  firmIds?: string[]
   status: Status
   mfa: MFA
   joined: string
 }
 
-const ROLES: Role[] = ["Admin", "Manager", "Developer", "Member"]
 const STATUSES: Status[] = ["Active", "Pending", "Suspended"]
 
+<<<<<<< Updated upstream
 const initialUsers: User[] = [
   { id: "1", name: "Sarah Miller", email: "sarah.m@fixlsolutions.com", role: "Admin", status: "Active", mfa: "Enabled", joined: "Oct 12, 2024" },
   { id: "2", name: "Robert Wilson", email: "robert.w@fixlsolutions.com", role: "Manager", status: "Active", mfa: "Enabled", joined: "Oct 15, 2024" },
@@ -63,11 +64,39 @@ const initialUsers: User[] = [
   { id: "4", name: "James Chen", email: "james.c@fixlsolutions.com", role: "Manager", status: "Pending", mfa: "Disabled", joined: "Jan 10, 2025" },
   { id: "5", name: "Maria Garcia", email: "maria.g@fixlsolutions.com", role: "Member", status: "Active", mfa: "Enabled", joined: "Feb 22, 2025" },
 ]
+=======
+const mapApiUserToUser = (apiUser: any): User => {
+  const firstName = apiUser.firstName || ""
+  const lastName = apiUser.lastName || ""
+  const name = [firstName, lastName].filter(Boolean).join(" ") || "Unknown"
+  const role: Role = apiUser.role || "Member"
+  const status: Status = apiUser.orgActive === true ? "Active" : apiUser.orgActive === false ? "Suspended" : "Pending"
+  const mfa: MFA = apiUser.twoFAEnabled ? "Enabled" : "Disabled"
+  const joined = apiUser.joinedAt
+    ? new Date(apiUser.joinedAt).toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })
+    : "N/A"
+  const firmIds = Array.isArray(apiUser.firmIds)
+    ? apiUser.firmIds.map((f: any) => (typeof f === "string" ? f : f?._id)).filter(Boolean)
+    : []
+  return {
+    id: apiUser._id,
+    firstName,
+    lastName,
+    name,
+    email: apiUser.email || "",
+    role,
+    roleId: apiUser.roleId || apiUser.role_id || "",
+    firmIds,
+    status,
+    mfa,
+    joined,
+  }
+}
+>>>>>>> Stashed changes
 
 export default function AllUsersPage() {
   const [users, setUsers] = useState<User[]>(initialUsers)
   const [searchQuery, setSearchQuery] = useState("")
-  const [roleFilter, setRoleFilter] = useState<"All" | Role>("All")
   const [statusFilter, setStatusFilter] = useState<"All" | Status>("All")
 
   // Modal states
@@ -76,22 +105,43 @@ export default function AllUsersPage() {
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
 
+<<<<<<< Updated upstream
   // Form states
   const [formName, setFormName] = useState("")
   const [formEmail, setFormEmail] = useState("")
   const [formRole, setFormRole] = useState<Role>("Member")
+=======
+  const loadUsers = async () => {
+    try {
+      setLoading(true)
+      const res = await fetchUsersApi()
+      const data = res?.data || res || []
+      const usersArray = Array.isArray(data) ? data : data.users ? data.users : []
+      setUsers(usersArray.map(mapApiUserToUser))
+    } catch (err: any) {
+      showError(err?.response?.data?.message || "Failed to load users")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadUsers()
+  }, [])
+>>>>>>> Stashed changes
 
   const filteredUsers = useMemo(() => {
+    const q = searchQuery.toLowerCase()
     return users.filter((user) => {
       const matchesSearch =
-        user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.role.toLowerCase().includes(searchQuery.toLowerCase())
-      const matchesRole = roleFilter === "All" || user.role === roleFilter
+        !q ||
+        user.name.toLowerCase().includes(q) ||
+        user.email.toLowerCase().includes(q) ||
+        user.role.toLowerCase().includes(q)
       const matchesStatus = statusFilter === "All" || user.status === statusFilter
-      return matchesSearch && matchesRole && matchesStatus
+      return matchesSearch && matchesStatus
     })
-  }, [users, searchQuery, roleFilter, statusFilter])
+  }, [users, searchQuery, statusFilter])
 
   const stats = useMemo(() => ({
     total: users.length,
@@ -106,18 +156,13 @@ export default function AllUsersPage() {
     return name[0].toUpperCase()
   }
 
-  const cycleRoleFilter = () => {
-    const options: ("All" | Role)[] = ["All", ...ROLES]
-    const idx = options.indexOf(roleFilter)
-    setRoleFilter(options[(idx + 1) % options.length])
-  }
-
   const cycleStatusFilter = () => {
     const options: ("All" | Status)[] = ["All", ...STATUSES]
     const idx = options.indexOf(statusFilter)
     setStatusFilter(options[(idx + 1) % options.length])
   }
 
+<<<<<<< Updated upstream
   const resetForm = () => {
     setFormName("")
     setFormEmail("")
@@ -163,14 +208,14 @@ export default function AllUsersPage() {
     showSuccess("User updated successfully")
   }
 
+=======
+>>>>>>> Stashed changes
   const openEditModal = (user: User) => {
     setSelectedUser(user)
-    setFormName(user.name)
-    setFormEmail(user.email)
-    setFormRole(user.role)
     setEditOpen(true)
   }
 
+<<<<<<< Updated upstream
   const handleChangeRole = (user: User) => {
     const idx = ROLES.indexOf(user.role)
     const nextRole = ROLES[(idx + 1) % ROLES.length]
@@ -179,6 +224,9 @@ export default function AllUsersPage() {
   }
 
   const handleToggleStatus = (user: User) => {
+=======
+  const handleToggleStatus = async (user: User) => {
+>>>>>>> Stashed changes
     const newStatus: Status = user.status === "Active" ? "Suspended" : "Active"
     setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, status: newStatus } : u)))
     showSuccess(`${user.name} is now ${newStatus}`)
@@ -198,12 +246,13 @@ export default function AllUsersPage() {
   }
 
   const roleBadgeClass = (role: Role) => {
-    switch (role) {
-      case "Admin": return "bg-purple-50 text-purple-700 border border-purple-200"
-      case "Manager": return "bg-blue-50 text-blue-700 border border-blue-200"
-      case "Developer": return "bg-amber-50 text-amber-700 border border-amber-200"
-      case "Member": return "bg-gray-50 text-gray-600 border border-gray-200"
-    }
+    const r = (role || "").toLowerCase()
+    if (r.includes("admin")) return "bg-purple-50 text-purple-700 border border-purple-200"
+    if (r.includes("manager")) return "bg-blue-50 text-blue-700 border border-blue-200"
+    if (r.includes("developer") || r.includes("engineer"))
+      return "bg-amber-50 text-amber-700 border border-amber-200"
+    if (r.includes("hr")) return "bg-rose-50 text-rose-700 border border-rose-200"
+    return "bg-gray-50 text-gray-600 border border-gray-200"
   }
 
   const statusBadgeClass = (status: Status) => {
@@ -231,11 +280,11 @@ export default function AllUsersPage() {
             <p className="text-xs text-gray-600 mt-1">Manage and monitor all users in your organization</p>
           </div>
           <button
-            onClick={() => { resetForm(); setInviteOpen(true) }}
+            onClick={() => setInviteOpen(true)}
             className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-white text-sm font-medium px-4 py-2 rounded-none transition-colors"
           >
             <UserPlus className="w-4 h-4" />
-            Invite User
+            Invite / Create
           </button>
         </div>
 
@@ -302,17 +351,6 @@ export default function AllUsersPage() {
               className="w-full pl-10 pr-4 py-2 h-9 bg-white border border-gray-200 rounded-none text-sm placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
             />
           </div>
-          <button
-            onClick={cycleRoleFilter}
-            className={`inline-flex items-center gap-2 px-4 h-9 text-sm font-medium rounded-none border transition-colors ${
-              roleFilter !== "All"
-                ? "bg-primary/10 border-primary text-primary"
-                : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"
-            }`}
-          >
-            <Shield className="w-3.5 h-3.5" />
-            Role: {roleFilter}
-          </button>
           <button
             onClick={cycleStatusFilter}
             className={`inline-flex items-center gap-2 px-4 h-9 text-sm font-medium rounded-none border transition-colors ${
@@ -400,13 +438,6 @@ export default function AllUsersPage() {
                               Edit user
                             </DropdownMenuItem>
                             <DropdownMenuItem
-                              onClick={() => handleChangeRole(user)}
-                              className="rounded-none cursor-pointer text-sm"
-                            >
-                              <Shield className="w-4 h-4 mr-2" />
-                              Change role
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
                               onClick={() => handleToggleStatus(user)}
                               className="rounded-none cursor-pointer text-sm"
                             >
@@ -449,131 +480,42 @@ export default function AllUsersPage() {
         </div>
       </div>
 
-      {/* Invite User Dialog */}
-      <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
-        <DialogContent className="max-w-md rounded-none p-0 gap-0">
-          <div className="bg-gradient-to-r from-primary to-primary/80 px-5 py-4">
-            <DialogHeader>
-              <DialogTitle className="text-white text-sm font-semibold">Invite user</DialogTitle>
-              <DialogDescription className="text-white/70 text-xs">Send an invitation to a new team member</DialogDescription>
-            </DialogHeader>
-          </div>
-          <div className="p-5 space-y-4">
-            <div>
-              <Label className="text-xs text-gray-700">Full name</Label>
-              <input
-                type="text"
-                value={formName}
-                onChange={(e) => setFormName(e.target.value)}
-                placeholder="Enter full name"
-                className="w-full h-9 px-3 text-sm border border-gray-200 rounded-none focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
-              />
-            </div>
-            <div>
-              <Label className="text-xs text-gray-700">Email address</Label>
-              <input
-                type="email"
-                value={formEmail}
-                onChange={(e) => setFormEmail(e.target.value)}
-                placeholder="Enter email address"
-                className="w-full h-9 px-3 text-sm border border-gray-200 rounded-none focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
-              />
-            </div>
-            <div>
-              <Label className="text-xs text-gray-700">Role</Label>
-              <Select value={formRole} onValueChange={(v) => setFormRole(v as Role)}>
-                <SelectTrigger className="h-9 rounded-none text-sm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="rounded-none">
-                  {ROLES.map((role) => (
-                    <SelectItem key={role} value={role} className="rounded-none text-sm">
-                      {role}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter className="px-5 py-3 border-t border-gray-100 bg-gray-50">
-            <button
-              onClick={() => setInviteOpen(false)}
-              className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 rounded-none transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleInvite}
-              className="px-4 py-2 text-sm font-medium bg-primary text-white hover:bg-primary/90 rounded-none transition-colors"
-            >
-              Send invitation
-            </button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <UserFormDialog
+        open={inviteOpen}
+        onOpenChange={(v) => {
+          setInviteOpen(v)
+          if (!v) setSelectedUser(null)
+        }}
+        mode="invite"
+        onSuccess={loadUsers}
+      />
 
-      {/* Edit User Dialog */}
-      <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="max-w-md rounded-none p-0 gap-0">
-          <div className="bg-gradient-to-r from-primary to-primary/80 px-5 py-4">
-            <DialogHeader>
-              <DialogTitle className="text-white text-sm font-semibold">Edit user</DialogTitle>
-              <DialogDescription className="text-white/70 text-xs">Update user details and role</DialogDescription>
-            </DialogHeader>
-          </div>
-          <div className="p-5 space-y-4">
-            <div>
-              <Label className="text-xs text-gray-700">Full name</Label>
-              <input
-                type="text"
-                value={formName}
-                onChange={(e) => setFormName(e.target.value)}
-                placeholder="Enter full name"
-                className="w-full h-9 px-3 text-sm border border-gray-200 rounded-none focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
-              />
-            </div>
-            <div>
-              <Label className="text-xs text-gray-700">Email address</Label>
-              <input
-                type="email"
-                value={formEmail}
-                onChange={(e) => setFormEmail(e.target.value)}
-                placeholder="Enter email address"
-                className="w-full h-9 px-3 text-sm border border-gray-200 rounded-none focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
-              />
-            </div>
-            <div>
-              <Label className="text-xs text-gray-700">Role</Label>
-              <Select value={formRole} onValueChange={(v) => setFormRole(v as Role)}>
-                <SelectTrigger className="h-9 rounded-none text-sm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="rounded-none">
-                  {ROLES.map((role) => (
-                    <SelectItem key={role} value={role} className="rounded-none text-sm">
-                      {role}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter className="px-5 py-3 border-t border-gray-100 bg-gray-50">
-            <button
-              onClick={() => setEditOpen(false)}
-              className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 rounded-none transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleEdit}
-              className="px-4 py-2 text-sm font-medium bg-primary text-white hover:bg-primary/90 rounded-none transition-colors"
-            >
-              Save changes
-            </button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <UserFormDialog
+        open={editOpen}
+        onOpenChange={(v) => {
+          setEditOpen(v)
+          if (!v) setSelectedUser(null)
+        }}
+        mode="edit"
+        editTarget={
+          selectedUser
+            ? {
+                id: selectedUser.id,
+                firstName:
+                  selectedUser.firstName ||
+                  splitName(selectedUser.name).firstName,
+                lastName:
+                  selectedUser.lastName ||
+                  splitName(selectedUser.name).lastName,
+                email: selectedUser.email,
+                roleId: selectedUser.roleId,
+                roleName: selectedUser.role,
+                firmIds: selectedUser.firmIds,
+              }
+            : null
+        }
+        onSuccess={loadUsers}
+      />
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
