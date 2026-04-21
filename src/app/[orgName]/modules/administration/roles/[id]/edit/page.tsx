@@ -83,42 +83,42 @@ export default function EditRolePage() {
     const org =
       (params.orgName as string) || localStorage.getItem("orgName") || ""
     setOrgName(org)
-    ;(async () => {
-      setIsLoading(true)
-      try {
-        const res = await getAllRolesNPermissions({ scope: "sc-org" })
+      ; (async () => {
+        setIsLoading(true)
+        try {
+          const res = await getAllRolesNPermissions({ scope: "sc-org" })
 
-        let rolesList: any[] = []
-        if (res?.data?.permissions && res?.data?.iv) {
-          rolesList = decryptData(res.data.permissions, res.data.iv) || []
-        } else if (Array.isArray(res?.data?.roles)) {
-          rolesList = res.data.roles
-        } else if (Array.isArray(res?.data)) {
-          rolesList = res.data
+          let rolesList: any[] = []
+          if (res?.data?.permissions && res?.data?.iv) {
+            rolesList = decryptData(res.data.permissions, res.data.iv) || []
+          } else if (Array.isArray(res?.data?.roles)) {
+            rolesList = res.data.roles
+          } else if (Array.isArray(res?.data)) {
+            rolesList = res.data
+          }
+
+          const target = rolesList.find((r: any) => r._id === roleId)
+          if (!target) {
+            toast.error("Role not found")
+            router.push(`/${org}/modules/administration/roles`)
+            return
+          }
+
+          reset({
+            name: target.name || "",
+            description: target.description || "",
+            permissions: (target.permissions || []).map((p: any) => ({
+              module: p.module,
+              actions: Array.isArray(p.actions) ? p.actions : [],
+            })),
+          })
+        } catch (error) {
+          console.error("Error fetching role:", error)
+          toast.error("Failed to load role details")
+        } finally {
+          setIsLoading(false)
         }
-
-        const target = rolesList.find((r: any) => r._id === roleId)
-        if (!target) {
-          toast.error("Role not found")
-          router.push(`/${org}/modules/administration/roles`)
-          return
-        }
-
-        reset({
-          name: target.name || "",
-          description: target.description || "",
-          permissions: (target.permissions || []).map((p: any) => ({
-            module: p.module,
-            actions: Array.isArray(p.actions) ? p.actions : [],
-          })),
-        })
-      } catch (error) {
-        console.error("Error fetching role:", error)
-        toast.error("Failed to load role details")
-      } finally {
-        setIsLoading(false)
-      }
-    })()
+      })()
   }, [params.orgName, params.id])
 
   const permissions = watch("permissions")
@@ -126,120 +126,18 @@ export default function EditRolePage() {
 
   const onSubmit = async (values: RoleFormValues) => {
     try {
-<<<<<<< Updated upstream
-      const scopeParams = { scope: "sc-org" as const }
-      const res = await getAllRolesNPermissions(scopeParams)
-
-      if (res?.data?.permissions && res?.data?.iv) {
-        const decrypted = decryptData(res.data.permissions, res.data.iv)
-        const targetRole = decrypted.find((r: any) => r._id === roleId)
-
-        if (targetRole) {
-          setFormData({
-            name: targetRole.name,
-            description: targetRole.description,
-            permissions: targetRole.permissions.map((p: any) => ({
-              module: p.module,
-              actions: p.actions
-            }))
-          })
-        } else {
-          toast.error("Identity role not found in directory")
-          router.push(`/${orgName}/modules/administration/roles`)
-        }
-      }
-    } catch (error) {
-      console.error("Error fetching role:", error)
-      toast.error("Failed to fetch role details")
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const toggleAction = (module: string, action: string) => {
-    setFormData(prev => {
-      const existingModule = prev.permissions.find(p => p.module === module)
-
-      if (!existingModule) {
-        return {
-          ...prev,
-          permissions: [...prev.permissions, { module, actions: [action] }]
-        }
-      }
-
-      const isActionSelected = existingModule.actions.includes(action)
-      const updatedPermissions = prev.permissions.map(p => {
-        if (p.module === module) {
-          return {
-            ...p,
-            actions: isActionSelected
-              ? p.actions.filter(a => a !== action)
-              : [...p.actions, action]
-          }
-        }
-        return p
-      }).filter(p => p.actions.length > 0)
-
-      return { ...prev, permissions: updatedPermissions }
-    })
-  }
-
-  const isActionSelected = (module: string, action: string) => {
-    return formData.permissions.find(p => p.module === module)?.actions.includes(action) || false
-  }
-
-  const toggleAllModuleActions = (module: string, actions: string[]) => {
-    const existingModule = formData.permissions.find(p => p.module === module)
-    const isAllSelected = existingModule && existingModule.actions.length === actions.length
-
-    setFormData(prev => {
-      if (isAllSelected) {
-        return { ...prev, permissions: prev.permissions.filter(p => p.module !== module) }
-      }
-      const otherPermissions = prev.permissions.filter(p => p.module !== module)
-      return { ...prev, permissions: [...otherPermissions, { module, actions: [...actions] }] }
-    })
-  }
-
-  const handleUpdate = async () => {
-    if (!formData.name || !formData.description || formData.permissions.length === 0) {
-      toast.error("Please fill all required fields and select at least one permission")
-      return
-    }
-
-    // Name validation (no numbers)
-    const nameRegex = /^[a-zA-Z\s]+$/;
-    if (!nameRegex.test(formData.name.trim())) {
-      toast.error("Role name should not contain numbers or special characters")
-      return
-    }
-
-    setIsSubmitting(true)
-    try {
       const payload = {
-        name: formData.name,
-        description: formData.description,
-        permissions: formData.permissions
+        name: values.name,
+        description: values.description,
+        permissions: values.permissions,
       }
 
       await updateRole(payload, roleId)
-      toast.success("Identity Extension Updated")
-=======
-      await updateRole(
-        {
-          name: values.name.trim(),
-          description: values.description.trim(),
-          permissions: values.permissions,
-        },
-        roleId
-      )
-      toast.success("Role updated")
->>>>>>> Stashed changes
+      toast.success("Role updated successfully")
       router.push(`/${orgName}/modules/administration/roles`)
     } catch (error: any) {
-      toast.error(
-        error?.response?.data?.message || "Failed to update role"
-      )
+      console.error("Error updating role:", error)
+      toast.error(error?.response?.data?.message || "Failed to update role")
     }
   }
 

@@ -408,7 +408,6 @@ function SidebarComponent({ ...props }: React.ComponentProps<typeof ShadcnSideba
                                             </CollapsibleTrigger>
                                             <CollapsibleContent className="transition-all duration-300 ease-in-out">
                                                 <SidebarMenuSub className="border-l-slate-200 ml-2">
-<<<<<<< Updated upstream
                                                     {item.items.map((subItem) => (
                                                         <SidebarMenuSubItem key={subItem.title}>
                                                             <SidebarMenuSubButton asChild isActive={pathname === subItem.url} className="text-slate-500 h-8 text-[12.5px] hover:text-slate-900 hover:bg-slate-100 rounded-md">
@@ -419,58 +418,6 @@ function SidebarComponent({ ...props }: React.ComponentProps<typeof ShadcnSideba
                                                             </SidebarMenuSubButton>
                                                         </SidebarMenuSubItem>
                                                     ))}
-=======
-                                                    {item.items.map((subItem: any) => {
-                                                        const hasNested = Array.isArray(subItem.items) && subItem.items.length > 0;
-                                                        const nestedActive = hasNested && subItem.items.some((leaf: any) => pathname === leaf.url);
-
-                                                        if (hasNested) {
-                                                            return (
-                                                                <Collapsible
-                                                                    key={subItem.title}
-                                                                    asChild
-                                                                    defaultOpen={nestedActive}
-                                                                    className="group/nested"
-                                                                >
-                                                                    <SidebarMenuSubItem>
-                                                                        <CollapsibleTrigger asChild>
-                                                                            <SidebarMenuSubButton isActive={nestedActive} className="text-slate-500 h-8 text-[12.5px] hover:text-slate-900 hover:bg-slate-100 rounded-md cursor-pointer">
-                                                                                <span className="shrink-0 text-[13px]">{subItem.icon}</span>
-                                                                                <span className="ml-1 truncate" title={subItem.title}>{subItem.title}</span>
-                                                                                <ChevronRight className="ml-auto w-3 h-3 text-slate-400 transition-transform duration-200 group-data-[state=open]/nested:rotate-90" />
-                                                                            </SidebarMenuSubButton>
-                                                                        </CollapsibleTrigger>
-                                                                        <CollapsibleContent className="transition-all duration-300 ease-in-out">
-                                                                            <SidebarMenuSub className="border-l-slate-200 ml-2 mr-0 pr-0">
-                                                                                {subItem.items.map((leaf: any) => (
-                                                                                    <SidebarMenuSubItem key={leaf.title}>
-                                                                                        <SidebarMenuSubButton asChild isActive={pathname === leaf.url} className="text-slate-500 h-8 text-[12px] hover:text-slate-900 hover:bg-slate-100 rounded-md">
-                                                                                            <Link href={leaf.url} prefetch={true} className="flex w-full items-center">
-                                                                                                <span className="shrink-0 text-[12px]">{leaf.icon}</span>
-                                                                                                <span className="ml-1 truncate" title={leaf.title}>{leaf.title}</span>
-                                                                                            </Link>
-                                                                                        </SidebarMenuSubButton>
-                                                                                    </SidebarMenuSubItem>
-                                                                                ))}
-                                                                            </SidebarMenuSub>
-                                                                        </CollapsibleContent>
-                                                                    </SidebarMenuSubItem>
-                                                                </Collapsible>
-                                                            )
-                                                        }
-
-                                                        return (
-                                                            <SidebarMenuSubItem key={subItem.title}>
-                                                                <SidebarMenuSubButton asChild isActive={pathname === subItem.url} className="text-slate-500 h-8 text-[12.5px] hover:text-slate-900 hover:bg-slate-100 rounded-md">
-                                                                    <Link href={subItem.url} prefetch={true} className="flex w-full items-center">
-                                                                        <span className="shrink-0 text-[13px]">{subItem.icon}</span>
-                                                                        <span className="ml-1 truncate" title={subItem.title}>{subItem.title}</span>
-                                                                    </Link>
-                                                                </SidebarMenuSubButton>
-                                                            </SidebarMenuSubItem>
-                                                        )
-                                                    })}
->>>>>>> Stashed changes
                                                 </SidebarMenuSub>
                                             </CollapsibleContent>
                                         </SidebarMenuItem>
