@@ -39,11 +39,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 const NotificationsPage = () => {
     const { toast } = useToast();
     const router = useRouter();
-<<<<<<< Updated upstream
-    const { notifications, markAsRead, markAllAsRead, deleteNotification } = useInboxStore();
-=======
-    const { notifications, markAsRead, markAllAsRead, deleteNotification, notificationPreferences, updateNotificationPreferences, addNotification } = useInboxStore();
->>>>>>> Stashed changes
+    const { notifications, markAsRead, markAllAsRead, deleteNotification, addNotification } = useInboxStore();
 
     const [view, setView] = useState<'all' | 'preferences'>('all');
     const [filterCategory, setFilterCategory] = useState<NotificationCategory | 'All'>('All');

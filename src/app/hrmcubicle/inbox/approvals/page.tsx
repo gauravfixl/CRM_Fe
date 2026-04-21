@@ -56,6 +56,8 @@ const ApprovalsPage = () => {
     const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
     const [auditApproval, setAuditApproval] = useState<ApprovalItem | null>(null);
     const [rejectionReason, setRejectionReason] = useState("");
+    const [delegateTo, setDelegateTo] = useState("");
+    const [escalateTo, setEscalateTo] = useState("");
 
     const [filterCategory, setFilterCategory] = useState<ApprovalCategory | 'All'>('All');
     const [filterStatus, setFilterStatus] = useState<ApprovalStatus | 'All'>('Pending');
@@ -231,81 +233,6 @@ const ApprovalsPage = () => {
         toast({ title: "Request Rejected" });
     };
 
-<<<<<<< Updated upstream
-=======
-    const handleDelegate = () => {
-        if (!selectedApproval || !isDelegateValid) {
-            toast({ title: "Please fix the errors", description: "Please enter a valid delegatee name.", variant: "destructive" });
-            return;
-        }
-        if (isLiveItem(selectedApproval.id)) {
-            toast({
-                title: "Delegate Not Supported",
-                description: "Leave requests support only Approve/Reject via the live system.",
-                variant: "destructive"
-            });
-            return;
-        }
-        delegateRequest(selectedApproval.id, delegateToTrimmed);
-        setIsDelegateDialogOpen(false);
-        setDelegateTo("");
-        toast({ title: "Request Delegated", description: `Delegated to ${delegateToTrimmed}` });
-    };
-
-    const handleEscalate = () => {
-        if (!selectedApproval || !isEscalateValid) {
-            toast({ title: "Please fix the errors", description: "Please enter a valid escalatee name.", variant: "destructive" });
-            return;
-        }
-        if (isLiveItem(selectedApproval.id)) {
-            toast({
-                title: "Escalate Not Supported",
-                description: "Leave requests support only Approve/Reject via the live system.",
-                variant: "destructive"
-            });
-            return;
-        }
-        escalateRequest(selectedApproval.id, escalateToTrimmed);
-        setIsEscalateDialogOpen(false);
-        setEscalateTo("");
-        toast({ title: "Request Escalated", description: `Escalated to ${escalateToTrimmed}` });
-    };
-
-    const handleDelete = () => {
-        if (!selectedApproval) return;
-        if (isLiveItem(selectedApproval.id)) {
-            toast({
-                title: "Delete Not Supported",
-                description: "Live leave records can only be approved or rejected, not deleted.",
-                variant: "destructive"
-            });
-            setIsDeleteDialogOpen(false);
-            return;
-        }
-        deleteApproval(selectedApproval.id);
-        toast({ title: "Approval Removed", description: `${selectedApproval.requestedBy.name}'s request has been deleted from the log.` });
-        setIsDeleteDialogOpen(false);
-        setSelectedApproval(null);
-        setSelectedIds(prev => prev.filter(id => id !== selectedApproval.id));
-    };
-
-    const handleBulkDelete = () => {
-        const deletableIds = selectedIds.filter(id => !isLiveItem(id));
-        const skipped = selectedIds.length - deletableIds.length;
-        deletableIds.forEach(id => deleteApproval(id));
-        setSelectedIds([]);
-        setIsBulkDeleteDialogOpen(false);
-        if (skipped > 0) {
-            toast({
-                title: "Bulk Delete Partial",
-                description: `${deletableIds.length} removed. ${skipped} live record(s) skipped — they cannot be deleted.`
-            });
-        } else {
-            toast({ title: "Bulk Delete Complete", description: `${deletableIds.length} approval record(s) have been removed.` });
-        }
-    };
-
->>>>>>> Stashed changes
     const toggleSelect = (id: string) => {
         setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
     };
@@ -341,17 +268,10 @@ const ApprovalsPage = () => {
     };
 
     const stats = [
-<<<<<<< Updated upstream
         { label: "Pending", count: approvals.filter(a => a.status === 'Pending').length, icon: <Clock className="w-5 h-5 text-white" />, bg: "bg-amber-500" },
         { label: "Delegated", count: approvals.filter(a => a.status === 'Delegated').length, icon: <Forward className="w-5 h-5 text-white" />, bg: "bg-indigo-600" },
         { label: "Escalated", count: approvals.filter(a => a.status === 'Escalated').length, icon: <TrendingUp className="w-5 h-5 text-white" />, bg: "bg-purple-600" },
         { label: "History", count: approvals.filter(a => ['Approved', 'Rejected'].includes(a.status)).length, icon: <ShieldCheck className="w-5 h-5 text-white" />, bg: "bg-emerald-600" },
-=======
-        { label: "Pending", count: combinedApprovals.filter(a => a.status === 'Pending').length, icon: <Clock className="w-5 h-5 text-orange-600" />, bg: "bg-orange-100", text: "text-orange-700", iconBg: "bg-orange-200" },
-        { label: "Delegated", count: combinedApprovals.filter(a => a.status === 'Delegated').length, icon: <Forward className="w-5 h-5 text-blue-600" />, bg: "bg-blue-100", text: "text-blue-700", iconBg: "bg-blue-200" },
-        { label: "Escalated", count: combinedApprovals.filter(a => a.status === 'Escalated').length, icon: <TrendingUp className="w-5 h-5 text-purple-600" />, bg: "bg-purple-100", text: "text-purple-700", iconBg: "bg-purple-200" },
-        { label: "History", count: combinedApprovals.filter(a => ['Approved', 'Rejected'].includes(a.status)).length, icon: <ShieldCheck className="w-5 h-5 text-emerald-600" />, bg: "bg-emerald-100", text: "text-emerald-700", iconBg: "bg-emerald-200" },
->>>>>>> Stashed changes
     ];
 
     return (
@@ -580,7 +500,6 @@ const ApprovalsPage = () => {
                                                                         >
                                                                             <CheckCircle2 size={16} /> Approve
                                                                         </Button>
-<<<<<<< Updated upstream
                                                                         <Button
                                                                             variant="ghost"
                                                                             className="text-slate-400 hover:text-rose-600 font-bold text-xs h-10 px-4 rounded-xl hover:bg-rose-50 transition-all"
@@ -588,36 +507,6 @@ const ApprovalsPage = () => {
                                                                         >
                                                                             Reject Request
                                                                         </Button>
-=======
-                                                                        <div className="flex items-center gap-2">
-                                                                            {!isLive && (
-                                                                                <>
-                                                                                    <Button
-                                                                                        variant="ghost"
-                                                                                        className="text-slate-400 hover:text-indigo-600 font-bold text-xs h-10 px-3 rounded-xl hover:bg-indigo-50 transition-all gap-1.5"
-                                                                                        onClick={() => { setSelectedApproval(approval); setIsDelegateDialogOpen(true); }}
-                                                                                    >
-                                                                                        <Forward size={14} /> Delegate
-                                                                                    </Button>
-                                                                                    <Button
-                                                                                        variant="ghost"
-                                                                                        className="text-slate-400 hover:text-purple-600 font-bold text-xs h-10 px-3 rounded-xl hover:bg-purple-50 transition-all gap-1.5"
-                                                                                        onClick={() => { setSelectedApproval(approval); setIsEscalateDialogOpen(true); }}
-                                                                                    >
-                                                                                        <TrendingUp size={14} /> Escalate
-                                                                                    </Button>
-                                                                                </>
-                                                                            )}
-                                                                            <Button
-                                                                                variant="ghost"
-                                                                                className="text-slate-400 hover:text-rose-600 font-bold text-xs h-10 px-3 rounded-xl hover:bg-rose-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                                                                                onClick={() => { setSelectedApproval(approval); setIsRejectDialogOpen(true); }}
-                                                                                disabled={isActing}
-                                                                            >
-                                                                                Reject
-                                                                            </Button>
-                                                                        </div>
->>>>>>> Stashed changes
                                                                     </>
                                                                 ) : (
                                                                     <div className="flex items-center gap-2">
@@ -688,79 +577,6 @@ const ApprovalsPage = () => {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-<<<<<<< Updated upstream
-=======
-            {/* Delegate Dialog */}
-            <Dialog open={isDelegateDialogOpen} onOpenChange={(open) => { setIsDelegateDialogOpen(open); if (!open) setDelegateTo(""); }}>
-                <DialogContent className="bg-white rounded-3xl border-none p-10 max-w-md shadow-2xl">
-                    <DialogHeader className="space-y-4">
-                        <div className="h-12 w-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 mb-2">
-                            <Forward size={28} />
-                        </div>
-                        <DialogTitle className="text-2xl font-bold tracking-tight text-slate-900">Delegate Request</DialogTitle>
-                        <DialogDescription className="text-slate-500 font-medium">Assign this request to another team lead or manager for review.</DialogDescription>
-                    </DialogHeader>
-                    <div className="py-6 space-y-2">
-                        <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Delegate To *</Label>
-                        <Input
-                            className={`rounded-2xl bg-slate-50 focus:bg-white h-12 font-medium px-4 ${delegateToError ? 'border-rose-300 focus:border-rose-400' : 'border-slate-200'}`}
-                            placeholder="e.g. Team Lead - Sarah, HR Manager..."
-                            value={delegateTo}
-                            maxLength={80}
-                            onChange={(e) => setDelegateTo(e.target.value)}
-                            aria-invalid={!!delegateToError}
-                        />
-                        {delegateToError && <p className="text-[11px] font-semibold text-rose-500 ml-1">{delegateToError}</p>}
-                    </div>
-                    <DialogFooter className="gap-3">
-                        <Button variant="outline" className="rounded-xl h-12 font-bold px-8" onClick={() => { setIsDelegateDialogOpen(false); setDelegateTo(""); }}>Cancel</Button>
-                        <Button
-                            className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl h-12 font-bold shadow-lg shadow-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
-                            onClick={handleDelegate}
-                            disabled={!isDelegateValid}
-                        >
-                            Delegate Now
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            {/* Escalate Dialog */}
-            <Dialog open={isEscalateDialogOpen} onOpenChange={(open) => { setIsEscalateDialogOpen(open); if (!open) setEscalateTo(""); }}>
-                <DialogContent className="bg-white rounded-3xl border-none p-10 max-w-md shadow-2xl">
-                    <DialogHeader className="space-y-4">
-                        <div className="h-12 w-12 bg-purple-50 rounded-2xl flex items-center justify-center text-purple-600 mb-2">
-                            <TrendingUp size={28} />
-                        </div>
-                        <DialogTitle className="text-2xl font-bold tracking-tight text-slate-900">Escalate Request</DialogTitle>
-                        <DialogDescription className="text-slate-500 font-medium">Escalate this to a higher authority for urgent attention.</DialogDescription>
-                    </DialogHeader>
-                    <div className="py-6 space-y-2">
-                        <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Escalate To *</Label>
-                        <Input
-                            className={`rounded-2xl bg-slate-50 focus:bg-white h-12 font-medium px-4 ${escalateToError ? 'border-rose-300 focus:border-rose-400' : 'border-slate-200'}`}
-                            placeholder="e.g. Head of Operations, VP HR..."
-                            value={escalateTo}
-                            maxLength={80}
-                            onChange={(e) => setEscalateTo(e.target.value)}
-                            aria-invalid={!!escalateToError}
-                        />
-                        {escalateToError && <p className="text-[11px] font-semibold text-rose-500 ml-1">{escalateToError}</p>}
-                    </div>
-                    <DialogFooter className="gap-3">
-                        <Button variant="outline" className="rounded-xl h-12 font-bold px-8" onClick={() => { setIsEscalateDialogOpen(false); setEscalateTo(""); }}>Cancel</Button>
-                        <Button
-                            className="flex-1 bg-purple-600 hover:bg-purple-700 text-white rounded-xl h-12 font-bold shadow-lg shadow-purple-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
-                            onClick={handleEscalate}
-                            disabled={!isEscalateValid}
-                        >
-                            Escalate Now
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
->>>>>>> Stashed changes
             {/* Audit Trail Dialog */}
             <Dialog open={isAuditDialogOpen} onOpenChange={setIsAuditDialogOpen}>
                 <DialogContent className="bg-white rounded-3xl border-none p-10 max-w-md shadow-2xl">
@@ -844,7 +660,14 @@ const ApprovalsPage = () => {
                     </DialogHeader>
                     <DialogFooter className="gap-3 pt-4">
                         <Button variant="outline" className="rounded-xl h-12 font-bold px-8" onClick={() => setIsDeleteDialogOpen(false)}>Cancel</Button>
-                        <Button className="flex-1 bg-rose-600 hover:bg-rose-700 text-white rounded-xl h-12 font-bold shadow-lg shadow-rose-100 gap-2" onClick={handleDelete}>
+                        <Button className="flex-1 bg-rose-600 hover:bg-rose-700 text-white rounded-xl h-12 font-bold shadow-lg shadow-rose-100 gap-2" onClick={() => {
+                            if (selectedApproval) {
+                                deleteApproval(selectedApproval.id);
+                                setSelectedIds(prev => prev.filter(id => id !== selectedApproval.id));
+                                toast({ title: "Record Deleted", description: `${selectedApproval.requestedBy.name}'s approval has been removed.` });
+                            }
+                            setIsDeleteDialogOpen(false);
+                        }}>
                             <Trash2 size={16} /> Delete Permanently
                         </Button>
                     </DialogFooter>
@@ -865,7 +688,13 @@ const ApprovalsPage = () => {
                     </DialogHeader>
                     <DialogFooter className="gap-3 pt-4">
                         <Button variant="outline" className="rounded-xl h-12 font-bold px-8" onClick={() => setIsBulkDeleteDialogOpen(false)}>Cancel</Button>
-                        <Button className="flex-1 bg-rose-600 hover:bg-rose-700 text-white rounded-xl h-12 font-bold shadow-lg shadow-rose-100 gap-2" onClick={handleBulkDelete}>
+                        <Button className="flex-1 bg-rose-600 hover:bg-rose-700 text-white rounded-xl h-12 font-bold shadow-lg shadow-rose-100 gap-2" onClick={() => {
+                            const mockIds = selectedIds.filter(id => !isLiveItem(id));
+                            mockIds.forEach(id => deleteApproval(id));
+                            setSelectedIds([]);
+                            setIsBulkDeleteDialogOpen(false);
+                            toast({ title: "Records Deleted", description: `${mockIds.length} approval record(s) have been removed.` });
+                        }}>
                             <Trash2 size={16} /> Delete Selected
                         </Button>
                     </DialogFooter>

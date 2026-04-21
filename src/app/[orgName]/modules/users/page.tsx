@@ -28,22 +28,19 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu"
-<<<<<<< Updated upstream
 import { showSuccess, showWarning } from "@/utils/toast"
-=======
-import { showSuccess, showError } from "@/utils/toast"
-import { fetchUsersApi, updateOrgUser, deleteOrgUser } from "@/modules/crm/organizations/hooks/orgHooks"
 import { UserFormDialog, splitName } from "@/shared/components/rbac/UserFormDialog"
->>>>>>> Stashed changes
 
 type Role = string
 type Status = "Active" | "Pending" | "Suspended"
 type MFA = "Enabled" | "Disabled"
 
+const ROLES: Role[] = ["Admin", "Manager", "Developer", "Member", "HR"]
+
 interface User {
   id: string
-  firstName: string
-  lastName: string
+  firstName?: string
+  lastName?: string
   name: string
   email: string
   role: Role
@@ -56,7 +53,6 @@ interface User {
 
 const STATUSES: Status[] = ["Active", "Pending", "Suspended"]
 
-<<<<<<< Updated upstream
 const initialUsers: User[] = [
   { id: "1", name: "Sarah Miller", email: "sarah.m@fixlsolutions.com", role: "Admin", status: "Active", mfa: "Enabled", joined: "Oct 12, 2024" },
   { id: "2", name: "Robert Wilson", email: "robert.w@fixlsolutions.com", role: "Manager", status: "Active", mfa: "Enabled", joined: "Oct 15, 2024" },
@@ -64,35 +60,6 @@ const initialUsers: User[] = [
   { id: "4", name: "James Chen", email: "james.c@fixlsolutions.com", role: "Manager", status: "Pending", mfa: "Disabled", joined: "Jan 10, 2025" },
   { id: "5", name: "Maria Garcia", email: "maria.g@fixlsolutions.com", role: "Member", status: "Active", mfa: "Enabled", joined: "Feb 22, 2025" },
 ]
-=======
-const mapApiUserToUser = (apiUser: any): User => {
-  const firstName = apiUser.firstName || ""
-  const lastName = apiUser.lastName || ""
-  const name = [firstName, lastName].filter(Boolean).join(" ") || "Unknown"
-  const role: Role = apiUser.role || "Member"
-  const status: Status = apiUser.orgActive === true ? "Active" : apiUser.orgActive === false ? "Suspended" : "Pending"
-  const mfa: MFA = apiUser.twoFAEnabled ? "Enabled" : "Disabled"
-  const joined = apiUser.joinedAt
-    ? new Date(apiUser.joinedAt).toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })
-    : "N/A"
-  const firmIds = Array.isArray(apiUser.firmIds)
-    ? apiUser.firmIds.map((f: any) => (typeof f === "string" ? f : f?._id)).filter(Boolean)
-    : []
-  return {
-    id: apiUser._id,
-    firstName,
-    lastName,
-    name,
-    email: apiUser.email || "",
-    role,
-    roleId: apiUser.roleId || apiUser.role_id || "",
-    firmIds,
-    status,
-    mfa,
-    joined,
-  }
-}
->>>>>>> Stashed changes
 
 export default function AllUsersPage() {
   const [users, setUsers] = useState<User[]>(initialUsers)
@@ -105,30 +72,10 @@ export default function AllUsersPage() {
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
 
-<<<<<<< Updated upstream
   // Form states
   const [formName, setFormName] = useState("")
   const [formEmail, setFormEmail] = useState("")
   const [formRole, setFormRole] = useState<Role>("Member")
-=======
-  const loadUsers = async () => {
-    try {
-      setLoading(true)
-      const res = await fetchUsersApi()
-      const data = res?.data || res || []
-      const usersArray = Array.isArray(data) ? data : data.users ? data.users : []
-      setUsers(usersArray.map(mapApiUserToUser))
-    } catch (err: any) {
-      showError(err?.response?.data?.message || "Failed to load users")
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    loadUsers()
-  }, [])
->>>>>>> Stashed changes
 
   const filteredUsers = useMemo(() => {
     const q = searchQuery.toLowerCase()
@@ -162,7 +109,6 @@ export default function AllUsersPage() {
     setStatusFilter(options[(idx + 1) % options.length])
   }
 
-<<<<<<< Updated upstream
   const resetForm = () => {
     setFormName("")
     setFormEmail("")
@@ -208,14 +154,11 @@ export default function AllUsersPage() {
     showSuccess("User updated successfully")
   }
 
-=======
->>>>>>> Stashed changes
   const openEditModal = (user: User) => {
     setSelectedUser(user)
     setEditOpen(true)
   }
 
-<<<<<<< Updated upstream
   const handleChangeRole = (user: User) => {
     const idx = ROLES.indexOf(user.role)
     const nextRole = ROLES[(idx + 1) % ROLES.length]
@@ -224,9 +167,6 @@ export default function AllUsersPage() {
   }
 
   const handleToggleStatus = (user: User) => {
-=======
-  const handleToggleStatus = async (user: User) => {
->>>>>>> Stashed changes
     const newStatus: Status = user.status === "Active" ? "Suspended" : "Active"
     setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, status: newStatus } : u)))
     showSuccess(`${user.name} is now ${newStatus}`)
@@ -353,11 +293,10 @@ export default function AllUsersPage() {
           </div>
           <button
             onClick={cycleStatusFilter}
-            className={`inline-flex items-center gap-2 px-4 h-9 text-sm font-medium rounded-none border transition-colors ${
-              statusFilter !== "All"
-                ? "bg-primary/10 border-primary text-primary"
-                : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"
-            }`}
+            className={`inline-flex items-center gap-2 px-4 h-9 text-sm font-medium rounded-none border transition-colors ${statusFilter !== "All"
+              ? "bg-primary/10 border-primary text-primary"
+              : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"
+              }`}
           >
             Status: {statusFilter}
           </button>
@@ -408,9 +347,8 @@ export default function AllUsersPage() {
                       </td>
                       <td className="px-4 py-3">
                         <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded-none ${statusBadgeClass(user.status)}`}>
-                          <span className={`h-1.5 w-1.5 rounded-full ${
-                            user.status === "Active" ? "bg-green-500" : user.status === "Pending" ? "bg-amber-500" : "bg-red-500"
-                          }`} />
+                          <span className={`h-1.5 w-1.5 rounded-full ${user.status === "Active" ? "bg-green-500" : user.status === "Pending" ? "bg-amber-500" : "bg-red-500"
+                            }`} />
                           {user.status}
                         </span>
                       </td>
@@ -480,6 +418,7 @@ export default function AllUsersPage() {
         </div>
       </div>
 
+      {/* Invite/Create User Dialog */}
       <UserFormDialog
         open={inviteOpen}
         onOpenChange={(v) => {
@@ -487,9 +426,13 @@ export default function AllUsersPage() {
           if (!v) setSelectedUser(null)
         }}
         mode="invite"
-        onSuccess={loadUsers}
+        onSuccess={() => {
+          // Reload users or refresh the list
+          window.location.reload()
+        }}
       />
 
+      {/* Edit User Dialog */}
       <UserFormDialog
         open={editOpen}
         onOpenChange={(v) => {
@@ -500,21 +443,24 @@ export default function AllUsersPage() {
         editTarget={
           selectedUser
             ? {
-                id: selectedUser.id,
-                firstName:
-                  selectedUser.firstName ||
-                  splitName(selectedUser.name).firstName,
-                lastName:
-                  selectedUser.lastName ||
-                  splitName(selectedUser.name).lastName,
-                email: selectedUser.email,
-                roleId: selectedUser.roleId,
-                roleName: selectedUser.role,
-                firmIds: selectedUser.firmIds,
-              }
+              id: selectedUser.id,
+              firstName:
+                selectedUser.firstName ||
+                splitName(selectedUser.name).firstName,
+              lastName:
+                selectedUser.lastName ||
+                splitName(selectedUser.name).lastName,
+              email: selectedUser.email,
+              roleId: selectedUser.roleId,
+              roleName: selectedUser.role,
+              firmIds: selectedUser.firmIds,
+            }
             : null
         }
-        onSuccess={loadUsers}
+        onSuccess={() => {
+          // Reload users or refresh the list
+          window.location.reload()
+        }}
       />
 
       {/* Delete Confirmation Dialog */}

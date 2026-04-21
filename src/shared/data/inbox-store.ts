@@ -273,8 +273,6 @@ export const useInboxStore = create<InboxState>()(
                 notifications: state.notifications.filter(n => n.id !== id)
             })),
 
-<<<<<<< Updated upstream
-=======
             addNotification: (payload) => set((state) => ({
                 notifications: [
                     {
@@ -287,9 +285,6 @@ export const useInboxStore = create<InboxState>()(
                 ]
             })),
 
-            updateNotificationPreferences: (prefs) => set({ notificationPreferences: prefs }),
-
->>>>>>> Stashed changes
             updateRequestStatus: (id, status) => set((state) => ({
                 requests: state.requests.map(r =>
                     r.id === id ? { ...r, status, updatedAt: new Date().toISOString() } : r

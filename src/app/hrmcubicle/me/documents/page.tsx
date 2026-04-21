@@ -491,13 +491,8 @@ const MyDocumentsPage = () => {
                         </div>
                         <div className="space-y-2">
                             <Label className="text-[10px] font-bold text-slate-400 capitalize text-start block">Category</Label>
-<<<<<<< Updated upstream
                             <Select defaultValue="Personal">
                                 <SelectTrigger className="rounded-xl bg-slate-50 border-none h-11 text-sm font-medium">
-=======
-                            <Select value={uploadForm.category} onValueChange={v => setUploadForm({ ...uploadForm, category: v })}>
-                                <SelectTrigger className="rounded-xl bg-slate-50 border border-slate-200 h-11 text-sm font-medium" disabled={isUploading}>
->>>>>>> Stashed changes
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
