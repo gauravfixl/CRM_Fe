@@ -815,9 +815,8 @@ export default function SignUpPage() {
                                       }
                                     }
                                   }}
-                                  className={`w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-blue-50 text-left ${
-                                    selectedCountry.code === c.code ? "bg-blue-50 font-medium" : ""
-                                  }`}
+                                  className={`w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-blue-50 text-left ${selectedCountry.code === c.code ? "bg-blue-50 font-medium" : ""
+                                    }`}
                                 >
                                   <span>{c.flag}</span>
                                   <span className="flex-1">{c.country}</span>
@@ -868,13 +867,12 @@ export default function SignUpPage() {
                         onChange={(e) => handleInputChange("password", e.target.value)}
                         onBlur={() => handleBlur("password")}
                         placeholder="Create password"
-                        className={`h-11 pr-10 ${
-                          formErrors.password
+                        className={`h-11 pr-10 ${formErrors.password
                             ? "border-red-500 focus-visible:ring-red-500"
                             : touchedFields.password && allPasswordChecksPassed
-                            ? "border-green-500 focus-visible:ring-green-500"
-                            : ""
-                        }`}
+                              ? "border-green-500 focus-visible:ring-green-500"
+                              : ""
+                          }`}
                       />
                       <Button
                         type="button"
@@ -904,11 +902,10 @@ export default function SignUpPage() {
                               <X className="h-3 w-3 text-red-400" />
                             )}
                             <span
-                              className={`text-[10px] ${
-                                passwordChecks[key as keyof typeof passwordChecks]
+                              className={`text-[10px] ${passwordChecks[key as keyof typeof passwordChecks]
                                   ? "text-green-600"
                                   : "text-red-400"
-                              }`}
+                                }`}
                             >
                               {label}
                             </span>
@@ -965,9 +962,9 @@ export default function SignUpPage() {
                   />
                   <Label htmlFor="terms" className="text-sm text-gray-600 leading-relaxed">
                     I agree to the{" "}
-                    <Link href="/terms" className="text-blue-600 hover:underline">Terms of Service</Link>{" "}
+                    <Link href="/terms-of-service" className="text-blue-600 hover:underline">Terms of Service</Link>{" "}
                     and{" "}
-                    <Link href="/privacy" className="text-blue-600 hover:underline">Privacy Policy</Link>
+                    <Link href="/privacy-policy" className="text-blue-600 hover:underline">Privacy Policy</Link>
                   </Label>
                 </div>
                 <ErrorMessage message={formErrors.agreeToTerms} />

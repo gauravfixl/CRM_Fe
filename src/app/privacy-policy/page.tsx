@@ -97,6 +97,27 @@ export default function PrivacyPolicyPage() {
               className="lg:col-span-1"
             >
               <div className="lg:sticky lg:top-24">
+                {/* Back Button */}
+                <button
+                  onClick={() => window.history.back()}
+                  className="flex items-center gap-2 px-3 py-2 mb-6 text-sm text-[#6B7280] hover:text-[#0067B8] hover:bg-[#EBF3FB] rounded-lg transition-all w-full"
+                >
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M10 19l-7-7m0 0l7-7m-7 7h18"
+                    />
+                  </svg>
+                  Back
+                </button>
+
                 <h3 className="text-xs font-semibold text-[#6B7280] uppercase tracking-wider mb-4">
                   Table of Contents
                 </h3>
@@ -105,11 +126,10 @@ export default function PrivacyPolicyPage() {
                     <a
                       key={section.id}
                       href={`#${section.id}`}
-                      className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all ${
-                        activeSection === section.id
+                      className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all ${activeSection === section.id
                           ? "bg-[#EBF3FB] text-[#0067B8] font-medium"
                           : "text-[#6B7280] hover:bg-gray-50 hover:text-[#1A1A1A]"
-                      }`}
+                        }`}
                     >
                       <section.icon className="w-4 h-4 flex-shrink-0" />
                       {section.title}

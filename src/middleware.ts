@@ -50,6 +50,8 @@ const PUBLIC_ROUTES = [
   "/contact",
   "/privacy-policy",
   "/terms-of-service",
+  "/terms",
+  "/privacy",
 ];
 
 /**
