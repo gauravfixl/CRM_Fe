@@ -1,7 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
-import { FileText, Plus, Search, Filter, MoreVertical, Edit, Trash2, ChevronRight, CheckCircle2, Clock } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { FileText, Plus, Search, Filter, MoreVertical, Edit, Trash2, ChevronRight, CheckCircle2, Clock, Loader2, XCircle } from "lucide-react";
+import { toast } from "sonner";
+import { getAllInvoices, getAllDrafts, cancelInvoice, softDeleteInvoice, updateInvoice } from "@/modules/crm/invoices/hooks/invoiceHooks";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -13,12 +15,79 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 export default function InvoiceDraftFlowPage() {
     const [showCreateModal, setShowCreateModal] = useState(false);
-    const [workflows, setWorkflows] = useState([
-        { id: "1", name: "Standard Invoice Flow", stages: 4, approvalRequired: true, autoNumber: true, status: "Active", usage: 1204 },
-        { id: "2", name: "Draft Review Process", stages: 3, approvalRequired: true, autoNumber: false, status: "Active", usage: 856 },
-        { id: "3", name: "Quick Invoice", stages: 2, approvalRequired: false, autoNumber: true, status: "Active", usage: 342 },
-        { id: "4", name: "Recurring Invoice", stages: 5, approvalRequired: true, autoNumber: true, status: "Paused", usage: 120 },
-    ]);
+    const [workflows, setWorkflows] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+    const fetchData = async () => {
+        try {
+            setLoading(true);
+            const [invoicesRes, draftsRes] = await Promise.all([
+                getAllInvoices(),
+                getAllDrafts(),
+            ]);
+            const invoices = invoicesRes?.data?.data || invoicesRes?.data || [];
+            const drafts = draftsRes?.data?.data || draftsRes?.data || [];
+
+            const allItems = [
+                ...drafts.map((d: any) => ({
+                    id: d._id || d.id,
+                    name: d.invoiceNumber || d.number || "Draft",
+                    stages: 1,
+                    approvalRequired: false,
+                    autoNumber: true,
+                    status: "Draft",
+                    usage: 0,
+                    _raw: d,
+                })),
+                ...invoices.map((inv: any) => ({
+                    id: inv._id || inv.id,
+                    name: inv.invoiceNumber || inv.number || "Invoice",
+                    stages: inv.status === "Paid" ? 3 : inv.status === "Sent" ? 2 : 1,
+                    approvalRequired: inv.status === "Pending",
+                    autoNumber: true,
+                    status: inv.status || "Pending",
+                    usage: inv.totalAmount || inv.total || 0,
+                    _raw: inv,
+                })),
+            ];
+            setWorkflows(allItems);
+        } catch (err: any) {
+            toast.error(err?.response?.data?.message || "Failed to load invoices");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchData();
+    }, []);
+
+    const handleCancel = async (id: string) => {
+        try {
+            setActionLoading(id);
+            await cancelInvoice(id);
+            toast.success("Invoice cancelled successfully");
+            fetchData();
+        } catch (err: any) {
+            toast.error(err?.response?.data?.message || "Failed to cancel invoice");
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    const handleDelete = async (id: string) => {
+        try {
+            setActionLoading(id);
+            await softDeleteInvoice(id);
+            toast.success("Invoice deleted successfully");
+            fetchData();
+        } catch (err: any) {
+            toast.error(err?.response?.data?.message || "Failed to delete invoice");
+        } finally {
+            setActionLoading(null);
+        }
+    };
 
     const toggleStatus = (id: string) => {
         setWorkflows(prev => prev.map(w => w.id === id ? { ...w, status: w.status === "Active" ? "Paused" : "Active" } : w));
@@ -82,7 +151,22 @@ export default function InvoiceDraftFlowPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-zinc-100">
-                            {workflows.map((workflow) => (
+                            {loading ? (
+                                <tr>
+                                    <td colSpan={7} className="px-5 py-12 text-center">
+                                        <div className="flex items-center justify-center gap-2 text-slate-500">
+                                            <Loader2 size={18} className="animate-spin" />
+                                            <span className="text-xs">Loading invoices...</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ) : workflows.length === 0 ? (
+                                <tr>
+                                    <td colSpan={7} className="px-5 py-12 text-center">
+                                        <span className="text-xs text-slate-500">No invoices found.</span>
+                                    </td>
+                                </tr>
+                            ) : workflows.map((workflow) => (
                                 <tr key={workflow.id} className="hover:bg-blue-50/30 transition-colors group">
                                     <td className="px-5 py-3">
                                         <div className="flex items-center gap-3">
@@ -109,23 +193,26 @@ export default function InvoiceDraftFlowPage() {
                                             <Badge className="bg-zinc-400 text-white border-none rounded-md text-[10px] font-medium px-2 py-0.5">Disabled</Badge>
                                         )}
                                     </td>
-                                    <td className="px-5 py-3"><span className="text-xs font-medium text-gray-900">{workflow.usage.toLocaleString()}</span></td>
+                                    <td className="px-5 py-3"><span className="text-xs font-medium text-gray-900">{typeof workflow.usage === 'number' ? workflow.usage.toLocaleString() : workflow.usage}</span></td>
                                     <td className="px-5 py-3">
                                         <div className="flex items-center gap-2">
-                                            <Switch checked={workflow.status === "Active"} onCheckedChange={() => toggleStatus(workflow.id)} className="data-[state=checked]:bg-green-600" />
-                                            <Badge className={`${workflow.status === "Active" ? "bg-green-600" : "bg-zinc-400"} text-white border-none rounded-md text-[10px] font-medium px-2 py-0.5`}>{workflow.status}</Badge>
+                                            <Switch checked={workflow.status === "Active" || workflow.status === "Paid" || workflow.status === "Sent"} onCheckedChange={() => toggleStatus(workflow.id)} className="data-[state=checked]:bg-green-600" />
+                                            <Badge className={`${workflow.status === "Draft" ? "bg-zinc-400" : workflow.status === "Paid" ? "bg-green-600" : workflow.status === "Cancelled" ? "bg-red-600" : "bg-blue-600"} text-white border-none rounded-md text-[10px] font-medium px-2 py-0.5`}>{workflow.status}</Badge>
                                         </div>
                                     </td>
                                     <td className="px-5 py-3 text-right">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" className="h-8 w-8 p-0 rounded-lg hover:bg-zinc-100"><MoreVertical size={16} /></Button>
+                                                <Button variant="ghost" className="h-8 w-8 p-0 rounded-lg hover:bg-zinc-100" disabled={actionLoading === workflow.id}>
+                                                    {actionLoading === workflow.id ? <Loader2 size={16} className="animate-spin" /> : <MoreVertical size={16} />}
+                                                </Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end" className="rounded-xl border-zinc-200 shadow-lg p-2 min-w-[180px]">
                                                 <DropdownMenuLabel className="text-[10px] font-medium text-slate-500">Actions</DropdownMenuLabel>
                                                 <DropdownMenuItem className="text-xs p-2 flex items-center gap-2 focus:bg-blue-600 focus:text-white cursor-pointer"><Edit size={14} /> Edit Workflow</DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => handleCancel(workflow.id)} className="text-xs p-2 flex items-center gap-2 text-amber-600 focus:bg-amber-600 focus:text-white cursor-pointer"><XCircle size={14} /> Cancel Invoice</DropdownMenuItem>
                                                 <DropdownMenuSeparator className="my-2" />
-                                                <DropdownMenuItem className="text-xs p-2 text-red-600 focus:bg-red-600 focus:text-white flex items-center gap-2 cursor-pointer"><Trash2 size={14} /> Delete</DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => handleDelete(workflow.id)} className="text-xs p-2 text-red-600 focus:bg-red-600 focus:text-white flex items-center gap-2 cursor-pointer"><Trash2 size={14} /> Delete</DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </td>

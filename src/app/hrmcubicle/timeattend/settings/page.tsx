@@ -8,7 +8,7 @@ import { Badge } from "@/shared/components/ui/badge";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { Switch } from "@/shared/components/ui/switch";
-import { Settings, Save, Clock, Calendar, ShieldCheck, GitBranch } from "lucide-react";
+import { Settings, Save, Clock, Calendar, ShieldCheck, GitBranch, Trash2 } from "lucide-react";
 import { useToast } from "@/shared/components/ui/use-toast";
 import {
     Dialog,
@@ -24,6 +24,9 @@ import {
     getHolidaysByYear,
     upsertAttendancePolicy,
 } from "@/modules/hrm/hooks/hrmHooks";
+import SandwichRulesPanel from "@/shared/components/hrm/timeattend/panels/sandwich-rules-panel";
+import GeoFencingPanel from "@/shared/components/hrm/timeattend/panels/geofencing-panel";
+import BiometricPanel from "@/shared/components/hrm/timeattend/panels/biometric-panel";
 
 const TimeAttendSettingsPage = () => {
     const [activeTab, setActiveTab] = useState("attendance-rules");
@@ -124,11 +127,25 @@ const TimeAttendSettingsPage = () => {
             toast({ title: "Incomplete", description: "Please fill in all fields.", variant: "destructive" });
             return;
         }
+        if (workflowName.trim().length < 5) {
+            toast({ title: "Name Too Short", description: "Workflow name must be at least 5 characters.", variant: "destructive" });
+            return;
+        }
+        const stepArray = workflowSteps.split("→").map((s) => s.trim()).filter(Boolean);
+        if (stepArray.length < 2) {
+            toast({ title: "Too Few Steps", description: "Workflow must have at least 2 approval steps separated by →.", variant: "destructive" });
+            return;
+        }
+        if (stepArray.some((s) => s.length < 2)) {
+            toast({ title: "Invalid Steps", description: "Each approval step must be at least 2 characters.", variant: "destructive" });
+            return;
+        }
         if (editingWorkflow) {
             setWorkflows(prev => prev.map(w => w.id === editingWorkflow.id ? { ...w, name: workflowName, steps: workflowSteps } : w));
             toast({ title: "Workflow Updated", description: `"${workflowName}" has been modified.` });
         } else {
-            const newWorkflow = { id: `WF-0${workflows.length + 1}`, name: workflowName, steps: workflowSteps };
+            const nextNum = workflows.length + 1;
+            const newWorkflow = { id: `WF-${String(nextNum).padStart(2, "0")}`, name: workflowName, steps: workflowSteps };
             setWorkflows(prev => [...prev, newWorkflow]);
             toast({ title: "Workflow Created", description: `"${workflowName}" is now active.` });
         }
@@ -136,6 +153,13 @@ const TimeAttendSettingsPage = () => {
         setEditingWorkflow(null);
         setWorkflowName("");
         setWorkflowSteps("");
+    };
+
+    const handleDeleteWorkflow = (wf: { id: string; name: string }) => {
+        const confirmed = window.confirm(`Delete workflow "${wf.name}"? This cannot be undone.`);
+        if (!confirmed) return;
+        setWorkflows(prev => prev.filter(w => w.id !== wf.id));
+        toast({ title: "Workflow Deleted", description: `"${wf.name}" has been removed.`, variant: "destructive" });
     };
 
     return (
@@ -152,7 +176,7 @@ const TimeAttendSettingsPage = () => {
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
                 <TabsList className="bg-transparent p-0 gap-6 border-b border-transparent w-full overflow-x-auto justify-start h-auto rounded-none">
-                    {["Attendance Rules", "Leave Rules", "Shift Rules", "Approval Workflows"].map((tab) => (
+                    {["Attendance Rules", "Leave Rules", "Shift Rules", "Approval Workflows", "Sandwich Rules", "Geo-fencing", "Biometric"].map((tab) => (
                         <TabsTrigger
                             key={tab.toLowerCase().replace(" ", "-")}
                             value={tab.toLowerCase().replace(" ", "-")}
@@ -180,7 +204,7 @@ const TimeAttendSettingsPage = () => {
                                         <p className="text-sm text-slate-500">Allow employees some extra time before marking late.</p>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <Input type="number" className="w-20" value={gracePeriod} onChange={(e) => setGracePeriod(Number(e.target.value))} />
+                                        <Input type="number" className="w-20 border border-slate-200" value={gracePeriod} onChange={(e) => setGracePeriod(Number(e.target.value))} />
                                         <span className="text-sm text-slate-500">Mins</span>
                                     </div>
                                 </div>
@@ -236,7 +260,7 @@ const TimeAttendSettingsPage = () => {
                                     <p className="text-sm text-slate-500">Days required to apply for leave in advance.</p>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <Input type="number" className="w-20" value={noticePeriod} onChange={(e) => setNoticePeriod(Number(e.target.value))} />
+                                    <Input type="number" className="w-20 border border-slate-200" value={noticePeriod} onChange={(e) => setNoticePeriod(Number(e.target.value))} />
                                     <span className="text-sm text-slate-500">Days</span>
                                 </div>
                             </div>
@@ -251,6 +275,71 @@ const TimeAttendSettingsPage = () => {
                     </Card>
                 </TabsContent>
 
+                {/* Shift Rules Tab */}
+                <TabsContent value="shift-rules" className="space-y-4">
+                    <div className="grid gap-6 md:grid-cols-2">
+                        <Card className="shadow-sm border-slate-200">
+                            <CardHeader>
+                                <CardTitle className="text-lg flex items-center gap-2">
+                                    <Clock className="h-5 w-5 text-[#6366f1]" /> Shift Configuration
+                                </CardTitle>
+                                <CardDescription>Define shift timings and rotation rules.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-6">
+                                <div className="flex items-center justify-between">
+                                    <div className="space-y-0.5">
+                                        <Label className="text-base">Default Shift Start</Label>
+                                        <p className="text-sm text-slate-500">Standard start time for the default shift.</p>
+                                    </div>
+                                    <Input type="time" defaultValue="09:00" className="w-32 border border-slate-200" />
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <div className="space-y-0.5">
+                                        <Label className="text-base">Default Shift End</Label>
+                                        <p className="text-sm text-slate-500">Standard end time for the default shift.</p>
+                                    </div>
+                                    <Input type="time" defaultValue="18:00" className="w-32 border border-slate-200" />
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <div className="space-y-0.5">
+                                        <Label className="text-base">Minimum Break Duration</Label>
+                                        <p className="text-sm text-slate-500">Minimum break time between shifts (in minutes).</p>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Input type="number" defaultValue={60} className="w-20 border border-slate-200" />
+                                        <span className="text-sm text-slate-500">Mins</span>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        <Card className="shadow-sm border-slate-200">
+                            <CardHeader>
+                                <CardTitle className="text-lg flex items-center gap-2">
+                                    <Settings className="h-5 w-5 text-[#6366f1]" /> Rotation & Allowances
+                                </CardTitle>
+                                <CardDescription>Configure shift rotation and allowance rules.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-6">
+                                <div className="flex items-center justify-between">
+                                    <div className="space-y-0.5">
+                                        <Label className="text-base">Enable Shift Rotation</Label>
+                                        <p className="text-sm text-slate-500">Automatically rotate shifts on a weekly basis.</p>
+                                    </div>
+                                    <Switch />
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <div className="space-y-0.5">
+                                        <Label className="text-base">Night Shift Allowance</Label>
+                                        <p className="text-sm text-slate-500">Enable additional allowance for night shift employees.</p>
+                                    </div>
+                                    <Switch />
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                </TabsContent>
+
                 {/* Approval Workflows Tab */}
                 <TabsContent value="approval-workflows" className="space-y-4">
                     <Card className="shadow-sm border-slate-200">
@@ -260,13 +349,28 @@ const TimeAttendSettingsPage = () => {
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-6">
+                            {workflows.length === 0 && (
+                                <div className="text-center text-sm text-slate-500 p-6 border border-dashed border-slate-200 rounded-lg">
+                                    No workflows configured yet. Create one below to get started.
+                                </div>
+                            )}
                             {workflows.map((wf) => (
                                 <div key={wf.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200">
                                     <div className="space-y-1">
                                         <h4 className="font-semibold text-slate-900">{wf.name}</h4>
                                         <p className="text-sm text-slate-500">{wf.steps}</p>
                                     </div>
-                                    <Button variant="outline" size="sm" onClick={() => handleOpenWorkflowDialog(wf)}>Modify</Button>
+                                    <div className="flex items-center gap-2">
+                                        <Button variant="outline" size="sm" onClick={() => handleOpenWorkflowDialog(wf)}>Modify</Button>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="text-rose-600 border-rose-200 hover:bg-rose-50 hover:text-rose-700"
+                                            onClick={() => handleDeleteWorkflow(wf)}
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </div>
                                 </div>
                             ))}
                             <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200">
@@ -282,11 +386,26 @@ const TimeAttendSettingsPage = () => {
                         </CardContent>
                     </Card>
                 </TabsContent>
+
+                {/* Sandwich Rules Tab */}
+                <TabsContent value="sandwich-rules" className="space-y-4">
+                    <SandwichRulesPanel />
+                </TabsContent>
+
+                {/* Geo-fencing Tab */}
+                <TabsContent value="geo-fencing" className="space-y-4">
+                    <GeoFencingPanel />
+                </TabsContent>
+
+                {/* Biometric Tab */}
+                <TabsContent value="biometric" className="space-y-4">
+                    <BiometricPanel />
+                </TabsContent>
             </Tabs>
 
             {/* Workflow Create/Edit Dialog */}
             <Dialog open={isWorkflowDialogOpen} onOpenChange={setIsWorkflowDialogOpen}>
-                <DialogContent className="sm:max-w-[450px] rounded-2xl p-8 bg-white border-none shadow-2xl">
+                <DialogContent className="sm:max-w-[450px] rounded-2xl p-8 bg-white border-2 border-slate-200 shadow-2xl">
                     <DialogHeader>
                         <DialogTitle className="text-xl font-bold text-slate-900">
                             {editingWorkflow ? "Edit Workflow" : "Create New Workflow"}
@@ -302,7 +421,7 @@ const TimeAttendSettingsPage = () => {
                                 placeholder="e.g. Overtime Approval"
                                 value={workflowName}
                                 onChange={(e) => setWorkflowName(e.target.value)}
-                                className="h-11 rounded-lg"
+                                className="h-11 rounded-lg border border-slate-200"
                             />
                         </div>
                         <div className="grid gap-2">
@@ -311,7 +430,7 @@ const TimeAttendSettingsPage = () => {
                                 placeholder="e.g. Manager → HR → Director"
                                 value={workflowSteps}
                                 onChange={(e) => setWorkflowSteps(e.target.value)}
-                                className="h-11 rounded-lg"
+                                className="h-11 rounded-lg border border-slate-200"
                             />
                         </div>
                     </div>

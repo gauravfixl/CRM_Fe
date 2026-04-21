@@ -175,6 +175,111 @@ const data = {
     { value: "3x", label: "Pipeline visibility" },
     { value: "25%", label: "Revenue growth" },
   ],
+  capabilities: [
+    {
+      title: "Advanced Pipeline Intelligence",
+      description:
+        "Go beyond simple deal tracking with AI-powered pipeline analysis that identifies patterns in your sales data and provides actionable recommendations to improve win rates across every stage of your funnel.",
+      keyPoints: [
+        "Predictive deal scoring that learns from your historical win/loss data",
+        "Automated stale-deal detection with recommended next actions",
+        "Stage-by-stage conversion analytics with bottleneck identification",
+        "Revenue impact modeling for pipeline changes and scenario planning",
+      ],
+    },
+    {
+      title: "Relationship Mapping & Stakeholder Tracking",
+      description:
+        "Understand the full buying committee behind every deal by mapping relationships between contacts, identifying decision-makers, and tracking engagement levels across all stakeholders involved in the purchase process.",
+      keyPoints: [
+        "Visual org charts showing reporting lines and influence networks",
+        "Multi-threading alerts when only one contact is engaged on a deal",
+        "Stakeholder engagement scoring based on email, meeting, and call activity",
+        "Champion and detractor identification with sentiment tracking",
+      ],
+    },
+    {
+      title: "Omni-Channel Communication Hub",
+      description:
+        "Unify every customer touchpoint into a single chronological timeline. Whether your team communicates via email, phone, live chat, or social media, every interaction is captured and linked to the right contact and deal record.",
+      keyPoints: [
+        "Two-way email sync with Gmail and Outlook including thread tracking",
+        "Call logging with automatic duration capture and recording links",
+        "Built-in meeting scheduler that eliminates back-and-forth availability emails",
+      ],
+    },
+    {
+      title: "Territory & Quota Management",
+      description:
+        "Design and manage sales territories based on geography, industry, deal size, or custom criteria. Set individual and team quotas, track attainment in real time, and rebalance territories as your market coverage evolves.",
+      keyPoints: [
+        "Rule-based territory assignment with automatic lead routing",
+        "Quota setting at individual, team, and organizational levels",
+        "Real-time attainment dashboards with gap-to-goal indicators",
+        "Territory overlap detection and conflict resolution workflows",
+      ],
+    },
+  ],
+  integrations: [
+    { name: "Gmail", category: "Communication" },
+    { name: "Outlook", category: "Communication" },
+    { name: "Slack", category: "Communication" },
+    { name: "Microsoft Teams", category: "Communication" },
+    { name: "Google Calendar", category: "Productivity" },
+    { name: "Mailchimp", category: "Marketing" },
+    { name: "Stripe", category: "Payments" },
+    { name: "Zapier", category: "Automation" },
+    { name: "Google Analytics", category: "Analytics" },
+    { name: "LinkedIn Sales Navigator", category: "Sales" },
+    { name: "DocuSign", category: "Documents" },
+    { name: "Twilio", category: "Communication" },
+  ],
+  testimonials: [
+    {
+      quote:
+        "CubicleERP CRM replaced three separate tools for us. Our sales team now has a single source of truth for every deal, and pipeline reviews that used to take two hours are done in twenty minutes.",
+      author: "Priya Sharma",
+      role: "VP of Sales",
+      company: "Nextera Solutions",
+      metric: "40% increase in quarterly revenue",
+    },
+    {
+      quote:
+        "The lead scoring alone was a game-changer. Our reps stopped wasting time on unqualified prospects and focused on the leads that actually convert. We saw results in the first month.",
+      author: "Marcus Chen",
+      role: "Sales Director",
+      company: "BrightPath Technologies",
+      metric: "60% faster lead-to-close cycle",
+    },
+    {
+      quote:
+        "We evaluated Salesforce, HubSpot, and Pipedrive before choosing CubicleERP. The native integration with invoicing and project management meant we didn't need to stitch together five different products.",
+      author: "Anita Reddy",
+      role: "COO",
+      company: "Meridian Consulting Group",
+      metric: "25% reduction in software costs",
+    },
+  ],
+  comparisons: [
+    { feature: "Contact Management", traditional: "Scattered spreadsheets", cubicleErp: "Unified 360-degree profiles" },
+    { feature: "Pipeline Tracking", traditional: "Manual stage updates", cubicleErp: "Automated deal progression" },
+    { feature: "Email Integration", traditional: "Copy-paste into CRM", cubicleErp: "Two-way auto-sync" },
+    { feature: "Sales Forecasting", traditional: "End-of-month guesswork", cubicleErp: "Real-time AI predictions" },
+    { feature: "Reporting", traditional: "Export and build charts", cubicleErp: "Live interactive dashboards" },
+    { feature: "Cross-Module Data", traditional: "Separate tools, no link", cubicleErp: "Natively connected modules" },
+  ],
+  subNavItems: [
+    { label: "Overview", sectionId: "hero" },
+    { label: "Features", sectionId: "features" },
+    { label: "Capabilities", sectionId: "capabilities" },
+    { label: "Benefits", sectionId: "benefits" },
+    { label: "Integrations", sectionId: "integrations" },
+    { label: "Use Cases", sectionId: "use-cases" },
+    { label: "FAQs", sectionId: "faqs" },
+    { label: "HRM", href: "/explore/hrm" },
+    { label: "Finance", href: "/explore/finance" },
+    { label: "Analytics", href: "/explore/analytics" },
+  ],
 }
 
 export default function CRMPage() {

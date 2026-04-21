@@ -9,13 +9,13 @@ import {
     AlertTriangle,
     Eye,
     FileText,
-    MessageSquare,
-    ChevronRight,
     Receipt,
     Check,
     X,
-    Filter,
     AlertCircle,
+    Search,
+    DollarSign,
+    Wallet,
 } from "lucide-react";
 import { Card, CardContent } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
@@ -32,7 +32,14 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/shared/components/ui/dialog";
-import { useExpenseStore, type ExpenseClaim, type ClaimStatus } from "@/shared/data/expense-store";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/shared/components/ui/select";
+import { useExpenseStore, type ExpenseClaim, type ClaimStatus, type ExpenseCategory } from "@/shared/data/expense-store";
 import { useToast } from "@/shared/components/ui/use-toast";
 import { cn } from "@/lib/utils";
 
@@ -44,6 +51,8 @@ const statusConfig: Record<ClaimStatus, { color: string; bg: string }> = {
     Paid: { color: 'text-purple-700', bg: 'bg-purple-50' },
 };
 
+const categories: ExpenseCategory[] = ['Travel', 'Food', 'Accommodation', 'Transport', 'Communication', 'Medical', 'Other'];
+
 const ExpenseApprovalsPage = () => {
     const { toast } = useToast();
     const { claims, policies, updateClaim } = useExpenseStore();
@@ -52,17 +61,11 @@ const ExpenseApprovalsPage = () => {
     const [reviewNotes, setReviewNotes] = useState('');
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [showHistory, setShowHistory] = useState(false);
-
-    const pendingClaims = useMemo(() =>
-        claims.filter(c => c.status === 'Submitted').sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
-        [claims]
-    );
-
-    const approvalHistory = useMemo(() =>
-        claims.filter(c => c.status === 'Approved' || c.status === 'Rejected' || c.status === 'Paid')
-            .sort((a, b) => new Date(b.approvedDate || b.date).getTime() - new Date(a.approvedDate || a.date).getTime()),
-        [claims]
-    );
+    const [searchQuery, setSearchQuery] = useState('');
+    const [filterCategory, setFilterCategory] = useState<string>('all');
+    const [filterViolations, setFilterViolations] = useState<'all' | 'violations' | 'clean'>('all');
+    const [isBulkRejectOpen, setIsBulkRejectOpen] = useState(false);
+    const [bulkRejectNotes, setBulkRejectNotes] = useState('');
 
     const checkPolicyViolation = (claim: ExpenseClaim): string[] => {
         const violations: string[] = [];
@@ -78,11 +81,47 @@ const ExpenseApprovalsPage = () => {
         return violations;
     };
 
-    const handleApprove = (claim: ExpenseClaim) => {
+    const pendingClaims = useMemo(() => {
+        let result = claims.filter(c => c.status === 'Submitted');
+        if (searchQuery) {
+            const q = searchQuery.toLowerCase();
+            result = result.filter(c =>
+                c.employeeName.toLowerCase().includes(q) ||
+                c.description.toLowerCase().includes(q) ||
+                c.id.toLowerCase().includes(q) ||
+                c.project.toLowerCase().includes(q)
+            );
+        }
+        if (filterCategory !== 'all') result = result.filter(c => c.category === filterCategory);
+        if (filterViolations !== 'all') {
+            result = result.filter(c => {
+                const hasViolation = checkPolicyViolation(c).length > 0;
+                return filterViolations === 'violations' ? hasViolation : !hasViolation;
+            });
+        }
+        return result.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    }, [claims, policies, searchQuery, filterCategory, filterViolations]);
+
+    const approvalHistory = useMemo(() => {
+        let result = claims.filter(c => c.status === 'Approved' || c.status === 'Rejected' || c.status === 'Paid');
+        if (searchQuery) {
+            const q = searchQuery.toLowerCase();
+            result = result.filter(c =>
+                c.employeeName.toLowerCase().includes(q) ||
+                c.description.toLowerCase().includes(q) ||
+                c.id.toLowerCase().includes(q)
+            );
+        }
+        if (filterCategory !== 'all') result = result.filter(c => c.category === filterCategory);
+        return result.sort((a, b) => new Date(b.approvedDate || b.date).getTime() - new Date(a.approvedDate || a.date).getTime());
+    }, [claims, searchQuery, filterCategory]);
+
+    const handleApprove = (claim: ExpenseClaim, notes?: string) => {
         updateClaim(claim.id, {
             status: 'Approved',
             approvedBy: 'Current Admin',
             approvedDate: new Date().toISOString().split('T')[0],
+            reviewNotes: notes?.trim() || claim.reviewNotes,
         });
         setIsReviewOpen(false);
         setReviewNotes('');
@@ -90,21 +129,36 @@ const ExpenseApprovalsPage = () => {
     };
 
     const handleReject = (claim: ExpenseClaim) => {
-        if (!reviewNotes.trim()) {
+        const notes = reviewNotes.trim();
+        if (!notes) {
             toast({ title: "Notes Required", description: "Please provide a reason for rejection.", variant: "destructive" });
+            return;
+        }
+        if (notes.length > 500) {
+            toast({ title: "Notes too long", description: "Review notes must be 500 characters or less.", variant: "destructive" });
             return;
         }
         updateClaim(claim.id, {
             status: 'Rejected',
             approvedBy: 'Current Admin',
             approvedDate: new Date().toISOString().split('T')[0],
+            reviewNotes: notes,
         });
         setIsReviewOpen(false);
         setReviewNotes('');
         toast({ title: "Claim Rejected", description: `${claim.id} has been rejected.` });
     };
 
+    const handleMarkPaid = (claim: ExpenseClaim) => {
+        updateClaim(claim.id, {
+            status: 'Paid',
+            paidDate: new Date().toISOString().split('T')[0],
+        });
+        toast({ title: "Marked as Paid", description: `${claim.id} has been marked as paid.` });
+    };
+
     const handleBulkApprove = () => {
+        if (selectedIds.length === 0) return;
         selectedIds.forEach(id => {
             updateClaim(id, {
                 status: 'Approved',
@@ -117,26 +171,47 @@ const ExpenseApprovalsPage = () => {
     };
 
     const handleBulkReject = () => {
+        if (selectedIds.length === 0) return;
+        setBulkRejectNotes('');
+        setIsBulkRejectOpen(true);
+    };
+
+    const confirmBulkReject = () => {
+        const notes = bulkRejectNotes.trim();
+        if (!notes) {
+            toast({ title: "Notes Required", description: "Please provide a reason for rejection.", variant: "destructive" });
+            return;
+        }
         selectedIds.forEach(id => {
             updateClaim(id, {
                 status: 'Rejected',
                 approvedBy: 'Current Admin',
                 approvedDate: new Date().toISOString().split('T')[0],
+                reviewNotes: notes,
             });
         });
         toast({ title: "Claims Rejected", description: `${selectedIds.length} claims have been rejected.` });
         setSelectedIds([]);
+        setIsBulkRejectOpen(false);
+        setBulkRejectNotes('');
     };
 
     const toggleSelect = (id: string) => {
         setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
     };
 
+    const toggleSelectAll = () => {
+        if (selectedIds.length === pendingClaims.length) setSelectedIds([]);
+        else setSelectedIds(pendingClaims.map(c => c.id));
+    };
+
     const openReview = (claim: ExpenseClaim) => {
         setSelectedClaim(claim);
-        setReviewNotes('');
+        setReviewNotes(claim.reviewNotes || '');
         setIsReviewOpen(true);
     };
+
+    const totalPendingAmount = pendingClaims.reduce((s, c) => s + c.amount, 0);
 
     return (
         <div className="min-h-screen bg-[#f8fafc] p-6 space-y-6">
@@ -152,7 +227,7 @@ const ExpenseApprovalsPage = () => {
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
-                    {selectedIds.length > 0 && (
+                    {selectedIds.length > 0 && !showHistory && (
                         <>
                             <Button size="sm" variant="outline" className="gap-1.5 text-green-600 border-green-200" onClick={handleBulkApprove}>
                                 <Check className="h-3.5 w-3.5" /> Approve ({selectedIds.length})
@@ -162,7 +237,7 @@ const ExpenseApprovalsPage = () => {
                             </Button>
                         </>
                     )}
-                    <Button variant={showHistory ? "default" : "outline"} size="sm" className={cn("gap-1.5", showHistory && "bg-[#8B5CF6] hover:bg-[#7C3AED]")} onClick={() => setShowHistory(!showHistory)}>
+                    <Button variant={showHistory ? "default" : "outline"} size="sm" className={cn("gap-1.5", showHistory && "bg-[#8B5CF6] hover:bg-[#7C3AED]")} onClick={() => { setShowHistory(!showHistory); setSelectedIds([]); }}>
                         <Clock className="h-4 w-4" /> {showHistory ? 'Show Pending' : 'View History'}
                     </Button>
                 </div>
@@ -170,61 +245,116 @@ const ExpenseApprovalsPage = () => {
 
             {/* Stats */}
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-                <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <Card className="rounded-2xl border-none bg-[#CB9DF0] shadow-sm">
                     <CardContent className="p-4 flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50">
-                            <Clock className="h-5 w-5 text-amber-600" />
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/30 backdrop-blur-sm">
+                            <Clock className="h-5 w-5 text-slate-800" />
                         </div>
                         <div>
-                            <p className="text-xs font-bold text-slate-500">Pending</p>
-                            <p className="text-xl font-bold text-slate-900">{pendingClaims.length}</p>
+                            <p className="text-xs font-bold text-slate-700">Pending</p>
+                            <p className="text-xl font-bold text-slate-900">{claims.filter(c => c.status === 'Submitted').length}</p>
+                            <p className="text-[10px] text-slate-600">₹{totalPendingAmount.toLocaleString()}</p>
                         </div>
                     </CardContent>
                 </Card>
-                <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <Card className="rounded-2xl border-none bg-[#F0C1E1] shadow-sm">
                     <CardContent className="p-4 flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-green-50">
-                            <CheckCircle2 className="h-5 w-5 text-green-600" />
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/30 backdrop-blur-sm">
+                            <CheckCircle2 className="h-5 w-5 text-slate-800" />
                         </div>
                         <div>
-                            <p className="text-xs font-bold text-slate-500">Approved</p>
+                            <p className="text-xs font-bold text-slate-700">Approved</p>
                             <p className="text-xl font-bold text-slate-900">{claims.filter(c => c.status === 'Approved').length}</p>
                         </div>
                     </CardContent>
                 </Card>
-                <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <Card className="rounded-2xl border-none bg-[#FFF9BF] shadow-sm">
                     <CardContent className="p-4 flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50">
-                            <XCircle className="h-5 w-5 text-red-600" />
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/30 backdrop-blur-sm">
+                            <XCircle className="h-5 w-5 text-slate-800" />
                         </div>
                         <div>
-                            <p className="text-xs font-bold text-slate-500">Rejected</p>
+                            <p className="text-xs font-bold text-slate-700">Rejected</p>
                             <p className="text-xl font-bold text-slate-900">{claims.filter(c => c.status === 'Rejected').length}</p>
                         </div>
                     </CardContent>
                 </Card>
-                <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <Card className="rounded-2xl border-none bg-[#FDDBBB] shadow-sm">
                     <CardContent className="p-4 flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-50">
-                            <AlertTriangle className="h-5 w-5 text-orange-600" />
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/30 backdrop-blur-sm">
+                            <AlertTriangle className="h-5 w-5 text-slate-800" />
                         </div>
                         <div>
-                            <p className="text-xs font-bold text-slate-500">Policy Violations</p>
-                            <p className="text-xl font-bold text-slate-900">{pendingClaims.filter(c => checkPolicyViolation(c).length > 0).length}</p>
+                            <p className="text-xs font-bold text-slate-700">Policy Violations</p>
+                            <p className="text-xl font-bold text-slate-900">{claims.filter(c => c.status === 'Submitted' && checkPolicyViolation(c).length > 0).length}</p>
                         </div>
                     </CardContent>
                 </Card>
             </div>
 
+            {/* Filters */}
+            <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <CardContent className="p-4">
+                    <div className="flex flex-wrap items-center gap-3">
+                        <div className="relative flex-1 min-w-[220px]">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                            <Input
+                                placeholder="Search by employee, description, or ID..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="pl-9"
+                            />
+                        </div>
+                        <Select value={filterCategory} onValueChange={setFilterCategory}>
+                            <SelectTrigger className="w-[160px]">
+                                <SelectValue placeholder="Category" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Categories</SelectItem>
+                                {categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                        {!showHistory && (
+                            <Select value={filterViolations} onValueChange={(v) => setFilterViolations(v as typeof filterViolations)}>
+                                <SelectTrigger className="w-[180px]">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Claims</SelectItem>
+                                    <SelectItem value="violations">With Violations</SelectItem>
+                                    <SelectItem value="clean">Compliant Only</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        )}
+                        {(searchQuery || filterCategory !== 'all' || filterViolations !== 'all') && (
+                            <Button size="sm" variant="ghost" className="gap-1 text-slate-500" onClick={() => { setSearchQuery(''); setFilterCategory('all'); setFilterViolations('all'); }}>
+                                <X className="h-3 w-3" /> Clear
+                            </Button>
+                        )}
+                    </div>
+                </CardContent>
+            </Card>
+
             {/* Pending Approvals Queue */}
             {!showHistory && (
                 <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
                     <CardContent className="p-5">
-                        <h3 className="text-sm font-bold text-slate-900 mb-4">Pending Approval Queue</h3>
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-sm font-bold text-slate-900">Pending Approval Queue</h3>
+                            {pendingClaims.length > 0 && (
+                                <div className="flex items-center gap-2">
+                                    <Checkbox
+                                        checked={pendingClaims.length > 0 && selectedIds.length === pendingClaims.length}
+                                        onCheckedChange={toggleSelectAll}
+                                    />
+                                    <Label className="text-xs text-slate-500">Select all</Label>
+                                </div>
+                            )}
+                        </div>
                         {pendingClaims.length === 0 ? (
                             <div className="py-12 text-center text-slate-400">
                                 <CheckCircle2 className="h-12 w-12 mx-auto mb-3 text-green-200" />
-                                <p className="text-sm">All caught up! No pending approvals.</p>
+                                <p className="text-sm">{searchQuery || filterCategory !== 'all' || filterViolations !== 'all' ? 'No claims match the filters.' : 'All caught up! No pending approvals.'}</p>
                             </div>
                         ) : (
                             <div className="space-y-2">
@@ -240,9 +370,10 @@ const ExpenseApprovalsPage = () => {
                                                 <Receipt className="h-4 w-4 text-blue-600" />
                                             </div>
                                             <div className="flex-1 min-w-0">
-                                                <div className="flex items-center gap-2">
+                                                <div className="flex items-center gap-2 flex-wrap">
                                                     <span className="text-sm font-medium text-slate-900">{claim.employeeName}</span>
                                                     <Badge variant="secondary" className="text-[10px] bg-slate-100 text-slate-600">{claim.category}</Badge>
+                                                    <span className="text-xs text-slate-400">{claim.id}</span>
                                                     {violations.length > 0 && (
                                                         <Badge variant="secondary" className="text-[10px] bg-orange-100 text-orange-700 gap-1">
                                                             <AlertTriangle className="h-2.5 w-2.5" /> Policy Violation
@@ -265,6 +396,9 @@ const ExpenseApprovalsPage = () => {
                                                 <Button size="sm" variant="outline" className="h-8 text-xs gap-1 text-green-600 border-green-200 hover:bg-green-50" onClick={() => handleApprove(claim)}>
                                                     <Check className="h-3 w-3" /> Approve
                                                 </Button>
+                                                <Button size="sm" variant="outline" className="h-8 text-xs gap-1 text-red-600 border-red-200 hover:bg-red-50" onClick={() => openReview(claim)}>
+                                                    <X className="h-3 w-3" /> Reject
+                                                </Button>
                                                 <Button size="sm" variant="ghost" className="h-8 text-xs gap-1 text-slate-500" onClick={() => openReview(claim)}>
                                                     <Eye className="h-3 w-3" /> Review
                                                 </Button>
@@ -282,45 +416,60 @@ const ExpenseApprovalsPage = () => {
             {showHistory && (
                 <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
                     <CardContent className="p-5">
-                        <h3 className="text-sm font-bold text-slate-900 mb-4">Approval History</h3>
-                        <div className="space-y-3">
-                            {approvalHistory.map((claim) => (
-                                <div key={claim.id} className="flex items-center gap-4 py-3 border-b border-slate-50 last:border-0">
-                                    <div className={cn("flex h-8 w-8 items-center justify-center rounded-full",
-                                        claim.status === 'Approved' || claim.status === 'Paid' ? 'bg-green-100' : 'bg-red-100'
-                                    )}>
-                                        {claim.status === 'Approved' || claim.status === 'Paid' ? (
-                                            <CheckCircle2 className="h-4 w-4 text-green-600" />
-                                        ) : (
-                                            <XCircle className="h-4 w-4 text-red-600" />
+                        <h3 className="text-sm font-bold text-slate-900 mb-4">Approval History ({approvalHistory.length})</h3>
+                        {approvalHistory.length === 0 ? (
+                            <div className="py-12 text-center text-slate-400 text-sm">No records match the filters.</div>
+                        ) : (
+                            <div className="space-y-3">
+                                {approvalHistory.map((claim) => (
+                                    <div key={claim.id} className="flex items-center gap-4 py-3 border-b border-slate-50 last:border-0">
+                                        <div className={cn("flex h-8 w-8 items-center justify-center rounded-full",
+                                            claim.status === 'Approved' || claim.status === 'Paid' ? 'bg-green-100' : 'bg-red-100'
+                                        )}>
+                                            {claim.status === 'Approved' || claim.status === 'Paid' ? (
+                                                <CheckCircle2 className="h-4 w-4 text-green-600" />
+                                            ) : (
+                                                <XCircle className="h-4 w-4 text-red-600" />
+                                            )}
+                                        </div>
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-sm font-medium text-slate-900">{claim.employeeName}</span>
+                                                <span className="text-xs text-slate-400">-</span>
+                                                <span className="text-xs text-slate-500">{claim.description}</span>
+                                            </div>
+                                            <div className="flex items-center gap-2 mt-0.5">
+                                                <span className="text-xs text-slate-400">{claim.status === 'Rejected' ? 'Rejected' : 'Approved'} by {claim.approvedBy}</span>
+                                                <span className="text-xs text-slate-300">|</span>
+                                                <span className="text-xs text-slate-400">{claim.approvedDate}</span>
+                                                {claim.reviewNotes && (
+                                                    <>
+                                                        <span className="text-xs text-slate-300">|</span>
+                                                        <span className="text-xs text-slate-500 italic truncate max-w-xs">"{claim.reviewNotes}"</span>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <span className="text-sm font-bold text-slate-900">₹{claim.amount.toLocaleString()}</span>
+                                        <Badge variant="secondary" className={cn("text-xs", statusConfig[claim.status].bg, statusConfig[claim.status].color)}>
+                                            {claim.status}
+                                        </Badge>
+                                        {claim.status === 'Approved' && (
+                                            <Button size="sm" variant="outline" className="h-7 text-xs gap-1 text-purple-600 border-purple-200" onClick={() => handleMarkPaid(claim)}>
+                                                <Wallet className="h-3 w-3" /> Mark Paid
+                                            </Button>
                                         )}
                                     </div>
-                                    <div className="flex-1">
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-sm font-medium text-slate-900">{claim.employeeName}</span>
-                                            <span className="text-xs text-slate-400">-</span>
-                                            <span className="text-xs text-slate-500">{claim.description}</span>
-                                        </div>
-                                        <div className="flex items-center gap-2 mt-0.5">
-                                            <span className="text-xs text-slate-400">{claim.status === 'Approved' || claim.status === 'Paid' ? 'Approved' : 'Rejected'} by {claim.approvedBy}</span>
-                                            <span className="text-xs text-slate-300">|</span>
-                                            <span className="text-xs text-slate-400">{claim.approvedDate}</span>
-                                        </div>
-                                    </div>
-                                    <span className="text-sm font-bold text-slate-900">₹{claim.amount.toLocaleString()}</span>
-                                    <Badge variant="secondary" className={cn("text-xs", statusConfig[claim.status].bg, statusConfig[claim.status].color)}>
-                                        {claim.status}
-                                    </Badge>
-                                </div>
-                            ))}
-                        </div>
+                                ))}
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
             )}
 
             {/* Review Dialog */}
             <Dialog open={isReviewOpen} onOpenChange={setIsReviewOpen}>
-                <DialogContent className="max-w-lg">
+                <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto border-2 border-slate-200">
                     <DialogHeader>
                         <DialogTitle>Review Expense Claim</DialogTitle>
                         <DialogDescription>{selectedClaim?.id} - {selectedClaim?.employeeName}</DialogDescription>
@@ -342,15 +491,14 @@ const ExpenseApprovalsPage = () => {
                                 </div>
                                 <div className="bg-slate-50 rounded-lg p-3">
                                     <p className="text-[10px] text-slate-400 uppercase">Receipt</p>
-                                    <p className="text-sm font-medium text-slate-900">{selectedClaim.receiptUrl ? 'Attached' : 'Not attached'}</p>
+                                    <p className="text-sm font-medium text-slate-900">{selectedClaim.receiptUrl ? (selectedClaim.receiptName || 'Attached') : 'Not attached'}</p>
                                 </div>
                             </div>
                             <div className="bg-slate-50 rounded-lg p-3">
                                 <p className="text-[10px] text-slate-400 uppercase">Description</p>
-                                <p className="text-sm text-slate-700 mt-1">{selectedClaim.description}</p>
+                                <p className="text-sm text-slate-700 mt-1">{selectedClaim.description || '-'}</p>
                             </div>
 
-                            {/* Policy Compliance */}
                             {(() => {
                                 const violations = checkPolicyViolation(selectedClaim);
                                 if (violations.length > 0) {
@@ -385,7 +533,9 @@ const ExpenseApprovalsPage = () => {
                                     value={reviewNotes}
                                     onChange={(e) => setReviewNotes(e.target.value)}
                                     rows={3}
+                                    maxLength={500}
                                 />
+                                <p className="text-xs text-slate-400 text-right">{reviewNotes.length}/500</p>
                             </div>
                         </div>
                     )}
@@ -393,9 +543,28 @@ const ExpenseApprovalsPage = () => {
                         <Button variant="outline" className="gap-1.5 text-red-600 border-red-200 hover:bg-red-50" onClick={() => selectedClaim && handleReject(selectedClaim)}>
                             <XCircle className="h-4 w-4" /> Reject
                         </Button>
-                        <Button className="gap-1.5 bg-green-600 hover:bg-green-700" onClick={() => selectedClaim && handleApprove(selectedClaim)}>
+                        <Button className="gap-1.5 bg-green-600 hover:bg-green-700" onClick={() => selectedClaim && handleApprove(selectedClaim, reviewNotes)}>
                             <CheckCircle2 className="h-4 w-4" /> Approve
                         </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Bulk Reject Dialog */}
+            <Dialog open={isBulkRejectOpen} onOpenChange={setIsBulkRejectOpen}>
+                <DialogContent className="max-w-md border-2 border-slate-200">
+                    <DialogHeader>
+                        <DialogTitle>Reject {selectedIds.length} claim{selectedIds.length > 1 ? 's' : ''}</DialogTitle>
+                        <DialogDescription>Please provide a reason that will be shared with the employees.</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-2">
+                        <Label className="text-xs font-bold text-slate-500">Reason *</Label>
+                        <Textarea placeholder="Reason for bulk rejection..." value={bulkRejectNotes} onChange={(e) => setBulkRejectNotes(e.target.value)} rows={4} maxLength={500} />
+                        <p className="text-xs text-slate-400 text-right">{bulkRejectNotes.length}/500</p>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsBulkRejectOpen(false)}>Cancel</Button>
+                        <Button className="bg-red-600 hover:bg-red-700" onClick={confirmBulkReject}>Reject All</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

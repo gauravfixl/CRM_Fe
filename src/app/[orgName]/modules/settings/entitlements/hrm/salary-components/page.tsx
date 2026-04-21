@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { DollarSign, Search, Plus, MoreHorizontal, Percent, Calculator, Wallet, Loader2 } from "lucide-react"
+import { useState, useEffect, useCallback } from "react"
+import { DollarSign, Search, Plus, MoreHorizontal, Percent, Wallet, Loader2, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogD
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
+import { getAllEmployees, getSalaryConfigs } from "@/modules/hrm/hooks/hrmHooks"
 
 interface SalaryComponent {
     id: string
@@ -26,26 +27,186 @@ interface SalaryComponent {
     isActive: boolean
 }
 
-const INITIAL_COMPONENTS: SalaryComponent[] = [
-    { id: "1", name: "Basic Salary", code: "BASIC", type: "Earning", calculationType: "Percentage", percentageOf: "CTC", value: 40, isTaxable: true, isActive: true },
-    { id: "2", name: "House Rent Allowance", code: "HRA", type: "Earning", calculationType: "Percentage", percentageOf: "Basic", value: 50, isTaxable: true, isActive: true },
-    { id: "3", name: "Dearness Allowance", code: "DA", type: "Earning", calculationType: "Percentage", percentageOf: "Basic", value: 10, isTaxable: true, isActive: true },
-    { id: "4", name: "Provident Fund", code: "PF", type: "Deduction", calculationType: "Percentage", percentageOf: "Basic", value: 12, isTaxable: false, isActive: true },
-    { id: "5", name: "Employer PF", code: "EPF", type: "Employer Contribution", calculationType: "Percentage", percentageOf: "Basic", value: 12, isTaxable: false, isActive: true },
-    { id: "6", name: "Professional Tax", code: "PT", type: "Deduction", calculationType: "Fixed", percentageOf: "", value: 200, isTaxable: false, isActive: true },
-    { id: "7", name: "Special Allowance", code: "SA", type: "Earning", calculationType: "Fixed", percentageOf: "", value: 0, isTaxable: true, isActive: true },
+// Default salary components used as fallback when no API data is available
+const DEFAULT_COMPONENTS: SalaryComponent[] = [
+    { id: "default-1", name: "Basic Salary", code: "BASIC", type: "Earning", calculationType: "Percentage", percentageOf: "CTC", value: 40, isTaxable: true, isActive: true },
+    { id: "default-2", name: "House Rent Allowance", code: "HRA", type: "Earning", calculationType: "Percentage", percentageOf: "Basic", value: 50, isTaxable: true, isActive: true },
+    { id: "default-3", name: "Dearness Allowance", code: "DA", type: "Earning", calculationType: "Percentage", percentageOf: "Basic", value: 10, isTaxable: true, isActive: true },
+    { id: "default-4", name: "Provident Fund", code: "PF", type: "Deduction", calculationType: "Percentage", percentageOf: "Basic", value: 12, isTaxable: false, isActive: true },
+    { id: "default-5", name: "Employer PF", code: "EPF", type: "Employer Contribution", calculationType: "Percentage", percentageOf: "Basic", value: 12, isTaxable: false, isActive: true },
+    { id: "default-6", name: "Professional Tax", code: "PT", type: "Deduction", calculationType: "Fixed", percentageOf: "", value: 200, isTaxable: false, isActive: true },
+    { id: "default-7", name: "Special Allowance", code: "SA", type: "Earning", calculationType: "Fixed", percentageOf: "", value: 0, isTaxable: true, isActive: true },
 ]
 
+/**
+ * Maps a backend salary-config component type to the UI type.
+ * Backend uses EARNING / DEDUCTION; we also support Employer Contribution locally.
+ */
+function mapComponentType(backendType: string): SalaryComponent["type"] {
+    if (backendType === "DEDUCTION") return "Deduction"
+    return "Earning"
+}
+
+/**
+ * Derives a human-readable label from a component key.
+ * e.g. "basic" -> "Basic Salary", "hra" -> "House Rent Allowance"
+ */
+function labelFromKey(key: string, label?: string): string {
+    if (label) return label
+    const map: Record<string, string> = {
+        basic: "Basic Salary",
+        hra: "House Rent Allowance",
+        da: "Dearness Allowance",
+        pf: "Provident Fund",
+        epf: "Employer PF",
+        pt: "Professional Tax",
+        sa: "Special Allowance",
+        conveyance: "Conveyance Allowance",
+        medical: "Medical Allowance",
+        bonus: "Bonus",
+        esi: "ESI",
+        tds: "TDS",
+        gratuity: "Gratuity",
+    }
+    return map[key.toLowerCase()] || key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, " $1")
+}
+
+/**
+ * Extracts unique salary components from an array of SalaryConfiguration documents.
+ * Each unique component key becomes one row in the table.
+ * When the same key appears in multiple configs, we use the most recent values.
+ */
+function extractComponentsFromConfigs(configs: any[]): SalaryComponent[] {
+    const componentMap = new Map<string, SalaryComponent>()
+
+    for (const config of configs) {
+        const comps = config.components || []
+        for (const comp of comps) {
+            const key = (comp.key || "").toLowerCase()
+            if (!key) continue
+            // Only overwrite if we don't already have it (first config is most recent due to sort)
+            if (!componentMap.has(key)) {
+                const value = typeof comp.value === "object" && comp.value?.$numberDecimal
+                    ? parseFloat(comp.value.$numberDecimal)
+                    : parseFloat(comp.value?.toString() || "0")
+
+                componentMap.set(key, {
+                    id: comp._id || `config-${key}-${config._id}`,
+                    name: labelFromKey(key, comp.label),
+                    code: key.toUpperCase(),
+                    type: mapComponentType(comp.type),
+                    calculationType: comp.mode === "PERCENT" ? "Percentage" : "Fixed",
+                    percentageOf: comp.mode === "PERCENT" ? "Basic" : "",
+                    value,
+                    isTaxable: comp.isTaxable !== false,
+                    isActive: config.status === "Active",
+                })
+            }
+        }
+    }
+
+    return Array.from(componentMap.values())
+}
+
+/**
+ * Derives salary components from employee data when no SalaryConfiguration records exist.
+ * Uses employee CTC to compute standard Indian payroll breakdowns.
+ */
+function deriveComponentsFromEmployees(employees: any[]): { components: SalaryComponent[]; totalCtc: number; avgCtc: number } {
+    const employeesWithCtc = employees.filter((e: any) => e.salary?.ctc && e.salary.ctc > 0)
+    const totalCtc = employeesWithCtc.reduce((sum: number, e: any) => sum + (e.salary?.ctc || 0), 0)
+    const avgCtc = employeesWithCtc.length > 0 ? totalCtc / employeesWithCtc.length : 0
+
+    // If employees have CTC data, return standard Indian payroll components with calculated values
+    if (employeesWithCtc.length > 0) {
+        const avgMonthly = avgCtc / 12
+        const basic = avgMonthly * 0.4
+        return {
+            components: [
+                { id: "derived-1", name: "Basic Salary", code: "BASIC", type: "Earning", calculationType: "Percentage", percentageOf: "CTC", value: 40, isTaxable: true, isActive: true },
+                { id: "derived-2", name: "House Rent Allowance", code: "HRA", type: "Earning", calculationType: "Percentage", percentageOf: "Basic", value: 50, isTaxable: true, isActive: true },
+                { id: "derived-3", name: "Dearness Allowance", code: "DA", type: "Earning", calculationType: "Percentage", percentageOf: "Basic", value: 10, isTaxable: true, isActive: true },
+                { id: "derived-4", name: "Provident Fund", code: "PF", type: "Deduction", calculationType: "Percentage", percentageOf: "Basic", value: 12, isTaxable: false, isActive: true },
+                { id: "derived-5", name: "Employer PF", code: "EPF", type: "Employer Contribution", calculationType: "Percentage", percentageOf: "Basic", value: 12, isTaxable: false, isActive: true },
+                { id: "derived-6", name: "Professional Tax", code: "PT", type: "Deduction", calculationType: "Fixed", percentageOf: "", value: 200, isTaxable: false, isActive: true },
+                { id: "derived-7", name: "Special Allowance", code: "SA", type: "Earning", calculationType: "Fixed", percentageOf: "", value: Math.round(avgMonthly - basic - basic * 0.5 - basic * 0.1 - basic * 0.12 - 200), isTaxable: true, isActive: true },
+            ],
+            totalCtc,
+            avgCtc,
+        }
+    }
+
+    return { components: [], totalCtc: 0, avgCtc: 0 }
+}
+
 export default function SalaryComponentsPage() {
-    const [components, setComponents] = useState<SalaryComponent[]>(INITIAL_COMPONENTS)
+    const [pageLoading, setPageLoading] = useState(true)
+    const [components, setComponents] = useState<SalaryComponent[]>([])
     const [searchQuery, setSearchQuery] = useState("")
     const [isCreateOpen, setIsCreateOpen] = useState(false)
     const [isEditOpen, setIsEditOpen] = useState(false)
     const [editItem, setEditItem] = useState<SalaryComponent | null>(null)
+    const [employeeCount, setEmployeeCount] = useState(0)
+    const [dataSource, setDataSource] = useState<"api" | "derived" | "default">("default")
     const [newItem, setNewItem] = useState({
         name: "", code: "", type: "Earning" as SalaryComponent["type"],
         calculationType: "Fixed" as "Fixed" | "Percentage", percentageOf: "", value: 0, isTaxable: true,
     })
+
+    const fetchData = useCallback(async () => {
+        try {
+            // Fetch employees and salary configs in parallel
+            const [employeeRes, salaryConfigRes] = await Promise.allSettled([
+                getAllEmployees(),
+                getSalaryConfigs({ status: "Active" }),
+            ])
+
+            // Process employee data
+            let employees: any[] = []
+            if (employeeRes.status === "fulfilled") {
+                const empData = employeeRes.value?.data?.data || employeeRes.value?.data?.employees || []
+                employees = Array.isArray(empData) ? empData : []
+                setEmployeeCount(employees.length)
+            }
+
+            // Try salary configs first (most structured data)
+            if (salaryConfigRes.status === "fulfilled") {
+                const configs = salaryConfigRes.value?.data?.configs || salaryConfigRes.value?.data?.data || []
+                if (Array.isArray(configs) && configs.length > 0) {
+                    const extracted = extractComponentsFromConfigs(configs)
+                    if (extracted.length > 0) {
+                        setComponents(extracted)
+                        setDataSource("api")
+                        return
+                    }
+                }
+            }
+
+            // Fallback: derive components from employee CTC data
+            if (employees.length > 0) {
+                const { components: derived } = deriveComponentsFromEmployees(employees)
+                if (derived.length > 0) {
+                    setComponents(derived)
+                    setDataSource("derived")
+                    return
+                }
+            }
+
+            // Final fallback: use default components
+            setComponents(DEFAULT_COMPONENTS)
+            setDataSource("default")
+        } catch {
+            // If everything fails, use defaults
+            setComponents(DEFAULT_COMPONENTS)
+            setDataSource("default")
+        } finally {
+            setPageLoading(false)
+        }
+    }, [])
+
+    useEffect(() => {
+        fetchData()
+    }, [fetchData])
 
     const filtered = components.filter((c) =>
         c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -54,10 +215,11 @@ export default function SalaryComponentsPage() {
 
     const earnings = components.filter((c) => c.type === "Earning" && c.isActive).length
     const deductions = components.filter((c) => c.type === "Deduction" && c.isActive).length
-    const contributions = components.filter((c) => c.type === "Employer Contribution" && c.isActive).length
+    const _contributions = components.filter((c) => c.type === "Employer Contribution" && c.isActive).length
 
     const handleCreate = () => {
         if (!newItem.name || !newItem.code) return toast.error("Name and code are required")
+        if (components.some((c) => c.code === newItem.code.toUpperCase())) return toast.error("Component code already exists")
         setComponents([...components, { ...newItem, id: Date.now().toString(), isActive: true }])
         setIsCreateOpen(false)
         setNewItem({ name: "", code: "", type: "Earning", calculationType: "Fixed", percentageOf: "", value: 0, isTaxable: true })
@@ -75,6 +237,14 @@ export default function SalaryComponentsPage() {
     const handleDelete = (id: string) => {
         setComponents(components.filter((c) => c.id !== id))
         toast.success("Component removed")
+    }
+
+    if (pageLoading) {
+        return (
+            <div className="font-outfit flex items-center justify-center min-h-screen bg-[#fafafa]">
+                <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+            </div>
+        )
     }
 
     return (
@@ -97,7 +267,7 @@ export default function SalaryComponentsPage() {
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <SmallCard className="rounded-xl border bg-gradient-to-r from-primary/70 to-primary text-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
-                    <SmallCardContent className="p-4"><div className="flex items-center justify-between"><div><p className="text-xs text-white/80">Total Components</p><p className="text-xl font-semibold">{components.length}</p><p className="text-[10px] text-white/70">Active in payroll</p></div><DollarSign className="w-5 h-5 text-white/80" /></div></SmallCardContent>
+                    <SmallCardContent className="p-4"><div className="flex items-center justify-between"><div><p className="text-xs text-white/80">Total Components</p><p className="text-xl font-semibold text-white tracking-tight">{components.length}</p><p className="text-[10px] text-white/70">Active in payroll</p></div><DollarSign className="w-5 h-5 text-white/80" /></div></SmallCardContent>
                 </SmallCard>
                 <SmallCard className="rounded-xl border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
                     <SmallCardContent className="p-4"><div className="flex items-center justify-between"><div><p className="text-xs text-gray-600">Earnings</p><p className="text-xl font-semibold text-gray-900">{earnings}</p><p className="text-[10px] text-gray-500">Pay components</p></div><Wallet className="w-5 h-5 text-gray-400" /></div></SmallCardContent>
@@ -106,7 +276,7 @@ export default function SalaryComponentsPage() {
                     <SmallCardContent className="p-4"><div className="flex items-center justify-between"><div><p className="text-xs text-gray-600">Deductions</p><p className="text-xl font-semibold text-gray-900">{deductions}</p><p className="text-[10px] text-gray-500">Employee deductions</p></div><Percent className="w-5 h-5 text-gray-400" /></div></SmallCardContent>
                 </SmallCard>
                 <SmallCard className="rounded-xl border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
-                    <SmallCardContent className="p-4"><div className="flex items-center justify-between"><div><p className="text-xs text-gray-600">Employer Contributions</p><p className="text-xl font-semibold text-gray-900">{contributions}</p><p className="text-[10px] text-gray-500">Company obligations</p></div><Calculator className="w-5 h-5 text-gray-400" /></div></SmallCardContent>
+                    <SmallCardContent className="p-4"><div className="flex items-center justify-between"><div><p className="text-xs text-gray-600">Employees</p><p className="text-xl font-semibold text-gray-900">{employeeCount}</p><p className="text-[10px] text-gray-500">On payroll</p></div><Users className="w-5 h-5 text-gray-400" /></div></SmallCardContent>
                 </SmallCard>
             </div>
 

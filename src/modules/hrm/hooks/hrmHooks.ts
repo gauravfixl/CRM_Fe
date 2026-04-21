@@ -34,6 +34,91 @@ export const getEmployeeById = async (employeeId: string) => {
     }
 };
 
+export const createEmployee = async (data: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    department: string;
+    position: string;
+    employmentType?: string;
+    createdBy?: string;
+}) => {
+    try {
+        const response = await axios.post("/employees/", data);
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error creating employee:", err);
+            showError(err?.response?.data?.message || "Failed to create employee");
+        }
+        throw err;
+    }
+};
+
+export const updateEmployee = async (employeeId: string, data: Record<string, any>) => {
+    try {
+        const response = await axios.patch(`/employees/update/${employeeId}`, data);
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error updating employee:", err);
+            showError(err?.response?.data?.message || "Failed to update employee");
+        }
+        throw err;
+    }
+};
+
+export const deleteEmployee = async (employeeId: string) => {
+    try {
+        const response = await axios.delete(`/employees/delete/${employeeId}`);
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error deleting employee:", err);
+            showError(err?.response?.data?.message || "Failed to delete employee");
+        }
+        throw err;
+    }
+};
+
+// ==================== ORGANIZATION / COMPANY PROFILE APIs ====================
+
+export const getOrganizationById = async (orgId: string) => {
+    try {
+        const response = await axios.get(`/organization/${orgId}`);
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error fetching organization:", err);
+            showError(err?.response?.data?.message || "Failed to fetch organization");
+        }
+        throw err;
+    }
+};
+
+export const updateOrganizationDetails = async (data: {
+    name?: string;
+    contactEmail?: string;
+    contactPhone?: string;
+    contactName?: string;
+    address?: string;
+    orgCity?: string;
+    orgState?: string;
+    orgCountry?: string;
+    timezone?: string;
+}) => {
+    try {
+        const response = await axios.patch("/organization/update/details", data);
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error updating organization:", err);
+            showError(err?.response?.data?.message || "Failed to update organization");
+        }
+        throw err;
+    }
+};
+
 // ==================== DEPARTMENT APIs ====================
 
 export const getAllDepartments = async () => {
@@ -324,7 +409,7 @@ export const deleteCandidate = async (candidateId: string) => {
 
 export const getAllInterviews = async () => {
     try {
-        const response = await axios.get("/recruitment/interviews/all");
+        const response = await axios.get("/recruitment/interviews/");
         return response;
     } catch (err: any) {
         if (err?.response?.status !== 401) {
@@ -533,6 +618,35 @@ export const getTodayPunches = async () => {
         if (err?.response?.status !== 401) {
             console.error("Error fetching today punches:", err);
             showError("Failed to fetch today punches");
+        }
+        throw err;
+    }
+};
+
+export const overrideAttendance = async (attendanceId: string, data: {
+    status: "Present" | "Absent" | "HalfDay" | "Leave" | "Holiday" | "Weekend";
+    remarks: string;
+}) => {
+    try {
+        const response = await axios.patch(`/hrm/attendance/${attendanceId}/override`, data);
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error overriding attendance:", err);
+            showError(err?.response?.data?.message || "Failed to override attendance");
+        }
+        throw err;
+    }
+};
+
+export const lockAttendanceForPayroll = async (data?: { month?: number; year?: number }) => {
+    try {
+        const response = await axios.post("/hrm/attendance/lock", data || {});
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error locking attendance:", err);
+            showError(err?.response?.data?.message || "Failed to lock attendance");
         }
         throw err;
     }
@@ -824,6 +938,19 @@ export const updateAppraisal = async (appraisalId: string, data: Record<string, 
     }
 };
 
+export const deleteAppraisal = async (appraisalId: string) => {
+    try {
+        const response = await axios.delete(`/performance/appraisal/${appraisalId}`);
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error deleting appraisal:", err);
+            showError(err?.response?.data?.message || "Failed to delete appraisal");
+        }
+        throw err;
+    }
+};
+
 export const getAllGoals = async () => {
     try {
         const response = await axios.get("/performance/goals/all");
@@ -920,6 +1047,108 @@ export const createFeedback = async (data: {
         if (err?.response?.status !== 401) {
             console.error("Error creating feedback:", err);
             showError(err?.response?.data?.message || "Failed to create feedback");
+        }
+        throw err;
+    }
+};
+
+export const getFeedbackById = async (feedbackId: string) => {
+    try {
+        const response = await axios.get(`/performance/feedback/${feedbackId}`);
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error fetching feedback:", err);
+            showError("Failed to fetch feedback");
+        }
+        throw err;
+    }
+};
+
+// Backend registers delete under GET method at /:feedbackId/delete (non-REST but matches backend)
+export const deleteFeedback = async (feedbackId: string) => {
+    try {
+        const response = await axios.get(`/performance/feedback/${feedbackId}/delete`);
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error deleting feedback:", err);
+            showError(err?.response?.data?.message || "Failed to delete feedback");
+        }
+        throw err;
+    }
+};
+
+// ==================== PERFORMANCE IMPROVEMENT PLAN (PIP) APIs ====================
+
+export const getAllImprovementPlans = async () => {
+    try {
+        const response = await axios.get("/performance/improvement/all");
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error fetching improvement plans:", err);
+            showError("Failed to fetch PIP records");
+        }
+        throw err;
+    }
+};
+
+export const createImprovementPlan = async (data: {
+    employee: string;
+    objectives: string[];
+    actions: string[];
+    timeline: string;
+    planDate?: string;
+    managerComments?: string;
+}) => {
+    try {
+        const response = await axios.post("/performance/improvement/", data);
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error creating improvement plan:", err);
+            showError(err?.response?.data?.message || "Failed to create PIP");
+        }
+        throw err;
+    }
+};
+
+export const updateImprovementPlan = async (pipId: string, data: Record<string, any>) => {
+    try {
+        const response = await axios.patch(`/performance/improvement/${pipId}`, data);
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error updating improvement plan:", err);
+            showError(err?.response?.data?.message || "Failed to update PIP");
+        }
+        throw err;
+    }
+};
+
+// Backend registers delete under GET method at /:improvementId/delete (matches backend route)
+export const deleteImprovementPlan = async (pipId: string) => {
+    try {
+        const response = await axios.get(`/performance/improvement/${pipId}/delete`);
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error deleting improvement plan:", err);
+            showError(err?.response?.data?.message || "Failed to delete PIP");
+        }
+        throw err;
+    }
+};
+
+export const getImprovementPlanById = async (pipId: string) => {
+    try {
+        const response = await axios.get(`/performance/improvement/${pipId}`);
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error fetching improvement plan:", err);
+            showError("Failed to fetch PIP details");
         }
         throw err;
     }
@@ -1058,6 +1287,74 @@ export const disableShift = async (id: string) => {
         if (err?.response?.status !== 401) {
             console.error("Error disabling shift:", err);
             showError(err?.response?.data?.message || "Failed to disable shift");
+        }
+        throw err;
+    }
+};
+
+// ==================== SALARY CONFIGURATION APIs ====================
+
+export const getSalaryConfigs = async (params?: { status?: string }) => {
+    try {
+        const response = await axios.get("/payroll/salary-config/all", { params });
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error fetching salary configurations:", err);
+        }
+        throw err;
+    }
+};
+
+export const createSalaryConfig = async (data: {
+    employee: string;
+    salaryType: string;
+    base: number;
+    components: Array<{
+        key: string;
+        label: string;
+        type: "EARNING" | "DEDUCTION";
+        mode: "AMOUNT" | "PERCENT";
+        value: number;
+        isTaxable: boolean;
+        sequence?: number;
+    }>;
+    effectiveFrom: string;
+    currency?: string;
+}) => {
+    try {
+        const response = await axios.post("/payroll/salary-config/", data);
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error creating salary configuration:", err);
+            showError(err?.response?.data?.error || "Failed to create salary configuration");
+        }
+        throw err;
+    }
+};
+
+export const updateSalaryConfig = async (id: string, data: Record<string, any>) => {
+    try {
+        const response = await axios.patch(`/payroll/salary-config/${id}`, data);
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error updating salary configuration:", err);
+            showError(err?.response?.data?.error || "Failed to update salary configuration");
+        }
+        throw err;
+    }
+};
+
+export const deactivateSalaryConfig = async (id: string) => {
+    try {
+        const response = await axios.delete(`/payroll/salary-config/${id}`);
+        return response;
+    } catch (err: any) {
+        if (err?.response?.status !== 401) {
+            console.error("Error deactivating salary configuration:", err);
+            showError(err?.response?.data?.error || "Failed to deactivate salary configuration");
         }
         throw err;
     }

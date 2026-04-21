@@ -37,6 +37,7 @@ interface IntegrationsState {
     // Webhook Actions
     addWebhook: (webhook: Omit<Webhook, 'id' | 'secret'>) => void;
     deleteWebhook: (id: string) => void;
+    toggleWebhook: (id: string, isActive: boolean) => void;
 
     // API Key Actions
     generateApiKey: (name: string) => void;
@@ -105,6 +106,10 @@ export const useIntegrationsStore = create<IntegrationsState>()(
 
             deleteWebhook: (id) => set((state) => ({
                 webhooks: state.webhooks.filter(w => w.id !== id)
+            })),
+
+            toggleWebhook: (id, isActive) => set((state) => ({
+                webhooks: state.webhooks.map(w => w.id === id ? { ...w, isActive } : w)
             })),
 
             generateApiKey: (name) => set((state) => ({

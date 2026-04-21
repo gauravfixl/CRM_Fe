@@ -181,6 +181,115 @@ const data = {
     { value: "50%", label: "Faster order fulfillment" },
     { value: "20%", label: "Reduction in carrying costs" },
   ],
+
+  capabilities: [
+    {
+      title: "Demand Forecasting Engine",
+      description:
+        "Leverage historical sales data, seasonal patterns, and market signals to predict future demand with high accuracy. The forecasting engine automatically adjusts for trends, promotions, and external factors so you order the right quantities at the right time.",
+      keyPoints: [
+        "Machine learning models trained on your own sales history produce SKU-level demand forecasts up to 12 months out",
+        "Factor in promotional calendars, holiday seasons, and marketing campaigns for more precise predictions",
+        "Automated safety stock calculations adjust dynamically based on demand variability and supplier lead times",
+        "Scenario planning lets you model 'what-if' situations like supplier delays or demand spikes before they happen",
+      ],
+    },
+    {
+      title: "Multi-Channel Inventory Synchronization",
+      description:
+        "Sell across your own website, Amazon, Shopify, eBay, and brick-and-mortar stores while maintaining a single, accurate inventory count. Real-time sync prevents overselling and ensures stock availability is consistent everywhere.",
+      keyPoints: [
+        "Bi-directional sync with major e-commerce platforms updates stock counts within seconds of each sale or return",
+        "Channel-specific stock reserves let you allocate inventory pools for flash sales or marketplace promotions without affecting other channels",
+        "Centralized order routing engine selects the optimal fulfillment location based on proximity, stock availability, and shipping cost",
+      ],
+    },
+    {
+      title: "Warehouse Optimization Intelligence",
+      description:
+        "Go beyond basic storage with AI-driven recommendations for slotting, picking routes, and layout optimization. The system analyzes order patterns to minimize travel time and maximize throughput in your warehouse.",
+      keyPoints: [
+        "Heat-map analysis of pick frequency identifies high-velocity items that should be placed closest to packing stations",
+        "Dynamic pick-path routing calculates the shortest route through the warehouse for each batch of orders",
+        "Zone-based wave picking groups orders by location to reduce picker travel time by up to 40%",
+        "Automated putaway rules assign incoming stock to optimal bin locations based on product velocity and dimensions",
+      ],
+    },
+    {
+      title: "Advanced Lot and Expiry Management",
+      description:
+        "Maintain full traceability from supplier receipt to customer delivery with granular lot, batch, and expiry tracking. Critical for food, pharmaceutical, and chemical industries where compliance is non-negotiable.",
+      keyPoints: [
+        "FEFO (First Expired, First Out) picking enforcement ensures products closest to expiration are shipped first",
+        "Automated alerts notify warehouse staff of approaching expiration dates with configurable lead times",
+        "One-click recall management identifies every customer who received products from a specific batch for rapid response",
+      ],
+    },
+  ],
+
+  integrations: [
+    { name: "Shopify", category: "E-commerce" },
+    { name: "Amazon Seller Central", category: "Marketplace" },
+    { name: "WooCommerce", category: "E-commerce" },
+    { name: "QuickBooks", category: "Accounting" },
+    { name: "Xero", category: "Accounting" },
+    { name: "ShipStation", category: "Shipping" },
+    { name: "Shiprocket", category: "Shipping" },
+    { name: "Razorpay", category: "Payments" },
+    { name: "Google Sheets", category: "Productivity" },
+    { name: "Slack", category: "Communication" },
+    { name: "Tally", category: "Accounting" },
+    { name: "eBay", category: "Marketplace" },
+  ],
+
+  testimonials: [
+    {
+      quote:
+        "We used to do manual stock counts every Friday and still had discrepancies. After switching to CubicleERP Inventory with barcode scanning, our inventory accuracy went from 87% to 99.6% and we eliminated the weekly counting entirely.",
+      author: "James Whitfield",
+      role: "Warehouse Operations Manager",
+      company: "Summit Distribution Co.",
+      metric: "99.6% inventory accuracy achieved",
+    },
+    {
+      quote:
+        "Managing inventory across our Shopify store, Amazon, and two retail locations was a nightmare of spreadsheets. CubicleERP unified everything into one dashboard and we have not had an oversell incident in 8 months.",
+      author: "Anita Rao",
+      role: "E-commerce Director",
+      company: "GreenLeaf Organics",
+      metric: "Zero overselling incidents in 8 months",
+    },
+    {
+      quote:
+        "The demand forecasting feature alone justified the investment. We reduced our carrying costs by 22% in the first quarter because we stopped over-ordering slow-moving SKUs while keeping fast movers fully stocked.",
+      author: "Marcus Johansson",
+      role: "Supply Chain VP",
+      company: "NordicTech Hardware",
+      metric: "22% reduction in carrying costs",
+    },
+  ],
+
+  comparisons: [
+    { feature: "Stock updates", traditional: "End-of-day batch sync", cubicleErp: "Real-time across channels" },
+    { feature: "Reorder management", traditional: "Manual spreadsheet checks", cubicleErp: "Automated smart alerts" },
+    { feature: "Barcode scanning", traditional: "Separate hardware system", cubicleErp: "Built-in with any device" },
+    { feature: "Multi-warehouse", traditional: "Separate systems per site", cubicleErp: "Unified control panel" },
+    { feature: "Demand forecasting", traditional: "Gut feeling estimates", cubicleErp: "ML-powered predictions" },
+    { feature: "Supplier management", traditional: "Email and phone calls", cubicleErp: "Integrated vendor portal" },
+  ],
+
+  subNavItems: [
+    { label: "Overview", sectionId: "hero" },
+    { label: "Features", sectionId: "features" },
+    { label: "Capabilities", sectionId: "capabilities" },
+    { label: "Benefits", sectionId: "benefits" },
+    { label: "Integrations", sectionId: "integrations" },
+    { label: "Use Cases", sectionId: "use-cases" },
+    { label: "FAQs", sectionId: "faqs" },
+    { label: "Supply Chain", href: "/explore/scm" },
+    { label: "E-commerce", href: "/explore/ecommerce" },
+    { label: "Finance", href: "/explore/finance" },
+  ],
 }
 
 export default function InventoryPage() {

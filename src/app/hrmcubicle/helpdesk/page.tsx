@@ -1,6 +1,6 @@
 "use client"
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
     LayoutDashboard,
@@ -12,22 +12,45 @@ import {
     Users,
     TrendingUp,
     BarChart3,
-    ArrowDownRight,
     Inbox,
     History,
     ChevronRight,
-    Activity
+    Activity,
+    Download
 } from "lucide-react";
 import { Card, CardContent } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
 import { Badge } from "@/shared/components/ui/badge";
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
-import { useHelpdeskStore } from "@/shared/data/helpdesk-store";
+import { useHelpdeskStore, type Ticket } from "@/shared/data/helpdesk-store";
+import { helpdeskApi } from "@/shared/data/helpdesk-api";
+import { useToast } from "@/shared/components/ui/use-toast";
 import { motion } from "framer-motion";
 
 const HelpdeskDashboard = () => {
     const router = useRouter();
-    const { tickets, agents } = useHelpdeskStore();
+    const { toast } = useToast();
+    const { tickets: storeTickets, agents, categories } = useHelpdeskStore();
+    const [apiTickets, setApiTickets] = useState<Ticket[] | null>(null);
+    const [backendAvailable, setBackendAvailable] = useState<boolean | null>(null);
+
+    useEffect(() => {
+        let cancelled = false;
+        (async () => {
+            try {
+                const list = await helpdeskApi.fetchAllTickets({ limit: 200 });
+                if (!cancelled) {
+                    setApiTickets(list);
+                    setBackendAvailable(true);
+                }
+            } catch {
+                if (!cancelled) setBackendAvailable(false);
+            }
+        })();
+        return () => { cancelled = true; };
+    }, []);
+
+    const tickets = apiTickets !== null ? apiTickets : storeTickets;
 
     const stats = {
         total: tickets.length,
@@ -38,13 +61,46 @@ const HelpdeskDashboard = () => {
         warning: tickets.filter(t => t.slaStatus === "Warning" && t.status !== "Closed").length
     };
 
-    const categories = ["Payroll", "Leave", "IT Support", "Admin", "HR Ops"];
-    const categoryStats = categories.map(cat => ({
-        name: cat,
-        count: tickets.filter(t => t.category === cat).length
+    const categoryStats = categories.slice(0, 5).map(cat => ({
+        name: cat.name,
+        count: tickets.filter(t => t.category === cat.name).length
     }));
 
-    const recentActivity = tickets.slice(0, 5);
+    const recentActivity = [...tickets]
+        .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+        .slice(0, 5);
+
+    const handleExportIntel = () => {
+        const rows: string[][] = [
+            ["Metric", "Value"],
+            ["Total Tickets", String(stats.total)],
+            ["Open", String(stats.open)],
+            ["In Progress", String(stats.inProgress)],
+            ["Resolved/Closed", String(stats.resolved)],
+            ["SLA Breached", String(stats.breached)],
+            ["SLA Warning", String(stats.warning)],
+            [],
+            ["Category", "Ticket Count"],
+            ...categoryStats.map(c => [c.name, String(c.count)]),
+            [],
+            ["Agent", "Queues", "Resolved", "CSAT"],
+            ...agents.map(a => [a.name, a.assignedQueues.join("|"), String(a.ticketsResolved), String(a.csatScore)])
+        ];
+        const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `helpdesk-intel-${new Date().toISOString().split("T")[0]}.csv`;
+        link.click();
+        URL.revokeObjectURL(url);
+        toast({ title: "Intel Exported", description: "CSV report downloaded successfully." });
+    };
+
+    const agentWorkload = agents.map(a => {
+        const active = tickets.filter(t => t.assignedTo?.id === a.id && !["Closed", "Resolved"].includes(t.status)).length;
+        return { ...a, active };
+    }).sort((a, b) => b.active - a.active).slice(0, 4);
 
     return (
         <div className="flex flex-col h-full bg-[#f8fafc]">
@@ -55,16 +111,20 @@ const HelpdeskDashboard = () => {
                         <LayoutDashboard size={20} />
                     </div>
                     <div>
-                        <h1 className="text-xl font-bold text-slate-900 leading-tight tracking-tight">Support Metrics</h1>
+                        <h1 className="text-xl font-bold text-slate-900 leading-tight tracking-tight flex items-center gap-2">
+                            Support Metrics
+                            {backendAvailable === false && <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">Offline</span>}
+                            {backendAvailable === true && <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">Live</span>}
+                        </h1>
                         <p className="text-sm font-medium text-slate-500">Real-time operational overview</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-3">
-                    <Button variant="outline" className="h-10 border-slate-200 text-slate-600 font-bold px-4 gap-2 text-xs uppercase tracking-widest bg-white hover:bg-slate-50">
+                    <Button variant="outline" className="h-10 border-slate-200 text-slate-600 font-bold px-4 gap-2 text-xs uppercase tracking-widest bg-white hover:bg-slate-50" onClick={() => router.push("/hrmcubicle/helpdesk/reports")}>
                         <History size={16} /> History
                     </Button>
-                    <Button className="h-10 bg-rose-600 hover:bg-rose-700 text-white font-bold px-6 gap-2 text-xs uppercase tracking-widest shadow-lg shadow-rose-200">
-                        <TrendingUp size={16} /> Export Intel
+                    <Button className="h-10 bg-rose-600 hover:bg-rose-700 text-white font-bold px-6 gap-2 text-xs uppercase tracking-widest shadow-lg shadow-rose-200" onClick={handleExportIntel}>
+                        <Download size={16} /> Export Intel
                     </Button>
                 </div>
             </div>
@@ -74,21 +134,21 @@ const HelpdeskDashboard = () => {
                     {/* Primary Stats Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                         {[
-                            { label: "Incoming Queue", val: stats.open, sub: "Action Required", icon: Inbox, color: "text-indigo-600", bg: "bg-indigo-50" },
-                            { label: "Active Resolve", val: stats.inProgress, sub: "Work in Progress", icon: Clock, color: "text-amber-600", bg: "bg-amber-50" },
-                            { label: "Success Rate", val: `${Math.round((stats.resolved / stats.total) * 100)}%`, sub: "Closed vs Total", icon: CheckCircle2, color: "text-emerald-600", bg: "bg-emerald-50" },
-                            { label: "SLA Breaches", val: stats.breached, sub: "Critical Attention", icon: AlertCircle, color: "text-rose-600", bg: "bg-rose-50" },
+                            { label: "Incoming Queue", val: stats.open, sub: "Action Required", icon: Inbox, cardBg: "bg-[#CB9DF0]", href: "/hrmcubicle/helpdesk/support-queue" },
+                            { label: "Active Resolve", val: stats.inProgress, sub: "Work in Progress", icon: Clock, cardBg: "bg-[#F0C1E1]", href: "/hrmcubicle/helpdesk/support-queue" },
+                            { label: "Success Rate", val: stats.total ? `${Math.round((stats.resolved / stats.total) * 100)}%` : "0%", sub: "Closed vs Total", icon: CheckCircle2, cardBg: "bg-[#FFF9BF]", href: "/hrmcubicle/helpdesk/reports" },
+                            { label: "SLA Breaches", val: stats.breached, sub: "Critical Attention", icon: AlertCircle, cardBg: "bg-[#FDDBBB]", href: "/hrmcubicle/helpdesk/support-queue" },
                         ].map((stat, i) => (
-                            <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
-                                <Card className="border-none shadow-sm bg-white overflow-hidden group hover:shadow-xl transition-all duration-300">
+                            <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} onClick={() => router.push(stat.href)} className="cursor-pointer">
+                                <Card className={`border-none shadow-sm ${stat.cardBg} overflow-hidden group hover:shadow-xl transition-all duration-300`}>
                                     <CardContent className="p-6">
                                         <div className="flex justify-between items-start">
                                             <div className="space-y-1">
-                                                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">{stat.label}</p>
-                                                <h2 className={`text-2xl font-bold ${stat.color}`}>{stat.val}</h2>
-                                                <p className="text-[11px] font-bold text-slate-400">{stat.sub}</p>
+                                                <p className="text-[11px] font-bold text-slate-700 uppercase tracking-widest">{stat.label}</p>
+                                                <h2 className="text-2xl font-bold text-slate-900">{stat.val}</h2>
+                                                <p className="text-[11px] font-bold text-slate-600">{stat.sub}</p>
                                             </div>
-                                            <div className={`h-11 w-11 ${stat.bg} ${stat.color} rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform`}>
+                                            <div className="h-11 w-11 bg-white/30 text-slate-800 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform backdrop-blur-sm">
                                                 <stat.icon size={22} />
                                             </div>
                                         </div>
@@ -115,7 +175,7 @@ const HelpdeskDashboard = () => {
                                             { label: "Healthy", val: stats.total - stats.breached - stats.warning, color: "bg-emerald-500" },
                                             { label: "Warning", val: stats.warning, color: "bg-amber-500" },
                                             { label: "Breached", val: stats.breached, color: "bg-rose-500" },
-                                            { label: "Efficiency", val: "94%", color: "bg-indigo-500" }
+                                            { label: "Success", val: stats.total ? `${Math.round((stats.resolved / stats.total) * 100)}%` : "0%", color: "bg-indigo-500" }
                                         ].map((item, i) => (
                                             <div key={i} className="p-6 border-r border-slate-100 last:border-r-0 text-center">
                                                 <div className={`h-1 w-8 ${item.color} rounded-full mx-auto mb-3`} />
@@ -128,7 +188,7 @@ const HelpdeskDashboard = () => {
                                         <div className="flex justify-between items-end mb-6">
                                             <div>
                                                 <h4 className="text-sm font-bold text-slate-800">SLA Breach Variance</h4>
-                                                <p className="text-xs font-medium text-slate-500">Weekly performance compared to previous cycle</p>
+                                                <p className="text-xs font-medium text-slate-500">Weekly performance trend</p>
                                             </div>
                                             <div className="flex items-center gap-2 text-rose-600 font-bold text-sm">
                                                 <ArrowUpRight size={16} /> 12% increase
@@ -148,13 +208,7 @@ const HelpdeskDashboard = () => {
                                             ))}
                                         </div>
                                         <div className="flex justify-between mt-4 text-[9px] font-bold text-slate-400 uppercase tracking-widest">
-                                            <span>Mon</span>
-                                            <span>Tue</span>
-                                            <span>Wed</span>
-                                            <span>Thu</span>
-                                            <span>Fri</span>
-                                            <span>Sat</span>
-                                            <span>Sun</span>
+                                            <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
                                         </div>
                                     </div>
                                 </CardContent>
@@ -169,7 +223,7 @@ const HelpdeskDashboard = () => {
                                         </h4>
                                         <div className="space-y-4">
                                             {categoryStats.map((cat, i) => (
-                                                <div key={i} className="space-y-2">
+                                                <div key={i} className="space-y-2 cursor-pointer hover:opacity-80" onClick={() => router.push(`/hrmcubicle/helpdesk/support-queue`)}>
                                                     <div className="flex justify-between items-center text-xs font-bold text-slate-700">
                                                         <span>{cat.name}</span>
                                                         <span>{cat.count}</span>
@@ -177,11 +231,12 @@ const HelpdeskDashboard = () => {
                                                     <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
                                                         <div
                                                             className="h-full bg-indigo-500 transition-all duration-1000"
-                                                            style={{ width: `${(cat.count / stats.total) * 100}%` }}
+                                                            style={{ width: `${stats.total ? (cat.count / stats.total) * 100 : 0}%` }}
                                                         />
                                                     </div>
                                                 </div>
                                             ))}
+                                            {categoryStats.length === 0 && <p className="text-xs text-slate-400 italic">No categories yet.</p>}
                                         </div>
                                     </CardContent>
                                 </Card>
@@ -192,22 +247,23 @@ const HelpdeskDashboard = () => {
                                             <Users size={14} className="text-emerald-500" /> Agent Workload
                                         </h4>
                                         <div className="space-y-4">
-                                            {agents.slice(0, 4).map((agent, i) => (
-                                                <div key={i} className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-50 transition-all border border-transparent hover:border-slate-100">
+                                            {agentWorkload.map((agent, i) => (
+                                                <div key={i} className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-50 transition-all border border-transparent hover:border-slate-100 cursor-pointer" onClick={() => router.push("/hrmcubicle/helpdesk/agent-management")}>
                                                     <div className="flex items-center gap-3">
                                                         <div className="h-8 w-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[10px] font-bold text-slate-400">
                                                             {agent.name.split(' ').map(n => n[0]).join('')}
                                                         </div>
                                                         <div className="flex flex-col">
                                                             <span className="text-xs font-bold text-slate-800 leading-none">{agent.name}</span>
-                                                            <span className="text-[9px] font-bold text-slate-400 mt-1 uppercase leading-none">{agent.assignedQueues[0]}</span>
+                                                            <span className="text-[9px] font-bold text-slate-400 mt-1 uppercase leading-none">{agent.active} active</span>
                                                         </div>
                                                     </div>
-                                                    <Badge className="bg-emerald-50 text-emerald-600 border-none font-bold text-[10px] h-5 px-2">
+                                                    <Badge className={`${agent.status === "Active" ? "bg-emerald-50 text-emerald-600" : agent.status === "Away" ? "bg-amber-50 text-amber-600" : "bg-slate-50 text-slate-400"} border-none font-bold text-[10px] h-5 px-2`}>
                                                         {agent.status}
                                                     </Badge>
                                                 </div>
                                             ))}
+                                            {agentWorkload.length === 0 && <p className="text-xs text-slate-400 italic">No agents yet.</p>}
                                         </div>
                                     </CardContent>
                                 </Card>
@@ -220,18 +276,20 @@ const HelpdeskDashboard = () => {
                                 <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
                                     <History size={14} className="text-indigo-500" /> Real-time Feed
                                 </h3>
-                                <button className="text-[10px] font-bold text-indigo-600 uppercase" onClick={() => router.push("/hrmcubicle/helpdesk/my-tickets")}>View All</button>
+                                <button className="text-[10px] font-bold text-indigo-600 uppercase hover:underline" onClick={() => router.push("/hrmcubicle/helpdesk/my-tickets")}>View All</button>
                             </div>
 
                             <div className="space-y-3">
-                                {recentActivity.map((tkt, i) => (
-                                    <div key={i} className="p-4 bg-white border border-slate-200 rounded-2xl shadow-sm hover:shadow-md transition-all group cursor-pointer relative overflow-hidden">
-                                        <div className={`absolute left-0 top-0 bottom-0 w-1 ${tkt.priority === 'High' ? 'bg-rose-500' : tkt.priority === 'Medium' ? 'bg-amber-400' : 'bg-emerald-400'}`} />
+                                {recentActivity.map((tkt) => (
+                                    <div key={tkt.id} onClick={() => router.push("/hrmcubicle/helpdesk/support-queue")} className="p-4 bg-white border border-slate-200 rounded-2xl shadow-sm hover:shadow-md transition-all group cursor-pointer relative overflow-hidden">
+                                        <div className={`absolute left-0 top-0 bottom-0 w-1 ${tkt.priority === 'Urgent' ? 'bg-rose-600' : tkt.priority === 'High' ? 'bg-rose-500' : tkt.priority === 'Medium' ? 'bg-amber-400' : 'bg-emerald-400'}`} />
                                         <div className="flex justify-between items-start mb-2">
                                             <Badge variant="outline" className="text-[8px] font-extrabold border-slate-100 text-slate-400 uppercase px-1.5 h-4 tracking-tighter shadow-none">{tkt.id}</Badge>
-                                            <span className="text-[9px] font-bold text-slate-400 uppercase">{new Date(tkt.createdAt).getHours()}:{new Date(tkt.createdAt).getMinutes()} AM</span>
+                                            <span className="text-[9px] font-bold text-slate-400 uppercase">
+                                                {new Date(tkt.updatedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                                            </span>
                                         </div>
-                                        <h5 className="text-[13px] font-bold text-slate-800 leading-tight mb-2 group-hover:text-rose-600 transition-colors uppercase">{tkt.subject}</h5>
+                                        <h5 className="text-[13px] font-bold text-slate-800 leading-tight mb-2 group-hover:text-rose-600 transition-colors uppercase line-clamp-1">{tkt.subject}</h5>
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-2">
                                                 <div className="h-5 w-5 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-[8px] font-bold text-slate-400">
@@ -243,6 +301,11 @@ const HelpdeskDashboard = () => {
                                         </div>
                                     </div>
                                 ))}
+                                {recentActivity.length === 0 && (
+                                    <div className="p-8 text-center text-slate-400 font-bold italic bg-white rounded-2xl border-2 border-dashed border-slate-100">
+                                        No activity yet.
+                                    </div>
+                                )}
                             </div>
 
                             <Card className="bg-slate-900 border-none rounded-3xl p-6 text-white relative overflow-hidden mt-8">
@@ -252,7 +315,9 @@ const HelpdeskDashboard = () => {
                                     </div>
                                     <div>
                                         <h4 className="text-sm font-bold mb-1">Critical Escalations</h4>
-                                        <p className="text-[11px] text-slate-400 leading-relaxed font-medium">3 tickets have bypassed local resolution and require admin override.</p>
+                                        <p className="text-[11px] text-slate-400 leading-relaxed font-medium">
+                                            {stats.breached} ticket(s) breached. Require admin override.
+                                        </p>
                                     </div>
                                     <Button variant="outline" className="w-full bg-white/5 border-white/10 hover:bg-white/10 text-white font-bold text-[10px] uppercase tracking-widest h-9" onClick={() => router.push("/hrmcubicle/helpdesk/support-queue")}>
                                         Intervene Now

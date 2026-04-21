@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect, useMemo } from "react"
 import { useParams } from "next/navigation"
 import {
     Lock,
@@ -22,7 +22,8 @@ import {
     Network,
     Key,
     Eye,
-    Zap
+    Zap,
+    Loader2
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -46,10 +47,66 @@ import {
 import { SmallCard, SmallCardContent, SmallCardHeader } from "@/shared/components/custom/SmallCard"
 import { Switch } from "@/components/ui/switch"
 import { toast } from "sonner"
+import { getAllRolesNPermissions } from "@/hooks/roleNPermissionHooks"
+
+interface RolePermission {
+    _id: string
+    name: string
+    type?: string
+    permissions?: Record<string, any>
+    scope?: string
+}
+
+// Default fallback permission matrix
+const DEFAULT_PERMISSION_MATRIX = [
+    { role: "Global Admin", create: true, edit: true, delete: true, convert: true, viewAll: true, type: "System" },
+    { role: "Sales Manager", create: true, edit: true, delete: false, convert: true, viewAll: true, type: "Custom" },
+    { role: "Sales Representative", create: true, edit: "OWN" as boolean | string, delete: false, convert: true, viewAll: false, type: "Custom" },
+    { role: "Support Desk", create: false, edit: false, delete: false, convert: false, viewAll: true, type: "Custom" },
+    { role: "External Partner", create: true, edit: "OWN" as boolean | string, delete: false, convert: false, viewAll: false, type: "Guest" },
+]
 
 export default function LeadPermissionsPage() {
     const params = useParams()
     const [isLoading, setIsLoading] = useState(false)
+    const [isFetching, setIsFetching] = useState(true)
+    const [roles, setRoles] = useState<RolePermission[]>([])
+
+    useEffect(() => {
+        const fetchRoles = async () => {
+            try {
+                const res = await getAllRolesNPermissions({ scope: "sc-lead" })
+                const rolesData = res?.data?.data || res?.data?.roles || res?.data || []
+                setRoles(Array.isArray(rolesData) ? rolesData : [])
+            } catch (error) {
+                console.error("Failed to fetch lead permissions:", error)
+                toast.error("Failed to load permissions data")
+                setRoles([])
+            } finally {
+                setIsFetching(false)
+            }
+        }
+        fetchRoles()
+    }, [])
+
+    // Build permission matrix from fetched roles, falling back to defaults
+    const permissionMatrix = useMemo(() => {
+        if (roles.length === 0) return DEFAULT_PERMISSION_MATRIX
+
+        return roles.map(role => {
+            const perms = role.permissions || {}
+            const leadPerms = perms.lead || perms.leads || perms
+            return {
+                role: role.name || "Unknown Role",
+                create: leadPerms.create ?? false,
+                edit: leadPerms.edit ?? false,
+                delete: leadPerms.delete ?? false,
+                convert: leadPerms.convert ?? false,
+                viewAll: leadPerms.viewAll ?? leadPerms.read ?? false,
+                type: role.type || "Custom"
+            }
+        })
+    }, [roles])
 
     const handleAction = (msg: string) => {
         setIsLoading(true)
@@ -58,14 +115,6 @@ export default function LeadPermissionsPage() {
             toast.success(msg)
         }, 1200)
     }
-
-    const permissionMatrix = [
-        { role: "Global Admin", create: true, edit: true, delete: true, convert: true, viewAll: true, type: "System" },
-        { role: "Sales Manager", create: true, edit: true, delete: false, convert: true, viewAll: true, type: "Custom" },
-        { role: "Sales Representative", create: true, edit: "OWN", delete: false, convert: true, viewAll: false, type: "Custom" },
-        { role: "Support Desk", create: false, edit: false, delete: false, convert: false, viewAll: true, type: "Custom" },
-        { role: "External Partner", create: true, edit: "OWN", delete: false, convert: false, viewAll: false, type: "Guest" },
-    ]
 
     return (
         <div className="flex flex-col gap-6 p-6 min-h-screen bg-[#fafafa]">
@@ -119,7 +168,7 @@ export default function LeadPermissionsPage() {
                     <SmallCardContent className="p-4 flex flex-row items-center justify-between">
                         <div>
                             <p className="text-xs text-gray-600">Active Roles</p>
-                            <p className="text-xl font-semibold text-gray-900">12 Defined</p>
+                            <p className="text-xl font-semibold text-gray-900">{isFetching ? "..." : `${permissionMatrix.length} Defined`}</p>
                             <p className="text-[10px] text-gray-500">Standardized by Org</p>
                         </div>
                         <Users className="w-4 h-4 text-blue-400" />
@@ -171,7 +220,16 @@ export default function LeadPermissionsPage() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {permissionMatrix.map((item, idx) => (
+                        {isFetching ? (
+                            <TableRow>
+                                <TableCell colSpan={7} className="py-12 text-center">
+                                    <div className="flex flex-col items-center gap-2">
+                                        <Loader2 className="w-5 h-5 animate-spin text-zinc-400" />
+                                        <span className="text-xs text-zinc-400 font-medium">Loading permissions...</span>
+                                    </div>
+                                </TableCell>
+                            </TableRow>
+                        ) : permissionMatrix.map((item, idx) => (
                             <TableRow key={idx} className="hover:bg-zinc-50/50 transition-colors group">
                                 <TableCell className="py-4 px-6">
                                     <div className="flex items-center gap-3">

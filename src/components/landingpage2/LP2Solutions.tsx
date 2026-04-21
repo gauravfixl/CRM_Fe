@@ -423,22 +423,32 @@ export default function LP2Solutions() {
         initial={{ opacity: 0, y: 40 }}
         animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 40 }}
         transition={{ duration: 0.6, ease: "easeOut" }}
-        className="relative mx-auto max-w-[1400px] px-8"
+        className="relative mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8"
       >
         {/* Header */}
-        <div className="mb-12">
-          <motion.p
-            className="text-xs tracking-widest font-semibold uppercase mb-3"
-            style={{ color: activeColor }}
-            animate={{ color: activeColor }}
+        <div className="mb-12 text-center">
+          <motion.div
+            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border mb-5"
+            animate={{ borderColor: activeColor + "30", backgroundColor: activeColor + "08" }}
             transition={{ duration: 0.5 }}
           >
-            SOLUTIONS
-          </motion.p>
-          <h2 className="text-3xl lg:text-[2.5rem] font-semibold text-[#1A1A1A] leading-tight">
+            <motion.div
+              className="w-2 h-2 rounded-full"
+              animate={{ backgroundColor: activeColor }}
+              transition={{ duration: 0.5 }}
+            />
+            <motion.span
+              className="text-xs tracking-widest font-bold uppercase"
+              animate={{ color: activeColor }}
+              transition={{ duration: 0.5 }}
+            >
+              Solutions
+            </motion.span>
+          </motion.div>
+          <h2 className="text-3xl lg:text-[2.75rem] font-bold text-[#1A1A1A] leading-tight">
             One platform. Limitless possibilities
           </h2>
-          <p className="mt-3 text-[#6B6B6B] text-base max-w-xl">
+          <p className="mt-4 text-[#6B6B6B] text-base max-w-2xl mx-auto leading-relaxed">
             Everything your business needs — from CRM to finance — working together seamlessly.
           </p>
         </div>
@@ -551,6 +561,51 @@ export default function LP2Solutions() {
                 </motion.div>
               )
             })}
+
+            {/* Dot indicators */}
+            <div className="flex items-center justify-center gap-2.5 mt-6">
+              {accordionData.map((_, index) => {
+                const isActive = activeIndex === index
+                const color = accentColors[index]
+                const isAutoRotating = inView && !isHovered && !isManuallyInteracted
+                return (
+                  <button
+                    key={index}
+                    onClick={() => toggle(index)}
+                    className="relative flex items-center justify-center"
+                    aria-label={`Go to ${accordionData[index].title}`}
+                  >
+                    <motion.div
+                      className="rounded-full overflow-hidden"
+                      animate={{
+                        width: isActive ? 28 : 10,
+                        height: 10,
+                        backgroundColor: isActive ? color + "30" : "#D1D5DB",
+                      }}
+                      whileHover={{
+                        backgroundColor: isActive ? color + "30" : color + "50",
+                        scale: 1.15,
+                      }}
+                      transition={{ duration: 0.3, ease: "easeInOut" }}
+                    >
+                      {isActive && (
+                        <motion.div
+                          className="h-full rounded-full"
+                          style={{ backgroundColor: color }}
+                          initial={{ width: "0%" }}
+                          animate={{ width: isAutoRotating ? "100%" : "100%" }}
+                          transition={{
+                            duration: isAutoRotating ? 4.5 : 0.3,
+                            ease: isAutoRotating ? "linear" : "easeOut",
+                          }}
+                          key={`${activeIndex}-${isAutoRotating}`}
+                        />
+                      )}
+                    </motion.div>
+                  </button>
+                )
+              })}
+            </div>
           </div>
 
           {/* Right — Visual (60%) */}

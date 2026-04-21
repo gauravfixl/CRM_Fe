@@ -41,11 +41,8 @@ import { Label } from "@/shared/components/ui/label";
 
 const RequestsPage = () => {
     const { toast } = useToast();
-<<<<<<< Updated upstream
     const { requests, updateRequestStatus, deleteRequest } = useInboxStore();
-=======
-    const { requests, updateRequestStatus, addReplyToRequest, deleteRequest, addRequest } = useInboxStore();
->>>>>>> Stashed changes
+    const { requests, updateRequestStatus, addReplyToRequest, deleteRequest } = useInboxStore();
 
     const [selectedRequest, setSelectedRequest] = useState<Request | null>(null);
     const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
@@ -197,10 +194,10 @@ const RequestsPage = () => {
     ];
 
     return (
-        <div className="flex flex-col min-h-screen bg-slate-50/20">
-            <header className="p-6 bg-white border-b border-slate-100 sticky top-0 z-30 shadow-sm">
-                <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                    <div className="space-y-1">
+        <div className="flex flex-col min-h-screen bg-slate-50/20" style={{ zoom: 0.9 }}>
+            <header className="px-6 py-3 bg-white border-b border-slate-100 sticky top-0 z-30 shadow-sm">
+                <div className="w-full flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                    <div className="space-y-0.5">
                         <div className="flex items-center gap-3">
                             <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Employee Support Hub</h1>
                             <Badge className="bg-emerald-600 text-white border-none font-bold text-[10px] h-6 px-3 rounded-lg uppercase tracking-wider">Help Desk</Badge>
@@ -232,7 +229,7 @@ const RequestsPage = () => {
                 </div>
             </header>
 
-            <main className="p-6 max-w-6xl mx-auto w-full space-y-10">
+            <main className="p-6 w-full space-y-10">
                 <div className="flex flex-col lg:flex-row gap-8">
                     {/* Left: Categorization Drawer */}
                     <div className="w-full lg:w-72 space-y-6">
@@ -440,19 +437,16 @@ const RequestsPage = () => {
                             className="flex-1 bg-slate-900 hover:bg-emerald-600 text-white rounded-2xl h-14 font-bold text-sm shadow-xl shadow-slate-200 transition-all flex gap-3 group disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
                             disabled={!isReplyValid}
                             onClick={() => {
-<<<<<<< Updated upstream
                                 if (selectedRequest) {
+                                    if (!reply.trim()) {
+                                        toast({ title: "Reply Required", description: "Please write a response before resolving.", variant: "destructive" });
+                                        return;
+                                    }
+                                    addReplyToRequest(selectedRequest.id, reply.trim());
                                     handleStatusUpdate(selectedRequest.id, 'Resolved');
                                     setIsDetailDialogOpen(false);
                                     setReply("");
                                 }
-=======
-                                if (!selectedRequest || !isReplyValid) return;
-                                addReplyToRequest(selectedRequest.id, replyTrimmed);
-                                handleStatusUpdate(selectedRequest.id, 'Resolved');
-                                setIsDetailDialogOpen(false);
-                                setReply("");
->>>>>>> Stashed changes
                             }}
                         >
                             <MailCheck size={18} className="group-hover:scale-110 transition-transform" /> Dispatch & Resolve Ticket

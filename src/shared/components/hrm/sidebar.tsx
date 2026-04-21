@@ -161,21 +161,6 @@ const hrmNavigation = [
                 url: "/hrmcubicle/my-team/calendar",
                 icon: <span className="text-lg">🗓️</span>
             },
-            {
-                title: "On/Offboarding",
-                url: "/hrmcubicle/my-team/lifecycle",
-                icon: <span className="text-lg">🚀</span>
-            },
-            {
-                title: "Team Documents",
-                url: "/hrmcubicle/my-team/documents",
-                icon: <span className="text-lg">📂</span>
-            },
-            {
-                title: "Team Reports",
-                url: "/hrmcubicle/my-team/reports",
-                icon: <span className="text-lg">📑</span>
-            },
         ]
     },
     {
@@ -240,13 +225,9 @@ const hrmNavigation = [
             { title: "Leave", url: "/hrmcubicle/timeattend/leave", icon: <span className="text-lg">🌴</span> },
             { title: "Shift Allowance", url: "/hrmcubicle/timeattend/allowance", icon: <span className="text-lg">💵</span> },
             { title: "Approvals", url: "/hrmcubicle/timeattend/approvals", icon: <span className="text-lg">✔️</span> },
+            { title: "Comp-Off", url: "/hrmcubicle/timeattend/comp-off", icon: <span className="text-lg">🔄</span> },
             { title: "Reports", url: "/hrmcubicle/timeattend/reports", icon: <span className="text-lg">📊</span> },
             { title: "Settings", url: "/hrmcubicle/timeattend/settings", icon: <span className="text-lg">⚙️</span> },
-            { title: "Geo-fencing", url: "/hrmcubicle/timeattend/geofencing", icon: <span className="text-lg">📍</span> },
-            { title: "Biometric", url: "/hrmcubicle/timeattend/biometric", icon: <span className="text-lg">🔐</span> },
-            { title: "Comp-Off", url: "/hrmcubicle/timeattend/comp-off", icon: <span className="text-lg">🔄</span> },
-            { title: "Optional Holidays", url: "/hrmcubicle/timeattend/optional-holidays", icon: <span className="text-lg">🎌</span> },
-            { title: "Sandwich Rules", url: "/hrmcubicle/timeattend/sandwich-rules", icon: <span className="text-lg">🥪</span> },
         ]
     },
     {
@@ -357,7 +338,7 @@ const hrmNavigation = [
         ]
     },
     {
-        title: "Admin",
+        title: "Settings",
         url: "#",
         icon: <span className="text-xl">⚙️</span>,
         items: [
@@ -402,9 +383,9 @@ function SidebarComponent({ ...props }: React.ComponentProps<typeof ShadcnSideba
 
     return (
         <ShadcnSidebar collapsible="icon" className="top-[63px] h-[calc(100vh-63px)] border-r bg-white" {...props}>
-            <SidebarContent className="py-2">
+            <SidebarContent className="py-2 text-[13px]">
                 <SidebarGroup>
-                    <SidebarMenu className="gap-2">
+                    <SidebarMenu className="gap-1">
                         {navWithActive.map((item) => {
                             const isActive = item.isActive;
                             const hasSubMenu = item.items.length > 0;
@@ -419,10 +400,10 @@ function SidebarComponent({ ...props }: React.ComponentProps<typeof ShadcnSideba
                                     >
                                         <SidebarMenuItem>
                                             <CollapsibleTrigger asChild>
-                                                <SidebarMenuButton tooltip={item.title} isActive={isActive} className="font-medium text-slate-600 h-10 hover:bg-slate-100 group-data-[collapsible=icon]:justify-center">
-                                                    <span className="flex items-center justify-center shrink-0">{item.icon}</span>
-                                                    <span className="ml-1.5 truncate group-data-[collapsible=icon]:hidden" title={item.title}>{item.title}</span>
-                                                    <ChevronRight className="ml-auto w-3.5 h-3.5 text-slate-400 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90 group-data-[collapsible=icon]:hidden" />
+                                                <SidebarMenuButton tooltip={item.title} isActive={isActive} className="font-medium text-slate-600 h-9 text-[13px] hover:bg-slate-100 group-data-[collapsible=icon]:justify-center">
+                                                    <span className="flex items-center justify-center shrink-0 text-[16px]">{item.icon}</span>
+                                                    <span className="ml-1 truncate group-data-[collapsible=icon]:hidden" title={item.title}>{item.title}</span>
+                                                    <ChevronRight className="ml-auto w-3 h-3 text-slate-400 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90 group-data-[collapsible=icon]:hidden" />
                                                 </SidebarMenuButton>
                                             </CollapsibleTrigger>
                                             <CollapsibleContent className="transition-all duration-300 ease-in-out">
@@ -430,10 +411,10 @@ function SidebarComponent({ ...props }: React.ComponentProps<typeof ShadcnSideba
 <<<<<<< Updated upstream
                                                     {item.items.map((subItem) => (
                                                         <SidebarMenuSubItem key={subItem.title}>
-                                                            <SidebarMenuSubButton asChild isActive={pathname === subItem.url} className="text-slate-500 h-9 hover:text-slate-900 hover:bg-slate-100 rounded-md">
+                                                            <SidebarMenuSubButton asChild isActive={pathname === subItem.url} className="text-slate-500 h-8 text-[12.5px] hover:text-slate-900 hover:bg-slate-100 rounded-md">
                                                                 <Link href={subItem.url} prefetch={true} className="flex w-full items-center">
-                                                                    <span className="shrink-0">{subItem.icon}</span>
-                                                                    <span className="ml-1.5 truncate" title={subItem.title}>{subItem.title}</span>
+                                                                    <span className="shrink-0 text-[13px]">{subItem.icon}</span>
+                                                                    <span className="ml-1 truncate" title={subItem.title}>{subItem.title}</span>
                                                                 </Link>
                                                             </SidebarMenuSubButton>
                                                         </SidebarMenuSubItem>
@@ -499,9 +480,9 @@ function SidebarComponent({ ...props }: React.ComponentProps<typeof ShadcnSideba
 
                             return (
                                 <SidebarMenuItem key={item.title}>
-                                    <SidebarMenuButton asChild isActive={isActive} tooltip={item.title} className="font-medium text-slate-600 h-10 hover:bg-slate-100 group-data-[collapsible=icon]:justify-center">
+                                    <SidebarMenuButton asChild isActive={isActive} tooltip={item.title} className="font-medium text-slate-600 h-9 text-[13px] hover:bg-slate-100 group-data-[collapsible=icon]:justify-center">
                                         <Link href={item.url} prefetch={true} className="flex w-full items-center group-data-[collapsible=icon]:justify-center">
-                                            <span className="shrink-0 flex items-center justify-center">{item.icon}</span>
+                                            <span className="shrink-0 flex items-center justify-center text-[16px]">{item.icon}</span>
                                             <span className="ml-1 truncate group-data-[collapsible=icon]:hidden" title={item.title}>{item.title}</span>
                                         </Link>
                                     </SidebarMenuButton>

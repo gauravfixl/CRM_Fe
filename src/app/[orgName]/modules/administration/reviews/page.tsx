@@ -83,8 +83,8 @@ export default function AccessReviewsPage() {
                             <div className="flex items-center justify-between mb-2">
                                 <BarChart3 className="w-5 h-5 text-white/80" />
                             </div>
-                            <p className="text-xl font-semibold">{totalReviews}</p>
                             <p className="text-xs text-white/80">Total Reviews</p>
+                            <p className="text-xl font-semibold text-white">{totalReviews}</p>
                             <p className="text-[10px] text-white/60 mt-0.5">All review cycles</p>
                         </CardContent>
                     </Card>
@@ -93,8 +93,8 @@ export default function AccessReviewsPage() {
                             <div className="flex items-center justify-between mb-2">
                                 <PlayCircle className="w-5 h-5 text-blue-500" />
                             </div>
-                            <p className="text-xl font-semibold text-gray-900">{inProgress}</p>
                             <p className="text-xs text-gray-600">In Progress</p>
+                            <p className="text-xl font-semibold text-gray-900">{inProgress}</p>
                             <p className="text-[10px] text-gray-400 mt-0.5">Currently running</p>
                         </CardContent>
                     </Card>
@@ -103,8 +103,8 @@ export default function AccessReviewsPage() {
                             <div className="flex items-center justify-between mb-2">
                                 <CheckCircle2 className="w-5 h-5 text-emerald-500" />
                             </div>
-                            <p className="text-xl font-semibold text-gray-900">{completed}</p>
                             <p className="text-xs text-gray-600">Completed</p>
+                            <p className="text-xl font-semibold text-gray-900">{completed}</p>
                             <p className="text-[10px] text-gray-400 mt-0.5">Finished reviews</p>
                         </CardContent>
                     </Card>
@@ -113,8 +113,8 @@ export default function AccessReviewsPage() {
                             <div className="flex items-center justify-between mb-2">
                                 <Calendar className="w-5 h-5 text-orange-500" />
                             </div>
-                            <p className="text-xl font-semibold text-gray-900">{scheduled}</p>
                             <p className="text-xs text-gray-600">Scheduled</p>
+                            <p className="text-xl font-semibold text-gray-900">{scheduled}</p>
                             <p className="text-[10px] text-gray-400 mt-0.5">Upcoming reviews</p>
                         </CardContent>
                     </Card>

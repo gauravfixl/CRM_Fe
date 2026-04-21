@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     Users,
@@ -33,7 +33,7 @@ import { Button } from "@/shared/components/ui/button";
 import { Badge } from "@/shared/components/ui/badge";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
-import { Avatar, AvatarFallback } from "@/shared/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/shared/components/ui/avatar";
 import { useToast } from "@/shared/components/ui/use-toast";
 import { useOrganisationStore, type Employee } from "@/shared/data/organisation-store";
 import {
@@ -64,9 +64,37 @@ import {
     TabsTrigger,
 } from "@/shared/components/ui/tabs";
 
+const NAME_RE = /^[A-Za-z][A-Za-z '.-]{0,49}$/;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PHONE_RE = /^[+0-9][0-9 \-()]{6,19}$/;
+
+const mapEmploymentTypeToBackend = (t?: string): string => {
+    if (t === "Full-Time") return "Permanent";
+    if (t === "Part-Time") return "Permanent";
+    if (t === "Contract") return "Contract";
+    if (t === "Intern") return "Intern";
+    return "Permanent";
+};
+
 const EmployeesPage = () => {
     const { toast } = useToast();
-    const { employees, departments, designations, locations, addEmployee, updateEmployee, deleteEmployee } = useOrganisationStore();
+    const employees = useOrganisationStore((s) => s.employees);
+    const departments = useOrganisationStore((s) => s.departments);
+    const designations = useOrganisationStore((s) => s.designations);
+    const locations = useOrganisationStore((s) => s.locations);
+    const loadEmployeesFromApi = useOrganisationStore((s) => s.loadEmployeesFromApi);
+    const loadDepartmentsFromApi = useOrganisationStore((s) => s.loadDepartmentsFromApi);
+    const loadDesignationsFromApi = useOrganisationStore((s) => s.loadDesignationsFromApi);
+    const createEmployeeApi = useOrganisationStore((s) => s.createEmployeeApi);
+    const updateEmployeeApi = useOrganisationStore((s) => s.updateEmployeeApi);
+    const deleteEmployeeApi = useOrganisationStore((s) => s.deleteEmployeeApi);
+
+    // Load from API on mount
+    useEffect(() => {
+        loadEmployeesFromApi().catch(() => {});
+        loadDepartmentsFromApi().catch(() => {});
+        loadDesignationsFromApi().catch(() => {});
+    }, []);
 
     const [searchQuery, setSearchQuery] = useState("");
     const [statusFilter, setStatusFilter] = useState<string>("All");
@@ -75,6 +103,8 @@ const EmployeesPage = () => {
     const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
     const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    const [errors, setErrors] = useState<Record<string, string>>({});
     const fileInputRef = React.useRef<HTMLInputElement>(null);
 
     const [formData, setFormData] = useState<Partial<Employee>>({
@@ -93,52 +123,124 @@ const EmployeesPage = () => {
         employeeCode: ""
     });
 
-    const handleAddEmployee = () => {
-        if (!formData.firstName || !formData.email || !formData.departmentId) {
-            toast({ title: "Validation Error", description: "Name, Email, and Department are required", variant: "destructive" });
-            return;
-        }
-
-        addEmployee({
-            ...formData,
-            employeeCode: `FX${new Date().getFullYear()}${String(employees.length + 1).padStart(3, '0')}`,
-            profileImage: `${formData.firstName?.charAt(0)}${formData.lastName?.charAt(0)}`
-        } as Omit<Employee, 'id'>);
-
-        toast({ title: "Employee Added", description: `${formData.firstName} ${formData.lastName} has been onboarded successfully.` });
-        setIsAddDialogOpen(false);
+    const resetForm = () => {
         setFormData({
-            firstName: "",
-            lastName: "",
-            email: "",
-            phone: "",
-            dateOfJoining: "",
-            dateOfBirth: "",
-            gender: "Male",
-            status: "Active",
-            employmentType: "Full-Time",
-            departmentId: "",
-            designationId: "",
-            locationId: "",
-            employeeCode: ""
+            firstName: "", lastName: "", email: "", phone: "",
+            dateOfJoining: "", dateOfBirth: "", gender: "Male",
+            status: "Active", employmentType: "Full-Time",
+            departmentId: "", designationId: "", locationId: "", employeeCode: ""
         });
+        setErrors({});
     };
 
-    const handleUpdateEmployee = () => {
-        if (!selectedEmployee || !formData.firstName || !formData.email || !formData.departmentId) {
-            toast({ title: "Validation Error", description: "Name, Email, and Department are required", variant: "destructive" });
-            return;
+    const validateForm = (mode: "add" | "edit"): boolean => {
+        const errs: Record<string, string> = {};
+        const firstName = (formData.firstName || "").trim();
+        const lastName = (formData.lastName || "").trim();
+        const email = (formData.email || "").trim();
+        const phone = (formData.phone || "").trim();
+
+        if (!firstName) errs.firstName = "First name is required";
+        else if (!NAME_RE.test(firstName)) errs.firstName = "Letters, 2-50 chars only";
+
+        if (!lastName) errs.lastName = "Last name is required";
+        else if (!NAME_RE.test(lastName)) errs.lastName = "Letters, 2-50 chars only";
+
+        if (!email) errs.email = "Email is required";
+        else if (!EMAIL_RE.test(email)) errs.email = "Invalid email format";
+        else {
+            const duplicate = employees.some((e) =>
+                e.email.toLowerCase() === email.toLowerCase() &&
+                (mode === "add" || e.id !== selectedEmployee?.id)
+            );
+            if (duplicate) errs.email = "An employee with this email already exists";
         }
 
-        updateEmployee(selectedEmployee.id, formData);
-        toast({ title: "Employee Updated", description: "Employee details have been updated successfully." });
-        setIsEditDialogOpen(false);
-        setSelectedEmployee(null);
+        if (phone && !PHONE_RE.test(phone)) errs.phone = "Invalid phone (digits, +, spaces, dashes)";
+
+        if (!formData.departmentId) errs.departmentId = "Department is required";
+        if (!formData.designationId) errs.designationId = "Designation is required";
+
+        if (formData.dateOfJoining) {
+            const d = new Date(formData.dateOfJoining);
+            if (isNaN(d.getTime())) errs.dateOfJoining = "Invalid date";
+        }
+        if (formData.dateOfBirth) {
+            const d = new Date(formData.dateOfBirth);
+            if (isNaN(d.getTime())) errs.dateOfBirth = "Invalid date";
+            else {
+                const age = (Date.now() - d.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
+                if (age < 16) errs.dateOfBirth = "Employee must be at least 16 years old";
+                if (age > 100) errs.dateOfBirth = "Invalid date of birth";
+            }
+        }
+
+        setErrors(errs);
+        return Object.keys(errs).length === 0;
     };
 
-    const handleDeleteEmployee = (id: string) => {
-        deleteEmployee(id);
-        toast({ title: "Employee Removed", description: "Employee record has been deleted from the system." });
+    const handleAddEmployee = async () => {
+        if (!validateForm("add")) return;
+        setIsSaving(true);
+        try {
+            await createEmployeeApi({
+                firstName: (formData.firstName || "").trim(),
+                lastName: (formData.lastName || "").trim(),
+                email: (formData.email || "").trim(),
+                department: formData.departmentId!,
+                position: formData.designationId!,
+                employmentType: mapEmploymentTypeToBackend(formData.employmentType),
+            });
+            toast({ title: "Employee Added", description: `${formData.firstName} ${formData.lastName} has been onboarded.` });
+            setIsAddDialogOpen(false);
+            resetForm();
+        } catch (err: any) {
+            // error toast already shown by hook
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleUpdateEmployee = async () => {
+        if (!selectedEmployee) return;
+        if (!validateForm("edit")) return;
+        setIsSaving(true);
+        try {
+            await updateEmployeeApi(selectedEmployee.id, {
+                personalInfo: {
+                    firstName: (formData.firstName || "").trim(),
+                    lastName: (formData.lastName || "").trim(),
+                    email: (formData.email || "").trim(),
+                    phone: (formData.phone || "").trim() || undefined,
+                    gender: formData.gender,
+                    dateOfBirth: formData.dateOfBirth || undefined,
+                },
+                jobInfo: {
+                    department: formData.departmentId,
+                    position: formData.designationId,
+                    employmentType: mapEmploymentTypeToBackend(formData.employmentType),
+                    joinDate: formData.dateOfJoining || undefined,
+                },
+            });
+            toast({ title: "Employee Updated", description: "Employee details have been saved." });
+            setIsEditDialogOpen(false);
+            setSelectedEmployee(null);
+            resetForm();
+        } catch (err: any) {
+            // error toast already shown by hook
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleDeleteEmployee = async (id: string) => {
+        if (!window.confirm("Delete this employee? This action cannot be undone.")) return;
+        try {
+            await deleteEmployeeApi(id);
+            toast({ title: "Employee Removed", description: "Employee record has been deleted." });
+        } catch (err: any) {
+            // error toast already shown by hook
+        }
     };
 
     const handleExportCSV = () => {
@@ -286,7 +388,7 @@ const EmployeesPage = () => {
                             <Search className="absolute left-4 top-1/2 -transform -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
                             <Input
                                 placeholder="Search by name, email, or employee code..."
-                                className="pl-11 h-10 rounded-xl bg-slate-50 border-none shadow-none font-medium text-xs focus-visible:ring-2 focus-visible:ring-indigo-100 w-full"
+                                className="pl-11 h-10 rounded-xl bg-slate-50 border border-slate-200 shadow-none font-medium text-xs focus-visible:ring-2 focus-visible:ring-indigo-100 w-full"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
@@ -294,7 +396,7 @@ const EmployeesPage = () => {
 
                         <div className="flex flex-wrap gap-3 flex-1 justify-start md:justify-end">
                             <Select value={statusFilter} onValueChange={setStatusFilter}>
-                                <SelectTrigger className="w-36 h-10 rounded-xl bg-slate-50 border-none font-bold text-[10px] ring-1 ring-slate-100">
+                                <SelectTrigger className="w-36 h-10 rounded-xl bg-slate-50 border border-slate-200 font-bold text-[10px]">
                                     <SelectValue placeholder="Status" />
                                 </SelectTrigger>
                                 <SelectContent className="rounded-xl border-none shadow-2xl p-2 font-bold">
@@ -306,7 +408,7 @@ const EmployeesPage = () => {
                             </Select>
 
                             <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-                                <SelectTrigger className="w-40 h-10 rounded-xl bg-slate-50 border-none font-bold text-[10px] ring-1 ring-slate-100">
+                                <SelectTrigger className="w-40 h-10 rounded-xl bg-slate-50 border border-slate-200 font-bold text-[10px]">
                                     <SelectValue placeholder="Department" />
                                 </SelectTrigger>
                                 <SelectContent className="rounded-xl border-none shadow-2xl p-2 font-bold max-h-[250px]">
@@ -387,6 +489,7 @@ const EmployeesPage = () => {
                                                                 e.preventDefault();
                                                                 setSelectedEmployee(employee);
                                                                 setFormData(employee);
+                                                                setErrors({});
                                                                 setIsEditDialogOpen(true);
                                                             }}
                                                         >
@@ -484,20 +587,24 @@ const EmployeesPage = () => {
                             <div className="space-y-1.5">
                                 <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">First Name *</Label>
                                 <Input
-                                    className="rounded-lg h-10 bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors"
+                                    className={`rounded-lg h-10 bg-slate-50 border font-bold px-4 text-xs focus:border-indigo-500 transition-colors ${errors.firstName ? "border-rose-500" : "border-slate-300"}`}
                                     placeholder="John"
+                                    maxLength={50}
                                     value={formData.firstName}
                                     onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
                                 />
+                                {errors.firstName && <p className="text-[10px] font-bold text-rose-500 ml-1">{errors.firstName}</p>}
                             </div>
                             <div className="space-y-1.5">
                                 <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Last Name *</Label>
                                 <Input
-                                    className="rounded-lg h-10 bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors"
+                                    className={`rounded-lg h-10 bg-slate-50 border font-bold px-4 text-xs focus:border-indigo-500 transition-colors ${errors.lastName ? "border-rose-500" : "border-slate-300"}`}
                                     placeholder="Doe"
+                                    maxLength={50}
                                     value={formData.lastName}
                                     onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                                 />
+                                {errors.lastName && <p className="text-[10px] font-bold text-rose-500 ml-1">{errors.lastName}</p>}
                             </div>
                         </div>
 
@@ -506,20 +613,22 @@ const EmployeesPage = () => {
                                 <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Email *</Label>
                                 <Input
                                     type="email"
-                                    className="rounded-lg h-10 bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors"
+                                    className={`rounded-lg h-10 bg-slate-50 border font-bold px-4 text-xs focus:border-indigo-500 transition-colors ${errors.email ? "border-rose-500" : "border-slate-300"}`}
                                     placeholder="john.doe@company.com"
                                     value={formData.email}
                                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                 />
+                                {errors.email && <p className="text-[10px] font-bold text-rose-500 ml-1">{errors.email}</p>}
                             </div>
                             <div className="space-y-1.5">
                                 <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Phone</Label>
                                 <Input
-                                    className="rounded-lg h-10 bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors"
+                                    className={`rounded-lg h-10 bg-slate-50 border font-bold px-4 text-xs focus:border-indigo-500 transition-colors ${errors.phone ? "border-rose-500" : "border-slate-300"}`}
                                     placeholder="+91 98765 43210"
                                     value={formData.phone}
                                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                                 />
+                                {errors.phone && <p className="text-[10px] font-bold text-rose-500 ml-1">{errors.phone}</p>}
                             </div>
                         </div>
 
@@ -527,7 +636,7 @@ const EmployeesPage = () => {
                             <div className="space-y-1.5">
                                 <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Department *</Label>
                                 <Select value={formData.departmentId} onValueChange={(v) => setFormData({ ...formData, departmentId: v })}>
-                                    <SelectTrigger className="h-10 rounded-lg bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors">
+                                    <SelectTrigger className={`h-10 rounded-lg bg-slate-50 border font-bold px-4 text-xs focus:border-indigo-500 transition-colors ${errors.departmentId ? "border-rose-500" : "border-slate-300"}`}>
                                         <SelectValue placeholder="Select" />
                                     </SelectTrigger>
                                     <SelectContent className="rounded-xl border-none shadow-2xl p-2 font-bold">
@@ -536,20 +645,24 @@ const EmployeesPage = () => {
                                         ))}
                                     </SelectContent>
                                 </Select>
+                                {errors.departmentId && <p className="text-[10px] font-bold text-rose-500 ml-1">{errors.departmentId}</p>}
                             </div>
 
                             <div className="space-y-1.5">
-                                <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Designation</Label>
+                                <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Designation *</Label>
                                 <Select value={formData.designationId} onValueChange={(v) => setFormData({ ...formData, designationId: v })}>
-                                    <SelectTrigger className="h-10 rounded-lg bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors">
+                                    <SelectTrigger className={`h-10 rounded-lg bg-slate-50 border font-bold px-4 text-xs focus:border-indigo-500 transition-colors ${errors.designationId ? "border-rose-500" : "border-slate-300"}`}>
                                         <SelectValue placeholder="Select" />
                                     </SelectTrigger>
                                     <SelectContent className="rounded-xl border-none shadow-2xl p-2 font-bold">
-                                        {designations.map(des => (
-                                            <SelectItem key={des.id} value={des.id} className="rounded-lg h-10">{des.title}</SelectItem>
-                                        ))}
+                                        {designations
+                                            .filter((des) => !formData.departmentId || des.departmentId === formData.departmentId)
+                                            .map(des => (
+                                                <SelectItem key={des.id} value={des.id} className="rounded-lg h-10">{des.title}</SelectItem>
+                                            ))}
                                     </SelectContent>
                                 </Select>
+                                {errors.designationId && <p className="text-[10px] font-bold text-rose-500 ml-1">{errors.designationId}</p>}
                             </div>
 
                             <div className="space-y-1.5">
@@ -572,10 +685,11 @@ const EmployeesPage = () => {
                                 <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Date of Joining</Label>
                                 <Input
                                     type="date"
-                                    className="rounded-lg h-10 bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors"
+                                    className={`rounded-lg h-10 bg-slate-50 border font-bold px-4 text-xs focus:border-indigo-500 transition-colors ${errors.dateOfJoining ? "border-rose-500" : "border-slate-300"}`}
                                     value={formData.dateOfJoining}
                                     onChange={(e) => setFormData({ ...formData, dateOfJoining: e.target.value })}
                                 />
+                                {errors.dateOfJoining && <p className="text-[10px] font-bold text-rose-500 ml-1">{errors.dateOfJoining}</p>}
                             </div>
                             <div className="space-y-1.5">
                                 <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Employment Type</Label>
@@ -596,12 +710,13 @@ const EmployeesPage = () => {
 
                     <DialogFooter className="gap-2 pt-6 border-t border-slate-200 sm:justify-end">
                         <Button
-                            className="flex-1 bg-indigo-600 hover:bg-slate-900 text-white rounded-lg h-10 font-bold text-xs shadow-xl shadow-indigo-100 transition-all"
+                            className="flex-1 bg-indigo-600 hover:bg-slate-900 text-white rounded-lg h-10 font-bold text-xs shadow-xl shadow-indigo-100 transition-all disabled:opacity-50"
                             onClick={handleAddEmployee}
+                            disabled={isSaving}
                         >
-                            Add to Directory
+                            {isSaving ? "Adding..." : "Add to Directory"}
                         </Button>
-                        <Button variant="outline" className="h-10 px-6 rounded-lg font-bold border-slate-300 text-slate-600 text-xs" onClick={() => setIsAddDialogOpen(false)}>
+                        <Button variant="outline" className="h-10 px-6 rounded-lg font-bold border-slate-300 text-slate-600 text-xs" onClick={() => { setIsAddDialogOpen(false); resetForm(); }} disabled={isSaving}>
                             Cancel
                         </Button>
                     </DialogFooter>
@@ -615,8 +730,9 @@ const EmployeesPage = () => {
                         <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl -mr-32 -mt-32" />
                         <div className="flex items-center gap-6 relative z-10">
                             <Avatar className="h-24 w-24 border-4 border-white/10 shadow-2xl">
+                                {selectedEmployee?.profileImage && <AvatarImage src={selectedEmployee.profileImage} />}
                                 <AvatarFallback className="bg-indigo-600 text-white font-bold text-3xl">
-                                    {selectedEmployee?.profileImage}
+                                    {selectedEmployee ? `${selectedEmployee.firstName[0]}${selectedEmployee.lastName[0]}` : ""}
                                 </AvatarFallback>
                             </Avatar>
                             <div className="space-y-1 text-start">
@@ -660,33 +776,69 @@ const EmployeesPage = () => {
                                     <div className="space-y-6">
                                         <h4 className="text-[13px] font-bold text-slate-900 uppercase tracking-wider border-l-4 border-indigo-500 pl-3">Job Details</h4>
                                         <div className="space-y-4 ml-4">
-                                            {[
-                                                { label: "Reporting Manager", value: "Sarah Jenkins (Senior Director)", icon: Users },
-                                                { label: "Employment Type", value: selectedEmployee?.employmentType, icon: Briefcase },
-                                                { label: "Location", value: locations.find(l => l.id === selectedEmployee?.locationId)?.name, icon: MapPin },
-                                                { label: "Work Shift", value: "General (9:00 AM - 6:00 PM)", icon: Clock },
-                                            ].map((item, i) => (
-                                                <div key={i} className="flex flex-col gap-1">
-                                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">{item.label}</span>
-                                                    <div className="flex items-center gap-2 text-sm font-bold text-slate-700">
-                                                        <item.icon size={14} className="text-indigo-500" />
-                                                        {item.value || 'N/A'}
+                                            {(() => {
+                                                const manager = selectedEmployee?.reportingManagerId
+                                                    ? employees.find((e) => e.id === selectedEmployee.reportingManagerId)
+                                                    : null;
+                                                const managerDesig = manager ? designations.find((d) => d.id === manager.designationId) : null;
+                                                const items = [
+                                                    {
+                                                        label: "Reporting Manager",
+                                                        value: manager
+                                                            ? `${manager.firstName} ${manager.lastName}${managerDesig ? ` (${managerDesig.title})` : ""}`
+                                                            : "Not assigned",
+                                                        icon: Users,
+                                                    },
+                                                    { label: "Employment Type", value: selectedEmployee?.employmentType, icon: Briefcase },
+                                                    { label: "Location", value: locations.find((l) => l.id === selectedEmployee?.locationId)?.name, icon: MapPin },
+                                                    { label: "Work Shift", value: "General (9:00 AM - 6:00 PM)", icon: Clock },
+                                                ];
+                                                return items.map((item, i) => (
+                                                    <div key={i} className="flex flex-col gap-1">
+                                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">{item.label}</span>
+                                                        <div className="flex items-center gap-2 text-sm font-bold text-slate-700">
+                                                            <item.icon size={14} className="text-indigo-500" />
+                                                            {item.value || "N/A"}
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            ))}
+                                                ));
+                                            })()}
                                         </div>
                                     </div>
                                     <div className="space-y-6">
                                         <h4 className="text-[13px] font-bold text-slate-900 uppercase tracking-wider border-l-4 border-emerald-500 pl-3">Onboarding Info</h4>
                                         <div className="space-y-4 ml-4">
-                                            <div className="flex flex-col gap-1">
-                                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Probation Status</span>
-                                                <Badge className="w-fit bg-amber-50 text-amber-600 border-none font-bold text-[10px]">CONCLUDED</Badge>
-                                            </div>
-                                            <div className="flex flex-col gap-1">
-                                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Confirmation Date</span>
-                                                <span className="text-sm font-bold text-slate-700">Aug 15, 2024</span>
-                                            </div>
+                                            {(() => {
+                                                const doj = selectedEmployee?.dateOfJoining ? new Date(selectedEmployee.dateOfJoining) : null;
+                                                const now = new Date();
+                                                const daysSinceJoin = doj ? Math.floor((now.getTime() - doj.getTime()) / (1000 * 60 * 60 * 24)) : 0;
+                                                const probationOver = daysSinceJoin >= 90;
+                                                const confirmationDate = doj ? new Date(doj.getTime() + 90 * 24 * 60 * 60 * 1000) : null;
+                                                return (
+                                                    <>
+                                                        <div className="flex flex-col gap-1">
+                                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Probation Status</span>
+                                                            <Badge className={`w-fit border-none font-bold text-[10px] ${probationOver ? "bg-emerald-50 text-emerald-600" : "bg-amber-50 text-amber-600"}`}>
+                                                                {probationOver ? "CONCLUDED" : "IN PROGRESS"}
+                                                            </Badge>
+                                                        </div>
+                                                        <div className="flex flex-col gap-1">
+                                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Confirmation Date</span>
+                                                            <span className="text-sm font-bold text-slate-700">
+                                                                {confirmationDate
+                                                                    ? confirmationDate.toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })
+                                                                    : "N/A"}
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex flex-col gap-1">
+                                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Tenure</span>
+                                                            <span className="text-sm font-bold text-slate-700">
+                                                                {doj ? `${Math.floor(daysSinceJoin / 365)} yr ${Math.floor((daysSinceJoin % 365) / 30)} mo` : "N/A"}
+                                                            </span>
+                                                        </div>
+                                                    </>
+                                                );
+                                            })()}
                                         </div>
                                     </div>
                                 </div>
@@ -697,25 +849,49 @@ const EmployeesPage = () => {
                                     {[
                                         { label: "Full Name", value: `${selectedEmployee?.firstName} ${selectedEmployee?.lastName}` },
                                         { label: "Personal Email", value: selectedEmployee?.email },
+                                        { label: "Phone", value: selectedEmployee?.phone },
                                         { label: "Date of Birth", value: selectedEmployee?.dateOfBirth },
                                         { label: "Gender", value: selectedEmployee?.gender },
-                                        { label: "Blood Group", value: "B+ Positive" },
-                                        { label: "Marital Status", value: "Married" },
-                                        { label: "Permanent Address", value: "123, Tech Park Mansion, Silicon Valley, India" },
+                                        { label: "Blood Group", value: selectedEmployee?.bloodGroup },
+                                        {
+                                            label: "Emergency Contact",
+                                            value: selectedEmployee?.emergencyContact
+                                                ? `${selectedEmployee.emergencyContact.name} (${selectedEmployee.emergencyContact.relationship}) · ${selectedEmployee.emergencyContact.phone}`
+                                                : undefined,
+                                        },
+                                        { label: "Location", value: locations.find((l) => l.id === selectedEmployee?.locationId)?.name },
                                     ].map((item, i) => (
                                         <div key={i} className="flex flex-col gap-1">
                                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">{item.label}</span>
-                                            <span className="text-sm font-bold text-slate-700">{item.value || 'N/A'}</span>
+                                            <span className="text-sm font-bold text-slate-700">{item.value || "N/A"}</span>
                                         </div>
                                     ))}
                                 </div>
                             </TabsContent>
 
                             <TabsContent value="salary" className="m-0 space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                                <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-[10px] font-bold text-amber-700">
+                                    Sample salary structure preview. Actual payroll data is managed under Payroll module.
+                                </div>
                                 <Card className="border-none bg-slate-50 p-6 rounded-3xl">
                                     <div className="flex justify-between items-center mb-6">
                                         <h4 className="text-[13px] font-bold text-slate-900 uppercase tracking-wider">Salary Structure (FY 24-25)</h4>
-                                        <Button variant="outline" className="h-8 rounded-lg text-[10px] font-bold gap-2">
+                                        <Button
+                                            variant="outline"
+                                            className="h-8 rounded-lg text-[10px] font-bold gap-2"
+                                            onClick={() => {
+                                                if (!selectedEmployee) return;
+                                                const csv = `Employee,${selectedEmployee.firstName} ${selectedEmployee.lastName}\nCode,${selectedEmployee.employeeCode}\n\nComponent,Amount\nBasic Salary,45000\nHRA,22500\nSpecial Allowance,15000\nProvident Fund,-1800\nProfessional Tax,-200\nNet Payable,80500`;
+                                                const blob = new Blob([csv], { type: "text/csv" });
+                                                const url = URL.createObjectURL(blob);
+                                                const a = document.createElement("a");
+                                                a.href = url;
+                                                a.download = `payslip_${selectedEmployee.employeeCode}.csv`;
+                                                a.click();
+                                                URL.revokeObjectURL(url);
+                                                toast({ title: "Sample Payslip", description: "Download started." });
+                                            }}
+                                        >
                                             <Download size={12} /> DOWNLOAD PAYSLIP
                                         </Button>
                                     </div>
@@ -741,6 +917,9 @@ const EmployeesPage = () => {
                             </TabsContent>
 
                             <TabsContent value="attendance" className="m-0 space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                                <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-[10px] font-bold text-amber-700">
+                                    Sample attendance preview. Live data appears in the Time & Attendance module.
+                                </div>
                                 <div className="grid grid-cols-3 gap-4">
                                     {[
                                         { label: "Avg Check-in", value: "09:12 AM" },
@@ -757,6 +936,32 @@ const EmployeesPage = () => {
                                     <p className="text-[11px] font-bold text-indigo-700">System Note:</p>
                                     <p className="text-[10px] font-medium text-indigo-600 mt-1">Excellent attendance record. Consistently logs in within 15 mins of shift start.</p>
                                 </div>
+                            </TabsContent>
+
+                            <TabsContent value="performance" className="m-0 space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                                <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-[10px] font-bold text-amber-700">
+                                    Sample performance preview. Live data appears in the Performance module.
+                                </div>
+                                <div className="grid grid-cols-3 gap-4">
+                                    {[
+                                        { label: "Last Review", value: "4.6 / 5", color: "text-emerald-600" },
+                                        { label: "Goals Met", value: "8 / 10", color: "text-indigo-600" },
+                                        { label: "Peer Rating", value: "4.4 / 5", color: "text-amber-600" },
+                                    ].map((stat, i) => (
+                                        <div key={i} className="p-4 bg-slate-50 rounded-2xl text-center border border-slate-100">
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight mb-1">{stat.label}</p>
+                                            <p className={`text-xl font-bold ${stat.color}`}>{stat.value}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                                <Card className="border-none bg-slate-50 p-6 rounded-3xl">
+                                    <h4 className="text-[13px] font-bold text-slate-900 uppercase tracking-wider mb-4">Recent Highlights</h4>
+                                    <ul className="space-y-2 text-[11px] font-medium text-slate-600 list-disc list-inside">
+                                        <li>Led cross-functional initiative with measurable outcomes.</li>
+                                        <li>Mentored 2 junior team members through onboarding.</li>
+                                        <li>Shipped 3 critical features within committed timelines.</li>
+                                    </ul>
+                                </Card>
                             </TabsContent>
                         </div>
                     </Tabs>
@@ -794,20 +999,24 @@ const EmployeesPage = () => {
                             <div className="space-y-1.5">
                                 <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">First Name *</Label>
                                 <Input
-                                    className="rounded-lg h-10 bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors"
+                                    className={`rounded-lg h-10 bg-slate-50 border font-bold px-4 text-xs focus:border-indigo-500 transition-colors ${errors.firstName ? "border-rose-500" : "border-slate-300"}`}
                                     placeholder="John"
+                                    maxLength={50}
                                     value={formData.firstName}
                                     onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
                                 />
+                                {errors.firstName && <p className="text-[10px] font-bold text-rose-500 ml-1">{errors.firstName}</p>}
                             </div>
                             <div className="space-y-1.5">
                                 <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Last Name *</Label>
                                 <Input
-                                    className="rounded-lg h-10 bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors"
+                                    className={`rounded-lg h-10 bg-slate-50 border font-bold px-4 text-xs focus:border-indigo-500 transition-colors ${errors.lastName ? "border-rose-500" : "border-slate-300"}`}
                                     placeholder="Doe"
+                                    maxLength={50}
                                     value={formData.lastName}
                                     onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                                 />
+                                {errors.lastName && <p className="text-[10px] font-bold text-rose-500 ml-1">{errors.lastName}</p>}
                             </div>
                         </div>
 
@@ -816,20 +1025,22 @@ const EmployeesPage = () => {
                                 <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Email *</Label>
                                 <Input
                                     type="email"
-                                    className="rounded-lg h-10 bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors"
+                                    className={`rounded-lg h-10 bg-slate-50 border font-bold px-4 text-xs focus:border-indigo-500 transition-colors ${errors.email ? "border-rose-500" : "border-slate-300"}`}
                                     placeholder="john.doe@company.com"
                                     value={formData.email}
                                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                 />
+                                {errors.email && <p className="text-[10px] font-bold text-rose-500 ml-1">{errors.email}</p>}
                             </div>
                             <div className="space-y-1.5">
                                 <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Phone</Label>
                                 <Input
-                                    className="rounded-lg h-10 bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors"
+                                    className={`rounded-lg h-10 bg-slate-50 border font-bold px-4 text-xs focus:border-indigo-500 transition-colors ${errors.phone ? "border-rose-500" : "border-slate-300"}`}
                                     placeholder="+91 98765 43210"
                                     value={formData.phone}
                                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                                 />
+                                {errors.phone && <p className="text-[10px] font-bold text-rose-500 ml-1">{errors.phone}</p>}
                             </div>
                         </div>
 
@@ -837,7 +1048,7 @@ const EmployeesPage = () => {
                             <div className="space-y-1.5">
                                 <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Department *</Label>
                                 <Select value={formData.departmentId} onValueChange={(v) => setFormData({ ...formData, departmentId: v })}>
-                                    <SelectTrigger className="h-10 rounded-lg bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors">
+                                    <SelectTrigger className={`h-10 rounded-lg bg-slate-50 border font-bold px-4 text-xs focus:border-indigo-500 transition-colors ${errors.departmentId ? "border-rose-500" : "border-slate-300"}`}>
                                         <SelectValue placeholder="Select" />
                                     </SelectTrigger>
                                     <SelectContent className="rounded-xl border-none shadow-2xl p-2 font-bold">
@@ -846,20 +1057,24 @@ const EmployeesPage = () => {
                                         ))}
                                     </SelectContent>
                                 </Select>
+                                {errors.departmentId && <p className="text-[10px] font-bold text-rose-500 ml-1">{errors.departmentId}</p>}
                             </div>
 
                             <div className="space-y-1.5">
-                                <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Designation</Label>
+                                <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Designation *</Label>
                                 <Select value={formData.designationId} onValueChange={(v) => setFormData({ ...formData, designationId: v })}>
-                                    <SelectTrigger className="h-10 rounded-lg bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors">
+                                    <SelectTrigger className={`h-10 rounded-lg bg-slate-50 border font-bold px-4 text-xs focus:border-indigo-500 transition-colors ${errors.designationId ? "border-rose-500" : "border-slate-300"}`}>
                                         <SelectValue placeholder="Select" />
                                     </SelectTrigger>
                                     <SelectContent className="rounded-xl border-none shadow-2xl p-2 font-bold">
-                                        {designations.map(des => (
-                                            <SelectItem key={des.id} value={des.id} className="rounded-lg h-10">{des.title}</SelectItem>
-                                        ))}
+                                        {designations
+                                            .filter((des) => !formData.departmentId || des.departmentId === formData.departmentId)
+                                            .map(des => (
+                                                <SelectItem key={des.id} value={des.id} className="rounded-lg h-10">{des.title}</SelectItem>
+                                            ))}
                                     </SelectContent>
                                 </Select>
+                                {errors.designationId && <p className="text-[10px] font-bold text-rose-500 ml-1">{errors.designationId}</p>}
                             </div>
 
                             <div className="space-y-1.5">
@@ -882,10 +1097,11 @@ const EmployeesPage = () => {
                                 <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Date of Joining</Label>
                                 <Input
                                     type="date"
-                                    className="rounded-lg h-10 bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors"
+                                    className={`rounded-lg h-10 bg-slate-50 border font-bold px-4 text-xs focus:border-indigo-500 transition-colors ${errors.dateOfJoining ? "border-rose-500" : "border-slate-300"}`}
                                     value={formData.dateOfJoining}
                                     onChange={(e) => setFormData({ ...formData, dateOfJoining: e.target.value })}
                                 />
+                                {errors.dateOfJoining && <p className="text-[10px] font-bold text-rose-500 ml-1">{errors.dateOfJoining}</p>}
                             </div>
                             <div className="space-y-1.5">
                                 <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Status</Label>
@@ -922,12 +1138,13 @@ const EmployeesPage = () => {
 
                     <DialogFooter className="gap-2 pt-6 border-t border-slate-200 sm:justify-end">
                         <Button
-                            className="flex-1 bg-indigo-600 hover:bg-slate-900 text-white rounded-lg h-10 font-bold text-xs shadow-xl shadow-indigo-100 transition-all"
+                            className="flex-1 bg-indigo-600 hover:bg-slate-900 text-white rounded-lg h-10 font-bold text-xs shadow-xl shadow-indigo-100 transition-all disabled:opacity-50"
                             onClick={handleUpdateEmployee}
+                            disabled={isSaving}
                         >
-                            Save Changes
+                            {isSaving ? "Saving..." : "Save Changes"}
                         </Button>
-                        <Button variant="outline" className="h-10 px-6 rounded-lg font-bold border-slate-300 text-slate-600 text-xs" onClick={() => setIsEditDialogOpen(false)}>
+                        <Button variant="outline" className="h-10 px-6 rounded-lg font-bold border-slate-300 text-slate-600 text-xs" onClick={() => { setIsEditDialogOpen(false); resetForm(); }} disabled={isSaving}>
                             Cancel
                         </Button>
                     </DialogFooter>

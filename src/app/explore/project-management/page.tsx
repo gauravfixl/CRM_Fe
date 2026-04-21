@@ -176,6 +176,111 @@ const data = {
     { value: "3x", label: "Team productivity increase" },
     { value: "30%", label: "Project cost savings" },
   ],
+  capabilities: [
+    {
+      title: "Advanced Sprint & Agile Management",
+      description:
+        "Run full agile ceremonies with dedicated sprint planning boards, backlog grooming tools, and automated burndown tracking. Whether your team follows Scrum, Kanban, or a hybrid approach, the platform adapts to your workflow.",
+      keyPoints: [
+        "Sprint creation with story point estimation and velocity tracking",
+        "Backlog prioritization with drag-and-drop ranking and effort scoring",
+        "Automated burndown, burnup, and cumulative flow diagrams",
+        "Retrospective boards with action item tracking across sprints",
+      ],
+    },
+    {
+      title: "Portfolio & Program Management",
+      description:
+        "Manage multiple projects as a unified portfolio with cross-project dependency mapping, consolidated dashboards, and program-level resource allocation. Ideal for PMOs overseeing dozens of concurrent initiatives.",
+      keyPoints: [
+        "Portfolio dashboards showing health, budget, and timeline across all projects",
+        "Cross-project dependency visualization to identify cascading risks",
+        "Program-level milestone tracking with roll-up status reporting",
+        "Strategic alignment scoring to prioritize projects against business goals",
+      ],
+    },
+    {
+      title: "Intelligent Workload Balancing",
+      description:
+        "Prevent burnout and underutilization with real-time workload heatmaps that show exactly how capacity is distributed across your team. Reassign tasks with drag-and-drop and forecast resource needs for upcoming periods.",
+      keyPoints: [
+        "Capacity heatmaps with daily and weekly utilization views",
+        "Drag-and-drop task reassignment from the resource dashboard",
+        "Forecasting models that predict resource shortages before they happen",
+      ],
+    },
+    {
+      title: "Budget & Cost Tracking",
+      description:
+        "Track project budgets in real time with cost breakdowns by phase, task, and resource. Compare planned versus actual spend, set budget threshold alerts, and generate profitability reports for client-facing engagements.",
+      keyPoints: [
+        "Budget allocation by project phase with real-time burn tracking",
+        "Hourly rate management for internal and contractor resources",
+        "Profitability analysis comparing revenue against labor and expense costs",
+        "Automated alerts when spend exceeds configurable budget thresholds",
+      ],
+    },
+  ],
+  integrations: [
+    { name: "GitHub", category: "Development" },
+    { name: "GitLab", category: "Development" },
+    { name: "Bitbucket", category: "Development" },
+    { name: "Slack", category: "Communication" },
+    { name: "Microsoft Teams", category: "Communication" },
+    { name: "Google Drive", category: "Storage" },
+    { name: "Dropbox", category: "Storage" },
+    { name: "Figma", category: "Design" },
+    { name: "Zapier", category: "Automation" },
+    { name: "Google Calendar", category: "Scheduling" },
+    { name: "Confluence", category: "Documentation" },
+    { name: "Notion", category: "Productivity" },
+  ],
+  testimonials: [
+    {
+      quote:
+        "We moved from Jira and Asana to CubicleERP and consolidated everything into one tool. The Gantt charts are incredibly intuitive, and the fact that time tracking and invoicing are built in saved us from stitching together three separate products.",
+      author: "David Park",
+      role: "Director of Engineering",
+      company: "Vantage Labs",
+      metric: "45% faster project delivery",
+    },
+    {
+      quote:
+        "As a consulting firm managing 40+ client engagements simultaneously, portfolio-level visibility was critical. CubicleERP gives our leadership real-time insight into every project without a single status meeting.",
+      author: "Kavitha Rao",
+      role: "Managing Partner",
+      company: "Elevate Advisory",
+      metric: "80% fewer missed deadlines",
+    },
+    {
+      quote:
+        "The resource allocation heatmaps completely changed how we plan sprints. We stopped overloading our senior engineers and started distributing work more evenly, which improved both velocity and team morale.",
+      author: "Tom Henriksen",
+      role: "VP of Product",
+      company: "StreamForge Inc.",
+      metric: "3x improvement in team throughput",
+    },
+  ],
+  comparisons: [
+    { feature: "Task Management", traditional: "Static to-do lists", cubicleErp: "Dynamic boards and charts" },
+    { feature: "Time Tracking", traditional: "Separate timekeeping app", cubicleErp: "Built into every task" },
+    { feature: "Resource Planning", traditional: "Manual spreadsheet grids", cubicleErp: "Live capacity heatmaps" },
+    { feature: "Dependency Tracking", traditional: "Verbal communication", cubicleErp: "Automated alerts and links" },
+    { feature: "Client Reporting", traditional: "Manual slide decks", cubicleErp: "Auto-generated dashboards" },
+    { feature: "Budget Monitoring", traditional: "Monthly finance review", cubicleErp: "Real-time cost tracking" },
+  ],
+  subNavItems: [
+    { label: "Overview", sectionId: "hero" },
+    { label: "Features", sectionId: "features" },
+    { label: "Capabilities", sectionId: "capabilities" },
+    { label: "Benefits", sectionId: "benefits" },
+    { label: "Integrations", sectionId: "integrations" },
+    { label: "Use Cases", sectionId: "use-cases" },
+    { label: "FAQs", sectionId: "faqs" },
+    { label: "Time Tracking", href: "/explore/time-tracking" },
+    { label: "Documents", href: "/explore/documents" },
+    { label: "Automation", href: "/explore/automation" },
+  ],
 }
 
 export default function ProjectManagementPage() {

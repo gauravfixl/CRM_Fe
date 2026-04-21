@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
     Key,
     Plus,
@@ -13,7 +13,13 @@ import {
     Clock,
     AlertTriangle,
     Activity,
+    Loader2,
 } from "lucide-react";
+import {
+    listApiKeys,
+    createApiKey as apiCreateApiKey,
+    revokeApiKey as apiRevokeApiKey,
+} from "@/hooks/orgAdminHooks";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -38,7 +44,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/shared/components/ui/select";
-import { showSuccess, showWarning } from "@/utils/toast";
+import { showSuccess, showWarning, showError } from "@/utils/toast";
 
 interface ApiKey {
     id: string;
@@ -108,12 +114,61 @@ export default function APIKeysPage() {
     const [newKey, setNewKey] = useState<KeyForm>({ ...defaultFormState });
     const [formErrors, setFormErrors] = useState<FormErrors>({});
 
-    const [apiKeys, setApiKeys] = useState<ApiKey[]>([
-        { id: "1", name: "Production API", key: "api_prod_xxxxxxxxxxxxxxxxxxxxxxxxxxxx", permissions: "Full Access", created: "Jan 15, 2026", expires: "Jan 15, 2027", status: "Active" },
-        { id: "2", name: "Development API", key: "api_dev_xxxxxxxxxxxxxxxxxxxxxxxxxxxxx", permissions: "Read Only", created: "Feb 20, 2026", expires: "Feb 20, 2027", status: "Active" },
-        { id: "3", name: "Analytics Export", key: "api_prod_yyyyyyyyyyyyyyyyyyyyyyyyyyyy", permissions: "Read Only", created: "Dec 1, 2025", expires: "Dec 1, 2026", status: "Expired" },
-        { id: "4", name: "Webhook Signing", key: "api_prod_zzzzzzzzzzzzzzzzzzzzzzzzzzzz", permissions: "Webhooks Only", created: "Mar 1, 2026", expires: "Mar 1, 2027", status: "Active" },
-    ]);
+    const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [submitting, setSubmitting] = useState(false);
+
+    const formatDate = (value: any): string => {
+        if (!value) return "—";
+        try {
+            return new Date(value).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+            });
+        } catch {
+            return String(value);
+        }
+    };
+
+    const normalizeKey = (raw: any): ApiKey => {
+        const id = raw?._id || raw?.id || "";
+        const status =
+            raw?.status === "Revoked" || raw?.revoked === true
+                ? "Revoked"
+                : raw?.expiresAt && new Date(raw.expiresAt) < new Date()
+                ? "Expired"
+                : "Active";
+        return {
+            id,
+            name: raw?.name || "—",
+            key: raw?.key || raw?.maskedKey || raw?.prefix || "",
+            permissions: raw?.permissions || raw?.scope || "Full Access",
+            created: formatDate(raw?.createdAt || raw?.created),
+            expires: raw?.expiresAt ? formatDate(raw.expiresAt) : "Never",
+            status,
+        };
+    };
+
+    const fetchKeys = async () => {
+        try {
+            setLoading(true);
+            const res = await listApiKeys();
+            const data = res?.data?.apiKeys || res?.data?.keys || res?.data?.data || res?.data || [];
+            const list = Array.isArray(data) ? data : [];
+            setApiKeys(list.map(normalizeKey));
+        } catch (err: any) {
+            console.error("Failed to load API keys:", err);
+            showError(err?.response?.data?.message || "Failed to load API keys");
+            setApiKeys([]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchKeys();
+    }, []);
 
     const filteredKeys = useMemo(() => {
         return apiKeys.filter((k) => {
@@ -135,35 +190,73 @@ export default function APIKeysPage() {
         return errors;
     };
 
-    const handleCreate = () => {
+    const handleCreate = async () => {
         const errors = validateForm(newKey);
         setFormErrors(errors);
         if (Object.keys(errors).length > 0) return;
 
-        const generatedKey = generateRandomKey();
-        const created: ApiKey = {
-            id: Date.now().toString(),
-            name: newKey.name.trim(),
-            key: generatedKey,
-            permissions: newKey.permissions,
-            created: getTodayFormatted(),
-            expires: getExpiryDate(newKey.expiry),
-            status: "Active",
-        };
-        setApiKeys((prev) => [...prev, created]);
-        setNewKey({ ...defaultFormState });
-        setFormErrors({});
-        setShowCreateModal(false);
-        showSuccess(`API key created: ${generatedKey} — Copy it now, it won't be shown again!`);
+        try {
+            setSubmitting(true);
+            // Compute expiry date for backend
+            let expiresAt: string | null = null;
+            if (newKey.expiry === "30 days") {
+                const d = new Date();
+                d.setDate(d.getDate() + 30);
+                expiresAt = d.toISOString();
+            } else if (newKey.expiry === "90 days") {
+                const d = new Date();
+                d.setDate(d.getDate() + 90);
+                expiresAt = d.toISOString();
+            } else if (newKey.expiry === "1 year") {
+                const d = new Date();
+                d.setFullYear(d.getFullYear() + 1);
+                expiresAt = d.toISOString();
+            }
+
+            const payload: any = {
+                name: newKey.name.trim(),
+                permissions: newKey.permissions,
+            };
+            if (expiresAt) payload.expiresAt = expiresAt;
+
+            const res = await apiCreateApiKey(payload);
+            const generatedKey =
+                res?.data?.key || res?.data?.apiKey?.key || res?.data?.plainKey || "";
+            if (generatedKey) {
+                navigator.clipboard?.writeText(generatedKey).catch(() => {});
+                showSuccess(
+                    `API key created and copied to clipboard. This is the only time the full key will be shown.`
+                );
+            } else {
+                showSuccess("API key created successfully");
+            }
+            setNewKey({ ...defaultFormState });
+            setFormErrors({});
+            setShowCreateModal(false);
+            await fetchKeys();
+        } catch (err: any) {
+            console.error("Create API key failed:", err);
+            showError(err?.response?.data?.message || "Failed to create API key");
+        } finally {
+            setSubmitting(false);
+        }
     };
 
-    const revokeKey = (id: string) => {
+    const revokeKey = async (id: string) => {
         const key = apiKeys.find((k) => k.id === id);
         if (!key) return;
-        const confirmed = window.confirm("Are you sure you want to revoke this key?");
+        const confirmed = window.confirm(
+            `Revoke "${key.name}"? This cannot be undone and any application using this key will stop working.`
+        );
         if (!confirmed) return;
-        setApiKeys((prev) => prev.filter((k) => k.id !== id));
-        showWarning(`API key "${key.name}" revoked`);
+        try {
+            await apiRevokeApiKey(id);
+            showWarning(`API key "${key.name}" revoked`);
+            await fetchKeys();
+        } catch (err: any) {
+            console.error("Revoke API key failed:", err);
+            showError(err?.response?.data?.message || "Failed to revoke API key");
+        }
     };
 
     const copyKeyToClipboard = (key: string) => {
@@ -272,7 +365,16 @@ export default function APIKeysPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-zinc-100">
-                            {filteredKeys.length === 0 ? (
+                            {loading ? (
+                                <tr>
+                                    <td colSpan={7} className="px-6 py-16 text-center">
+                                        <div className="flex flex-col items-center gap-3">
+                                            <Loader2 size={32} className="text-primary animate-spin" />
+                                            <p className="text-sm font-bold text-gray-500">Loading API keys...</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ) : filteredKeys.length === 0 ? (
                                 <tr>
                                     <td colSpan={7} className="px-6 py-16 text-center">
                                         <div className="flex flex-col items-center gap-3">
@@ -450,9 +552,10 @@ export default function APIKeysPage() {
                         </Button>
                         <Button
                             onClick={handleCreate}
-                            className="bg-primary hover:bg-primary/90 rounded-none text-sm px-6 h-9 shadow-md shadow-primary/20"
+                            disabled={submitting}
+                            className="bg-primary hover:bg-primary/90 rounded-none text-sm px-6 h-9 shadow-md shadow-primary/20 disabled:opacity-60"
                         >
-                            Generate Key
+                            {submitting ? (<><Loader2 size={14} className="animate-spin mr-2" /> Generating...</>) : "Generate Key"}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

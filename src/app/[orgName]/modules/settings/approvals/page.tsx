@@ -141,18 +141,26 @@ export default function ApprovalProcessesPage() {
 
     const handleCreate = () => {
         const errors: Partial<Record<keyof ProcessForm, string>> = {};
-        if (!newProcess.name.trim()) errors.name = "Process name is required";
+        const sanitizedName = newProcess.name.trim();
+
+        if (!sanitizedName) {
+            errors.name = "Process name is required";
+        } else if (/\d/.test(sanitizedName)) {
+            errors.name = "Process name cannot contain numbers";
+        }
+
         if (!newProcess.module) errors.module = "Module is required";
+        
         if (Object.keys(errors).length > 0) {
             setFormErrors(errors);
-            showWarning("Please fill in all required fields");
+            showWarning(errors.name || "Please fill in all required fields");
             return;
         }
         const moduleName = moduleLabels[newProcess.module] || newProcess.module;
         const chain = buildApproverChain(newProcess.firstApprover, newProcess.secondApprover);
         const created: ApprovalProcess = {
             id: Date.now().toString(),
-            name: newProcess.name.trim(),
+            name: sanitizedName,
             module: moduleName,
             approvers: chain || "Not configured",
             avgTime: "N/A",
@@ -185,11 +193,19 @@ export default function ApprovalProcessesPage() {
 
     const handleEdit = () => {
         const errors: Partial<Record<keyof ProcessForm, string>> = {};
-        if (!editProcess.name.trim()) errors.name = "Process name is required";
+        const sanitizedName = editProcess.name.trim();
+
+        if (!sanitizedName) {
+            errors.name = "Process name is required";
+        } else if (/\d/.test(sanitizedName)) {
+            errors.name = "Process name cannot contain numbers";
+        }
+
         if (!editProcess.module) errors.module = "Module is required";
+
         if (Object.keys(errors).length > 0) {
             setEditFormErrors(errors);
-            showWarning("Please fill in all required fields");
+            showWarning(errors.name || "Please fill in all required fields");
             return;
         }
         const moduleName = moduleLabels[editProcess.module] || editProcess.module;
@@ -197,12 +213,12 @@ export default function ApprovalProcessesPage() {
         setApprovalProcesses((prev) =>
             prev.map((p) =>
                 p.id === editProcess.id
-                    ? { ...p, name: editProcess.name.trim(), module: moduleName, approvers: chain || p.approvers }
+                    ? { ...p, name: sanitizedName, module: moduleName, approvers: chain || p.approvers }
                     : p
             )
         );
         setShowEditModal(false);
-        showSuccess(`Approval process "${editProcess.name}" updated successfully`);
+        showSuccess(`Approval process "${sanitizedName}" updated successfully`);
     };
 
     const deleteProcess = (id: string) => {

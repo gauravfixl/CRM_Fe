@@ -81,3 +81,12 @@ export const deleteTeamMember = async (teamId, memberId, projectId) => {
   });
   return response;
 };
+
+/**
+ * Deletes a team.
+ * @param {string} teamId - Team ID.
+ */
+export const deleteTeam = async (teamId) => {
+  const response = await axios.delete(`/teams/${teamId}/delete`);
+  return response;
+};

@@ -134,11 +134,11 @@ function StepCard({
 
 function AnimatedConnector({ isVisible, delay, color = "#0067B8" }: { isVisible: boolean; delay: number; color?: string }) {
   return (
-    <div className="flex justify-center py-2">
+    <div className="flex justify-center py-1">
       <div className="relative flex flex-col items-center">
         {/* Animated line */}
         <motion.div
-          className="w-0.5 h-12 rounded-full"
+          className="w-0.5 h-8 rounded-full"
           style={{ backgroundColor: color + "30" }}
           initial={{ scaleY: 0 }}
           animate={isVisible ? { scaleY: 1 } : {}}
@@ -222,7 +222,7 @@ export default function LP2Workflow() {
       <div ref={ref as any} className="relative max-w-[1280px] mx-auto px-6">
         {/* Header */}
         <motion.div
-          className="text-center mb-20"
+          className="text-center mb-14"
           initial={{ opacity: 0, y: 30 }}
           animate={isVisible ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.7, ease: [0.25, 0.46, 0.45, 0.94] }}
@@ -258,7 +258,7 @@ export default function LP2Workflow() {
         <div className="max-w-6xl mx-auto">
 
           {/* Step 1: Trigger - Right Side */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center mb-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-center mb-1">
             <div className="lg:text-right order-2 lg:order-1">
               <AnnotationLabel text={steps[0].annotation} color={steps[0].color} side="left" delay={0.3} isVisible={isVisible} />
             </div>
@@ -268,7 +268,7 @@ export default function LP2Workflow() {
           </div>
 
           {/* Connector */}
-          <div className="flex justify-center -my-2 relative z-10">
+          <div className="flex justify-center -my-1 relative z-10">
             <div className="relative">
               <AnimatedConnector isVisible={isVisible} delay={0.4} color="#107C10" />
               {/* Floating particle */}
@@ -286,8 +286,8 @@ export default function LP2Workflow() {
           </div>
 
           {/* Step 2: AI Action - Left Side */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center mb-4">
-            <div className="order-1">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-center mb-1">
+            <div className="order-1 flex lg:justify-end">
               <StepCard {...steps[1]} type={steps[1].type} delay={0.5} isVisible={isVisible} index={2} />
             </div>
             <div className="lg:text-left order-2">
@@ -296,7 +296,7 @@ export default function LP2Workflow() {
           </div>
 
           {/* Connector */}
-          <div className="flex justify-center -my-2 relative z-10">
+          <div className="flex justify-center -my-1 relative z-10">
             <div className="relative">
               <AnimatedConnector isVisible={isVisible} delay={0.7} color="#5C2D91" />
               {/* Floating particle */}
@@ -314,7 +314,7 @@ export default function LP2Workflow() {
           </div>
 
           {/* Step 3: Condition - Right Side */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center mb-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-center mb-1">
             <div className="lg:text-right order-2 lg:order-1">
               <AnnotationLabel text={steps[2].annotation} color={steps[2].color} side="left" delay={0.85} isVisible={isVisible} />
             </div>
@@ -324,9 +324,9 @@ export default function LP2Workflow() {
           </div>
 
           {/* Branch connector - Center */}
-          <div className="flex justify-center py-2">
+          <div className="flex justify-center py-1">
             <motion.div
-              className="relative w-0.5 h-10 rounded-full bg-[#0067B8]/20"
+              className="relative w-0.5 h-8 rounded-full bg-[#0067B8]/20"
               initial={{ scaleY: 0 }}
               animate={isVisible ? { scaleY: 1 } : {}}
               transition={{ duration: 0.3, delay: 0.9 }}
@@ -350,7 +350,7 @@ export default function LP2Workflow() {
           </div>
 
           {/* Yes / No branches - Side by Side */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-1">
             {/* Yes branch - Left */}
             <motion.div
               className="flex flex-col items-center lg:items-end"
@@ -438,9 +438,9 @@ export default function LP2Workflow() {
           </div>
 
           {/* Merge connector - Simplified */}
-          <div className="flex justify-center py-2">
+          <div className="flex justify-center py-1">
             <motion.div
-              className="w-0.5 h-8 rounded-full bg-[#008575]/20"
+              className="w-0.5 h-6 rounded-full bg-[#008575]/20"
               initial={{ scaleY: 0 }}
               animate={isVisible ? { scaleY: 1 } : {}}
               transition={{ delay: 1.15 }}
@@ -448,8 +448,8 @@ export default function LP2Workflow() {
           </div>
 
           {/* Final step: Notification - Left Side */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center">
-            <div className="order-1">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-center">
+            <div className="order-1 flex lg:justify-end">
               <StepCard {...finalStep} type={finalStep.type} delay={1.2} isVisible={isVisible} index={4} />
             </div>
             <div className="lg:text-left order-2">

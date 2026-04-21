@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
     FileText,
     Download,
@@ -11,8 +11,10 @@ import {
     CheckCircle2,
     Clock,
     AlertCircle,
-    ChevronDown
+    ChevronDown,
+    Loader2
 } from "lucide-react";
+import { axiosInstance } from "@/lib/axios";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -25,7 +27,47 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-const allInvoices = [
+interface InvoiceRecord {
+    id: string;
+    date: string;
+    year: number;
+    amount: string;
+    rawAmount: number;
+    status: string;
+    items: string;
+    due: string;
+}
+
+function formatDate(dateStr: string): string {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" });
+}
+
+function mapApiToInvoices(billingHistories: any[]): InvoiceRecord[] {
+    return billingHistories.map((item, index) => {
+        const createdAt = item.createdAt ? new Date(item.createdAt) : new Date();
+        const price = item.planSnapshot?.price ?? 0;
+        const planName = item.planSnapshot?.name ?? "Plan";
+        const planType = item.billingPlanId?.planType ?? "Subscription";
+        const status = item.paymentStatus === "refunded" || item.paymentStatus === "canceled"
+            ? "Refunded"
+            : item.paymentStatus === "pending"
+            ? "Pending"
+            : "Paid";
+        return {
+            id: item._id || `Inv-${index + 1}`,
+            date: formatDate(item.createdAt),
+            year: createdAt.getFullYear(),
+            amount: `$${price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+            rawAmount: price,
+            status,
+            items: `${planName} - ${planType}`,
+            due: formatDate(item.createdAt),
+        };
+    });
+}
+
+const fallbackInvoices: InvoiceRecord[] = [
     { id: "Inv-2026-001", date: "Jan 01, 2026", year: 2026, amount: "$1,389.00", rawAmount: 1389, status: "Paid", items: "Enterprise Plan + 2 Addons", due: "Jan 01, 2026" },
     { id: "Inv-2025-12-004", date: "Dec 01, 2025", year: 2025, amount: "$1,290.00", rawAmount: 1290, status: "Paid", items: "Enterprise Plan + 1 Addon", due: "Dec 01, 2025" },
     { id: "Inv-2025-11-012", date: "Nov 01, 2025", year: 2025, amount: "$1,290.00", rawAmount: 1290, status: "Paid", items: "Enterprise Plan + 1 Addon", due: "Nov 01, 2025" },
@@ -33,11 +75,41 @@ const allInvoices = [
     { id: "Inv-2025-09-022", date: "Sep 01, 2025", year: 2025, amount: "$1,290.00", rawAmount: 1290, status: "Paid", items: "Enterprise Plan", due: "Sep 01, 2025" },
 ];
 
-const years = [{ label: "All Years", value: "all" }, { label: "2026", value: "2026" }, { label: "2025", value: "2025" }];
-
 export default function BillingHistoryPage() {
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedYear, setSelectedYear] = useState("all");
+    const [allInvoices, setAllInvoices] = useState<InvoiceRecord[]>(fallbackInvoices);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchBillingHistory = async () => {
+            try {
+                setLoading(true);
+                const response = await axiosInstance.get("/OrgBilling/history");
+                const data = response.data;
+                if (data?.billingHistories?.length > 0) {
+                    setAllInvoices(mapApiToInvoices(data.billingHistories));
+                } else {
+                    setAllInvoices(fallbackInvoices);
+                }
+            } catch (error) {
+                console.error("Failed to fetch billing history:", error);
+                toast.error("Failed to load billing history.");
+                setAllInvoices(fallbackInvoices);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchBillingHistory();
+    }, []);
+
+    const years = useMemo(() => {
+        const uniqueYears = [...new Set(allInvoices.map(inv => inv.year))].sort((a, b) => b - a);
+        return [
+            { label: "All Years", value: "all" },
+            ...uniqueYears.map(y => ({ label: String(y), value: String(y) }))
+        ];
+    }, [allInvoices]);
 
     const filteredInvoices = useMemo(() => {
         return allInvoices.filter(inv => {
@@ -48,7 +120,7 @@ export default function BillingHistoryPage() {
             const matchesYear = selectedYear === "all" || inv.year.toString() === selectedYear;
             return matchesSearch && matchesYear;
         });
-    }, [searchQuery, selectedYear]);
+    }, [searchQuery, selectedYear, allInvoices]);
 
     const handleDownload = (invoiceId: string) => {
         toast.promise(new Promise((resolve) => setTimeout(resolve, 1500)), {
@@ -154,7 +226,14 @@ export default function BillingHistoryPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 text-xs">
-                                {filteredInvoices.length === 0 ? (
+                                {loading ? (
+                                    <tr>
+                                        <td colSpan={5} className="px-4 py-12 text-center">
+                                            <Loader2 className="w-5 h-5 animate-spin text-slate-400 mx-auto" />
+                                            <p className="text-xs text-slate-400 mt-2">Loading billing history...</p>
+                                        </td>
+                                    </tr>
+                                ) : filteredInvoices.length === 0 ? (
                                     <tr>
                                         <td colSpan={5} className="px-4 py-12 text-center">
                                             <p className="text-xs text-slate-400">No invoices found matching your criteria.</p>
@@ -190,6 +269,11 @@ export default function BillingHistoryPage() {
                                                 {inv.status === 'Paid' && (
                                                     <Badge className="bg-emerald-50 text-emerald-700 border-emerald-100 hover:bg-emerald-100 rounded-md shadow-none font-medium text-[10px]">
                                                         <CheckCircle2 className="w-2.5 h-2.5 mr-1" /> Paid
+                                                    </Badge>
+                                                )}
+                                                {inv.status === 'Pending' && (
+                                                    <Badge className="bg-amber-50 text-amber-700 border-amber-100 hover:bg-amber-100 rounded-md shadow-none font-medium text-[10px]">
+                                                        <Clock className="w-2.5 h-2.5 mr-1" /> Pending
                                                     </Badge>
                                                 )}
                                                 {inv.status === 'Refunded' && (

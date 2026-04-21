@@ -8,7 +8,7 @@ const SmallCard = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "border bg-white text-gray-800 shadow-sm transition-all duration-200",
+      "border border-zinc-200 dark:border-zinc-800 bg-card text-card-foreground shadow-sm transition-all duration-200",
       "text-sm",
       className
     )}
@@ -48,7 +48,7 @@ const SmallCardDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("text-xs text-gray-500", className)} // lighter, smaller desc
+    className={cn("text-xs text-muted-foreground", className)} // lighter, smaller desc
     {...props}
   />
 ));

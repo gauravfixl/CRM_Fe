@@ -176,6 +176,115 @@ const data = {
     { value: "5 min", label: "Average daily time to log hours" },
     { value: "20%", label: "Increase in project profitability" },
   ],
+
+  capabilities: [
+    {
+      title: "Intelligent Time Capture",
+      description:
+        "Go beyond manual timers with AI-assisted time capture that learns your work patterns. The system analyzes calendar events, task transitions, and application usage to suggest time entries you may have forgotten to log, ensuring nothing slips through the cracks.",
+      keyPoints: [
+        "Calendar integration auto-detects meetings and suggests time entries for every event with attendee and project context",
+        "Task activity monitoring identifies when you start and stop working on project tasks and pre-fills timer entries accordingly",
+        "End-of-day summary prompts highlight gaps in your logged time and suggest entries based on your activity patterns",
+        "Idle detection pauses running timers after configurable inactivity periods and prompts you to classify the idle time",
+      ],
+    },
+    {
+      title: "Resource Utilization Analytics",
+      description:
+        "Transform raw time data into strategic workforce insights. Utilization dashboards show exactly how team capacity is allocated across projects, clients, and internal work, helping managers balance workloads and plan hiring decisions with confidence.",
+      keyPoints: [
+        "Real-time utilization rates per employee, team, and department displayed against target benchmarks",
+        "Capacity planning forecasts project future workload based on booked projects and historical velocity",
+        "Burnout risk indicators flag team members consistently working above sustainable thresholds before problems escalate",
+      ],
+    },
+    {
+      title: "Client-Ready Reporting and Invoicing",
+      description:
+        "Convert tracked hours into polished client reports and invoices with a single click. Customizable report templates let you present time data in the format each client expects, with configurable detail levels from summary to line-item granularity.",
+      keyPoints: [
+        "Branded time reports with your logo, client name, and configurable column layouts exportable as PDF or Excel",
+        "One-click invoice generation pulls billable hours, applies client-specific rate cards, and creates draft invoices in CubicleERP Finance",
+        "Approval workflows let project managers review and adjust time entries before they reach the client",
+        "Retainer tracking monitors hours consumed against prepaid hour banks and alerts when balances run low",
+      ],
+    },
+    {
+      title: "Compliance and Labor Law Engine",
+      description:
+        "Stay compliant with labor regulations automatically. The compliance engine enforces overtime rules, mandatory break requirements, and maximum working hour limits based on your jurisdiction, alerting managers before violations occur.",
+      keyPoints: [
+        "Pre-configured rule sets for major labor jurisdictions including US FLSA, EU Working Time Directive, and India Shops and Establishments Act",
+        "Real-time alerts notify managers when an employee approaches daily or weekly overtime thresholds",
+        "Mandatory break enforcement ensures minimum rest periods are logged between work sessions",
+      ],
+    },
+  ],
+
+  integrations: [
+    { name: "Jira", category: "Project Management" },
+    { name: "Asana", category: "Project Management" },
+    { name: "Trello", category: "Project Management" },
+    { name: "Google Calendar", category: "Scheduling" },
+    { name: "Microsoft Outlook", category: "Scheduling" },
+    { name: "QuickBooks", category: "Accounting" },
+    { name: "Xero", category: "Accounting" },
+    { name: "Slack", category: "Communication" },
+    { name: "Tally", category: "Accounting" },
+    { name: "Zoho Books", category: "Accounting" },
+    { name: "GitHub", category: "Development" },
+    { name: "Microsoft Teams", category: "Communication" },
+  ],
+
+  testimonials: [
+    {
+      quote:
+        "As a 40-person consulting firm, we were losing an estimated 15% of billable hours to poor tracking habits. CubicleERP's one-click timer and end-of-day reminders helped us recover those hours, adding $320K to our annual revenue without taking on a single new client.",
+      author: "Laura Pennington",
+      role: "Managing Partner",
+      company: "Pennington Strategy Group",
+      metric: "$320K in recovered annual billable revenue",
+    },
+    {
+      quote:
+        "The timesheet approval workflow and payroll integration eliminated what used to be a two-day reconciliation process at the end of every pay period. Our payroll team went from dreading month-end to barely noticing it.",
+      author: "Kenji Watanabe",
+      role: "Finance Controller",
+      company: "Bridgepoint Engineering",
+      metric: "Payroll processing time cut from 2 days to 2 hours",
+    },
+    {
+      quote:
+        "We manage 200+ field technicians across three states. GPS clock-in verification and geofenced job sites gave us the attendance accuracy we needed to bill our government contracts with full confidence and zero audit findings.",
+      author: "Sandra Mitchell",
+      role: "Director of Field Operations",
+      company: "CoreTech Infrastructure Services",
+      metric: "Zero audit findings on government time billing",
+    },
+  ],
+
+  comparisons: [
+    { feature: "Time entry", traditional: "Manual spreadsheet logging", cubicleErp: "One-click timer + AI assist" },
+    { feature: "Timesheet approval", traditional: "Email-based review chain", cubicleErp: "Built-in approval workflow" },
+    { feature: "Invoicing from hours", traditional: "Export and reformat data", cubicleErp: "One-click invoice generation" },
+    { feature: "Overtime tracking", traditional: "Manual calculation", cubicleErp: "Automatic rule enforcement" },
+    { feature: "Field attendance", traditional: "Paper sign-in sheets", cubicleErp: "GPS-verified clock-in" },
+    { feature: "Payroll sync", traditional: "Manual data re-entry", cubicleErp: "Direct payroll integration" },
+  ],
+
+  subNavItems: [
+    { label: "Overview", sectionId: "hero" },
+    { label: "Features", sectionId: "features" },
+    { label: "Capabilities", sectionId: "capabilities" },
+    { label: "Benefits", sectionId: "benefits" },
+    { label: "Integrations", sectionId: "integrations" },
+    { label: "Use Cases", sectionId: "use-cases" },
+    { label: "FAQs", sectionId: "faqs" },
+    { label: "Project Management", href: "/explore/project-management" },
+    { label: "Payroll", href: "/explore/payroll" },
+    { label: "HRM", href: "/explore/hrm" },
+  ],
 }
 
 export default function TimeTrackingPage() {

@@ -30,9 +30,11 @@ import {
     Smile,
     Check,
     History,
-    RefreshCw
+    RefreshCw,
+    Trash2
 } from "lucide-react";
 import { useEngageStore, type Event, type EmployeeCelebration } from "@/shared/data/engage-store";
+import { required, minLength, maxLength, isFutureOrToday, isValidDate, runValidators } from "@/shared/utils/engage-validation";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/shared/components/ui/dialog";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
@@ -50,7 +52,7 @@ import {
 } from "@/shared/components/ui/dropdown-menu";
 
 const EventsPage = () => {
-    const { events, celebrations, addEvent, updateEvent, userPoints, addPoints, toggleRegistration } = useEngageStore();
+    const { events, celebrations, addEvent, updateEvent, deleteEvent, userPoints, addPoints, toggleRegistration } = useEngageStore();
     const { toast } = useToast();
 
     const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -104,8 +106,37 @@ const EventsPage = () => {
     };
 
     const handleSave = () => {
-        if (!formData.title || !formData.date || !formData.time) {
-            toast({ title: "Details Missing", description: "Event title and schedule are required.", variant: "destructive" });
+        const titleError = runValidators(
+            required(formData.title, "title", "Title"),
+            minLength(formData.title ?? "", 3, "title", "Title"),
+            maxLength(formData.title ?? "", 120, "title", "Title")
+        );
+        if (titleError) {
+            toast({ title: "Invalid Title", description: titleError.message, variant: "destructive" });
+            return;
+        }
+        // For edits, existing past-date is OK; for new events require today or future
+        const dateError = selectedEvent
+            ? isValidDate(formData.date ?? "", "date", "Date")
+            : isFutureOrToday(formData.date ?? "", "date", "Date");
+        if (dateError) {
+            toast({ title: "Invalid Date", description: dateError.message, variant: "destructive" });
+            return;
+        }
+        if (!formData.time) {
+            toast({ title: "Missing Time", description: "Event time is required.", variant: "destructive" });
+            return;
+        }
+        const locationError = runValidators(
+            required(formData.location, "location", "Location"),
+            maxLength(formData.location ?? "", 200, "location", "Location")
+        );
+        if (locationError) {
+            toast({ title: "Invalid Location", description: locationError.message, variant: "destructive" });
+            return;
+        }
+        if (formData.description && formData.description.length > 2000) {
+            toast({ title: "Description Too Long", description: "Max 2000 characters.", variant: "destructive" });
             return;
         }
 
@@ -408,6 +439,12 @@ const EventsPage = () => {
                                                                             <DropdownMenuItem className="rounded-xl px-4 py-3 hover:bg-emerald-50 cursor-pointer text-emerald-600" onClick={() => { setSelectedEvent(item as Event); setIsRSVPSheetOpen(true); }}>
                                                                                 <Users2 size={14} className="mr-3" /> Manage RSVPs
                                                                             </DropdownMenuItem>
+                                                                            <DropdownMenuItem className="rounded-xl px-4 py-3 hover:bg-amber-50 cursor-pointer text-amber-600" onClick={() => handleCopyEventLink(item.title)}>
+                                                                                <Share2 size={14} className="mr-3" /> Copy Link
+                                                                            </DropdownMenuItem>
+                                                                            <DropdownMenuItem className="rounded-xl px-4 py-3 hover:bg-rose-50 cursor-pointer text-rose-500" onClick={() => { deleteEvent(item.id); toast({ title: "Event Deleted", description: `"${item.title}" removed.` }); }}>
+                                                                                <Trash2 size={14} className="mr-3" /> Delete Event
+                                                                            </DropdownMenuItem>
                                                                         </DropdownMenuContent>
                                                                     </DropdownMenu>
                                                                 )}
@@ -453,9 +490,11 @@ const EventsPage = () => {
                                                 <Input
                                                     placeholder="Make it catchy! e.g. Pizza Friday 🍕"
                                                     value={formData.title}
+                                                    maxLength={120}
                                                     onChange={e => setFormData({ ...formData, title: e.target.value })}
                                                     className="h-16 border-slate-300 bg-slate-50/50 rounded-2xl px-6 font-black text-lg text-slate-900 focus:ring-4 focus:ring-purple-50 transition-all shadow-inner"
                                                 />
+                                                <p className="text-[10px] text-slate-400 font-bold ml-2">{(formData.title ?? "").length}/120</p>
                                             </div>
 
                                             <div className="grid grid-cols-2 gap-6">
@@ -489,9 +528,11 @@ const EventsPage = () => {
                                                 <Input
                                                     placeholder="Where's the party at?"
                                                     value={formData.location}
+                                                    maxLength={200}
                                                     onChange={e => setFormData({ ...formData, location: e.target.value })}
                                                     className="h-16 border-slate-300 bg-white rounded-2xl px-6 font-bold text-slate-600"
                                                 />
+                                                <p className="text-[10px] text-slate-400 font-bold ml-2">{(formData.location ?? "").length}/200</p>
                                             </div>
 
                                             <div className="grid grid-cols-2 gap-6">
@@ -500,6 +541,7 @@ const EventsPage = () => {
                                                     <Input
                                                         type="date"
                                                         value={formData.date}
+                                                        min={selectedEvent ? undefined : new Date().toISOString().split("T")[0]}
                                                         onChange={e => setFormData({ ...formData, date: e.target.value })}
                                                         className="h-14 border-slate-300 bg-white rounded-2xl px-6 font-bold text-slate-600"
                                                     />
@@ -523,9 +565,11 @@ const EventsPage = () => {
                                         <Textarea
                                             placeholder="Sell the experience..."
                                             value={formData.description}
+                                            maxLength={2000}
                                             onChange={e => setFormData({ ...formData, description: e.target.value })}
                                             className="h-32 border-slate-300 bg-slate-50/50 rounded-[2rem] p-6 font-bold text-sm leading-relaxed focus:ring-4 focus:ring-purple-50 resize-none shadow-inner"
                                         />
+                                        <p className="text-[10px] text-slate-400 font-bold ml-2">{(formData.description ?? "").length}/2000</p>
                                     </div>
                                 </div>
                             </ScrollArea>

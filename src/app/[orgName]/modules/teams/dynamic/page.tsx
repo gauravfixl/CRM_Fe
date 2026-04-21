@@ -1,8 +1,8 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import SubHeader from "@/shared/components/custom/SubHeader"
-import { Zap, Plus, Search, MoreHorizontal, Trash2, Edit3, Play, Pause, Clock, CheckCircle2 } from "lucide-react"
+import { Zap, Plus, Search, MoreHorizontal, Trash2, Edit3, Play, Pause, Clock, CheckCircle2, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -19,11 +19,40 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { DynamicRuleModal, RuleData } from "@/components/groups/dynamic-rule-modal"
 import { toast } from "sonner"
+import { getAllTeams, deleteTeam } from "@/hooks/teamHooks"
 
 export default function DynamicMembershipPage() {
     const [searchQuery, setSearchQuery] = useState("")
     const [rules, setRules] = useState<RuleData[]>([])
     const [createRuleOpen, setCreateRuleOpen] = useState(false)
+    const [loading, setLoading] = useState(true)
+
+    const fetchDynamicTeams = async () => {
+        try {
+            setLoading(true)
+            const response = await getAllTeams()
+            const teams = response.data?.teams || response.data || []
+            const dynamicTeams = teams.filter((t: any) => t.type === "Dynamic")
+            // Dynamic page manages rules; if API returns dynamic teams, map them as rules
+            const mapped = dynamicTeams.map((t: any) => ({
+                id: t._id || t.id,
+                name: t.name || "",
+                targetGroup: t.targetGroup || t.name || "",
+                action: t.action || "add",
+                status: t.status || "Active",
+                conditions: t.conditions || [],
+            }))
+            setRules(mapped)
+        } catch (error: any) {
+            toast.error(error?.response?.data?.message || "Failed to fetch dynamic rules")
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    useEffect(() => {
+        fetchDynamicTeams()
+    }, [])
 
     const handleRuleCreated = (rule: RuleData) => {
         setRules(prev => [...prev, rule])
@@ -40,10 +69,15 @@ export default function DynamicMembershipPage() {
         }))
     }
 
-    const deleteRule = (ruleId: string) => {
+    const deleteRule = async (ruleId: string) => {
         const rule = rules.find(r => r.id === ruleId)
-        setRules(prev => prev.filter(r => r.id !== ruleId))
-        toast.success(`Rule "${rule?.name}" deleted`)
+        try {
+            await deleteTeam(ruleId)
+            setRules(prev => prev.filter(r => r.id !== ruleId))
+            toast.success(`Rule "${rule?.name}" deleted`)
+        } catch (error: any) {
+            toast.error(error?.response?.data?.message || "Failed to delete rule")
+        }
     }
 
     const filteredRules = rules.filter(r =>
@@ -94,7 +128,11 @@ export default function DynamicMembershipPage() {
                     </div>
                 )}
 
-                {filteredRules.length === 0 && rules.length === 0 ? (
+                {loading ? (
+                    <div className="flex items-center justify-center py-20">
+                        <Loader2 className="w-8 h-8 animate-spin text-amber-600" />
+                    </div>
+                ) : filteredRules.length === 0 && rules.length === 0 ? (
                     <Card className="rounded-none border-0 shadow-sm bg-white/50 backdrop-blur-sm">
                         <CardHeader>
                             <CardTitle className="text-lg font-bold">Automation Rules</CardTitle>

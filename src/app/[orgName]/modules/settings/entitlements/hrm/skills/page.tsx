@@ -182,7 +182,7 @@ export default function SkillsPage() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-xs text-white/80">Total skills</p>
-                                <p className="text-xl font-semibold">{skills.length}</p>
+                                <p className="text-xl font-semibold text-white tracking-tight">{skills.length}</p>
                                 <p className="text-[10px] text-white/80">In library</p>
                             </div>
                             <Award className="w-5 h-5 text-white/80" />
