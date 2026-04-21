@@ -46,6 +46,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/shared/components/ui/switch";
 import { axiosInstance } from "@/lib/axios";
 import { getHolidaysByYear } from "@/modules/hrm/hooks/hrmHooks";
+import OptionalHolidaysPanel from "@/shared/components/hrm/timeattend/panels/optional-holidays-panel";
 
 const ShiftsAdminPage = () => {
     const router = useRouter();
@@ -117,7 +118,24 @@ const ShiftsAdminPage = () => {
     }, []);
 
     const handleHolidaySubmit = async () => {
-        if (!newHoliday.name || !newHoliday.date) return;
+        if (!newHoliday.name || !newHoliday.date) {
+            toast({ title: "Incomplete", description: "Holiday name and date are required.", variant: "destructive" });
+            return;
+        }
+        if (newHoliday.name.trim().length < 3) {
+            toast({ title: "Name Too Short", description: "Holiday name must be at least 3 characters.", variant: "destructive" });
+            return;
+        }
+        const hDate = new Date(newHoliday.date);
+        if (Number.isNaN(hDate.getTime())) {
+            toast({ title: "Invalid Date", description: "Please pick a valid date.", variant: "destructive" });
+            return;
+        }
+        const duplicate = backendHolidays.some(h => h.date === newHoliday.date && h.name.toLowerCase() === newHoliday.name.toLowerCase());
+        if (duplicate) {
+            toast({ title: "Duplicate Holiday", description: "A holiday with this name already exists on that date.", variant: "destructive" });
+            return;
+        }
         try {
             const backendType = newHoliday.type === "Optional" ? "Optional" : "National"; // backend has only National/Optional
             await axiosInstance.post("/attendance/holidays/", {
@@ -139,7 +157,26 @@ const ShiftsAdminPage = () => {
     };
 
     const handleShiftSubmit = () => {
-        if (!newShift.name) return;
+        if (!newShift.name || newShift.name.trim().length < 3) {
+            toast({ title: "Invalid Name", description: "Shift name must be at least 3 characters.", variant: "destructive" });
+            return;
+        }
+        if (!newShift.startTime || !newShift.endTime) {
+            toast({ title: "Times Required", description: "Both start and end time are required.", variant: "destructive" });
+            return;
+        }
+        if (newShift.endTime <= newShift.startTime && !newShift.startTime.endsWith("PM")) {
+            toast({ title: "Invalid Range", description: "End time must be after start time (for overnight shifts, use isNightShift flag).", variant: "destructive" });
+            return;
+        }
+        if (newShift.workingHours < 1 || newShift.workingHours > 16) {
+            toast({ title: "Invalid Hours", description: "Working hours must be between 1 and 16.", variant: "destructive" });
+            return;
+        }
+        if (newShift.breakDuration < 0 || newShift.breakDuration > 480) {
+            toast({ title: "Invalid Break", description: "Break duration must be between 0 and 480 minutes.", variant: "destructive" });
+            return;
+        }
         if (selectedShift) {
             updateShift(selectedShift.id, newShift);
             toast({ title: "Shift Updated", description: `${newShift.name} has been modified successfully.` });
@@ -207,6 +244,7 @@ const ShiftsAdminPage = () => {
                             { id: "shifts", label: "Shift Types", icon: <Clock size={16} /> },
                             { id: "roster", label: "Live Roster", icon: <LayoutGrid size={16} /> },
                             { id: "holidays", label: "Holiday Deck", icon: <CalendarDays size={16} /> },
+                            { id: "optional-holidays", label: "Optional Holidays", icon: <CalendarDays size={16} /> },
                             { id: "rules", label: "System Rules", icon: <ShieldCheck size={16} /> }
                         ].map(tab => (
                             <TabsTrigger
@@ -405,6 +443,11 @@ const ShiftsAdminPage = () => {
                                 </Card>
                             </div>
                         </div>
+                    </TabsContent>
+
+                    {/* Content: Optional Holidays */}
+                    <TabsContent value="optional-holidays">
+                        <OptionalHolidaysPanel />
                     </TabsContent>
 
                     {/* Content: Rules */}

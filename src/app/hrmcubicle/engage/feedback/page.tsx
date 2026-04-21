@@ -50,9 +50,13 @@ import { useToast } from "@/shared/components/ui/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { Label } from "@/shared/components/ui/label";
 import { Input } from "@/shared/components/ui/input";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/shared/components/ui/dialog";
+import { Plus } from "lucide-react";
+import { Switch } from "@/shared/components/ui/switch";
+import { required, minLength, maxLength, runValidators } from "@/shared/utils/engage-validation";
 
 const EmployeeFeedbackEngagePage = () => {
-    const { feedbacks, updateFeedback, deleteFeedback } = useEngageStore();
+    const { feedbacks, addFeedback, updateFeedback, deleteFeedback } = useEngageStore();
     const { toast } = useToast();
 
     const [activeTab, setActiveTab] = useState<Feedback["status"]>("Open");
@@ -61,6 +65,51 @@ const EmployeeFeedbackEngagePage = () => {
     const [replyText, setReplyText] = useState("");
     const [assignTo, setAssignTo] = useState("");
     const [searchTerm, setSearchTerm] = useState("");
+    const [isSubmitOpen, setIsSubmitOpen] = useState(false);
+
+    const defaultSubmitForm: Omit<Feedback, "id" | "date" | "status" | "moderationStatus"> = {
+        employeeId: "EMP-CURRENT",
+        subject: "",
+        department: "Engineering",
+        category: "General",
+        content: "",
+        isAnonymous: false,
+        priority: "Medium",
+        sentiment: "Neutral"
+    };
+    const [submitForm, setSubmitForm] = useState(defaultSubmitForm);
+
+    const handleSubmitIdea = () => {
+        const subjectError = runValidators(
+            required(submitForm.subject, "subject", "Subject"),
+            minLength(submitForm.subject, 3, "subject", "Subject"),
+            maxLength(submitForm.subject, 120, "subject", "Subject")
+        );
+        if (subjectError) {
+            toast({ title: "Invalid Subject", description: subjectError.message, variant: "destructive" });
+            return;
+        }
+        const contentError = runValidators(
+            required(submitForm.content, "content", "Message"),
+            minLength(submitForm.content, 10, "content", "Message"),
+            maxLength(submitForm.content, 2000, "content", "Message")
+        );
+        if (contentError) {
+            toast({ title: "Invalid Message", description: contentError.message, variant: "destructive" });
+            return;
+        }
+        addFeedback({
+            ...submitForm,
+            employeeId: submitForm.isAnonymous ? "Anonymous" : submitForm.employeeId
+        });
+        toast({
+            title: "Idea Submitted! 💡",
+            description: "Thanks for sharing your voice.",
+            className: "bg-rose-500 text-white font-bold"
+        });
+        setSubmitForm(defaultSubmitForm);
+        setIsSubmitOpen(false);
+    };
 
     const stats = {
         total: feedbacks.length,
@@ -88,7 +137,16 @@ const EmployeeFeedbackEngagePage = () => {
     };
 
     const handlePostReply = () => {
-        if (!replyText.trim() || !selectedFeedback) return;
+        if (!selectedFeedback) return;
+        const error = runValidators(
+            required(replyText, "reply", "Response"),
+            minLength(replyText, 3, "reply", "Response"),
+            maxLength(replyText, 2000, "reply", "Response")
+        );
+        if (error) {
+            toast({ title: "Invalid Response", description: error.message, variant: "destructive" });
+            return;
+        }
         updateFeedback(selectedFeedback.id, { adminResponse: replyText });
         toast({ title: "Comment Shared", description: "Your thoughts have been recorded." });
         setReplyText("");
@@ -129,6 +187,12 @@ const EmployeeFeedbackEngagePage = () => {
                             <p className="text-[10px] font-bold text-white/60 mb-1 tracking-widest capitalize">Sentiment</p>
                             <p className="text-xl font-bold text-rose-200 flex items-center justify-center gap-2">92% <Smile size={20} /></p>
                         </div>
+                        <Button
+                            onClick={() => setIsSubmitOpen(true)}
+                            className="bg-white text-rose-600 hover:bg-white/90 rounded-2xl h-14 px-8 font-bold text-xs tracking-widest shadow-2xl border-none"
+                        >
+                            <Plus className="mr-2 h-5 w-5" /> Submit Idea
+                        </Button>
                     </div>
                 </div>
             </div>
@@ -361,6 +425,7 @@ const EmployeeFeedbackEngagePage = () => {
                                     <Textarea
                                         placeholder="Record your thoughts or reply..."
                                         value={replyText || selectedFeedback?.adminResponse || ""}
+                                        maxLength={2000}
                                         onChange={e => setReplyText(e.target.value)}
                                         className="h-32 border-slate-300 rounded-[2rem] p-6 font-bold text-sm leading-relaxed focus:ring-4 focus:ring-rose-50 bg-white shadow-inner resize-none"
                                     />
@@ -374,6 +439,95 @@ const EmployeeFeedbackEngagePage = () => {
                     </ScrollArea>
                 </SheetContent>
             </Sheet>
+
+            {/* Submit Idea Dialog */}
+            <Dialog open={isSubmitOpen} onOpenChange={(v) => { if (!v) setSubmitForm(defaultSubmitForm); setIsSubmitOpen(v); }}>
+                <DialogContent className="max-w-lg">
+                    <DialogHeader>
+                        <DialogTitle>Submit Your Idea</DialogTitle>
+                        <DialogDescription>Share your thoughts, suggestions, or concerns. Your voice matters.</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-2">
+                        <div className="space-y-2">
+                            <Label>Subject</Label>
+                            <Input
+                                placeholder="e.g. Office snack suggestions"
+                                value={submitForm.subject}
+                                maxLength={120}
+                                onChange={e => setSubmitForm({ ...submitForm, subject: e.target.value })}
+                            />
+                            <p className="text-[10px] text-slate-400">{submitForm.subject.length}/120 • min 3</p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-2">
+                                <Label>Category</Label>
+                                <Select value={submitForm.category} onValueChange={v => setSubmitForm({ ...submitForm, category: v as Feedback["category"] })}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="General">General</SelectItem>
+                                        <SelectItem value="Work Environment">Work Environment</SelectItem>
+                                        <SelectItem value="Management">Management</SelectItem>
+                                        <SelectItem value="Policies">Policies</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Department</Label>
+                                <Select value={submitForm.department} onValueChange={v => setSubmitForm({ ...submitForm, department: v })}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="Engineering">Engineering</SelectItem>
+                                        <SelectItem value="Sales">Sales</SelectItem>
+                                        <SelectItem value="HR">HR</SelectItem>
+                                        <SelectItem value="Finance">Finance</SelectItem>
+                                        <SelectItem value="Marketing">Marketing</SelectItem>
+                                        <SelectItem value="Operations">Operations</SelectItem>
+                                        <SelectItem value="Product">Product</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Priority</Label>
+                            <Select value={submitForm.priority} onValueChange={v => setSubmitForm({ ...submitForm, priority: v as Feedback["priority"] })}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Low">Low</SelectItem>
+                                    <SelectItem value="Medium">Medium</SelectItem>
+                                    <SelectItem value="High">High</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Your Message</Label>
+                            <Textarea
+                                placeholder="Share your idea in detail..."
+                                rows={5}
+                                value={submitForm.content}
+                                maxLength={2000}
+                                onChange={e => setSubmitForm({ ...submitForm, content: e.target.value })}
+                            />
+                            <p className="text-[10px] text-slate-400">{submitForm.content.length}/2000 • min 10</p>
+                        </div>
+                        <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200">
+                            <div>
+                                <p className="text-sm font-bold text-slate-900">Submit Anonymously</p>
+                                <p className="text-xs text-slate-500">Your identity will be hidden</p>
+                            </div>
+                            <Switch
+                                checked={submitForm.isAnonymous}
+                                onCheckedChange={v => setSubmitForm({ ...submitForm, isAnonymous: v })}
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsSubmitOpen(false)}>Cancel</Button>
+                        <Button className="bg-rose-500 hover:bg-rose-600 text-white font-bold" onClick={handleSubmitIdea}>
+                            <Send size={14} className="mr-1" /> Submit Idea
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 };

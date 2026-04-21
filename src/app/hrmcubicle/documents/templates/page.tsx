@@ -55,13 +55,17 @@ import { useDocumentsStore, type LetterTemplate } from "@/shared/data/documents-
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { required, minLength, maxLength, isUnique, isPlaceholderTag, firstError } from "@/shared/utils/validators";
 
 const TemplatesPage = () => {
-    const { letterTemplates, addTemplate, updateTemplate, deleteTemplate } = useDocumentsStore();
+    const { letterTemplates, addTemplate, updateTemplate, deleteTemplate, duplicateTemplate } = useDocumentsStore();
     const router = useRouter();
     const [searchQuery, setSearchQuery] = useState("");
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [editingTemplate, setEditingTemplate] = useState<LetterTemplate | null>(null);
+    const [previewingTemplate, setPreviewingTemplate] = useState<LetterTemplate | null>(null);
+    const [deleteTemplateId, setDeleteTemplateId] = useState<string | null>(null);
+    const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
     const [templateType, setTemplateType] = useState("all");
     const [selectedTemplateIds, setSelectedTemplateIds] = useState<string[]>([]);
 
@@ -84,43 +88,80 @@ const TemplatesPage = () => {
     });
 
     const handleAddPlaceholder = () => {
-        if (currentPlaceholder && !newTemplate.placeholders.includes(currentPlaceholder)) {
-            setNewTemplate({
-                ...newTemplate,
-                placeholders: [...newTemplate.placeholders, currentPlaceholder]
-            });
-            setCurrentPlaceholder("");
+        const tag = currentPlaceholder.trim();
+        const err = firstError(
+            required(tag, "Placeholder"),
+            isPlaceholderTag(tag, "Placeholder"),
+            maxLength(tag, 40, "Placeholder"),
+        );
+        if (err) { toast.error(err); return; }
+        if (newTemplate.placeholders.includes(tag)) {
+            toast.error("Placeholder already exists");
+            return;
         }
+        setNewTemplate({
+            ...newTemplate,
+            placeholders: [...newTemplate.placeholders, tag]
+        });
+        setCurrentPlaceholder("");
+    };
+
+    const validateTemplate = (t: { name: string; content: string; type: string }, ignoreId?: string): string | null => {
+        const existingNames = letterTemplates.filter(x => x.id !== ignoreId).map(x => x.name);
+        return firstError(
+            required(t.name, "Template name"),
+            minLength(t.name, 3, "Template name"),
+            maxLength(t.name, 120, "Template name"),
+            isUnique(t.name, existingNames, "Template name"),
+            required(t.type, "Template type"),
+            required(t.content, "Template content"),
+            minLength(t.content, 20, "Template content"),
+        );
     };
 
     const handleCreateTemplate = () => {
-        if (!newTemplate.name || !newTemplate.content) {
-            toast.error("Please fill in template name and content");
-            return;
-        }
-        addTemplate(newTemplate);
+        const err = validateTemplate(newTemplate);
+        if (err) { toast.error(err); return; }
+        addTemplate({
+            ...newTemplate,
+            name: newTemplate.name.trim(),
+            content: newTemplate.content.trim(),
+        });
         setIsCreateOpen(false);
         setNewTemplate({ name: "", type: "Offer Letter", content: "", placeholders: [] });
         toast.success("Template created successfully");
     };
 
     const handleUpdateTemplate = () => {
-        if (!editingTemplate?.name || !editingTemplate?.content) {
-            toast.error("Required fields cannot be empty");
-            return;
-        }
-        updateTemplate(editingTemplate.id, editingTemplate);
+        if (!editingTemplate) return;
+        const err = validateTemplate(editingTemplate, editingTemplate.id);
+        if (err) { toast.error(err); return; }
+        updateTemplate(editingTemplate.id, {
+            ...editingTemplate,
+            name: editingTemplate.name.trim(),
+            content: editingTemplate.content.trim(),
+        });
         setEditingTemplate(null);
         toast.success("Template blueprint updated");
     };
 
     const handleAddPlaceholderToEdit = (tag: string) => {
-        if (editingTemplate && tag && !editingTemplate.placeholders.includes(tag)) {
-            setEditingTemplate({
-                ...editingTemplate,
-                placeholders: [...editingTemplate.placeholders, tag]
-            });
+        if (!editingTemplate) return;
+        const t = tag.trim();
+        const err = firstError(
+            required(t, "Placeholder"),
+            isPlaceholderTag(t, "Placeholder"),
+            maxLength(t, 40, "Placeholder"),
+        );
+        if (err) { toast.error(err); return; }
+        if (editingTemplate.placeholders.includes(t)) {
+            toast.error("Placeholder already exists");
+            return;
         }
+        setEditingTemplate({
+            ...editingTemplate,
+            placeholders: [...editingTemplate.placeholders, t]
+        });
     };
 
     return (
@@ -137,11 +178,7 @@ const TemplatesPage = () => {
                             <Button
                                 variant="outline"
                                 className="h-11 rounded-xl text-rose-600 font-bold border-rose-100 bg-rose-50/50 px-6"
-                                onClick={() => {
-                                    selectedTemplateIds.forEach(id => deleteTemplate(id));
-                                    setSelectedTemplateIds([]);
-                                    toast.success(`${selectedTemplateIds.length} blueprints purged`);
-                                }}
+                                onClick={() => setBulkDeleteOpen(true)}
                             >
                                 <Trash2 className="w-4 h-4 mr-2" /> Delete ({selectedTemplateIds.length})
                             </Button>
@@ -365,14 +402,14 @@ const TemplatesPage = () => {
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent align="end" className="w-56 p-2 rounded-2xl border border-slate-200 shadow-2xl bg-white font-sans">
                                                         <DropdownMenuLabel className="px-3 py-2 text-[10px] font-bold text-slate-400 tracking-wide">Options</DropdownMenuLabel>
-                                                        <DropdownMenuItem className="gap-3 p-3 rounded-xl cursor-pointer font-bold text-xs hover:bg-slate-50 text-start" onClick={() => toast.success("Opening template preview")}>
+                                                        <DropdownMenuItem className="gap-3 p-3 rounded-xl cursor-pointer font-bold text-xs hover:bg-slate-50 text-start" onClick={() => setPreviewingTemplate(template)}>
                                                             <Eye size={16} className="text-indigo-500" /> Preview Blueprint
                                                         </DropdownMenuItem>
-                                                        <DropdownMenuItem className="gap-3 p-3 rounded-xl cursor-pointer font-bold text-xs hover:bg-slate-50 text-start" onClick={() => toast.success("Blueprint duplicated")}>
+                                                        <DropdownMenuItem className="gap-3 p-3 rounded-xl cursor-pointer font-bold text-xs hover:bg-slate-50 text-start" onClick={() => { duplicateTemplate(template.id); toast.success(`Duplicated "${template.name}"`); }}>
                                                             <Copy size={16} className="text-indigo-500" /> Duplicate Version
                                                         </DropdownMenuItem>
                                                         <DropdownMenuSeparator className="my-2 bg-slate-50" />
-                                                        <DropdownMenuItem className="gap-3 p-3 rounded-xl cursor-pointer font-bold text-xs text-rose-600 hover:bg-rose-50 text-start" onClick={() => deleteTemplate(template.id)}>
+                                                        <DropdownMenuItem className="gap-3 p-3 rounded-xl cursor-pointer font-bold text-xs text-rose-600 hover:bg-rose-50 text-start" onClick={() => setDeleteTemplateId(template.id)}>
                                                             <Trash2 size={16} /> Delete Blueprint
                                                         </DropdownMenuItem>
                                                     </DropdownMenuContent>
@@ -538,6 +575,97 @@ const TemplatesPage = () => {
                         <DialogFooter className="border-t border-slate-50 pt-8 gap-3">
                             <Button variant="ghost" onClick={() => setEditingTemplate(null)} className="h-14 rounded-2xl font-bold text-[11px] tracking-wide transition-all px-8 border-none">Discard Changes</Button>
                             <Button className="bg-indigo-600 hover:bg-slate-900 text-white rounded-2xl h-14 px-12 font-bold shadow-lg shadow-indigo-100 transition-all text-[11px] tracking-wide border-none" onClick={handleUpdateTemplate}>Synchronize Blueprint</Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* Preview Blueprint Dialog */}
+                <Dialog open={!!previewingTemplate} onOpenChange={(open) => !open && setPreviewingTemplate(null)}>
+                    <DialogContent className="max-w-3xl bg-white rounded-[2rem] border border-slate-200 p-8 shadow-3xl font-sans" style={{ zoom: "80%" }}>
+                        <DialogHeader className="text-start">
+                            <div className="h-12 w-12 bg-indigo-50 rounded-2xl flex items-center justify-center mb-3 border border-indigo-100">
+                                <Eye size={22} className="text-indigo-600" />
+                            </div>
+                            <DialogTitle className="text-2xl font-black tracking-tight text-slate-900 leading-tight">{previewingTemplate?.name}</DialogTitle>
+                            <DialogDescription className="font-bold text-slate-400 text-[11px] tracking-wide mt-2">
+                                {previewingTemplate?.type} · Last updated {previewingTemplate?.updatedAt}
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="py-6 space-y-6 text-start">
+                            <div>
+                                <p className="text-[10px] font-bold text-slate-400 tracking-wide mb-2 uppercase">Placeholders</p>
+                                <div className="flex flex-wrap gap-2">
+                                    {previewingTemplate?.placeholders.length ? previewingTemplate.placeholders.map((p, i) => (
+                                        <Badge key={i} className="bg-indigo-50 text-indigo-600 border border-indigo-100 px-3 py-1.5 rounded-lg font-bold text-[10px] font-mono">
+                                            {"{{"}{p}{"}}"}
+                                        </Badge>
+                                    )) : (
+                                        <span className="text-[11px] text-slate-400 italic font-bold">No placeholders defined</span>
+                                    )}
+                                </div>
+                            </div>
+                            <div>
+                                <p className="text-[10px] font-bold text-slate-400 tracking-wide mb-2 uppercase">Content</p>
+                                <div className="p-6 bg-slate-50 border border-slate-200 rounded-2xl max-h-[400px] overflow-auto">
+                                    <pre className="text-xs font-mono text-slate-700 whitespace-pre-wrap leading-relaxed">{previewingTemplate?.content || "No content available."}</pre>
+                                </div>
+                            </div>
+                        </div>
+                        <DialogFooter className="gap-3">
+                            <Button variant="ghost" onClick={() => setPreviewingTemplate(null)} className="h-12 rounded-xl font-bold text-[10px] tracking-wide transition-all px-6">Close</Button>
+                            <Button className="bg-indigo-600 hover:bg-slate-900 text-white rounded-xl h-12 px-8 font-bold shadow-lg text-[10px] tracking-wide border-none" onClick={() => { if (previewingTemplate) { setEditingTemplate(previewingTemplate); setPreviewingTemplate(null); } }}>
+                                <Edit3 size={14} className="mr-2" /> Edit Template
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* Delete Single Confirm Dialog */}
+                <Dialog open={!!deleteTemplateId} onOpenChange={(open) => !open && setDeleteTemplateId(null)}>
+                    <DialogContent className="max-w-md bg-white rounded-[2rem] border border-slate-200 p-8 shadow-3xl font-sans" style={{ zoom: "80%" }}>
+                        <DialogHeader className="text-start">
+                            <div className="h-12 w-12 bg-rose-50 rounded-2xl flex items-center justify-center mb-3 border border-rose-100">
+                                <Trash2 size={22} className="text-rose-500" />
+                            </div>
+                            <DialogTitle className="text-2xl font-black tracking-tight text-slate-900">Delete Blueprint?</DialogTitle>
+                            <DialogDescription className="font-bold text-slate-400 text-[11px] tracking-wide mt-2">
+                                This template will be permanently removed. Any letters already issued from it remain unaffected.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <DialogFooter className="gap-3 pt-4">
+                            <Button variant="ghost" onClick={() => setDeleteTemplateId(null)} className="h-12 rounded-xl font-bold text-[10px] tracking-wide px-6">Cancel</Button>
+                            <Button className="bg-rose-500 hover:bg-rose-600 text-white rounded-xl h-12 px-8 font-bold shadow-lg text-[10px] tracking-wide border-none" onClick={() => {
+                                if (deleteTemplateId) {
+                                    deleteTemplate(deleteTemplateId);
+                                    toast.success("Blueprint deleted");
+                                    setDeleteTemplateId(null);
+                                }
+                            }}>Delete Blueprint</Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* Bulk Delete Confirm Dialog */}
+                <Dialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
+                    <DialogContent className="max-w-md bg-white rounded-[2rem] border border-slate-200 p-8 shadow-3xl font-sans" style={{ zoom: "80%" }}>
+                        <DialogHeader className="text-start">
+                            <div className="h-12 w-12 bg-rose-50 rounded-2xl flex items-center justify-center mb-3 border border-rose-100">
+                                <Trash2 size={22} className="text-rose-500" />
+                            </div>
+                            <DialogTitle className="text-2xl font-black tracking-tight text-slate-900">Delete {selectedTemplateIds.length} Blueprints?</DialogTitle>
+                            <DialogDescription className="font-bold text-slate-400 text-[11px] tracking-wide mt-2">
+                                All selected blueprints will be permanently removed. This action cannot be undone.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <DialogFooter className="gap-3 pt-4">
+                            <Button variant="ghost" onClick={() => setBulkDeleteOpen(false)} className="h-12 rounded-xl font-bold text-[10px] tracking-wide px-6">Cancel</Button>
+                            <Button className="bg-rose-500 hover:bg-rose-600 text-white rounded-xl h-12 px-8 font-bold shadow-lg text-[10px] tracking-wide border-none" onClick={() => {
+                                const count = selectedTemplateIds.length;
+                                selectedTemplateIds.forEach(id => deleteTemplate(id));
+                                setSelectedTemplateIds([]);
+                                setBulkDeleteOpen(false);
+                                toast.success(`${count} blueprints purged`);
+                            }}>Delete All</Button>
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>

@@ -12,13 +12,17 @@ export const axiosInstance = axios.create({
   },
 })
 
-// Add a request interceptor to include the org-token
+// Add a request interceptor to include org-token and firm-id
 axiosInstance.interceptors.request.use(
   (config) => {
     if (typeof window !== "undefined") {
       const orgToken = localStorage.getItem("orgToken");
       if (orgToken) {
         config.headers["org-token"] = orgToken;
+      }
+      const firmId = localStorage.getItem("firmId");
+      if (firmId) {
+        config.headers["firm-id"] = firmId;
       }
     }
     return config;

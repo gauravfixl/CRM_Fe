@@ -1,6 +1,6 @@
 "use client"
 
-import React from "react";
+import React, { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -43,7 +43,11 @@ import { useMeStore } from "@/shared/data/me-store";
 const MyAssetsPage = () => {
     const { toast } = useToast();
     const router = useRouter();
-    const { assets: storeAssets } = useMeStore();
+    const { assets: storeAssets, loadMyAssets } = useMeStore();
+
+    useEffect(() => {
+        loadMyAssets().catch(() => { /* silent fallback to seeded data */ });
+    }, [loadMyAssets]);
 
     const [isRequestOpen, setIsRequestOpen] = React.useState(false);
     const [isPoliciesOpen, setIsPoliciesOpen] = React.useState(false);
@@ -363,23 +367,31 @@ const MyAssetsPage = () => {
                             </Select>
                         </div>
                         <div className="space-y-2 text-start">
-                            <Label className="text-xs font-bold text-slate-400 capitalize tracking-tight ml-1 block">Business Justification *</Label>
+                            <Label className="text-xs font-bold text-slate-400 capitalize tracking-tight ml-1 block">Business Justification <span className="text-rose-500">*</span> (min 20 chars)</Label>
                             <Textarea
                                 className="rounded-xl bg-slate-50 border-none min-h-[100px] font-medium p-4"
                                 placeholder="Explain why this asset is required..."
+                                maxLength={1000}
                                 value={requestForm.reason}
                                 onChange={e => setRequestForm({ ...requestForm, reason: e.target.value })}
                             />
+                            <p className="text-[10px] text-slate-400 ml-1">{requestForm.reason.length}/1000 chars</p>
                         </div>
                     </div>
                     <DialogFooter className="gap-3 pt-4 border-t border-slate-50">
                         <Button variant="ghost" className="rounded-xl h-12 font-bold px-8 text-slate-500 capitalize" onClick={() => { setIsRequestOpen(false); }}>Cancel</Button>
                         <Button className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl h-12 font-bold shadow-lg shadow-indigo-100" onClick={() => {
-                            if (!requestForm.reason) {
-                                toast({ title: "Error", description: "Justification is required", variant: "destructive" });
+                            const reason = requestForm.reason.trim();
+                            if (!reason) {
+                                toast({ title: "Justification required", description: "Please explain why this asset is needed.", variant: "destructive" });
+                                return;
+                            }
+                            if (reason.length < 20) {
+                                toast({ title: "More detail needed", description: "Justification must be at least 20 characters.", variant: "destructive" });
                                 return;
                             }
                             setIsRequestOpen(false);
+                            setRequestForm({ category: 'Laptop', reason: '', urgency: 'Medium' });
                             toast({ title: "Submitted", description: "Request is now under review." });
                         }}>Submit Request</Button>
                     </DialogFooter>

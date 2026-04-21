@@ -49,9 +49,21 @@ import {
     DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu";
 
+const HOLIDAY_NAME_RE = /^[A-Za-z][A-Za-z0-9 '&/\-()]{1,79}$/;
+
+const mapHolidayTypeToBackend = (t: Holiday["type"]): "National" | "Optional" => {
+    if (t === "Optional") return "Optional";
+    return "National";
+};
+
 const HolidayCalendarPage = () => {
     const { toast } = useToast();
-    const { holidays, locations, addHoliday, updateHoliday, deleteHoliday, loadHolidaysFromApi, createHolidayApi, updateHolidayApi, deleteHolidayApi } = useOrganisationStore();
+    const holidays = useOrganisationStore((s) => s.holidays);
+    const locations = useOrganisationStore((s) => s.locations);
+    const loadHolidaysFromApi = useOrganisationStore((s) => s.loadHolidaysFromApi);
+    const createHolidayApi = useOrganisationStore((s) => s.createHolidayApi);
+    const updateHolidayApi = useOrganisationStore((s) => s.updateHolidayApi);
+    const deleteHolidayApi = useOrganisationStore((s) => s.deleteHolidayApi);
 
     useEffect(() => { loadHolidaysFromApi().catch(() => {}); }, []);
 
@@ -61,6 +73,12 @@ const HolidayCalendarPage = () => {
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [selectedHoliday, setSelectedHoliday] = useState<Holiday | null>(null);
+    const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
+    const [typeFilter, setTypeFilter] = useState<string>("All");
+    const [monthFilter, setMonthFilter] = useState<string>("All");
+    const [dayFilter, setDayFilter] = useState<string>("All");
+    const [isSaving, setIsSaving] = useState(false);
+    const [errors, setErrors] = useState<Record<string, string>>({});
 
     const [formData, setFormData] = useState<Partial<Holiday>>({
         name: "",
@@ -70,42 +88,110 @@ const HolidayCalendarPage = () => {
         year: parseInt(yearFilter)
     });
 
-    const handleAddHoliday = () => {
-        if (!formData.name || !formData.date) {
-            toast({ title: "Validation Error", description: "Name and Date are required", variant: "destructive" });
-            return;
-        }
-        addHoliday({
-            ...formData,
-            year: new Date(formData.date!).getFullYear()
-        } as Omit<Holiday, 'id'>);
-        toast({ title: "Holiday Added", description: `${formData.name} has been added to the calendar.` });
-        setIsAddDialogOpen(false);
+    const resetForm = () => {
         setFormData({ name: "", date: "", type: "Public", locationIds: ["All"], year: parseInt(yearFilter) });
+        setErrors({});
     };
 
-    const handleUpdateHoliday = () => {
-        if (!selectedHoliday || !formData.name || !formData.date) return;
-        updateHoliday(selectedHoliday.id, {
-            ...formData,
-            year: new Date(formData.date!).getFullYear()
-        });
-        toast({ title: "Holiday Updated", description: "Holiday details have been updated." });
-        setIsEditDialogOpen(false);
-        setSelectedHoliday(null);
+    const validateForm = (mode: "add" | "edit"): boolean => {
+        const errs: Record<string, string> = {};
+        const name = (formData.name || "").trim();
+
+        if (!name) errs.name = "Holiday name is required";
+        else if (!HOLIDAY_NAME_RE.test(name)) errs.name = "2-80 chars, starts with a letter";
+
+        if (!formData.date) errs.date = "Date is required";
+        else {
+            const d = new Date(formData.date);
+            if (isNaN(d.getTime())) errs.date = "Invalid date";
+            else {
+                const dateStr = d.toISOString().split("T")[0];
+                const duplicate = holidays.some((h) =>
+                    h.date === dateStr &&
+                    (mode === "add" || h.id !== selectedHoliday?.id)
+                );
+                if (duplicate) errs.date = "A holiday already exists on this date";
+            }
+        }
+
+        if (!formData.type) errs.type = "Type is required";
+
+        setErrors(errs);
+        return Object.keys(errs).length === 0;
     };
 
-    const handleDeleteHoliday = (id: string) => {
-        deleteHoliday(id);
-        toast({ title: "Holiday Removed", description: "Holiday has been deleted from the calendar." });
+    const handleAddHoliday = async () => {
+        if (!validateForm("add")) return;
+        setIsSaving(true);
+        try {
+            await createHolidayApi({
+                name: (formData.name || "").trim(),
+                date: formData.date!,
+                type: mapHolidayTypeToBackend((formData.type || "Public") as Holiday["type"]),
+                isPaid: true,
+                isMandatory: (formData.type || "Public") !== "Optional",
+            });
+            toast({ title: "Holiday Added", description: `${formData.name} has been added to the calendar.` });
+            setIsAddDialogOpen(false);
+            resetForm();
+        } catch (err: any) {
+            // error toast already shown by hook
+        } finally {
+            setIsSaving(false);
+        }
     };
+
+    const handleUpdateHoliday = async () => {
+        if (!selectedHoliday) return;
+        if (!validateForm("edit")) return;
+        setIsSaving(true);
+        try {
+            await updateHolidayApi(selectedHoliday.id, {
+                name: (formData.name || "").trim(),
+                date: formData.date,
+                type: mapHolidayTypeToBackend((formData.type || "Public") as Holiday["type"]),
+                isMandatory: (formData.type || "Public") !== "Optional",
+            });
+            toast({ title: "Holiday Updated", description: "Holiday details have been updated." });
+            setIsEditDialogOpen(false);
+            setSelectedHoliday(null);
+            resetForm();
+        } catch (err: any) {
+            // error toast already shown by hook
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleDeleteHoliday = async (id: string) => {
+        if (!window.confirm("Remove this holiday from the calendar?")) return;
+        try {
+            await deleteHolidayApi(id);
+            toast({ title: "Holiday Removed", description: "Holiday has been deleted." });
+        } catch (err: any) {
+            // error toast already shown by hook
+        }
+    };
+
+    const activeAdvancedCount = [typeFilter !== "All", monthFilter !== "All", dayFilter !== "All"].filter(Boolean).length;
 
     const filteredHolidays = holidays.filter(h => {
         const matchesSearch = h.name.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesYear = h.year.toString() === yearFilter;
         const matchesLocation = locationFilter === 'All' || h.locationIds.includes('All') || h.locationIds.includes(locationFilter);
-        return matchesSearch && matchesYear && matchesLocation;
+        const matchesType = typeFilter === 'All' || h.type === typeFilter;
+        const holidayDate = new Date(h.date);
+        const matchesMonth = monthFilter === 'All' || String(holidayDate.getMonth() + 1) === monthFilter;
+        const matchesDay = dayFilter === 'All' || holidayDate.toLocaleString('default', { weekday: 'long' }) === dayFilter;
+        return matchesSearch && matchesYear && matchesLocation && matchesType && matchesMonth && matchesDay;
     }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+    const resetAdvancedFilters = () => {
+        setTypeFilter("All");
+        setMonthFilter("All");
+        setDayFilter("All");
+        toast({ title: "Filters Cleared", description: "All advanced filters have been reset." });
+    };
 
     const getTypeStyles = (type: Holiday['type']) => {
         switch (type) {
@@ -256,8 +342,16 @@ const HolidayCalendarPage = () => {
                     </Card>
 
                     <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="sm" className="h-10 rounded-xl font-black text-[10px] uppercase tracking-widest text-slate-400">
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setIsAdvancedOpen(true)}
+                            className={`h-10 rounded-xl font-black text-[10px] uppercase tracking-widest ${activeAdvancedCount > 0 ? "text-indigo-600 bg-indigo-50 hover:bg-indigo-100" : "text-slate-400"}`}
+                        >
                             <Filter size={14} className="mr-2" /> Advanced Filter
+                            {activeAdvancedCount > 0 && (
+                                <Badge className="ml-2 bg-indigo-600 text-white border-none text-[9px] h-4 px-1.5">{activeAdvancedCount}</Badge>
+                            )}
                         </Button>
                     </div>
                 </div>
@@ -295,6 +389,7 @@ const HolidayCalendarPage = () => {
                                                         onClick={() => {
                                                             setSelectedHoliday(holiday);
                                                             setFormData(holiday);
+                                                            setErrors({});
                                                             setIsEditDialogOpen(true);
                                                         }}
                                                     >
@@ -367,11 +462,13 @@ const HolidayCalendarPage = () => {
                         <div className="space-y-1.5">
                             <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Holiday Name *</Label>
                             <Input
-                                className="rounded-lg h-10 bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors"
+                                className={`rounded-lg h-10 bg-slate-50 border font-bold px-4 text-xs focus:border-indigo-500 transition-colors ${errors.name ? "border-rose-500" : "border-slate-300"}`}
                                 placeholder="e.g. Independence Day"
+                                maxLength={80}
                                 value={formData.name}
                                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                             />
+                            {errors.name && <p className="text-[10px] font-bold text-rose-500 ml-1">{errors.name}</p>}
                         </div>
 
                         <div className="grid grid-cols-2 gap-5">
@@ -379,10 +476,11 @@ const HolidayCalendarPage = () => {
                                 <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Date *</Label>
                                 <Input
                                     type="date"
-                                    className="rounded-lg h-10 bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors"
+                                    className={`rounded-lg h-10 bg-slate-50 border font-bold px-4 text-xs focus:border-indigo-500 transition-colors ${errors.date ? "border-rose-500" : "border-slate-300"}`}
                                     value={formData.date}
                                     onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                                 />
+                                {errors.date && <p className="text-[10px] font-bold text-rose-500 ml-1">{errors.date}</p>}
                             </div>
                             <div className="space-y-1.5">
                                 <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Holiday Type</Label>
@@ -417,12 +515,13 @@ const HolidayCalendarPage = () => {
 
                     <DialogFooter className="gap-2 pt-6 border-t border-slate-200 sm:justify-end">
                         <Button
-                            className="flex-1 bg-indigo-600 hover:bg-slate-900 text-white rounded-lg h-10 font-bold text-xs shadow-xl shadow-indigo-100 transition-all font-outfit"
+                            className="flex-1 bg-indigo-600 hover:bg-slate-900 text-white rounded-lg h-10 font-bold text-xs shadow-xl shadow-indigo-100 transition-all font-outfit disabled:opacity-50"
                             onClick={handleAddHoliday}
+                            disabled={isSaving}
                         >
-                            Confirm Holiday
+                            {isSaving ? "Saving..." : "Confirm Holiday"}
                         </Button>
-                        <Button variant="outline" className="h-10 px-6 rounded-lg font-bold border-slate-300 text-slate-600 text-xs" onClick={() => setIsAddDialogOpen(false)}>
+                        <Button variant="outline" className="h-10 px-6 rounded-lg font-bold border-slate-300 text-slate-600 text-xs" onClick={() => { setIsAddDialogOpen(false); resetForm(); }} disabled={isSaving}>
                             Cancel
                         </Button>
                     </DialogFooter>
@@ -495,13 +594,79 @@ const HolidayCalendarPage = () => {
 
                     <DialogFooter className="gap-2 pt-6 border-t border-slate-200 sm:justify-end">
                         <Button
-                            className="flex-1 bg-indigo-600 hover:bg-slate-900 text-white rounded-lg h-10 font-bold text-xs shadow-xl shadow-indigo-100 transition-all font-outfit"
+                            className="flex-1 bg-indigo-600 hover:bg-slate-900 text-white rounded-lg h-10 font-bold text-xs shadow-xl shadow-indigo-100 transition-all font-outfit disabled:opacity-50"
                             onClick={handleUpdateHoliday}
+                            disabled={isSaving}
                         >
-                            Save Changes
+                            {isSaving ? "Saving..." : "Save Changes"}
                         </Button>
-                        <Button variant="outline" className="h-10 px-6 rounded-lg font-bold border-slate-300 text-slate-600 text-xs" onClick={() => setIsEditDialogOpen(false)}>
+                        <Button variant="outline" className="h-10 px-6 rounded-lg font-bold border-slate-300 text-slate-600 text-xs" onClick={() => { setIsEditDialogOpen(false); resetForm(); }} disabled={isSaving}>
                             Cancel
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Advanced Filter Dialog */}
+            <Dialog open={isAdvancedOpen} onOpenChange={setIsAdvancedOpen}>
+                <DialogContent className="bg-white rounded-[2.5rem] border border-slate-300 p-8 max-w-lg">
+                    <DialogHeader>
+                        <div className="h-11 w-11 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600 mb-1">
+                            <Filter size={22} />
+                        </div>
+                        <DialogTitle className="text-2xl font-bold tracking-tight text-slate-900">Advanced Filters</DialogTitle>
+                        <DialogDescription className="text-slate-500 font-medium text-xs">
+                            Narrow holidays by type, month, or weekday.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="py-6 space-y-5">
+                        <div className="space-y-1.5">
+                            <Label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest ml-1">Holiday Type</Label>
+                            <Select value={typeFilter} onValueChange={setTypeFilter}>
+                                <SelectTrigger className="h-10 rounded-lg bg-slate-50 border border-slate-300 font-bold px-4 text-xs"><SelectValue /></SelectTrigger>
+                                <SelectContent className="rounded-xl">
+                                    <SelectItem value="All">All Types</SelectItem>
+                                    <SelectItem value="Public">Public</SelectItem>
+                                    <SelectItem value="Optional">Optional</SelectItem>
+                                    <SelectItem value="Company">Company</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <Label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest ml-1">Month</Label>
+                            <Select value={monthFilter} onValueChange={setMonthFilter}>
+                                <SelectTrigger className="h-10 rounded-lg bg-slate-50 border border-slate-300 font-bold px-4 text-xs"><SelectValue /></SelectTrigger>
+                                <SelectContent className="rounded-xl max-h-[240px]">
+                                    <SelectItem value="All">All Months</SelectItem>
+                                    {["January","February","March","April","May","June","July","August","September","October","November","December"].map((m, idx) => (
+                                        <SelectItem key={m} value={String(idx + 1)}>{m}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <Label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest ml-1">Weekday</Label>
+                            <Select value={dayFilter} onValueChange={setDayFilter}>
+                                <SelectTrigger className="h-10 rounded-lg bg-slate-50 border border-slate-300 font-bold px-4 text-xs"><SelectValue /></SelectTrigger>
+                                <SelectContent className="rounded-xl">
+                                    <SelectItem value="All">Any Day</SelectItem>
+                                    {["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"].map((d) => (
+                                        <SelectItem key={d} value={d}>{d}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+
+                    <DialogFooter className="gap-2 pt-6 border-t border-slate-200">
+                        <Button variant="outline" className="h-10 px-6 rounded-lg font-bold border-slate-300 text-slate-600 text-xs" onClick={resetAdvancedFilters}>
+                            Reset All
+                        </Button>
+                        <Button className="flex-1 bg-indigo-600 hover:bg-slate-900 text-white rounded-lg h-10 font-bold text-xs" onClick={() => setIsAdvancedOpen(false)}>
+                            Apply Filters
                         </Button>
                     </DialogFooter>
                 </DialogContent>

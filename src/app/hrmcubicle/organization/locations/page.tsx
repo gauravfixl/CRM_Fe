@@ -54,13 +54,14 @@ import { Progress } from "@/shared/components/ui/progress";
 
 const LocationsPage = () => {
     const { toast } = useToast();
-    const { locations, employees, addLocation, updateLocation, deleteLocation } = useOrganisationStore();
+    const { locations, employees, designations, addLocation, updateLocation, deleteLocation } = useOrganisationStore();
 
     const [searchQuery, setSearchQuery] = useState("");
     const [typeFilter, setTypeFilter] = useState<string>("All");
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
     const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    const [isMembersDialogOpen, setIsMembersDialogOpen] = useState(false);
 
     const [formData, setFormData] = useState<Partial<Location>>({
         name: "",
@@ -83,11 +84,15 @@ const LocationsPage = () => {
             toast({ title: "Validation Error", description: "Name, Code, and City are required", variant: "destructive" });
             return;
         }
+        if (locations.some((l) => l.code.toUpperCase() === (formData.code || "").toUpperCase())) {
+            toast({ title: "Duplicate Code", description: "A location with this code already exists.", variant: "destructive" });
+            return;
+        }
 
-        addLocation({
-            ...formData,
-            isActive: true
-        } as Omit<Location, 'id' | 'employeeCount' | 'createdAt'>);
+        const payload = { ...formData, isActive: true } as Omit<Location, 'id' | 'employeeCount' | 'createdAt'>;
+        if (payload.hrContactId === "none" || !payload.hrContactId) delete (payload as any).hrContactId;
+
+        addLocation(payload);
 
         toast({ title: "Location Added", description: `${formData.name} has been added to the organization.` });
         setIsAddDialogOpen(false);
@@ -114,10 +119,40 @@ const LocationsPage = () => {
             return;
         }
 
-        updateLocation(selectedLocation.id, formData);
+        const updates: Partial<Location> = { ...formData };
+        if (updates.hrContactId === "none") updates.hrContactId = undefined;
+        updateLocation(selectedLocation.id, updates);
         toast({ title: "Location Updated", description: "Changes have been saved successfully." });
         setIsEditDialogOpen(false);
         setSelectedLocation(null);
+    };
+
+    const handleExportCSV = () => {
+        const header = ["Name", "Code", "Type", "City", "State", "Country", "Employees", "Active"];
+        const rows = locations.map((l) => [
+            l.name,
+            l.code,
+            l.type,
+            l.address.city,
+            l.address.state,
+            l.address.country,
+            String(employees.filter((e) => e.locationId === l.id).length),
+            l.isActive ? "Yes" : "No",
+        ]);
+        const csv = [header, ...rows].map((r) => r.map((c) => `"${c}"`).join(",")).join("\n");
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "locations.csv";
+        a.click();
+        URL.revokeObjectURL(url);
+        toast({ title: "Export Complete", description: "Locations CSV downloaded." });
+    };
+
+    const openViewMembers = (loc: Location) => {
+        setSelectedLocation(loc);
+        setIsMembersDialogOpen(true);
     };
 
     const handleDeleteLocation = (id: string) => {
@@ -208,6 +243,13 @@ const LocationsPage = () => {
                             </SelectContent>
                         </Select>
 
+                        <Button
+                            variant="outline"
+                            onClick={handleExportCSV}
+                            className="h-10 px-4 rounded-xl font-bold border-slate-200 text-xs gap-2"
+                        >
+                            Export CSV
+                        </Button>
                         <Button
                             onClick={() => setIsAddDialogOpen(true)}
                             className="bg-indigo-600 hover:bg-slate-900 text-white rounded-xl h-10 px-6 font-bold shadow-xl shadow-indigo-100 transition-all gap-2 text-xs"
@@ -303,6 +345,12 @@ const LocationsPage = () => {
                                                     <DropdownMenuContent align="end" className="rounded-xl border-none shadow-2xl p-1.5 w-44 font-bold">
                                                         <DropdownMenuItem
                                                             className="rounded-lg h-9 gap-2 text-xs"
+                                                            onClick={(e) => { e.stopPropagation(); openViewMembers(location); }}
+                                                        >
+                                                            <Users size={14} /> View Members
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem
+                                                            className="rounded-lg h-9 gap-2 text-xs"
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
                                                                 setSelectedLocation(location);
@@ -339,10 +387,13 @@ const LocationsPage = () => {
                                                 </div>
 
                                                 {hrContact && (
-                                                    <div className="flex items-center gap-3 p-3 bg-white rounded-xl border border-slate-100 shadow-sm">
+                                                    <div
+                                                        className="flex items-center gap-3 p-3 bg-white rounded-xl border border-slate-100 shadow-sm cursor-pointer hover:border-indigo-200"
+                                                        onClick={() => (window.location.href = `mailto:${hrContact.email}`)}
+                                                    >
                                                         <Avatar className="h-8 w-8 border border-white shadow-sm shrink-0">
                                                             <AvatarFallback className="bg-indigo-600 text-white font-bold text-[10px]">
-                                                                {hrContact.profileImage}
+                                                                {hrContact.firstName[0]}{hrContact.lastName[0]}
                                                             </AvatarFallback>
                                                         </Avatar>
                                                         <div className="flex-1 min-w-0">
@@ -454,7 +505,7 @@ const LocationsPage = () => {
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-1">
                                         <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">HR Contact</Label>
-                                        <Select value={formData.hrContactId} onValueChange={(v) => setFormData({ ...formData, hrContactId: v })}>
+                                        <Select value={formData.hrContactId || "none"} onValueChange={(v) => setFormData({ ...formData, hrContactId: v === "none" ? undefined : v })}>
                                             <SelectTrigger className="h-10 rounded-lg bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors">
                                                 <SelectValue placeholder="Select" />
                                             </SelectTrigger>
@@ -692,6 +743,48 @@ const LocationsPage = () => {
                         <Button variant="outline" className="h-9 px-4 rounded-lg font-bold border-slate-200 text-slate-600 text-xs" onClick={() => setIsEditDialogOpen(false)}>
                             Cancel
                         </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* View Members Dialog */}
+            <Dialog open={isMembersDialogOpen} onOpenChange={(o) => { setIsMembersDialogOpen(o); if (!o) setSelectedLocation(null); }}>
+                <DialogContent className="bg-white rounded-3xl border border-slate-300 p-6 max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+                    <DialogHeader>
+                        <DialogTitle className="text-xl font-bold tracking-tight text-slate-900">
+                            Members · {selectedLocation?.name}
+                        </DialogTitle>
+                        <DialogDescription className="text-slate-500 font-medium text-[11px]">
+                            Employees assigned to this location.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="flex-1 overflow-y-auto py-4 space-y-2">
+                        {selectedLocation && employees.filter((e) => e.locationId === selectedLocation.id).length === 0 ? (
+                            <p className="text-sm text-slate-500 p-6 text-center">No employees assigned to this location.</p>
+                        ) : (
+                            selectedLocation && employees.filter((e) => e.locationId === selectedLocation.id).map((emp) => {
+                                const desig = designations.find((d) => d.id === emp.designationId);
+                                return (
+                                    <div key={emp.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 border border-slate-100">
+                                        <div className="flex items-center gap-3">
+                                            <Avatar className="h-9 w-9">
+                                                <AvatarFallback className="bg-indigo-100 text-indigo-700 text-xs font-bold">{emp.firstName[0]}{emp.lastName[0]}</AvatarFallback>
+                                            </Avatar>
+                                            <div>
+                                                <p className="text-sm font-bold text-slate-900">{emp.firstName} {emp.lastName}</p>
+                                                <p className="text-[10px] text-slate-500 font-medium">{desig?.title || "—"} · {emp.email}</p>
+                                            </div>
+                                        </div>
+                                        <Badge className={`text-[9px] border-none font-bold ${emp.status === "Active" ? "bg-emerald-50 text-emerald-600" : "bg-slate-100 text-slate-500"}`}>
+                                            {emp.status}
+                                        </Badge>
+                                    </div>
+                                );
+                            })
+                        )}
+                    </div>
+                    <DialogFooter>
+                        <Button className="w-full rounded-lg bg-slate-900 hover:bg-slate-800" onClick={() => setIsMembersDialogOpen(false)}>Close</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

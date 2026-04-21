@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/shared/components/ui/button";
 import { Badge } from "@/shared/components/ui/badge";
 import {
@@ -28,6 +28,11 @@ import {
 } from "lucide-react";
 import { useToast } from "@/shared/components/ui/use-toast";
 import { useIntegrationsStore, type Integration, type Webhook as WebhookType } from "@/shared/data/integrations-store";
+import { webhooksApi, apiKeysApi, extractApiError } from "@/shared/api/settings-api";
+import { validateWebhook, validateApiKey, validateIntegration, type ValidationErrors } from "@/shared/api/settings-validators";
+
+const FieldError = ({ msg }: { msg?: string }) =>
+    msg ? <p className="text-[11px] text-rose-600 font-medium mt-1">{msg}</p> : null;
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/shared/components/ui/dialog";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
@@ -40,9 +45,13 @@ import { Textarea } from "@/shared/components/ui/textarea";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/shared/components/ui/sheet";
 
 const IntegrationsPage = () => {
-    const { integrations, webhooks, apiKeys, toggleIntegration, updateIntegrationConfig, addWebhook, deleteWebhook, generateApiKey, revokeApiKey, addIntegration } = useIntegrationsStore();
+    const { integrations, webhooks, apiKeys, toggleIntegration, updateIntegrationConfig, addWebhook, deleteWebhook, toggleWebhook, generateApiKey, revokeApiKey, addIntegration } = useIntegrationsStore();
     const { toast } = useToast();
     const [activeTab, setActiveTab] = useState("apps");
+
+    // App Marketplace Filters
+    const [appSearch, setAppSearch] = useState("");
+    const [appCategoryFilter, setAppCategoryFilter] = useState<string>("All");
 
     // Deep Configuration State
     const [selectedIntegration, setSelectedIntegration] = useState<Integration | null>(null);
@@ -56,9 +65,90 @@ const IntegrationsPage = () => {
     const [webhookDialogOpen, setWebhookDialogOpen] = useState(false);
     const [newWebhook, setNewWebhook] = useState({ url: "", events: [] as string[], isActive: true });
     const [keyName, setKeyName] = useState("");
+    const [webhookErrors, setWebhookErrors] = useState<ValidationErrors>({});
+    const [keyErrors, setKeyErrors] = useState<ValidationErrors>({});
+    const [appErrors, setAppErrors] = useState<ValidationErrors>({});
+
+    // Backend id tracking (zustand ids are string, backend MongoDB _id)
+    const [webhookBackendIds, setWebhookBackendIds] = useState<Record<string, string>>({});
+    const [keyBackendIds, setKeyBackendIds] = useState<Record<string, string>>({});
+
+    // Hydrate webhooks + api keys from backend on mount
+    useEffect(() => {
+        let cancel = false;
+        (async () => {
+            const [wh, ak] = await Promise.allSettled([webhooksApi.list(), apiKeysApi.list()]);
+            if (cancel) return;
+            if (wh.status === "fulfilled" && Array.isArray(wh.value?.data)) {
+                const whMap: Record<string, string> = {};
+                const items = wh.value.data.map((w: any) => {
+                    const fid = `wh-${w._id}`;
+                    whMap[fid] = w._id;
+                    return { id: fid, url: w.endpoint, events: w.events || [], isActive: w.active !== false, secret: w.secret || "" };
+                });
+                if (items.length) useIntegrationsStore.setState({ webhooks: items as any });
+                setWebhookBackendIds(whMap);
+            }
+            if (ak.status === "fulfilled" && Array.isArray(ak.value?.data)) {
+                const kMap: Record<string, string> = {};
+                const items = ak.value.data.map((k: any) => {
+                    const fid = `key-${k._id}`;
+                    kMap[fid] = k._id;
+                    return { id: fid, name: k.name, key: k.keyPrefix ? `${k.keyPrefix}••••••••` : "••••••••", lastUsed: k.lastUsedAt };
+                });
+                if (items.length) useIntegrationsStore.setState({ apiKeys: items as any });
+                setKeyBackendIds(kMap);
+            }
+        })();
+        return () => { cancel = true; };
+    }, []);
+
+    const filteredIntegrations = integrations.filter(i => {
+        const matchesSearch =
+            i.name.toLowerCase().includes(appSearch.toLowerCase()) ||
+            i.provider.toLowerCase().includes(appSearch.toLowerCase());
+        const matchesCategory = appCategoryFilter === "All" || i.category === appCategoryFilter;
+        return matchesSearch && matchesCategory;
+    });
+
+    const handleToggleWebhook = async (id: string, isActive: boolean) => {
+        toggleWebhook(id, isActive);
+        toast({ title: isActive ? "Webhook Enabled" : "Webhook Disabled", description: `Endpoint is now ${isActive ? "receiving" : "paused from"} events.` });
+        const bid = webhookBackendIds[id];
+        if (bid) {
+            try { await webhooksApi.update(bid, { active: isActive }); } catch { /* non-fatal */ }
+        }
+    };
+
+    const handleDeleteWebhook = async (id: string) => {
+        deleteWebhook(id);
+        toast({ title: "Webhook Removed", description: "Endpoint unsubscribed.", variant: "destructive" });
+        const bid = webhookBackendIds[id];
+        if (bid) {
+            try { await webhooksApi.remove(bid); } catch (e) {
+                toast({ title: "Backend Sync Failed", description: extractApiError(e), variant: "destructive" });
+            }
+        }
+    };
+
+    const handleRevokeKey = async (id: string) => {
+        revokeApiKey(id);
+        toast({ title: "Key Revoked", description: "API key can no longer be used.", variant: "destructive" });
+        const bid = keyBackendIds[id];
+        if (bid) {
+            try { await apiKeysApi.revoke(bid); } catch (e) {
+                toast({ title: "Backend Sync Failed", description: extractApiError(e), variant: "destructive" });
+            }
+        }
+    };
 
     const handleAddApp = () => {
-        if (!newApp.name) return;
+        const errs = validateIntegration(newApp);
+        setAppErrors(errs);
+        if (Object.keys(errs).length > 0) {
+            toast({ title: "Please fix highlighted fields", variant: "destructive" });
+            return;
+        }
         addIntegration({
             name: newApp.name,
             provider: newApp.provider as any,
@@ -68,6 +158,7 @@ const IntegrationsPage = () => {
         });
         setAddDialogOpen(false);
         setNewApp({ name: "", provider: "Custom", category: "Communication" });
+        setAppErrors({});
         toast({ title: "Integration Added", description: `${newApp.name} added to marketplace.` });
     };
 
@@ -171,19 +262,57 @@ const IntegrationsPage = () => {
     };
 
     // --- Developer Functions ---
-    const handleGenerateKey = () => {
-        if (!keyName) return;
-        generateApiKey(keyName);
+    const handleGenerateKey = async () => {
+        const errs = validateApiKey({ name: keyName });
+        setKeyErrors(errs);
+        if (Object.keys(errs).length > 0) {
+            toast({ title: "Key label required (min 3 chars)", variant: "destructive" });
+            return;
+        }
+        try {
+            const res = await apiKeysApi.create({ name: keyName });
+            const fid = res.data?._id ? `key-${res.data._id}` : `key-${Date.now()}`;
+            if (res.data?._id) setKeyBackendIds(prev => ({ ...prev, [fid]: res.data._id }));
+            useIntegrationsStore.setState((s) => ({
+                apiKeys: [...s.apiKeys, { id: fid, name: keyName, key: res.data?.key || "Copied once, stored securely", lastUsed: undefined } as any]
+            }));
+            toast({ title: "API Key Generated", description: "Copy it now. It won't be shown again." });
+        } catch (e) {
+            generateApiKey(keyName);
+            toast({ title: "Saved Locally", description: extractApiError(e, "Backend unreachable."), variant: "destructive" });
+        }
         setKeyName("");
-        toast({ title: "Key Generated", description: "Copy it now. It won't be shown again." });
+        setKeyErrors({});
     };
 
-    const handleSaveWebhook = () => {
-        if (!newWebhook.url) return;
-        addWebhook(newWebhook);
+    const handleSaveWebhook = async () => {
+        const errs = validateWebhook({ url: newWebhook.url, events: newWebhook.events });
+        setWebhookErrors(errs);
+        if (Object.keys(errs).length > 0) {
+            toast({ title: "Please fix highlighted fields", variant: "destructive" });
+            return;
+        }
+        const payload = {
+            name: newWebhook.url.slice(0, 60),
+            endpoint: newWebhook.url,
+            events: newWebhook.events.filter(e => e && e.trim()),
+            active: newWebhook.isActive,
+        };
+        try {
+            const res = await webhooksApi.create(payload);
+            const fid = res.data?._id ? `wh-${res.data._id}` : `wh-${Date.now()}`;
+            if (res.data?._id) setWebhookBackendIds(prev => ({ ...prev, [fid]: res.data._id }));
+            useIntegrationsStore.setState((s) => ({
+                webhooks: [...s.webhooks, { id: fid, url: newWebhook.url, events: payload.events, isActive: newWebhook.isActive, secret: res.data?.secret || "" } as any]
+            }));
+            toast({ title: "Webhook Registered", description: "Endpoint saved to backend." });
+        } catch (e) {
+            addWebhook({ ...newWebhook, events: payload.events });
+            toast({ title: "Saved Locally", description: extractApiError(e, "Backend unreachable."), variant: "destructive" });
+        }
         setWebhookDialogOpen(false);
         setNewWebhook({ url: "", events: [], isActive: true });
-        toast({ title: "Webhook Verified", description: "Endpoint registered successfully." });
+        setWebhookErrors({});
     };
 
     const AppCard = ({ integration }: { integration: Integration }) => (
@@ -252,9 +381,33 @@ const IntegrationsPage = () => {
 
                 <ScrollArea className="flex-1 -mx-4 px-4 pb-10">
                     {/* Apps Tab */}
-                    <TabsContent value="apps" className="m-0">
+                    <TabsContent value="apps" className="m-0 space-y-6">
+                        <div className="flex flex-wrap gap-4 items-center bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                            <div className="relative flex-1 min-w-[260px]">
+                                <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                                <Input
+                                    placeholder="Search apps by name or provider..."
+                                    className="pl-9 bg-slate-50 border-slate-200"
+                                    value={appSearch}
+                                    onChange={(e) => setAppSearch(e.target.value)}
+                                />
+                            </div>
+                            <Select value={appCategoryFilter} onValueChange={setAppCategoryFilter}>
+                                <SelectTrigger className="w-44 bg-slate-50"><SelectValue placeholder="Category" /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="All">All Categories</SelectItem>
+                                    <SelectItem value="Communication">Communication</SelectItem>
+                                    <SelectItem value="Calendar">Calendar</SelectItem>
+                                    <SelectItem value="Meeting">Meeting</SelectItem>
+                                    <SelectItem value="Storage">Storage</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <div className="text-xs font-semibold text-slate-500">
+                                {filteredIntegrations.length} apps
+                            </div>
+                        </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-                            {integrations.map(int => (
+                            {filteredIntegrations.map(int => (
                                 <AppCard key={int.id} integration={int} />
                             ))}
                             {/* Add More Card */}
@@ -266,6 +419,11 @@ const IntegrationsPage = () => {
                                 <p className="text-xs text-slate-400 mt-1">Register a new app.</p>
                             </div>
                         </div>
+                        {filteredIntegrations.length === 0 && (
+                            <div className="text-center py-16 text-slate-400">
+                                <p className="font-bold">No integrations match your filters.</p>
+                            </div>
+                        )}
                     </TabsContent>
 
                     {/* Developer Tab */}
@@ -277,14 +435,17 @@ const IntegrationsPage = () => {
                                     <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2"><Key className="text-cyan-500" size={20} /> API Keys</h3>
                                     <p className="text-sm text-slate-500">Manage access tokens for custom integrations.</p>
                                 </div>
-                                <div className="flex gap-2">
-                                    <Input
-                                        placeholder="Key Label (e.g. Mobile App)"
-                                        className="bg-white w-64"
-                                        value={keyName}
-                                        onChange={(e) => setKeyName(e.target.value)}
-                                    />
-                                    <Button onClick={handleGenerateKey} variant="secondary" className="font-bold">Generate</Button>
+                                <div className="flex gap-2 flex-col items-end">
+                                    <div className="flex gap-2">
+                                        <Input
+                                            placeholder="Key Label (e.g. Mobile App)"
+                                            className={`bg-white w-64 ${keyErrors.name ? "border-rose-400" : ""}`}
+                                            value={keyName}
+                                            onChange={(e) => setKeyName(e.target.value)}
+                                        />
+                                        <Button onClick={handleGenerateKey} variant="secondary" className="font-bold">Generate</Button>
+                                    </div>
+                                    <FieldError msg={keyErrors.name} />
                                 </div>
                             </div>
 
@@ -304,7 +465,7 @@ const IntegrationsPage = () => {
                                             <Button size="sm" variant="ghost" onClick={() => handleCopy(key.key)}>
                                                 <Copy size={14} className="mr-2" /> Copy
                                             </Button>
-                                            <Button size="sm" variant="ghost" className="text-rose-500 hover:bg-rose-50 hover:text-rose-600" onClick={() => revokeApiKey(key.id)}>
+                                            <Button size="sm" variant="ghost" className="text-rose-500 hover:bg-rose-50 hover:text-rose-600" onClick={() => handleRevokeKey(key.id)}>
                                                 Revoke
                                             </Button>
                                         </div>
@@ -338,10 +499,18 @@ const IntegrationsPage = () => {
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <div className="flex items-center gap-2 mr-4">
-                                                <Switch checked={hook.isActive} />
-                                                <span className="text-xs font-semibold text-slate-500">Active</span>
+                                                <Switch
+                                                    checked={hook.isActive}
+                                                    onCheckedChange={(v) => handleToggleWebhook(hook.id, v)}
+                                                />
+                                                <span className={`text-xs font-semibold ${hook.isActive ? 'text-emerald-600' : 'text-slate-400'}`}>
+                                                    {hook.isActive ? 'Active' : 'Paused'}
+                                                </span>
                                             </div>
-                                            <Button size="icon" variant="ghost" className="text-rose-500 hover:bg-rose-50 hover:text-rose-600" onClick={() => deleteWebhook(hook.id)}>
+                                            <Button size="sm" variant="ghost" onClick={() => handleCopy(hook.id)}>
+                                                <Copy size={14} className="mr-1" /> ID
+                                            </Button>
+                                            <Button size="icon" variant="ghost" className="text-rose-500 hover:bg-rose-50 hover:text-rose-600" onClick={() => handleDeleteWebhook(hook.id)}>
                                                 <Trash2 size={16} />
                                             </Button>
                                         </div>
@@ -431,17 +600,19 @@ const IntegrationsPage = () => {
                     </DialogHeader>
                     <div className="grid gap-6 py-4">
                         <div className="grid gap-2">
-                            <Label>Endpoint URL</Label>
-                            <Input placeholder="https://api.yourapp.com/hooks" value={newWebhook.url} onChange={e => setNewWebhook({ ...newWebhook, url: e.target.value })} className="bg-slate-50" />
+                            <Label>Endpoint URL *</Label>
+                            <Input placeholder="https://api.yourapp.com/hooks" value={newWebhook.url} onChange={e => setNewWebhook({ ...newWebhook, url: e.target.value })} className={`bg-slate-50 ${webhookErrors.url ? "border-rose-400" : ""}`} />
+                            <FieldError msg={webhookErrors.url} />
                         </div>
                         <div className="grid gap-2">
-                            <Label>Events to Subscribe</Label>
+                            <Label>Events to Subscribe *</Label>
                             <Textarea
                                 placeholder="leave.approved, employee.created (comma separated)"
                                 value={newWebhook.events.join(', ')}
                                 onChange={e => setNewWebhook({ ...newWebhook, events: e.target.value.split(',').map(s => s.trim()) })}
-                                className="bg-slate-50"
+                                className={`bg-slate-50 ${webhookErrors.events ? "border-rose-400" : ""}`}
                             />
+                            <FieldError msg={webhookErrors.events} />
                         </div>
                     </div>
                     <Button onClick={handleSaveWebhook} className="bg-cyan-600 text-white w-full h-12 rounded-xl font-bold hover:bg-cyan-700">Create Subscription</Button>
@@ -457,13 +628,14 @@ const IntegrationsPage = () => {
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
                         <div className="grid gap-2">
-                            <Label>App Name</Label>
-                            <Input placeholder="e.g. Jira, GitHub" value={newApp.name} onChange={e => setNewApp({ ...newApp, name: e.target.value })} className="bg-slate-50" />
+                            <Label>App Name *</Label>
+                            <Input placeholder="e.g. Jira, GitHub" value={newApp.name} onChange={e => setNewApp({ ...newApp, name: e.target.value })} className={`bg-slate-50 ${appErrors.name ? "border-rose-400" : ""}`} />
+                            <FieldError msg={appErrors.name} />
                         </div>
                         <div className="grid gap-2">
-                            <Label>Category</Label>
+                            <Label>Category *</Label>
                             <Select value={newApp.category} onValueChange={(val) => setNewApp({ ...newApp, category: val })}>
-                                <SelectTrigger className="bg-slate-50"><SelectValue /></SelectTrigger>
+                                <SelectTrigger className={`bg-slate-50 ${appErrors.category ? "border-rose-400" : ""}`}><SelectValue /></SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="Communication">Communication</SelectItem>
                                     <SelectItem value="Calendar">Calendar</SelectItem>
@@ -472,6 +644,7 @@ const IntegrationsPage = () => {
                                     <SelectItem value="Other">Other</SelectItem>
                                 </SelectContent>
                             </Select>
+                            <FieldError msg={appErrors.category} />
                         </div>
                     </div>
                     <Button onClick={handleAddApp} className="bg-slate-900 text-white w-full h-12 rounded-xl font-bold hover:bg-slate-800">Add to Marketplace</Button>

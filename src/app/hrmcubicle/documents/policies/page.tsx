@@ -68,6 +68,7 @@ import { Textarea } from "@/shared/components/ui/textarea";
 import { useDocumentsStore, type CompanyPolicy } from "@/shared/data/documents-store";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
+import { required, maxLength, minLength, isSemver, isUnique, firstError, isValidDate } from "@/shared/utils/validators";
 
 const PolicyPage = () => {
     const { policies, addPolicy, updatePolicy, deletePolicy } = useDocumentsStore();
@@ -104,13 +105,33 @@ const PolicyPage = () => {
         archived: policies.filter(p => p.status === "Archived").length
     };
 
+    const validatePolicy = (p: { title: string; description: string; effectiveDate: string; currentVersion: string; audience: string[]; category: string }, ignoreId?: string): string | null => {
+        const existingTitles = policies.filter(x => x.id !== ignoreId).map(x => x.title);
+        return firstError(
+            required(p.title, "Title"),
+            minLength(p.title, 3, "Title"),
+            maxLength(p.title, 120, "Title"),
+            isUnique(p.title, existingTitles, "Policy title"),
+            required(p.category, "Category"),
+            required(p.description, "Description"),
+            minLength(p.description, 10, "Description"),
+            maxLength(p.description, 500, "Description"),
+            required(p.effectiveDate, "Effective date"),
+            isValidDate(p.effectiveDate, "Effective date"),
+            required(p.currentVersion, "Version"),
+            isSemver(p.currentVersion, "Version"),
+            required(p.audience, "Audience"),
+        );
+    };
+
     const handleAddPolicy = () => {
-        if (!newPolicy.title || !newPolicy.description) {
-            toast.error("Please fill in all required fields");
-            return;
-        }
+        const err = validatePolicy(newPolicy);
+        if (err) { toast.error(err); return; }
         addPolicy({
             ...newPolicy,
+            title: newPolicy.title.trim(),
+            description: newPolicy.description.trim(),
+            currentVersion: newPolicy.currentVersion.trim(),
             status: "Active"
         });
         setIsAddDialogOpen(false);
@@ -127,11 +148,14 @@ const PolicyPage = () => {
     };
 
     const handleUpdatePolicy = () => {
-        if (!editingPolicy?.title || !editingPolicy?.description) {
-            toast.error("Required fields cannot be empty");
-            return;
-        }
-        updatePolicy(editingPolicy.id, editingPolicy);
+        if (!editingPolicy) return;
+        const err = validatePolicy(editingPolicy, editingPolicy.id);
+        if (err) { toast.error(err); return; }
+        updatePolicy(editingPolicy.id, {
+            ...editingPolicy,
+            title: editingPolicy.title.trim(),
+            description: editingPolicy.description.trim(),
+        });
         setEditingPolicy(null);
         toast.success("Policy documentation synchronized");
     };
@@ -228,15 +252,20 @@ const PolicyPage = () => {
                                     </div>
                                     <div className="space-y-2.5">
                                         <label className="text-[11px] font-black tracking-wide text-slate-500 ml-1">Target Audience</label>
-                                        <Select defaultValue="all">
+                                        <Select
+                                            value={newPolicy.audience[0] || "All Employees"}
+                                            onValueChange={(val) => setNewPolicy({ ...newPolicy, audience: [val] })}
+                                        >
                                             <SelectTrigger className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 focus:bg-white focus:ring-4 focus:ring-indigo-100 transition-all">
                                                 <SelectValue placeholder="Select audience" />
                                             </SelectTrigger>
                                             <SelectContent className="rounded-2xl border border-slate-200 shadow-2xl p-2 font-bold text-xs">
-                                                <SelectItem value="all" className="rounded-xl h-10">All Employees</SelectItem>
-                                                <SelectItem value="it" className="rounded-xl h-10">IT Department</SelectItem>
-                                                <SelectItem value="hr" className="rounded-xl h-10">HR Department</SelectItem>
-                                                <SelectItem value="sales" className="rounded-xl h-10">Sales & Marketing</SelectItem>
+                                                <SelectItem value="All Employees" className="rounded-xl h-10">All Employees</SelectItem>
+                                                <SelectItem value="IT Department" className="rounded-xl h-10">IT Department</SelectItem>
+                                                <SelectItem value="HR Department" className="rounded-xl h-10">HR Department</SelectItem>
+                                                <SelectItem value="Sales & Marketing" className="rounded-xl h-10">Sales & Marketing</SelectItem>
+                                                <SelectItem value="Finance" className="rounded-xl h-10">Finance</SelectItem>
+                                                <SelectItem value="Engineering" className="rounded-xl h-10">Engineering</SelectItem>
                                             </SelectContent>
                                         </Select>
                                     </div>

@@ -197,7 +197,7 @@ const HRM_SIDEBAR_SECTIONS: SidebarSection[] = [
         ]
     },
     {
-        id: "admin", title: "Admin", icon: "\u{2699}\uFE0F",
+        id: "admin", title: "Settings", icon: "\u{2699}\uFE0F",
         children: [
             { id: "role-permissions", title: "Role & Permissions" },
             { id: "workflows-approvals", title: "Workflows & Approvals" },

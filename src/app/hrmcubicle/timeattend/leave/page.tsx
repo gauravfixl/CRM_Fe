@@ -55,14 +55,17 @@ const LeavePage = () => {
         return { year: now.getFullYear(), month: now.getMonth() };
     });
 
-    // Computed: Check for overlaps in the same department
+    // Computed: Check for overlaps where requested date falls within any approved leave range
     const overlaps = useMemo(() => {
         if (!newLeave.from) return [];
-        return leaveRequests.filter(r =>
-            r.dept === "Engineering" &&
-            r.status === "Approved" &&
-            r.from === newLeave.from
-        );
+        const requested = new Date(newLeave.from).getTime();
+        if (Number.isNaN(requested)) return [];
+        return leaveRequests.filter(r => {
+            if (r.status !== "Approved" || !r.from || !r.to) return false;
+            const start = new Date(r.from).getTime();
+            const end = new Date(r.to).getTime();
+            return requested >= start && requested <= end;
+        });
     }, [newLeave.from, leaveRequests]);
 
     const fetchLeaveData = async () => {
@@ -209,6 +212,34 @@ const LeavePage = () => {
         if (!newLeave.leaveTypeId || !newLeave.from || !newLeave.to || !newLeave.reason) {
             toast({ title: "Incomplete Data", description: "Please provide all necessary details.", variant: "destructive" });
             return;
+        }
+
+        const fromDate = new Date(newLeave.from);
+        const toDate = new Date(newLeave.to);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        if (Number.isNaN(fromDate.getTime()) || Number.isNaN(toDate.getTime())) {
+            toast({ title: "Invalid Dates", description: "Please pick valid start and end dates.", variant: "destructive" });
+            return;
+        }
+        if (toDate < fromDate) {
+            toast({ title: "Invalid Range", description: "End date must be on or after start date.", variant: "destructive" });
+            return;
+        }
+        if (fromDate < today && !editingId) {
+            toast({ title: "Invalid Date", description: "Cannot apply leave starting on a past date.", variant: "destructive" });
+            return;
+        }
+        if (newLeave.reason.trim().length < 10) {
+            toast({ title: "Reason Too Short", description: "Please provide a reason of at least 10 characters.", variant: "destructive" });
+            return;
+        }
+
+        if (overlaps.length > 0) {
+            const overlapNames = overlaps.map(o => o.employee).join(", ");
+            const proceed = window.confirm(`The requested start date overlaps approved leave for: ${overlapNames}. Continue anyway?`);
+            if (!proceed) return;
         }
 
         if (editingId) {

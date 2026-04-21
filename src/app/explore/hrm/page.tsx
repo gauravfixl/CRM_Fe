@@ -176,6 +176,111 @@ const data = {
     { value: "99%", label: "Payroll accuracy rate" },
     { value: "35%", label: "Better employee retention" },
   ],
+  capabilities: [
+    {
+      title: "Comprehensive Onboarding Automation",
+      description:
+        "Transform the new-hire experience with automated onboarding workflows that handle document collection, equipment provisioning, training assignments, and buddy matching — ensuring every employee is set up for success from day one.",
+      keyPoints: [
+        "Pre-boarding checklists sent before the start date with e-signature support",
+        "Automated IT provisioning requests triggered by role and department",
+        "Structured 30-60-90 day onboarding plans with milestone tracking",
+        "Onboarding satisfaction surveys to continuously improve the experience",
+      ],
+    },
+    {
+      title: "Workforce Analytics & Planning",
+      description:
+        "Make data-driven people decisions with advanced analytics that reveal headcount trends, attrition risk factors, compensation benchmarks, and workforce diversity metrics across your entire organization.",
+      keyPoints: [
+        "Attrition prediction models that flag flight-risk employees early",
+        "Compensation benchmarking against industry and regional data",
+        "Diversity and inclusion dashboards with trend tracking over time",
+        "Succession planning tools that identify leadership pipeline gaps",
+      ],
+    },
+    {
+      title: "Learning & Development Management",
+      description:
+        "Build a culture of continuous learning with a built-in training management system. Assign courses, track certifications, measure skill development, and connect learning outcomes directly to performance reviews and career pathing.",
+      keyPoints: [
+        "Course assignment with automated reminders and deadline enforcement",
+        "Certification tracking with expiry alerts and renewal workflows",
+        "Skill matrix visualization showing team competencies and gaps",
+      ],
+    },
+    {
+      title: "Policy & Compliance Engine",
+      description:
+        "Centralize company policies, automate acknowledgment tracking, and maintain audit-ready records for every compliance requirement. From workplace safety training to data privacy agreements, ensure nothing falls through the cracks.",
+      keyPoints: [
+        "Digital policy distribution with read-receipt tracking",
+        "Automated compliance calendar with jurisdiction-specific reminders",
+        "Incident reporting workflows with investigation tracking",
+        "Audit log exports that satisfy regulatory inspection requirements",
+      ],
+    },
+  ],
+  integrations: [
+    { name: "Google Workspace", category: "Productivity" },
+    { name: "Microsoft 365", category: "Productivity" },
+    { name: "Slack", category: "Communication" },
+    { name: "Zoom", category: "Communication" },
+    { name: "ADP", category: "Payroll" },
+    { name: "Gusto", category: "Payroll" },
+    { name: "LinkedIn Recruiter", category: "Recruitment" },
+    { name: "Indeed", category: "Recruitment" },
+    { name: "Google Calendar", category: "Scheduling" },
+    { name: "Zapier", category: "Automation" },
+    { name: "BambooHR", category: "HR" },
+    { name: "DocuSign", category: "Documents" },
+  ],
+  testimonials: [
+    {
+      quote:
+        "Before CubicleERP HRM, our HR team spent 60% of their week on manual paperwork. Now onboarding is fully automated, leave approvals happen in seconds, and we finally have time for strategic initiatives like employee engagement programs.",
+      author: "Deepak Patel",
+      role: "Head of People Operations",
+      company: "Cloudshift Technologies",
+      metric: "70% reduction in HR admin time",
+    },
+    {
+      quote:
+        "We grew from 50 to 300 employees in eighteen months and CubicleERP scaled with us without adding a single HR headcount. The self-service portal alone cut our inbox volume in half.",
+      author: "Sarah Mitchell",
+      role: "HR Director",
+      company: "Launchpad Ventures",
+      metric: "50% fewer HR support requests",
+    },
+    {
+      quote:
+        "The performance review module transformed our review cycles from a dreaded quarterly exercise into a continuous feedback culture. Managers actually enjoy using it, which is something I never thought I would say about HR software.",
+      author: "Rajesh Gupta",
+      role: "Chief People Officer",
+      company: "Pinnacle Group",
+      metric: "92% manager adoption rate",
+    },
+  ],
+  comparisons: [
+    { feature: "Employee Onboarding", traditional: "Paper forms and emails", cubicleErp: "Automated digital workflows" },
+    { feature: "Leave Management", traditional: "Email requests to manager", cubicleErp: "One-click self-service" },
+    { feature: "Attendance Tracking", traditional: "Manual timesheets", cubicleErp: "Automatic clock-in capture" },
+    { feature: "Performance Reviews", traditional: "Annual Word documents", cubicleErp: "Continuous 360-degree feedback" },
+    { feature: "Compliance Tracking", traditional: "Spreadsheet reminders", cubicleErp: "Automated alerts and audits" },
+    { feature: "People Analytics", traditional: "Quarterly manual reports", cubicleErp: "Real-time live dashboards" },
+  ],
+  subNavItems: [
+    { label: "Overview", sectionId: "hero" },
+    { label: "Features", sectionId: "features" },
+    { label: "Capabilities", sectionId: "capabilities" },
+    { label: "Benefits", sectionId: "benefits" },
+    { label: "Integrations", sectionId: "integrations" },
+    { label: "Use Cases", sectionId: "use-cases" },
+    { label: "FAQs", sectionId: "faqs" },
+    { label: "Payroll", href: "/explore/payroll" },
+    { label: "Time Tracking", href: "/explore/time-tracking" },
+    { label: "Automation", href: "/explore/automation" },
+  ],
 }
 
 export default function HRMPage() {

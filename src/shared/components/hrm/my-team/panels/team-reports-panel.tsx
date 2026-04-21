@@ -4,14 +4,8 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-    BarChart3,
-    PieChart,
-    TrendingUp,
-    ArrowUpRight,
-    ArrowDownRight,
     Download,
     Calendar,
-    Filter,
     Users,
     Clock,
     FileText,
@@ -28,9 +22,8 @@ import {
     SelectTrigger,
     SelectValue
 } from "@/shared/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/shared/components/ui/card";
+import { Card, CardContent, CardTitle, CardDescription } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
-import { Badge } from "@/shared/components/ui/badge";
 import {
     AreaChart,
     Area,
@@ -52,13 +45,7 @@ const performanceDistributionData = [
     { name: "Action Req", value: 2, color: "#ef4444", detail: "Immediate review needed" },
 ];
 
-const reportHistory = [
-    { id: "REP-902", name: "Q1 Performance Audit", date: "Jan 22, 2026", size: "2.4 MB", type: "PDF" },
-    { id: "REP-899", name: "Attendance Variance", date: "Jan 15, 2026", size: "1.1 MB", type: "XLSX" },
-    { id: "REP-854", name: "Leave Forecast Map", date: "Jan 10, 2026", size: "850 KB", type: "PDF" },
-];
-
-const TeamReportsPage = () => {
+const TeamReportsPanel = () => {
     const { toast } = useToast();
     const router = useRouter();
     const [mounted, setMounted] = useState(false);
@@ -105,7 +92,6 @@ const TeamReportsPage = () => {
         setIsLoading(true);
         setTimeRange(range);
 
-        // Simulate real data fetching
         setTimeout(() => {
             const newData = chartData.map(d => ({
                 ...d,
@@ -125,13 +111,12 @@ const TeamReportsPage = () => {
     if (!mounted) return null;
 
     return (
-        <div className="flex-1 space-y-6 p-6 bg-[#f8fafc] min-h-screen text-start" style={{ zoom: "90%" }}>
-
+        <div className="space-y-6 text-start">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                 <div>
-                    <h1 className="text-3xl font-black tracking-tighter text-slate-900 leading-none">Analytics Hub</h1>
+                    <h2 className="text-2xl font-black tracking-tighter text-slate-900 leading-none">Analytics Hub</h2>
                     <p className="text-slate-500 font-bold text-xs mt-2 flex items-center gap-2">
-                        <div className="h-2 w-2 rounded-full bg-emerald-500" />
+                        <span className="h-2 w-2 rounded-full bg-emerald-500" />
                         Live data synchronization active • Secure Team Vault v4.0
                     </p>
                 </div>
@@ -158,7 +143,6 @@ const TeamReportsPage = () => {
                 </div>
             </div>
 
-            {/* Insight Stats Grid */}
             <div className="flex flex-wrap gap-5">
                 {[
                     { label: "Attendance Compliance", val: "94.2%", drift: "+1.2%", status: "up", sub: "vs Last Week", icon: <ActivityIcon className="text-indigo-600" />, color: "bg-indigo-100" },
@@ -186,8 +170,6 @@ const TeamReportsPage = () => {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-
-                {/* Interactive Chart Section */}
                 <Card className="lg:col-span-8 border-none shadow-sm bg-white rounded-[2.5rem] border border-slate-100/50 overflow-hidden">
                     <div className="p-8 pb-0">
                         <div className="flex justify-between items-start mb-8">
@@ -285,7 +267,6 @@ const TeamReportsPage = () => {
                     </div>
                 </Card>
 
-                {/* Rating Distribution Bar Chart */}
                 <Card className="lg:col-span-4 border-none shadow-sm p-8 bg-white rounded-[2.5rem] border border-slate-100/50">
                     <div className="space-y-1 mb-8 text-start">
                         <CardTitle className="text-xl font-black tracking-tight text-slate-900">Performance Mix</CardTitle>
@@ -332,14 +313,13 @@ const TeamReportsPage = () => {
                     </div>
                 </Card>
 
-                {/* Report Download Grid */}
                 <div className="lg:col-span-12 space-y-6">
                     <div className="flex justify-between items-end px-1">
                         <div>
                             <h3 className="text-xl font-black text-slate-800 tracking-tight leading-none">Download Center</h3>
                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">Generate on-demand compliance files</p>
                         </div>
-                        <Button variant="ghost" className="text-[10px] font-black text-indigo-600 uppercase tracking-widest hover:bg-white" onClick={() => router.push("/hrmcubicle/my-team/documents")}>View Vault History</Button>
+                        <Button variant="ghost" className="text-[10px] font-black text-indigo-600 uppercase tracking-widest hover:bg-white" onClick={() => router.push("/hrmcubicle/my-team/members")}>View Document Vault</Button>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -388,10 +368,9 @@ const TeamReportsPage = () => {
                         ))}
                     </div>
                 </div>
-
             </div>
         </div>
     );
 };
 
-export default TeamReportsPage;
+export default TeamReportsPanel;

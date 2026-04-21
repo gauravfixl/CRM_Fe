@@ -14,21 +14,12 @@ import {
     MoreVertical,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/shared/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
     Dialog,
     DialogContent,
     DialogFooter,
 } from "@/shared/components/ui/dialog";
-import { Label } from "@/shared/components/ui/label";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/shared/components/ui/select";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -36,6 +27,7 @@ import {
     DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu";
 import { showSuccess, showWarning, showError } from "@/utils/toast";
+import { UserFormDialog } from "@/shared/components/rbac/UserFormDialog";
 import { getAllOrgInvites, createOrgInvite, declineOrgInvite } from "@/modules/crm/organizations/hooks/orgHooks";
 
 type Invitation = {
@@ -55,8 +47,8 @@ const mapApiInviteToInvitation = (inv: any): Invitation => {
         inv.status === "accepted" || inv.status === "Accepted"
             ? "Accepted"
             : inv.status === "expired" || inv.status === "Expired"
-            ? "Expired"
-            : "Pending";
+                ? "Expired"
+                : "Pending";
     const sentDate = inv.createdAt
         ? new Date(inv.createdAt).toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })
         : inv.sentDate || "N/A";
@@ -89,7 +81,7 @@ export default function InvitationsPage() {
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [deleteTarget, setDeleteTarget] = useState<Invitation | null>(null);
     const [newEmail, setNewEmail] = useState("");
-    const [newRole, setNewRole] = useState("");
+    const [newRole, setNewRole] = useState<string>("Member");
 
     const loadInvitations = async () => {
         try {
@@ -137,13 +129,13 @@ export default function InvitationsPage() {
             const invite: Invitation = newInvite
                 ? mapApiInviteToInvitation(newInvite)
                 : {
-                      id: Date.now().toString(),
-                      email: newEmail,
-                      role: newRole,
-                      status: "Pending",
-                      sentDate: new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }),
-                      expiry: "24h left",
-                  };
+                    id: Date.now().toString(),
+                    email: newEmail,
+                    role: newRole,
+                    status: "Pending",
+                    sentDate: new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }),
+                    expiry: "24h left",
+                };
             setInvitations((prev) => [...prev, invite]);
             setNewEmail("");
             setNewRole("");
@@ -340,50 +332,16 @@ export default function InvitationsPage() {
                 </div>
             </div>
 
-            {/* Create Invite Dialog */}
-            <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-                <DialogContent className="max-w-md rounded-none p-0 overflow-hidden">
-                    <div className="bg-primary px-6 py-4">
-                        <h2 className="text-sm font-semibold text-white">Create invite</h2>
-                        <p className="text-xs text-white/70 mt-0.5">Send an invitation to join your organization</p>
-                    </div>
-                    <div className="px-6 py-4 space-y-4">
-                        <div className="space-y-2">
-                            <Label className="text-xs text-gray-700">Email address</Label>
-                            <Input
-                                type="email"
-                                placeholder="user@example.com"
-                                value={newEmail}
-                                onChange={(e) => setNewEmail(e.target.value)}
-                                className="rounded-none"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label className="text-xs text-gray-700">Role</Label>
-                            <Select value={newRole} onValueChange={setNewRole}>
-                                <SelectTrigger className="rounded-none">
-                                    <SelectValue placeholder="Select a role" />
-                                </SelectTrigger>
-                                <SelectContent className="rounded-none">
-                                    {ROLES.map((role) => (
-                                        <SelectItem key={role} value={role}>
-                                            {role}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </div>
-                    <DialogFooter className="px-6 py-4 border-t border-gray-100">
-                        <Button variant="outline" onClick={() => setCreateOpen(false)} className="rounded-none">
-                            Cancel
-                        </Button>
-                        <Button onClick={handleCreate} className="bg-primary hover:bg-primary/90 text-white rounded-none">
-                            Send invite
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            {/* Create Invitation Dialog */}
+            <UserFormDialog
+                open={createOpen}
+                onOpenChange={setCreateOpen}
+                mode="invite"
+                onSuccess={() => {
+                    // Reload invitations or refresh the list
+                    window.location.reload()
+                }}
+            />
 
             {/* Delete Confirmation Dialog */}
             <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>

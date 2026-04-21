@@ -25,6 +25,7 @@ import { getFirmList } from "@/hooks/firmHooks"
 import { useModule } from "@/app/context/ModuleContext"
 import { useAuthStore } from "@/lib/useAuthStore"
 import { showSuccess, showError } from "@/utils/toast"
+import { refreshPermissions } from "@/shared/utils/refresh-permissions"
 import { jwtDecode } from "jwt-decode"
 import {
   Tooltip,
@@ -170,7 +171,7 @@ export default function ToggleOverlayPanel() {
     }
   }
 
-  const handleSwitchFirm = (firm: any) => {
+  const handleSwitchFirm = async (firm: any) => {
     const firmId = firm._id
     const firmName = firm.FirmName
 
@@ -181,14 +182,22 @@ export default function ToggleOverlayPanel() {
       localStorage.removeItem("firmName")
       showSuccess(`Deselected firm: ${firmName}`)
       setOpen(false)
+      try {
+        await refreshPermissions()
+      } catch { }
       return
     }
 
     setCurrentFirm({ firmId, firmName })
     localStorage.setItem("firmId", firmId)
     localStorage.setItem("firmName", firmName)
-    showSuccess(`Switched to firm: ${firmName}`)
     setOpen(false)
+    try {
+      await refreshPermissions()
+      showSuccess(`Switched to firm: ${firmName}`)
+    } catch {
+      showSuccess(`Switched to firm: ${firmName}`)
+    }
   }
 
   const getInitials = (name?: string) => {

@@ -9,7 +9,10 @@ import { Label } from "@/shared/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/shared/components/ui/dialog";
-import { useToast } from "@/shared/components/ui/use-toast";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/shared/components/ui/dropdown-menu";
+import { useDocumentsStore, type ESignatureRequest } from "@/shared/data/documents-store";
+import { toast } from "sonner";
+import { required, minLength, maxLength, isEmail, isStrictPositiveInt, isFutureDate, firstError } from "@/shared/utils/validators";
 import {
     PenTool,
     Plus,
@@ -25,45 +28,45 @@ import {
     Mail,
     Download,
     ArrowRight,
-    Users
+    Users,
+    Trash2,
+    MoreHorizontal,
+    Pencil,
+    RefreshCw,
 } from "lucide-react";
 
-type SignatureDoc = {
-    id: string;
-    name: string;
-    type: "Offer Letter" | "Contract" | "Policy" | "NDA" | "Amendment";
-    sentTo: string;
-    sentToEmail: string;
-    sentDate: string;
-    status: "Pending" | "Viewed" | "Signed" | "Expired" | "Declined";
-    signedDate?: string;
-    viewedDate?: string;
-    expiryDate: string;
-};
-
-const mockDocuments: SignatureDoc[] = [
-    { id: "SIG-001", name: "Offer Letter - Senior Developer", type: "Offer Letter", sentTo: "Amit Joshi", sentToEmail: "amit@email.com", sentDate: "2026-03-28", status: "Signed", signedDate: "2026-03-29", viewedDate: "2026-03-28", expiryDate: "2026-04-15" },
-    { id: "SIG-002", name: "NDA - Project Phoenix", type: "NDA", sentTo: "Priya Sharma", sentToEmail: "priya@email.com", sentDate: "2026-03-30", status: "Viewed", viewedDate: "2026-03-31", expiryDate: "2026-04-10" },
-    { id: "SIG-003", name: "Employment Contract - Full Time", type: "Contract", sentTo: "Rahul Verma", sentToEmail: "rahul@email.com", sentDate: "2026-03-25", status: "Pending", expiryDate: "2026-04-08" },
-    { id: "SIG-004", name: "Remote Work Policy Acknowledgement", type: "Policy", sentTo: "Sneha Rao", sentToEmail: "sneha@email.com", sentDate: "2026-03-20", status: "Signed", signedDate: "2026-03-21", viewedDate: "2026-03-20", expiryDate: "2026-04-05" },
-    { id: "SIG-005", name: "Salary Revision Amendment", type: "Amendment", sentTo: "Vikram Singh", sentToEmail: "vikram@email.com", sentDate: "2026-03-15", status: "Expired", expiryDate: "2026-03-30" },
-    { id: "SIG-006", name: "NDA - Client Alpha", type: "NDA", sentTo: "Kavita Patel", sentToEmail: "kavita@email.com", sentDate: "2026-03-29", status: "Declined", expiryDate: "2026-04-12" },
-    { id: "SIG-007", name: "Offer Letter - Product Manager", type: "Offer Letter", sentTo: "Deepak Nair", sentToEmail: "deepak@email.com", sentDate: "2026-04-01", status: "Pending", expiryDate: "2026-04-15" },
-    { id: "SIG-008", name: "IP Assignment Agreement", type: "Contract", sentTo: "Arjun Reddy", sentToEmail: "arjun@email.com", sentDate: "2026-04-01", status: "Viewed", viewedDate: "2026-04-02", expiryDate: "2026-04-20" },
-];
+type SignatureType = ESignatureRequest['type'];
+type SignatureStatus = ESignatureRequest['status'];
 
 const ESignaturesPage = () => {
-    const { toast } = useToast();
-    const [documents, setDocuments] = useState(mockDocuments);
+    const { eSignatures, sendESignature, updateESignature, setESignatureStatus, deleteESignature, bulkDeleteESignatures } = useDocumentsStore();
+
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState("all");
     const [typeFilter, setTypeFilter] = useState("all");
+    const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
     const [isSendOpen, setIsSendOpen] = useState(false);
-    const [isTrackerOpen, setIsTrackerOpen] = useState<SignatureDoc | null>(null);
-    const [isAuditOpen, setIsAuditOpen] = useState<SignatureDoc | null>(null);
+    const [isBulkSendOpen, setIsBulkSendOpen] = useState(false);
+    const [trackerDoc, setTrackerDoc] = useState<ESignatureRequest | null>(null);
+    const [auditDoc, setAuditDoc] = useState<ESignatureRequest | null>(null);
+    const [editingDoc, setEditingDoc] = useState<ESignatureRequest | null>(null);
+    const [reminderDoc, setReminderDoc] = useState<ESignatureRequest | null>(null);
+    const [downloadDoc, setDownloadDoc] = useState<ESignatureRequest | null>(null);
+    const [statusChangeDoc, setStatusChangeDoc] = useState<ESignatureRequest | null>(null);
+    const [pendingStatus, setPendingStatus] = useState<SignatureStatus>("Pending");
+    const [deleteId, setDeleteId] = useState<string | null>(null);
+    const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+    const [bulkRows, setBulkRows] = useState<{ name: string; email: string }[]>([
+        { name: "", email: "" },
+        { name: "", email: "" },
+    ]);
+    const [bulkDocument, setBulkDocument] = useState<SignatureType>("Contract");
+    const [bulkExpiry, setBulkExpiry] = useState("");
 
     const [form, setForm] = useState({
         document: "",
+        type: "Contract" as SignatureType,
         signerName: "",
         signerEmail: "",
         signingOrder: "1",
@@ -71,11 +74,24 @@ const ESignaturesPage = () => {
         message: "",
     });
 
-    const pendingCount = documents.filter(d => d.status === "Pending" || d.status === "Viewed").length;
-    const signedThisMonth = documents.filter(d => d.status === "Signed" && d.signedDate?.startsWith("2026-04")).length + documents.filter(d => d.status === "Signed" && d.signedDate?.startsWith("2026-03")).length;
-    const avgSigningTime = "1.2 days";
+    const pendingCount = eSignatures.filter(d => d.status === "Pending" || d.status === "Viewed").length;
+    const signedThisMonth = eSignatures.filter(d => {
+        if (d.status !== "Signed" || !d.signedDate) return false;
+        const now = new Date();
+        const cutoff = new Date(now.getFullYear(), now.getMonth(), 1);
+        return new Date(d.signedDate) >= cutoff;
+    }).length;
+    const signedAll = eSignatures.filter(d => d.status === "Signed");
+    const avgSigningTime = signedAll.length > 0 ? (() => {
+        const totalDays = signedAll.reduce((sum, d) => {
+            if (!d.signedDate) return sum;
+            const diff = (new Date(d.signedDate).getTime() - new Date(d.sentDate).getTime()) / (1000 * 60 * 60 * 24);
+            return sum + Math.max(0, diff);
+        }, 0);
+        return `${(totalDays / signedAll.length).toFixed(1)} days`;
+    })() : "—";
 
-    const filtered = documents.filter(d => {
+    const filtered = eSignatures.filter(d => {
         const matchSearch = d.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             d.sentTo.toLowerCase().includes(searchTerm.toLowerCase()) ||
             d.id.toLowerCase().includes(searchTerm.toLowerCase());
@@ -84,32 +100,190 @@ const ESignaturesPage = () => {
         return matchSearch && matchStatus && matchType;
     });
 
+    const allFilteredSelected = filtered.length > 0 && filtered.every(d => selectedIds.includes(d.id));
+
+    const toggleSelect = (id: string) => {
+        setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+    };
+
+    const toggleSelectAll = () => {
+        if (allFilteredSelected) {
+            setSelectedIds(prev => prev.filter(id => !filtered.some(d => d.id === id)));
+        } else {
+            const ids = filtered.map(d => d.id);
+            setSelectedIds(prev => Array.from(new Set([...prev, ...ids])));
+        }
+    };
+
+    const resetForm = () => setForm({ document: "", type: "Contract", signerName: "", signerEmail: "", signingOrder: "1", expiryDate: "", message: "" });
+
     const handleSend = () => {
-        if (!form.document || !form.signerName || !form.signerEmail) {
-            toast({ title: "Missing Fields", description: "Please fill all required fields.", variant: "destructive" });
+        const trimmedEmail = form.signerEmail.trim();
+        const err = firstError(
+            required(form.document, "Document name"),
+            minLength(form.document, 3, "Document name"),
+            maxLength(form.document, 120, "Document name"),
+            required(form.type, "Document type"),
+            required(form.signerName, "Signer name"),
+            minLength(form.signerName, 2, "Signer name"),
+            maxLength(form.signerName, 80, "Signer name"),
+            required(trimmedEmail, "Signer email"),
+            isEmail(trimmedEmail, "Signer email"),
+            maxLength(trimmedEmail, 254, "Signer email"),
+            isStrictPositiveInt(form.signingOrder, "Signing order"),
+            form.expiryDate ? isFutureDate(form.expiryDate, "Expiry date") : null,
+            form.message ? maxLength(form.message, 500, "Message") : null,
+        );
+        if (err) { toast.error(err); return; }
+        sendESignature({
+            name: form.document.trim(),
+            type: form.type,
+            sentTo: form.signerName.trim(),
+            sentToEmail: trimmedEmail,
+            expiryDate: form.expiryDate || new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+            signingOrder: parseInt(form.signingOrder, 10),
+            message: form.message?.trim() || undefined,
+        });
+        setIsSendOpen(false);
+        resetForm();
+        toast.success(`Document sent to ${form.signerName.trim()} for signature`);
+    };
+
+    const handleSaveEdit = () => {
+        if (!editingDoc) return;
+        const trimmedEmail = editingDoc.sentToEmail.trim();
+        const err = firstError(
+            required(editingDoc.name, "Document name"),
+            minLength(editingDoc.name, 3, "Document name"),
+            maxLength(editingDoc.name, 120, "Document name"),
+            required(editingDoc.type, "Document type"),
+            required(editingDoc.sentTo, "Signer name"),
+            minLength(editingDoc.sentTo, 2, "Signer name"),
+            maxLength(editingDoc.sentTo, 80, "Signer name"),
+            required(trimmedEmail, "Signer email"),
+            isEmail(trimmedEmail, "Signer email"),
+            maxLength(trimmedEmail, 254, "Signer email"),
+            required(editingDoc.expiryDate, "Expiry date"),
+        );
+        if (err) { toast.error(err); return; }
+        updateESignature(editingDoc.id, {
+            ...editingDoc,
+            name: editingDoc.name.trim(),
+            sentTo: editingDoc.sentTo.trim(),
+            sentToEmail: trimmedEmail,
+        });
+        toast.success("Signature request updated");
+        setEditingDoc(null);
+    };
+
+    const handleStatusChange = () => {
+        if (!statusChangeDoc) return;
+        setESignatureStatus(statusChangeDoc.id, pendingStatus);
+        toast.success(`Status updated to ${pendingStatus}`);
+        setStatusChangeDoc(null);
+    };
+
+    const handleSendReminder = () => {
+        if (!reminderDoc) return;
+        toast.success(`Reminder sent to ${reminderDoc.sentTo}`);
+        setReminderDoc(null);
+    };
+
+    const handleDownload = () => {
+        if (!downloadDoc) return;
+        const content = `${downloadDoc.name}\n\nSigned by: ${downloadDoc.sentTo} (${downloadDoc.sentToEmail})\nSigned on: ${downloadDoc.signedDate || "—"}\nDocument ID: ${downloadDoc.id}\nType: ${downloadDoc.type}\n\n— Signature Verified —`;
+        const blob = new Blob([content], { type: "text/plain;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${downloadDoc.id}_signed.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        toast.success(`Downloaded "${downloadDoc.name}"`);
+        setDownloadDoc(null);
+    };
+
+    const confirmDelete = () => {
+        if (!deleteId) return;
+        deleteESignature(deleteId);
+        setSelectedIds(prev => prev.filter(id => id !== deleteId));
+        toast.success("Signature request deleted");
+        setDeleteId(null);
+    };
+
+    const confirmBulkDelete = () => {
+        const count = selectedIds.length;
+        bulkDeleteESignatures(selectedIds);
+        setSelectedIds([]);
+        setBulkDeleteOpen(false);
+        toast.success(`${count} signature requests deleted`);
+    };
+
+    const handleBulkSend = () => {
+        if (bulkExpiry) {
+            const dateErr = isFutureDate(bulkExpiry, "Expiry date");
+            if (dateErr) { toast.error(dateErr); return; }
+        }
+        const filledRows = bulkRows.filter(r => r.name.trim() || r.email.trim());
+        if (filledRows.length === 0) {
+            toast.error("Add at least one signer");
             return;
         }
-        const newDoc: SignatureDoc = {
-            id: `SIG-${String(documents.length + 1).padStart(3, "0")}`,
-            name: form.document,
-            type: "Contract",
-            sentTo: form.signerName,
-            sentToEmail: form.signerEmail,
-            sentDate: new Date().toISOString().split("T")[0],
-            status: "Pending",
-            expiryDate: form.expiryDate || "2026-04-30",
-        };
-        setDocuments([newDoc, ...documents]);
-        setIsSendOpen(false);
-        setForm({ document: "", signerName: "", signerEmail: "", signingOrder: "1", expiryDate: "", message: "" });
-        toast({ title: "Document Sent", description: `Sent to ${form.signerName} for signature.` });
+        if (filledRows.length > 50) {
+            toast.error("Maximum 50 signers per bulk request");
+            return;
+        }
+        const invalid: { idx: number; reason: string }[] = [];
+        const valid: { name: string; email: string }[] = [];
+        const seenEmails = new Set<string>();
+        filledRows.forEach((r, idx) => {
+            const name = r.name.trim();
+            const email = r.email.trim().toLowerCase();
+            const rowErr = firstError(
+                required(name, "Name"),
+                minLength(name, 2, "Name"),
+                maxLength(name, 80, "Name"),
+                required(email, "Email"),
+                isEmail(email, "Email"),
+                maxLength(email, 254, "Email"),
+            );
+            if (rowErr) {
+                invalid.push({ idx: idx + 1, reason: rowErr });
+                return;
+            }
+            if (seenEmails.has(email)) {
+                invalid.push({ idx: idx + 1, reason: "Duplicate email in this batch" });
+                return;
+            }
+            seenEmails.add(email);
+            valid.push({ name, email: r.email.trim() });
+        });
+        if (valid.length === 0) {
+            toast.error(`No valid signers. Row 1: ${invalid[0]?.reason || "invalid"}`);
+            return;
+        }
+        valid.forEach(row => {
+            sendESignature({
+                name: bulkDocument,
+                type: bulkDocument,
+                sentTo: row.name,
+                sentToEmail: row.email,
+                expiryDate: bulkExpiry || new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+            });
+        });
+        if (invalid.length) {
+            toast.warning(`${valid.length} sent · ${invalid.length} skipped (row ${invalid[0].idx}: ${invalid[0].reason})`);
+        } else {
+            toast.success(`${valid.length} signature requests sent`);
+        }
+        setIsBulkSendOpen(false);
+        setBulkRows([{ name: "", email: "" }, { name: "", email: "" }]);
+        setBulkExpiry("");
     };
 
-    const handleReminder = (doc: SignatureDoc) => {
-        toast({ title: "Reminder Sent", description: `Reminder sent to ${doc.sentTo} for "${doc.name}".` });
-    };
-
-    const statusBadge = (status: SignatureDoc["status"]) => {
+    const statusBadge = (status: SignatureStatus) => {
         const styles: Record<string, string> = {
             Pending: "bg-amber-50 text-amber-600 border-amber-200",
             Viewed: "bg-blue-50 text-blue-600 border-blue-200",
@@ -134,7 +308,12 @@ const ESignaturesPage = () => {
                     </div>
                 </div>
                 <div className="flex gap-3">
-                    <Button variant="outline" className="font-bold border-slate-200" onClick={() => toast({ title: "Bulk Send", description: "Bulk signature request would be initiated for selected documents." })}>
+                    {selectedIds.length > 0 && (
+                        <Button variant="outline" className="font-bold border-rose-100 bg-rose-50/40 text-rose-600" onClick={() => setBulkDeleteOpen(true)}>
+                            <Trash2 size={16} className="mr-2" /> Delete ({selectedIds.length})
+                        </Button>
+                    )}
+                    <Button variant="outline" className="font-bold border-slate-200" onClick={() => setIsBulkSendOpen(true)}>
                         <Users size={16} className="mr-2 text-slate-400" /> Bulk Send
                     </Button>
                     <Button className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white font-bold" onClick={() => setIsSendOpen(true)}>
@@ -193,6 +372,11 @@ const ESignaturesPage = () => {
                         <SelectItem value="Amendment">Amendment</SelectItem>
                     </SelectContent>
                 </Select>
+                {(searchTerm || statusFilter !== "all" || typeFilter !== "all") && (
+                    <Button variant="ghost" size="sm" className="text-xs font-bold text-slate-500" onClick={() => { setSearchTerm(""); setStatusFilter("all"); setTypeFilter("all"); }}>
+                        <RefreshCw size={14} className="mr-1.5" /> Reset
+                    </Button>
+                )}
             </div>
 
             {/* Table */}
@@ -201,6 +385,14 @@ const ESignaturesPage = () => {
                     <Table>
                         <TableHeader className="bg-slate-50">
                             <TableRow>
+                                <TableHead className="w-10">
+                                    <input
+                                        type="checkbox"
+                                        className="rounded"
+                                        checked={allFilteredSelected}
+                                        onChange={toggleSelectAll}
+                                    />
+                                </TableHead>
                                 <TableHead className="font-bold text-slate-500 uppercase text-xs">Document</TableHead>
                                 <TableHead className="font-bold text-slate-500 uppercase text-xs">Type</TableHead>
                                 <TableHead className="font-bold text-slate-500 uppercase text-xs">Sent To</TableHead>
@@ -212,7 +404,15 @@ const ESignaturesPage = () => {
                         </TableHeader>
                         <TableBody>
                             {filtered.map(doc => (
-                                <TableRow key={doc.id} className="hover:bg-slate-50/50">
+                                <TableRow key={doc.id} className={`hover:bg-slate-50/50 ${selectedIds.includes(doc.id) ? 'bg-purple-50/30' : ''}`}>
+                                    <TableCell>
+                                        <input
+                                            type="checkbox"
+                                            className="rounded"
+                                            checked={selectedIds.includes(doc.id)}
+                                            onChange={() => toggleSelect(doc.id)}
+                                        />
+                                    </TableCell>
                                     <TableCell>
                                         <div className="flex items-center gap-2">
                                             <FileText size={16} className="text-slate-400" />
@@ -228,20 +428,38 @@ const ESignaturesPage = () => {
                                     <TableCell className="text-sm text-slate-600">{doc.signedDate || "-"}</TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex justify-end gap-1">
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400" onClick={() => setIsTrackerOpen(doc)} title="Track"><Eye size={14} /></Button>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400" onClick={() => setTrackerDoc(doc)} title="Track"><Eye size={14} /></Button>
                                             {(doc.status === "Pending" || doc.status === "Viewed") && (
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-amber-500" onClick={() => handleReminder(doc)} title="Remind"><Bell size={14} /></Button>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-amber-500" onClick={() => setReminderDoc(doc)} title="Remind"><Bell size={14} /></Button>
                                             )}
                                             {doc.status === "Signed" && (
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400" title="Download" onClick={() => toast({ title: "Downloading", description: `Signed document "${doc.title}" is being downloaded.` })}><Download size={14} /></Button>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400" title="Download" onClick={() => setDownloadDoc(doc)}><Download size={14} /></Button>
                                             )}
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400" onClick={() => setIsAuditOpen(doc)} title="Audit"><FileCheck size={14} /></Button>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400" onClick={() => setAuditDoc(doc)} title="Audit"><FileCheck size={14} /></Button>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400" title="More"><MoreHorizontal size={14} /></Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end" className="w-52">
+                                                    <DropdownMenuLabel className="text-[10px] font-bold text-slate-400 uppercase">Manage</DropdownMenuLabel>
+                                                    <DropdownMenuItem className="gap-2 cursor-pointer" onClick={() => setEditingDoc({ ...doc })}>
+                                                        <Pencil size={14} className="text-indigo-500" /> Edit Details
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem className="gap-2 cursor-pointer" onClick={() => { setStatusChangeDoc(doc); setPendingStatus(doc.status); }}>
+                                                        <RefreshCw size={14} className="text-indigo-500" /> Update Status
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuSeparator />
+                                                    <DropdownMenuItem className="gap-2 cursor-pointer text-rose-600" onClick={() => setDeleteId(doc.id)}>
+                                                        <Trash2 size={14} /> Delete
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
                                         </div>
                                     </TableCell>
                                 </TableRow>
                             ))}
                             {filtered.length === 0 && (
-                                <TableRow><TableCell colSpan={7} className="h-24 text-center text-slate-400">No documents found.</TableCell></TableRow>
+                                <TableRow><TableCell colSpan={8} className="h-24 text-center text-slate-400">No documents found.</TableCell></TableRow>
                             )}
                         </TableBody>
                     </Table>
@@ -257,15 +475,19 @@ const ESignaturesPage = () => {
                     </DialogHeader>
                     <div className="space-y-4 py-4">
                         <div className="space-y-2">
-                            <Label className="text-xs font-bold text-slate-500">Document / Template</Label>
-                            <Select value={form.document} onValueChange={v => setForm({ ...form, document: v })}>
-                                <SelectTrigger><SelectValue placeholder="Select document..." /></SelectTrigger>
+                            <Label className="text-xs font-bold text-slate-500">Document Name</Label>
+                            <Input placeholder="e.g. Offer Letter — Senior Designer" value={form.document} onChange={e => setForm({ ...form, document: e.target.value })} />
+                        </div>
+                        <div className="space-y-2">
+                            <Label className="text-xs font-bold text-slate-500">Document Type</Label>
+                            <Select value={form.type} onValueChange={(val: SignatureType) => setForm({ ...form, type: val })}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="Offer Letter Template">Offer Letter Template</SelectItem>
-                                    <SelectItem value="Employment Contract">Employment Contract</SelectItem>
-                                    <SelectItem value="NDA Template">NDA Template</SelectItem>
-                                    <SelectItem value="Policy Acknowledgement">Policy Acknowledgement</SelectItem>
-                                    <SelectItem value="Amendment Template">Amendment Template</SelectItem>
+                                    <SelectItem value="Offer Letter">Offer Letter</SelectItem>
+                                    <SelectItem value="Contract">Contract</SelectItem>
+                                    <SelectItem value="NDA">NDA</SelectItem>
+                                    <SelectItem value="Policy">Policy</SelectItem>
+                                    <SelectItem value="Amendment">Amendment</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -295,26 +517,212 @@ const ESignaturesPage = () => {
                         </div>
                     </div>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsSendOpen(false)}>Cancel</Button>
+                        <Button variant="outline" onClick={() => { setIsSendOpen(false); resetForm(); }}>Cancel</Button>
                         <Button className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white font-bold" onClick={handleSend}>Send Document</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
 
+            {/* Bulk Send Dialog */}
+            <Dialog open={isBulkSendOpen} onOpenChange={setIsBulkSendOpen}>
+                <DialogContent className="max-w-2xl border-2 border-slate-200">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2"><Users size={20} className="text-[#8B5CF6]" /> Bulk Signature Request</DialogTitle>
+                        <DialogDescription>Send the same document to multiple signers at once.</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label className="text-xs font-bold text-slate-500">Document Type</Label>
+                                <Select value={bulkDocument} onValueChange={(v: SignatureType) => setBulkDocument(v)}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="Offer Letter">Offer Letter</SelectItem>
+                                        <SelectItem value="Contract">Contract</SelectItem>
+                                        <SelectItem value="NDA">NDA</SelectItem>
+                                        <SelectItem value="Policy">Policy</SelectItem>
+                                        <SelectItem value="Amendment">Amendment</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label className="text-xs font-bold text-slate-500">Common Expiry Date</Label>
+                                <Input type="date" value={bulkExpiry} onChange={e => setBulkExpiry(e.target.value)} />
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <Label className="text-xs font-bold text-slate-500">Signers</Label>
+                            <div className="space-y-2 max-h-[260px] overflow-auto pr-1">
+                                {bulkRows.map((row, idx) => (
+                                    <div key={idx} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center">
+                                        <Input placeholder="Signer name" value={row.name} onChange={e => setBulkRows(r => r.map((x, i) => i === idx ? { ...x, name: e.target.value } : x))} />
+                                        <Input type="email" placeholder="signer@email.com" value={row.email} onChange={e => setBulkRows(r => r.map((x, i) => i === idx ? { ...x, email: e.target.value } : x))} />
+                                        <Button variant="ghost" size="icon" className="h-9 w-9 text-rose-500" onClick={() => setBulkRows(r => r.length > 1 ? r.filter((_, i) => i !== idx) : r)} disabled={bulkRows.length <= 1}>
+                                            <Trash2 size={14} />
+                                        </Button>
+                                    </div>
+                                ))}
+                            </div>
+                            <Button variant="outline" size="sm" className="font-bold text-xs mt-2" onClick={() => setBulkRows(r => [...r, { name: "", email: "" }])}>
+                                <Plus size={14} className="mr-1" /> Add Signer
+                            </Button>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsBulkSendOpen(false)}>Cancel</Button>
+                        <Button className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white font-bold" onClick={handleBulkSend}>Send to All</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Edit Dialog */}
+            <Dialog open={!!editingDoc} onOpenChange={(open) => !open && setEditingDoc(null)}>
+                <DialogContent className="max-w-lg border-2 border-slate-200">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2"><Pencil size={20} className="text-[#8B5CF6]" /> Edit Signature Request</DialogTitle>
+                        <DialogDescription>Update document and signer details.</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                            <Label className="text-xs font-bold text-slate-500">Document Name</Label>
+                            <Input value={editingDoc?.name || ""} onChange={e => setEditingDoc(prev => prev ? { ...prev, name: e.target.value } : null)} />
+                        </div>
+                        <div className="space-y-2">
+                            <Label className="text-xs font-bold text-slate-500">Type</Label>
+                            <Select value={editingDoc?.type} onValueChange={(val: SignatureType) => setEditingDoc(prev => prev ? { ...prev, type: val } : null)}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Offer Letter">Offer Letter</SelectItem>
+                                    <SelectItem value="Contract">Contract</SelectItem>
+                                    <SelectItem value="NDA">NDA</SelectItem>
+                                    <SelectItem value="Policy">Policy</SelectItem>
+                                    <SelectItem value="Amendment">Amendment</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label className="text-xs font-bold text-slate-500">Signer Name</Label>
+                                <Input value={editingDoc?.sentTo || ""} onChange={e => setEditingDoc(prev => prev ? { ...prev, sentTo: e.target.value } : null)} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label className="text-xs font-bold text-slate-500">Signer Email</Label>
+                                <Input type="email" value={editingDoc?.sentToEmail || ""} onChange={e => setEditingDoc(prev => prev ? { ...prev, sentToEmail: e.target.value } : null)} />
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <Label className="text-xs font-bold text-slate-500">Expiry Date</Label>
+                            <Input type="date" value={editingDoc?.expiryDate || ""} onChange={e => setEditingDoc(prev => prev ? { ...prev, expiryDate: e.target.value } : null)} />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setEditingDoc(null)}>Cancel</Button>
+                        <Button className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white font-bold" onClick={handleSaveEdit}>Save Changes</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Update Status Dialog */}
+            <Dialog open={!!statusChangeDoc} onOpenChange={(open) => !open && setStatusChangeDoc(null)}>
+                <DialogContent className="max-w-md border-2 border-slate-200">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2"><RefreshCw size={20} className="text-[#8B5CF6]" /> Update Signature Status</DialogTitle>
+                        <DialogDescription>{statusChangeDoc?.name}</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-3 py-4">
+                        <Label className="text-xs font-bold text-slate-500">New Status</Label>
+                        <Select value={pendingStatus} onValueChange={(v: SignatureStatus) => setPendingStatus(v)}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Pending">Pending</SelectItem>
+                                <SelectItem value="Viewed">Viewed</SelectItem>
+                                <SelectItem value="Signed">Signed</SelectItem>
+                                <SelectItem value="Expired">Expired</SelectItem>
+                                <SelectItem value="Declined">Declined</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setStatusChangeDoc(null)}>Cancel</Button>
+                        <Button className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white font-bold" onClick={handleStatusChange}>Update</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Reminder Dialog */}
+            <Dialog open={!!reminderDoc} onOpenChange={(open) => !open && setReminderDoc(null)}>
+                <DialogContent className="max-w-md border-2 border-slate-200">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2"><Bell size={20} className="text-amber-500" /> Send Reminder?</DialogTitle>
+                        <DialogDescription>
+                            A reminder email will be sent to {reminderDoc?.sentTo} ({reminderDoc?.sentToEmail}) for "{reminderDoc?.name}".
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setReminderDoc(null)}>Cancel</Button>
+                        <Button className="bg-amber-500 hover:bg-amber-600 text-white font-bold" onClick={handleSendReminder}>Send Reminder</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Download Confirm */}
+            <Dialog open={!!downloadDoc} onOpenChange={(open) => !open && setDownloadDoc(null)}>
+                <DialogContent className="max-w-md border-2 border-slate-200">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2"><Download size={20} className="text-emerald-500" /> Download Signed Copy?</DialogTitle>
+                        <DialogDescription>
+                            A signed copy of "{downloadDoc?.name}" will be downloaded.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setDownloadDoc(null)}>Cancel</Button>
+                        <Button className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold" onClick={handleDownload}>Download</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Delete Confirm */}
+            <Dialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
+                <DialogContent className="max-w-md border-2 border-slate-200">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2"><Trash2 size={20} className="text-rose-500" /> Delete Signature Request?</DialogTitle>
+                        <DialogDescription>This action permanently removes the request and its audit trail.</DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setDeleteId(null)}>Cancel</Button>
+                        <Button className="bg-rose-500 hover:bg-rose-600 text-white font-bold" onClick={confirmDelete}>Delete</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Bulk Delete Confirm */}
+            <Dialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
+                <DialogContent className="max-w-md border-2 border-slate-200">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2"><Trash2 size={20} className="text-rose-500" /> Delete {selectedIds.length} Requests?</DialogTitle>
+                        <DialogDescription>All selected signature requests and their audit trails will be permanently removed.</DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setBulkDeleteOpen(false)}>Cancel</Button>
+                        <Button className="bg-rose-500 hover:bg-rose-600 text-white font-bold" onClick={confirmBulkDelete}>Delete All</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
             {/* Signature Status Tracker */}
-            <Dialog open={!!isTrackerOpen} onOpenChange={() => setIsTrackerOpen(null)}>
+            <Dialog open={!!trackerDoc} onOpenChange={() => setTrackerDoc(null)}>
                 <DialogContent className="max-w-md border-2 border-slate-200">
                     <DialogHeader>
                         <DialogTitle>Signature Status</DialogTitle>
-                        <DialogDescription>{isTrackerOpen?.name}</DialogDescription>
+                        <DialogDescription>{trackerDoc?.name}</DialogDescription>
                     </DialogHeader>
-                    {isTrackerOpen && (
+                    {trackerDoc && (
                         <div className="py-4">
                             <div className="flex items-center justify-between">
                                 {[
-                                    { label: "Sent", date: isTrackerOpen.sentDate, done: true },
-                                    { label: "Viewed", date: isTrackerOpen.viewedDate, done: !!isTrackerOpen.viewedDate },
-                                    { label: "Signed", date: isTrackerOpen.signedDate, done: isTrackerOpen.status === "Signed" },
+                                    { label: "Sent", date: trackerDoc.sentDate, done: true },
+                                    { label: "Viewed", date: trackerDoc.viewedDate, done: !!trackerDoc.viewedDate },
+                                    { label: "Signed", date: trackerDoc.signedDate, done: trackerDoc.status === "Signed" },
                                 ].map((step, i, arr) => (
                                     <React.Fragment key={step.label}>
                                         <div className="flex flex-col items-center gap-1">
@@ -328,14 +736,14 @@ const ESignaturesPage = () => {
                                     </React.Fragment>
                                 ))}
                             </div>
-                            {isTrackerOpen.status === "Declined" && (
+                            {trackerDoc.status === "Declined" && (
                                 <div className="mt-4 p-3 bg-rose-50 border border-rose-200 rounded-xl text-sm text-rose-600 font-medium flex items-center gap-2">
                                     <XCircle size={16} /> Document was declined by the signer.
                                 </div>
                             )}
-                            {isTrackerOpen.status === "Expired" && (
+                            {trackerDoc.status === "Expired" && (
                                 <div className="mt-4 p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-500 font-medium flex items-center gap-2">
-                                    <Clock size={16} /> Document expired on {isTrackerOpen.expiryDate}.
+                                    <Clock size={16} /> Document expired on {trackerDoc.expiryDate}.
                                 </div>
                             )}
                         </div>
@@ -344,34 +752,34 @@ const ESignaturesPage = () => {
             </Dialog>
 
             {/* Audit Trail Dialog */}
-            <Dialog open={!!isAuditOpen} onOpenChange={() => setIsAuditOpen(null)}>
+            <Dialog open={!!auditDoc} onOpenChange={() => setAuditDoc(null)}>
                 <DialogContent className="max-w-md border-2 border-slate-200">
                     <DialogHeader>
                         <DialogTitle>Signature Audit Trail</DialogTitle>
-                        <DialogDescription>{isAuditOpen?.name}</DialogDescription>
+                        <DialogDescription>{auditDoc?.name}</DialogDescription>
                     </DialogHeader>
-                    {isAuditOpen && (
+                    {auditDoc && (
                         <div className="space-y-3 py-4">
                             <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
                                 <Mail size={14} className="text-blue-500" />
-                                <div><p className="text-sm font-medium text-slate-700">Document sent to {isAuditOpen.sentTo}</p><p className="text-xs text-slate-400">{isAuditOpen.sentDate}</p></div>
+                                <div><p className="text-sm font-medium text-slate-700">Document sent to {auditDoc.sentTo}</p><p className="text-xs text-slate-400">{auditDoc.sentDate}</p></div>
                             </div>
-                            {isAuditOpen.viewedDate && (
+                            {auditDoc.viewedDate && (
                                 <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
                                     <Eye size={14} className="text-amber-500" />
-                                    <div><p className="text-sm font-medium text-slate-700">Document viewed by {isAuditOpen.sentTo}</p><p className="text-xs text-slate-400">{isAuditOpen.viewedDate}</p></div>
+                                    <div><p className="text-sm font-medium text-slate-700">Document viewed by {auditDoc.sentTo}</p><p className="text-xs text-slate-400">{auditDoc.viewedDate}</p></div>
                                 </div>
                             )}
-                            {isAuditOpen.signedDate && (
+                            {auditDoc.signedDate && (
                                 <div className="flex items-center gap-3 p-3 bg-emerald-50 rounded-lg">
                                     <CheckCircle2 size={14} className="text-emerald-500" />
-                                    <div><p className="text-sm font-medium text-slate-700">Document signed by {isAuditOpen.sentTo}</p><p className="text-xs text-slate-400">{isAuditOpen.signedDate}</p></div>
+                                    <div><p className="text-sm font-medium text-slate-700">Document signed by {auditDoc.sentTo}</p><p className="text-xs text-slate-400">{auditDoc.signedDate}</p></div>
                                 </div>
                             )}
-                            {isAuditOpen.status === "Declined" && (
+                            {auditDoc.status === "Declined" && (
                                 <div className="flex items-center gap-3 p-3 bg-rose-50 rounded-lg">
                                     <XCircle size={14} className="text-rose-500" />
-                                    <div><p className="text-sm font-medium text-slate-700">Document declined by {isAuditOpen.sentTo}</p></div>
+                                    <div><p className="text-sm font-medium text-slate-700">Document declined by {auditDoc.sentTo}</p></div>
                                 </div>
                             )}
                         </div>

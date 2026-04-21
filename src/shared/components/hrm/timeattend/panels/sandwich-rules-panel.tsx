@@ -1,19 +1,14 @@
 "use client"
 
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
 import {
-  Layers,
   Plus,
-  Settings,
   AlertTriangle,
-  CheckCircle2,
-  Calendar,
   Calculator,
   ToggleLeft,
   ToggleRight,
   Shield,
-  FileText,
   Search,
   Info,
 } from "lucide-react";
@@ -32,13 +27,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/shared/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/shared/components/ui/select";
 import { cn } from "@/lib/utils";
 
 interface SandwichRule {
@@ -87,7 +75,7 @@ const mockApplications: SandwichApplication[] = [
   { id: "SA005", employeeName: "Vikram Singh", employeeId: "E005", leaveType: "Casual Leave", leaveDates: "Fri 20 Mar - Mon 23 Mar", sandwichDays: 2, totalCounted: 4, appliedOn: "2026-03-17", isException: false },
 ];
 
-const SandwichRulesPage = () => {
+const SandwichRulesPanel = () => {
   const { toast } = useToast();
   const [rules, setRules] = useState<SandwichRule[]>(mockRules);
   const [applications, setApplications] = useState<SandwichApplication[]>(mockApplications);
@@ -97,7 +85,6 @@ const SandwichRulesPage = () => {
 
   const [newRule, setNewRule] = useState({ name: "", condition: "", action: "", leaveTypes: [] as string[] });
 
-  // Simulation state
   const [simStartDate, setSimStartDate] = useState("");
   const [simEndDate, setSimEndDate] = useState("");
   const [simResult, setSimResult] = useState<SimulationResult | null>(null);
@@ -135,7 +122,7 @@ const SandwichRulesPage = () => {
     const diffDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
 
     let weekends = 0;
-    let current = new Date(start);
+    const current = new Date(start);
     while (current <= end) {
       if (current.getDay() === 0 || current.getDay() === 6) weekends++;
       current.setDate(current.getDate() + 1);
@@ -166,11 +153,11 @@ const SandwichRulesPage = () => {
   );
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] p-6 space-y-6">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Sandwich Leave Rules</h1>
-          <p className="text-slate-500 text-sm mt-1">Configure and manage sandwich leave policies</p>
+          <h2 className="text-lg font-semibold text-slate-800">Sandwich Leave Rules</h2>
+          <p className="text-slate-500 text-xs mt-1">Configure and manage sandwich leave policies</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setSimulationOpen(true)} className="gap-2"><Calculator className="w-4 h-4" /> Simulate</Button>
@@ -178,7 +165,6 @@ const SandwichRulesPage = () => {
         </div>
       </div>
 
-      {/* Rule Explanation */}
       <Card className="rounded-2xl border border-blue-200 bg-blue-50/50 shadow-sm">
         <CardContent className="p-5">
           <div className="flex items-start gap-3">
@@ -188,12 +174,10 @@ const SandwichRulesPage = () => {
               <p className="text-xs text-blue-700 mb-3">
                 When an employee takes leave on both sides of a weekend or holiday, the intervening non-working days are also counted as leave.
               </p>
-              {/* Visual Diagram */}
               <div className="flex items-center gap-1 bg-white p-3 rounded-lg border border-blue-100">
                 {["Thu", "Fri", "Sat", "Sun", "Mon", "Tue"].map((day, i) => {
                   const isLeave = i === 1 || i === 4;
                   const isSandwich = i === 2 || i === 3;
-                  const isNormal = i === 0 || i === 5;
                   return (
                     <div key={day} className="flex-1 text-center">
                       <div className="text-[10px] text-slate-400 mb-1">{day}</div>
@@ -217,17 +201,16 @@ const SandwichRulesPage = () => {
         </CardContent>
       </Card>
 
-      {/* Current Rules */}
       <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
         <CardContent className="p-6">
-          <h2 className="text-lg font-semibold text-slate-800 mb-4">Current Rules</h2>
+          <h3 className="text-lg font-semibold text-slate-800 mb-4">Current Rules</h3>
           <div className="space-y-3">
             {rules.map((rule) => (
               <div key={rule.id} className={cn("p-4 rounded-xl border transition-all", rule.active ? "border-slate-200 bg-white" : "border-slate-100 bg-slate-50 opacity-60")}>
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                      <h3 className="text-sm font-semibold text-slate-800">{rule.name}</h3>
+                      <h4 className="text-sm font-semibold text-slate-800">{rule.name}</h4>
                       <Badge className={cn("text-[10px] border-0", rule.active ? "bg-green-50 text-green-700" : "bg-slate-100 text-slate-500")}>
                         {rule.active ? "Active" : "Inactive"}
                       </Badge>
@@ -254,11 +237,10 @@ const SandwichRulesPage = () => {
         </CardContent>
       </Card>
 
-      {/* Recent Applications */}
       <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-slate-800">Recent Sandwich Rule Applications</h2>
+            <h3 className="text-lg font-semibold text-slate-800">Recent Sandwich Rule Applications</h3>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <Input placeholder="Search..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-9 w-56" />
@@ -314,7 +296,6 @@ const SandwichRulesPage = () => {
         </CardContent>
       </Card>
 
-      {/* Add Rule Dialog */}
       <Dialog open={addRuleDialog} onOpenChange={setAddRuleDialog}>
         <DialogContent className="sm:max-w-md border-2 border-slate-200">
           <DialogHeader>
@@ -347,7 +328,6 @@ const SandwichRulesPage = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Simulation Dialog */}
       <Dialog open={simulationOpen} onOpenChange={setSimulationOpen}>
         <DialogContent className="sm:max-w-md border-2 border-slate-200">
           <DialogHeader>
@@ -388,4 +368,4 @@ const SandwichRulesPage = () => {
   );
 };
 
-export default SandwichRulesPage;
+export default SandwichRulesPanel;

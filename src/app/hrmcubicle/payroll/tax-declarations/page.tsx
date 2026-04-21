@@ -1,57 +1,63 @@
 "use client"
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react"
+import { useRouter } from "next/navigation"
 import {
     ShieldCheck,
     CheckCircle2,
     XCircle,
     Clock,
-    DollarSign,
-    Users,
     FileText,
-    ChevronRight,
     Search,
     Filter,
-    ArrowUpRight,
-    PieChart,
     AlertTriangle,
     Scale,
-    History,
     MoreHorizontal,
     Eye,
     X,
-    TrendingUp,
     Bookmark,
-    Activity,
-    Lock,
     Download,
     Bell,
     Trash2,
-    Check,
-    Calendar,
-    ExternalLink
-} from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/shared/components/ui/card";
-import { Button } from "@/shared/components/ui/button";
-import { Badge } from "@/shared/components/ui/badge";
-import { Input } from "@/shared/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/components/ui/table";
+    Plus,
+    Edit,
+    ChevronDown,
+    RotateCcw,
+    TrendingDown,
+    FileCheck,
+    Calculator,
+    Link2,
+    Lock,
+    Unlock,
+    Sparkles,
+    TrendingUp,
+    ArrowLeftRight,
+    Target,
+    Wand2,
+    PiggyBank,
+    Zap,
+} from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/shared/components/ui/card"
+import { Button } from "@/shared/components/ui/button"
+import { Badge } from "@/shared/components/ui/badge"
+import { Input } from "@/shared/components/ui/input"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/components/ui/table"
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuLabel,
     DropdownMenuSeparator,
-    DropdownMenuTrigger
-} from "@/shared/components/ui/dropdown-menu";
+    DropdownMenuTrigger,
+} from "@/shared/components/ui/dropdown-menu"
 import {
     Sheet,
     SheetContent,
     SheetDescription,
     SheetHeader,
     SheetTitle,
-} from "@/shared/components/ui/sheet";
-import { ScrollArea } from "@/shared/components/ui/scroll-area";
+} from "@/shared/components/ui/sheet"
+import { ScrollArea } from "@/shared/components/ui/scroll-area"
 import {
     Dialog,
     DialogContent,
@@ -59,546 +65,1710 @@ import {
     DialogTitle,
     DialogDescription,
     DialogFooter,
-} from "@/shared/components/ui/dialog";
-import { Label } from "@/shared/components/ui/label";
-import { Checkbox } from "@/shared/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
-import { usePayrollStore } from "@/shared/data/payroll-store";
-import { useToast } from "@/shared/components/ui/use-toast";
-import { motion, AnimatePresence } from "framer-motion";
+} from "@/shared/components/ui/dialog"
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/shared/components/ui/popover"
+import { Label } from "@/shared/components/ui/label"
+import { Checkbox } from "@/shared/components/ui/checkbox"
+import { Textarea } from "@/shared/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/shared/components/ui/tooltip"
+import { usePayrollStore, type TaxDeclaration } from "@/shared/data/payroll-store"
+import { useToast } from "@/shared/components/ui/use-toast"
+import { motion, AnimatePresence } from "framer-motion"
+import { cn } from "@/lib/utils"
+
+const formatINR = (amt: number) => `₹${Math.round(amt || 0).toLocaleString("en-IN")}`
+
+const FISCAL_YEARS = ["2025-26", "2024-25", "2023-24"]
+
+const INVESTMENT_CATEGORIES = [
+    { code: "80C", name: "80C — Investments", max: 150000, subTypes: ["LIC Premium", "PPF", "ELSS Mutual Fund", "EPF", "NSC", "Tax Saver FD", "Tuition Fees", "Principal (Home Loan)"] },
+    { code: "80CCD(1B)", name: "80CCD(1B) — NPS", max: 50000, subTypes: ["NPS Contribution"] },
+    { code: "80D", name: "80D — Health Insurance", max: 100000, subTypes: ["Health Insurance (Self+Family)", "Parents Health Insurance", "Preventive Health Check-up"] },
+    { code: "80E", name: "80E — Education Loan Interest", max: -1, subTypes: ["Education Loan Interest"] },
+    { code: "80G", name: "80G — Donations", max: -1, subTypes: ["Donations"] },
+    { code: "HRA", name: "HRA — House Rent", max: -1, subTypes: ["Rent Paid"] },
+    { code: "Sec 24", name: "Sec 24 — Home Loan Interest", max: 200000, subTypes: ["Home Loan Interest"] },
+    { code: "80TTA", name: "80TTA — Savings Interest", max: 10000, subTypes: ["Savings Bank Interest"] },
+]
+
+const REJECTION_TAGS = ["Missing Documents", "Invalid Proof", "Amount Mismatch", "Outside FY", "Policy Gap"]
+
+const emptyDeclarationForm: Omit<TaxDeclaration, "id"> = {
+    empCode: "",
+    employeeId: "",
+    employeeName: "",
+    dept: "",
+    pan: "",
+    fiscalYear: "2025-26",
+    regime: "New",
+    status: "Pending",
+    grossSalary: 0,
+    basicSalary: 0,
+    totalSavings: 0,
+    estimatedTax: 0,
+    taxableIncome: 0,
+    declarations: [],
+    submittedDate: new Date().toISOString().split("T")[0],
+}
+
+// Rough tax calculator (FY 2025-26 simplified slabs)
+const calculateTax = (taxableIncome: number, regime: "Old" | "New"): number => {
+    if (taxableIncome <= 0) return 0
+    let tax = 0
+    if (regime === "New") {
+        // FY 2025-26 new regime slabs (rough)
+        const slabs = [
+            { upto: 300000, rate: 0 },
+            { upto: 700000, rate: 0.05 },
+            { upto: 1000000, rate: 0.10 },
+            { upto: 1200000, rate: 0.15 },
+            { upto: 1500000, rate: 0.20 },
+            { upto: Infinity, rate: 0.30 },
+        ]
+        let prev = 0
+        for (const s of slabs) {
+            if (taxableIncome > prev) {
+                const slice = Math.min(taxableIncome, s.upto) - prev
+                tax += slice * s.rate
+                prev = s.upto
+            }
+        }
+    } else {
+        // Old regime slabs
+        const slabs = [
+            { upto: 250000, rate: 0 },
+            { upto: 500000, rate: 0.05 },
+            { upto: 1000000, rate: 0.20 },
+            { upto: Infinity, rate: 0.30 },
+        ]
+        let prev = 0
+        for (const s of slabs) {
+            if (taxableIncome > prev) {
+                const slice = Math.min(taxableIncome, s.upto) - prev
+                tax += slice * s.rate
+                prev = s.upto
+            }
+        }
+    }
+    // 4% cess
+    return Math.round(tax * 1.04)
+}
 
 const TaxDeclarationsPage = () => {
-    const { declarations, updateDeclarationStatus, addDeclaration, updateDeclaration, deleteDeclaration } = usePayrollStore();
-    const { toast } = useToast();
-    const [selectedDec, setSelectedDec] = useState<any>(null);
-    const [isSheetOpen, setIsSheetOpen] = useState(false);
-    const [isFormOpen, setIsFormOpen] = useState(false);
-    const [editingDec, setEditingDec] = useState<any>(null);
+    const router = useRouter()
+    const {
+        declarations,
+        proofs,
+        addDeclaration,
+        updateDeclaration,
+        deleteDeclaration,
+        approveDeclaration,
+        rejectDeclaration,
+        bulkUpdateDeclarationStatus,
+        bulkDeleteDeclarations,
+        // Round 2
+        lockDeclaration,
+        unlockDeclaration,
+        recommendRegime,
+        recommendAllRegimes,
+        bulkFlipRegime,
+        runGapAnalysis,
+    } = usePayrollStore()
+    const { toast } = useToast()
 
-    const [formData, setFormData] = useState({
-        employeeName: "",
-        employeeId: "",
-        fiscalYear: "2025-26",
-        regime: "New",
-        totalSavings: "0",
-        estimatedTax: "0",
-    });
+    // ── State ──────────────────────────────────────────────
+    const [fyFilter, setFyFilter] = useState<string>("2025-26")
+    const [searchQuery, setSearchQuery] = useState("")
+    const [statusFilter, setStatusFilter] = useState<string>("all")
+    const [regimeFilter, setRegimeFilter] = useState<string>("all")
+    const [deptFilter, setDeptFilter] = useState<string>("all")
+    const [selectedIds, setSelectedIds] = useState<string[]>([])
 
-    const [selectedIds, setSelectedIds] = useState<string[]>([]);
-    const [isBulkProcessing, setIsBulkProcessing] = useState(false);
-    const [searchQuery, setSearchQuery] = useState("");
-    const [statusFilter, setStatusFilter] = useState("All");
+    const [formOpen, setFormOpen] = useState(false)
+    const [detailOpen, setDetailOpen] = useState(false)
+    const [rejectOpen, setRejectOpen] = useState(false)
+    const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+    const [regimeCompareOpen, setRegimeCompareOpen] = useState(false)
 
-    const filteredDeclarations = declarations.filter(dec => {
-        const matchesSearch = dec.employeeName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            dec.employeeId.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesStatus = statusFilter === "All" || dec.status === statusFilter;
-        return matchesSearch && matchesStatus;
-    });
+    // ─ Round 2 state ─
+    const [lockDialogOpen, setLockDialogOpen] = useState(false)
+    const [lockTarget, setLockTarget] = useState<TaxDeclaration | null>(null)
+    const [lockUntilDate, setLockUntilDate] = useState("")
+    const [lockReasonInput, setLockReasonInput] = useState("")
+    const [plannerOpen, setPlannerOpen] = useState(false)
+    const [plannerTarget, setPlannerTarget] = useState<TaxDeclaration | null>(null)
+    const [plannerSec80C, setPlannerSec80C] = useState(0)
+    const [plannerSec80D, setPlannerSec80D] = useState(0)
+    const [plannerHRA, setPlannerHRA] = useState(0)
+    const [plannerSec24, setPlannerSec24] = useState(0)
+    const [plannerNPS, setPlannerNPS] = useState(0)
+    const [bulkFlipOpen, setBulkFlipOpen] = useState(false)
+    const [bulkFlipTarget, setBulkFlipTarget] = useState<"Old" | "New">("New")
+    const [recommendResult, setRecommendResult] = useState<{ analyzed: number; switched: number } | null>(null)
+    const [gapOpen, setGapOpen] = useState(false)
+    const [gapTarget, setGapTarget] = useState<TaxDeclaration | null>(null)
 
-    const metrics = [
-        { label: "Submitted", val: `${declarations.length}/${declarations.length + 7}`, icon: Bookmark, color: "text-[#CB9DF0]", bg: "bg-[#CB9DF0]/20" },
-        { label: "Verified", val: declarations.filter(d => d.status === 'Verified').length, icon: ShieldCheck, color: "text-emerald-500", bg: "bg-emerald-100/60" },
-        { label: "Risk Flags", val: "04", icon: AlertTriangle, color: "text-[#FDDBBB]", bg: "bg-[#FDDBBB]/30" },
-        { label: "Tax Liability", val: "₹18.4L", icon: Scale, color: "text-[#F0C1E1]", bg: "bg-[#F0C1E1]/20" }
-    ];
+    const [editingDec, setEditingDec] = useState<TaxDeclaration | null>(null)
+    const [selectedDec, setSelectedDec] = useState<TaxDeclaration | null>(null)
+    const [formData, setFormData] = useState<Omit<TaxDeclaration, "id">>(emptyDeclarationForm)
+    const [rejectTargetId, setRejectTargetId] = useState<string | null>(null)
+    const [rejectReason, setRejectReason] = useState("")
 
-    const regimes = [
-        { name: "New Regime", count: declarations.filter(d => d.regime === 'New').length, pct: `${Math.round((declarations.filter(d => d.regime === 'New').length / Math.max(1, declarations.length)) * 100)}%`, color: "bg-[#CB9DF0]" },
-        { name: "Old Regime", count: declarations.filter(d => d.regime === 'Old').length, pct: `${Math.round((declarations.filter(d => d.regime === 'Old').length / Math.max(1, declarations.length)) * 100)}%`, color: "bg-[#F0C1E1]" },
-    ];
+    // Declaration line item form (inside add/edit dialog)
+    const [newLineCategory, setNewLineCategory] = useState<string>("80C")
+    const [newLineSubCategory, setNewLineSubCategory] = useState<string>("")
+    const [newLineAmount, setNewLineAmount] = useState<string>("")
 
-    const formatINR = (amt: number) => `₹${amt.toLocaleString("en-IN")}`;
+    // ── Derived data ───────────────────────────────────────
+    const fyDeclarations = useMemo(
+        () => declarations.filter((d) => d.fiscalYear === fyFilter),
+        [declarations, fyFilter]
+    )
 
-    const handleOpenForm = (dec?: any) => {
-        if (dec) {
-            setEditingDec(dec);
-            setFormData({
-                employeeName: dec.employeeName,
-                employeeId: dec.employeeId,
-                fiscalYear: dec.fiscalYear,
-                regime: dec.regime,
-                totalSavings: dec.totalSavings.toString(),
-                estimatedTax: dec.estimatedTax.toString(),
-            });
-        } else {
-            setEditingDec(null);
-            setFormData({
-                employeeName: "",
-                employeeId: "",
-                fiscalYear: "2025-26",
-                regime: "New",
-                totalSavings: "0",
-                estimatedTax: "0",
-            });
+    const filteredDeclarations = useMemo(() => {
+        return fyDeclarations.filter((d) => {
+            if (searchQuery) {
+                const q = searchQuery.toLowerCase()
+                if (
+                    !d.employeeName.toLowerCase().includes(q) &&
+                    !d.employeeId.toLowerCase().includes(q) &&
+                    !(d.empCode ?? "").toLowerCase().includes(q) &&
+                    !(d.dept ?? "").toLowerCase().includes(q) &&
+                    !(d.pan ?? "").toLowerCase().includes(q)
+                ) return false
+            }
+            if (statusFilter !== "all" && d.status !== statusFilter) return false
+            if (regimeFilter !== "all" && d.regime !== regimeFilter) return false
+            if (deptFilter !== "all" && d.dept !== deptFilter) return false
+            return true
+        })
+    }, [fyDeclarations, searchQuery, statusFilter, regimeFilter, deptFilter])
+
+    const stats = useMemo(() => {
+        const verified = fyDeclarations.filter((d) => d.status === "Verified")
+        const pending = fyDeclarations.filter((d) => d.status === "Pending")
+        const submitted = fyDeclarations.filter((d) => d.status === "Submitted")
+        const rejected = fyDeclarations.filter((d) => d.status === "Rejected")
+        const totalTax = fyDeclarations.reduce((s, d) => s + (d.estimatedTax || 0), 0)
+        const totalSavings = fyDeclarations.reduce((s, d) => s + (d.totalSavings || 0), 0)
+        return {
+            total: fyDeclarations.length,
+            verified: verified.length,
+            pending: pending.length,
+            submitted: submitted.length,
+            rejected: rejected.length,
+            totalTax,
+            totalSavings,
+            oldCount: fyDeclarations.filter((d) => d.regime === "Old").length,
+            newCount: fyDeclarations.filter((d) => d.regime === "New").length,
         }
-        setIsFormOpen(true);
-    };
+    }, [fyDeclarations])
 
-    const handleSubmit = () => {
-        if (!formData.employeeName || !formData.employeeId) {
-            toast({ title: "Incomplete Protocol", description: "Identity markers are required for compliance.", variant: "destructive" });
-            return;
-        }
+    const availableDepts = useMemo(
+        () => Array.from(new Set(fyDeclarations.map((d) => d.dept).filter(Boolean) as string[])),
+        [fyDeclarations]
+    )
 
-        const payload = {
-            ...formData,
-            regime: formData.regime as 'Old' | 'New',
-            totalSavings: parseFloat(formData.totalSavings),
-            estimatedTax: parseFloat(formData.estimatedTax),
-            status: editingDec ? editingDec.status : 'Pending' as any,
-            declarations: editingDec ? editingDec.declarations : [],
-            submittedDate: new Date().toISOString().split('T')[0],
-        };
+    const hasActiveFilters = statusFilter !== "all" || regimeFilter !== "all" || deptFilter !== "all"
+    const clearFilters = () => { setStatusFilter("all"); setRegimeFilter("all"); setDeptFilter("all"); setSearchQuery("") }
 
-        if (editingDec) {
-            updateDeclaration(editingDec.id, payload);
-            toast({ title: "Compliance Updated", description: "Ledger has been updated with new declaration parameters." });
-        } else {
-            addDeclaration(payload);
-            toast({ title: "Declaration Injected", description: "Manual compliance entry has been localized." });
-        }
-        setIsFormOpen(false);
-    };
-
-    const handleDelete = (id: string) => {
-        deleteDeclaration(id);
-        toast({ title: "Record Purged", description: "Compliance data has been removed from the repository." });
-    };
-
-    const toggleSelect = (id: string) => {
-        setSelectedIds(prev => prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]);
-    };
+    // ── Selection ──────────────────────────────────────────
+    const toggleSelect = (id: string) =>
+        setSelectedIds((prev) => (prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]))
 
     const toggleSelectAll = () => {
-        setSelectedIds(selectedIds.length === filteredDeclarations.length ? [] : filteredDeclarations.map(d => d.id));
-    };
+        const visible = filteredDeclarations.map((d) => d.id)
+        const allSel = visible.every((id) => selectedIds.includes(id))
+        if (allSel) setSelectedIds((prev) => prev.filter((id) => !visible.includes(id)))
+        else setSelectedIds((prev) => Array.from(new Set([...prev, ...visible])))
+    }
+
+    // ── Form helpers ───────────────────────────────────────
+    const openAddForm = () => {
+        setEditingDec(null)
+        setFormData({ ...emptyDeclarationForm, fiscalYear: fyFilter })
+        setNewLineCategory("80C")
+        setNewLineSubCategory("")
+        setNewLineAmount("")
+        setFormOpen(true)
+    }
+
+    const openEditForm = (dec: TaxDeclaration) => {
+        setEditingDec(dec)
+        setFormData({
+            empCode: dec.empCode,
+            employeeId: dec.employeeId,
+            employeeName: dec.employeeName,
+            dept: dec.dept,
+            pan: dec.pan,
+            fiscalYear: dec.fiscalYear,
+            regime: dec.regime,
+            status: dec.status,
+            grossSalary: dec.grossSalary,
+            basicSalary: dec.basicSalary,
+            totalSavings: dec.totalSavings,
+            estimatedTax: dec.estimatedTax,
+            taxableIncome: dec.taxableIncome,
+            declarations: [...dec.declarations],
+            submittedDate: dec.submittedDate,
+            verifiedDate: dec.verifiedDate,
+            verifiedBy: dec.verifiedBy,
+            rejectedDate: dec.rejectedDate,
+            rejectionReason: dec.rejectionReason,
+            notes: dec.notes,
+        })
+        setFormOpen(true)
+    }
+
+    // Live-computed totals for the form
+    const formTotals = useMemo(() => {
+        const savings = formData.declarations.reduce((s, d) => s + (d.amount || 0), 0)
+        const taxableIncome = Math.max(0, (formData.grossSalary || 0) - (formData.regime === "Old" ? savings : 0))
+        const tax = calculateTax(taxableIncome, formData.regime)
+        return { savings, taxableIncome, tax }
+    }, [formData])
+
+    const addLineItem = () => {
+        const amount = parseFloat(newLineAmount) || 0
+        if (amount <= 0) {
+            toast({ title: "Invalid amount", description: "Enter a positive amount.", variant: "destructive" })
+            return
+        }
+        const cat = INVESTMENT_CATEGORIES.find((c) => c.code === newLineCategory)
+        if (cat && cat.max > 0) {
+            const existing = formData.declarations.filter((d) => d.category === newLineCategory).reduce((s, d) => s + d.amount, 0)
+            if (existing + amount > cat.max) {
+                toast({
+                    title: "Exceeds cap",
+                    description: `${cat.name} cap is ${formatINR(cat.max)}. Current total: ${formatINR(existing + amount)}.`,
+                    variant: "destructive",
+                })
+                return
+            }
+        }
+        setFormData({
+            ...formData,
+            declarations: [
+                ...formData.declarations,
+                {
+                    id: `ln-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
+                    category: newLineCategory,
+                    subCategory: newLineSubCategory || undefined,
+                    amount,
+                },
+            ],
+        })
+        setNewLineSubCategory("")
+        setNewLineAmount("")
+    }
+
+    const removeLineItem = (idx: number) => {
+        setFormData({
+            ...formData,
+            declarations: formData.declarations.filter((_, i) => i !== idx),
+        })
+    }
+
+    const handleSubmitForm = () => {
+        if (!formData.employeeName || !formData.employeeId || !formData.fiscalYear) {
+            toast({ title: "Missing fields", description: "Employee name, ID and fiscal year are required.", variant: "destructive" })
+            return
+        }
+        const payload: Omit<TaxDeclaration, "id"> = {
+            ...formData,
+            totalSavings: formTotals.savings,
+            taxableIncome: formTotals.taxableIncome,
+            estimatedTax: formTotals.tax,
+            submittedDate: formData.submittedDate || new Date().toISOString().split("T")[0],
+        }
+        if (editingDec) {
+            updateDeclaration(editingDec.id, payload)
+            toast({ title: "Declaration updated", description: `${formData.employeeName} — ${formData.fiscalYear}.` })
+        } else {
+            addDeclaration(payload)
+            toast({ title: "Declaration added", description: `${formData.employeeName} — ${formData.fiscalYear}.` })
+        }
+        setFormOpen(false)
+        setEditingDec(null)
+    }
+
+    const handleApprove = (dec: TaxDeclaration) => {
+        approveDeclaration(dec.id, "HR Manager")
+        toast({ title: "Verified", description: `${dec.employeeName}'s declaration verified.` })
+    }
+
+    const openRejectDialog = (id: string) => {
+        setRejectTargetId(id)
+        setRejectReason("")
+        setRejectOpen(true)
+    }
+
+    const handleConfirmReject = () => {
+        if (!rejectTargetId) return
+        if (!rejectReason.trim()) {
+            toast({ title: "Reason required", description: "Explain what's wrong.", variant: "destructive" })
+            return
+        }
+        rejectDeclaration(rejectTargetId, rejectReason)
+        toast({ title: "Declaration rejected", description: "Employee will be notified.", variant: "destructive" })
+        setRejectOpen(false)
+        setRejectReason("")
+        setRejectTargetId(null)
+    }
+
+    const handleDelete = (id: string) => {
+        const dec = declarations.find((d) => d.id === id)
+        deleteDeclaration(id)
+        toast({ title: "Declaration removed", description: `${dec?.employeeName ?? "Record"} deleted.`, variant: "destructive" })
+        setSelectedIds((prev) => prev.filter((i) => i !== id))
+    }
 
     const handleBulkVerify = () => {
-        setIsBulkProcessing(true);
-        setTimeout(() => {
-            selectedIds.forEach(id => updateDeclarationStatus(id, 'Verified'));
-            setSelectedIds([]);
-            setIsBulkProcessing(false);
-            toast({ title: "Bulk Authorization Complete", description: `${selectedIds.length} declarations have been verified.` });
-        }, 1500);
-    };
+        if (!selectedIds.length) return
+        bulkUpdateDeclarationStatus(selectedIds, "Verified")
+        toast({ title: `Verified ${selectedIds.length}`, description: "Bulk verification complete." })
+        setSelectedIds([])
+    }
 
-    const handleExportReport = () => {
-        const headers = ["Employee Name", "Employee ID", "Fiscal Year", "Regime", "Total Savings", "Estimated Tax", "Status", "Submitted Date"];
-        const rows = declarations.map(dec => [
-            dec.employeeName,
-            dec.employeeId,
-            dec.fiscalYear,
-            dec.regime,
-            dec.totalSavings,
-            dec.estimatedTax,
-            dec.status,
-            dec.submittedDate
-        ]);
-        const csvContent = [headers, ...rows].map(row => row.map(v => `"${v}"`).join(",")).join("\n");
-        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = `tax_declarations_${new Date().toISOString().split('T')[0]}.csv`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-        toast({ title: "Report Exported", description: `CSV file with ${declarations.length} declarations downloaded.` });
-    };
+    // ─── Round 2 handlers ────────────────────────────────
+    const openLockDialog = (dec: TaxDeclaration) => {
+        setLockTarget(dec)
+        setLockUntilDate(dec.lockedUntil ?? "")
+        setLockReasonInput(dec.lockReason ?? "")
+        setLockDialogOpen(true)
+    }
 
-    const handleSendReminders = () => {
-        const pendingCount = declarations.filter(d => d.status === 'Pending').length;
-        toast({ title: "Reminders Dispatched", description: `Notifications sent to ${pendingCount} employee(s) with pending declarations.` });
-    };
+    const handleConfirmLock = () => {
+        if (!lockTarget) return
+        if (!lockUntilDate) {
+            toast({ title: "Lock date required", variant: "destructive" })
+            return
+        }
+        lockDeclaration(lockTarget.id, lockUntilDate, "HR Admin", lockReasonInput || undefined)
+        toast({
+            title: "Declaration locked",
+            description: `${lockTarget.employeeName} can't edit until ${lockUntilDate}`,
+        })
+        setLockDialogOpen(false)
+        setLockTarget(null)
+    }
 
-    const handleViewProofs = (name: string) => {
-        setIsSheetOpen(false);
-        const proofPath = `/hrmcubicle/payroll/proof-submission`;
-        window.location.href = proofPath;
-        toast({ title: "Navigating to Proofs", description: `Opening proof submissions for ${name}...` });
-    };
+    const handleUnlock = (dec: TaxDeclaration) => {
+        unlockDeclaration(dec.id)
+        toast({ title: "Unlocked", description: `${dec.employeeName} can edit again.` })
+    }
 
+    const handleRecommendSingle = (dec: TaxDeclaration) => {
+        recommendRegime(dec.id)
+        const updated = usePayrollStore.getState().declarations.find(d => d.id === dec.id)
+        if (updated?.recommendedRegime && updated.recommendedRegime !== updated.regime) {
+            toast({
+                title: `Switch to ${updated.recommendedRegime} regime`,
+                description: `Would save ${formatINR(updated.recommendedSavings ?? 0)} annually`,
+            })
+        } else {
+            toast({ title: "Current regime is optimal", description: "No switch needed." })
+        }
+    }
+
+    const handleRecommendAll = () => {
+        const result = recommendAllRegimes()
+        setRecommendResult(result)
+        toast({
+            title: `Analyzed ${result.analyzed} declarations`,
+            description: `${result.switched} would benefit from switching regime.`,
+        })
+    }
+
+    const handleRunGap = (dec: TaxDeclaration) => {
+        runGapAnalysis(dec.id)
+        const updated = usePayrollStore.getState().declarations.find(d => d.id === dec.id)
+        if (updated) {
+            setGapTarget(updated)
+            setGapOpen(true)
+        }
+    }
+
+    const openBulkFlip = () => {
+        if (!selectedIds.length) {
+            toast({ title: "Select declarations first", variant: "destructive" })
+            return
+        }
+        setBulkFlipTarget("New")
+        setBulkFlipOpen(true)
+    }
+
+    const handleConfirmBulkFlip = () => {
+        bulkFlipRegime(selectedIds, bulkFlipTarget)
+        toast({
+            title: `Flipped ${selectedIds.length} to ${bulkFlipTarget} regime`,
+            description: "Tax recomputation is instant.",
+        })
+        setBulkFlipOpen(false)
+        setSelectedIds([])
+    }
+
+    const openPlanner = (dec: TaxDeclaration) => {
+        setPlannerTarget(dec)
+        // Initialize with current category totals
+        const byCategory = new Map<string, number>()
+        dec.declarations.forEach(line => {
+            byCategory.set(line.category, (byCategory.get(line.category) ?? 0) + line.amount)
+        })
+        setPlannerSec80C(byCategory.get("80C") ?? 0)
+        setPlannerSec80D(byCategory.get("80D") ?? 0)
+        setPlannerHRA(byCategory.get("HRA") ?? 0)
+        setPlannerSec24(byCategory.get("Sec 24") ?? 0)
+        setPlannerNPS(byCategory.get("80CCD(1B)") ?? 0)
+        setPlannerOpen(true)
+    }
+
+    const handleBulkDelete = () => {
+        if (!selectedIds.length) return
+        bulkDeleteDeclarations(selectedIds)
+        toast({ title: `Deleted ${selectedIds.length}`, variant: "destructive" })
+        setSelectedIds([])
+        setDeleteConfirmOpen(false)
+    }
+
+    const handleRemindPending = () => {
+        const pendingEmps = fyDeclarations.filter((d) => d.status === "Pending")
+        if (!pendingEmps.length) {
+            toast({ title: "No one to remind", description: "All declarations are submitted." })
+            return
+        }
+        toast({
+            title: "Reminders sent",
+            description: `Notification queued for ${pendingEmps.length} employee${pendingEmps.length > 1 ? "s" : ""} with pending declarations.`,
+        })
+    }
+
+    const handleExport = () => {
+        const source = filteredDeclarations.length ? filteredDeclarations : fyDeclarations
+        if (!source.length) {
+            toast({ title: "Nothing to export", variant: "destructive" })
+            return
+        }
+        const headers = [
+            "Emp Code", "Name", "Department", "PAN", "Fiscal Year", "Regime",
+            "Gross Salary", "Basic", "Taxable Income", "Total Savings", "Estimated Tax",
+            "Status", "Submitted", "Verified By", "Declaration Items",
+        ]
+        const rows = source.map((d) => {
+            const items = d.declarations.map((x) => `${x.category}:${x.amount}`).join("; ")
+            return [
+                d.empCode ?? d.employeeId,
+                `"${d.employeeName}"`,
+                d.dept ?? "",
+                d.pan ?? "",
+                d.fiscalYear,
+                d.regime,
+                d.grossSalary ?? 0,
+                d.basicSalary ?? 0,
+                d.taxableIncome ?? 0,
+                d.totalSavings,
+                d.estimatedTax,
+                d.status,
+                d.submittedDate ?? "",
+                d.verifiedBy ?? "",
+                `"${items}"`,
+            ].join(",")
+        })
+        const csv = [headers.join(","), ...rows].join("\n")
+        const blob = new Blob([csv], { type: "text/csv" })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement("a")
+        a.href = url
+        a.download = `tax_declarations_${fyFilter}_${new Date().toISOString().split("T")[0]}.csv`
+        a.click()
+        URL.revokeObjectURL(url)
+        toast({ title: "Exported", description: `${source.length} rows downloaded.` })
+    }
+
+    const linkedProofs = (decId: string) => proofs.filter((p) => p.linkedDeclarationId === decId)
+
+    // ── Render ─────────────────────────────────────────────
     return (
-        <div className="flex flex-col h-full bg-[#f8fafc] font-sans overflow-hidden">
-            <div className="flex flex-col h-full overflow-auto" style={{ transform: "scale(0.85)", transformOrigin: "top left", width: "117.65%", height: "117.65%" }}>
+        <TooltipProvider delayDuration={200}>
+            <div className="flex flex-col h-full bg-[#f8fafc] font-sans overflow-y-auto">
                 {/* Header */}
-                <div className="h-20 bg-white border-b border-slate-200 px-8 flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <div className="h-10 w-10 bg-[#FDDBBB]/20 rounded-xl flex items-center justify-center text-[#e6b48a]">
+                <div className="h-auto min-h-[72px] bg-white border-b border-slate-200 px-6 lg:px-8 py-3 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 sticky top-0 z-20 shadow-sm">
+                    <div className="flex items-center gap-4 min-w-0">
+                        <div className="h-10 w-10 bg-[#8B5CF6]/10 rounded-xl flex items-center justify-center text-[#8B5CF6] shrink-0">
                             <Scale size={20} />
                         </div>
-                        <div className="text-start">
-                            <h1 className="text-xl font-bold text-slate-900 tracking-tight text-start">Tax Compliance Hub</h1>
-                            <p className="text-sm font-semibold text-slate-500 capitalize tracking-wider text-start italic">FY 2025-26 • Operational View</p>
+                        <div className="min-w-0">
+                            <h1 className="text-lg lg:text-xl font-bold text-slate-900 tracking-tight truncate">Tax Declarations</h1>
+                            <p className="text-xs font-medium text-slate-500">Investment declarations & TDS projection</p>
                         </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                        <Button variant="outline" onClick={handleSendReminders} className="h-10 border-slate-200 rounded-lg font-bold text-xs gap-2 px-4 shadow-sm hover:bg-slate-50 border-none transition-all hover:text-[#CB9DF0]">
-                            <Bell size={14} /> Remind All
+                    <div className="flex flex-wrap items-center gap-2">
+                        <Select value={fyFilter} onValueChange={setFyFilter}>
+                            <SelectTrigger className="h-9 w-36 rounded-lg border-slate-200 bg-white font-semibold text-xs">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {FISCAL_YEARS.map((fy) => (
+                                    <SelectItem key={fy} value={fy}>FY {fy}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <Button
+                            variant="outline"
+                            onClick={() => setRegimeCompareOpen(true)}
+                            className="h-9 rounded-lg border-slate-200 bg-white font-semibold text-xs gap-2 px-3 hover:bg-slate-50 text-slate-600"
+                        >
+                            <Calculator size={14} /> <span className="hidden md:inline">Regime calc</span>
                         </Button>
-                        <Button variant="outline" onClick={handleExportReport} className="h-10 border-slate-200 rounded-lg font-bold text-xs gap-2 px-4 shadow-sm hover:bg-slate-50 border-none transition-all hover:text-emerald-500">
-                            <Download size={14} /> Export Report
+                        <Button
+                            variant="outline"
+                            onClick={handleRecommendAll}
+                            className="h-9 rounded-lg border-[#8B5CF6]/30 bg-[#8B5CF6]/5 font-semibold text-xs gap-2 px-3 hover:bg-[#8B5CF6]/10 text-[#8B5CF6]"
+                        >
+                            <Wand2 size={14} /> <span className="hidden md:inline">Auto-recommend all</span>
                         </Button>
-                        <Button onClick={() => handleOpenForm()} className="bg-[#CB9DF0] hover:bg-[#b088e0] text-white rounded-lg h-10 px-6 font-bold text-xs shadow-sm border-none transition-all hover:scale-[1.02]">
-                            Record Declaration <ChevronRight size={14} className="ml-1" />
+                        <Button
+                            variant="outline"
+                            onClick={handleRemindPending}
+                            className="h-9 rounded-lg border-slate-200 bg-white font-semibold text-xs gap-2 px-3 hover:bg-slate-50 text-slate-600"
+                        >
+                            <Bell size={14} /> <span className="hidden md:inline">Remind pending</span>
+                        </Button>
+                        <Button
+                            variant="outline"
+                            onClick={handleExport}
+                            className="h-9 rounded-lg border-slate-200 bg-white font-semibold text-xs gap-2 px-3 hover:bg-slate-50 text-slate-600"
+                        >
+                            <Download size={14} /> <span className="hidden md:inline">Export CSV</span>
+                        </Button>
+                        <Button
+                            onClick={openAddForm}
+                            className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-lg h-9 px-4 font-bold text-xs border-none gap-2"
+                        >
+                            <Plus size={14} /> <span className="hidden md:inline">New declaration</span>
                         </Button>
                     </div>
                 </div>
 
-                <ScrollArea className="flex-1">
-                    <div className="p-8 space-y-6">
-                        {/* Performance Dashboard */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                            {metrics.map((m, i) => (
-                                <Card key={i} className={`rounded-xl border ${m.color.replace('text-', 'border-')}/20 ${m.bg} shadow-sm overflow-hidden text-start transition-all hover:shadow-md`}>
-                                    <CardContent className="p-3 space-y-1">
-                                        <div className="flex justify-end">
-                                            <div className="h-7 w-7 bg-white/80 backdrop-blur-sm rounded-lg flex items-center justify-center shadow-sm border border-white">
-                                                <m.icon size={14} className={m.color} />
-                                            </div>
-                                        </div>
-                                        <div className="space-y-0 text-start">
-                                            <p className="text-[10px] font-bold text-slate-500 capitalize tracking-widest leading-none mb-1">{m.label}</p>
-                                            <p className="text-xl font-black text-slate-900 tracking-tight leading-none">{m.val}</p>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            ))}
+                <div className="flex-1">
+                    <div className="p-6 lg:p-8 space-y-6">
+                        {/* Stats */}
+                        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
+                            <StatCard label="Total" value={String(stats.total)} caption={`FY ${fyFilter}`} icon={Bookmark} color="#8B5CF6" />
+                            <StatCard label="Verified" value={String(stats.verified)} caption={`${stats.total ? Math.round((stats.verified / stats.total) * 100) : 0}% complete`} icon={ShieldCheck} color="#10B981" />
+                            <StatCard label="Pending/Submitted" value={String(stats.pending + stats.submitted)} caption="Awaiting verification" icon={Clock} color="#F59E0B" />
+                            <StatCard label="Rejected" value={String(stats.rejected)} caption="Needs resubmit" icon={AlertTriangle} color="#F43F5E" />
+                            <StatCard label="TDS liability" value={formatINR(stats.totalTax)} caption={`Savings ${formatINR(stats.totalSavings)}`} icon={TrendingDown} color="#EC4899" />
                         </div>
 
-                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                            {/* Declaration Grid */}
-                            <div className="lg:col-span-8 space-y-6">
-                                <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-                                    <CardHeader className="p-6 border-b border-slate-50 text-start">
-                                        <div className="flex justify-between items-center text-start">
-                                            <div className="text-start">
-                                                <CardTitle className="text-lg font-bold text-slate-800 tracking-tight text-start">Declaration Ledger</CardTitle>
-                                                <CardDescription className="text-sm font-bold text-slate-400 capitalize tracking-widest mt-1 text-start italic">Historical audit trace</CardDescription>
+                        {/* Regime distribution */}
+                        <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                            <CardHeader className="p-4 lg:p-5 border-b border-slate-100 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 space-y-0">
+                                <div>
+                                    <CardTitle className="text-base font-bold text-slate-900">Regime distribution</CardTitle>
+                                    <CardDescription className="text-[11px] font-semibold text-slate-500 mt-0.5">How employees have split across Old vs New for FY {fyFilter}.</CardDescription>
+                                </div>
+                            </CardHeader>
+                            <CardContent className="p-4 lg:p-5">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <RegimeBar label="New Regime" count={stats.newCount} total={stats.total} color="#8B5CF6" />
+                                    <RegimeBar label="Old Regime" count={stats.oldCount} total={stats.total} color="#EC4899" />
+                                </div>
+                                {stats.total > 0 && stats.pending + stats.submitted > 0 && (
+                                    <div className="mt-4 p-3 bg-amber-50 rounded-lg border border-amber-100 flex items-start gap-2">
+                                        <AlertTriangle size={14} className="text-amber-600 shrink-0 mt-0.5" />
+                                        <p className="text-[11px] font-semibold text-amber-800">
+                                            {stats.pending + stats.submitted} declarations still awaiting HR verification.
+                                            Consider sending reminders before the FY closes.
+                                        </p>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+
+                        {/* Declarations table */}
+                        <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+                            <CardHeader className="p-4 lg:p-5 border-b border-slate-100 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 space-y-0">
+                                <div>
+                                    <CardTitle className="text-base font-bold text-slate-900">Declaration ledger</CardTitle>
+                                    <CardDescription className="text-[11px] font-semibold text-slate-500 mt-0.5">
+                                        {filteredDeclarations.length} of {fyDeclarations.length} declarations
+                                    </CardDescription>
+                                </div>
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <div className="relative flex-1 min-w-[200px] lg:w-60 lg:flex-none">
+                                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                        <Input
+                                            placeholder="Search name, code, PAN..."
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            className="pl-9 h-9 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium"
+                                        />
+                                    </div>
+                                    <Popover>
+                                        <PopoverTrigger asChild>
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                className={cn("h-9 rounded-lg font-semibold text-xs gap-2",
+                                                    hasActiveFilters ? "border-[#8B5CF6] text-[#8B5CF6] bg-[#8B5CF6]/5" : "border-slate-200 text-slate-600")}
+                                            >
+                                                <Filter size={14} /> Filters
+                                                {hasActiveFilters && (
+                                                    <Badge className="bg-[#8B5CF6] text-white border-none text-[9px] font-bold h-4 px-1.5">
+                                                        {[statusFilter !== "all", regimeFilter !== "all", deptFilter !== "all"].filter(Boolean).length}
+                                                    </Badge>
+                                                )}
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent align="end" className="w-64 p-4 space-y-3">
+                                            <div className="flex items-center justify-between">
+                                                <h4 className="text-sm font-bold text-slate-900">Filters</h4>
+                                                {hasActiveFilters && (
+                                                    <Button variant="ghost" size="sm" onClick={clearFilters} className="h-7 text-xs font-semibold text-rose-500 hover:text-rose-600 px-2">
+                                                        <RotateCcw size={12} className="mr-1" /> Reset
+                                                    </Button>
+                                                )}
                                             </div>
-                                            <div className="flex gap-2 font-sans text-start">
-                                                <div className="relative w-48 font-sans text-start">
-                                                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                                                    <Input
-                                                        placeholder="Search Employee..."
-                                                        value={searchQuery}
-                                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                                        className="pl-9 h-9 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold focus:ring-1 focus:ring-[#CB9DF0]"
-                                                    />
-                                                </div>
+                                            <div className="space-y-2">
+                                                <Label className="text-[11px] font-semibold text-slate-600">Status</Label>
                                                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                                                    <SelectTrigger className="h-9 w-32 rounded-lg border-slate-100 text-slate-500 font-bold text-[10px] capitalize bg-white shadow-sm">
-                                                        <div className="flex items-center gap-2">
-                                                            <Filter size={12} />
-                                                            <SelectValue placeholder="All Status" />
-                                                        </div>
-                                                    </SelectTrigger>
-                                                    <SelectContent className="rounded-xl border-none shadow-2xl bg-white font-sans">
-                                                        <SelectItem value="All" className="text-[10px] font-bold">ALL NODES</SelectItem>
-                                                        <SelectItem value="Verified" className="text-[10px] font-bold text-emerald-600">VERIFIED</SelectItem>
-                                                        <SelectItem value="Pending" className="text-[10px] font-bold text-amber-600">PENDING</SelectItem>
+                                                    <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="all">All statuses</SelectItem>
+                                                        <SelectItem value="Pending">Pending</SelectItem>
+                                                        <SelectItem value="Submitted">Submitted</SelectItem>
+                                                        <SelectItem value="Verified">Verified</SelectItem>
+                                                        <SelectItem value="Rejected">Rejected</SelectItem>
                                                     </SelectContent>
                                                 </Select>
                                             </div>
-                                        </div>
-                                    </CardHeader>
-                                    <CardContent className="p-0">
-                                        <AnimatePresence>
-                                            {selectedIds.length > 0 && (
-                                                <motion.div
-                                                    initial={{ height: 0, opacity: 0 }}
-                                                    animate={{ height: 'auto', opacity: 1 }}
-                                                    exit={{ height: 0, opacity: 0 }}
-                                                    className="bg-slate-50 border-b border-slate-100 px-8 py-3 flex items-center justify-between"
-                                                >
-                                                    <div className="flex items-center gap-4 text-start">
-                                                        <span className="text-xs font-bold text-slate-500 capitalize tracking-wide leading-none">{selectedIds.length} Nodes Selected for Bulk Processing</span>
-                                                        <div className="h-4 w-px bg-slate-200" />
-                                                        <Button onClick={handleBulkVerify} disabled={isBulkProcessing} className="h-8 bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-bold capitalize px-4 rounded-lg shadow-sm border-none transition-all active:scale-95">
-                                                            {isBulkProcessing ? <Activity size={12} className="animate-spin mr-2" /> : <CheckCircle2 size={12} className="mr-2" />} Authorize Selected
-                                                        </Button>
-                                                    </div>
-                                                    <Button variant="ghost" size="sm" onClick={() => setSelectedIds([])} className="text-slate-400 hover:text-rose-500 font-bold text-[10px] capitalize transition-colors">Discard Selection</Button>
-                                                </motion.div>
-                                            )}
-                                        </AnimatePresence>
-                                        <Table>
-                                            <TableHeader className="bg-slate-50/50">
-                                                <TableRow className="border-slate-100 h-12">
-                                                    <TableHead className="pl-8 w-12 text-start">
-                                                        <Checkbox
-                                                            checked={selectedIds.length > 0 && selectedIds.length === filteredDeclarations.length}
-                                                            onCheckedChange={toggleSelectAll}
-                                                            className="border-slate-300 data-[state=checked]:bg-[#CB9DF0] data-[state=checked]:border-[#CB9DF0]"
-                                                        />
-                                                    </TableHead>
-                                                    <TableHead className="text-[11px] font-black capitalize text-slate-400 tracking-widest text-start">Employee</TableHead>
-                                                    <TableHead className="text-[11px] font-black capitalize text-slate-400 tracking-widest text-start">Regime</TableHead>
-                                                    <TableHead className="text-[11px] font-black capitalize text-slate-400 tracking-widest text-start">Savings</TableHead>
-                                                    <TableHead className="text-[11px] font-black capitalize text-slate-400 tracking-widest text-start">TDS/Mo</TableHead>
-                                                    <TableHead className="text-[11px] font-black capitalize text-slate-400 tracking-widest text-start">Status</TableHead>
-                                                    <TableHead className="text-right pr-8 text-[11px] font-black capitalize text-slate-400 tracking-widest">Protocol</TableHead>
+                                            <div className="space-y-2">
+                                                <Label className="text-[11px] font-semibold text-slate-600">Regime</Label>
+                                                <Select value={regimeFilter} onValueChange={setRegimeFilter}>
+                                                    <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="all">Both regimes</SelectItem>
+                                                        <SelectItem value="New">New</SelectItem>
+                                                        <SelectItem value="Old">Old</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label className="text-[11px] font-semibold text-slate-600">Department</Label>
+                                                <Select value={deptFilter} onValueChange={setDeptFilter}>
+                                                    <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="all">All departments</SelectItem>
+                                                        {availableDepts.map((d) => (<SelectItem key={d} value={d}>{d}</SelectItem>))}
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                        </PopoverContent>
+                                    </Popover>
+                                </div>
+                            </CardHeader>
+
+                            <CardContent className="p-0">
+                                <AnimatePresence>
+                                    {selectedIds.length > 0 && (
+                                        <motion.div
+                                            initial={{ height: 0, opacity: 0 }}
+                                            animate={{ height: "auto", opacity: 1 }}
+                                            exit={{ height: 0, opacity: 0 }}
+                                            className="bg-[#8B5CF6]/5 border-b border-[#8B5CF6]/10 px-6 py-3 flex flex-wrap items-center justify-between gap-2"
+                                        >
+                                            <div className="flex items-center flex-wrap gap-2">
+                                                <span className="text-xs font-bold text-[#8B5CF6]">{selectedIds.length} selected</span>
+                                                <span className="h-4 w-px bg-slate-200 mx-1" />
+                                                <Button size="sm" onClick={handleBulkVerify} className="h-7 bg-emerald-500 hover:bg-emerald-600 text-white text-[11px] font-semibold px-3 rounded-md border-none">
+                                                    <CheckCircle2 size={12} className="mr-1" /> Verify
+                                                </Button>
+                                                <Button size="sm" onClick={openBulkFlip} variant="outline" className="h-7 text-[11px] font-semibold px-3 rounded-md border-[#8B5CF6]/30 text-[#8B5CF6] hover:bg-[#8B5CF6]/5">
+                                                    <ArrowLeftRight size={12} className="mr-1" /> Flip regime
+                                                </Button>
+                                                <Button size="sm" onClick={() => setDeleteConfirmOpen(true)} variant="outline" className="h-7 text-[11px] font-semibold px-3 rounded-md border-rose-200 text-rose-600 hover:bg-rose-50">
+                                                    <Trash2 size={12} className="mr-1" /> Delete
+                                                </Button>
+                                            </div>
+                                            <Button variant="ghost" size="sm" onClick={() => setSelectedIds([])} className="h-7 text-[11px] font-semibold text-slate-500 hover:text-rose-500">
+                                                Clear
+                                            </Button>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+
+                                <div className="overflow-x-auto">
+                                    <Table>
+                                        <TableHeader className="bg-slate-50/70">
+                                            <TableRow className="border-slate-100 hover:bg-transparent">
+                                                <TableHead className="pl-6 w-10">
+                                                    <Checkbox
+                                                        checked={filteredDeclarations.length > 0 && filteredDeclarations.every((d) => selectedIds.includes(d.id))}
+                                                        onCheckedChange={toggleSelectAll}
+                                                        disabled={filteredDeclarations.length === 0}
+                                                        className="border-slate-300 data-[state=checked]:bg-[#8B5CF6] data-[state=checked]:border-[#8B5CF6]"
+                                                    />
+                                                </TableHead>
+                                                <TableHead className="text-[11px] font-bold text-slate-500 uppercase tracking-wider h-10">Employee</TableHead>
+                                                <TableHead className="text-[11px] font-bold text-slate-500 uppercase tracking-wider h-10">Regime</TableHead>
+                                                <TableHead className="text-[11px] font-bold text-slate-500 uppercase tracking-wider h-10">Savings</TableHead>
+                                                <TableHead className="text-[11px] font-bold text-slate-500 uppercase tracking-wider h-10">Est. TDS</TableHead>
+                                                <TableHead className="text-[11px] font-bold text-slate-500 uppercase tracking-wider h-10">Proofs</TableHead>
+                                                <TableHead className="text-[11px] font-bold text-slate-500 uppercase tracking-wider h-10">Status</TableHead>
+                                                <TableHead className="text-right pr-6 text-[11px] font-bold text-slate-500 uppercase tracking-wider h-10">Actions</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {filteredDeclarations.length === 0 ? (
+                                                <TableRow>
+                                                    <TableCell colSpan={8} className="text-center py-12 text-slate-400 text-sm font-medium">
+                                                        {fyDeclarations.length === 0 ? `No declarations for FY ${fyFilter}.` : "No declarations match the current filters."}
+                                                    </TableCell>
                                                 </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                <AnimatePresence mode="popLayout">
-                                                    {filteredDeclarations.map((dec) => (
-                                                        <motion.tr
-                                                            key={dec.id}
-                                                            initial={{ opacity: 0 }}
-                                                            animate={{ opacity: 1 }}
-                                                            exit={{ opacity: 0 }}
-                                                            className={`group hover:bg-slate-50/50 border-slate-50 border-b last:border-0 transition-colors ${selectedIds.includes(dec.id) ? 'bg-[#CB9DF0]/5' : ''}`}
-                                                        >
-                                                            <TableCell className="pl-8 py-3 text-start">
+                                            ) : (
+                                                filteredDeclarations.map((dec) => {
+                                                    const proofCount = linkedProofs(dec.id).length
+                                                    return (
+                                                        <TableRow key={dec.id} className={cn("group border-slate-50", selectedIds.includes(dec.id) ? "bg-[#8B5CF6]/5 hover:bg-[#8B5CF6]/10" : "hover:bg-slate-50/70")}>
+                                                            <TableCell className="pl-6 py-3">
                                                                 <Checkbox
                                                                     checked={selectedIds.includes(dec.id)}
                                                                     onCheckedChange={() => toggleSelect(dec.id)}
-                                                                    className="border-slate-300 data-[state=checked]:bg-[#CB9DF0] data-[state=checked]:border-[#CB9DF0]"
+                                                                    className="border-slate-300 data-[state=checked]:bg-[#8B5CF6] data-[state=checked]:border-[#8B5CF6]"
                                                                 />
                                                             </TableCell>
-                                                            <TableCell className="py-3 text-start">
+                                                            <TableCell className="py-3">
                                                                 <div className="flex items-center gap-3">
-                                                                    <div className="h-8 w-8 rounded-lg bg-slate-100 flex items-center justify-center font-black text-[10px] text-slate-500 capitalize tracking-tighter group-hover:bg-white transition-colors">{dec.employeeId.slice(-3)}</div>
-                                                                    <span className="text-sm font-bold text-slate-900 block leading-tight text-start">{dec.employeeName}</span>
+                                                                    <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center font-bold text-[11px] text-slate-600 shrink-0">
+                                                                        {dec.employeeName.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
+                                                                    </div>
+                                                                    <div className="min-w-0">
+                                                                        <div className="text-sm font-semibold text-slate-900 truncate">{dec.employeeName}</div>
+                                                                        <div className="text-[11px] font-medium text-slate-500 truncate">
+                                                                            {dec.empCode ?? dec.employeeId}{dec.dept ? ` • ${dec.dept}` : ""}{dec.pan ? ` • ${dec.pan}` : ""}
+                                                                        </div>
+                                                                    </div>
                                                                 </div>
                                                             </TableCell>
-                                                            <TableCell>
-                                                                <Badge variant="outline" className={`border-none text-[9px] font-black px-2 capitalize tracking-widest ${dec.regime === 'New' ? 'text-[#CB9DF0]' : 'text-[#F0C1E1]'
-                                                                    }`}>{dec.regime}</Badge>
+                                                            <TableCell className="py-3">
+                                                                <Badge
+                                                                    className="border-none text-[10px] font-semibold px-2 py-0.5"
+                                                                    style={{
+                                                                        backgroundColor: dec.regime === "New" ? "#8B5CF620" : "#EC489920",
+                                                                        color: dec.regime === "New" ? "#8B5CF6" : "#EC4899",
+                                                                    }}
+                                                                >
+                                                                    {dec.regime}
+                                                                </Badge>
                                                             </TableCell>
-                                                            <TableCell className="text-sm font-black text-slate-700 tracking-tight text-start">{formatINR(dec.totalSavings)}</TableCell>
-                                                            <TableCell className="text-sm font-black text-rose-500 tracking-tight text-start">{formatINR(dec.estimatedTax)}</TableCell>
-                                                            <TableCell>
-                                                                <Badge className={`bg-white border-none text-[9px] font-black shadow-sm h-5 px-3 capitalize tracking-widest ${dec.status === 'Verified' ? 'text-emerald-500' : 'text-amber-500'
-                                                                    }`}>{dec.status}</Badge>
+                                                            <TableCell className="py-3 text-sm font-semibold text-slate-800 tabular-nums">{formatINR(dec.totalSavings)}</TableCell>
+                                                            <TableCell className="py-3 text-sm font-bold text-rose-600 tabular-nums">{formatINR(dec.estimatedTax)}</TableCell>
+                                                            <TableCell className="py-3">
+                                                                {proofCount > 0 ? (
+                                                                    <Badge className="bg-emerald-50 text-emerald-600 border-none text-[10px] font-semibold px-2">
+                                                                        {proofCount} linked
+                                                                    </Badge>
+                                                                ) : (
+                                                                    <span className="text-[11px] font-medium text-slate-400">—</span>
+                                                                )}
                                                             </TableCell>
-                                                            <TableCell className="text-right pr-8">
-                                                                <div className="flex justify-end gap-2 text-start">
-                                                                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-lg text-slate-300 hover:text-[#CB9DF0] hover:bg-slate-100" onClick={() => { setSelectedDec(dec); setIsSheetOpen(true); }}>
-                                                                        <Eye size={14} />
-                                                                    </Button>
+                                                            <TableCell className="py-3">
+                                                                <div className="flex items-center gap-1.5 flex-wrap">
+                                                                    <Badge className={cn("border-none text-[10px] font-semibold px-2 py-0.5",
+                                                                        dec.status === "Verified" ? "bg-emerald-50 text-emerald-600" :
+                                                                            dec.status === "Rejected" ? "bg-rose-50 text-rose-600" :
+                                                                                dec.status === "Submitted" ? "bg-blue-50 text-blue-600" :
+                                                                                    "bg-amber-50 text-amber-600")}>
+                                                                        {dec.status}
+                                                                    </Badge>
+                                                                    {dec.lockedUntil && new Date(dec.lockedUntil) > new Date() && (
+                                                                        <Tooltip>
+                                                                            <TooltipTrigger asChild>
+                                                                                <Lock size={12} className="text-amber-500" />
+                                                                            </TooltipTrigger>
+                                                                            <TooltipContent>Locked until {dec.lockedUntil}</TooltipContent>
+                                                                        </Tooltip>
+                                                                    )}
+                                                                    {dec.recommendedRegime && dec.recommendedRegime !== dec.regime && (
+                                                                        <Tooltip>
+                                                                            <TooltipTrigger asChild>
+                                                                                <Badge className="bg-[#8B5CF6]/10 text-[#8B5CF6] border-none text-[9px] font-bold gap-0.5 px-1.5">
+                                                                                    <Wand2 size={9} /> → {dec.recommendedRegime}
+                                                                                </Badge>
+                                                                            </TooltipTrigger>
+                                                                            <TooltipContent>
+                                                                                Save ~{formatINR(dec.recommendedSavings ?? 0)}/yr by switching
+                                                                            </TooltipContent>
+                                                                        </Tooltip>
+                                                                    )}
+                                                                </div>
+                                                            </TableCell>
+                                                            <TableCell className="text-right pr-6 py-3">
+                                                                <div className="flex justify-end gap-1">
+                                                                    <Tooltip>
+                                                                        <TooltipTrigger asChild>
+                                                                            <Button
+                                                                                variant="ghost"
+                                                                                size="sm"
+                                                                                onClick={() => { setSelectedDec(dec); setDetailOpen(true) }}
+                                                                                className="h-8 w-8 p-0 rounded-lg text-slate-400 hover:text-[#8B5CF6] hover:bg-slate-100"
+                                                                            >
+                                                                                <Eye size={14} />
+                                                                            </Button>
+                                                                        </TooltipTrigger>
+                                                                        <TooltipContent>View details</TooltipContent>
+                                                                    </Tooltip>
                                                                     <DropdownMenu>
                                                                         <DropdownMenuTrigger asChild>
-                                                                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-lg text-slate-300 hover:bg-slate-100">
-                                                                                <MoreHorizontal size={14} />
+                                                                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-lg text-slate-400 hover:text-[#8B5CF6] hover:bg-slate-100">
+                                                                                <MoreHorizontal size={15} />
                                                                             </Button>
                                                                         </DropdownMenuTrigger>
-                                                                        <DropdownMenuContent align="end" className="w-[180px] rounded-xl p-2 border-none shadow-2xl ring-1 ring-slate-100 bg-white font-sans text-start">
-                                                                            <DropdownMenuItem onClick={() => { updateDeclarationStatus(dec.id, 'Verified'); toast({ title: "Verified!" }); }} className="rounded-lg flex items-center gap-3 px-3 py-1.5 font-bold text-[11px] text-emerald-600">
-                                                                                <CheckCircle2 size={14} /> Verify Data
+                                                                        <DropdownMenuContent align="end" className="w-48">
+                                                                            {dec.status !== "Verified" && (
+                                                                                <DropdownMenuItem onClick={() => handleApprove(dec)} className="cursor-pointer text-xs font-medium text-emerald-600">
+                                                                                    <CheckCircle2 size={13} className="mr-2" /> Verify
+                                                                                </DropdownMenuItem>
+                                                                            )}
+                                                                            {dec.status !== "Rejected" && (
+                                                                                <DropdownMenuItem onClick={() => openRejectDialog(dec.id)} className="cursor-pointer text-xs font-medium text-rose-600">
+                                                                                    <XCircle size={13} className="mr-2" /> Reject
+                                                                                </DropdownMenuItem>
+                                                                            )}
+                                                                            <DropdownMenuItem onClick={() => openEditForm(dec)} disabled={!!dec.lockedUntil && new Date(dec.lockedUntil) > new Date()} className="cursor-pointer text-xs font-medium">
+                                                                                <Edit size={13} className="mr-2" /> Edit
                                                                             </DropdownMenuItem>
-                                                                            <DropdownMenuSeparator className="bg-slate-50" />
-                                                                            <DropdownMenuItem onClick={() => handleOpenForm(dec)} className="rounded-lg flex items-center gap-3 px-3 py-1.5 font-bold text-[11px] text-slate-600">
-                                                                                <FileText size={14} /> Refine Entry
+                                                                            <DropdownMenuItem
+                                                                                onClick={() => router.push(`/hrmcubicle/payroll/proof-submission?employeeId=${dec.employeeId}`)}
+                                                                                className="cursor-pointer text-xs font-medium"
+                                                                            >
+                                                                                <Link2 size={13} className="mr-2" /> View proofs
                                                                             </DropdownMenuItem>
-                                                                            <DropdownMenuItem onClick={() => handleDelete(dec.id)} className="rounded-lg flex items-center gap-3 px-3 py-1.5 font-bold text-[11px] text-rose-400">
-                                                                                <Trash2 size={14} /> Expunge Record
+                                                                            <DropdownMenuSeparator />
+                                                                            {/* ─ Round 2 ─ */}
+                                                                            <DropdownMenuItem onClick={() => handleRecommendSingle(dec)} className="cursor-pointer text-xs font-medium text-[#8B5CF6]">
+                                                                                <Wand2 size={13} className="mr-2" /> Recommend regime
+                                                                            </DropdownMenuItem>
+                                                                            <DropdownMenuItem onClick={() => openPlanner(dec)} className="cursor-pointer text-xs font-medium">
+                                                                                <PiggyBank size={13} className="mr-2" /> Investment planner
+                                                                            </DropdownMenuItem>
+                                                                            <DropdownMenuItem onClick={() => handleRunGap(dec)} className="cursor-pointer text-xs font-medium">
+                                                                                <Target size={13} className="mr-2" /> Gap analysis
+                                                                            </DropdownMenuItem>
+                                                                            {dec.lockedUntil && new Date(dec.lockedUntil) > new Date() ? (
+                                                                                <DropdownMenuItem onClick={() => handleUnlock(dec)} className="cursor-pointer text-xs font-medium text-amber-600">
+                                                                                    <Unlock size={13} className="mr-2" /> Unlock window
+                                                                                </DropdownMenuItem>
+                                                                            ) : (
+                                                                                <DropdownMenuItem onClick={() => openLockDialog(dec)} className="cursor-pointer text-xs font-medium text-amber-600">
+                                                                                    <Lock size={13} className="mr-2" /> Lock window
+                                                                                </DropdownMenuItem>
+                                                                            )}
+                                                                            <DropdownMenuSeparator />
+                                                                            <DropdownMenuItem onClick={() => handleDelete(dec.id)} className="cursor-pointer text-xs font-medium text-rose-600 focus:text-rose-600">
+                                                                                <Trash2 size={13} className="mr-2" /> Delete
                                                                             </DropdownMenuItem>
                                                                         </DropdownMenuContent>
                                                                     </DropdownMenu>
                                                                 </div>
                                                             </TableCell>
-                                                        </motion.tr>
-                                                    ))}
-                                                </AnimatePresence>
-                                                {filteredDeclarations.length === 0 && (
-                                                    <TableRow className="hover:bg-transparent">
-                                                        <TableCell colSpan={7} className="h-40 text-center">
-                                                            <div className="flex flex-col items-center justify-center text-slate-400">
-                                                                <Search size={40} className="mb-4 opacity-10" />
-                                                                <p className="text-sm font-bold capitalize tracking-widest italic leading-none">No matching compliance nodes found</p>
-                                                            </div>
-                                                        </TableCell>
-                                                    </TableRow>
-                                                )}
-                                            </TableBody>
-                                        </Table>
-                                    </CardContent>
-                                </Card>
-                            </div>
+                                                        </TableRow>
+                                                    )
+                                                })
+                                            )}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                </div>
 
-                            {/* Fiscal Insights Sidebar */}
-                            <div className="lg:col-span-4 space-y-6 text-start">
-                                <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden flex flex-col items-start text-start">
-                                    <CardHeader className="p-4 pb-1 text-start">
-                                        <h4 className="text-[12px] font-black text-slate-400 capitalize tracking-widest text-start leading-none mb-0">Regime Distribution</h4>
-                                    </CardHeader>
-                                    <CardContent className="p-4 w-full text-start">
-                                        <div className="space-y-3 text-start">
-                                            {regimes.map((r, i) => (
-                                                <div key={i} className="space-y-1.5 text-start">
-                                                    <div className="flex justify-between items-end text-start">
-                                                        <span className="text-xs font-bold text-slate-700 text-start">{r.name}</span>
-                                                        <span className="text-xs font-black text-slate-900">{r.count} <span className="text-[8px] text-slate-400 ml-1">({r.pct})</span></span>
+                {/* ── Add/Edit Dialog ───────────────── */}
+                <Dialog open={formOpen} onOpenChange={setFormOpen}>
+                    <DialogContent className="max-w-3xl bg-white rounded-2xl p-0 font-sans max-h-[92vh] overflow-hidden flex flex-col">
+                        <DialogHeader className="p-6 border-b border-slate-100 space-y-1">
+                            <div className="h-10 w-10 bg-[#8B5CF6]/10 rounded-xl flex items-center justify-center text-[#8B5CF6] mb-2">
+                                {editingDec ? <Edit size={20} /> : <Plus size={20} />}
+                            </div>
+                            <DialogTitle className="text-lg font-bold text-slate-900">
+                                {editingDec ? "Edit declaration" : "New tax declaration"}
+                            </DialogTitle>
+                            <DialogDescription className="text-xs font-medium text-slate-500">
+                                Enter employee info + investment declarations. Tax auto-calculates from slabs (rough).
+                            </DialogDescription>
+                        </DialogHeader>
+                        <ScrollArea className="flex-1 p-6">
+                            <div className="space-y-5">
+                                <section className="space-y-3">
+                                    <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Employee</h4>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <FormField label="Employee code">
+                                            <Input value={formData.empCode ?? ""} onChange={(e) => setFormData({ ...formData, empCode: e.target.value })} placeholder="EMP001" className="h-10 text-sm font-medium" />
+                                        </FormField>
+                                        <FormField label="Employee name" required>
+                                            <Input value={formData.employeeName} onChange={(e) => setFormData({ ...formData, employeeName: e.target.value })} className="h-10 text-sm font-medium" />
+                                        </FormField>
+                                        <FormField label="Employee ID" required>
+                                            <Input value={formData.employeeId} onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })} className="h-10 text-sm font-medium" />
+                                        </FormField>
+                                        <FormField label="PAN">
+                                            <Input value={formData.pan ?? ""} onChange={(e) => setFormData({ ...formData, pan: e.target.value.toUpperCase() })} placeholder="ABCDE1234F" className="h-10 text-sm font-medium font-mono" maxLength={10} />
+                                        </FormField>
+                                        <FormField label="Department">
+                                            <Input value={formData.dept ?? ""} onChange={(e) => setFormData({ ...formData, dept: e.target.value })} className="h-10 text-sm font-medium" />
+                                        </FormField>
+                                        <FormField label="Fiscal year" required>
+                                            <Select value={formData.fiscalYear} onValueChange={(v) => setFormData({ ...formData, fiscalYear: v })}>
+                                                <SelectTrigger className="h-10 text-sm"><SelectValue /></SelectTrigger>
+                                                <SelectContent>
+                                                    {FISCAL_YEARS.map((fy) => (<SelectItem key={fy} value={fy}>FY {fy}</SelectItem>))}
+                                                </SelectContent>
+                                            </Select>
+                                        </FormField>
+                                    </div>
+                                </section>
+
+                                <section className="space-y-3">
+                                    <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Income & regime</h4>
+                                    <div className="grid grid-cols-3 gap-3">
+                                        <FormField label="Gross salary (₹/yr)">
+                                            <Input type="number" value={formData.grossSalary ?? 0} onChange={(e) => setFormData({ ...formData, grossSalary: parseFloat(e.target.value) || 0 })} className="h-10 text-sm font-semibold tabular-nums" />
+                                        </FormField>
+                                        <FormField label="Basic salary (₹/yr)">
+                                            <Input type="number" value={formData.basicSalary ?? 0} onChange={(e) => setFormData({ ...formData, basicSalary: parseFloat(e.target.value) || 0 })} className="h-10 text-sm font-semibold tabular-nums" />
+                                        </FormField>
+                                        <FormField label="Regime">
+                                            <Select value={formData.regime} onValueChange={(v: "Old" | "New") => setFormData({ ...formData, regime: v })}>
+                                                <SelectTrigger className="h-10 text-sm"><SelectValue /></SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="New">New (default)</SelectItem>
+                                                    <SelectItem value="Old">Old (with deductions)</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </FormField>
+                                    </div>
+                                </section>
+
+                                <section className="space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Declaration line items</h4>
+                                        {formData.regime === "New" && (
+                                            <Badge className="bg-amber-50 text-amber-700 border-none text-[10px] font-semibold">
+                                                Deductions ignored in New regime
+                                            </Badge>
+                                        )}
+                                    </div>
+
+                                    {/* Add line item */}
+                                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                                        <div className="grid grid-cols-1 md:grid-cols-12 gap-2">
+                                            <div className="md:col-span-4">
+                                                <Select value={newLineCategory} onValueChange={setNewLineCategory}>
+                                                    <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+                                                    <SelectContent>
+                                                        {INVESTMENT_CATEGORIES.map((c) => (
+                                                            <SelectItem key={c.code} value={c.code}>{c.name}</SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                            <div className="md:col-span-4">
+                                                <Select value={newLineSubCategory} onValueChange={setNewLineSubCategory}>
+                                                    <SelectTrigger className="h-9 text-xs">
+                                                        <SelectValue placeholder="Sub-type (optional)" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {(INVESTMENT_CATEGORIES.find((c) => c.code === newLineCategory)?.subTypes ?? []).map((st) => (
+                                                            <SelectItem key={st} value={st}>{st}</SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                            <div className="md:col-span-3">
+                                                <Input type="number" placeholder="Amount" value={newLineAmount} onChange={(e) => setNewLineAmount(e.target.value)} className="h-9 text-xs font-semibold tabular-nums" />
+                                            </div>
+                                            <div className="md:col-span-1">
+                                                <Button onClick={addLineItem} size="sm" className="h-9 w-full bg-[#8B5CF6] hover:bg-[#7c4dff] text-white font-semibold text-xs">
+                                                    <Plus size={12} />
+                                                </Button>
+                                            </div>
+                                        </div>
+                                        {INVESTMENT_CATEGORIES.find((c) => c.code === newLineCategory)?.max !== -1 && (
+                                            <p className="text-[11px] font-medium text-slate-500">
+                                                Cap: {formatINR(INVESTMENT_CATEGORIES.find((c) => c.code === newLineCategory)?.max ?? 0)}
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    {/* Line items list */}
+                                    {formData.declarations.length === 0 ? (
+                                        <p className="text-xs text-slate-400 italic text-center py-4">No declarations yet. Add line items above.</p>
+                                    ) : (
+                                        <div className="space-y-2">
+                                            {formData.declarations.map((d, i) => (
+                                                <div key={d.id ?? i} className="flex items-center gap-3 p-3 bg-white rounded-lg border border-slate-200">
+                                                    <Badge className="bg-[#8B5CF6]/10 text-[#8B5CF6] border-none text-[10px] font-bold shrink-0">{d.category}</Badge>
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="text-sm font-semibold text-slate-800 truncate">{d.subCategory ?? d.category}</div>
                                                     </div>
-                                                    <div className="h-2 w-full bg-slate-50 rounded-full overflow-hidden">
-                                                        <div className={`h-full ${r.color} opacity-80`} style={{ width: r.pct }} />
-                                                    </div>
+                                                    <div className="text-sm font-bold text-slate-900 tabular-nums">{formatINR(d.amount)}</div>
+                                                    <Button variant="ghost" size="sm" onClick={() => removeLineItem(i)} className="h-8 w-8 p-0 rounded-lg text-slate-400 hover:text-rose-500">
+                                                        <X size={14} />
+                                                    </Button>
                                                 </div>
                                             ))}
                                         </div>
-                                        <div className="mt-3 pt-4 border-t border-slate-50 text-start">
-                                            <div className="p-3 rounded-xl bg-[#FFF9BF]/20 border border-[#FFF9BF]/50 flex items-start gap-3 text-start">
-                                                <AlertTriangle size={14} className="text-[#e6d08a] shrink-0" />
-                                                <p className="text-[11px] font-bold text-[#b09e5a] leading-relaxed capitalize tracking-wide text-start italic">TDS projected to increase by 12% in final quarter (March Overflow).</p>
-                                            </div>
+                                    )}
+                                </section>
+
+                                <section className="p-4 bg-gradient-to-br from-[#8B5CF6]/5 to-[#EC4899]/5 rounded-xl border border-[#8B5CF6]/10">
+                                    <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Projected tax</h4>
+                                    <div className="grid grid-cols-3 gap-3">
+                                        <div>
+                                            <div className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Total savings</div>
+                                            <div className="text-lg font-bold text-emerald-600 tabular-nums">{formatINR(formTotals.savings)}</div>
                                         </div>
-                                    </CardContent>
-                                </Card>
-                            </div>
-                        </div>
-                    </div>
-                </ScrollArea>
-            </div>
-
-            {/* Redesigned Attractive Form Dialog */}
-            <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-                <DialogContent className="bg-white rounded-3xl border-2 border-slate-200 p-8 max-w-lg font-sans shadow-2xl fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[100]">
-                    <div className="absolute top-0 left-0 w-32 h-32 bg-[#F0C1E1]/10 rounded-full -translate-y-16 -translate-x-16 blur-3xl" />
-                    <DialogHeader className="text-start space-y-2 relative z-10">
-                        <Badge className="bg-[#F0C1E1] text-white border-none font-bold text-[9px] px-3 py-1 capitalize tracking-wide w-fit shadow-lg shadow-[#F0C1E1]/20">Fiscal Node</Badge>
-                        <DialogTitle className="text-2xl font-bold tracking-tight text-slate-900 leading-none">{editingDec ? "Refine Compliance Trace" : "New Tax Initialization"}</DialogTitle>
-                        <DialogDescription className="text-xs font-semibold text-slate-400 capitalize tracking-wide leading-none">Map individual regime parameters for current cycle</DialogDescription>
-                    </DialogHeader>
-
-                    <div className="grid gap-5 py-8 relative z-10">
-                        <div className="space-y-2 text-start">
-                            <Label className="text-[10px] font-bold text-slate-400 capitalize tracking-wide block ml-1 text-start leading-none">Employee Marker</Label>
-                            <Input
-                                placeholder="Formal Identity..."
-                                value={formData.employeeName}
-                                onChange={e => setFormData({ ...formData, employeeName: e.target.value })}
-                                className="rounded-xl bg-slate-50 border border-slate-200 h-12 font-semibold text-sm tracking-tight px-4"
-                            />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4 text-start">
-                            <div className="space-y-2 text-start">
-                                <Label className="text-[10px] font-bold text-slate-400 capitalize tracking-wide block ml-1 text-start leading-none">Registry Id</Label>
-                                <Input
-                                    placeholder="EMPXXX"
-                                    value={formData.employeeId}
-                                    onChange={e => setFormData({ ...formData, employeeId: e.target.value })}
-                                    className="rounded-xl bg-slate-50 border border-slate-200 h-12 font-bold text-sm tracking-wide px-4"
-                                />
-                            </div>
-                            <div className="space-y-2 text-start">
-                                <Label className="text-[10px] font-bold text-slate-400 capitalize tracking-wide block ml-1 text-start leading-none">Tax Regime</Label>
-                                <Select value={formData.regime} onValueChange={(v) => setFormData({ ...formData, regime: v })}>
-                                    <SelectTrigger className="rounded-xl h-12 bg-slate-50 border border-slate-200 font-bold text-xs px-4 focus:ring-1 focus:ring-[#CB9DF0]">
-                                        <SelectValue placeholder="Select Regime" />
-                                    </SelectTrigger>
-                                    <SelectContent position="popper" className="rounded-xl border border-slate-100 shadow-2xl p-2 font-sans bg-white z-[200] min-w-[180px]">
-                                        <SelectItem value="New" className="rounded-lg text-xs font-semibold text-slate-700 h-10 focus:bg-slate-50 transition-colors">New Regime</SelectItem>
-                                        <SelectItem value="Old" className="rounded-lg text-xs font-semibold text-slate-700 h-10 focus:bg-slate-50 transition-colors">Old Regime</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4 text-start">
-                            <div className="space-y-2 text-start">
-                                <Label className="text-[10px] font-bold text-slate-400 capitalize tracking-wide block ml-1 text-start leading-none">Gross Savings (₹)</Label>
-                                <Input
-                                    type="number"
-                                    value={formData.totalSavings}
-                                    onChange={e => setFormData({ ...formData, totalSavings: e.target.value })}
-                                    className="rounded-xl bg-slate-50 border border-slate-200 h-12 font-bold text-base text-slate-900 px-4 tabular-nums"
-                                />
-                            </div>
-                            <div className="space-y-2 text-start">
-                                <Label className="text-[10px] font-bold text-slate-400 capitalize tracking-wide block ml-1 text-start leading-none">Est Monthly Tds (₹)</Label>
-                                <Input
-                                    type="number"
-                                    value={formData.estimatedTax}
-                                    onChange={e => setFormData({ ...formData, estimatedTax: e.target.value })}
-                                    className="rounded-xl bg-slate-50 border border-slate-200 h-12 font-bold text-base text-rose-500 px-4 tabular-nums"
-                                />
-                            </div>
-                        </div>
-                    </div>
-
-                    <DialogFooter className="relative z-10 sm:justify-start">
-                        <Button
-                            className="w-full bg-[#CB9DF0] hover:bg-[#b088e0] text-white rounded-2xl h-14 font-bold capitalize text-xs tracking-wide shadow-2xl shadow-[#CB9DF0]/20 transition-all border-none"
-                            onClick={handleSubmit}
-                        >
-                            {editingDec ? "Map Revised Compliance" : "Initialize Cycle Compliance"}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            {/* Verification Sheet */}
-            <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-                <SheetContent className="sm:max-w-md border-none shadow-2xl p-0 overflow-hidden font-sans">
-                    <div className="h-full flex flex-col bg-white overflow-hidden text-start font-sans">
-                        <div className="bg-slate-50 p-10 text-slate-900 border-b border-slate-100 flex flex-col items-start text-start">
-                            <Badge className="bg-[#CB9DF0]/10 text-[#CB9DF0] border-none font-black text-[9px] capitalize tracking-widest px-3 mb-4 leading-none h-5 shadow-sm">COMPLIANCE REVIEW</Badge>
-                            <SheetTitle className="text-2xl font-black text-slate-900 tracking-tighter uppercase leading-none text-start mb-0">{selectedDec?.employeeName}</SheetTitle>
-                            <SheetDescription className="text-slate-400 font-bold tracking-widest text-[10px] capitalize mt-2 text-start leading-none">Financial Year 2025-2026 • {selectedDec?.regime} Regime</SheetDescription>
-                        </div>
-                        <ScrollArea className="flex-1 p-8 text-start font-sans">
-                            <div className="space-y-8 text-start">
-                                <div className="grid grid-cols-2 gap-4 text-start font-sans">
-                                    <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 text-start font-sans">
-                                        <span className="text-[9px] font-black text-slate-400 capitalize tracking-widest block mb-1 leading-none text-start">Gross Savings</span>
-                                        <p className="text-lg font-black text-slate-900 leading-none text-start">{formatINR(selectedDec?.totalSavings || 0)}</p>
+                                        <div>
+                                            <div className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Taxable income</div>
+                                            <div className="text-lg font-bold text-slate-800 tabular-nums">{formatINR(formTotals.taxableIncome)}</div>
+                                        </div>
+                                        <div>
+                                            <div className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Est. annual TDS</div>
+                                            <div className="text-lg font-bold text-rose-600 tabular-nums">{formatINR(formTotals.tax)}</div>
+                                        </div>
                                     </div>
-                                    <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 text-start font-sans">
-                                        <span className="text-[9px] font-black text-slate-400 capitalize tracking-widest block mb-1 leading-none text-start">Projected TDS</span>
-                                        <p className="text-lg font-black text-rose-500 leading-none text-start">{formatINR(selectedDec?.estimatedTax || 0)}</p>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-4 text-start">
-                                    <h4 className="text-[10px] font-black text-slate-900 capitalize tracking-widest border-b border-slate-50 pb-3 text-start mb-0 leading-none">Declaration Breakdown</h4>
-                                    <div className="space-y-3 text-start">
-                                        {[
-                                            { label: "80C (Insurance, LIC, PPF)", amt: formatINR(150000) },
-                                            { label: "80D (Health Insurance)", amt: formatINR(25000) },
-                                            { label: "House Rent Allowance", amt: formatINR(360000) },
-                                            { label: "Section 24 (Home Loan)", amt: formatINR(200000) }
-                                        ].map((row, i) => (
-                                            <div key={i} className="flex justify-between items-center text-start">
-                                                <span className="text-[10px] font-bold text-slate-500 capitalize tracking-tighter text-start leading-none italic">{row.label}</span>
-                                                <span className="text-xs font-black text-slate-800 leading-none">{row.amt}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                <div className="p-6 rounded-2xl bg-emerald-50 border border-emerald-100 flex flex-col items-center gap-4 text-center group transition-all hover:bg-emerald-100/50">
-                                    <div className="h-12 w-12 bg-white rounded-xl flex items-center justify-center text-emerald-500 shadow-sm transition-transform group-hover:scale-110">
-                                        <ExternalLink size={20} />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <h4 className="text-sm font-bold text-slate-900 capitalize leading-none">Evidence Repository</h4>
-                                        <p className="text-[10px] font-semibold text-slate-400 capitalize italic tracking-wide">4 Documents linked to this declaration</p>
-                                    </div>
-                                    <Button
-                                        onClick={() => handleViewProofs(selectedDec?.employeeName)}
-                                        variant="outline" className="w-full h-10 border-emerald-200 text-emerald-600 font-bold text-xs capitalize hover:bg-emerald-500 hover:text-white rounded-xl border-none"
-                                    >View Proofs</Button>
-                                </div>
+                                    <p className="text-[11px] font-medium text-slate-500 mt-2 italic">
+                                        * Rough projection based on simplified slabs. Actual TDS may vary.
+                                    </p>
+                                </section>
                             </div>
                         </ScrollArea>
-                        <div className="p-8 border-t border-slate-50 bg-slate-50/50 flex flex-col gap-3 text-start">
-                            <Button
-                                onClick={() => { updateDeclarationStatus(selectedDec.id, 'Verified'); setIsSheetOpen(false); toast({ title: "Authorized" }); }}
-                                className="w-full h-12 bg-[#CB9DF0] text-white rounded-xl font-black capitalize text-[10px] tracking-widest shadow-xl shadow-[#CB9DF0]/20 border-none transition-all"
-                            >
-                                Verify Compliance
+                        <DialogFooter className="p-4 border-t border-slate-100 bg-slate-50/50 gap-2">
+                            <Button variant="ghost" onClick={() => setFormOpen(false)} className="h-10 px-5 font-semibold text-xs">Cancel</Button>
+                            <Button onClick={handleSubmitForm} className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-lg h-10 px-6 font-bold text-xs border-none">
+                                {editingDec ? "Save changes" : "Add declaration"}
                             </Button>
-                            <Button variant="ghost" className="w-full h-10 text-slate-400 font-bold capitalize text-[9px] tracking-widest hover:text-rose-500 transition-all border-none" onClick={() => { updateDeclarationStatus(selectedDec.id, 'Pending'); setIsSheetOpen(false); toast({ title: "Deficiency Flagged", description: `${selectedDec?.employeeName}'s declaration has been flagged and reverted to Pending status.`, variant: "destructive" }); }}>Flag Deficiency</Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* ── Detail Sheet ───────────────────── */}
+                <Sheet open={detailOpen} onOpenChange={setDetailOpen}>
+                    <SheetContent className="sm:max-w-xl p-0 font-sans">
+                        {selectedDec && (
+                            <div className="h-full flex flex-col bg-white">
+                                <SheetHeader className="bg-slate-50 p-6 border-b border-slate-100 space-y-2">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div className="min-w-0">
+                                            <Badge
+                                                className="border-none text-[10px] font-semibold px-2 py-0.5 mb-2 w-fit"
+                                                style={{
+                                                    backgroundColor: selectedDec.regime === "New" ? "#8B5CF620" : "#EC489920",
+                                                    color: selectedDec.regime === "New" ? "#8B5CF6" : "#EC4899",
+                                                }}
+                                            >
+                                                {selectedDec.regime} Regime • FY {selectedDec.fiscalYear}
+                                            </Badge>
+                                            <SheetTitle className="text-lg font-bold text-slate-900 tracking-tight truncate">{selectedDec.employeeName}</SheetTitle>
+                                            <SheetDescription className="text-[11px] font-medium text-slate-500 truncate">
+                                                {selectedDec.empCode ?? selectedDec.employeeId} • {selectedDec.dept ?? "—"}{selectedDec.pan ? ` • PAN ${selectedDec.pan}` : ""}
+                                            </SheetDescription>
+                                        </div>
+                                        <Badge className={cn("border-none text-[10px] font-semibold px-2 shrink-0",
+                                            selectedDec.status === "Verified" ? "bg-emerald-50 text-emerald-600" :
+                                                selectedDec.status === "Rejected" ? "bg-rose-50 text-rose-600" :
+                                                    selectedDec.status === "Submitted" ? "bg-blue-50 text-blue-600" :
+                                                        "bg-amber-50 text-amber-600")}>
+                                            {selectedDec.status}
+                                        </Badge>
+                                    </div>
+                                </SheetHeader>
+
+                                <ScrollArea className="flex-1">
+                                    <div className="p-6 space-y-5">
+                                        <section className="grid grid-cols-2 gap-3">
+                                            <MetricCard label="Gross salary" value={formatINR(selectedDec.grossSalary ?? 0)} />
+                                            <MetricCard label="Basic salary" value={formatINR(selectedDec.basicSalary ?? 0)} />
+                                            <MetricCard label="Total savings" value={formatINR(selectedDec.totalSavings)} color="text-emerald-600" />
+                                            <MetricCard label="Taxable income" value={formatINR(selectedDec.taxableIncome ?? 0)} />
+                                            <MetricCard label="Est. annual TDS" value={formatINR(selectedDec.estimatedTax)} color="text-rose-600" />
+                                            <MetricCard label="Monthly TDS" value={formatINR(selectedDec.estimatedTax / 12)} color="text-rose-600" />
+                                        </section>
+
+                                        <section>
+                                            <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">
+                                                Declaration breakdown ({selectedDec.declarations.length})
+                                            </div>
+                                            {selectedDec.declarations.length === 0 ? (
+                                                <p className="text-xs text-slate-400 italic">No line items declared.</p>
+                                            ) : (
+                                                <div className="space-y-1.5">
+                                                    {selectedDec.declarations.map((d, i) => (
+                                                        <div key={d.id ?? i} className="flex items-center gap-3 p-2.5 bg-slate-50 rounded-lg">
+                                                            <Badge className="bg-[#8B5CF6]/10 text-[#8B5CF6] border-none text-[10px] font-bold shrink-0 w-20 justify-center">{d.category}</Badge>
+                                                            <span className="text-xs font-medium text-slate-700 flex-1 truncate">{d.subCategory ?? "—"}</span>
+                                                            <span className="text-sm font-bold text-slate-900 tabular-nums">{formatINR(d.amount)}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </section>
+
+                                        <section>
+                                            <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">
+                                                Linked proofs ({linkedProofs(selectedDec.id).length})
+                                            </div>
+                                            {linkedProofs(selectedDec.id).length === 0 ? (
+                                                <div className="p-3 bg-amber-50 rounded-lg border border-amber-100 flex items-start gap-2">
+                                                    <AlertTriangle size={14} className="text-amber-600 shrink-0 mt-0.5" />
+                                                    <p className="text-[11px] font-semibold text-amber-800">
+                                                        No proofs attached yet. Employee must submit documents before verification.
+                                                    </p>
+                                                </div>
+                                            ) : (
+                                                <div className="space-y-1.5">
+                                                    {linkedProofs(selectedDec.id).map((p) => (
+                                                        <div key={p.id} className="flex items-center gap-3 p-2.5 bg-slate-50 rounded-lg">
+                                                            <FileText size={14} className="text-[#8B5CF6] shrink-0" />
+                                                            <div className="flex-1 min-w-0">
+                                                                <div className="text-xs font-semibold text-slate-800 truncate">{p.documentName ?? p.type}</div>
+                                                                <div className="text-[10px] font-medium text-slate-500">{p.type} • {formatINR(p.amount)}</div>
+                                                            </div>
+                                                            <Badge className={cn("border-none text-[9px] font-bold px-1.5",
+                                                                p.status === "Approved" ? "bg-emerald-50 text-emerald-600" :
+                                                                    p.status === "Rejected" ? "bg-rose-50 text-rose-600" :
+                                                                        "bg-amber-50 text-amber-600")}>{p.status}</Badge>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                            <Button
+                                                onClick={() => router.push(`/hrmcubicle/payroll/proof-submission?employeeId=${selectedDec.employeeId}`)}
+                                                variant="outline"
+                                                className="w-full mt-3 h-9 border-slate-200 text-slate-600 font-semibold text-xs gap-2"
+                                            >
+                                                <Link2 size={13} /> Go to proof submissions
+                                            </Button>
+                                        </section>
+
+                                        <section>
+                                            <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Timeline</div>
+                                            <div className="space-y-1.5">
+                                                <TimelineRow label="Submitted" value={selectedDec.submittedDate ?? "—"} />
+                                                {selectedDec.verifiedDate && <TimelineRow label="Verified" value={`${selectedDec.verifiedDate}${selectedDec.verifiedBy ? ` by ${selectedDec.verifiedBy}` : ""}`} valueColor="text-emerald-600" />}
+                                                {selectedDec.rejectedDate && <TimelineRow label="Rejected" value={selectedDec.rejectedDate} valueColor="text-rose-600" />}
+                                            </div>
+                                        </section>
+
+                                        {selectedDec.rejectionReason && (
+                                            <section>
+                                                <div className="text-[10px] font-bold text-rose-500 uppercase tracking-wider mb-2">Rejection reason</div>
+                                                <div className="p-3 bg-rose-50 rounded-lg border border-rose-100">
+                                                    <p className="text-xs font-semibold text-rose-800">{selectedDec.rejectionReason}</p>
+                                                </div>
+                                            </section>
+                                        )}
+                                    </div>
+                                </ScrollArea>
+
+                                <div className="p-5 border-t border-slate-100 bg-slate-50/50 flex gap-2 flex-wrap">
+                                    {selectedDec.status !== "Verified" && (
+                                        <Button
+                                            onClick={() => { handleApprove(selectedDec); setDetailOpen(false) }}
+                                            className="flex-1 h-10 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-bold text-xs border-none"
+                                        >
+                                            <CheckCircle2 size={13} className="mr-1.5" /> Verify
+                                        </Button>
+                                    )}
+                                    {selectedDec.status !== "Rejected" && (
+                                        <Button
+                                            onClick={() => { openRejectDialog(selectedDec.id); setDetailOpen(false) }}
+                                            variant="outline"
+                                            className="flex-1 h-10 text-rose-500 border-rose-200 font-bold text-xs hover:bg-rose-50"
+                                        >
+                                            <XCircle size={13} className="mr-1.5" /> Reject
+                                        </Button>
+                                    )}
+                                    <Button
+                                        onClick={() => { openEditForm(selectedDec); setDetailOpen(false) }}
+                                        variant="outline"
+                                        className="h-10 px-4 font-semibold text-xs border-slate-200"
+                                    >
+                                        <Edit size={13} className="mr-1.5" /> Edit
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
+                    </SheetContent>
+                </Sheet>
+
+                {/* ── Reject Dialog ───────────────── */}
+                <Dialog open={rejectOpen} onOpenChange={setRejectOpen}>
+                    <DialogContent className="max-w-md bg-white rounded-2xl p-6 font-sans">
+                        <DialogHeader className="space-y-1">
+                            <div className="h-10 w-10 bg-rose-50 rounded-xl flex items-center justify-center text-rose-500 mb-2">
+                                <XCircle size={20} />
+                            </div>
+                            <DialogTitle className="text-lg font-bold text-slate-900">Reject declaration</DialogTitle>
+                            <DialogDescription className="text-xs font-medium text-slate-500">
+                                Explain what's wrong so the employee can resubmit.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="mt-4 space-y-3">
+                            <FormField label="Reason" required>
+                                <Textarea value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} placeholder="e.g., Missing proofs, PAN mismatch..." className="min-h-[90px] text-xs font-medium" />
+                            </FormField>
+                        </div>
+                        <DialogFooter className="mt-4 gap-2">
+                            <Button variant="ghost" onClick={() => setRejectOpen(false)} className="h-10 font-semibold text-xs">Cancel</Button>
+                            <Button onClick={handleConfirmReject} className="bg-rose-500 hover:bg-rose-600 text-white rounded-lg h-10 px-5 font-bold text-xs border-none">
+                                Confirm reject
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* ── Bulk Delete Confirm ─────────── */}
+                <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+                    <DialogContent className="max-w-sm bg-white rounded-2xl p-6 font-sans">
+                        <DialogHeader className="space-y-1">
+                            <div className="h-10 w-10 bg-rose-50 rounded-xl flex items-center justify-center text-rose-500 mb-2">
+                                <Trash2 size={20} />
+                            </div>
+                            <DialogTitle className="text-lg font-bold text-slate-900">Delete {selectedIds.length} declaration{selectedIds.length > 1 ? "s" : ""}?</DialogTitle>
+                            <DialogDescription className="text-xs font-medium text-slate-500">This action cannot be undone.</DialogDescription>
+                        </DialogHeader>
+                        <DialogFooter className="mt-4 gap-2">
+                            <Button variant="ghost" onClick={() => setDeleteConfirmOpen(false)} className="h-10 font-semibold text-xs">Cancel</Button>
+                            <Button onClick={handleBulkDelete} className="bg-rose-500 hover:bg-rose-600 text-white rounded-lg h-10 px-5 font-bold text-xs border-none">Delete</Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* ── Regime Compare ───────────────── */}
+                <RegimeCompareDialog open={regimeCompareOpen} onOpenChange={setRegimeCompareOpen} />
+
+                {/* ──────────── Round 2 Dialogs ──────────── */}
+
+                {/* ── Lock Window Dialog ───── */}
+                <Dialog open={lockDialogOpen} onOpenChange={setLockDialogOpen}>
+                    <DialogContent className="max-w-md bg-white rounded-2xl p-6 font-sans">
+                        <DialogHeader className="space-y-1">
+                            <div className="h-10 w-10 bg-amber-50 rounded-xl flex items-center justify-center text-amber-600 mb-2">
+                                <Lock size={20} />
+                            </div>
+                            <DialogTitle className="text-lg font-bold text-slate-900">Lock declaration</DialogTitle>
+                            <DialogDescription className="text-xs font-medium text-slate-500">
+                                Employee won't be able to edit {lockTarget?.employeeName}'s declaration until the unlock date.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="mt-4 space-y-3">
+                            <div className="space-y-1.5">
+                                <Label className="text-[11px] font-semibold text-slate-600">Locked until</Label>
+                                <Input type="date" value={lockUntilDate} onChange={(e) => setLockUntilDate(e.target.value)} className="h-10 text-sm font-medium" />
+                                <p className="text-[10px] font-medium text-slate-500">Commonly the tax filing window closure (e.g. last day of January).</p>
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-[11px] font-semibold text-slate-600">Reason (optional)</Label>
+                                <Textarea value={lockReasonInput} onChange={(e) => setLockReasonInput(e.target.value)} placeholder="e.g. FY window closed, awaiting proofs..." className="min-h-[60px] text-xs font-medium" />
+                            </div>
+                        </div>
+                        <DialogFooter className="mt-4 gap-2">
+                            <Button variant="ghost" onClick={() => setLockDialogOpen(false)} className="h-10 font-semibold text-xs">Cancel</Button>
+                            <Button onClick={handleConfirmLock} className="bg-amber-500 hover:bg-amber-600 text-white rounded-lg h-10 px-5 font-bold text-xs border-none">
+                                <Lock size={13} className="mr-1.5" /> Lock
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* ── Bulk Flip Dialog ───── */}
+                <Dialog open={bulkFlipOpen} onOpenChange={setBulkFlipOpen}>
+                    <DialogContent className="max-w-md bg-white rounded-2xl p-6 font-sans">
+                        <DialogHeader className="space-y-1">
+                            <div className="h-10 w-10 bg-[#8B5CF6]/10 rounded-xl flex items-center justify-center text-[#8B5CF6] mb-2">
+                                <ArrowLeftRight size={20} />
+                            </div>
+                            <DialogTitle className="text-lg font-bold text-slate-900">Bulk flip regime</DialogTitle>
+                            <DialogDescription className="text-xs font-medium text-slate-500">
+                                Change regime for {selectedIds.length} declarations. Tax computations update instantly.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="mt-4 space-y-3">
+                            <div className="grid grid-cols-2 gap-2">
+                                <button
+                                    onClick={() => setBulkFlipTarget("Old")}
+                                    className={cn("p-3 rounded-xl border-2 text-left",
+                                        bulkFlipTarget === "Old" ? "border-[#EC4899] bg-[#EC4899]/5" : "border-slate-200 bg-white")}
+                                >
+                                    <div className="text-sm font-bold text-slate-900">Old Regime</div>
+                                    <div className="text-[10px] font-medium text-slate-500 mt-0.5">Higher rates, but deductions allowed</div>
+                                </button>
+                                <button
+                                    onClick={() => setBulkFlipTarget("New")}
+                                    className={cn("p-3 rounded-xl border-2 text-left",
+                                        bulkFlipTarget === "New" ? "border-[#8B5CF6] bg-[#8B5CF6]/5" : "border-slate-200 bg-white")}
+                                >
+                                    <div className="text-sm font-bold text-slate-900">New Regime</div>
+                                    <div className="text-[10px] font-medium text-slate-500 mt-0.5">Lower rates, no deductions</div>
+                                </button>
+                            </div>
+                        </div>
+                        <DialogFooter className="mt-4 gap-2">
+                            <Button variant="ghost" onClick={() => setBulkFlipOpen(false)} className="h-10 font-semibold text-xs">Cancel</Button>
+                            <Button onClick={handleConfirmBulkFlip} className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-lg h-10 px-5 font-bold text-xs border-none">
+                                Flip {selectedIds.length} to {bulkFlipTarget}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* ── Investment Planner ───── */}
+                <Dialog open={plannerOpen} onOpenChange={setPlannerOpen}>
+                    <DialogContent className="max-w-2xl bg-white rounded-2xl p-6 font-sans max-h-[90vh] overflow-auto">
+                        <DialogHeader className="space-y-1">
+                            <div className="h-10 w-10 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 mb-2">
+                                <PiggyBank size={20} />
+                            </div>
+                            <DialogTitle className="text-lg font-bold text-slate-900">Investment planner — {plannerTarget?.employeeName}</DialogTitle>
+                            <DialogDescription className="text-xs font-medium text-slate-500">
+                                Simulate tax savings by adjusting investments. Numbers update live.
+                            </DialogDescription>
+                        </DialogHeader>
+                        {plannerTarget && (() => {
+                            const gross = plannerTarget.grossSalary ?? 0
+                            const totalSim = plannerSec80C + plannerSec80D + plannerHRA + plannerSec24 + plannerNPS
+                            // Recompute tax with simulated deductions
+                            const taxOld = Math.max(0, (() => {
+                                const taxable = Math.max(0, gross - totalSim)
+                                let t = 0, prev = 0
+                                const slabs = [{ upto: 250000, rate: 0 }, { upto: 500000, rate: 0.05 }, { upto: 1000000, rate: 0.20 }, { upto: Infinity, rate: 0.30 }]
+                                for (const s of slabs) {
+                                    if (taxable > prev) { t += (Math.min(taxable, s.upto) - prev) * s.rate; prev = s.upto }
+                                }
+                                return Math.round(t * 1.04)
+                            })())
+                            const taxNew = Math.max(0, (() => {
+                                const taxable = gross
+                                let t = 0, prev = 0
+                                const slabs = [{ upto: 300000, rate: 0 }, { upto: 700000, rate: 0.05 }, { upto: 1000000, rate: 0.10 }, { upto: 1200000, rate: 0.15 }, { upto: 1500000, rate: 0.20 }, { upto: Infinity, rate: 0.30 }]
+                                for (const s of slabs) {
+                                    if (taxable > prev) { t += (Math.min(taxable, s.upto) - prev) * s.rate; prev = s.upto }
+                                }
+                                return Math.round(t * 1.04)
+                            })())
+                            const currentTax = plannerTarget.regime === "Old" ? taxOld : taxNew
+                            const currentTaxBaseline = plannerTarget.estimatedTax
+                            const savedVsBaseline = currentTaxBaseline - currentTax
+                            return (
+                                <div className="mt-4 space-y-4">
+                                    <div className="p-3 rounded-lg bg-slate-50 border border-slate-100 text-xs font-medium text-slate-700">
+                                        Gross salary: <strong>{formatINR(gross)}</strong> • Current regime: <strong>{plannerTarget.regime}</strong> • Baseline tax: <strong>{formatINR(plannerTarget.estimatedTax)}</strong>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <PlannerInput label="80C (LIC/PPF/ELSS)" max={150000} value={plannerSec80C} onChange={setPlannerSec80C} />
+                                        <PlannerInput label="80D (Health Insurance)" max={100000} value={plannerSec80D} onChange={setPlannerSec80D} />
+                                        <PlannerInput label="80CCD(1B) NPS" max={50000} value={plannerNPS} onChange={setPlannerNPS} />
+                                        <PlannerInput label="HRA" max={(plannerTarget.basicSalary ?? 0) * 0.5} value={plannerHRA} onChange={setPlannerHRA} />
+                                        <PlannerInput label="Sec 24 (Home Loan)" max={200000} value={plannerSec24} onChange={setPlannerSec24} />
+                                    </div>
+                                    <div className="p-4 rounded-xl bg-gradient-to-br from-[#8B5CF6]/5 to-[#EC4899]/5 border border-[#8B5CF6]/10 space-y-3">
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div className={cn("p-3 rounded-lg border-2",
+                                                taxOld < taxNew ? "border-emerald-500 bg-emerald-50" : "border-slate-200 bg-white")}>
+                                                <div className="flex items-center justify-between mb-1">
+                                                    <span className="text-[10px] font-bold text-slate-700">Old regime tax</span>
+                                                    {taxOld < taxNew && <Badge className="bg-emerald-500 text-white border-none text-[9px] font-bold">Better</Badge>}
+                                                </div>
+                                                <div className="text-xl font-bold text-slate-900 tabular-nums">{formatINR(taxOld)}</div>
+                                            </div>
+                                            <div className={cn("p-3 rounded-lg border-2",
+                                                taxNew < taxOld ? "border-emerald-500 bg-emerald-50" : "border-slate-200 bg-white")}>
+                                                <div className="flex items-center justify-between mb-1">
+                                                    <span className="text-[10px] font-bold text-slate-700">New regime tax</span>
+                                                    {taxNew < taxOld && <Badge className="bg-emerald-500 text-white border-none text-[9px] font-bold">Better</Badge>}
+                                                </div>
+                                                <div className="text-xl font-bold text-slate-900 tabular-nums">{formatINR(taxNew)}</div>
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div className="p-2.5 rounded-lg bg-white border border-slate-200">
+                                                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Total simulated deductions</div>
+                                                <div className="text-lg font-bold text-emerald-600 tabular-nums mt-0.5">{formatINR(totalSim)}</div>
+                                            </div>
+                                            <div className={cn("p-2.5 rounded-lg border",
+                                                savedVsBaseline > 0 ? "bg-emerald-50 border-emerald-200" :
+                                                    savedVsBaseline < 0 ? "bg-rose-50 border-rose-200" :
+                                                        "bg-slate-50 border-slate-200")}>
+                                                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Savings vs baseline</div>
+                                                <div className={cn("text-lg font-bold tabular-nums mt-0.5",
+                                                    savedVsBaseline > 0 ? "text-emerald-600" : savedVsBaseline < 0 ? "text-rose-600" : "text-slate-700")}>
+                                                    {savedVsBaseline > 0 ? "+" : ""}{formatINR(savedVsBaseline)}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )
+                        })()}
+                        <DialogFooter className="mt-4">
+                            <Button onClick={() => setPlannerOpen(false)} className="w-full h-10 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-bold text-xs border-none">
+                                Done
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* ── Gap Analysis Dialog ───── */}
+                <Dialog open={gapOpen} onOpenChange={setGapOpen}>
+                    <DialogContent className="max-w-md bg-white rounded-2xl p-6 font-sans">
+                        <DialogHeader className="space-y-1">
+                            <div className="h-10 w-10 bg-[#8B5CF6]/10 rounded-xl flex items-center justify-center text-[#8B5CF6] mb-2">
+                                <Target size={20} />
+                            </div>
+                            <DialogTitle className="text-lg font-bold text-slate-900">Gap analysis — {gapTarget?.employeeName}</DialogTitle>
+                            <DialogDescription className="text-xs font-medium text-slate-500">
+                                How close the employee is to maximum possible tax-saving.
+                            </DialogDescription>
+                        </DialogHeader>
+                        {gapTarget && (
+                            <div className="mt-4 space-y-3">
+                                <div className="grid grid-cols-3 gap-2">
+                                    <div className="p-3 rounded-lg bg-slate-50 border border-slate-100">
+                                        <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Declared</div>
+                                        <div className="text-base font-bold text-slate-900 tabular-nums mt-0.5">{formatINR(gapTarget.totalSavings)}</div>
+                                    </div>
+                                    <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200">
+                                        <div className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">Max possible</div>
+                                        <div className="text-base font-bold text-emerald-700 tabular-nums mt-0.5">{formatINR(gapTarget.maxPossibleSavings ?? 0)}</div>
+                                    </div>
+                                    <div className="p-3 rounded-lg bg-amber-50 border border-amber-200">
+                                        <div className="text-[10px] font-bold text-amber-700 uppercase tracking-wider">Unused</div>
+                                        <div className="text-base font-bold text-amber-700 tabular-nums mt-0.5">{formatINR(gapTarget.gapFromMax ?? 0)}</div>
+                                    </div>
+                                </div>
+                                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                    <div className="flex items-start gap-2">
+                                        <Sparkles size={14} className="text-blue-600 shrink-0 mt-0.5" />
+                                        <div className="text-xs text-blue-900 font-medium leading-relaxed">
+                                            This employee has <strong>{formatINR(gapTarget.gapFromMax ?? 0)}</strong> of unused deduction headroom.
+                                            Encouraging more 80C / 80D / NPS investment could save them up to <strong>~{formatINR((gapTarget.gapFromMax ?? 0) * 0.3)}</strong> more in tax (30% slab).
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                                    <motion.div
+                                        className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full"
+                                        initial={{ width: 0 }}
+                                        animate={{ width: `${Math.min(100, (gapTarget.totalSavings / (gapTarget.maxPossibleSavings ?? 1)) * 100)}%` }}
+                                    />
+                                </div>
+                                <p className="text-[10px] font-medium text-slate-500 text-center">
+                                    {((gapTarget.totalSavings / (gapTarget.maxPossibleSavings ?? 1)) * 100).toFixed(0)}% of maximum deduction utilized
+                                </p>
+                            </div>
+                        )}
+                        <DialogFooter className="mt-4">
+                            <Button onClick={() => setGapOpen(false)} className="w-full h-10 bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-lg font-bold text-xs border-none">Done</Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* ── Recommend All Result ─── */}
+                <Dialog open={!!recommendResult} onOpenChange={(open) => !open && setRecommendResult(null)}>
+                    <DialogContent className="max-w-md bg-white rounded-2xl p-6 font-sans">
+                        <DialogHeader className="space-y-1">
+                            <div className="h-10 w-10 bg-[#8B5CF6]/10 rounded-xl flex items-center justify-center text-[#8B5CF6] mb-2">
+                                <Wand2 size={20} />
+                            </div>
+                            <DialogTitle className="text-lg font-bold text-slate-900">Regime analysis complete</DialogTitle>
+                            <DialogDescription className="text-xs font-medium text-slate-500">
+                                Ran the regime optimiser across all declarations.
+                            </DialogDescription>
+                        </DialogHeader>
+                        {recommendResult && (
+                            <div className="mt-4 grid grid-cols-2 gap-3">
+                                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                                    <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Analyzed</div>
+                                    <div className="text-2xl font-bold text-slate-900 tabular-nums mt-1">{recommendResult.analyzed}</div>
+                                </div>
+                                <div className={cn("p-4 rounded-xl border",
+                                    recommendResult.switched > 0 ? "bg-amber-50 border-amber-200" : "bg-emerald-50 border-emerald-200")}>
+                                    <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Should switch</div>
+                                    <div className={cn("text-2xl font-bold tabular-nums mt-1",
+                                        recommendResult.switched > 0 ? "text-amber-700" : "text-emerald-700")}>
+                                        {recommendResult.switched}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                        <DialogFooter className="mt-4">
+                            <Button onClick={() => setRecommendResult(null)} className="w-full h-10 bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-lg font-bold text-xs border-none">Done</Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+            </div>
+        </TooltipProvider>
+    )
+}
+
+const PlannerInput = ({ label, max, value, onChange }: { label: string; max: number; value: number; onChange: (v: number) => void }) => (
+    <div className="space-y-1">
+        <div className="flex items-center justify-between">
+            <Label className="text-[11px] font-semibold text-slate-600">{label}</Label>
+            {max > 0 && <span className="text-[9px] font-bold text-slate-400">max ₹{max.toLocaleString()}</span>}
+        </div>
+        <Input
+            type="number"
+            value={value}
+            onChange={(e) => {
+                const v = parseFloat(e.target.value) || 0
+                onChange(max > 0 ? Math.min(max, v) : v)
+            }}
+            className="h-9 text-xs font-semibold tabular-nums"
+        />
+    </div>
+)
+
+// ──────────────────────────────────────────────────────────
+// Subcomponents
+// ──────────────────────────────────────────────────────────
+
+const StatCard = ({ label, value, caption, icon: Icon, color }: { label: string; value: string; caption: string; icon: any; color: string }) => (
+    <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-md transition-all">
+        <CardContent className="p-4">
+            <div className="flex justify-between items-start gap-2">
+                <div className="space-y-1 min-w-0">
+                    <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{label}</p>
+                    <p className="text-xl font-bold text-slate-900 tracking-tight tabular-nums truncate">{value}</p>
+                    <p className="text-[11px] font-medium text-slate-400 truncate">{caption}</p>
+                </div>
+                <div className="h-10 w-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: `${color}14`, color }}>
+                    <Icon size={18} />
+                </div>
+            </div>
+        </CardContent>
+    </Card>
+)
+
+const MetricCard = ({ label, value, color }: { label: string; value: string; color?: string }) => (
+    <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
+        <div className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">{label}</div>
+        <div className={cn("text-sm font-bold tabular-nums mt-0.5", color ?? "text-slate-900")}>{value}</div>
+    </div>
+)
+
+const RegimeBar = ({ label, count, total, color }: { label: string; count: number; total: number; color: string }) => {
+    const pct = total ? (count / total) * 100 : 0
+    return (
+        <div className="space-y-2 p-3 bg-slate-50 rounded-lg border border-slate-100">
+            <div className="flex justify-between items-baseline">
+                <span className="text-xs font-bold text-slate-700">{label}</span>
+                <span className="text-xs font-bold tabular-nums" style={{ color }}>
+                    {count} <span className="text-slate-400 text-[10px]">({Math.round(pct)}%)</span>
+                </span>
+            </div>
+            <div className="h-2 w-full bg-white rounded-full overflow-hidden">
+                <motion.div
+                    className="h-full rounded-full"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${pct}%` }}
+                    style={{ backgroundColor: color }}
+                />
+            </div>
+        </div>
+    )
+}
+
+const TimelineRow = ({ label, value, valueColor }: { label: string; value: string; valueColor?: string }) => (
+    <div className="flex justify-between items-center py-1 text-xs">
+        <span className="font-medium text-slate-500">{label}</span>
+        <span className={cn("font-semibold", valueColor ?? "text-slate-800")}>{value}</span>
+    </div>
+)
+
+const FormField = ({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) => (
+    <div className="space-y-1.5">
+        <Label className="text-[11px] font-semibold text-slate-600">
+            {label} {required && <span className="text-rose-500">*</span>}
+        </Label>
+        {children}
+    </div>
+)
+
+// Regime comparison calculator
+const RegimeCompareDialog = ({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) => {
+    const [gross, setGross] = useState(1000000)
+    const [deductions, setDeductions] = useState(150000)
+    const oldTax = calculateTax(Math.max(0, gross - deductions), "Old")
+    const newTax = calculateTax(gross, "New")
+    const better = oldTax < newTax ? "Old" : "New"
+    const savings = Math.abs(oldTax - newTax)
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="max-w-md bg-white rounded-2xl p-6 font-sans">
+                <DialogHeader className="space-y-1">
+                    <div className="h-10 w-10 bg-[#8B5CF6]/10 rounded-xl flex items-center justify-center text-[#8B5CF6] mb-2">
+                        <Calculator size={20} />
+                    </div>
+                    <DialogTitle className="text-lg font-bold text-slate-900">Tax regime calculator</DialogTitle>
+                    <DialogDescription className="text-xs font-medium text-slate-500">
+                        Quick comparison of Old vs New regime for FY 2025-26. Simplified slabs — actual may vary.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="mt-4 space-y-3">
+                    <FormField label="Gross annual income (₹)">
+                        <Input type="number" value={gross} onChange={(e) => setGross(parseFloat(e.target.value) || 0)} className="h-10 text-sm font-semibold tabular-nums" />
+                    </FormField>
+                    <FormField label="Total deductions (80C, HRA, 80D, etc.) (₹)">
+                        <Input type="number" value={deductions} onChange={(e) => setDeductions(parseFloat(e.target.value) || 0)} className="h-10 text-sm font-semibold tabular-nums" />
+                    </FormField>
+
+                    <div className="grid grid-cols-2 gap-3 mt-4">
+                        <div className={cn("p-4 rounded-xl border-2", better === "Old" ? "border-emerald-500 bg-emerald-50" : "border-slate-200 bg-slate-50")}>
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-xs font-bold text-slate-700">Old regime</span>
+                                {better === "Old" && <Badge className="bg-emerald-500 text-white border-none text-[9px] font-bold">Better</Badge>}
+                            </div>
+                            <div className="text-xl font-bold text-slate-900 tabular-nums">{formatINR(oldTax)}</div>
+                            <div className="text-[10px] font-medium text-slate-500 mt-0.5">After ₹{deductions.toLocaleString()} deductions</div>
+                        </div>
+                        <div className={cn("p-4 rounded-xl border-2", better === "New" ? "border-emerald-500 bg-emerald-50" : "border-slate-200 bg-slate-50")}>
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-xs font-bold text-slate-700">New regime</span>
+                                {better === "New" && <Badge className="bg-emerald-500 text-white border-none text-[9px] font-bold">Better</Badge>}
+                            </div>
+                            <div className="text-xl font-bold text-slate-900 tabular-nums">{formatINR(newTax)}</div>
+                            <div className="text-[10px] font-medium text-slate-500 mt-0.5">No deductions allowed</div>
                         </div>
                     </div>
-                </SheetContent>
-            </Sheet>
-        </div>
-    );
-};
 
-export default TaxDeclarationsPage;
+                    {savings > 0 && (
+                        <div className="p-3 bg-[#8B5CF6]/5 rounded-lg border border-[#8B5CF6]/10 flex items-center gap-2">
+                            <Calculator size={16} className="text-[#8B5CF6] shrink-0" />
+                            <p className="text-xs font-semibold text-slate-700">
+                                <span className="text-[#8B5CF6] font-bold">{better} regime</span> saves approx{" "}
+                                <span className="text-[#8B5CF6] font-bold tabular-nums">{formatINR(savings)}</span> annually.
+                            </p>
+                        </div>
+                    )}
+                </div>
+                <DialogFooter className="mt-4">
+                    <Button onClick={() => onOpenChange(false)} className="w-full h-10 bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-lg font-bold text-xs border-none">
+                        Done
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
+export default TaxDeclarationsPage

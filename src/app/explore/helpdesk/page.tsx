@@ -176,6 +176,111 @@ const data = {
     { value: "40%", label: "Fewer tickets via self-service" },
     { value: "4.8/5", label: "Average CSAT score" },
   ],
+  capabilities: [
+    {
+      title: "Omni-Channel Ticket Ingestion",
+      description:
+        "Capture support requests from every channel your customers use — email, live chat, social media, phone, and web forms — and funnel them into a single unified inbox with full context preserved regardless of the source.",
+      keyPoints: [
+        "Unified inbox merging email, chat, social, and phone tickets",
+        "Automatic channel detection with source-specific metadata tagging",
+        "Conversation continuity when customers switch between channels",
+        "Channel-specific SLA policies and routing rules",
+      ],
+    },
+    {
+      title: "AI-Powered Agent Assist",
+      description:
+        "Empower your support agents with AI that suggests replies based on past resolutions, auto-classifies incoming tickets, and surfaces relevant knowledge base articles — reducing handle time while maintaining response quality.",
+      keyPoints: [
+        "AI-suggested replies trained on your team's best historical responses",
+        "Automatic ticket classification by category, priority, and sentiment",
+        "Smart article recommendations shown to agents as they type replies",
+        "Sentiment analysis that flags frustrated customers for priority handling",
+      ],
+    },
+    {
+      title: "Advanced SLA & Escalation Engine",
+      description:
+        "Define multi-tiered SLA policies based on customer segment, ticket priority, or product line. Automated escalation chains ensure breached tickets are surfaced to the right managers with full context before customers are impacted.",
+      keyPoints: [
+        "Multi-tier SLA definitions with separate response and resolution targets",
+        "Escalation chains with configurable triggers at 50%, 75%, and 100% of SLA",
+        "Business hours and holiday calendar support per SLA policy",
+      ],
+    },
+    {
+      title: "Self-Service & Deflection Toolkit",
+      description:
+        "Reduce ticket volume by empowering customers to find answers on their own. A searchable knowledge base, community forums, and an AI chatbot work together to deflect common questions before they ever reach your agents.",
+      keyPoints: [
+        "Knowledge base with full-text search and article feedback ratings",
+        "AI chatbot that resolves common queries with conversational flows",
+        "Guided troubleshooting wizards for complex multi-step issues",
+        "Deflection analytics showing which articles prevent the most tickets",
+      ],
+    },
+  ],
+  integrations: [
+    { name: "Slack", category: "Communication" },
+    { name: "Microsoft Teams", category: "Communication" },
+    { name: "Gmail", category: "Communication" },
+    { name: "Twilio", category: "Telephony" },
+    { name: "WhatsApp Business", category: "Messaging" },
+    { name: "Intercom", category: "Live Chat" },
+    { name: "Jira", category: "Development" },
+    { name: "PagerDuty", category: "Incident Management" },
+    { name: "Zapier", category: "Automation" },
+    { name: "Salesforce", category: "CRM" },
+    { name: "Shopify", category: "E-Commerce" },
+    { name: "Statuspage", category: "Monitoring" },
+  ],
+  testimonials: [
+    {
+      quote:
+        "We handle over 2,000 tickets per month and CubicleERP Helpdesk brought our average resolution time down from 8 hours to under 3. The AI-suggested replies alone save each agent at least an hour per day.",
+      author: "Meena Iyer",
+      role: "Head of Customer Support",
+      company: "DataPulse Analytics",
+      metric: "60% faster ticket resolution",
+    },
+    {
+      quote:
+        "Implementing the knowledge base and AI chatbot deflected 40% of our incoming tickets. Our agents now focus on complex issues that actually need human attention, and our CSAT scores went up, not down.",
+      author: "Chris Andersen",
+      role: "Support Operations Manager",
+      company: "NovaTech SaaS",
+      metric: "40% ticket deflection rate",
+    },
+    {
+      quote:
+        "The SLA engine is the most configurable we have found. We run different SLA policies for Enterprise, Pro, and Free-tier customers, and the escalation chains ensure nothing slips through the cracks even during peak volume.",
+      author: "Fatima Al-Hassan",
+      role: "Director of Client Success",
+      company: "Apex Cloud Services",
+      metric: "95% SLA compliance maintained",
+    },
+  ],
+  comparisons: [
+    { feature: "Ticket Intake", traditional: "Email inbox only", cubicleErp: "Omni-channel unified inbox" },
+    { feature: "Ticket Routing", traditional: "Manual triage by manager", cubicleErp: "AI auto-routing by skill" },
+    { feature: "Response Drafting", traditional: "Type from scratch", cubicleErp: "AI-suggested replies" },
+    { feature: "SLA Management", traditional: "Spreadsheet tracking", cubicleErp: "Automated SLA clocks" },
+    { feature: "Self-Service", traditional: "Static FAQ page", cubicleErp: "AI chatbot + knowledge base" },
+    { feature: "Agent Analytics", traditional: "Monthly manual review", cubicleErp: "Real-time performance dashboards" },
+  ],
+  subNavItems: [
+    { label: "Overview", sectionId: "hero" },
+    { label: "Features", sectionId: "features" },
+    { label: "Capabilities", sectionId: "capabilities" },
+    { label: "Benefits", sectionId: "benefits" },
+    { label: "Integrations", sectionId: "integrations" },
+    { label: "Use Cases", sectionId: "use-cases" },
+    { label: "FAQs", sectionId: "faqs" },
+    { label: "Client Portal", href: "/explore/client-portal" },
+    { label: "Automation", href: "/explore/automation" },
+    { label: "Email Marketing", href: "/explore/email-marketing" },
+  ],
 }
 
 export default function HelpdeskPage() {

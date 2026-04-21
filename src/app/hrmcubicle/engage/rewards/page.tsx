@@ -38,37 +38,109 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
 import { useToast } from "@/shared/components/ui/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+    DropdownMenuSeparator,
+} from "@/shared/components/ui/dropdown-menu";
+import { MoreHorizontal, Edit as EditIcon, Trash2 } from "lucide-react";
+import { required, minLength, maxLength, rangeNumber, runValidators } from "@/shared/utils/engage-validation";
 
 const RewardsPage = () => {
-    const { recognitions, addRecognition, userPoints } = useEngageStore();
+    const { recognitions, addRecognition, updateRecognition, deleteRecognition, userPoints } = useEngageStore();
     const { toast } = useToast();
 
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
-    const [formData, setFormData] = useState<Partial<Recognition>>({
+    const [editingId, setEditingId] = useState<string | null>(null);
+    const [reactions, setReactions] = useState<Record<string, { heart: boolean; party: boolean }>>({});
+
+    const defaultFormData: Partial<Recognition> = {
         recipient: "",
         sender: "HR Admin",
         reason: "",
         awardType: "Values Hero",
         points: 50,
         category: "Peer"
-    });
+    };
+    const [formData, setFormData] = useState<Partial<Recognition>>(defaultFormData);
 
     const categories: Recognition["category"][] = ["Peer", "Manager", "Company"];
 
+    const resetForm = () => {
+        setFormData(defaultFormData);
+        setEditingId(null);
+    };
+
+    const openCreate = () => {
+        resetForm();
+        setIsDialogOpen(true);
+    };
+
+    const openEdit = (rec: Recognition) => {
+        setEditingId(rec.id);
+        setFormData({
+            recipient: rec.recipient,
+            sender: rec.sender,
+            reason: rec.reason,
+            awardType: rec.awardType,
+            points: rec.points,
+            category: rec.category
+        });
+        setIsDialogOpen(true);
+    };
+
     const handleSave = () => {
-        if (!formData.recipient || !formData.reason) {
-            toast({ title: "Incomplete Shoutout", description: "Who are we celebrating, and why?", variant: "destructive" });
+        const recipientError = runValidators(
+            required(formData.recipient, "recipient", "Recipient"),
+            minLength(formData.recipient ?? "", 2, "recipient", "Recipient"),
+            maxLength(formData.recipient ?? "", 80, "recipient", "Recipient")
+        );
+        if (recipientError) {
+            toast({ title: "Invalid Recipient", description: recipientError.message, variant: "destructive" });
             return;
         }
-        addRecognition(formData as Omit<Recognition, "id" | "date" | "status">);
-        toast({
-            title: "Success! 🎊",
-            description: `${formData.recipient} has been celebrated on the Victory Wall!`,
-            className: "bg-amber-500 text-white font-black"
-        });
+        const reasonError = runValidators(
+            required(formData.reason, "reason", "Citation"),
+            minLength(formData.reason ?? "", 10, "reason", "Citation"),
+            maxLength(formData.reason ?? "", 1000, "reason", "Citation")
+        );
+        if (reasonError) {
+            toast({ title: "Invalid Citation", description: reasonError.message, variant: "destructive" });
+            return;
+        }
+        const pointsError = rangeNumber(formData.points ?? 0, 1, 500, "points", "Points");
+        if (pointsError) {
+            toast({ title: "Invalid Points", description: pointsError.message, variant: "destructive" });
+            return;
+        }
+        if (editingId) {
+            updateRecognition(editingId, formData);
+            toast({ title: "Recognition Updated", description: `${formData.recipient}'s shoutout has been updated.` });
+        } else {
+            addRecognition(formData as Omit<Recognition, "id" | "date" | "status">);
+            toast({
+                title: "Success! 🎊",
+                description: `${formData.recipient} has been celebrated on the Victory Wall!`,
+                className: "bg-amber-500 text-white font-black"
+            });
+        }
         setIsDialogOpen(false);
-        setFormData({ recipient: "", sender: "HR Admin", reason: "", awardType: "Values Hero", points: 50, category: "Peer" });
+        resetForm();
+    };
+
+    const handleDelete = (rec: Recognition) => {
+        deleteRecognition(rec.id);
+        toast({ title: "Recognition Removed", description: `${rec.recipient}'s shoutout removed from the wall.` });
+    };
+
+    const toggleReaction = (id: string, type: "heart" | "party") => {
+        setReactions(prev => {
+            const current = prev[id] || { heart: false, party: false };
+            return { ...prev, [id]: { ...current, [type]: !current[type] } };
+        });
     };
 
     const filteredRecognitions = recognitions.filter(r =>
@@ -100,7 +172,7 @@ const RewardsPage = () => {
                                 <span className="text-2xl font-bold text-amber-300 tracking-tighter">{userPoints}</span>
                             </div>
                         </div>
-                        <Button onClick={() => setIsDialogOpen(true)} className="bg-white text-amber-900 hover:bg-white/90 rounded-[1.5rem] h-14 px-10 font-bold text-xs tracking-widest shadow-2xl transition-all active:scale-95 border-none">
+                        <Button onClick={openCreate} className="bg-white text-amber-900 hover:bg-white/90 rounded-[1.5rem] h-14 px-10 font-bold text-xs tracking-widest shadow-2xl transition-all active:scale-95 border-none">
                             <Plus className="mr-2 h-5 w-5" /> Award Points
                         </Button>
                     </div>
@@ -149,7 +221,7 @@ const RewardsPage = () => {
                             <div className="relative z-10">
                                 <h3 className="text-sm font-bold mb-0.5">Be a Spark!</h3>
                                 <p className="text-[9px] text-white/70 mb-3 line-clamp-1 italic">Nominate for a badge now</p>
-                                <Button onClick={() => setIsDialogOpen(true)} className="w-full bg-white text-amber-900 rounded-xl h-9 font-bold text-[10px] tracking-widest border-none hover:bg-white/95 capitalize transition-all active:scale-95">Start Recognition</Button>
+                                <Button onClick={openCreate} className="w-full bg-white text-amber-900 rounded-xl h-9 font-bold text-[10px] tracking-widest border-none hover:bg-white/95 capitalize transition-all active:scale-95">Start Recognition</Button>
                             </div>
                             <Sparkles className="absolute bottom-[-10px] right-[-10px] h-20 w-20 text-white/20" />
                         </Card>
@@ -176,7 +248,7 @@ const RewardsPage = () => {
                         <AnimatePresence mode="popLayout">
                             {filteredRecognitions.map((rec, idx) => (
                                 <motion.div
-                                    key={idx}
+                                    key={rec.id}
                                     initial={{ opacity: 0, scale: 0.9, y: 20 }}
                                     animate={{ opacity: 1, scale: 1, y: 0 }}
                                     transition={{ delay: idx * 0.05 }}
@@ -188,7 +260,25 @@ const RewardsPage = () => {
                                                 <Award size={14} className="text-amber-600" />
                                                 <span className="text-[10px] font-black tracking-[0.2em] text-amber-600 capitalize">{rec.awardType}</span>
                                             </div>
-                                            <Badge className="bg-amber-500 text-white border-none font-black text-[10px] px-2 py-0.5 rounded-full shadow-lg">+{rec.points} PTS</Badge>
+                                            <div className="flex items-center gap-1">
+                                                <Badge className="bg-amber-500 text-white border-none font-black text-[10px] px-2 py-0.5 rounded-full shadow-lg">+{rec.points} PTS</Badge>
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-slate-700">
+                                                            <MoreHorizontal size={14} />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end">
+                                                        <DropdownMenuItem onClick={() => openEdit(rec)}>
+                                                            <EditIcon size={12} className="mr-2" /> Edit
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuSeparator />
+                                                        <DropdownMenuItem className="text-rose-500" onClick={() => handleDelete(rec)}>
+                                                            <Trash2 size={12} className="mr-2" /> Delete
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </div>
                                         </div>
 
                                         <CardContent className="p-6 flex-col flex-1 flex">
@@ -209,10 +299,18 @@ const RewardsPage = () => {
                                             <div className="mt-auto flex items-center justify-between">
                                                 <Badge variant="outline" className="border-slate-200 text-slate-400 font-bold tracking-widest text-[8px] px-2 py-0.5 capitalize">{rec.category}</Badge>
                                                 <div className="flex items-center gap-1">
-                                                    <Button variant="ghost" className="h-8 w-8 p-0 rounded-lg hover:bg-rose-50 hover:text-rose-500 transition-all text-slate-300">
-                                                        <Heart size={16} />
+                                                    <Button
+                                                        variant="ghost"
+                                                        className={`h-8 w-8 p-0 rounded-lg hover:bg-rose-50 hover:text-rose-500 transition-all ${reactions[rec.id]?.heart ? "text-rose-500 bg-rose-50" : "text-slate-300"}`}
+                                                        onClick={() => toggleReaction(rec.id, "heart")}
+                                                    >
+                                                        <Heart size={16} className={reactions[rec.id]?.heart ? "fill-rose-500" : ""} />
                                                     </Button>
-                                                    <Button variant="ghost" className="h-8 w-8 p-0 rounded-lg hover:bg-amber-50 hover:text-amber-500 transition-all text-slate-300">
+                                                    <Button
+                                                        variant="ghost"
+                                                        className={`h-8 w-8 p-0 rounded-lg hover:bg-amber-50 hover:text-amber-500 transition-all ${reactions[rec.id]?.party ? "text-amber-500 bg-amber-50" : "text-slate-300"}`}
+                                                        onClick={() => toggleReaction(rec.id, "party")}
+                                                    >
                                                         <PartyPopper size={16} />
                                                     </Button>
                                                 </div>
@@ -227,7 +325,7 @@ const RewardsPage = () => {
             </div>
 
             {/* Standardized Recognition Dialog */}
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <Dialog open={isDialogOpen} onOpenChange={(val) => { if (!val) resetForm(); setIsDialogOpen(val); }}>
                 <DialogContent className="max-w-5xl p-0 overflow-hidden border-2 border-slate-300 rounded-[3rem] shadow-3xl bg-white" style={{ zoom: "67%" }}>
                     <div className="bg-gradient-to-br from-[#854d0e] to-[#b45309] p-10 text-white">
                         <DialogHeader>
@@ -236,8 +334,8 @@ const RewardsPage = () => {
                                     <Trophy size={32} />
                                 </div>
                                 <div>
-                                    <DialogTitle className="text-3xl font-bold tracking-tighter text-white">Crown a Colleague</DialogTitle>
-                                    <DialogDescription className="text-white/40 font-medium text-xs tracking-widest mt-2 capitalize">Recognize greatness in the organization</DialogDescription>
+                                    <DialogTitle className="text-3xl font-bold tracking-tighter text-white">{editingId ? "Edit Recognition" : "Crown a Colleague"}</DialogTitle>
+                                    <DialogDescription className="text-white/40 font-medium text-xs tracking-widest mt-2 capitalize">{editingId ? "Update the citation" : "Recognize greatness in the organization"}</DialogDescription>
                                 </div>
                             </div>
                         </DialogHeader>
@@ -254,9 +352,11 @@ const RewardsPage = () => {
                                         <Input
                                             placeholder="e.g. Rahul Sharma"
                                             value={formData.recipient}
+                                            maxLength={80}
                                             onChange={e => setFormData({ ...formData, recipient: e.target.value })}
                                             className="h-16 border-slate-300 bg-slate-50/50 rounded-2xl px-6 font-black text-lg text-slate-900 focus:ring-4 focus:ring-amber-50 transition-all shadow-inner"
                                         />
+                                        <p className="text-[10px] text-slate-400 font-bold ml-2">{(formData.recipient ?? "").length}/80 • min 2</p>
                                     </div>
 
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -284,6 +384,17 @@ const RewardsPage = () => {
                                             </Select>
                                         </div>
                                     </div>
+                                    <div className="space-y-4">
+                                        <Label className="text-[10px] font-black text-slate-400 tracking-widest ml-1 capitalize">Points (1-500)</Label>
+                                        <Input
+                                            type="number"
+                                            min={1}
+                                            max={500}
+                                            value={formData.points ?? 50}
+                                            onChange={e => setFormData({ ...formData, points: Math.max(0, Number(e.target.value) || 0) })}
+                                            className="h-14 border-slate-300 bg-white rounded-2xl px-6 font-bold text-slate-600"
+                                        />
+                                    </div>
                                 </div>
 
                                 {/* Right Side: The Citation */}
@@ -292,9 +403,11 @@ const RewardsPage = () => {
                                     <Textarea
                                         placeholder="Tell the story of their legend..."
                                         value={formData.reason}
+                                        maxLength={1000}
                                         onChange={e => setFormData({ ...formData, reason: e.target.value })}
                                         className="flex-1 min-h-[160px] border-slate-300 bg-slate-50/50 rounded-[2rem] p-6 font-bold text-sm leading-relaxed focus:ring-4 focus:ring-amber-50 resize-none shadow-inner"
                                     />
+                                    <p className="text-[10px] text-slate-400 font-bold ml-2">{(formData.reason ?? "").length}/1000 • min 10</p>
                                 </div>
                             </div>
 
@@ -318,7 +431,7 @@ const RewardsPage = () => {
                     <DialogFooter className="p-10 bg-slate-50 border-t border-slate-100 flex gap-4">
                         <Button variant="ghost" onClick={() => setIsDialogOpen(false)} className="h-14 px-8 font-black text-slate-400 text-[10px] capitalize tracking-[0.2em] hover:text-slate-600">Cancel</Button>
                         <Button onClick={handleSave} className="bg-amber-600 hover:bg-amber-700 text-white rounded-[1.5rem] h-14 px-12 font-black text-xs tracking-widest shadow-xl flex-1">
-                            Cast Recognition 🏆
+                            {editingId ? "Save Changes" : "Cast Recognition 🏆"}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
     Calculator,
@@ -12,7 +12,6 @@ import {
     ShieldCheck,
     ArrowRight,
     FileText,
-    Download,
     IndianRupee,
     Search,
 } from "lucide-react";
@@ -43,63 +42,68 @@ function downloadTextFile(filename: string, content: string) {
     URL.revokeObjectURL(url);
 }
 
+const DEFAULT_AMOUNTS = {
+    basicSalary: "45000",
+    leaveEncashment: "22500",
+    performanceIncentive: "15000",
+    tds: "8250",
+    gratuity: "0",
+};
+
 const SettlementPage = () => {
     const { toast } = useToast();
     const { employees, finalizeSettlement } = useLifecycleStore();
 
     const [searchTerm, setSearchTerm] = useState("");
     const [isProcessDialogOpen, setIsProcessDialogOpen] = useState(false);
-
-    // Custom settlement amounts dialog
     const [isCustomAmountOpen, setIsCustomAmountOpen] = useState(false);
-    const [customAmounts, setCustomAmounts] = useState({
-        basicSalary: "45000",
-        leaveEncashment: "22500",
-        performanceIncentive: "15000",
-        tds: "8250",
-        gratuity: "0",
-    });
+    const [selectedEmpId, setSelectedEmpId] = useState<string>("");
 
-    const exitedEmployees = useMemo(
-        () => employees.filter((e) => e.status === "Exited"),
-        [employees]
-    );
+    // Per-employee amounts map
+    const [amountsByEmp, setAmountsByEmp] = useState<Record<string, typeof DEFAULT_AMOUNTS>>({});
+    const [draftAmounts, setDraftAmounts] = useState(DEFAULT_AMOUNTS);
 
-    const filteredExitedEmployees = useMemo(
-        () => exitedEmployees.filter(e =>
-            e.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            e.department.toLowerCase().includes(searchTerm.toLowerCase())
-        ),
-        [exitedEmployees, searchTerm]
-    );
+    const exitedEmployees = useMemo(() => employees.filter(e => e.status === "Exited"), [employees]);
 
-    const [selectedEmpId, setSelectedEmpId] = useState<string>(
-        exitedEmployees[0]?.id || ""
-    );
+    const filteredExitedEmployees = useMemo(() => exitedEmployees.filter(e => {
+        const q = searchTerm.toLowerCase();
+        return !q || e.name.toLowerCase().includes(q) || e.department.toLowerCase().includes(q) || e.role.toLowerCase().includes(q);
+    }), [exitedEmployees, searchTerm]);
 
-    const selectedEmp = useMemo(
-        () => employees.find((e) => e.id === selectedEmpId),
-        [employees, selectedEmpId]
-    );
+    // Sort: unpaid first
+    const sortedExitedEmployees = useMemo(() => [...filteredExitedEmployees].sort((a, b) => {
+        const aPaid = a.settlement?.status === 'Paid' ? 1 : 0;
+        const bPaid = b.settlement?.status === 'Paid' ? 1 : 0;
+        return aPaid - bPaid;
+    }), [filteredExitedEmployees]);
+
+    // Auto-select and keep valid
+    useEffect(() => {
+        const list = exitedEmployees;
+        if (list.length === 0) { if (selectedEmpId) setSelectedEmpId(""); return; }
+        if (!selectedEmpId || !list.some(e => e.id === selectedEmpId)) setSelectedEmpId(list[0].id);
+    }, [exitedEmployees, selectedEmpId]);
+
+    const selectedEmp = useMemo(() => employees.find(e => e.id === selectedEmpId), [employees, selectedEmpId]);
+
+    const currentAmounts = amountsByEmp[selectedEmpId] || DEFAULT_AMOUNTS;
 
     const calculationItems = useMemo(() => {
         if (!selectedEmp) return [];
         return [
-            { label: "Pro-rated basic salary", amount: parseInt(customAmounts.basicSalary) || 0, type: "credit", desc: "For final service month" },
-            { label: "Leave encashment (14 days)", amount: parseInt(customAmounts.leaveEncashment) || 0, type: "credit", desc: "Unused privilege leaves" },
-            { label: "Performance incentive", amount: parseInt(customAmounts.performanceIncentive) || 0, type: "credit", desc: "Q1 pro-rata bonus" },
-            { label: "TDS / income tax", amount: parseInt(customAmounts.tds) || 0, type: "debit", desc: "Statutory deduction" },
-            { label: "Gratuity (if applicable)", amount: parseInt(customAmounts.gratuity) || 0, type: "neutral", desc: "Tenure check pending" },
+            { key: 'basicSalary', label: "Pro-rated basic salary", amount: parseInt(currentAmounts.basicSalary) || 0, type: "credit" as const, desc: "For final service month" },
+            { key: 'leaveEncashment', label: "Leave encashment", amount: parseInt(currentAmounts.leaveEncashment) || 0, type: "credit" as const, desc: "Unused privilege leaves" },
+            { key: 'performanceIncentive', label: "Performance incentive", amount: parseInt(currentAmounts.performanceIncentive) || 0, type: "credit" as const, desc: "Pro-rata bonus" },
+            { key: 'tds', label: "TDS / income tax", amount: parseInt(currentAmounts.tds) || 0, type: "debit" as const, desc: "Statutory deduction" },
+            { key: 'gratuity', label: "Gratuity (if applicable)", amount: parseInt(currentAmounts.gratuity) || 0, type: "neutral" as const, desc: "Tenure-based benefit" },
         ];
-    }, [selectedEmp, customAmounts]);
+    }, [selectedEmp, currentAmounts]);
 
-    const netAmount = useMemo(() => {
-        return calculationItems.reduce((acc, item) => {
-            if (item.type === "credit") return acc + item.amount;
-            if (item.type === "debit") return acc - item.amount;
-            return acc;
-        }, 0);
-    }, [calculationItems]);
+    const netAmount = useMemo(() => calculationItems.reduce((acc, item) => {
+        if (item.type === "credit") return acc + item.amount;
+        if (item.type === "debit") return acc - item.amount;
+        return acc;
+    }, 0), [calculationItems]);
 
     const isPaid = selectedEmp?.settlement?.status === "Paid";
 
@@ -110,30 +114,53 @@ const SettlementPage = () => {
     const totalPayout = exitedEmployees.filter(e => e.settlement?.status === "Paid").reduce((acc, e) => acc + (e.settlement?.netPayable || 0), 0);
 
     const stats = [
-        { label: "Total Settlements", value: totalExited, color: "bg-[#CB9DF0]", icon: <Calculator className="text-slate-800" size={20} /> },
-        { label: "Pending Payout", value: pendingCount, color: "bg-[#F0C1E1]", icon: <Clock className="text-slate-800" size={20} /> },
-        { label: "Paid Out", value: paidCount, color: "bg-[#FFF9BF]", icon: <CheckCircle2 className="text-slate-800" size={20} /> },
-        { label: "Total Disbursed", value: `₹${totalPayout.toLocaleString()}`, color: "bg-[#FDDBBB]", icon: <IndianRupee className="text-slate-800" size={20} /> },
+        { label: "Total Settlements", value: totalExited, color: "bg-[#CB9DF0]", icon: <Calculator className="text-slate-800" size={18} /> },
+        { label: "Pending Payout", value: pendingCount, color: "bg-[#F0C1E1]", icon: <Clock className="text-slate-800" size={18} /> },
+        { label: "Paid Out", value: paidCount, color: "bg-[#FFF9BF]", icon: <CheckCircle2 className="text-slate-800" size={18} /> },
+        { label: "Total Disbursed", value: `₹${totalPayout.toLocaleString()}`, color: "bg-[#FDDBBB]", icon: <IndianRupee className="text-slate-800" size={18} /> },
     ];
 
+    const openEditAmounts = () => {
+        setDraftAmounts(currentAmounts);
+        setIsCustomAmountOpen(true);
+    };
+
+    const validateAmounts = (a: typeof DEFAULT_AMOUNTS) => {
+        return Object.values(a).every(v => {
+            const n = parseInt(v);
+            return !isNaN(n) && n >= 0;
+        });
+    };
+
+    const saveDraftAmounts = () => {
+        if (!validateAmounts(draftAmounts)) {
+            toast({ title: "Invalid amounts", description: "All values must be valid non-negative numbers.", variant: "destructive" });
+            return;
+        }
+        setAmountsByEmp({ ...amountsByEmp, [selectedEmpId]: draftAmounts });
+        setIsCustomAmountOpen(false);
+        toast({ title: "Amounts Updated", description: "Settlement breakdown saved." });
+    };
+
     const handleProcess = () => {
+        if (netAmount < 0) {
+            toast({ title: "Invalid Payout", description: "Net payable cannot be negative. Review amounts.", variant: "destructive" });
+            return;
+        }
         setIsProcessDialogOpen(true);
     };
 
     const confirmProcess = () => {
         if (!selectedEmpId) return;
         finalizeSettlement(selectedEmpId, netAmount);
-        toast({
-            title: "Settlement finalized",
-            description: `Payment of ₹${netAmount.toLocaleString()} has been processed for ${selectedEmp?.name}.`,
-        });
+        toast({ title: "Settlement Finalized", description: `₹${netAmount.toLocaleString()} processed for ${selectedEmp?.name}.` });
         setIsProcessDialogOpen(false);
     };
 
     const handleDownloadSummary = () => {
         if (!selectedEmp) return;
         const lines = [
-            `Full & final settlement summary`,
+            `Full & Final Settlement Summary`,
             `${"=".repeat(40)}`,
             `Employee: ${selectedEmp.name}`,
             `Id: ${selectedEmp.id}`,
@@ -142,19 +169,14 @@ const SettlementPage = () => {
             `Status: ${isPaid ? "Paid" : "Draft"}`,
             ``,
             `--- Breakdown ---`,
-            ...calculationItems.map(
-                (item) =>
-                    `${item.label}: ${item.type === "debit" ? "-" : "+"}₹${item.amount.toLocaleString()} (${item.desc})`
-            ),
+            ...calculationItems.map(item => `${item.label}: ${item.type === "debit" ? "-" : "+"}₹${item.amount.toLocaleString()} (${item.desc})`),
             ``,
             `Net payable: ₹${netAmount.toLocaleString()}`,
+            isPaid && selectedEmp.settlement?.processedDate ? `Processed on: ${selectedEmp.settlement.processedDate}` : '',
             `Generated: ${new Date().toLocaleDateString()}`,
-        ];
-        downloadTextFile(
-            `settlement_summary_${selectedEmp.name.replace(/\s+/g, "_")}.txt`,
-            lines.join("\n")
-        );
-        toast({ title: "Downloaded", description: "Settlement summary has been downloaded." });
+        ].filter(Boolean);
+        downloadTextFile(`settlement_summary_${selectedEmp.name.replace(/\s+/g, "_")}.txt`, lines.join("\n"));
+        toast({ title: "Downloaded", description: "Settlement summary saved." });
     };
 
     const handleDownloadRelievingLetter = () => {
@@ -166,7 +188,7 @@ const SettlementPage = () => {
             ``,
             `To whom it may concern,`,
             ``,
-            `This is to certify that ${selectedEmp.name} was employed with our organization as ${selectedEmp.role} in the ${selectedEmp.department} department.`,
+            `This is to certify that ${selectedEmp.name} was employed with our organization as ${selectedEmp.role} in the ${selectedEmp.department} department from ${selectedEmp.joinDate}.`,
             ``,
             `${selectedEmp.name} has been relieved from duties effective ${selectedEmp.lwd || new Date().toLocaleDateString()}.`,
             ``,
@@ -176,11 +198,8 @@ const SettlementPage = () => {
             `Regards,`,
             `Human Resources Department`,
         ];
-        downloadTextFile(
-            `relieving_letter_${selectedEmp.name.replace(/\s+/g, "_")}.txt`,
-            letter.join("\n")
-        );
-        toast({ title: "Downloaded", description: "Relieving letter has been downloaded." });
+        downloadTextFile(`relieving_letter_${selectedEmp.name.replace(/\s+/g, "_")}.txt`, letter.join("\n"));
+        toast({ title: "Downloaded", description: "Relieving letter saved." });
     };
 
     const handleDownloadPaySlip = () => {
@@ -195,29 +214,21 @@ const SettlementPage = () => {
             `Period: Final settlement`,
             ``,
             `--- Earnings ---`,
-            ...calculationItems
-                .filter((i) => i.type === "credit")
-                .map((i) => `${i.label}: ₹${i.amount.toLocaleString()}`),
+            ...calculationItems.filter(i => i.type === "credit").map(i => `${i.label}: ₹${i.amount.toLocaleString()}`),
             ``,
             `--- Deductions ---`,
-            ...calculationItems
-                .filter((i) => i.type === "debit")
-                .map((i) => `${i.label}: ₹${i.amount.toLocaleString()}`),
+            ...calculationItems.filter(i => i.type === "debit").map(i => `${i.label}: ₹${i.amount.toLocaleString()}`),
             ``,
             `Net payable: ₹${netAmount.toLocaleString()}`,
             `Status: ${isPaid ? "Paid" : "Pending"}`,
             `Generated: ${new Date().toLocaleDateString()}`,
         ];
-        downloadTextFile(
-            `final_payslip_${selectedEmp.name.replace(/\s+/g, "_")}.txt`,
-            slip.join("\n")
-        );
-        toast({ title: "Downloaded", description: "Final pay slip has been downloaded." });
+        downloadTextFile(`final_payslip_${selectedEmp.name.replace(/\s+/g, "_")}.txt`, slip.join("\n"));
+        toast({ title: "Downloaded", description: "Final pay slip saved." });
     };
 
     return (
         <div className="flex-1 min-h-screen bg-[#fcfdff] p-4 space-y-4">
-            {/* Header */}
             <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
                 <div>
                     <h1 className="text-xl font-bold text-slate-900 tracking-tight">Full & Final Settlement</h1>
@@ -225,80 +236,54 @@ const SettlementPage = () => {
                 </div>
             </div>
 
-            {/* Stat Cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 {stats.map((stat, i) => (
-                    <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
-                        <Card className={`border-none shadow-sm rounded-2xl ${stat.color} relative overflow-hidden transition-all hover:shadow-md`}>
-                            <CardContent className="p-5 flex items-center justify-between relative z-10">
+                    <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}>
+                        <Card className={`border-none shadow-sm rounded-2xl ${stat.color} overflow-hidden hover:shadow-md transition-all`}>
+                            <CardContent className="p-4 flex items-center justify-between">
                                 <div className="space-y-0.5">
                                     <p className="text-[10px] font-bold text-slate-700">{stat.label}</p>
-                                    <h3 className="text-2xl font-bold text-slate-900">{stat.value}</h3>
+                                    <h3 className="text-xl font-bold text-slate-900">{stat.value}</h3>
                                 </div>
-                                <div className="h-10 w-10 rounded-xl flex items-center justify-center bg-white/20 backdrop-blur-sm shadow-sm">{stat.icon}</div>
+                                <div className="h-10 w-10 rounded-xl flex items-center justify-center bg-white/20 backdrop-blur-sm">{stat.icon}</div>
                             </CardContent>
                         </Card>
                     </motion.div>
                 ))}
             </div>
 
-            {/* Main layout */}
             <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 min-h-0">
-                {/* Left panel - Pending queue */}
+                {/* Sidebar */}
                 <div className="lg:col-span-1">
                     <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm h-full flex flex-col p-4">
                         <div className="flex items-center justify-between mb-3">
-                            <h3 className="font-bold text-sm text-slate-900">Pending Queue</h3>
-                            <Badge variant="outline" className="text-[10px] font-bold border-slate-200">{exitedEmployees.length}</Badge>
+                            <h3 className="font-bold text-sm text-slate-900">Settlement Queue</h3>
+                            <Badge variant="outline" className="text-[10px] font-bold border-slate-200">{sortedExitedEmployees.length}</Badge>
                         </div>
-
                         <div className="relative mb-3">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-                            <Input
-                                placeholder="Search..."
-                                className="pl-9 rounded-xl h-9 text-xs font-bold border border-slate-200"
-                                value={searchTerm}
-                                onChange={e => setSearchTerm(e.target.value)}
-                            />
+                            <Input placeholder="Search..." className="pl-9 rounded-xl h-9 text-xs font-bold border border-slate-200" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                         </div>
-
-                        <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2">
-                            {filteredExitedEmployees.length === 0 ? (
-                                <div className="py-16 text-center space-y-3">
-                                    <UserX size={40} className="mx-auto text-slate-300" />
-                                    <p className="text-sm text-slate-400 font-medium">No settlements pending</p>
+                        <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 max-h-[520px]">
+                            {sortedExitedEmployees.length === 0 ? (
+                                <div className="py-12 text-center space-y-3">
+                                    <UserX size={36} className="mx-auto text-slate-300" />
+                                    <p className="text-xs text-slate-400 font-bold">{exitedEmployees.length === 0 ? 'No settlements yet.' : 'No matches for your search.'}</p>
                                 </div>
                             ) : (
-                                filteredExitedEmployees.map((emp) => (
-                                    <div
-                                        key={emp.id}
-                                        onClick={() => setSelectedEmpId(emp.id)}
-                                        className={`p-3 rounded-xl border cursor-pointer flex items-center gap-3 transition-colors
-                                            ${selectedEmpId === emp.id
-                                                ? "bg-[#8B5CF6] border-[#8B5CF6] text-white"
-                                                : "bg-white border-slate-100 hover:border-[#8B5CF6]/30 text-slate-700"
-                                            }`}
-                                    >
+                                sortedExitedEmployees.map((emp) => (
+                                    <div key={emp.id} onClick={() => setSelectedEmpId(emp.id)} className={`p-3 rounded-xl border cursor-pointer flex items-center gap-3 transition-colors ${selectedEmpId === emp.id ? "bg-[#CB9DF0] border-[#CB9DF0] text-white" : "bg-white border-slate-100 hover:border-[#CB9DF0]/30 text-slate-700"}`}>
                                         <Avatar className="h-9 w-9 rounded-xl">
-                                            <AvatarFallback
-                                                className={`text-xs font-bold rounded-xl ${selectedEmpId === emp.id
-                                                    ? "bg-white/20 text-white"
-                                                    : "bg-violet-50 text-[#8B5CF6]"
-                                                    }`}
-                                            >
-                                                {emp.avatar}
-                                            </AvatarFallback>
+                                            <AvatarFallback className={`text-xs font-bold rounded-xl ${selectedEmpId === emp.id ? "bg-white/20 text-white" : "bg-violet-50 text-[#8B5CF6]"}`}>{emp.avatar}</AvatarFallback>
                                         </Avatar>
                                         <div className="flex-1 min-w-0">
-                                            <p className="font-semibold text-sm truncate">{emp.name}</p>
-                                            <p className={`text-xs ${selectedEmpId === emp.id ? "text-white/70" : "text-slate-400"}`}>
-                                                {emp.department}
-                                            </p>
+                                            <p className="font-bold text-xs truncate">{emp.name}</p>
+                                            <p className={`text-[10px] font-bold truncate ${selectedEmpId === emp.id ? "text-white/70" : "text-slate-400"}`}>{emp.department}</p>
                                         </div>
                                         {emp.settlement?.status === "Paid" ? (
-                                            <CheckCircle2 size={18} className="text-emerald-400 shrink-0" />
+                                            <CheckCircle2 size={16} className="text-emerald-400 shrink-0" />
                                         ) : (
-                                            <Clock size={16} className={`shrink-0 ${selectedEmpId === emp.id ? "text-white/50" : "text-slate-300"}`} />
+                                            <Clock size={14} className={`shrink-0 ${selectedEmpId === emp.id ? "text-white/50" : "text-slate-300"}`} />
                                         )}
                                     </div>
                                 ))
@@ -307,219 +292,141 @@ const SettlementPage = () => {
                     </Card>
                 </div>
 
-                {/* Right panel - Settlement sheet */}
+                {/* Detail */}
                 <div className="lg:col-span-2 space-y-4 overflow-y-auto custom-scrollbar">
                     {selectedEmp ? (
                         <>
-                            {/* Settlement card */}
                             <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-                                {/* Employee info header */}
-                                <div className="p-5 border-b border-slate-100 flex items-center justify-between">
-                                    <div className="flex items-center gap-4">
+                                <div className="p-5 border-b border-slate-100 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                                    <div className="flex items-center gap-3">
                                         <Avatar className="h-11 w-11 rounded-xl">
-                                            <AvatarFallback className="bg-violet-50 text-[#8B5CF6] font-bold rounded-xl">
-                                                {selectedEmp.avatar}
-                                            </AvatarFallback>
+                                            <AvatarFallback className="bg-violet-50 text-[#8B5CF6] font-bold rounded-xl text-sm">{selectedEmp.avatar}</AvatarFallback>
                                         </Avatar>
                                         <div>
                                             <h3 className="text-base font-bold text-slate-900">{selectedEmp.name}</h3>
-                                            <p className="text-xs text-slate-400">{selectedEmp.role} · {selectedEmp.department} · {selectedEmp.id}</p>
+                                            <p className="text-[10px] text-slate-400 font-bold">{selectedEmp.role} · {selectedEmp.department} · {selectedEmp.id}</p>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <Badge
-                                            className={`px-3 py-1 rounded-lg text-xs font-semibold border-none ${isPaid ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}
-                                        >
+                                        <Badge className={`px-3 py-1 rounded-lg text-[10px] font-bold border-none ${isPaid ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>
                                             {isPaid ? "Paid" : "Draft"}
                                         </Badge>
                                         {!isPaid && (
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                className="h-8 rounded-lg border-slate-200 text-xs font-bold text-slate-500"
-                                                onClick={() => setIsCustomAmountOpen(true)}
-                                            >
+                                            <Button variant="outline" size="sm" className="h-8 rounded-lg border-slate-200 text-[10px] font-bold text-slate-500" onClick={openEditAmounts}>
                                                 Edit Amounts
                                             </Button>
                                         )}
                                     </div>
                                 </div>
 
-                                {/* Calculation breakdown */}
                                 <div className="p-5 space-y-1">
                                     {calculationItems.map((item, i) => (
-                                        <div
-                                            key={i}
-                                            className="flex justify-between items-center py-3 border-b border-slate-50 last:border-b-0"
-                                        >
+                                        <div key={i} className="flex justify-between items-center py-2.5 border-b border-slate-50 last:border-b-0">
                                             <div>
-                                                <p className="font-semibold text-sm text-slate-800">{item.label}</p>
-                                                <p className="text-xs text-slate-400 mt-0.5">{item.desc}</p>
+                                                <p className="font-bold text-xs text-slate-800">{item.label}</p>
+                                                <p className="text-[10px] text-slate-400 mt-0.5 font-bold">{item.desc}</p>
                                             </div>
-                                            <span
-                                                className={`text-base font-bold tabular-nums ${item.type === "credit"
-                                                    ? "text-emerald-600"
-                                                    : item.type === "debit"
-                                                        ? "text-rose-500"
-                                                        : "text-slate-400"
-                                                    }`}
-                                            >
-                                                {item.type === "credit" ? "+" : item.type === "debit" ? "-" : ""}{" "}
-                                                ₹{item.amount.toLocaleString()}
+                                            <span className={`text-sm font-bold tabular-nums ${item.type === "credit" ? "text-emerald-600" : item.type === "debit" ? "text-rose-500" : "text-slate-400"}`}>
+                                                {item.type === "credit" ? "+" : item.type === "debit" ? "-" : ""} ₹{item.amount.toLocaleString()}
                                             </span>
                                         </div>
                                     ))}
                                 </div>
 
-                                {/* Net payable */}
-                                <div className="mx-5 mb-5 p-5 rounded-xl bg-slate-900 text-white flex justify-between items-center">
+                                <div className="mx-5 mb-5 p-4 rounded-xl bg-slate-900 text-white flex justify-between items-center">
                                     <div>
-                                        <p className="text-sm font-semibold text-violet-300">Net payable amount</p>
-                                        <p className="text-xs text-slate-400 mt-0.5">Calculated as per policy v4.2</p>
+                                        <p className="text-xs font-bold text-violet-300">Net Payable Amount</p>
+                                        <p className="text-[10px] text-slate-400 mt-0.5 font-bold">{isPaid ? `Processed on ${selectedEmp.settlement?.processedDate}` : 'Calculated as per current breakdown'}</p>
                                     </div>
-                                    <p className="text-2xl font-black tracking-tight text-white">₹{netAmount.toLocaleString()}</p>
+                                    <p className="text-2xl font-bold tabular-nums tracking-tight text-white">₹{(isPaid ? (selectedEmp.settlement?.netPayable || 0) : netAmount).toLocaleString()}</p>
                                 </div>
 
-                                {/* Action buttons */}
-                                <div className="px-5 pb-5 flex gap-3">
-                                    <Button
-                                        className={`flex-1 h-11 rounded-xl font-semibold text-sm transition-colors flex items-center justify-center gap-2
-                                            ${isPaid ? "bg-emerald-500 hover:bg-emerald-600" : "bg-[#8B5CF6] hover:bg-[#7C3AED]"} text-white`}
-                                        onClick={handleProcess}
-                                        disabled={isPaid}
-                                    >
-                                        <ShieldCheck size={18} />
-                                        {isPaid ? "Payment finalized" : "Approve & process payout"}
+                                <div className="px-5 pb-5 flex gap-3 flex-wrap">
+                                    <Button className={`flex-1 h-10 rounded-xl font-bold text-xs transition-colors flex items-center justify-center gap-2 min-w-[180px] ${isPaid ? "bg-emerald-500 hover:bg-emerald-600" : "bg-[#CB9DF0] hover:bg-[#b580e0]"} text-white`} onClick={handleProcess} disabled={isPaid}>
+                                        <ShieldCheck size={14} />
+                                        {isPaid ? "Payment Finalized" : "Approve & Process Payout"}
                                     </Button>
-                                    <Button
-                                        variant="outline"
-                                        className="flex-1 h-11 rounded-xl font-semibold text-sm border-slate-200 text-slate-600 hover:bg-slate-50 flex items-center justify-center gap-2"
-                                        onClick={handleDownloadSummary}
-                                    >
-                                        <FileText size={18} />
-                                        Download summary
+                                    <Button variant="outline" className="flex-1 h-10 rounded-xl font-bold text-xs border-slate-200 text-slate-600 hover:bg-slate-50 flex items-center justify-center gap-2 min-w-[180px]" onClick={handleDownloadSummary}>
+                                        <FileText size={14} />
+                                        Download Summary
                                     </Button>
                                 </div>
                             </Card>
 
-                            {/* Document action cards */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <Card
-                                    className="rounded-2xl border border-slate-200 bg-white shadow-sm p-5 flex items-center gap-4 cursor-pointer hover:border-[#8B5CF6]/30 transition-colors group"
-                                    onClick={handleDownloadRelievingLetter}
-                                >
+                                <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm p-5 flex items-center gap-3 cursor-pointer hover:border-[#CB9DF0]/30 transition-colors group" onClick={handleDownloadRelievingLetter}>
                                     <div className="h-10 w-10 rounded-xl bg-teal-50 flex items-center justify-center text-teal-600 shrink-0">
-                                        <Receipt size={20} />
+                                        <Receipt size={18} />
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <p className="font-semibold text-sm text-slate-800">Relieving Letter</p>
-                                        <p className="text-xs text-slate-400 mt-0.5">Official separation document</p>
+                                        <p className="font-bold text-xs text-slate-800">Relieving Letter</p>
+                                        <p className="text-[10px] text-slate-400 mt-0.5 font-bold">Official separation document</p>
                                     </div>
-                                    <ArrowRight size={18} className="text-slate-300 group-hover:text-[#8B5CF6] transition-colors shrink-0" />
+                                    <ArrowRight size={16} className="text-slate-300 group-hover:text-[#CB9DF0] transition-colors shrink-0" />
                                 </Card>
 
-                                <Card
-                                    className="rounded-2xl border border-slate-200 bg-white shadow-sm p-5 flex items-center gap-4 cursor-pointer hover:border-[#8B5CF6]/30 transition-colors group"
-                                    onClick={handleDownloadPaySlip}
-                                >
+                                <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm p-5 flex items-center gap-3 cursor-pointer hover:border-[#CB9DF0]/30 transition-colors group" onClick={handleDownloadPaySlip}>
                                     <div className="h-10 w-10 rounded-xl bg-violet-50 flex items-center justify-center text-[#8B5CF6] shrink-0">
-                                        <Banknote size={20} />
+                                        <Banknote size={18} />
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <p className="font-semibold text-sm text-slate-800">Final Pay Slip</p>
-                                        <p className="text-xs text-slate-400 mt-0.5">Payout breakdown statement</p>
+                                        <p className="font-bold text-xs text-slate-800">Final Pay Slip</p>
+                                        <p className="text-[10px] text-slate-400 mt-0.5 font-bold">Payout breakdown statement</p>
                                     </div>
-                                    <ArrowRight size={18} className="text-slate-300 group-hover:text-[#8B5CF6] transition-colors shrink-0" />
+                                    <ArrowRight size={16} className="text-slate-300 group-hover:text-[#CB9DF0] transition-colors shrink-0" />
                                 </Card>
                             </div>
                         </>
                     ) : (
                         <div className="h-full min-h-[400px] flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white p-12 text-center">
-                            <Calculator size={48} className="text-slate-200 mb-4" />
-                            <p className="text-sm text-slate-400 font-medium max-w-xs">
-                                Select a separation record to begin final settlement calculations
-                            </p>
+                            <Calculator size={48} className="text-slate-200 mb-3" />
+                            <p className="text-sm text-slate-400 font-bold max-w-xs">Select a separation record to begin final settlement calculations.</p>
+                            <p className="text-[10px] text-slate-300 mt-2 font-bold">Employees appear here only after Clearance is finalized.</p>
                         </div>
                     )}
                 </div>
             </div>
 
-            {/* Process Confirmation Dialog */}
+            {/* Process Confirm */}
             <Dialog open={isProcessDialogOpen} onOpenChange={setIsProcessDialogOpen}>
-                <DialogContent className="bg-white rounded-2xl border-2 border-slate-200 p-6 max-w-sm shadow-2xl">
+                <DialogContent className="bg-white rounded-2xl border-2 border-slate-200 p-6 max-w-md shadow-2xl">
                     <DialogHeader>
-                        <DialogTitle className="text-lg font-bold text-slate-900">Confirm Settlement Payout</DialogTitle>
-                        <DialogDescription className="text-sm text-slate-500">
-                            Are you sure you want to process a payout of <strong className="text-slate-900">₹{netAmount.toLocaleString()}</strong> for {selectedEmp?.name}? This action cannot be undone.
+                        <DialogTitle className="text-lg font-bold text-slate-900">Confirm Settlement Payout?</DialogTitle>
+                        <DialogDescription className="text-xs font-bold text-slate-400">
+                            A payout of <strong className="text-slate-900">₹{netAmount.toLocaleString()}</strong> will be processed for {selectedEmp?.name}. This action cannot be undone.
                         </DialogDescription>
                     </DialogHeader>
-                    <DialogFooter className="gap-2 mt-4">
-                        <Button variant="outline" onClick={() => setIsProcessDialogOpen(false)} className="rounded-xl font-bold text-slate-400 h-9 px-4 text-xs border border-slate-200">Cancel</Button>
-                        <Button onClick={confirmProcess} className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white rounded-xl font-bold h-9 px-6 text-xs">
-                            Process Payout
-                        </Button>
+                    <DialogFooter className="gap-2 mt-2">
+                        <Button variant="outline" onClick={() => setIsProcessDialogOpen(false)} className="rounded-xl font-bold text-slate-500 h-10 px-5 text-xs border-slate-200">Cancel</Button>
+                        <Button onClick={confirmProcess} className="bg-[#CB9DF0] hover:bg-[#b580e0] text-white rounded-xl font-bold h-10 text-xs flex-1">Yes, Process Payout</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
 
-            {/* Custom Amounts Dialog */}
+            {/* Edit Amounts */}
             <Dialog open={isCustomAmountOpen} onOpenChange={setIsCustomAmountOpen}>
                 <DialogContent className="bg-white rounded-2xl border-2 border-slate-200 p-6 max-w-md shadow-2xl">
                     <DialogHeader>
                         <DialogTitle className="text-lg font-bold text-slate-900">Edit Settlement Amounts</DialogTitle>
-                        <DialogDescription className="text-sm text-slate-500">Adjust the individual components of the settlement.</DialogDescription>
+                        <DialogDescription className="text-xs font-bold text-slate-400">Adjust the individual components. All values in ₹.</DialogDescription>
                     </DialogHeader>
-                    <div className="space-y-4 py-4">
-                        <div className="space-y-1.5">
-                            <Label className="text-[11px] font-bold text-slate-700 ml-1">Basic Salary (₹)</Label>
-                            <Input
-                                type="number"
-                                value={customAmounts.basicSalary}
-                                onChange={e => setCustomAmounts({ ...customAmounts, basicSalary: e.target.value })}
-                                className="rounded-xl h-9 bg-slate-50/50 border border-slate-200 font-bold px-4 text-xs"
-                            />
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label className="text-[11px] font-bold text-slate-700 ml-1">Leave Encashment (₹)</Label>
-                            <Input
-                                type="number"
-                                value={customAmounts.leaveEncashment}
-                                onChange={e => setCustomAmounts({ ...customAmounts, leaveEncashment: e.target.value })}
-                                className="rounded-xl h-9 bg-slate-50/50 border border-slate-200 font-bold px-4 text-xs"
-                            />
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label className="text-[11px] font-bold text-slate-700 ml-1">Performance Incentive (₹)</Label>
-                            <Input
-                                type="number"
-                                value={customAmounts.performanceIncentive}
-                                onChange={e => setCustomAmounts({ ...customAmounts, performanceIncentive: e.target.value })}
-                                className="rounded-xl h-9 bg-slate-50/50 border border-slate-200 font-bold px-4 text-xs"
-                            />
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label className="text-[11px] font-bold text-slate-700 ml-1">TDS Deduction (₹)</Label>
-                            <Input
-                                type="number"
-                                value={customAmounts.tds}
-                                onChange={e => setCustomAmounts({ ...customAmounts, tds: e.target.value })}
-                                className="rounded-xl h-9 bg-slate-50/50 border border-slate-200 font-bold px-4 text-xs"
-                            />
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label className="text-[11px] font-bold text-slate-700 ml-1">Gratuity (₹)</Label>
-                            <Input
-                                type="number"
-                                value={customAmounts.gratuity}
-                                onChange={e => setCustomAmounts({ ...customAmounts, gratuity: e.target.value })}
-                                className="rounded-xl h-9 bg-slate-50/50 border border-slate-200 font-bold px-4 text-xs"
-                            />
-                        </div>
+                    <div className="space-y-3 py-3">
+                        {[
+                            { key: 'basicSalary', label: 'Basic Salary' },
+                            { key: 'leaveEncashment', label: 'Leave Encashment' },
+                            { key: 'performanceIncentive', label: 'Performance Incentive' },
+                            { key: 'tds', label: 'TDS Deduction' },
+                            { key: 'gratuity', label: 'Gratuity' },
+                        ].map(f => (
+                            <div key={f.key} className="space-y-1">
+                                <Label className="text-[10px] font-bold text-slate-600 uppercase tracking-wide ml-1">{f.label} (₹)</Label>
+                                <Input type="number" min={0} value={(draftAmounts as any)[f.key]} onChange={e => setDraftAmounts({ ...draftAmounts, [f.key]: e.target.value })} className="rounded-xl h-9 bg-slate-50/50 border border-slate-200 font-bold px-4 text-xs" />
+                            </div>
+                        ))}
                     </div>
-                    <DialogFooter>
-                        <Button onClick={() => setIsCustomAmountOpen(false)} className="bg-[#CB9DF0] hover:bg-[#b580e0] text-white rounded-xl font-bold h-9 px-6 text-xs w-full">
-                            Save Changes
-                        </Button>
+                    <DialogFooter className="gap-2">
+                        <Button variant="outline" onClick={() => setIsCustomAmountOpen(false)} className="rounded-xl h-10 font-bold border-slate-200 text-xs">Cancel</Button>
+                        <Button onClick={saveDraftAmounts} className="bg-[#CB9DF0] hover:bg-[#b580e0] text-white rounded-xl font-bold h-10 text-xs flex-1">Save Changes</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

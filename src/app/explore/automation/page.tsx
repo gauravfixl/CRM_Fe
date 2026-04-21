@@ -175,6 +175,115 @@ const data = {
     { value: "99.9%", label: "Workflow execution reliability" },
     { value: "10x", label: "Faster process completion" },
   ],
+
+  capabilities: [
+    {
+      title: "Intelligent Process Discovery",
+      description:
+        "Before you automate, you need to know what to automate. The process discovery engine analyzes your team's actual usage patterns across CubicleERP modules to identify repetitive tasks, bottlenecks, and high-impact automation opportunities ranked by potential time savings.",
+      keyPoints: [
+        "Automated task mining scans user activity logs to surface the most frequently repeated manual actions across your organization",
+        "Impact scoring ranks each automation opportunity by estimated time savings, error reduction, and implementation complexity",
+        "Pre-built automation templates are recommended based on your industry and the specific processes discovered",
+        "One-click implementation turns a discovered process into a working draft workflow that you can review and activate immediately",
+      ],
+    },
+    {
+      title: "Cross-Module Orchestration",
+      description:
+        "Build workflows that span every CubicleERP module and external system in a single canvas. A single automation can create a CRM deal, generate an invoice in Finance, notify a Slack channel, update inventory, and send a customer email -- all triggered by one event.",
+      keyPoints: [
+        "Seamless data passing between CRM, Finance, Inventory, HRM, and every other module without manual mapping",
+        "External system actions for Slack, Gmail, WhatsApp, payment gateways, and shipping providers run as native workflow steps",
+        "Transaction-safe execution ensures that if any step fails, dependent steps are paused and rollback actions are triggered",
+      ],
+    },
+    {
+      title: "Approval Workflow Engine",
+      description:
+        "Digitize and accelerate every approval process in your organization. From expense reports and purchase orders to leave requests and contract sign-offs, the approval engine routes requests to the right people with the right context at the right time.",
+      keyPoints: [
+        "Multi-level approval chains support sequential, parallel, and quorum-based routing with configurable escalation rules",
+        "Dynamic approver assignment routes requests based on amount thresholds, department, project, or any custom field",
+        "Mobile-friendly approval inbox lets managers approve or reject with a single tap from their phone, with full context attached",
+        "SLA tracking monitors how long each request sits at each approval stage and escalates automatically when deadlines approach",
+      ],
+    },
+    {
+      title: "Robotic Process Automation (RPA) Integration",
+      description:
+        "Extend CubicleERP workflows into legacy systems and desktop applications using built-in RPA capabilities. Automate tasks in systems that lack APIs by simulating user interactions with screen-level automation bots.",
+      keyPoints: [
+        "Browser-based bot recorder captures clicks, keystrokes, and data extraction steps to create reusable automation scripts",
+        "Schedule RPA bots to run at specific times or trigger them as steps within larger CubicleERP workflows",
+        "Built-in exception handling pauses the bot and alerts operators when it encounters unexpected screens or data",
+      ],
+    },
+  ],
+
+  integrations: [
+    { name: "Slack", category: "Communication" },
+    { name: "Microsoft Teams", category: "Communication" },
+    { name: "Gmail", category: "Email" },
+    { name: "WhatsApp Business", category: "Messaging" },
+    { name: "Google Sheets", category: "Productivity" },
+    { name: "Razorpay", category: "Payments" },
+    { name: "Stripe", category: "Payments" },
+    { name: "Shiprocket", category: "Shipping" },
+    { name: "Twilio", category: "SMS" },
+    { name: "Zapier", category: "Automation" },
+    { name: "GitHub", category: "Development" },
+    { name: "Jira", category: "Project Management" },
+  ],
+
+  testimonials: [
+    {
+      quote:
+        "We automated our entire purchase order workflow -- from requisition to three-level approval to vendor notification. What used to take 3 business days now completes in under 2 hours, and we have not had a single approval slip through the cracks since.",
+      author: "Thomas Grant",
+      role: "Procurement Director",
+      company: "Atlas Manufacturing",
+      metric: "PO approval time reduced from 3 days to 2 hours",
+    },
+    {
+      quote:
+        "Our onboarding process involved 23 manual steps across HR, IT, and facilities. CubicleERP Automation reduced it to 3 human touchpoints. New hires now have their accounts, equipment, and training scheduled before their first day even starts.",
+      author: "Fatima Al-Rashidi",
+      role: "HR Operations Manager",
+      company: "Pinnacle Consulting Group",
+      metric: "87% fewer manual onboarding steps",
+    },
+    {
+      quote:
+        "The visual workflow builder is genuinely no-code. Our marketing coordinator, who has zero technical background, built a lead scoring and assignment workflow in an afternoon that our engineering team quoted two weeks to build custom.",
+      author: "Daniel Park",
+      role: "CTO",
+      company: "VeloTech Solutions",
+      metric: "Business users building workflows without IT help",
+    },
+  ],
+
+  comparisons: [
+    { feature: "Workflow creation", traditional: "Custom code or scripts", cubicleErp: "Visual drag-and-drop builder" },
+    { feature: "Trigger options", traditional: "Scheduled batch jobs", cubicleErp: "50+ real-time event triggers" },
+    { feature: "Error handling", traditional: "Silent failures", cubicleErp: "Auto-retry with alerts" },
+    { feature: "Cross-system actions", traditional: "Manual data transfer", cubicleErp: "Native multi-system steps" },
+    { feature: "Approval routing", traditional: "Email chains and follow-ups", cubicleErp: "Automated multi-level routing" },
+    { feature: "Audit trail", traditional: "No visibility into execution", cubicleErp: "Full execution logs" },
+  ],
+
+  subNavItems: [
+    { label: "Overview", sectionId: "hero" },
+    { label: "Features", sectionId: "features" },
+    { label: "Capabilities", sectionId: "capabilities" },
+    { label: "Benefits", sectionId: "benefits" },
+    { label: "Integrations", sectionId: "integrations" },
+    { label: "Use Cases", sectionId: "use-cases" },
+    { label: "FAQs", sectionId: "faqs" },
+    { label: "CRM", href: "/explore/crm" },
+    { label: "HRM", href: "/explore/hrm" },
+    { label: "Email Marketing", href: "/explore/email-marketing" },
+  ],
 }
 
 export default function AutomationPage() {
