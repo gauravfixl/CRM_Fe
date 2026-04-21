@@ -141,14 +141,29 @@ export default function LicensesPage() {
     };
 
     const handleCreate = () => {
-        if (!formName.trim() || !formEmail.trim()) {
+        const trimmedName = formName.trim();
+        const trimmedEmail = formEmail.trim();
+
+        if (!trimmedName || !trimmedEmail) {
             showWarning("Please fill in all required fields");
             return;
         }
+
+        if (/\d/.test(trimmedName)) {
+            showWarning("Full name should not contain numbers");
+            return;
+        }
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(trimmedEmail)) {
+            showWarning("Please enter a valid email address");
+            return;
+        }
+
         const newUser: LicenseUser = {
             id: String(Date.now()),
-            name: formName.trim(),
-            email: formEmail.trim(),
+            name: trimmedName,
+            email: trimmedEmail,
             role: formRole,
             plan: "Enterprise Pro",
             status: "Pending",
@@ -169,14 +184,29 @@ export default function LicensesPage() {
 
     const handleEdit = () => {
         if (!editingUser) return;
-        if (!formName.trim() || !formEmail.trim()) {
+        const trimmedName = formName.trim();
+        const trimmedEmail = formEmail.trim();
+
+        if (!trimmedName || !trimmedEmail) {
             showWarning("Please fill in all required fields");
             return;
         }
+
+        if (/\d/.test(trimmedName)) {
+            showWarning("Full name should not contain numbers");
+            return;
+        }
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(trimmedEmail)) {
+            showWarning("Please enter a valid email address");
+            return;
+        }
+
         setLicenseUsers((prev) =>
             prev.map((u) =>
                 u.id === editingUser.id
-                    ? { ...u, name: formName.trim(), email: formEmail.trim(), role: formRole }
+                    ? { ...u, name: trimmedName, email: trimmedEmail, role: formRole }
                     : u
             )
         );

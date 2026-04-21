@@ -23,8 +23,8 @@ import {
     TableHeader,
     TableRow,
 } from "@/shared/components/ui/table"
-import { showSuccess } from "@/shared/utils/toast"
-import axiosInstance from "@/lib/axios"
+import { showSuccess, showError } from "@/shared/utils/toast"
+import { getBillingHistory } from "@/hooks/billingHooks"
 
 interface Transaction {
     id: string
@@ -36,20 +36,6 @@ interface Transaction {
     status: "Completed" | "Pending" | "Failed"
 }
 
-const transactions: Transaction[] = [
-    { id: "TXN-2026-018", date: "Apr 01, 2026", description: "Enterprise Pro - Monthly", amount: "$499.00", type: "payment", method: "Visa •••• 4242", status: "Completed" },
-    { id: "TXN-2026-017", date: "Mar 15, 2026", description: "AI Copilot Add-on", amount: "$79.00", type: "payment", method: "Visa •••• 4242", status: "Completed" },
-    { id: "TXN-2026-016", date: "Mar 01, 2026", description: "Enterprise Pro - Monthly", amount: "$499.00", type: "payment", method: "Visa •••• 4242", status: "Completed" },
-    { id: "TXN-2026-015", date: "Feb 20, 2026", description: "Storage Add-on Refund", amount: "$29.00", type: "refund", method: "Visa •••• 4242", status: "Completed" },
-    { id: "TXN-2026-014", date: "Feb 01, 2026", description: "Enterprise Pro - Monthly", amount: "$499.00", type: "payment", method: "Visa •••• 4242", status: "Completed" },
-    { id: "TXN-2026-013", date: "Jan 15, 2026", description: "Advanced Analytics Add-on", amount: "$49.00", type: "payment", method: "Mastercard •••• 8888", status: "Completed" },
-    { id: "TXN-2026-012", date: "Jan 01, 2026", description: "Enterprise Pro - Monthly", amount: "$499.00", type: "payment", method: "Visa •••• 4242", status: "Completed" },
-    { id: "TXN-2025-011", date: "Dec 10, 2025", description: "Account Credit Applied", amount: "$50.00", type: "credit", method: "Account Credit", status: "Completed" },
-    { id: "TXN-2025-010", date: "Dec 01, 2025", description: "Enterprise Pro - Monthly + Storage", amount: "$528.00", type: "payment", method: "Visa •••• 4242", status: "Completed" },
-    { id: "TXN-2025-009", date: "Nov 01, 2025", description: "Enterprise Pro - Monthly", amount: "$499.00", type: "payment", method: "Visa •••• 4242", status: "Completed" },
-]
-
-const mockTransactions: Transaction[] = transactions
 
 function formatDate(dateStr: string): string {
     const date = new Date(dateStr)
@@ -103,23 +89,22 @@ type TypeFilter = (typeof typeFilters)[number]
 export default function BillingHistoryPage() {
     const [searchQuery, setSearchQuery] = useState("")
     const [typeFilter, setTypeFilter] = useState<TypeFilter>("All")
-    const [billingTransactions, setBillingTransactions] = useState<Transaction[]>(mockTransactions)
+    const [billingTransactions, setBillingTransactions] = useState<Transaction[]>([])
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
         const fetchBillingHistory = async () => {
             try {
                 setLoading(true)
-                const response = await axiosInstance.get("/OrgBilling/history")
-                const data = response.data
-                if (data?.billingHistories?.length > 0) {
-                    setBillingTransactions(mapApiToTransactions(data.billingHistories))
-                } else {
-                    setBillingTransactions(mockTransactions)
-                }
-            } catch (error) {
+                const response = await getBillingHistory()
+                const data = response?.data
+                const histories =
+                    data?.billingHistories || data?.history || data?.data || []
+                setBillingTransactions(mapApiToTransactions(histories))
+            } catch (error: any) {
                 console.error("Failed to fetch billing history:", error)
-                setBillingTransactions(mockTransactions)
+                showError(error?.response?.data?.message || "Failed to load billing history")
+                setBillingTransactions([])
             } finally {
                 setLoading(false)
             }

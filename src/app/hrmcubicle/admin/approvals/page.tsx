@@ -74,13 +74,42 @@ const ApprovalMatrixPage = () => {
 
     const handleSave = () => {
         if (!formData || !selectedFlowId) return;
+        // Validate: name required, at least one level with approver role
+        if (!formData.name || formData.name.trim().length < 2) {
+            toast({ title: "Flow name is required (min 2 chars)", variant: "destructive" });
+            return;
+        }
+        if (!formData.levels || formData.levels.length === 0) {
+            toast({ title: "At least one approval level is required", variant: "destructive" });
+            return;
+        }
+        if (formData.levels.some(l => !l.approverRole || !l.approverRole.trim())) {
+            toast({ title: "Each level must have an approver role", variant: "destructive" });
+            return;
+        }
+        if (formData.escalationRule?.enabled) {
+            const hrs = formData.escalationRule.afterHours;
+            if (!hrs || hrs < 1) {
+                toast({ title: "Escalation hours must be at least 1", variant: "destructive" });
+                return;
+            }
+        }
         updateFlow(selectedFlowId, formData);
         toast({ title: "Configuration Saved", description: "Workflow settings have been updated successfully." });
     };
 
     const handleCreate = (name: string, type: ApprovalType) => {
+        const trimmed = name.trim();
+        if (!trimmed || trimmed.length < 2) {
+            toast({ title: "Flow name required (min 2 chars)", variant: "destructive" });
+            return;
+        }
+        if (!type) {
+            toast({ title: "Flow type is required", variant: "destructive" });
+            return;
+        }
         createFlow({
-            name,
+            name: trimmed,
             type,
             description: "New workflow configuration",
             levels: [{ level: 1, approverRole: "Manager", isMandatory: true }],

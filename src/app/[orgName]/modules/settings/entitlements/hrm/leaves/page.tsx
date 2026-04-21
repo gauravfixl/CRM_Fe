@@ -252,7 +252,7 @@ export default function LeavePoliciesPage() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-xs text-white/80">Total Policies</p>
-                                <p className="text-xl font-semibold">{leaves.length}</p>
+                                <p className="text-xl font-semibold text-white tracking-tight">{leaves.length}</p>
                                 <p className="text-[10px] text-white/70">Defined categories</p>
                             </div>
                             <Plane className="w-5 h-5 text-white/80" />

@@ -41,7 +41,7 @@ import { Label } from "@/shared/components/ui/label";
 
 const RequestsPage = () => {
     const { toast } = useToast();
-    const { requests, updateRequestStatus, deleteRequest, addRequest } = useInboxStore();
+    const { requests, updateRequestStatus, deleteRequest, addRequest, addReplyToRequest } = useInboxStore();
 
     const [selectedRequest, setSelectedRequest] = useState<Request | null>(null);
     const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
@@ -193,10 +193,10 @@ const RequestsPage = () => {
     ];
 
     return (
-        <div className="flex flex-col min-h-screen bg-slate-50/20">
-            <header className="p-6 bg-white border-b border-slate-100 sticky top-0 z-30 shadow-sm">
-                <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                    <div className="space-y-1">
+        <div className="flex flex-col min-h-screen bg-slate-50/20" style={{ zoom: 0.9 }}>
+            <header className="px-6 py-3 bg-white border-b border-slate-100 sticky top-0 z-30 shadow-sm">
+                <div className="w-full flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                    <div className="space-y-0.5">
                         <div className="flex items-center gap-3">
                             <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Employee Support Hub</h1>
                             <Badge className="bg-emerald-600 text-white border-none font-bold text-[10px] h-6 px-3 rounded-lg uppercase tracking-wider">Help Desk</Badge>
@@ -228,7 +228,7 @@ const RequestsPage = () => {
                 </div>
             </header>
 
-            <main className="p-6 max-w-6xl mx-auto w-full space-y-10">
+            <main className="p-6 w-full space-y-10">
                 <div className="flex flex-col lg:flex-row gap-8">
                     {/* Left: Categorization Drawer */}
                     <div className="w-full lg:w-72 space-y-6">
@@ -437,6 +437,11 @@ const RequestsPage = () => {
                             disabled={!isReplyValid}
                             onClick={() => {
                                 if (selectedRequest) {
+                                    if (!reply.trim()) {
+                                        toast({ title: "Reply Required", description: "Please write a response before resolving.", variant: "destructive" });
+                                        return;
+                                    }
+                                    addReplyToRequest(selectedRequest.id, reply.trim());
                                     handleStatusUpdate(selectedRequest.id, 'Resolved');
                                     setIsDetailDialogOpen(false);
                                     setReply("");

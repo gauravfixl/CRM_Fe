@@ -13,9 +13,11 @@ const COOKIE_NAME = "orgToken";
  */
 export function setAuthCookie(token: string): void {
   const isSecure = window.location.protocol === "https:";
+  const maxAge = 7 * 24 * 60 * 60; // 7 days in seconds
   const flags = [
     `${COOKIE_NAME}=${encodeURIComponent(token)}`,
     "path=/",
+    `max-age=${maxAge}`,
     "SameSite=Lax",
     ...(isSecure ? ["Secure"] : []),
   ];

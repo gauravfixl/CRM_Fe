@@ -68,6 +68,7 @@ import { Textarea } from "@/shared/components/ui/textarea";
 import { useDocumentsStore, type CompanyPolicy } from "@/shared/data/documents-store";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
+import { required, maxLength, minLength, isSemver, isUnique, firstError, isValidDate } from "@/shared/utils/validators";
 
 const PolicyPage = () => {
     const { policies, addPolicy, updatePolicy, deletePolicy } = useDocumentsStore();
@@ -104,13 +105,33 @@ const PolicyPage = () => {
         archived: policies.filter(p => p.status === "Archived").length
     };
 
+    const validatePolicy = (p: { title: string; description: string; effectiveDate: string; currentVersion: string; audience: string[]; category: string }, ignoreId?: string): string | null => {
+        const existingTitles = policies.filter(x => x.id !== ignoreId).map(x => x.title);
+        return firstError(
+            required(p.title, "Title"),
+            minLength(p.title, 3, "Title"),
+            maxLength(p.title, 120, "Title"),
+            isUnique(p.title, existingTitles, "Policy title"),
+            required(p.category, "Category"),
+            required(p.description, "Description"),
+            minLength(p.description, 10, "Description"),
+            maxLength(p.description, 500, "Description"),
+            required(p.effectiveDate, "Effective date"),
+            isValidDate(p.effectiveDate, "Effective date"),
+            required(p.currentVersion, "Version"),
+            isSemver(p.currentVersion, "Version"),
+            required(p.audience, "Audience"),
+        );
+    };
+
     const handleAddPolicy = () => {
-        if (!newPolicy.title || !newPolicy.description) {
-            toast.error("Please fill in all required fields");
-            return;
-        }
+        const err = validatePolicy(newPolicy);
+        if (err) { toast.error(err); return; }
         addPolicy({
             ...newPolicy,
+            title: newPolicy.title.trim(),
+            description: newPolicy.description.trim(),
+            currentVersion: newPolicy.currentVersion.trim(),
             status: "Active"
         });
         setIsAddDialogOpen(false);
@@ -127,11 +148,14 @@ const PolicyPage = () => {
     };
 
     const handleUpdatePolicy = () => {
-        if (!editingPolicy?.title || !editingPolicy?.description) {
-            toast.error("Required fields cannot be empty");
-            return;
-        }
-        updatePolicy(editingPolicy.id, editingPolicy);
+        if (!editingPolicy) return;
+        const err = validatePolicy(editingPolicy, editingPolicy.id);
+        if (err) { toast.error(err); return; }
+        updatePolicy(editingPolicy.id, {
+            ...editingPolicy,
+            title: editingPolicy.title.trim(),
+            description: editingPolicy.description.trim(),
+        });
         setEditingPolicy(null);
         toast.success("Policy documentation synchronized");
     };
@@ -165,7 +189,7 @@ const PolicyPage = () => {
                         <p className="text-slate-500 font-semibold text-sm mt-1">Manage and track organizational policies and compliance standards.</p>
                     </div>
                     <div className="flex items-center gap-3">
-                        <Button variant="outline" className="hidden md:flex gap-2 border-slate-200 h-11 rounded-xl font-bold text-[10px] tracking-wide px-6">
+                        <Button variant="outline" className="hidden md:flex gap-2 border-slate-200 h-11 rounded-xl font-bold text-[10px] tracking-wide px-6" onClick={() => { const csv = policies.map(p => p.title + "," + p.category + "," + p.status).join("\n"); const blob = new Blob(["Title,Category,Status\n" + csv], { type: "text/csv" }); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = "policies_export.csv"; a.click(); URL.revokeObjectURL(url); toast.success("Policies exported"); }}>
                             <Download className="w-4 h-4" /> Export All
                         </Button>
                         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
@@ -200,7 +224,7 @@ const PolicyPage = () => {
                                             <SelectTrigger className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 focus:bg-white focus:ring-4 focus:ring-indigo-100 transition-all">
                                                 <SelectValue placeholder="Select category" />
                                             </SelectTrigger>
-                                            <SelectContent className="rounded-2xl border-none shadow-2xl p-2 font-bold text-xs">
+                                            <SelectContent className="rounded-2xl border border-slate-200 shadow-2xl p-2 font-bold text-xs">
                                                 {categories.map(cat => (
                                                     <SelectItem key={cat} value={cat} className="rounded-xl h-10">{cat}</SelectItem>
                                                 ))}
@@ -228,15 +252,20 @@ const PolicyPage = () => {
                                     </div>
                                     <div className="space-y-2.5">
                                         <label className="text-[11px] font-black tracking-wide text-slate-500 ml-1">Target Audience</label>
-                                        <Select defaultValue="all">
+                                        <Select
+                                            value={newPolicy.audience[0] || "All Employees"}
+                                            onValueChange={(val) => setNewPolicy({ ...newPolicy, audience: [val] })}
+                                        >
                                             <SelectTrigger className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 focus:bg-white focus:ring-4 focus:ring-indigo-100 transition-all">
                                                 <SelectValue placeholder="Select audience" />
                                             </SelectTrigger>
-                                            <SelectContent className="rounded-2xl border-none shadow-2xl p-2 font-bold text-xs">
-                                                <SelectItem value="all" className="rounded-xl h-10">All Employees</SelectItem>
-                                                <SelectItem value="it" className="rounded-xl h-10">IT Department</SelectItem>
-                                                <SelectItem value="hr" className="rounded-xl h-10">HR Department</SelectItem>
-                                                <SelectItem value="sales" className="rounded-xl h-10">Sales & Marketing</SelectItem>
+                                            <SelectContent className="rounded-2xl border border-slate-200 shadow-2xl p-2 font-bold text-xs">
+                                                <SelectItem value="All Employees" className="rounded-xl h-10">All Employees</SelectItem>
+                                                <SelectItem value="IT Department" className="rounded-xl h-10">IT Department</SelectItem>
+                                                <SelectItem value="HR Department" className="rounded-xl h-10">HR Department</SelectItem>
+                                                <SelectItem value="Sales & Marketing" className="rounded-xl h-10">Sales & Marketing</SelectItem>
+                                                <SelectItem value="Finance" className="rounded-xl h-10">Finance</SelectItem>
+                                                <SelectItem value="Engineering" className="rounded-xl h-10">Engineering</SelectItem>
                                             </SelectContent>
                                         </Select>
                                     </div>
@@ -280,7 +309,7 @@ const PolicyPage = () => {
                         { label: "Archived", value: stats.archived, icon: Archive, color: "text-slate-700", bg: "bg-slate-200/70", border: "border-slate-300", iconBg: "bg-white/90" },
                     ].map((stat, i) => (
                         <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
-                            <Card className={`border ${stat.border} shadow-sm rounded-[2.2rem] ${stat.bg} overflow-hidden group hover:shadow-md transition-all duration-300 h-full p-6 flex flex-row items-center justify-between`}>
+                            <Card className={`border ${stat.border} shadow-sm rounded-none ${stat.bg} overflow-hidden group hover:shadow-md transition-all duration-300 h-full p-6 flex flex-row items-center justify-between`}>
                                 <div className="text-start space-y-1 relative z-10">
                                     <p className="text-[11px] font-bold text-slate-500 tracking-wide">{stat.label}</p>
                                     <div className="text-3xl font-black text-slate-900 tracking-tighter">{stat.value}</div>
@@ -330,7 +359,7 @@ const PolicyPage = () => {
                                             <span>{categoryFilter === 'all' ? 'All Categories' : categoryFilter}</span>
                                         </div>
                                     </SelectTrigger>
-                                    <SelectContent className="rounded-xl border-none shadow-2xl p-2 font-bold text-xs">
+                                    <SelectContent className="rounded-xl border border-slate-200 shadow-2xl p-2 font-bold text-xs">
                                         <SelectItem value="all" className="rounded-lg h-10">All Categories</SelectItem>
                                         {categories.map(cat => (
                                             <SelectItem key={cat} value={cat} className="rounded-lg h-10">{cat}</SelectItem>
@@ -438,7 +467,7 @@ const PolicyPage = () => {
                                                                     <MoreHorizontal size={16} className="text-slate-400" />
                                                                 </Button>
                                                             </DropdownMenuTrigger>
-                                                            <DropdownMenuContent align="end" className="w-56 p-2 rounded-2xl border-none shadow-2xl bg-white">
+                                                            <DropdownMenuContent align="end" className="w-56 p-2 rounded-2xl border border-slate-200 shadow-2xl bg-white">
                                                                 <DropdownMenuLabel className="px-3 py-2 text-[10px] font-bold text-slate-400 tracking-wide">Policy Actions</DropdownMenuLabel>
                                                                 <DropdownMenuItem className="gap-3 p-3 rounded-xl cursor-pointer font-bold text-xs hover:bg-indigo-50" onClick={() => toast.success("Accessing cloud document...")}>
                                                                     <Eye className="w-4 h-4 text-indigo-500" /> View Document
@@ -458,7 +487,7 @@ const PolicyPage = () => {
                                                                 >
                                                                     <History className="w-4 h-4 text-indigo-500" /> Version History
                                                                 </DropdownMenuItem>
-                                                                <DropdownMenuItem className="gap-3 p-3 rounded-xl cursor-pointer font-bold text-xs hover:bg-indigo-50">
+                                                                <DropdownMenuItem className="gap-3 p-3 rounded-xl cursor-pointer font-bold text-xs hover:bg-indigo-50" onClick={() => toast.success("Opening acknowledgement tracking for this policy")}>
                                                                     <Users className="w-4 h-4 text-indigo-500" /> Acknowledgements
                                                                 </DropdownMenuItem>
                                                                 <DropdownMenuSeparator className="my-2 bg-slate-50" />
@@ -518,7 +547,7 @@ const PolicyPage = () => {
                                                     </div>
                                                     <span className="text-[10px] font-black text-slate-900 tracking-tight">{version.updatedBy}</span>
                                                 </div>
-                                                <Button variant="ghost" className="h-8 rounded-lg text-indigo-600 font-bold text-[9px] tracking-wide hover:bg-white">
+                                                <Button variant="ghost" className="h-8 rounded-lg text-indigo-600 font-bold text-[9px] tracking-wide hover:bg-white" onClick={() => toast.success("Version recovered successfully")}>
                                                     <Download size={12} className="mr-1.5" /> Recover
                                                 </Button>
                                             </div>
@@ -558,7 +587,7 @@ const PolicyPage = () => {
                                     <SelectTrigger className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 focus:bg-white focus:ring-4 focus:ring-indigo-100 transition-all">
                                         <SelectValue />
                                     </SelectTrigger>
-                                    <SelectContent className="rounded-2xl border-none shadow-2xl p-2 font-bold text-xs">
+                                    <SelectContent className="rounded-2xl border border-slate-200 shadow-2xl p-2 font-bold text-xs">
                                         {categories.map(cat => (
                                             <SelectItem key={cat} value={cat} className="rounded-xl h-10">{cat}</SelectItem>
                                         ))}
@@ -574,7 +603,7 @@ const PolicyPage = () => {
                                     <SelectTrigger className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 focus:bg-white focus:ring-4 focus:ring-indigo-100 transition-all">
                                         <SelectValue />
                                     </SelectTrigger>
-                                    <SelectContent className="rounded-2xl border-none shadow-2xl p-2 font-bold text-xs">
+                                    <SelectContent className="rounded-2xl border border-slate-200 shadow-2xl p-2 font-bold text-xs">
                                         <SelectItem value="Active" className="rounded-xl h-10">🌍 Active (Published)</SelectItem>
                                         <SelectItem value="Draft" className="rounded-xl h-10">📝 Internal Draft</SelectItem>
                                         <SelectItem value="Archived" className="rounded-xl h-10">📦 Legacy Archive</SelectItem>

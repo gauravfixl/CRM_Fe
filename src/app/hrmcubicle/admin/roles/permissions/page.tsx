@@ -41,10 +41,13 @@ const PermissionMatrixPage = () => {
                 // Initialize permissions for all modules
                 const initialPerms = AVAILABLE_MODULES.map(module => {
                     const existing = role.permissions.find(p => p.module === module);
-                    return existing || {
+                    if (existing) return existing;
+                    return {
                         module,
                         actions: { view: false, create: false, edit: false, delete: false, approve: false },
-                        scope: 'Self' as DataScope
+                        scope: 'Self' as DataScope,
+                        hasConfidentialAccess: false,
+                        fieldAccess: {} as Record<string, 'view' | 'edit' | 'hidden'>,
                     };
                 });
                 setPermissions(initialPerms);

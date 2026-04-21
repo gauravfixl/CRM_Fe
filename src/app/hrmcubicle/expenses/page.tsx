@@ -12,11 +12,6 @@ import {
     ArrowUpRight,
     ArrowDownRight,
     ChevronRight,
-    DollarSign,
-    AlertCircle,
-    CheckCircle2,
-    XCircle,
-    BarChart3,
     Download,
 } from "lucide-react";
 import { Card, CardContent } from "@/shared/components/ui/card";
@@ -48,7 +43,7 @@ const ExpenseDashboard = () => {
     const router = useRouter();
     const { toast } = useToast();
     const { claims, travelRequests } = useExpenseStore();
-    const [selectedMonth] = useState('2026-03');
+    const [selectedMonth, setSelectedMonth] = useState('2026-03');
 
     const stats = useMemo(() => {
         const monthClaims = claims.filter(c => c.date.startsWith(selectedMonth));
@@ -89,11 +84,25 @@ const ExpenseDashboard = () => {
     }, [claims]);
 
     const kpiCards = [
-        { label: 'Total Claims This Month', value: `₹${stats.totalThisMonth.toLocaleString()}`, icon: Receipt, change: '+12%', up: true, color: 'text-purple-600', bg: 'bg-purple-50' },
-        { label: 'Pending Approvals', value: stats.pendingApprovals.toString(), icon: Clock, change: `${stats.pendingApprovals} awaiting`, up: false, color: 'text-amber-600', bg: 'bg-amber-50' },
-        { label: 'Travel Budget Used', value: `${stats.travelBudgetPct}%`, icon: Plane, change: `₹${stats.travelSpent.toLocaleString()} / ₹${stats.totalTravelBudget.toLocaleString()}`, up: stats.travelBudgetPct > 75, color: 'text-blue-600', bg: 'bg-blue-50' },
-        { label: 'Avg Processing Time', value: `${stats.avgProcessing} days`, icon: TrendingUp, change: '-0.3 days', up: false, color: 'text-green-600', bg: 'bg-green-50' },
+        { label: 'Total Claims This Month', value: `₹${stats.totalThisMonth.toLocaleString()}`, icon: Receipt, change: '+12%', up: true, cardBg: 'bg-[#CB9DF0]' },
+        { label: 'Pending Approvals', value: stats.pendingApprovals.toString(), icon: Clock, change: `${stats.pendingApprovals} awaiting`, up: false, cardBg: 'bg-[#F0C1E1]' },
+        { label: 'Travel Budget Used', value: `${stats.travelBudgetPct}%`, icon: Plane, change: `₹${stats.travelSpent.toLocaleString()} / ₹${stats.totalTravelBudget.toLocaleString()}`, up: stats.travelBudgetPct > 75, cardBg: 'bg-[#FFF9BF]' },
+        { label: 'Avg Processing Time', value: `${stats.avgProcessing} days`, icon: TrendingUp, change: '-0.3 days', up: false, cardBg: 'bg-[#FDDBBB]' },
     ];
+
+    const handleExportRecent = () => {
+        const headers = ['ID', 'Employee', 'Date', 'Category', 'Project', 'Amount', 'Status'];
+        const rows = recentClaims.map(c => [c.id, c.employeeName, c.date, c.category, c.project || '-', c.amount.toString(), c.status]);
+        const csv = [headers.join(','), ...rows.map(r => r.map(v => `"${v}"`).join(','))].join('\n');
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `recent_claims_${selectedMonth}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+        toast({ title: "Exported", description: "Recent claims downloaded as CSV." });
+    };
 
     // Donut chart SVG
     const donutSegments = useMemo(() => {
@@ -146,19 +155,19 @@ const ExpenseDashboard = () => {
             {/* KPI Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {kpiCards.map((kpi, i) => (
-                    <Card key={i} className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                    <Card key={i} className={`rounded-2xl border-none ${kpi.cardBg} shadow-sm`}>
                         <CardContent className="p-5">
                             <div className="flex items-start justify-between">
                                 <div>
-                                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">{kpi.label}</p>
+                                    <p className="text-xs font-bold text-slate-700 uppercase tracking-wide">{kpi.label}</p>
                                     <p className="text-2xl font-bold text-slate-900 mt-1">{kpi.value}</p>
                                     <div className="flex items-center gap-1 mt-1.5">
                                         {kpi.up ? <ArrowUpRight className="h-3 w-3 text-red-500" /> : <ArrowDownRight className="h-3 w-3 text-green-500" />}
                                         <span className={cn("text-xs font-medium", kpi.up ? "text-red-500" : "text-green-500")}>{kpi.change}</span>
                                     </div>
                                 </div>
-                                <div className={cn("flex h-10 w-10 items-center justify-center rounded-xl", kpi.bg)}>
-                                    <kpi.icon className={cn("h-5 w-5", kpi.color)} />
+                                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/30 backdrop-blur-sm">
+                                    <kpi.icon className="h-5 w-5 text-slate-800" />
                                 </div>
                             </div>
                         </CardContent>
@@ -256,9 +265,14 @@ const ExpenseDashboard = () => {
                 <CardContent className="p-5">
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="text-sm font-bold text-slate-900">Recent Claims</h3>
-                        <Button variant="ghost" size="sm" className="text-xs text-purple-600 hover:text-purple-700" onClick={() => router.push('/hrmcubicle/expenses/claims')}>
-                            View All <ChevronRight className="h-3 w-3 ml-1" />
-                        </Button>
+                        <div className="flex items-center gap-2">
+                            <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5" onClick={handleExportRecent}>
+                                <Download className="h-3 w-3" /> Export
+                            </Button>
+                            <Button variant="ghost" size="sm" className="text-xs text-purple-600 hover:text-purple-700" onClick={() => router.push('/hrmcubicle/expenses/claims')}>
+                                View All <ChevronRight className="h-3 w-3 ml-1" />
+                            </Button>
+                        </div>
                     </div>
                     <div className="space-y-2">
                         {recentClaims.map((claim) => (

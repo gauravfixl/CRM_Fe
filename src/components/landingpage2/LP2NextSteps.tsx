@@ -59,7 +59,7 @@ export default function LP2NextSteps() {
   const [cardsRef, cardsInView] = useIntersection("-40px")
 
   return (
-    <section id="next-steps" className="relative py-24 overflow-hidden">
+    <section id="next-steps" className="relative py-12 lg:py-14 overflow-hidden">
       {/* Background */}
       <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, #FAFBFD 0%, #F0F4F8 50%, #FAFBFD 100%)" }} />
 
@@ -76,9 +76,10 @@ export default function LP2NextSteps() {
       <div className="relative mx-auto max-w-[1280px] px-6">
         {/* Header */}
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={mainInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.7 }}
+          className="text-center"
         >
           <motion.div
             className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-50 border border-blue-100 mb-5"
@@ -87,7 +88,7 @@ export default function LP2NextSteps() {
             transition={{ duration: 0.5 }}
           >
             <Rocket size={12} className="text-[#0067B8]" />
-            <span className="text-[10px] font-black text-[#0067B8] tracking-[0.2em] uppercase">
+            <span className="text-xs font-bold text-[#0067B8] tracking-widest uppercase">
               Next Steps
             </span>
           </motion.div>
@@ -103,34 +104,34 @@ export default function LP2NextSteps() {
         {/* Main CTA Card */}
         <motion.div
           ref={mainRef}
-          initial={{ opacity: 0, y: 32 }}
+          initial={{ opacity: 0, y: 24 }}
           animate={mainInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.6, delay: 0.15 }}
-          className="mt-10 overflow-hidden rounded-2xl border border-[#E5E5E5] shadow-lg group"
+          className="mt-6 overflow-hidden rounded-2xl border border-[#E5E5E5] shadow-lg group"
         >
           <div className="grid md:grid-cols-2">
             {/* Left content */}
-            <div className="p-10 lg:p-14 bg-white">
+            <div className="p-6 lg:p-8 bg-white">
               <motion.div
-                className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-50 border border-green-100 mb-6"
+                className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-green-50 border border-green-100 mb-4"
                 initial={{ opacity: 0, x: -15 }}
                 animate={mainInView ? { opacity: 1, x: 0 } : {}}
                 transition={{ delay: 0.3 }}
               >
-                <Sparkles size={12} className="text-green-600" />
-                <span className="text-[10px] font-bold text-green-600 uppercase tracking-wider">Free for 14 days</span>
+                <Sparkles size={11} className="text-green-600" />
+                <span className="text-[9px] font-bold text-green-600 uppercase tracking-wider">Free for 14 days</span>
               </motion.div>
 
-              <h3 className="text-2xl lg:text-3xl font-bold text-[#1A1A1A]">
+              <h3 className="text-xl lg:text-2xl font-bold text-[#1A1A1A]">
                 Try for free
               </h3>
-              <p className="mt-4 max-w-md text-[16px] text-[#505050] leading-relaxed">
+              <p className="mt-3 max-w-md text-[14px] text-[#505050] leading-relaxed">
                 Get hands-on experience with Cubicle&apos;s complete business
                 platform. No credit card required.
               </p>
 
               {/* Feature checklist */}
-              <div className="mt-6 grid grid-cols-2 gap-3">
+              <div className="mt-5 grid grid-cols-2 gap-2.5">
                 {trialFeatures.map((feature, i) => (
                   <motion.div
                     key={feature}
@@ -139,8 +140,8 @@ export default function LP2NextSteps() {
                     animate={mainInView ? { opacity: 1, x: 0 } : {}}
                     transition={{ delay: 0.35 + i * 0.08 }}
                   >
-                    <CheckCircle2 size={14} className="text-green-600 shrink-0" />
-                    <span className="text-sm text-[#505050]">{feature}</span>
+                    <CheckCircle2 size={13} className="text-green-600 shrink-0" />
+                    <span className="text-[13px] text-[#505050]">{feature}</span>
                   </motion.div>
                 ))}
               </div>
@@ -149,10 +150,10 @@ export default function LP2NextSteps() {
                 <motion.button
                   whileHover={{ scale: 1.03, boxShadow: "0 8px 20px rgba(0,103,184,0.3)" }}
                   whileTap={{ scale: 0.97 }}
-                  className="mt-8 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-3.5 text-[15px] font-semibold text-white transition-all hover:-translate-y-0.5"
+                  className="mt-6 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-7 py-3 text-[14px] font-semibold text-white transition-all hover:-translate-y-0.5"
                 >
                   Start a free trial
-                  <ArrowRight size={16} />
+                  <ArrowRight size={15} />
                 </motion.button>
               </Link>
             </div>
@@ -193,7 +194,7 @@ export default function LP2NextSteps() {
         </motion.div>
 
         {/* Three smaller CTA cards */}
-        <div ref={cardsRef} className="mt-6 grid gap-5 md:grid-cols-3">
+        <div ref={cardsRef} className="mt-4 grid gap-4 md:grid-cols-3">
           {smallCards.map((card, i) => {
             const Icon = card.icon
             return (
@@ -207,7 +208,7 @@ export default function LP2NextSteps() {
                   delay: i * 0.12,
                 }}
                 whileHover={{ y: -5, boxShadow: `0 12px 30px ${card.color}15` }}
-                className="rounded-2xl bg-white border-2 p-6 group cursor-pointer transition-all duration-300 relative overflow-hidden min-h-[200px] flex flex-col"
+                className="rounded-2xl bg-white border-2 p-5 group cursor-pointer transition-all duration-300 relative overflow-hidden min-h-[180px] flex flex-col"
                 style={{ borderColor: card.color + "20" }}
               >
                 {/* Hover glow */}

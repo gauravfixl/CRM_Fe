@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import {
     Workflow,
@@ -18,8 +18,16 @@ import {
     Search,
     Filter,
     MoreVertical,
-    Settings
+    Settings,
+    Loader2,
 } from "lucide-react";
+import {
+    listAutomationRules,
+    createAutomationRule,
+    updateAutomationRule,
+    deleteAutomationRule,
+    executeAutomationRule,
+} from "@/hooks/orgAdminHooks";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -48,7 +56,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/shared/components/ui/select";
-import { showSuccess, showWarning } from "@/utils/toast";
+import { showSuccess, showWarning, showError } from "@/utils/toast";
 
 const TRIGGER_OPTIONS = [
     { value: "lead-created", label: "Lead Created" },
@@ -82,12 +90,58 @@ export default function WorkflowAutomationPage() {
     } | null>(null);
     const [editFormErrors, setEditFormErrors] = useState<{ name?: string; trigger?: string }>({});
 
-    const [workflows, setWorkflows] = useState([
-        { id: "1", name: "Auto-Assign New Leads", trigger: "Lead Created", status: "Active", executions: "1,204", lastRun: "2 mins ago", description: "" },
-        { id: "2", name: "Send Welcome Email", trigger: "User Registered", status: "Active", executions: "856", lastRun: "5 mins ago", description: "" },
-        { id: "3", name: "Escalate Overdue Tasks", trigger: "Task Deadline Passed", status: "Paused", executions: "342", lastRun: "1 hour ago", description: "" },
-        { id: "4", name: "Notify Manager on Leave", trigger: "Leave Submitted", status: "Active", executions: "2,103", lastRun: "10 mins ago", description: "" },
-    ]);
+    const [workflows, setWorkflows] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [submitting, setSubmitting] = useState(false);
+
+    const formatRelativeTime = (value: any): string => {
+        if (!value) return "Never";
+        try {
+            const d = new Date(value);
+            const diffMs = Date.now() - d.getTime();
+            const diffMin = Math.floor(diffMs / 60000);
+            if (diffMin < 1) return "Just now";
+            if (diffMin < 60) return `${diffMin} mins ago`;
+            const diffH = Math.floor(diffMin / 60);
+            if (diffH < 24) return `${diffH} hour${diffH > 1 ? "s" : ""} ago`;
+            const diffD = Math.floor(diffH / 24);
+            return `${diffD} day${diffD > 1 ? "s" : ""} ago`;
+        } catch {
+            return "—";
+        }
+    };
+
+    const normalizeRule = (raw: any) => ({
+        id: raw?._id || raw?.id || "",
+        name: raw?.name || "Untitled",
+        trigger: raw?.trigger || raw?.triggerEvent || "—",
+        status:
+            raw?.status === "Paused" || raw?.enabled === false ? "Paused" : "Active",
+        executions: (raw?.executions || raw?.executionCount || 0).toLocaleString(),
+        lastRun: formatRelativeTime(raw?.lastRun || raw?.lastExecutedAt),
+        description: raw?.description || "",
+    });
+
+    const fetchWorkflows = async () => {
+        try {
+            setLoading(true);
+            const res = await listAutomationRules();
+            const data =
+                res?.data?.rules || res?.data?.automationRules || res?.data?.data || res?.data || [];
+            const list = Array.isArray(data) ? data : [];
+            setWorkflows(list.map(normalizeRule));
+        } catch (err: any) {
+            console.error("Failed to load automation rules:", err);
+            showError(err?.response?.data?.message || "Failed to load workflows");
+            setWorkflows([]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchWorkflows();
+    }, []);
 
     // Filtered workflows based on search and status filter
     const filteredWorkflows = useMemo(() => {
@@ -101,43 +155,78 @@ export default function WorkflowAutomationPage() {
         });
     }, [workflows, searchQuery, statusFilter]);
 
-    const toggleWorkflowStatus = (id: string) => {
-        setWorkflows(prev => prev.map(wf =>
-            wf.id === id ? { ...wf, status: wf.status === "Active" ? "Paused" : "Active" } : wf
-        ));
+    const toggleWorkflowStatus = async (id: string) => {
+        const wf = workflows.find(w => w.id === id);
+        if (!wf) return;
+        const newStatus = wf.status === "Active" ? "Paused" : "Active";
+        try {
+            await updateAutomationRule(id, {
+                status: newStatus,
+                enabled: newStatus === "Active",
+            });
+            setWorkflows(prev =>
+                prev.map(w => (w.id === id ? { ...w, status: newStatus } : w))
+            );
+        } catch (err: any) {
+            console.error("Toggle workflow failed:", err);
+            showError(err?.response?.data?.message || "Failed to update workflow status");
+        }
     };
 
-    const deleteWorkflow = (id: string) => {
+    const deleteWorkflow = async (id: string) => {
         const workflow = workflows.find(wf => wf.id === id);
         if (!workflow) return;
         const confirmed = window.confirm(`Are you sure you want to delete "${workflow.name}"? This action cannot be undone.`);
         if (!confirmed) return;
-        setWorkflows(prev => prev.filter(wf => wf.id !== id));
-        showSuccess("Workflow deleted successfully");
+        try {
+            await deleteAutomationRule(id);
+            showSuccess("Workflow deleted successfully");
+            await fetchWorkflows();
+        } catch (err: any) {
+            console.error("Delete workflow failed:", err);
+            showError(err?.response?.data?.message || "Failed to delete workflow");
+        }
     };
 
     // --- Create ---
-    const handleCreate = () => {
+    const handleCreate = async () => {
         const errors: { name?: string; trigger?: string } = {};
-        if (!newWorkflow.name.trim()) errors.name = "Workflow name is required";
+        const sanitizedName = newWorkflow.name.trim();
+
+        if (!sanitizedName) {
+            errors.name = "Workflow name is required";
+        } else if (/\d/.test(sanitizedName)) {
+            errors.name = "Workflow name cannot contain numbers";
+        }
+
         if (!newWorkflow.trigger) errors.trigger = "Trigger event is required";
         setFormErrors(errors);
-        if (Object.keys(errors).length > 0) return;
+        if (Object.keys(errors).length > 0) {
+            showWarning(errors.name || "Please fill in all required fields");
+            return;
+        }
 
-        const created = {
-            id: Date.now().toString(),
-            name: newWorkflow.name.trim(),
-            trigger: getTriggerLabel(newWorkflow.trigger),
-            status: "Active",
-            executions: "0",
-            lastRun: "Never",
-            description: newWorkflow.description.trim(),
-        };
-        setWorkflows(prev => [...prev, created]);
-        showSuccess(`Workflow "${created.name}" created successfully`);
-        setNewWorkflow({ name: "", trigger: "", description: "" });
-        setFormErrors({});
-        setShowCreateModal(false);
+        try {
+            setSubmitting(true);
+            await createAutomationRule({
+                name: sanitizedName,
+                trigger: newWorkflow.trigger,
+                triggerLabel: getTriggerLabel(newWorkflow.trigger),
+                description: newWorkflow.description.trim(),
+                status: "Active",
+                enabled: true,
+            });
+            showSuccess(`Workflow "${sanitizedName}" created successfully`);
+            setNewWorkflow({ name: "", trigger: "", description: "" });
+            setFormErrors({});
+            setShowCreateModal(false);
+            await fetchWorkflows();
+        } catch (err: any) {
+            console.error("Create workflow failed:", err);
+            showError(err?.response?.data?.message || "Failed to create workflow");
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     const resetCreateForm = () => {
@@ -157,44 +246,75 @@ export default function WorkflowAutomationPage() {
         setShowEditModal(true);
     };
 
-    const handleEdit = () => {
+    const handleEdit = async () => {
         if (!editWorkflow) return;
         const errors: { name?: string; trigger?: string } = {};
-        if (!editWorkflow.name.trim()) errors.name = "Workflow name is required";
+        const sanitizedName = editWorkflow.name.trim();
+
+        if (!sanitizedName) {
+            errors.name = "Workflow name is required";
+        } else if (/\d/.test(sanitizedName)) {
+            errors.name = "Workflow name cannot contain numbers";
+        }
+
         if (!editWorkflow.trigger) errors.trigger = "Trigger event is required";
         setEditFormErrors(errors);
-        if (Object.keys(errors).length > 0) return;
+        if (Object.keys(errors).length > 0) {
+            showWarning(errors.name || "Please fill in all required fields");
+            return;
+        }
 
-        setWorkflows(prev => prev.map(wf =>
-            wf.id === editWorkflow.id
-                ? {
-                    ...wf,
-                    name: editWorkflow.name.trim(),
-                    trigger: TRIGGER_OPTIONS.find(t => t.value === editWorkflow.trigger)
-                        ? getTriggerLabel(editWorkflow.trigger)
-                        : editWorkflow.trigger,
-                    description: editWorkflow.description.trim(),
-                }
-                : wf
-        ));
-        showSuccess(`Workflow "${editWorkflow.name.trim()}" updated successfully`);
-        setEditWorkflow(null);
-        setEditFormErrors({});
-        setShowEditModal(false);
+        try {
+            setSubmitting(true);
+            await updateAutomationRule(editWorkflow.id, {
+                name: sanitizedName,
+                trigger: editWorkflow.trigger,
+                triggerLabel: TRIGGER_OPTIONS.find(t => t.value === editWorkflow.trigger)
+                    ? getTriggerLabel(editWorkflow.trigger)
+                    : editWorkflow.trigger,
+                description: editWorkflow.description.trim(),
+            });
+            showSuccess(`Workflow "${sanitizedName}" updated successfully`);
+            setEditWorkflow(null);
+            setEditFormErrors({});
+            setShowEditModal(false);
+            await fetchWorkflows();
+        } catch (err: any) {
+            console.error("Update workflow failed:", err);
+            showError(err?.response?.data?.message || "Failed to update workflow");
+        } finally {
+            setSubmitting(false);
+        }
     };
 
-    // --- Duplicate ---
-    const duplicateWorkflow = (workflow: typeof workflows[0]) => {
-        const duplicate = {
-            ...workflow,
-            id: Date.now().toString(),
-            name: `${workflow.name} (Copy)`,
-            status: "Paused",
-            executions: "0",
-            lastRun: "Never",
-        };
-        setWorkflows(prev => [...prev, duplicate]);
-        showSuccess(`Workflow duplicated as "${duplicate.name}"`);
+    // --- Duplicate: create a new rule with same payload on backend ---
+    const duplicateWorkflow = async (workflow: any) => {
+        try {
+            await createAutomationRule({
+                name: `${workflow.name} (Copy)`,
+                trigger: workflow.trigger,
+                description: workflow.description || "",
+                status: "Paused",
+                enabled: false,
+            });
+            showSuccess(`Workflow duplicated as "${workflow.name} (Copy)"`);
+            await fetchWorkflows();
+        } catch (err: any) {
+            console.error("Duplicate workflow failed:", err);
+            showError(err?.response?.data?.message || "Failed to duplicate workflow");
+        }
+    };
+
+    // --- Run now (execute) ---
+    const runWorkflow = async (workflow: any) => {
+        try {
+            await executeAutomationRule(workflow.id);
+            showSuccess(`Workflow "${workflow.name}" execution started`);
+            await fetchWorkflows();
+        } catch (err: any) {
+            console.error("Execute workflow failed:", err);
+            showError(err?.response?.data?.message || "Failed to execute workflow");
+        }
     };
 
     // --- Navigation ---
@@ -295,7 +415,17 @@ export default function WorkflowAutomationPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-zinc-100">
-                            {filteredWorkflows.map((workflow) => (
+                            {loading && (
+                                <tr>
+                                    <td colSpan={6} className="px-6 py-16 text-center">
+                                        <div className="flex flex-col items-center gap-3">
+                                            <Loader2 size={32} className="text-primary animate-spin" />
+                                            <p className="text-sm font-bold text-gray-500">Loading workflows...</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            )}
+                            {!loading && filteredWorkflows.map((workflow) => (
                                 <tr key={workflow.id} className="hover:bg-primary/5 transition-colors group">
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-3">
@@ -353,6 +483,12 @@ export default function WorkflowAutomationPage() {
                                                     <Copy size={14} /> Duplicate
                                                 </DropdownMenuItem>
                                                 <DropdownMenuItem
+                                                    onClick={() => runWorkflow(workflow)}
+                                                    className="text-sm p-2 flex items-center gap-2 focus:bg-primary focus:text-white cursor-pointer"
+                                                >
+                                                    <Play size={14} /> Run Now
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem
                                                     onClick={() => openEdit(workflow)}
                                                     className="text-sm p-2 flex items-center gap-2 focus:bg-primary focus:text-white cursor-pointer"
                                                 >
@@ -370,10 +506,10 @@ export default function WorkflowAutomationPage() {
                                     </td>
                                 </tr>
                             ))}
-                            {filteredWorkflows.length === 0 && (
+                            {!loading && filteredWorkflows.length === 0 && (
                                 <tr>
                                     <td colSpan={6} className="px-6 py-12 text-center text-sm text-gray-500">
-                                        No workflows found matching your search or filter criteria.
+                                        No workflows found. Create your first automation rule to get started.
                                     </td>
                                 </tr>
                             )}
@@ -444,8 +580,12 @@ export default function WorkflowAutomationPage() {
                         <Button variant="ghost" onClick={() => { setShowCreateModal(false); resetCreateForm(); }} className="rounded-none text-sm text-gray-600 h-9">
                             Cancel
                         </Button>
-                        <Button onClick={handleCreate} className="bg-primary hover:bg-primary/90 rounded-none text-sm px-6 h-9 shadow-md shadow-primary/20">
-                            Create & Configure
+                        <Button
+                            onClick={handleCreate}
+                            disabled={submitting}
+                            className="bg-primary hover:bg-primary/90 rounded-none text-sm px-6 h-9 shadow-md shadow-primary/20 disabled:opacity-60"
+                        >
+                            {submitting ? (<><Loader2 size={14} className="animate-spin mr-2" /> Creating...</>) : "Create & Configure"}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -504,8 +644,12 @@ export default function WorkflowAutomationPage() {
                                 <Button variant="ghost" onClick={() => { setShowEditModal(false); setEditWorkflow(null); setEditFormErrors({}); }} className="rounded-none text-sm text-gray-600 h-9">
                                     Cancel
                                 </Button>
-                                <Button onClick={handleEdit} className="bg-primary hover:bg-primary/90 rounded-none text-sm px-6 h-9 shadow-md shadow-primary/20">
-                                    Save Changes
+                                <Button
+                                    onClick={handleEdit}
+                                    disabled={submitting}
+                                    className="bg-primary hover:bg-primary/90 rounded-none text-sm px-6 h-9 shadow-md shadow-primary/20 disabled:opacity-60"
+                                >
+                                    {submitting ? (<><Loader2 size={14} className="animate-spin mr-2" /> Saving...</>) : "Save Changes"}
                                 </Button>
                             </DialogFooter>
                         </>

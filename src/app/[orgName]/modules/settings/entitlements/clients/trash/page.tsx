@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { useParams } from "next/navigation"
 import {
     Trash2,
@@ -13,7 +13,8 @@ import {
     Clock,
     HardDrive,
     AlertOctagon,
-    MoreVertical
+    MoreVertical,
+    Loader2
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -44,27 +45,55 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { getAllClients, restoreClient, deleteClient } from "@/hooks/clientHooks"
 
 export default function ClientTrashPage() {
     const [isLoading, setIsLoading] = useState(false)
+    const [isFetching, setIsFetching] = useState(true)
     const [searchQuery, setSearchQuery] = useState("")
     const [selectedClient, setSelectedClient] = useState<any>(null)
     const [showRestoreDialog, setShowRestoreDialog] = useState(false)
     const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+    const [deletedClients, setDeletedClients] = useState<any[]>([])
 
-    const [deletedClients, setDeletedClients] = useState([
-        { id: "1", name: "Old Dominion Corp", deletedBy: "John Doe", deletedAt: "2023-10-25", daysRemaining: 12, reason: "Contract Expired" },
-        { id: "2", name: "Beta Solutions", deletedBy: "Sarah Smith", deletedAt: "2023-11-01", daysRemaining: 19, reason: "Duplicate Account" },
-        { id: "3", name: "Gamma Ventures", deletedBy: "System Admin", deletedAt: "2023-11-05", daysRemaining: 23, reason: "Testing Purpose" },
-        { id: "4", name: "Delta Group", deletedBy: "Mike Brown", deletedAt: "2023-10-20", daysRemaining: 7, reason: "Client Request" },
-    ])
+    const fetchDeletedClients = async () => {
+        try {
+            setIsFetching(true)
+            const response = await getAllClients()
+            const data = response?.data?.data || response?.data || []
+            const trashed = Array.isArray(data)
+                ? data.filter((c: any) => c.isDeleted === true || c.deleted === true)
+                : []
+            setDeletedClients(trashed.map((c: any) => {
+                const deletedDate = c.deletedAt || c.updatedAt || ""
+                const deletedDateObj = deletedDate ? new Date(deletedDate) : new Date()
+                const now = new Date()
+                const diffDays = Math.max(0, 30 - Math.floor((now.getTime() - deletedDateObj.getTime()) / (1000 * 60 * 60 * 24)))
+                return {
+                    id: c._id,
+                    name: c.clientFirmName || c.name || "",
+                    deletedBy: c.deletedBy || "Unknown",
+                    deletedAt: deletedDate ? new Date(deletedDate).toLocaleDateString() : "N/A",
+                    daysRemaining: diffDays,
+                    reason: c.deleteReason || "N/A",
+                }
+            }))
+        } catch (error: any) {
+            toast.error(error?.response?.data?.message || "Failed to fetch deleted clients")
+        } finally {
+            setIsFetching(false)
+        }
+    }
 
-    const handleAction = (msg: string) => {
+    useEffect(() => {
+        fetchDeletedClients()
+    }, [])
+
+    const handleAction = async (msg: string) => {
         setIsLoading(true)
-        setTimeout(() => {
-            setIsLoading(false)
-            toast.success(msg)
-        }, 1000)
+        await fetchDeletedClients()
+        setIsLoading(false)
+        toast.success(msg)
     }
 
     const handleRestoreClick = (client: any) => {
@@ -77,21 +106,31 @@ export default function ClientTrashPage() {
         setShowDeleteDialog(true)
     }
 
-    const confirmRestore = () => {
+    const confirmRestore = async () => {
         if (selectedClient) {
-            setDeletedClients(prev => prev.filter(c => c.id !== selectedClient.id))
-            toast.success(`Client "${selectedClient.name}" has been restored successfully`)
-            setShowRestoreDialog(false)
-            setSelectedClient(null)
+            try {
+                await restoreClient(selectedClient.id)
+                toast.success(`Client "${selectedClient.name}" has been restored successfully`)
+                setShowRestoreDialog(false)
+                setSelectedClient(null)
+                await fetchDeletedClients()
+            } catch (error: any) {
+                toast.error(error?.response?.data?.message || "Failed to restore client")
+            }
         }
     }
 
-    const confirmDelete = () => {
+    const confirmDelete = async () => {
         if (selectedClient) {
-            setDeletedClients(prev => prev.filter(c => c.id !== selectedClient.id))
-            toast.success(`Client "${selectedClient.name}" permanently deleted`)
-            setShowDeleteDialog(false)
-            setSelectedClient(null)
+            try {
+                await deleteClient(selectedClient.id)
+                toast.success(`Client "${selectedClient.name}" permanently deleted`)
+                setShowDeleteDialog(false)
+                setSelectedClient(null)
+                await fetchDeletedClients()
+            } catch (error: any) {
+                toast.error(error?.response?.data?.message || "Failed to delete client")
+            }
         }
     }
 
@@ -179,6 +218,11 @@ export default function ClientTrashPage() {
             </div>
 
             {/* DELETED CLIENTS TABLE */}
+            {isFetching ? (
+                <div className="flex items-center justify-center py-20">
+                    <Loader2 className="w-6 h-6 animate-spin text-zinc-400" />
+                </div>
+            ) : (
             <div className="bg-white rounded-xl border shadow-sm overflow-hidden flex flex-col">
                 <div className="p-4 border-b border-zinc-100 flex flex-col md:flex-row justify-between items-center gap-4 bg-zinc-50/20">
                     <div className="relative w-full md:w-80 group">
@@ -208,7 +252,7 @@ export default function ClientTrashPage() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {deletedClients.map((client) => (
+                        {deletedClients.filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase())).map((client) => (
                             <TableRow key={client.id} className="hover:bg-zinc-50/50 transition-colors group">
                                 <TableCell className="px-4 py-3">
                                     <div className="flex flex-col">
@@ -259,6 +303,7 @@ export default function ClientTrashPage() {
                     </TableBody>
                 </Table>
             </div>
+            )}
 
             {/* RESTORE DIALOG */}
             <AlertDialog open={showRestoreDialog} onOpenChange={setShowRestoreDialog}>

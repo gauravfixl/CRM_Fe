@@ -417,8 +417,19 @@ export default function ServiceAccountsPage() {
                         <CustomButton
                             className="bg-primary hover:bg-primary/90 text-white"
                             onClick={() => {
-                                if (!newAccountName) { toast.error("Please enter a name"); return }
-                                toast.success(`Service account '${newAccountName}' created successfully`)
+                                if (!newAccountName.trim()) { 
+                                    toast.error("Please enter a name")
+                                    return 
+                                }
+                                
+                                // Name validation (no numbers)
+                                const nameRegex = /^[a-zA-Z\s]+$/;
+                                if (!nameRegex.test(newAccountName.trim())) {
+                                    toast.error("Account name should not contain numbers or special characters")
+                                    return
+                                }
+
+                                toast.success(`Service account '${newAccountName.trim()}' created successfully`)
                                 setNewAccountName("")
                                 setShowCreateDialog(false)
                             }}

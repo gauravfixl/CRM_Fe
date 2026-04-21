@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
     Users,
     Search,
@@ -18,7 +18,8 @@ import {
     Network,
     Terminal,
     Lock,
-    CloudUpload
+    CloudUpload,
+    Loader2
 } from "lucide-react"
 import { CustomButton } from "@/components/custom/CustomButton"
 import SubHeader from "@/components/custom/SubHeader"
@@ -42,6 +43,7 @@ import { BulkImportModal } from "@/components/groups/bulk-import-modal"
 import { GroupProfileModal } from "@/components/groups/group-profile-modal"
 import { ManageMembersModal } from "@/components/groups/manage-members-modal"
 import { toast } from "sonner"
+import { getAllTeams, createTeam, deleteTeam } from "@/hooks/teamHooks"
 
 interface Group {
     id: string
@@ -56,14 +58,34 @@ export default function GroupsPage() {
     const [searchQuery, setSearchQuery] = useState("")
     const [typeFilter, setTypeFilter] = useState<string | null>(null)
     const [membershipFilter, setMembershipFilter] = useState<string | null>(null)
+    const [loading, setLoading] = useState(true)
 
-    const [groups, setGroups] = useState<Group[]>([
-        { id: "1", name: "Executive Leadership", members: 12, type: "Security", description: "All C-suite and executive members", status: "Active" },
-        { id: "2", name: "Engineering Team", members: 45, type: "M365", description: "Core product engineering and devops", status: "Active" },
-        { id: "3", name: "Finance & Accounts", members: 8, type: "Security", description: "Access to payroll and treasury", status: "Active" },
-        { id: "4", name: "Contractors (External)", members: 156, type: "Dynamic", description: "Automatically includes all guest users", status: "Active" },
-        { id: "5", name: "HR Operations", members: 5, type: "Security", description: "Personnel records and recruitment", status: "Active" },
-    ])
+    const [groups, setGroups] = useState<Group[]>([])
+
+    const fetchTeams = async () => {
+        try {
+            setLoading(true)
+            const response = await getAllTeams()
+            const teams = response.data?.teams || response.data || []
+            const mapped = teams.map((t: any) => ({
+                id: t._id || t.id,
+                name: t.name || "",
+                members: Array.isArray(t.members) ? t.members.length : (t.members || 0),
+                type: t.type || "Security",
+                description: t.description || "",
+                status: t.status || "Active",
+            }))
+            setGroups(mapped)
+        } catch (error: any) {
+            toast.error(error?.response?.data?.message || "Failed to fetch teams")
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    useEffect(() => {
+        fetchTeams()
+    }, [])
 
     // Modal states
     const [createGroupOpen, setCreateGroupOpen] = useState(false)
@@ -87,12 +109,24 @@ export default function GroupsPage() {
         return "bg-blue-50 text-blue-600 border border-blue-200"
     }
 
-    const handleGroupCreated = (group: GroupFormData) => {
-        setGroups(prev => [...prev, { ...group, members: 0 }])
+    const handleGroupCreated = async (group: GroupFormData) => {
+        try {
+            await createTeam(group)
+            toast.success("Team created successfully")
+            fetchTeams()
+        } catch (error: any) {
+            toast.error(error?.response?.data?.message || "Failed to create team")
+        }
     }
 
-    const handleGroupReleased = (groupId: string) => {
-        setGroups(prev => prev.filter(g => g.id !== groupId))
+    const handleGroupReleased = async (groupId: string) => {
+        try {
+            await deleteTeam(groupId)
+            toast.success("Team deleted successfully")
+            setGroups(prev => prev.filter(g => g.id !== groupId))
+        } catch (error: any) {
+            toast.error(error?.response?.data?.message || "Failed to delete team")
+        }
     }
 
     const handleGroupUpdated = (updated: { id: string; name: string; description: string; type: string; status: string }) => {
@@ -259,6 +293,11 @@ export default function GroupsPage() {
                 </div>
 
                 {/* Groups Grid */}
+                {loading ? (
+                    <div className="flex items-center justify-center py-20">
+                        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                    </div>
+                ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                     {filteredGroups.map((group) => (
                         <Card key={group.id} className={`bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-none shadow-sm hover:shadow-md transition-all group overflow-hidden border-t-3 ${typeBorderColor(group.type)}`}>
@@ -344,6 +383,7 @@ export default function GroupsPage() {
                         </div>
                     </div>
                 </div>
+                )}
 
                 {/* System Insights Footer */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-8">

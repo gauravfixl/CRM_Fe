@@ -87,9 +87,7 @@ export const getSingleFirm = async (firmId, orgId) => {
  */
 export const addNewFirm = async (form) => {
   try {
-    const response = await axios.post("/firm/create", form, {
-      headers: { "Content-Type": "application/json" }
-    });
+    const response = await axios.post("/firm/create", form);
     return response;
   } catch (error) {
     showError(error.message || "Failed to create firm.");

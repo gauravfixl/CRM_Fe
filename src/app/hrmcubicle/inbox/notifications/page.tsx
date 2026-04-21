@@ -100,11 +100,11 @@ const NotificationsPage = () => {
     };
 
     const defaultPrefs = [
-        { inApp: true, email: true },
-        { inApp: true, email: true },
-        { inApp: true, email: true },
-        { inApp: true, email: false },
-        { inApp: true, email: false },
+        { category: 'Announcement', inApp: true, email: true },
+        { category: 'Policy', inApp: true, email: true },
+        { category: 'Payroll', inApp: true, email: true },
+        { category: 'Performance', inApp: true, email: false },
+        { category: 'System', inApp: true, email: false },
     ];
     const [preferences, setPreferences] = useState(defaultPrefs);
 
@@ -150,10 +150,10 @@ const NotificationsPage = () => {
     ];
 
     return (
-        <div className="flex flex-col min-h-screen bg-white">
-            <header className="p-6 border-b border-slate-100 bg-white sticky top-0 z-30 shadow-sm">
-                <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                    <div className="space-y-1">
+        <div className="flex flex-col min-h-screen bg-white" style={{ zoom: 0.9 }}>
+            <header className="px-6 py-3 border-b border-slate-100 bg-white sticky top-0 z-30 shadow-sm">
+                <div className="w-full flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                    <div className="space-y-0.5">
                         <div className="flex items-center gap-3">
                             <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Notification Center</h1>
                             {unreadCount > 0 && <Badge className="bg-rose-500 text-white border-none font-bold text-[10px] h-6 px-2.5 rounded-lg animate-pulse">{unreadCount} New</Badge>}
@@ -186,7 +186,7 @@ const NotificationsPage = () => {
                 </div>
             </header>
 
-            <main className="p-6 max-w-7xl mx-auto w-full space-y-6">
+            <main className="p-6 w-full space-y-6">
                 {view === 'all' ? (
                     <div className="flex flex-col lg:flex-row gap-8">
                         {/* Filters Sidebar */}

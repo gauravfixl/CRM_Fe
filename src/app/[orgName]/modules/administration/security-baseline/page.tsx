@@ -106,8 +106,8 @@ export default function SecurityBaselinePage() {
                             <div className="flex items-center justify-between mb-2">
                                 <ShieldCheck className="w-5 h-5 text-white/80" />
                             </div>
-                            <p className="text-xl font-semibold">{totalPolicies}</p>
                             <p className="text-xs text-white/80">Total Policies</p>
+                            <p className="text-xl font-semibold text-white">{totalPolicies}</p>
                             <p className="text-[10px] text-white/60 mt-0.5">Defined rules</p>
                         </CardContent>
                     </Card>
@@ -116,8 +116,8 @@ export default function SecurityBaselinePage() {
                             <div className="flex items-center justify-between mb-2">
                                 <AlertTriangle className="w-5 h-5 text-orange-500" />
                             </div>
-                            <p className="text-xl font-semibold text-gray-900">{criticalCount}</p>
                             <p className="text-xs text-gray-600">Critical</p>
+                            <p className="text-xl font-semibold text-gray-900">{criticalCount}</p>
                             <p className="text-[10px] text-gray-400 mt-0.5">High priority policies</p>
                         </CardContent>
                     </Card>
@@ -126,8 +126,8 @@ export default function SecurityBaselinePage() {
                             <div className="flex items-center justify-between mb-2">
                                 <CheckCircle2 className="w-5 h-5 text-emerald-500" />
                             </div>
-                            <p className="text-xl font-semibold text-gray-900">{enabledCount}</p>
                             <p className="text-xs text-gray-600">Enabled</p>
+                            <p className="text-xl font-semibold text-gray-900">{enabledCount}</p>
                             <p className="text-[10px] text-gray-400 mt-0.5">Currently active</p>
                         </CardContent>
                     </Card>
@@ -136,8 +136,8 @@ export default function SecurityBaselinePage() {
                             <div className="flex items-center justify-between mb-2">
                                 <ShieldAlert className="w-5 h-5 text-blue-500" />
                             </div>
-                            <p className="text-xl font-semibold text-gray-900">{complianceScore}%</p>
                             <p className="text-xs text-gray-600">Compliance Score</p>
+                            <p className="text-xl font-semibold text-gray-900">{complianceScore}%</p>
                             <p className="text-[10px] text-gray-400 mt-0.5">Based on enabled policies</p>
                         </CardContent>
                     </Card>

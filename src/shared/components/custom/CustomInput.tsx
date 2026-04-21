@@ -12,7 +12,7 @@ export const CustomInput: React.FC<CustomInputProps> = ({ label, className, ...p
       <input
         {...props}
         className={cn(
-          "border border-zinc-200 bg-white px-3 py-2 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-zinc-400",
+          "border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 px-3 py-2 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-600",
           className
         )}
       />

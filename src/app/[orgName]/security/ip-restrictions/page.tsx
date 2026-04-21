@@ -78,8 +78,27 @@ export default function IPRestrictionsPage() {
   };
 
   const handleSave = () => {
-    if (!formRange.trim() || !formLabel.trim()) {
-      showWarning("Please fill in all fields");
+    const sanitizedRange = formRange.trim();
+    const sanitizedLabel = formLabel.trim();
+    
+    // IP / CIDR Regex
+    const ipRegex = /^(?:\d{1,3}\.){3}\d{1,3}(\/\d{1,2})?$/;
+
+    if (!sanitizedRange) {
+      showWarning("IP range is required");
+      return;
+    }
+    if (!ipRegex.test(sanitizedRange)) {
+      showWarning("Please enter a valid IP address or CIDR range");
+      return;
+    }
+
+    if (!sanitizedLabel) {
+      showWarning("Label is required");
+      return;
+    }
+    if (/\d/.test(sanitizedLabel)) {
+      showWarning("Label cannot contain numbers");
       return;
     }
 

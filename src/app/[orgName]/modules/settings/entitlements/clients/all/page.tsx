@@ -1,7 +1,7 @@
 "use client"
 
-import React, { useState } from "react"
-import { useParams } from "next/navigation"
+import React, { useState, useEffect } from "react"
+import { useParams, useRouter } from "next/navigation"
 import {
     Search,
     Filter,
@@ -20,7 +20,8 @@ import {
     TrendingUp,
     Mail,
     Phone,
-    MapPin
+    MapPin,
+    Loader2
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -59,47 +60,68 @@ import {
 } from "@/components/ui/select"
 import { SmallCard, SmallCardContent, SmallCardHeader } from "@/shared/components/custom/SmallCard"
 import { toast } from "sonner"
+import { getAllClients, deleteClient, updateClient } from "@/hooks/clientHooks"
 
 export default function MasterClientViewPage() {
     const params = useParams()
+    const router = useRouter()
+    const orgName = params?.orgName as string
     const [searchQuery, setSearchQuery] = useState("")
     const [isLoading, setIsLoading] = useState(false)
-    const [showNewClientDialog, setShowNewClientDialog] = useState(false)
+    const [isFetching, setIsFetching] = useState(true)
+    const [clients, setClients] = useState<any[]>([])
     const [showDetailsDialog, setShowDetailsDialog] = useState(false)
+    const [showEditDialog, setShowEditDialog] = useState(false)
+    const [editBusy, setEditBusy] = useState(false)
+    const [editForm, setEditForm] = useState({
+        clientFirmName: "",
+        firstName: "",
+        lastName: "",
+        email: "",
+        phone: "",
+        website: "",
+    })
     const [selectedClient, setSelectedClient] = useState<any>(null)
     const [statusFilter, setStatusFilter] = useState<"All" | "Active" | "Inactive">("All")
 
-    // New Client Form State
-    const [newClient, setNewClient] = useState({
-        name: "",
-        email: "",
-        phone: "",
-        address: "",
-        tier: "Standard",
-        manager: ""
-    })
-
-    const handleAction = (msg: string) => {
-        setIsLoading(true)
-        setTimeout(() => {
-            setIsLoading(false)
-            toast.success(msg)
-        }, 1000)
+    const fetchClients = async () => {
+        try {
+            setIsFetching(true)
+            const response = await getAllClients()
+            const data = response?.data?.clients || []
+            const activeClients = Array.isArray(data)
+                ? data.filter((c: any) => !c.isDeleted && !c.deleted)
+                : []
+            setClients(activeClients.map((c: any) => ({
+                id: c._id,
+                name: c.clientFirmName || [c.firstName, c.lastName].filter(Boolean).join(" ") || "Unnamed",
+                firstName: c.firstName || "",
+                lastName: c.lastName || "",
+                clientFirmName: c.clientFirmName || "",
+                email: c.email || "",
+                phone: c.phone || "",
+                website: c.website || "",
+                address: c.address || null,
+                firm: c.firmId?.firmName || "-",
+                createdAt: c.createdAt,
+                status: c.deleted ? "INACTIVE" : "ACTIVE",
+            })))
+        } catch (error: any) {
+            toast.error(error?.response?.data?.message || "Failed to fetch clients")
+        } finally {
+            setIsFetching(false)
+        }
     }
 
-    const handleCreateClient = () => {
-        if (!newClient.name || !newClient.email) {
-            toast.error("Please fill in required fields")
-            return
-        }
+    useEffect(() => {
+        fetchClients()
+    }, [])
 
+    const handleAction = async (msg: string) => {
         setIsLoading(true)
-        setTimeout(() => {
-            setIsLoading(false)
-            toast.success(`Client "${newClient.name}" created successfully`)
-            setShowNewClientDialog(false)
-            setNewClient({ name: "", email: "", phone: "", address: "", tier: "Standard", manager: "" })
-        }, 1000)
+        await fetchClients()
+        setIsLoading(false)
+        toast.success(msg)
     }
 
     const handleViewDetails = (client: any) => {
@@ -107,14 +129,65 @@ export default function MasterClientViewPage() {
         setShowDetailsDialog(true)
     }
 
-    const handleArchiveClient = (name: string) => {
-        toast.success(`${name} archived successfully`)
+    const handleOpenEdit = (client: any) => {
+        setSelectedClient(client)
+        setEditForm({
+            clientFirmName: client.clientFirmName || "",
+            firstName: client.firstName || "",
+            lastName: client.lastName || "",
+            email: client.email || "",
+            phone: client.phone || "",
+            website: client.website || "",
+        })
+        setShowEditDialog(true)
+    }
+
+    const handleSubmitEdit = async () => {
+        if (!selectedClient) return
+        if (!editForm.email.trim()) {
+            toast.error("Email is required")
+            return
+        }
+        if (!editForm.phone.trim()) {
+            toast.error("Phone is required")
+            return
+        }
+        const payload: Record<string, unknown> = {
+            email: editForm.email.trim(),
+            phone: editForm.phone.trim(),
+        }
+        if (editForm.clientFirmName) payload.clientFirmName = editForm.clientFirmName
+        if (editForm.firstName) payload.firstName = editForm.firstName
+        if (editForm.lastName) payload.lastName = editForm.lastName
+        if (editForm.website) payload.website = editForm.website
+
+        try {
+            setEditBusy(true)
+            await updateClient(selectedClient.id, payload)
+            toast.success("Client updated")
+            setShowEditDialog(false)
+            await fetchClients()
+        } catch (err: any) {
+            toast.error(err?.response?.data?.message || "Failed to update client")
+        } finally {
+            setEditBusy(false)
+        }
+    }
+
+    const handleArchiveClient = async (client: any) => {
+        try {
+            await deleteClient(client.id)
+            toast.success(`${client.name} archived successfully`)
+            await fetchClients()
+        } catch (error: any) {
+            toast.error(error?.response?.data?.message || "Failed to archive client")
+        }
     }
 
     const handleExport = () => {
-        const headers = ["Name", "Email", "Phone", "Address", "Status", "Tier", "Revenue", "Manager", "Stage"]
-        const rows = clients.map(c => [c.name, c.email, c.phone, c.address, c.status, c.tier, c.revenue, c.manager, c.stage])
-        const csvContent = [headers.join(","), ...rows.map(r => r.join(","))].join("\n")
+        const headers = ["Name", "Firm", "Email", "Phone", "Website", "Status"]
+        const rows = clients.map(c => [c.name, c.firm, c.email, c.phone, c.website, c.status])
+        const csvContent = [headers.join(","), ...rows.map(r => r.map((v: any) => `"${(v ?? "").toString().replace(/"/g, '""')}"`).join(","))].join("\n")
         const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
         const url = URL.createObjectURL(blob)
         const link = document.createElement("a")
@@ -126,57 +199,6 @@ export default function MasterClientViewPage() {
         URL.revokeObjectURL(url)
         toast.success("Client data exported successfully")
     }
-
-    const clients = [
-        {
-            id: "1",
-            name: "Acme Corporation",
-            email: "contact@acme.com",
-            phone: "+1 (555) 123-4567",
-            address: "123 Business St, NY",
-            status: "ACTIVE",
-            tier: "Enterprise",
-            revenue: "$125,000",
-            manager: "John Doe",
-            stage: "Onboarding"
-        },
-        {
-            id: "2",
-            name: "GlobalSoft Inc",
-            email: "info@globalsoft.com",
-            phone: "+1 (555) 234-5678",
-            address: "456 Tech Ave, CA",
-            status: "ACTIVE",
-            tier: "Premium",
-            revenue: "$82,500",
-            manager: "Sarah J.",
-            stage: "Active"
-        },
-        {
-            id: "3",
-            name: "Skyline Organization",
-            email: "admin@skyline.org",
-            phone: "+1 (555) 345-6789",
-            address: "789 Corporate Blvd, TX",
-            status: "AT-RISK",
-            tier: "Standard",
-            revenue: "$45,000",
-            manager: "Emma W.",
-            stage: "At-Risk"
-        },
-        {
-            id: "4",
-            name: "BankTech Solutions",
-            email: "support@banktech.io",
-            phone: "+1 (555) 456-7890",
-            address: "321 Finance Dr, IL",
-            status: "DORMANT",
-            tier: "Enterprise",
-            revenue: "$0",
-            manager: "Unassigned",
-            stage: "Dormant"
-        },
-    ]
 
     const filteredClients = clients.filter(client => {
         const matchesSearch = client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -214,7 +236,7 @@ export default function MasterClientViewPage() {
                             Refresh
                         </Button>
                         <Button
-                            onClick={() => setShowNewClientDialog(true)}
+                            onClick={() => router.push(`/${orgName}/modules/settings/entitlements/clients/add`)}
                             className="h-8 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium px-3 shadow-sm active:scale-95"
                         >
                             <UserCheck className="w-3.5 h-3.5 mr-2" />
@@ -227,46 +249,54 @@ export default function MasterClientViewPage() {
             {/* STATS CARDS */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <SmallCard className="bg-gradient-to-r from-primary/70 to-primary border-none text-white rounded-xl shadow-sm">
-                    <SmallCardHeader className="flex flex-row items-center justify-between pb-1 px-4 pt-4">
-                        <p className="text-xs text-white font-medium">Total Clients</p>
-                        <Users className="w-4 h-4 text-white" />
-                    </SmallCardHeader>
-                    <SmallCardContent className="px-4 pb-4">
-                        <p className="text-xl font-semibold text-white">1,247</p>
-                        <p className="text-[10px] text-white">89 active accounts</p>
+                    <SmallCardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-xs text-white font-medium">Total Clients</p>
+                                <p className="text-xl font-semibold text-white mt-1">{clients.length}</p>
+                                <p className="text-[10px] text-white mt-1">{clients.filter(c => c.status === "ACTIVE").length} active accounts</p>
+                            </div>
+                            <Users className="w-4 h-4 text-white" />
+                        </div>
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="border bg-white shadow-sm rounded-xl p-4">
-                    <SmallCardHeader className="flex flex-row items-center justify-between pb-1 px-4 pt-4">
-                        <p className="text-xs text-slate-500 font-medium">Enterprise Tier</p>
-                        <Building2 className="w-4 h-4 text-zinc-300" />
-                    </SmallCardHeader>
-                    <SmallCardContent className="px-4 pb-4">
-                        <p className="text-xl font-semibold text-zinc-900">342</p>
-                        <p className="text-[10px] text-zinc-400 font-medium">High-value accounts</p>
+                <SmallCard className="border bg-white shadow-sm rounded-xl">
+                    <SmallCardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-xs text-slate-500 font-medium">Enterprise Tier</p>
+                                <p className="text-xl font-semibold text-zinc-900 mt-1">342</p>
+                                <p className="text-[10px] text-zinc-400 font-medium mt-1">High-value accounts</p>
+                            </div>
+                            <Building2 className="w-4 h-4 text-zinc-300" />
+                        </div>
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="border bg-white shadow-sm rounded-xl p-4">
-                    <SmallCardHeader className="flex flex-row items-center justify-between pb-1 px-4 pt-4">
-                        <p className="text-xs text-slate-500 font-medium">Total Revenue</p>
-                        <TrendingUp className="w-4 h-4 text-zinc-300" />
-                    </SmallCardHeader>
-                    <SmallCardContent className="px-4 pb-4">
-                        <p className="text-xl font-semibold text-zinc-900">$3.2M</p>
-                        <p className="text-[10px] text-zinc-400 font-medium">Annual recurring</p>
+                <SmallCard className="border bg-white shadow-sm rounded-xl">
+                    <SmallCardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-xs text-slate-500 font-medium">Total Revenue</p>
+                                <p className="text-xl font-semibold text-zinc-900 mt-1">$3.2M</p>
+                                <p className="text-[10px] text-zinc-400 font-medium mt-1">Annual recurring</p>
+                            </div>
+                            <TrendingUp className="w-4 h-4 text-zinc-300" />
+                        </div>
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="border bg-white shadow-sm rounded-xl p-4">
-                    <SmallCardHeader className="flex flex-row items-center justify-between pb-1 px-4 pt-4">
-                        <p className="text-xs text-slate-500 font-medium">Retention Rate</p>
-                        <LayoutDashboard className="w-4 h-4 text-zinc-300" />
-                    </SmallCardHeader>
-                    <SmallCardContent className="px-4 pb-4">
-                        <p className="text-xl font-semibold text-zinc-900">94.2%</p>
-                        <p className="text-[10px] text-zinc-400 font-medium">Last 12 months</p>
+                <SmallCard className="border bg-white shadow-sm rounded-xl">
+                    <SmallCardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-xs text-slate-500 font-medium">Retention Rate</p>
+                                <p className="text-xl font-semibold text-zinc-900 mt-1">94.2%</p>
+                                <p className="text-[10px] text-zinc-400 font-medium mt-1">Last 12 months</p>
+                            </div>
+                            <LayoutDashboard className="w-4 h-4 text-zinc-300" />
+                        </div>
                     </SmallCardContent>
                 </SmallCard>
             </div>
@@ -319,14 +349,19 @@ export default function MasterClientViewPage() {
             </div>
 
             {/* MASTER DATA TABLE */}
+            {isFetching ? (
+                <div className="flex items-center justify-center py-20">
+                    <Loader2 className="w-6 h-6 animate-spin text-zinc-400" />
+                </div>
+            ) : (
             <div className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
                 <Table>
                     <TableHeader className="bg-zinc-50/50">
                         <TableRow>
-                            <TableHead className="px-4 py-3 font-medium text-[10px] text-slate-500">Client Identity</TableHead>
-                            <TableHead className="px-4 py-3 font-medium text-[10px] text-slate-500">Lifecycle Stage</TableHead>
-                            <TableHead className="px-4 py-3 font-medium text-[10px] text-slate-500">Tier</TableHead>
-                            <TableHead className="px-4 py-3 font-medium text-[10px] text-slate-500">Revenue</TableHead>
+                            <TableHead className="px-4 py-3 font-medium text-[10px] text-slate-500">Client</TableHead>
+                            <TableHead className="px-4 py-3 font-medium text-[10px] text-slate-500">Firm</TableHead>
+                            <TableHead className="px-4 py-3 font-medium text-[10px] text-slate-500">Phone</TableHead>
+                            <TableHead className="px-4 py-3 font-medium text-[10px] text-slate-500">Status</TableHead>
                             <TableHead className="px-4 py-3 text-right font-medium text-[10px] text-slate-500">Actions</TableHead>
                         </TableRow>
                     </TableHeader>
@@ -336,7 +371,7 @@ export default function MasterClientViewPage() {
                                 <TableCell className="px-4 py-3">
                                     <div className="flex items-center gap-3">
                                         <div className="w-8 h-8 rounded-lg bg-zinc-100 flex items-center justify-center text-[10px] font-semibold text-zinc-600 border border-zinc-200 transition-transform group-hover:scale-110">
-                                            {client.manager === 'Unassigned' ? '?' : client.manager.split(' ').map(n => n[0]).join('')}
+                                            {(client.name || "?").split(' ').map((n: string) => n[0]).filter(Boolean).slice(0, 2).join('') || '?'}
                                         </div>
                                         <div className="flex flex-col">
                                             <span className="text-xs font-semibold text-zinc-900">{client.name}</span>
@@ -345,18 +380,15 @@ export default function MasterClientViewPage() {
                                     </div>
                                 </TableCell>
                                 <TableCell className="px-4 py-3">
-                                    <div className="flex items-center gap-1.5">
-                                        <div className={`w-1.5 h-1.5 rounded-full ${client.status === 'ACTIVE' ? 'bg-emerald-500' : client.status === 'AT-RISK' ? 'bg-amber-500' : 'bg-zinc-400'}`} />
-                                        <span className="text-xs font-medium text-zinc-700">{client.stage}</span>
-                                    </div>
+                                    <span className="text-xs font-medium text-zinc-700">{client.firm}</span>
                                 </TableCell>
                                 <TableCell className="px-4 py-3">
-                                    <Badge variant="outline" className="rounded-md text-[10px] font-medium border-zinc-200 text-zinc-600 bg-white shadow-sm">
-                                        {client.tier}
+                                    <span className="text-xs font-medium text-zinc-700">{client.phone || "-"}</span>
+                                </TableCell>
+                                <TableCell className="px-4 py-3">
+                                    <Badge className={`rounded-md text-[10px] font-medium ${client.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-100' : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-100'}`}>
+                                        {client.status}
                                     </Badge>
-                                </TableCell>
-                                <TableCell className="px-4 py-3">
-                                    <span className="text-xs font-semibold text-zinc-900">{client.revenue}</span>
                                 </TableCell>
                                 <TableCell className="px-4 py-3 text-right">
                                     <DropdownMenu>
@@ -367,9 +399,9 @@ export default function MasterClientViewPage() {
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end" className="w-48 shadow-sm border-zinc-100 rounded-xl">
                                             <DropdownMenuItem onClick={() => handleViewDetails(client)} className="text-xs font-medium cursor-pointer">View Details</DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => toast.info(`Transferring ${client.name}`)} className="text-xs font-medium cursor-pointer">Transfer Manager</DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => handleOpenEdit(client)} className="text-xs font-medium cursor-pointer">Edit Client</DropdownMenuItem>
                                             <DropdownMenuSeparator />
-                                            <DropdownMenuItem onClick={() => handleArchiveClient(client.name)} className="text-xs font-medium text-rose-600 cursor-pointer">Archive Client</DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => handleArchiveClient(client)} className="text-xs font-medium text-rose-600 cursor-pointer">Archive Client</DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
                                 </TableCell>
@@ -378,108 +410,15 @@ export default function MasterClientViewPage() {
                     </TableBody>
                 </Table>
                 <div className="px-4 py-3 border-t border-zinc-100 flex items-center justify-between bg-zinc-50/30">
-                    <p className="text-[10px] text-zinc-400 font-medium">Showing {filteredClients.length} of 1,247 records</p>
+                    <p className="text-[10px] text-zinc-400 font-medium">Showing {filteredClients.length} of {clients.length} records</p>
                     <div className="flex gap-2">
                         <Button variant="ghost" size="sm" className="h-7 text-[10px] font-medium transition-colors" disabled>Prev</Button>
                         <Button variant="ghost" size="sm" className="h-7 text-[10px] font-medium text-blue-600 hover:text-blue-700 transition-colors">Next</Button>
                     </div>
                 </div>
             </div>
+            )}
 
-            {/* NEW CLIENT DIALOG */}
-            <Dialog open={showNewClientDialog} onOpenChange={setShowNewClientDialog}>
-                <DialogContent className="sm:max-w-[500px] rounded-xl p-5">
-                    <DialogHeader>
-                        <DialogTitle className="text-sm font-semibold">Create New Client</DialogTitle>
-                        <DialogDescription className="text-[10px] text-zinc-500">
-                            Add a new client account to your organization.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                        <div className="grid gap-2">
-                            <Label htmlFor="name" className="text-xs font-medium text-zinc-700">Client Name *</Label>
-                            <Input
-                                id="name"
-                                placeholder="Enter client name"
-                                value={newClient.name}
-                                onChange={(e) => setNewClient({ ...newClient, name: e.target.value })}
-                                className="h-9 rounded-lg"
-                            />
-                        </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="email" className="text-xs font-medium text-zinc-700">Email Address *</Label>
-                            <div className="relative">
-                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
-                                <Input
-                                    id="email"
-                                    type="email"
-                                    placeholder="client@example.com"
-                                    value={newClient.email}
-                                    onChange={(e) => setNewClient({ ...newClient, email: e.target.value })}
-                                    className="h-9 pl-10 rounded-lg"
-                                />
-                            </div>
-                        </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="phone" className="text-xs font-medium text-zinc-700">Phone Number</Label>
-                            <div className="relative">
-                                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
-                                <Input
-                                    id="phone"
-                                    placeholder="+1 (555) 000-0000"
-                                    value={newClient.phone}
-                                    onChange={(e) => setNewClient({ ...newClient, phone: e.target.value })}
-                                    className="h-9 pl-10 rounded-lg"
-                                />
-                            </div>
-                        </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="address" className="text-xs font-medium text-zinc-700">Address</Label>
-                            <div className="relative">
-                                <MapPin className="absolute left-3 top-3 w-4 h-4 text-zinc-400" />
-                                <Input
-                                    id="address"
-                                    placeholder="123 Business St, City, State"
-                                    value={newClient.address}
-                                    onChange={(e) => setNewClient({ ...newClient, address: e.target.value })}
-                                    className="h-9 pl-10 rounded-lg"
-                                />
-                            </div>
-                        </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="tier" className="text-xs font-medium text-zinc-700">Client Tier</Label>
-                            <Select value={newClient.tier} onValueChange={(value) => setNewClient({ ...newClient, tier: value })}>
-                                <SelectTrigger className="h-9 rounded-lg">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="Standard">Standard</SelectItem>
-                                    <SelectItem value="Premium">Premium</SelectItem>
-                                    <SelectItem value="Enterprise">Enterprise</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="manager" className="text-xs font-medium text-zinc-700">Account Manager</Label>
-                            <Input
-                                id="manager"
-                                placeholder="Assign account manager"
-                                value={newClient.manager}
-                                onChange={(e) => setNewClient({ ...newClient, manager: e.target.value })}
-                                className="h-9 rounded-lg"
-                            />
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setShowNewClientDialog(false)} className="h-8 text-xs font-medium rounded-lg">
-                            Cancel
-                        </Button>
-                        <Button onClick={handleCreateClient} disabled={isLoading} className="h-8 text-xs font-medium rounded-lg bg-blue-600 hover:bg-blue-700">
-                            {isLoading ? "Creating..." : "Create Client"}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
 
             {/* CLIENT DETAILS DIALOG */}
             <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
@@ -491,48 +430,144 @@ export default function MasterClientViewPage() {
                         </DialogDescription>
                     </DialogHeader>
                     {selectedClient && (
-                        <div className="grid gap-4 py-4">
-                            <div className="grid gap-2">
-                                <Label className="text-xs font-medium text-zinc-400">Client Name</Label>
-                                <p className="text-sm font-semibold text-zinc-900">{selectedClient.name}</p>
-                            </div>
-                            <div className="grid gap-2">
-                                <Label className="text-xs font-medium text-zinc-400">Email</Label>
-                                <p className="text-sm text-zinc-700">{selectedClient.email}</p>
-                            </div>
-                            <div className="grid gap-2">
-                                <Label className="text-xs font-medium text-zinc-400">Phone</Label>
-                                <p className="text-sm text-zinc-700">{selectedClient.phone}</p>
-                            </div>
-                            <div className="grid gap-2">
-                                <Label className="text-xs font-medium text-zinc-400">Address</Label>
-                                <p className="text-sm text-zinc-700">{selectedClient.address}</p>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="grid gap-2">
-                                    <Label className="text-xs font-medium text-zinc-400">Tier</Label>
-                                    <Badge variant="outline" className="w-fit rounded-md text-[10px] font-medium">{selectedClient.tier}</Badge>
+                        <div className="grid gap-3 py-2 max-h-[60vh] overflow-y-auto pr-1">
+                            <div className="flex items-start justify-between gap-3">
+                                <div>
+                                    <p className="text-sm font-semibold text-zinc-900">{selectedClient.name}</p>
+                                    <p className="text-[11px] text-zinc-500 mt-0.5">{selectedClient.firm}</p>
                                 </div>
-                                <div className="grid gap-2">
-                                    <Label className="text-xs font-medium text-zinc-400">Status</Label>
-                                    <Badge className={`w-fit rounded-md text-[10px] font-medium ${selectedClient.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
-                                        {selectedClient.status}
-                                    </Badge>
+                                <Badge className={`rounded-md text-[10px] font-medium ${selectedClient.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-100' : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-100'}`}>
+                                    {selectedClient.status}
+                                </Badge>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3 pt-2 border-t">
+                                <div>
+                                    <Label className="text-[10px] font-medium text-zinc-400">First Name</Label>
+                                    <p className="text-xs text-zinc-700 mt-0.5">{selectedClient.firstName || "-"}</p>
+                                </div>
+                                <div>
+                                    <Label className="text-[10px] font-medium text-zinc-400">Last Name</Label>
+                                    <p className="text-xs text-zinc-700 mt-0.5">{selectedClient.lastName || "-"}</p>
                                 </div>
                             </div>
-                            <div className="grid gap-2">
-                                <Label className="text-xs font-medium text-zinc-400">Revenue</Label>
-                                <p className="text-xl font-semibold text-zinc-900">{selectedClient.revenue}</p>
+
+                            <div className="pt-2 border-t flex flex-col gap-1.5">
+                                <div className="flex items-center gap-2 text-xs text-zinc-700">
+                                    <Mail className="w-3 h-3 text-zinc-400" /> {selectedClient.email || "-"}
+                                </div>
+                                <div className="flex items-center gap-2 text-xs text-zinc-700">
+                                    <Phone className="w-3 h-3 text-zinc-400" /> {selectedClient.phone || "-"}
+                                </div>
+                                {selectedClient.website && (
+                                    <div className="flex items-center gap-2 text-xs text-zinc-700">
+                                        <Building2 className="w-3 h-3 text-zinc-400" /> {selectedClient.website}
+                                    </div>
+                                )}
                             </div>
-                            <div className="grid gap-2">
-                                <Label className="text-xs font-medium text-zinc-400">Account Manager</Label>
-                                <p className="text-sm text-zinc-700">{selectedClient.manager}</p>
-                            </div>
+
+                            {selectedClient.address && typeof selectedClient.address === 'object' && (
+                                <div className="pt-2 border-t">
+                                    <Label className="text-[10px] font-medium text-zinc-400">Address</Label>
+                                    <div className="flex items-start gap-2 mt-1 text-xs text-zinc-700">
+                                        <MapPin className="w-3 h-3 text-zinc-400 mt-0.5" />
+                                        <div>
+                                            {[selectedClient.address.address1, selectedClient.address.address2, selectedClient.address.city, selectedClient.address.state, selectedClient.address.country, selectedClient.address.pinCode].filter(Boolean).join(", ") || "-"}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {selectedClient.createdAt && (
+                                <div className="pt-2 border-t">
+                                    <Label className="text-[10px] font-medium text-zinc-400">Created</Label>
+                                    <p className="text-xs text-zinc-700 mt-0.5">{new Date(selectedClient.createdAt).toLocaleString()}</p>
+                                </div>
+                            )}
                         </div>
                     )}
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setShowDetailsDialog(false)} className="h-8 text-xs font-medium rounded-lg">
                             Close
+                        </Button>
+                        {selectedClient && (
+                            <Button onClick={() => { setShowDetailsDialog(false); handleOpenEdit(selectedClient) }} className="h-8 text-xs font-medium rounded-lg">
+                                Edit
+                            </Button>
+                        )}
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* EDIT CLIENT DIALOG */}
+            <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+                <DialogContent className="sm:max-w-[520px] rounded-xl p-5">
+                    <DialogHeader>
+                        <DialogTitle className="text-sm font-semibold">Edit Client</DialogTitle>
+                        <DialogDescription className="text-[10px] text-zinc-500">
+                            Update the client's basic information.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-3 py-2">
+                        <div className="grid gap-1.5">
+                            <Label className="text-[10px] font-medium">Firm Name</Label>
+                            <Input
+                                value={editForm.clientFirmName}
+                                onChange={(e) => setEditForm({ ...editForm, clientFirmName: e.target.value })}
+                                className="h-8 text-xs"
+                            />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="grid gap-1.5">
+                                <Label className="text-[10px] font-medium">First Name</Label>
+                                <Input
+                                    value={editForm.firstName}
+                                    onChange={(e) => setEditForm({ ...editForm, firstName: e.target.value })}
+                                    className="h-8 text-xs"
+                                />
+                            </div>
+                            <div className="grid gap-1.5">
+                                <Label className="text-[10px] font-medium">Last Name</Label>
+                                <Input
+                                    value={editForm.lastName}
+                                    onChange={(e) => setEditForm({ ...editForm, lastName: e.target.value })}
+                                    className="h-8 text-xs"
+                                />
+                            </div>
+                        </div>
+                        <div className="grid gap-1.5">
+                            <Label className="text-[10px] font-medium">Email *</Label>
+                            <Input
+                                type="email"
+                                value={editForm.email}
+                                onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                                className="h-8 text-xs"
+                            />
+                        </div>
+                        <div className="grid gap-1.5">
+                            <Label className="text-[10px] font-medium">Phone *</Label>
+                            <Input
+                                value={editForm.phone}
+                                onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                                className="h-8 text-xs"
+                            />
+                        </div>
+                        <div className="grid gap-1.5">
+                            <Label className="text-[10px] font-medium">Website</Label>
+                            <Input
+                                value={editForm.website}
+                                onChange={(e) => setEditForm({ ...editForm, website: e.target.value })}
+                                placeholder="https://"
+                                className="h-8 text-xs"
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setShowEditDialog(false)} disabled={editBusy} className="h-8 text-xs font-medium rounded-lg">
+                            Cancel
+                        </Button>
+                        <Button onClick={handleSubmitEdit} disabled={editBusy} className="h-8 text-xs font-medium rounded-lg">
+                            {editBusy && <Loader2 className="w-3 h-3 mr-1 animate-spin" />}Save Changes
                         </Button>
                     </DialogFooter>
                 </DialogContent>

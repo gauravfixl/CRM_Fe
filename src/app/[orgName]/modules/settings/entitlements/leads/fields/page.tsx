@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect, useMemo } from "react"
 import { useParams } from "next/navigation"
 import {
     Settings,
@@ -22,7 +22,8 @@ import {
     Unlock,
     ChevronDown,
     ChevronUp,
-    Columns
+    Columns,
+    Loader2
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -64,22 +65,67 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
 import { Checkbox } from "@/components/ui/checkbox"
 import { toast } from "sonner"
+import { getLeadListByOrg } from "@/hooks/leadHooks"
+
+// Lead model schema definition - mirrors backend Lead model fields
+const LEAD_SCHEMA_FIELDS = [
+    { id: "f-name", label: "Full Name", apiKey: "name", type: "Text", required: true, inConversion: true, system: true },
+    { id: "f-email", label: "Work Email", apiKey: "email", type: "Email", required: true, inConversion: true, system: true },
+    { id: "f-company", label: "Company Name", apiKey: "company", type: "Text", required: true, inConversion: true, system: true },
+    { id: "f-phone", label: "Phone Number", apiKey: "phone", type: "Phone", required: false, inConversion: true, system: true },
+    { id: "f-source", label: "Lead Source", apiKey: "source", type: "Select", required: false, inConversion: true, system: true },
+    { id: "f-stage", label: "Stage", apiKey: "stage", type: "Select", required: true, inConversion: false, system: true },
+    { id: "f-estimatedValue", label: "Estimated Value", apiKey: "estimatedValue", type: "Number", required: false, inConversion: false, system: false },
+    { id: "f-probability", label: "Probability (%)", apiKey: "probability", type: "Number", required: false, inConversion: false, system: false },
+    { id: "f-assignedTo", label: "Assigned To", apiKey: "assignedTo", type: "Text", required: false, inConversion: true, system: true },
+    { id: "f-owner", label: "Owner", apiKey: "owner", type: "Text", required: false, inConversion: true, system: true },
+    { id: "f-tags", label: "Tags", apiKey: "tags", type: "Text", required: false, inConversion: false, system: false },
+]
 
 export default function LeadFieldsLayoutsPage() {
     const params = useParams()
     const [searchQuery, setSearchQuery] = useState("")
     const [isLoading, setIsLoading] = useState(false)
+    const [isFetching, setIsFetching] = useState(true)
     const [isFieldOpen, setIsFieldOpen] = useState(false)
     const [editingField, setEditingField] = useState<any>(null)
+    const [leads, setLeads] = useState<any[]>([])
 
-    const [fields, setFields] = useState([
-        { id: "1", label: "Full Name", type: "Text", required: true, inConversion: true, status: "ACTIVE", system: true },
-        { id: "2", label: "Work Email", type: "Email", required: true, inConversion: true, status: "ACTIVE", system: true },
-        { id: "3", label: "Company Name", type: "Text", required: true, inConversion: true, status: "ACTIVE", system: false },
-        { id: "4", label: "Lead Source", type: "Select", required: false, inConversion: true, status: "ACTIVE", system: true },
-        { id: "5", label: "Estimated Value", type: "Number", required: false, inConversion: false, status: "ACTIVE", system: false },
-        { id: "6", label: "Meeting Date", type: "Date", required: false, inConversion: false, status: "INACTIVE", system: false },
-    ])
+    useEffect(() => {
+        const fetchLeads = async () => {
+            try {
+                const res = await getLeadListByOrg()
+                setLeads(res?.data?.data || [])
+            } catch (error) {
+                console.error("Failed to fetch leads for fields:", error)
+                toast.error("Failed to load lead field data")
+            } finally {
+                setIsFetching(false)
+            }
+        }
+        fetchLeads()
+    }, [])
+
+    // Derive field fill rates from actual lead data
+    const fieldFillRates = useMemo(() => {
+        if (leads.length === 0) return {}
+        const rates: Record<string, number> = {}
+        LEAD_SCHEMA_FIELDS.forEach(f => {
+            const filled = leads.filter(l => {
+                const val = l[f.apiKey]
+                return val !== undefined && val !== null && val !== ""
+            }).length
+            rates[f.apiKey] = Math.round((filled / leads.length) * 100)
+        })
+        return rates
+    }, [leads])
+
+    const systemFieldCount = LEAD_SCHEMA_FIELDS.filter(f => f.system).length
+    const customFieldCount = LEAD_SCHEMA_FIELDS.filter(f => !f.system).length
+
+    const [fields, setFields] = useState(
+        LEAD_SCHEMA_FIELDS.map(f => ({ ...f, status: "ACTIVE" as string }))
+    )
 
     const [behaviors, setBehaviors] = useState({
         stickyConversion: true,
@@ -170,8 +216,8 @@ export default function LeadFieldsLayoutsPage() {
                     <SmallCardContent className="p-4 flex flex-row items-center justify-between">
                         <div>
                             <p className="text-white text-xs opacity-80">Total Fields</p>
-                            <p className="text-white text-xl font-semibold">24 Fields</p>
-                            <p className="text-[10px] text-white opacity-80">12 System / 12 Custom</p>
+                            <p className="text-white text-xl font-semibold">{fields.length} Fields</p>
+                            <p className="text-[10px] text-white opacity-80">{systemFieldCount} System / {customFieldCount} Custom</p>
                         </div>
                         <FileText className="w-5 h-5 text-white opacity-80" />
                     </SmallCardContent>
@@ -192,8 +238,8 @@ export default function LeadFieldsLayoutsPage() {
                     <SmallCardContent className="p-4 flex flex-row items-center justify-between">
                         <div>
                             <p className="text-xs text-gray-600">Conversion Mapping</p>
-                            <p className="text-xl font-semibold text-gray-900">100%</p>
-                            <p className="text-[10px] text-emerald-600 font-medium">Fields mapped to Client</p>
+                            <p className="text-xl font-semibold text-gray-900">{isFetching ? "..." : `${Math.round((fields.filter(f => f.inConversion).length / fields.length) * 100)}%`}</p>
+                            <p className="text-[10px] text-emerald-600 font-medium">{fields.filter(f => f.inConversion).length} fields mapped to Client</p>
                         </div>
                         <Lock className="w-5 h-5 text-emerald-400" />
                     </SmallCardContent>

@@ -291,7 +291,7 @@ const HRAdminDashboard = () => {
   };
 
   return (
-    <div className="flex-1 bg-[#f8fafc] p-6 pb-12 space-y-7 font-sans selection:bg-indigo-100 selection:text-indigo-900">
+    <div className="flex-1 bg-[#f8fafc] p-6 pb-12 space-y-7 font-sans selection:bg-indigo-100 selection:text-indigo-900" style={{ zoom: "90%" }}>
 
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="space-y-1 text-start">

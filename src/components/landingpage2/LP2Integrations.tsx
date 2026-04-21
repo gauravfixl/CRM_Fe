@@ -87,9 +87,9 @@ export default function LP2Integrations() {
   const [sectionRef, inView] = useIntersection("-80px")
 
   return (
-    <section id="apps-addons" className="relative py-24 overflow-hidden">
+    <section id="apps-addons" className="relative py-24 overflow-hidden border-t border-[#E5E5E5]">
       {/* Background */}
-      <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, #F0F4F8 0%, #E8EDF3 50%, #F0F4F8 100%)" }} />
+      <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, #FFFFFF 0%, #F7F9FC 50%, #FFFFFF 100%)" }} />
 
       {/* Decorative elements */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -107,49 +107,46 @@ export default function LP2Integrations() {
         className="relative max-w-[1280px] mx-auto px-6"
       >
         {/* Header */}
-        <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6 mb-14">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={inView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.7, ease: [0.25, 0.46, 0.45, 0.94] }}
+          className="text-center mb-14"
+        >
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={inView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.7, ease: [0.25, 0.46, 0.45, 0.94] }}
-            className="max-w-2xl"
+            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-50 border border-blue-100 mb-5"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={inView ? { opacity: 1, scale: 1 } : {}}
+            transition={{ duration: 0.5 }}
           >
-            <motion.div
-              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-50 border border-blue-100 mb-5"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={inView ? { opacity: 1, scale: 1 } : {}}
-              transition={{ duration: 0.5 }}
-            >
-              <Puzzle size={12} className="text-[#0067B8]" />
-              <span className="text-[10px] font-black text-[#0067B8] tracking-[0.2em] uppercase">
-                Apps & Add-ons
-              </span>
-            </motion.div>
-
-            <h2 className="text-3xl lg:text-[2.75rem] font-bold text-[#1A1A1A] leading-tight">
-              Customize Cubicle with apps from our{" "}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-purple-600 to-orange-500">
-                Marketplace
-              </span>
-            </h2>
-            <p className="text-lg text-[#505050] mt-4 leading-relaxed">
-              Better meet your specific business needs by adding industry-leading
-              integrations to Cubicle.
-            </p>
+            <Puzzle size={12} className="text-[#0067B8]" />
+            <span className="text-xs tracking-widest font-bold uppercase text-[#0067B8]">
+              Apps &amp; Add-ons
+            </span>
           </motion.div>
 
-          {/* View all button - desktop */}
+          <h2 className="text-3xl lg:text-[2.75rem] font-bold text-[#1A1A1A] leading-tight">
+            Customize Cubicle with apps from our{" "}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-purple-600 to-orange-500">
+              Marketplace
+            </span>
+          </h2>
+          <p className="text-base text-[#6B6B6B] mt-4 max-w-2xl mx-auto leading-relaxed">
+            Better meet your specific business needs by adding industry-leading
+            integrations to Cubicle.
+          </p>
+
           <motion.a
             href="/marketplace"
-            initial={{ opacity: 0, x: 20 }}
-            animate={inView ? { opacity: 1, x: 0 } : {}}
+            initial={{ opacity: 0, y: 10 }}
+            animate={inView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.5, delay: 0.3 }}
-            className="hidden lg:inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#0067B8] text-white font-semibold text-sm hover:bg-[#005DA6] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg group shrink-0"
+            className="mt-6 inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#0067B8] text-white font-semibold text-sm hover:bg-[#005DA6] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg group"
           >
             View all apps
             <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
           </motion.a>
-        </div>
+        </motion.div>
 
         {/* Stats Row */}
         <motion.div

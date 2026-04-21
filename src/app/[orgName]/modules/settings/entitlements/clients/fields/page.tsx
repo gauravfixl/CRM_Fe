@@ -170,46 +170,54 @@ export default function ClientFieldsLayoutsPage() {
             {/* SCHEMA INSIGHTS */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <SmallCard className="bg-gradient-to-r from-primary/70 to-primary border-none text-white rounded-xl shadow-sm">
-                    <SmallCardHeader className="flex flex-row items-center justify-between pb-1 px-4 pt-4">
-                        <p className="text-xs text-white font-medium">Total Schema Fields</p>
-                        <FileText className="w-4 h-4 text-white" />
-                    </SmallCardHeader>
-                    <SmallCardContent className="px-4 pb-4">
-                        <p className="text-xl font-semibold text-white">{fields.length} Attributes</p>
-                        <p className="text-[10px] text-white/80">Global master layout</p>
+                    <SmallCardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-xs text-white font-medium">Total Schema Fields</p>
+                                <p className="text-xl font-semibold text-white mt-1">{fields.length} Attributes</p>
+                                <p className="text-[10px] text-white/80 mt-1">Global master layout</p>
+                            </div>
+                            <FileText className="w-4 h-4 text-white" />
+                        </div>
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="border bg-white shadow-sm rounded-xl p-4">
-                    <SmallCardHeader className="flex flex-row items-center justify-between pb-1 px-4 pt-4">
-                        <p className="text-xs text-slate-500 font-medium">Active Models</p>
-                        <Layout className="w-4 h-4 text-indigo-400" />
-                    </SmallCardHeader>
-                    <SmallCardContent className="px-4 pb-4">
-                        <p className="text-xl font-semibold text-zinc-900">02 Variations</p>
-                        <p className="text-[10px] text-zinc-400 font-medium">Standard vs Enterprise</p>
+                <SmallCard className="border bg-white shadow-sm rounded-xl">
+                    <SmallCardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-xs text-slate-500 font-medium">Active Models</p>
+                                <p className="text-xl font-semibold text-zinc-900 mt-1">02 Variations</p>
+                                <p className="text-[10px] text-zinc-400 font-medium mt-1">Standard vs Enterprise</p>
+                            </div>
+                            <Layout className="w-4 h-4 text-indigo-400" />
+                        </div>
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="border bg-white shadow-sm rounded-xl p-4">
-                    <SmallCardHeader className="flex flex-row items-center justify-between pb-1 px-4 pt-4">
-                        <p className="text-xs text-slate-500 font-medium">Security Check</p>
-                        <Shield className="w-4 h-4 text-emerald-400" />
-                    </SmallCardHeader>
-                    <SmallCardContent className="px-4 pb-4">
-                        <p className="text-xl font-semibold text-zinc-900">PII Locked</p>
-                        <p className="text-[10px] text-zinc-400 font-medium">Data masking active</p>
+                <SmallCard className="border bg-white shadow-sm rounded-xl">
+                    <SmallCardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-xs text-slate-500 font-medium">Security Check</p>
+                                <p className="text-xl font-semibold text-zinc-900 mt-1">PII Locked</p>
+                                <p className="text-[10px] text-zinc-400 font-medium mt-1">Data masking active</p>
+                            </div>
+                            <Shield className="w-4 h-4 text-emerald-400" />
+                        </div>
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="border bg-white shadow-sm rounded-xl p-4">
-                    <SmallCardHeader className="flex flex-row items-center justify-between pb-1 px-4 pt-4">
-                        <p className="text-xs text-slate-500 font-medium">Regulatory</p>
-                        <CheckCircle2 className="w-4 h-4 text-zinc-300" />
-                    </SmallCardHeader>
-                    <SmallCardContent className="px-4 pb-4">
-                        <p className="text-xl font-semibold text-zinc-900">GDPR Ready</p>
-                        <p className="text-[10px] text-zinc-400 font-medium">Compliance validated</p>
+                <SmallCard className="border bg-white shadow-sm rounded-xl">
+                    <SmallCardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-xs text-slate-500 font-medium">Regulatory</p>
+                                <p className="text-xl font-semibold text-zinc-900 mt-1">GDPR Ready</p>
+                                <p className="text-[10px] text-zinc-400 font-medium mt-1">Compliance validated</p>
+                            </div>
+                            <CheckCircle2 className="w-4 h-4 text-zinc-300" />
+                        </div>
                     </SmallCardContent>
                 </SmallCard>
             </div>

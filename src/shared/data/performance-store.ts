@@ -79,13 +79,17 @@ interface PerformanceState {
     // Appraisal Actions
     addAppraisal: (appraisal: Omit<Appraisal, 'id' | 'status' | 'lastUpdated' | 'competencies'>) => void;
     updateAppraisal: (id: string, updates: Partial<Appraisal>) => void;
+    deleteAppraisal: (id: string) => void;
 
     // Review Actions
     addReview: (review: Omit<Review, 'id' | 'status'>) => void;
     updateReview: (id: string, updates: Partial<Review>) => void;
+    deleteReview: (id: string) => void;
 
     // Feedback Actions
     addFeedback: (feedback: Omit<Feedback, 'id' | 'timestamp' | 'moderationStatus'>) => void;
+    updateFeedback: (id: string, updates: Partial<Feedback>) => void;
+    deleteFeedback: (id: string) => void;
     moderateFeedback: (id: string, status: Feedback['moderationStatus']) => void;
 }
 
@@ -177,6 +181,9 @@ export const usePerformanceStore = create<PerformanceState>()(
             updateAppraisal: (id, updates) => set((state) => ({
                 appraisals: state.appraisals.map(a => a.id === id ? { ...a, ...updates, lastUpdated: new Date().toISOString().split('T')[0] } : a)
             })),
+            deleteAppraisal: (id) => set((state) => ({
+                appraisals: state.appraisals.filter(a => a.id !== id)
+            })),
 
             addReview: (review) => set((state) => ({
                 reviews: [
@@ -191,6 +198,9 @@ export const usePerformanceStore = create<PerformanceState>()(
             updateReview: (id, updates) => set((state) => ({
                 reviews: state.reviews.map(r => r.id === id ? { ...r, ...updates } : r)
             })),
+            deleteReview: (id) => set((state) => ({
+                reviews: state.reviews.filter(r => r.id !== id)
+            })),
 
             addFeedback: (feedback) => set((state) => ({
                 feedbacks: [
@@ -202,6 +212,12 @@ export const usePerformanceStore = create<PerformanceState>()(
                     },
                     ...state.feedbacks
                 ]
+            })),
+            updateFeedback: (id, updates) => set((state) => ({
+                feedbacks: state.feedbacks.map(f => f.id === id ? { ...f, ...updates } : f)
+            })),
+            deleteFeedback: (id) => set((state) => ({
+                feedbacks: state.feedbacks.filter(f => f.id !== id)
             })),
             moderateFeedback: (id, status) => set((state) => ({
                 feedbacks: state.feedbacks.map(f => f.id === id ? { ...f, moderationStatus: status } : f)

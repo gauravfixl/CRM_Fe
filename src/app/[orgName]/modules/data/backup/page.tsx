@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
     HardDrive,
     Download,
@@ -11,8 +11,10 @@ import {
     Database,
     ChevronRight,
     Play,
-    Calendar
+    Calendar,
+    Loader2,
 } from "lucide-react";
+import { listBackups, createBackup } from "@/hooks/orgAdminHooks";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/shared/components/ui/progress";
@@ -33,48 +35,105 @@ import {
 } from "@/shared/components/ui/select";
 import { toast } from "sonner";
 
+interface BackupItem {
+    id: string;
+    name: string;
+    date: string;
+    size: string;
+    type: string;
+    status: string;
+}
+
 export default function BackupRestorePage() {
     const [showBackupModal, setShowBackupModal] = useState(false);
     const [showRestoreModal, setShowRestoreModal] = useState(false);
     const [backing, setBacking] = useState(false);
     const [backupProgress, setBackupProgress] = useState(0);
 
-    const backups = [
-        { id: "1", name: "Full System Backup", date: "2025-01-16 02:00 AM", size: "2.4 GB", type: "Automated", status: "Completed" },
-        { id: "2", name: "Database Backup", date: "2025-01-15 02:00 AM", size: "1.8 GB", type: "Automated", status: "Completed" },
-        { id: "3", name: "Manual Backup - Pre-Migration", date: "2025-01-14 10:30 AM", size: "2.1 GB", type: "Manual", status: "Completed" },
-        { id: "4", name: "Full System Backup", date: "2025-01-13 02:00 AM", size: "2.3 GB", type: "Automated", status: "Completed" },
-    ];
+    const [backups, setBackups] = useState<BackupItem[]>([]);
+    const [loadingBackups, setLoadingBackups] = useState(true);
+    const [backupType, setBackupType] = useState<string>("full");
 
-    const handleBackup = () => {
-        setBacking(true);
-        setBackupProgress(0);
-        const interval = setInterval(() => {
-            setBackupProgress(prev => {
-                if (prev >= 100) {
-                    clearInterval(interval);
-                    setTimeout(() => {
-                        setBacking(false);
-                        setShowBackupModal(false);
-                        setBackupProgress(0);
-                        toast.success("Backup created successfully");
-                    }, 500);
-                    return 100;
-                }
-                return prev + 10;
+    const formatBytes = (bytes: any): string => {
+        const n = Number(bytes);
+        if (!n || Number.isNaN(n)) return "—";
+        if (n < 1024) return `${n} B`;
+        if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+        if (n < 1024 * 1024 * 1024) return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+        return `${(n / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+    };
+
+    const formatDateTime = (value: any): string => {
+        if (!value) return "—";
+        try {
+            return new Date(value).toLocaleString();
+        } catch {
+            return String(value);
+        }
+    };
+
+    const normalizeBackup = (raw: any): BackupItem => ({
+        id: raw?._id || raw?.id || "",
+        name: raw?.name || raw?.label || "Backup",
+        date: formatDateTime(raw?.createdAt || raw?.date),
+        size: typeof raw?.size === "string" ? raw.size : formatBytes(raw?.sizeBytes || raw?.size),
+        type: raw?.type === "manual" || raw?.type === "Manual" ? "Manual" : "Automated",
+        status: raw?.status || "Completed",
+    });
+
+    const fetchBackups = async () => {
+        try {
+            setLoadingBackups(true);
+            const res = await listBackups();
+            const data = res?.data?.backups || res?.data?.data || res?.data || [];
+            const list = Array.isArray(data) ? data : [];
+            setBackups(list.map(normalizeBackup));
+        } catch (err: any) {
+            console.error("Failed to load backups:", err);
+            toast.error(err?.response?.data?.message || "Failed to load backups");
+            setBackups([]);
+        } finally {
+            setLoadingBackups(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchBackups();
+    }, []);
+
+    const handleBackup = async () => {
+        try {
+            setBacking(true);
+            setBackupProgress(30);
+            await createBackup({
+                type: "Manual",
+                backupType,
+                name: `Manual ${backupType} backup`,
+                status: "Queued",
             });
-        }, 400);
+            setBackupProgress(100);
+            toast.success("Backup job queued successfully");
+            setTimeout(() => {
+                setBacking(false);
+                setShowBackupModal(false);
+                setBackupProgress(0);
+                fetchBackups();
+            }, 400);
+        } catch (err: any) {
+            console.error("Create backup failed:", err);
+            toast.error(err?.response?.data?.message || "Failed to create backup");
+            setBacking(false);
+            setBackupProgress(0);
+        }
     };
 
     const handleRestore = () => {
-        toast.success("Restore initiated. Your system will be restored shortly.");
-        setTimeout(() => {
-            setShowRestoreModal(false);
-        }, 500);
+        toast.info("Restore is not yet supported by the backend. Contact your administrator.");
+        setShowRestoreModal(false);
     };
 
     const handleDownloadBackup = (backupName: string) => {
-        toast.success(`Downloading "${backupName}"...`);
+        toast.info(`Download for "${backupName}" is not yet supported by the backend.`);
     };
 
     return (
@@ -105,8 +164,8 @@ export default function BackupRestorePage() {
             {/* Stats */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div className="bg-gradient-to-r from-primary/70 to-primary text-white p-6 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
-                    <p className="text-xs opacity-80">Total Backups</p>
-                    <h2 className="text-xl font-semibold">{backups.length}</h2>
+                    <p className="text-xs font-semibold text-white">Total Backups</p>
+                    <h2 className="text-xl font-semibold text-white">{backups.length}</h2>
                     <p className="text-[10px] mt-1 opacity-80">Last 30 days</p>
                 </div>
 
@@ -184,7 +243,22 @@ export default function BackupRestorePage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-zinc-100">
-                            {backups.map((backup) => (
+                            {loadingBackups && (
+                                <tr>
+                                    <td colSpan={6} className="px-6 py-12 text-center">
+                                        <Loader2 size={24} className="mx-auto animate-spin text-blue-600" />
+                                        <p className="text-xs text-gray-500 mt-2">Loading backups...</p>
+                                    </td>
+                                </tr>
+                            )}
+                            {!loadingBackups && backups.length === 0 && (
+                                <tr>
+                                    <td colSpan={6} className="px-6 py-12 text-center text-sm text-gray-500">
+                                        No backups yet. Create your first backup.
+                                    </td>
+                                </tr>
+                            )}
+                            {!loadingBackups && backups.map((backup) => (
                                 <tr key={backup.id} className="hover:bg-blue-50/30 transition-colors group">
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-3">
@@ -264,7 +338,7 @@ export default function BackupRestorePage() {
                     <div className="p-6 space-y-5 bg-white">
                         <div className="space-y-2">
                             <Label className="text-xs font-semibold text-gray-600">Backup Type</Label>
-                            <Select defaultValue="full">
+                            <Select value={backupType} onValueChange={setBackupType}>
                                 <SelectTrigger className="rounded-lg border-zinc-200 h-9">
                                     <SelectValue />
                                 </SelectTrigger>

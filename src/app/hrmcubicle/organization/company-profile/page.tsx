@@ -1,7 +1,6 @@
 "use client"
 
-import React, { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import React, { useState, useRef, useEffect } from "react";
 import {
     Building2,
     Globe,
@@ -16,12 +15,10 @@ import {
     Save,
     X,
     Upload,
-    CheckCircle2,
-    Calendar,
-    Briefcase,
-    Link as LinkIcon
+    Link as LinkIcon,
+    Trash2,
 } from "lucide-react";
-import { Card, CardContent } from "@/shared/components/ui/card";
+import { Card } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
 import { Badge } from "@/shared/components/ui/badge";
 import { Input } from "@/shared/components/ui/input";
@@ -29,19 +26,101 @@ import { Label } from "@/shared/components/ui/label";
 import { useToast } from "@/shared/components/ui/use-toast";
 import { useOrganisationStore, type Company } from "@/shared/data/organisation-store";
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const URL_RE = /^(https?:\/\/)?([\w-]+\.)+[\w-]+(\/\S*)?$/i;
+const PINCODE_RE = /^\d{4,10}$/;
+
 const CompanyProfilePage = () => {
     const { toast } = useToast();
-    const { company, updateCompany } = useOrganisationStore();
+    const company = useOrganisationStore((s) => s.company);
+    const loadCompanyFromApi = useOrganisationStore((s) => s.loadCompanyFromApi);
+    const updateCompanyApi = useOrganisationStore((s) => s.updateCompanyApi);
     const [isEditing, setIsEditing] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
     const [formData, setFormData] = useState<Company>(company);
+    const [errors, setErrors] = useState<Record<string, string>>({});
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const handleSave = () => {
-        updateCompany(formData);
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+        const orgId = localStorage.getItem("orgID") || localStorage.getItem("orgId");
+        if (orgId) loadCompanyFromApi(orgId).catch(() => {});
+    }, []);
+
+    useEffect(() => {
+        if (!isEditing) setFormData(company);
+    }, [company, isEditing]);
+
+    const validate = (): boolean => {
+        const errs: Record<string, string> = {};
+        if (!formData.name?.trim()) errs.name = "Name required";
+        if (!formData.contactEmail?.trim()) errs.contactEmail = "Email required";
+        else if (!EMAIL_RE.test(formData.contactEmail)) errs.contactEmail = "Invalid email";
+        if (formData.supportEmail && !EMAIL_RE.test(formData.supportEmail)) errs.supportEmail = "Invalid email";
+        if (!formData.contactPhone?.trim()) errs.contactPhone = "Phone required";
+        if (formData.website && !URL_RE.test(formData.website)) errs.website = "Invalid URL";
+        if (formData.address.pincode && !PINCODE_RE.test(formData.address.pincode)) errs.pincode = "Invalid pincode";
+        setErrors(errs);
+        return Object.keys(errs).length === 0;
+    };
+
+    const isDirty = JSON.stringify(formData) !== JSON.stringify(company);
+
+    const handleSave = async () => {
+        if (!validate()) {
+            toast({ title: "Check fields", description: "Please fix validation errors before saving.", variant: "destructive" });
+            return;
+        }
+        setIsSaving(true);
+        try {
+            await updateCompanyApi(formData);
+            setIsEditing(false);
+            setErrors({});
+            toast({ title: "Settings Saved", description: "Company profile has been updated successfully." });
+        } catch (err: any) {
+            // error toast shown by hook
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleCancel = () => {
+        if (isDirty && !window.confirm("Discard unsaved changes?")) return;
+        setFormData(company);
+        setErrors({});
         setIsEditing(false);
-        toast({
-            title: "Settings Saved",
-            description: "Company profile has been updated successfully.",
-        });
+    };
+
+    const handleLogoClick = () => {
+        if (!isEditing) {
+            toast({ title: "Enable edit mode", description: "Click 'Edit Profile' to change the logo." });
+            return;
+        }
+        fileInputRef.current?.click();
+    };
+
+    const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        if (!file.type.startsWith("image/")) {
+            toast({ title: "Invalid file", description: "Please select an image file.", variant: "destructive" });
+            return;
+        }
+        if (file.size > 2 * 1024 * 1024) {
+            toast({ title: "File too large", description: "Logo must be under 2 MB.", variant: "destructive" });
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = () => {
+            setFormData({ ...formData, logo: reader.result as string });
+            toast({ title: "Logo ready", description: "Click 'Save Changes' to persist." });
+        };
+        reader.readAsDataURL(file);
+        e.target.value = "";
+    };
+
+    const handleRemoveLogo = () => {
+        setFormData({ ...formData, logo: undefined });
     };
 
     const sectionStyles = "p-8 space-y-6";
@@ -67,18 +146,17 @@ const CompanyProfilePage = () => {
                                 <Button
                                     variant="outline"
                                     className="h-10 px-6 rounded-xl font-bold border-slate-200 gap-2 text-xs"
-                                    onClick={() => {
-                                        setIsEditing(false);
-                                        setFormData(company);
-                                    }}
+                                    onClick={handleCancel}
+                                    disabled={isSaving}
                                 >
                                     <X size={16} /> Cancel
                                 </Button>
                                 <Button
                                     onClick={handleSave}
-                                    className="bg-indigo-600 hover:bg-slate-900 text-white rounded-xl h-10 px-8 font-bold shadow-xl shadow-indigo-100 transition-all gap-2 text-xs"
+                                    disabled={isSaving}
+                                    className="bg-indigo-600 hover:bg-slate-900 text-white rounded-xl h-10 px-8 font-bold shadow-xl shadow-indigo-100 transition-all gap-2 text-xs disabled:opacity-50"
                                 >
-                                    <Save size={16} /> Save Changes
+                                    <Save size={16} /> {isSaving ? "Saving..." : "Save Changes"}
                                 </Button>
                             </>
                         ) : (
@@ -99,28 +177,67 @@ const CompanyProfilePage = () => {
                     <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-600" />
                     <div className="p-10 flex flex-col lg:flex-row gap-12 items-start">
                         <div className="relative group/logo">
-                            <div className="h-40 w-40 bg-gradient-to-br from-slate-50 to-slate-100 rounded-[2.5rem] border-2 border-dashed border-slate-200 flex items-center justify-center p-2 relative overflow-hidden transition-all duration-500 group-hover/logo:border-indigo-400">
-                                <Building2 size={64} className="text-slate-300 transition-transform duration-500 group-hover/logo:scale-110" />
-                                <div className="absolute inset-0 bg-indigo-600/0 group-hover/logo:bg-indigo-600/10 flex items-center justify-center transition-all opacity-0 group-hover/logo:opacity-100 italic cursor-pointer">
-                                    <Upload size={24} className="text-indigo-600" />
-                                </div>
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                accept="image/*"
+                                onChange={handleLogoChange}
+                                className="hidden"
+                            />
+                            <div
+                                onClick={handleLogoClick}
+                                className={`h-40 w-40 bg-gradient-to-br from-slate-50 to-slate-100 rounded-[2.5rem] border-2 border-dashed border-slate-200 flex items-center justify-center p-2 relative overflow-hidden transition-all duration-500 group-hover/logo:border-indigo-400 ${isEditing ? "cursor-pointer" : ""}`}
+                            >
+                                {formData.logo ? (
+                                    // eslint-disable-next-line @next/next/no-img-element
+                                    <img src={formData.logo} alt="Company logo" className="h-full w-full object-contain rounded-[2rem]" />
+                                ) : (
+                                    <Building2 size={64} className="text-slate-300 transition-transform duration-500 group-hover/logo:scale-110" />
+                                )}
+                                {isEditing && (
+                                    <div className="absolute inset-0 bg-indigo-600/0 group-hover/logo:bg-indigo-600/20 flex items-center justify-center transition-all opacity-0 group-hover/logo:opacity-100">
+                                        <Upload size={24} className="text-white drop-shadow" />
+                                    </div>
+                                )}
                             </div>
-                            <Button variant="ghost" size="sm" className="absolute -bottom-3 -right-3 h-10 w-10 rounded-full bg-white shadow-lg border border-slate-100 text-indigo-600 hover:scale-110 transition-transform">
-                                <Edit size={16} />
-                            </Button>
+                            {isEditing && (
+                                <>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={handleLogoClick}
+                                        className="absolute -bottom-3 -right-3 h-10 w-10 rounded-full bg-white shadow-lg border border-slate-100 text-indigo-600 hover:scale-110 transition-transform"
+                                    >
+                                        <Edit size={16} />
+                                    </Button>
+                                    {formData.logo && (
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={handleRemoveLogo}
+                                            className="absolute -bottom-3 -left-3 h-10 w-10 rounded-full bg-white shadow-lg border border-slate-100 text-rose-500 hover:scale-110 transition-transform"
+                                        >
+                                            <Trash2 size={16} />
+                                        </Button>
+                                    )}
+                                </>
+                            )}
                         </div>
 
                         <div className="flex-1 space-y-8 w-full">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                 <div className="space-y-4">
                                     <div className="space-y-1.5">
-                                        <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Official Name</Label>
+                                        <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Official Name *</Label>
                                         <Input
                                             disabled={!isEditing}
-                                            className="rounded-xl h-12 bg-slate-50 border border-slate-300 font-bold px-5 text-sm focus:border-indigo-500 transition-all disabled:opacity-100 disabled:border-transparent disabled:bg-transparent disabled:px-1 disabled:text-2xl"
+                                            className={`rounded-xl h-12 bg-slate-50 border font-bold px-5 text-sm focus:border-indigo-500 transition-all disabled:opacity-100 disabled:border-transparent disabled:bg-transparent disabled:px-1 disabled:text-2xl ${errors.name ? "border-rose-500" : "border-slate-300"}`}
                                             value={formData.name}
                                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                         />
+                                        {errors.name && <p className="text-[10px] font-bold text-rose-500 ml-1">{errors.name}</p>}
                                     </div>
                                     <div className="space-y-1.5">
                                         <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Slogan / Tagline</Label>
@@ -148,10 +265,11 @@ const CompanyProfilePage = () => {
                                         <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Official Website</Label>
                                         <Input
                                             disabled={!isEditing}
-                                            className="rounded-xl h-11 bg-slate-50 border border-slate-300 font-bold px-5 text-sm focus:border-indigo-500 transition-all disabled:opacity-100 disabled:border-transparent disabled:bg-transparent disabled:px-1 text-indigo-600 cursor-link"
-                                            value={formData.website}
+                                            className={`rounded-xl h-11 bg-slate-50 border font-bold px-5 text-sm focus:border-indigo-500 transition-all disabled:opacity-100 disabled:border-transparent disabled:bg-transparent disabled:px-1 text-indigo-600 cursor-link ${errors.website ? "border-rose-500" : "border-slate-300"}`}
+                                            value={formData.website || ""}
                                             onChange={(e) => setFormData({ ...formData, website: e.target.value })}
                                         />
+                                        {errors.website && <p className="text-[10px] font-bold text-rose-500 ml-1">{errors.website}</p>}
                                     </div>
                                 </div>
                             </div>
@@ -242,41 +360,46 @@ const CompanyProfilePage = () => {
                         <div className="p-8 space-y-6">
                             <div className="grid grid-cols-2 gap-6">
                                 <div className="space-y-1.5">
-                                    <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Official Email</Label>
+                                    <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Official Email *</Label>
                                     <div className="relative group">
                                         <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 group-hover:text-indigo-500 transition-colors" size={14} />
                                         <Input
+                                            type="email"
                                             disabled={!isEditing}
-                                            className="rounded-lg h-10 bg-slate-50 border border-slate-300 font-bold pl-10 pr-4 text-xs focus:border-indigo-500 transition-colors disabled:opacity-80"
+                                            className={`rounded-lg h-10 bg-slate-50 border font-bold pl-10 pr-4 text-xs focus:border-indigo-500 transition-colors disabled:opacity-80 ${errors.contactEmail ? "border-rose-500" : "border-slate-300"}`}
                                             value={formData.contactEmail}
                                             onChange={(e) => setFormData({ ...formData, contactEmail: e.target.value })}
                                         />
                                     </div>
+                                    {errors.contactEmail && <p className="text-[10px] font-bold text-rose-500 ml-1">{errors.contactEmail}</p>}
                                 </div>
                                 <div className="space-y-1.5">
                                     <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Support Email</Label>
                                     <div className="relative group">
                                         <Globe className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 group-hover:text-indigo-500 transition-colors" size={14} />
                                         <Input
+                                            type="email"
                                             disabled={!isEditing}
-                                            className="rounded-lg h-10 bg-slate-50 border border-slate-300 font-bold pl-10 pr-4 text-xs focus:border-indigo-500 transition-colors disabled:opacity-80"
-                                            value={formData.supportEmail}
+                                            className={`rounded-lg h-10 bg-slate-50 border font-bold pl-10 pr-4 text-xs focus:border-indigo-500 transition-colors disabled:opacity-80 ${errors.supportEmail ? "border-rose-500" : "border-slate-300"}`}
+                                            value={formData.supportEmail || ""}
                                             onChange={(e) => setFormData({ ...formData, supportEmail: e.target.value })}
                                         />
                                     </div>
+                                    {errors.supportEmail && <p className="text-[10px] font-bold text-rose-500 ml-1">{errors.supportEmail}</p>}
                                 </div>
                             </div>
                             <div className="space-y-1.5">
-                                <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Primary Phone</Label>
+                                <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Primary Phone *</Label>
                                 <div className="relative group">
                                     <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 group-hover:text-emerald-500 transition-colors" size={14} />
                                     <Input
                                         disabled={!isEditing}
-                                        className="rounded-lg h-10 bg-slate-50 border border-slate-300 font-bold pl-10 pr-4 text-xs focus:border-indigo-500 transition-colors disabled:opacity-80"
+                                        className={`rounded-lg h-10 bg-slate-50 border font-bold pl-10 pr-4 text-xs focus:border-indigo-500 transition-colors disabled:opacity-80 ${errors.contactPhone ? "border-rose-500" : "border-slate-300"}`}
                                         value={formData.contactPhone}
                                         onChange={(e) => setFormData({ ...formData, contactPhone: e.target.value })}
                                     />
                                 </div>
+                                {errors.contactPhone && <p className="text-[10px] font-bold text-rose-500 ml-1">{errors.contactPhone}</p>}
                             </div>
                         </div>
                     </Card>
@@ -343,10 +466,11 @@ const CompanyProfilePage = () => {
                                 <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">PIN/ZIP Code</Label>
                                 <Input
                                     disabled={!isEditing}
-                                    className="rounded-lg h-10 bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors"
+                                    className={`rounded-lg h-10 bg-slate-50 border font-bold px-4 text-xs focus:border-indigo-500 transition-colors ${errors.pincode ? "border-rose-500" : "border-slate-300"}`}
                                     value={formData.address.pincode}
                                     onChange={(e) => setFormData({ ...formData, address: { ...formData.address, pincode: e.target.value } })}
                                 />
+                                {errors.pincode && <p className="text-[10px] font-bold text-rose-500 ml-1">{errors.pincode}</p>}
                             </div>
                         </div>
                     </div>

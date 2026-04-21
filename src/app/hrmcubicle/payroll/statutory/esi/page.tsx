@@ -18,6 +18,19 @@ import {
     AlertTriangle,
     CheckCircle2,
     Info,
+    UserMinus,
+    Shield,
+    Activity,
+    Baby,
+    Heart,
+    MoreHorizontal,
+    Edit,
+    Scan,
+    LogOut,
+    ClipboardList,
+    Accessibility,
+    CircleHelp,
+    Eye,
 } from "lucide-react"
 import { Card, CardContent } from "@/shared/components/ui/card"
 import { Button } from "@/shared/components/ui/button"
@@ -41,7 +54,14 @@ import {
     SelectValue,
 } from "@/shared/components/ui/select"
 import { useToast } from "@/shared/components/ui/use-toast"
-import { useStatutoryStore, ESIRecord } from "@/shared/data/statutory-store"
+import { useStatutoryStore, ESIRecord, ESIBreach, ESIBenefitClaim } from "@/shared/data/statutory-store"
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/shared/components/ui/dropdown-menu"
+import { Textarea } from "@/shared/components/ui/textarea"
 import { cn } from "@/lib/utils"
 
 const ESI_WAGE_LIMIT = 21000
@@ -51,12 +71,60 @@ const ESI_ER_RATE = 0.0325
 const ESIManagement = () => {
     const router = useRouter()
     const { toast } = useToast()
-    const { esiRecords, addESIRecord, updateESIRecord, deleteESIRecord } = useStatutoryStore()
+    const {
+        esiRecords,
+        addESIRecord,
+        updateESIRecord,
+        deleteESIRecord,
+        esiBreaches,
+        esiBenefitClaims,
+        addESIBreach,
+        updateESIBreach,
+        autoDetectESIBreaches,
+        exitEmployeeFromESI,
+        addESIBenefitClaim,
+        updateESIBenefitClaim,
+        deleteESIBenefitClaim,
+    } = useStatutoryStore()
     const [search, setSearch] = useState("")
     const [statusFilter, setStatusFilter] = useState<string>("all")
     const [isAddOpen, setIsAddOpen] = useState(false)
     const [editRecord, setEditRecord] = useState<ESIRecord | null>(null)
     const [formData, setFormData] = useState({ employeeId: "", employeeName: "", esicNumber: "", month: "Mar 2026", grossWage: "" })
+
+    // Round 2 state
+    const [ceilingInput, setCeilingInput] = useState<number>(21000)
+    const [autoDetectResult, setAutoDetectResult] = useState<number | null>(null)
+    const [isExitOpen, setIsExitOpen] = useState(false)
+    const [exitTarget, setExitTarget] = useState<ESIBreach | null>(null)
+    const [exitDate, setExitDate] = useState<string>(new Date().toISOString().split("T")[0])
+    const [isBreachViewOpen, setIsBreachViewOpen] = useState(false)
+    const [breachView, setBreachView] = useState<ESIBreach | null>(null)
+    const [isBreachEditOpen, setIsBreachEditOpen] = useState(false)
+    const [breachEdit, setBreachEdit] = useState<ESIBreach | null>(null)
+    const [breachEditNotes, setBreachEditNotes] = useState("")
+    const [breachEditAction, setBreachEditAction] = useState<'Flagged' | 'Continued' | 'Exited'>('Flagged')
+    const [isClaimOpen, setIsClaimOpen] = useState(false)
+    const [claimEdit, setClaimEdit] = useState<ESIBenefitClaim | null>(null)
+    const [claimForm, setClaimForm] = useState<{
+        employeeId: string
+        employeeName: string
+        benefitType: ESIBenefitClaim['benefitType']
+        claimDate: string
+        amount: string
+        durationDays: string
+        notes: string
+    }>({
+        employeeId: "",
+        employeeName: "",
+        benefitType: "Sickness",
+        claimDate: new Date().toISOString().split("T")[0],
+        amount: "",
+        durationDays: "",
+        notes: "",
+    })
+
+    const formatINR = (n: number) => '₹' + Math.round(n || 0).toLocaleString('en-IN')
 
     const filtered = useMemo(() => {
         return esiRecords.filter((r) => {
@@ -146,6 +214,179 @@ const ESIManagement = () => {
         deleteESIRecord(id)
         toast({ title: "Record Deleted", description: `ESI record for ${name} removed.` })
     }
+
+    // --- Round 2 handlers ---
+    const handleAutoDetect = () => {
+        const result = autoDetectESIBreaches(ceilingInput)
+        toast({
+            title: "Auto-detect complete",
+            description: `${result.flagged} new breach${result.flagged === 1 ? '' : 'es'} flagged at ceiling ${formatINR(ceilingInput)}.`,
+        })
+        if (result.flagged > 0) {
+            setAutoDetectResult(result.flagged)
+        }
+    }
+
+    const openExit = (b: ESIBreach) => {
+        setExitTarget(b)
+        setExitDate(new Date().toISOString().split("T")[0])
+        setIsExitOpen(true)
+    }
+
+    const handleConfirmExit = () => {
+        if (!exitTarget) return
+        exitEmployeeFromESI(exitTarget.id, exitDate)
+        toast({ title: "Employee exited from ESI", description: `${exitTarget.employeeName} marked as exited effective ${exitDate}.` })
+        setIsExitOpen(false)
+        setExitTarget(null)
+    }
+
+    const openBreachView = (b: ESIBreach) => {
+        setBreachView(b)
+        setIsBreachViewOpen(true)
+    }
+
+    const openBreachEdit = (b: ESIBreach) => {
+        setBreachEdit(b)
+        setBreachEditNotes(b.notes || "")
+        setBreachEditAction(b.action)
+        setIsBreachEditOpen(true)
+    }
+
+    const handleBreachEditSave = () => {
+        if (!breachEdit) return
+        updateESIBreach(breachEdit.id, { notes: breachEditNotes, action: breachEditAction })
+        toast({ title: "Breach updated", description: `${breachEdit.employeeName} breach record updated.` })
+        setIsBreachEditOpen(false)
+        setBreachEdit(null)
+    }
+
+    const openNewClaim = () => {
+        setClaimEdit(null)
+        setClaimForm({
+            employeeId: "",
+            employeeName: "",
+            benefitType: "Sickness",
+            claimDate: new Date().toISOString().split("T")[0],
+            amount: "",
+            durationDays: "",
+            notes: "",
+        })
+        setIsClaimOpen(true)
+    }
+
+    const openEditClaim = (c: ESIBenefitClaim) => {
+        setClaimEdit(c)
+        setClaimForm({
+            employeeId: c.employeeId,
+            employeeName: c.employeeName,
+            benefitType: c.benefitType,
+            claimDate: c.claimDate,
+            amount: c.amount != null ? String(c.amount) : "",
+            durationDays: c.durationDays != null ? String(c.durationDays) : "",
+            notes: c.notes || "",
+        })
+        setIsClaimOpen(true)
+    }
+
+    const handleClaimSave = () => {
+        if (!claimForm.employeeId || !claimForm.employeeName) {
+            toast({ title: "Missing employee", description: "Please select an employee.", variant: "destructive" })
+            return
+        }
+        const payload = {
+            employeeId: claimForm.employeeId,
+            employeeName: claimForm.employeeName,
+            benefitType: claimForm.benefitType,
+            claimDate: claimForm.claimDate,
+            amount: claimForm.amount ? parseFloat(claimForm.amount) : undefined,
+            durationDays: claimForm.durationDays ? parseInt(claimForm.durationDays) : undefined,
+            notes: claimForm.notes || undefined,
+        }
+        if (claimEdit) {
+            updateESIBenefitClaim(claimEdit.id, payload)
+            toast({ title: "Claim updated", description: `${payload.benefitType} claim for ${payload.employeeName} updated.` })
+        } else {
+            addESIBenefitClaim({ ...payload, status: "Submitted" })
+            toast({ title: "Claim submitted", description: `${payload.benefitType} claim for ${payload.employeeName} created.` })
+        }
+        setIsClaimOpen(false)
+        setClaimEdit(null)
+    }
+
+    const handleMarkSettled = (c: ESIBenefitClaim) => {
+        updateESIBenefitClaim(c.id, { status: "Settled", settledDate: new Date().toISOString().split("T")[0] })
+        toast({ title: "Claim settled", description: `${c.employeeName}'s ${c.benefitType} claim marked settled.` })
+    }
+
+    const handleClaimDelete = (c: ESIBenefitClaim) => {
+        deleteESIBenefitClaim(c.id)
+        toast({ title: "Claim deleted", description: `${c.employeeName}'s claim removed.` })
+    }
+
+    // --- Derived Round 2 data ---
+    const breachActionColor = (a: ESIBreach['action']) => {
+        switch (a) {
+            case 'Flagged': return 'bg-amber-50 text-amber-600'
+            case 'Continued': return 'bg-indigo-50 text-indigo-600'
+            case 'Exited': return 'bg-rose-50 text-rose-600'
+            default: return 'bg-slate-50 text-slate-500'
+        }
+    }
+
+    const claimStatusColor = (s: ESIBenefitClaim['status']) => {
+        switch (s) {
+            case 'Submitted': return 'bg-amber-50 text-amber-600'
+            case 'Approved': return 'bg-blue-50 text-blue-600'
+            case 'Settled': return 'bg-emerald-50 text-emerald-600'
+            case 'Rejected': return 'bg-rose-50 text-rose-600'
+            default: return 'bg-slate-50 text-slate-500'
+        }
+    }
+
+    const benefitIconMap: Record<ESIBenefitClaim['benefitType'], React.ElementType> = {
+        Sickness: Activity,
+        Maternity: Baby,
+        Disablement: Accessibility,
+        Dependent: Users,
+        Medical: Heart,
+        Funeral: CircleHelp,
+    }
+
+    const benefitBadgeColor = (t: ESIBenefitClaim['benefitType']) => {
+        switch (t) {
+            case 'Sickness': return 'bg-amber-50 text-amber-600'
+            case 'Maternity': return 'bg-pink-50 text-pink-600'
+            case 'Disablement': return 'bg-indigo-50 text-indigo-600'
+            case 'Dependent': return 'bg-blue-50 text-blue-600'
+            case 'Medical': return 'bg-rose-50 text-rose-600'
+            case 'Funeral': return 'bg-slate-100 text-slate-600'
+            default: return 'bg-slate-50 text-slate-500'
+        }
+    }
+
+    const claimStats = useMemo(() => {
+        const total = esiBenefitClaims.length
+        const settled = esiBenefitClaims.filter(c => c.status === 'Settled').length
+        const totalAmount = esiBenefitClaims.reduce((s, c) => s + (c.amount || 0), 0)
+        const avg = total > 0 ? totalAmount / total : 0
+        return { total, settled, totalAmount, avg }
+    }, [esiBenefitClaims])
+
+    const uniqueEmployees = useMemo(() => {
+        const seen = new Map<string, { employeeId: string; employeeName: string; esicNumber: string }>()
+        esiRecords.forEach(r => {
+            if (!seen.has(r.employeeId)) {
+                seen.set(r.employeeId, { employeeId: r.employeeId, employeeName: r.employeeName, esicNumber: r.esicNumber })
+            }
+        })
+        return Array.from(seen.values())
+    }, [esiRecords])
+
+    const priorRecordsForBreach = useMemo(() => {
+        if (!breachView) return []
+        return esiRecords.filter(r => r.employeeId === breachView.employeeId)
+    }, [esiRecords, breachView])
 
     return (
         <div className="flex flex-col h-full bg-[#f8fafc] font-sans overflow-y-auto" style={{ zoom: "67%" }}>
@@ -318,6 +559,200 @@ const ESIManagement = () => {
                             </div>
                         </CardContent>
                     </Card>
+
+                    {/* Wage Ceiling Breaches */}
+                    <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+                        <CardContent className="p-0">
+                            <div className="p-5 border-b border-slate-100 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                                <div className="flex items-center gap-3">
+                                    <div className="h-9 w-9 rounded-xl bg-amber-50 text-amber-500 flex items-center justify-center">
+                                        <AlertTriangle size={16} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-sm font-bold text-slate-900">Wage ceiling breaches</h3>
+                                        <p className="text-[10px] text-slate-400 mt-0.5">Employees whose gross wage crossed the ESI ceiling — review, continue or exit.</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <div className="flex flex-col">
+                                        <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Ceiling (₹)</Label>
+                                        <Input
+                                            type="number"
+                                            value={ceilingInput}
+                                            onChange={(e) => setCeilingInput(parseInt(e.target.value) || 0)}
+                                            className="h-9 w-[120px] text-xs rounded-lg border-slate-200"
+                                        />
+                                    </div>
+                                    <Button
+                                        className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-lg h-9 px-4 font-bold text-xs shadow-sm gap-2 mt-4"
+                                        onClick={handleAutoDetect}
+                                    >
+                                        <Scan size={14} /> Auto-detect breaches
+                                    </Button>
+                                </div>
+                            </div>
+                            <ScrollArea className="max-h-[420px]">
+                                <table className="w-full">
+                                    <thead className="sticky top-0 bg-slate-50 z-10">
+                                        <tr>
+                                            {["Employee", "Breach Month", "Breach Wage", "Ceiling", "Action", "Exit Date", "Notes", "Actions"].map((h) => (
+                                                <th key={h} className="text-[10px] font-bold text-slate-400 px-4 py-3 text-left uppercase tracking-wider">{h}</th>
+                                            ))}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {esiBreaches.length === 0 ? (
+                                            <tr>
+                                                <td colSpan={8} className="px-4 py-12 text-center text-xs text-slate-400">
+                                                    No breaches flagged. Run auto-detect to scan current ESI records.
+                                                </td>
+                                            </tr>
+                                        ) : esiBreaches.map((b) => (
+                                            <tr key={b.id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
+                                                <td className="px-4 py-3">
+                                                    <p className="text-xs font-bold text-slate-700">{b.employeeName}</p>
+                                                    <p className="text-[10px] text-slate-400 font-mono">{b.esicNumber}</p>
+                                                </td>
+                                                <td className="px-4 py-3 text-xs font-medium text-slate-600">{b.breachMonth}</td>
+                                                <td className="px-4 py-3 text-xs font-bold text-rose-600">{formatINR(b.breachGrossWage)}</td>
+                                                <td className="px-4 py-3 text-xs font-medium text-slate-600">{formatINR(b.ceiling)}</td>
+                                                <td className="px-4 py-3">
+                                                    <Badge className={cn("border-none font-semibold text-[10px] px-2 py-0.5", breachActionColor(b.action))}>{b.action}</Badge>
+                                                </td>
+                                                <td className="px-4 py-3 text-xs text-slate-500">{b.exitDate || "—"}</td>
+                                                <td className="px-4 py-3 text-xs text-slate-500 max-w-[180px] truncate">{b.notes || "—"}</td>
+                                                <td className="px-4 py-3">
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild>
+                                                            <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg text-slate-400 hover:text-[#8B5CF6]">
+                                                                <MoreHorizontal size={14} />
+                                                            </Button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent align="end" className="rounded-lg">
+                                                            <DropdownMenuItem className="text-xs gap-2" onClick={() => openExit(b)} disabled={b.action === 'Exited'}>
+                                                                <LogOut size={12} /> Exit employee
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem className="text-xs gap-2" onClick={() => openBreachEdit(b)}>
+                                                                <Edit size={12} /> Edit
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem className="text-xs gap-2" onClick={() => openBreachView(b)}>
+                                                                <Eye size={12} /> View
+                                                            </DropdownMenuItem>
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </ScrollArea>
+                        </CardContent>
+                    </Card>
+
+                    {/* ESI Benefit Claims */}
+                    <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+                        <CardContent className="p-0">
+                            <div className="p-5 border-b border-slate-100 flex flex-col gap-4">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="h-9 w-9 rounded-xl bg-[#8B5CF6]/10 text-[#8B5CF6] flex items-center justify-center">
+                                            <Shield size={16} />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-sm font-bold text-slate-900">ESI benefit claims</h3>
+                                            <p className="text-[10px] text-slate-400 mt-0.5">Sickness, maternity, medical and dependent benefits tracked under ESIC.</p>
+                                        </div>
+                                    </div>
+                                    <Button
+                                        className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-lg h-9 px-4 font-bold text-xs shadow-sm gap-2"
+                                        onClick={openNewClaim}
+                                    >
+                                        <Plus size={14} /> New benefit claim
+                                    </Button>
+                                </div>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                    {[
+                                        { label: "Total Claims", val: claimStats.total.toString(), icon: ClipboardList, color: "text-[#8B5CF6]", bg: "bg-[#8B5CF6]/10" },
+                                        { label: "Settled", val: claimStats.settled.toString(), icon: CheckCircle2, color: "text-emerald-500", bg: "bg-emerald-50" },
+                                        { label: "Total Benefit Amt", val: formatINR(claimStats.totalAmount), icon: IndianRupee, color: "text-blue-500", bg: "bg-blue-50" },
+                                        { label: "Avg Claim Amt", val: formatINR(claimStats.avg), icon: TrendingUp, color: "text-amber-500", bg: "bg-amber-50" },
+                                    ].map((s, i) => (
+                                        <div key={i} className="rounded-xl border border-slate-100 bg-slate-50/40 p-3 flex items-center gap-3">
+                                            <div className={cn("h-9 w-9 rounded-lg flex items-center justify-center", s.bg, s.color)}>
+                                                <s.icon size={16} />
+                                            </div>
+                                            <div className="min-w-0">
+                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider truncate">{s.label}</p>
+                                                <p className="text-sm font-bold text-slate-900 truncate">{s.val}</p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                            <ScrollArea className="max-h-[420px]">
+                                <table className="w-full">
+                                    <thead className="sticky top-0 bg-slate-50 z-10">
+                                        <tr>
+                                            {["Employee", "Benefit Type", "Claim Date", "Amount", "Duration", "Status", "Settled", "Actions"].map((h) => (
+                                                <th key={h} className="text-[10px] font-bold text-slate-400 px-4 py-3 text-left uppercase tracking-wider">{h}</th>
+                                            ))}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {esiBenefitClaims.length === 0 ? (
+                                            <tr>
+                                                <td colSpan={8} className="px-4 py-12 text-center text-xs text-slate-400">
+                                                    No benefit claims yet. Click &ldquo;New benefit claim&rdquo; to record one.
+                                                </td>
+                                            </tr>
+                                        ) : esiBenefitClaims.map((c) => {
+                                            const Icon = benefitIconMap[c.benefitType] || CircleHelp
+                                            return (
+                                                <tr key={c.id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
+                                                    <td className="px-4 py-3">
+                                                        <p className="text-xs font-bold text-slate-700">{c.employeeName}</p>
+                                                        <p className="text-[10px] text-slate-400">{c.employeeId}</p>
+                                                    </td>
+                                                    <td className="px-4 py-3">
+                                                        <Badge className={cn("border-none font-semibold text-[10px] px-2 py-0.5 gap-1", benefitBadgeColor(c.benefitType))}>
+                                                            <Icon size={10} /> {c.benefitType}
+                                                        </Badge>
+                                                    </td>
+                                                    <td className="px-4 py-3 text-xs text-slate-600">{c.claimDate}</td>
+                                                    <td className="px-4 py-3 text-xs font-bold text-slate-700">{c.amount != null ? formatINR(c.amount) : "—"}</td>
+                                                    <td className="px-4 py-3 text-xs text-slate-600">{c.durationDays != null ? `${c.durationDays} days` : "—"}</td>
+                                                    <td className="px-4 py-3">
+                                                        <Badge className={cn("border-none font-semibold text-[10px] px-2 py-0.5", claimStatusColor(c.status))}>{c.status}</Badge>
+                                                    </td>
+                                                    <td className="px-4 py-3 text-xs text-slate-500">{c.settledDate || "—"}</td>
+                                                    <td className="px-4 py-3">
+                                                        <DropdownMenu>
+                                                            <DropdownMenuTrigger asChild>
+                                                                <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg text-slate-400 hover:text-[#8B5CF6]">
+                                                                    <MoreHorizontal size={14} />
+                                                                </Button>
+                                                            </DropdownMenuTrigger>
+                                                            <DropdownMenuContent align="end" className="rounded-lg">
+                                                                <DropdownMenuItem className="text-xs gap-2" onClick={() => openEditClaim(c)}>
+                                                                    <Edit size={12} /> Edit
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuItem className="text-xs gap-2" onClick={() => handleMarkSettled(c)} disabled={c.status === 'Settled'}>
+                                                                    <CheckCircle2 size={12} /> Mark settled
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuItem className="text-xs gap-2 text-rose-600 focus:text-rose-600" onClick={() => handleClaimDelete(c)}>
+                                                                    <Trash2 size={12} /> Delete
+                                                                </DropdownMenuItem>
+                                                            </DropdownMenuContent>
+                                                        </DropdownMenu>
+                                                    </td>
+                                                </tr>
+                                            )
+                                        })}
+                                    </tbody>
+                                </table>
+                            </ScrollArea>
+                        </CardContent>
+                    </Card>
                 </div>
             </div>
 
@@ -378,6 +813,269 @@ const ESIManagement = () => {
                         <Button className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white h-9 rounded-lg text-xs font-bold shadow-lg shadow-[#8B5CF6]/20" onClick={handleSave}>
                             {editRecord ? "Update" : "Add Record"}
                         </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* New / Edit Benefit Claim Dialog */}
+            <Dialog open={isClaimOpen} onOpenChange={(o) => { setIsClaimOpen(o); if (!o) setClaimEdit(null) }}>
+                <DialogContent className="sm:max-w-[520px] rounded-2xl">
+                    <DialogHeader>
+                        <DialogTitle className="text-lg font-bold text-slate-900">{claimEdit ? "Edit benefit claim" : "New benefit claim"}</DialogTitle>
+                        <DialogDescription className="text-xs text-slate-500">
+                            Record a new ESI benefit claim. All fields except notes are recommended for faster settlement.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-2">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-1.5">
+                                <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Employee</Label>
+                                <Select
+                                    value={claimForm.employeeId}
+                                    onValueChange={(val) => {
+                                        const emp = uniqueEmployees.find(e => e.employeeId === val)
+                                        setClaimForm({ ...claimForm, employeeId: val, employeeName: emp?.employeeName || "" })
+                                    }}
+                                >
+                                    <SelectTrigger className="h-9 rounded-lg text-xs">
+                                        <SelectValue placeholder="Select employee" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {uniqueEmployees.map((e) => (
+                                            <SelectItem key={e.employeeId} value={e.employeeId} className="text-xs">
+                                                {e.employeeName} — {e.esicNumber}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Benefit type</Label>
+                                <Select
+                                    value={claimForm.benefitType}
+                                    onValueChange={(val) => setClaimForm({ ...claimForm, benefitType: val as ESIBenefitClaim['benefitType'] })}
+                                >
+                                    <SelectTrigger className="h-9 rounded-lg text-xs">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {(["Sickness", "Maternity", "Disablement", "Dependent", "Medical", "Funeral"] as const).map((t) => (
+                                            <SelectItem key={t} value={t} className="text-xs">{t}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-3 gap-4">
+                            <div className="space-y-1.5">
+                                <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Claim date</Label>
+                                <Input type="date" className="h-9 text-xs rounded-lg" value={claimForm.claimDate} onChange={(e) => setClaimForm({ ...claimForm, claimDate: e.target.value })} />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Amount (₹)</Label>
+                                <Input type="number" className="h-9 text-xs rounded-lg" value={claimForm.amount} onChange={(e) => setClaimForm({ ...claimForm, amount: e.target.value })} />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Duration (days)</Label>
+                                <Input type="number" className="h-9 text-xs rounded-lg" value={claimForm.durationDays} onChange={(e) => setClaimForm({ ...claimForm, durationDays: e.target.value })} />
+                            </div>
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Notes</Label>
+                            <Textarea className="text-xs rounded-lg min-h-[72px]" value={claimForm.notes} onChange={(e) => setClaimForm({ ...claimForm, notes: e.target.value })} placeholder="Additional context, diagnosis reference, hospital etc." />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" className="h-9 rounded-lg text-xs font-bold" onClick={() => { setIsClaimOpen(false); setClaimEdit(null) }}>Cancel</Button>
+                        <Button className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white h-9 rounded-lg text-xs font-bold shadow-lg shadow-[#8B5CF6]/20" onClick={handleClaimSave}>
+                            {claimEdit ? "Update claim" : "Submit claim"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Auto-detect Result Dialog */}
+            <Dialog open={autoDetectResult !== null && autoDetectResult > 0} onOpenChange={(o) => { if (!o) setAutoDetectResult(null) }}>
+                <DialogContent className="sm:max-w-[420px] rounded-2xl">
+                    <DialogHeader>
+                        <DialogTitle className="text-lg font-bold text-slate-900">Auto-detection complete</DialogTitle>
+                        <DialogDescription className="text-xs text-slate-500">
+                            Scanned all ESI records against ceiling {formatINR(ceilingInput)}.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4 flex flex-col items-center justify-center gap-3">
+                        <div className="h-16 w-16 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center">
+                            <AlertTriangle size={28} />
+                        </div>
+                        <p className="text-4xl font-bold text-slate-900 tracking-tight">{autoDetectResult}</p>
+                        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                            New breach{autoDetectResult === 1 ? '' : 'es'} flagged
+                        </p>
+                        <p className="text-[11px] text-slate-400 text-center max-w-[300px]">
+                            Review each flagged employee in the breaches table. Continue ESI till period end or exit them with an effective date.
+                        </p>
+                    </div>
+                    <DialogFooter>
+                        <Button className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white h-9 rounded-lg text-xs font-bold w-full shadow-lg shadow-[#8B5CF6]/20" onClick={() => setAutoDetectResult(null)}>
+                            View breaches
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Exit Employee from ESI Dialog */}
+            <Dialog open={isExitOpen} onOpenChange={(o) => { setIsExitOpen(o); if (!o) setExitTarget(null) }}>
+                <DialogContent className="sm:max-w-[420px] rounded-2xl">
+                    <DialogHeader>
+                        <DialogTitle className="text-lg font-bold text-slate-900">Exit employee from ESI</DialogTitle>
+                        <DialogDescription className="text-xs text-slate-500">
+                            Record the effective exit date for {exitTarget?.employeeName}. The employee will be marked as exited from ESI scheme.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-2">
+                        <div className="p-3 rounded-xl bg-rose-50 border border-rose-100 flex items-start gap-2">
+                            <UserMinus size={14} className="text-rose-500 flex-shrink-0 mt-0.5" />
+                            <div>
+                                <p className="text-[11px] font-bold text-rose-600">{exitTarget?.employeeName} — {exitTarget?.esicNumber}</p>
+                                <p className="text-[10px] text-rose-500 mt-0.5">Breach month: {exitTarget?.breachMonth} · Wage {exitTarget ? formatINR(exitTarget.breachGrossWage) : ""}</p>
+                            </div>
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Exit date</Label>
+                            <Input type="date" className="h-9 text-xs rounded-lg" value={exitDate} onChange={(e) => setExitDate(e.target.value)} />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" className="h-9 rounded-lg text-xs font-bold" onClick={() => { setIsExitOpen(false); setExitTarget(null) }}>Cancel</Button>
+                        <Button className="bg-rose-500 hover:bg-rose-600 text-white h-9 rounded-lg text-xs font-bold shadow-lg shadow-rose-500/20 gap-2" onClick={handleConfirmExit}>
+                            <LogOut size={12} /> Confirm exit
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Edit Breach Dialog */}
+            <Dialog open={isBreachEditOpen} onOpenChange={(o) => { setIsBreachEditOpen(o); if (!o) setBreachEdit(null) }}>
+                <DialogContent className="sm:max-w-[440px] rounded-2xl">
+                    <DialogHeader>
+                        <DialogTitle className="text-lg font-bold text-slate-900">Edit breach record</DialogTitle>
+                        <DialogDescription className="text-xs text-slate-500">
+                            Update the action status and notes for this breach.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-2">
+                        <div className="space-y-1.5">
+                            <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Action</Label>
+                            <Select value={breachEditAction} onValueChange={(v) => setBreachEditAction(v as 'Flagged' | 'Continued' | 'Exited')}>
+                                <SelectTrigger className="h-9 rounded-lg text-xs">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Flagged" className="text-xs">Flagged</SelectItem>
+                                    <SelectItem value="Continued" className="text-xs">Continued</SelectItem>
+                                    <SelectItem value="Exited" className="text-xs">Exited</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Notes</Label>
+                            <Textarea className="text-xs rounded-lg min-h-[80px]" value={breachEditNotes} onChange={(e) => setBreachEditNotes(e.target.value)} />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" className="h-9 rounded-lg text-xs font-bold" onClick={() => { setIsBreachEditOpen(false); setBreachEdit(null) }}>Cancel</Button>
+                        <Button className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white h-9 rounded-lg text-xs font-bold shadow-lg shadow-[#8B5CF6]/20" onClick={handleBreachEditSave}>
+                            Save changes
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* View Breach Detail Dialog */}
+            <Dialog open={isBreachViewOpen} onOpenChange={(o) => { setIsBreachViewOpen(o); if (!o) setBreachView(null) }}>
+                <DialogContent className="sm:max-w-[560px] rounded-2xl">
+                    <DialogHeader>
+                        <DialogTitle className="text-lg font-bold text-slate-900">Breach detail</DialogTitle>
+                        <DialogDescription className="text-xs text-slate-500">
+                            Full breach information and prior ESI contribution history for this employee.
+                        </DialogDescription>
+                    </DialogHeader>
+                    {breachView && (
+                        <div className="space-y-4 py-2">
+                            <div className="grid grid-cols-2 gap-3 p-4 rounded-xl bg-slate-50 border border-slate-100">
+                                <div>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Employee</p>
+                                    <p className="text-xs font-bold text-slate-700 mt-0.5">{breachView.employeeName}</p>
+                                    <p className="text-[10px] text-slate-500 font-mono">{breachView.esicNumber}</p>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Employee ID</p>
+                                    <p className="text-xs font-bold text-slate-700 mt-0.5">{breachView.employeeId}</p>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Breach Month</p>
+                                    <p className="text-xs font-bold text-slate-700 mt-0.5">{breachView.breachMonth}</p>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Breach Wage</p>
+                                    <p className="text-xs font-bold text-rose-600 mt-0.5">{formatINR(breachView.breachGrossWage)}</p>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Ceiling</p>
+                                    <p className="text-xs font-bold text-slate-700 mt-0.5">{formatINR(breachView.ceiling)}</p>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Action</p>
+                                    <Badge className={cn("border-none font-semibold text-[10px] px-2 py-0.5 mt-1", breachActionColor(breachView.action))}>{breachView.action}</Badge>
+                                </div>
+                                {breachView.exitDate && (
+                                    <div>
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Exit Date</p>
+                                        <p className="text-xs font-bold text-slate-700 mt-0.5">{breachView.exitDate}</p>
+                                    </div>
+                                )}
+                                {breachView.notes && (
+                                    <div className="col-span-2">
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Notes</p>
+                                        <p className="text-xs text-slate-600 mt-0.5">{breachView.notes}</p>
+                                    </div>
+                                )}
+                            </div>
+                            <div>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Prior ESI Records ({priorRecordsForBreach.length})</p>
+                                <div className="rounded-xl border border-slate-100 overflow-hidden">
+                                    {priorRecordsForBreach.length === 0 ? (
+                                        <p className="p-4 text-xs text-slate-400 text-center">No prior records found for this employee.</p>
+                                    ) : (
+                                        <table className="w-full">
+                                            <thead className="bg-slate-50">
+                                                <tr>
+                                                    {["Month", "Gross", "EE", "ER", "Status"].map((h) => (
+                                                        <th key={h} className="text-[9px] font-bold text-slate-400 px-3 py-2 text-left uppercase tracking-wider">{h}</th>
+                                                    ))}
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {priorRecordsForBreach.map((r) => (
+                                                    <tr key={r.id} className="border-t border-slate-50">
+                                                        <td className="px-3 py-2 text-[11px] font-bold text-slate-700">{r.month}</td>
+                                                        <td className="px-3 py-2 text-[11px] text-slate-600">{formatINR(r.grossWage)}</td>
+                                                        <td className="px-3 py-2 text-[11px] text-slate-600">{formatINR(r.esiEmployee)}</td>
+                                                        <td className="px-3 py-2 text-[11px] text-slate-600">{formatINR(r.esiEmployer)}</td>
+                                                        <td className="px-3 py-2">
+                                                            <Badge className={cn("border-none font-semibold text-[9px] px-1.5 py-0.5", statusColor(r.status))}>{r.status}</Badge>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    <DialogFooter>
+                        <Button variant="outline" className="h-9 rounded-lg text-xs font-bold" onClick={() => { setIsBreachViewOpen(false); setBreachView(null) }}>Close</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

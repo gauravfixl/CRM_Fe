@@ -7,29 +7,91 @@ import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { Textarea } from "@/shared/components/ui/textarea";
-import { showSuccess } from "@/shared/utils/toast";
+import axiosInstance from "@/lib/axios";
+import { showSuccess, showError, showWarning } from "@/shared/utils/toast";
 
 export default function BillingSettingsPage() {
     const router = useRouter();
     const params = useParams() as { orgName?: string };
     const orgName = params.orgName || "";
     const [isSaving, setIsSaving] = useState(false);
-    const [companyName, setCompanyName] = useState("Fixl Solutions Private Limited");
-    const [taxId, setTaxId] = useState("29AAAAA0000A1Z5");
-    const [billingEmail, setBillingEmail] = useState("accounts@fixlsolutions.com");
-    const [industry, setIndustry] = useState("Software & Technology");
-    const [address, setAddress] = useState("102, Innovation Hub, Outer Ring Road, Bangalore, Karnataka, 560103, India");
-    const [fiscalYear, setFiscalYear] = useState("April");
+    const [loading, setLoading] = useState(true);
 
-    const handleSave = () => {
-        if (!companyName.trim() || !billingEmail.trim()) {
+    const [companyName, setCompanyName] = useState("");
+    const [taxId, setTaxId] = useState("29AAAAA0000A1Z5");
+    const [billingEmail, setBillingEmail] = useState("");
+    const [industry, setIndustry] = useState("Software & Technology");
+    const [address, setAddress] = useState("");
+    const [fiscalYear, setFiscalYear] = useState("April");
+    const [contactPhone, setContactPhone] = useState("");
+    const [contactName, setContactName] = useState("");
+    const [orgCountry, setOrgCountry] = useState("");
+
+    React.useEffect(() => {
+        const fetchOrgDetails = async () => {
+            try {
+                setLoading(true);
+                // We use the org name from params to get ID if needed, 
+                // but since we are authenticated as org, we can just get /organization/:id if we knew it,
+                // or we can use the switch-org logic to get current org.
+                // Actually, let's fetch current org details.
+                const res = await axiosInstance.get(`/organization/org/all`);
+                const currentOrg = res.data?.data?.[0]; // Assuming first for now, or we find by name
+                if (currentOrg) {
+                    setCompanyName(currentOrg.orgName || "");
+                    setBillingEmail(currentOrg.orgEmail || "");
+                    setContactName(currentOrg.orgContact || "");
+                    setContactPhone(currentOrg.orgPhone || "");
+                }
+            } catch (error) {
+                console.error("Failed to fetch org details:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchOrgDetails();
+    }, []);
+
+    const handleSave = async () => {
+        // Validation
+        if (!companyName.trim()) {
+            showWarning("Company legal name is required");
             return;
         }
+
+        if (/\d/.test(companyName)) {
+            showWarning("Company legal name should not contain numbers");
+            return;
+        }
+
+        if (!billingEmail.trim()) {
+            showWarning("Billing email is required");
+            return;
+        }
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(billingEmail)) {
+            showWarning("Please enter a valid billing email address");
+            return;
+        }
+
         setIsSaving(true);
-        setTimeout(() => {
-            setIsSaving(false);
+        try {
+            await axiosInstance.patch("/organization/update/details", {
+                name: companyName.trim(),
+                contactEmail: billingEmail.trim(),
+                contactPhone: contactPhone.trim(),
+                contactName: contactName.trim(),
+                address: address.trim(),
+                orgCountry: orgCountry.trim() || "India"
+            });
             showSuccess("Billing details saved successfully");
-        }, 800);
+        } catch (error: any) {
+            console.error("Failed to save billing details:", error);
+            showError(error.response?.data?.message || "Failed to save billing details");
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const quickLinks = [

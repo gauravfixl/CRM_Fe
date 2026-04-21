@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     Building2,
@@ -53,15 +53,27 @@ import {
 } from "@/shared/components/ui/select";
 import { Progress } from "@/shared/components/ui/progress";
 
+const NAME_RE = /^[A-Za-z][A-Za-z0-9 &/\-]{1,59}$/;
+const CODE_RE = /^[A-Z0-9_-]{2,10}$/;
+
 const DepartmentsPage = () => {
     const { toast } = useToast();
-    const { departments, employees, addDepartment, updateDepartment, deleteDepartment } = useOrganisationStore();
+    const departments = useOrganisationStore((s) => s.departments);
+    const employees = useOrganisationStore((s) => s.employees);
+    const loadDepartmentsFromApi = useOrganisationStore((s) => s.loadDepartmentsFromApi);
+    const createDepartmentApi = useOrganisationStore((s) => s.createDepartmentApi);
+    const updateDepartmentApi = useOrganisationStore((s) => s.updateDepartmentApi);
+    const deleteDepartmentApi = useOrganisationStore((s) => s.deleteDepartmentApi);
+
+    useEffect(() => { loadDepartmentsFromApi().catch(() => {}); }, []);
 
     const [searchQuery, setSearchQuery] = useState("");
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
     const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [isViewMembersDialogOpen, setIsViewMembersDialogOpen] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    const [errors, setErrors] = useState<Record<string, string>>({});
 
     const [formData, setFormData] = useState<Partial<Department>>({
         name: "",
@@ -72,42 +84,80 @@ const DepartmentsPage = () => {
         isActive: true
     });
 
-    const handleAddDepartment = () => {
-        if (!formData.name || !formData.code) {
-            toast({ title: "Validation Error", description: "Name and Code are required", variant: "destructive" });
-            return;
-        }
-
-        addDepartment({
-            ...formData,
-            isActive: true
-        } as Omit<Department, 'id' | 'employeeCount' | 'createdAt'>);
-
-        toast({ title: "Department Created", description: `${formData.name} has been added to the organization structure.` });
-        setIsAddDialogOpen(false);
-        setFormData({
-            name: "",
-            code: "",
-            description: "",
-            headId: "",
-            parentDepartmentId: "",
-            isActive: true
-        });
+    const resetForm = () => {
+        setFormData({ name: "", code: "", description: "", headId: "", parentDepartmentId: "", isActive: true });
+        setErrors({});
     };
 
-    const handleUpdateDepartment = () => {
-        if (!selectedDepartment || !formData.name || !formData.code) {
-            toast({ title: "Validation Error", description: "Name and Code are required", variant: "destructive" });
-            return;
+    const validateForm = (mode: "add" | "edit"): boolean => {
+        const errs: Record<string, string> = {};
+        const name = (formData.name || "").trim();
+        const code = (formData.code || "").trim();
+
+        if (!name) errs.name = "Name is required";
+        else if (!NAME_RE.test(name)) errs.name = "2-60 chars, letters/numbers/&/-/space";
+
+        if (!code) errs.code = "Code is required";
+        else if (!CODE_RE.test(code)) errs.code = "2-10 uppercase letters/digits/-/_";
+        else {
+            const duplicate = departments.some((d) =>
+                d.code.toUpperCase() === code.toUpperCase() &&
+                (mode === "add" || d.id !== selectedDepartment?.id)
+            );
+            if (duplicate) errs.code = "A department with this code already exists";
         }
 
-        updateDepartment(selectedDepartment.id, formData);
-        toast({ title: "Department Updated", description: "Changes have been saved successfully." });
-        setIsEditDialogOpen(false);
-        setSelectedDepartment(null);
+        if ((formData.description || "").length > 500) errs.description = "Description max 500 chars";
+
+        if (mode === "edit" && formData.parentDepartmentId && formData.parentDepartmentId === selectedDepartment?.id) {
+            errs.parentDepartmentId = "A department cannot be its own parent";
+        }
+
+        setErrors(errs);
+        return Object.keys(errs).length === 0;
     };
 
-    const handleDeleteDepartment = (id: string) => {
+    const handleAddDepartment = async () => {
+        if (!validateForm("add")) return;
+        setIsSaving(true);
+        try {
+            await createDepartmentApi({
+                name: (formData.name || "").trim(),
+                description: (formData.description || "").trim() || undefined,
+                head: formData.headId && formData.headId !== "none" ? formData.headId : undefined,
+            });
+            toast({ title: "Department Created", description: `${formData.name} has been added.` });
+            setIsAddDialogOpen(false);
+            resetForm();
+        } catch (err: any) {
+            // error toast already shown by hook
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleUpdateDepartment = async () => {
+        if (!selectedDepartment) return;
+        if (!validateForm("edit")) return;
+        setIsSaving(true);
+        try {
+            await updateDepartmentApi(selectedDepartment.id, {
+                name: (formData.name || "").trim(),
+                description: (formData.description || "").trim() || undefined,
+                headId: formData.headId && formData.headId !== "none" ? formData.headId : undefined,
+            } as any);
+            toast({ title: "Department Updated", description: "Changes saved successfully." });
+            setIsEditDialogOpen(false);
+            setSelectedDepartment(null);
+            resetForm();
+        } catch (err: any) {
+            // error toast already shown by hook
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleDeleteDepartment = async (id: string) => {
         const deptEmployees = employees.filter(e => e.departmentId === id);
         if (deptEmployees.length > 0) {
             toast({
@@ -117,9 +167,13 @@ const DepartmentsPage = () => {
             });
             return;
         }
-
-        deleteDepartment(id);
-        toast({ title: "Department Deleted", description: "Department has been removed from the organization." });
+        if (!window.confirm("Delete this department? This action cannot be undone.")) return;
+        try {
+            await deleteDepartmentApi(id);
+            toast({ title: "Department Deleted", description: "Department has been removed." });
+        } catch (err: any) {
+            // error toast already shown by hook
+        }
     };
 
     const filteredDepartments = departments.filter(dept =>
@@ -155,7 +209,7 @@ const DepartmentsPage = () => {
                             <Search className="absolute left-3.5 top-1/2 -transform -translate-y-1/2 w-3.5 h-3.5 text-slate-400 group-focus-within:text-purple-500 transition-colors" />
                             <Input
                                 placeholder="Search departments..."
-                                className="pl-10 h-9 rounded-xl bg-slate-50 border-none shadow-none font-medium text-[11px] focus-visible:ring-2 focus-visible:ring-purple-100 placeholder:text-slate-400"
+                                className="pl-10 h-9 rounded-xl bg-slate-50 border border-slate-200 shadow-none font-medium text-[11px] focus-visible:ring-2 focus-visible:ring-purple-100 placeholder:text-slate-400"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
@@ -174,7 +228,7 @@ const DepartmentsPage = () => {
 
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-                    <Card className="rounded-[1.25rem] border-none bg-indigo-100/90 text-indigo-700 p-4 shadow-sm ring-1 ring-indigo-200/50 transition-all hover:scale-[1.02] relative overflow-hidden group">
+                    <Card className="rounded-xl border-none bg-indigo-100/90 text-indigo-700 p-4 shadow-sm transition-all hover:scale-[1.02] relative overflow-hidden group">
                         <div className="relative z-10 space-y-2.5">
                             <div className="h-8 w-8 bg-white/90 rounded-lg flex items-center justify-center shadow-sm text-indigo-600 transition-transform group-hover:scale-110">
                                 <Building2 size={16} />
@@ -186,7 +240,7 @@ const DepartmentsPage = () => {
                         </div>
                     </Card>
 
-                    <Card className="rounded-[1.25rem] border-none bg-emerald-100/90 text-emerald-700 p-4 shadow-sm ring-1 ring-emerald-200/50 transition-all hover:scale-[1.02] relative overflow-hidden group">
+                    <Card className="rounded-xl border-none bg-emerald-100/90 text-emerald-700 p-4 shadow-sm transition-all hover:scale-[1.02] relative overflow-hidden group">
                         <div className="relative z-10 space-y-2.5">
                             <div className="h-8 w-8 bg-white/90 rounded-lg flex items-center justify-center shadow-sm text-emerald-600 transition-transform group-hover:scale-110">
                                 <Activity size={16} />
@@ -198,7 +252,7 @@ const DepartmentsPage = () => {
                         </div>
                     </Card>
 
-                    <Card className="rounded-[1.25rem] border-none bg-purple-100/90 text-purple-700 p-4 shadow-sm ring-1 ring-purple-200/50 transition-all hover:scale-[1.02] relative overflow-hidden group">
+                    <Card className="rounded-xl border-none bg-purple-100/90 text-purple-700 p-4 shadow-sm transition-all hover:scale-[1.02] relative overflow-hidden group">
                         <div className="relative z-10 space-y-2.5">
                             <div className="h-8 w-8 bg-white/90 rounded-lg flex items-center justify-center shadow-sm text-purple-600 transition-transform group-hover:scale-110">
                                 <Crown size={16} />
@@ -210,7 +264,7 @@ const DepartmentsPage = () => {
                         </div>
                     </Card>
 
-                    <Card className="rounded-[1.25rem] border-none bg-amber-100/90 text-amber-700 p-4 shadow-sm ring-1 ring-amber-200/50 transition-all hover:scale-[1.02] relative overflow-hidden group">
+                    <Card className="rounded-xl border-none bg-amber-100/90 text-amber-700 p-4 shadow-sm transition-all hover:scale-[1.02] relative overflow-hidden group">
                         <div className="relative z-10 space-y-2.5">
                             <div className="h-8 w-8 bg-white/90 rounded-lg flex items-center justify-center shadow-sm text-amber-600 transition-transform group-hover:scale-110">
                                 <Users size={16} />
@@ -270,6 +324,7 @@ const DepartmentsPage = () => {
                                                             onClick={() => {
                                                                 setSelectedDepartment(department);
                                                                 setFormData(department);
+                                                                setErrors({});
                                                                 setIsEditDialogOpen(true);
                                                             }}
                                                         >
@@ -387,26 +442,30 @@ const DepartmentsPage = () => {
                                     <div className="space-y-1">
                                         <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Department Name *</Label>
                                         <Input
-                                            className="rounded-lg h-10 bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors"
+                                            className={`rounded-lg h-10 bg-slate-50 border font-bold px-4 text-xs focus:border-indigo-500 transition-colors ${errors.name ? "border-rose-500" : "border-slate-300"}`}
                                             placeholder="e.g., Engineering"
+                                            maxLength={60}
                                             value={formData.name}
                                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                         />
+                                        {errors.name && <p className="text-[10px] font-bold text-rose-500 ml-1">{errors.name}</p>}
                                     </div>
                                     <div className="space-y-1">
                                         <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Department Code *</Label>
                                         <Input
-                                            className="rounded-lg h-10 bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors"
+                                            className={`rounded-lg h-10 bg-slate-50 border font-bold px-4 text-xs focus:border-indigo-500 transition-colors ${errors.code ? "border-rose-500" : "border-slate-300"}`}
                                             placeholder="ENG"
+                                            maxLength={10}
                                             value={formData.code}
                                             onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
                                         />
+                                        {errors.code && <p className="text-[10px] font-bold text-rose-500 ml-1">{errors.code}</p>}
                                     </div>
                                 </div>
 
                                 <div className="space-y-1">
                                     <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Department Head</Label>
-                                    <Select value={formData.headId} onValueChange={(v) => setFormData({ ...formData, headId: v })}>
+                                    <Select value={formData.headId || "none"} onValueChange={(v) => setFormData({ ...formData, headId: v === "none" ? "" : v })}>
                                         <SelectTrigger className="h-10 rounded-lg bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors">
                                             <SelectValue placeholder="Select head" />
                                         </SelectTrigger>
@@ -423,13 +482,13 @@ const DepartmentsPage = () => {
 
                                 <div className="space-y-1">
                                     <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Parent Department</Label>
-                                    <Select value={formData.parentDepartmentId} onValueChange={(v) => setFormData({ ...formData, parentDepartmentId: v })}>
+                                    <Select value={formData.parentDepartmentId || "none"} onValueChange={(v) => setFormData({ ...formData, parentDepartmentId: v === "none" ? "" : v })}>
                                         <SelectTrigger className="h-10 rounded-lg bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors">
                                             <SelectValue placeholder="Select parent" />
                                         </SelectTrigger>
                                         <SelectContent className="rounded-xl border border-slate-200 shadow-2xl p-1 font-bold">
                                             <SelectItem value="none" className="rounded-lg h-8 text-xs">None (Top Level)</SelectItem>
-                                            {departments.map(dept => (
+                                            {departments.filter(d => d.id !== selectedDepartment?.id).map(dept => (
                                                 <SelectItem key={dept.id} value={dept.id} className="rounded-lg h-8 text-xs">
                                                     {dept.name}
                                                 </SelectItem>
@@ -442,23 +501,29 @@ const DepartmentsPage = () => {
                             <div className="space-y-1">
                                 <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Department Description</Label>
                                 <Textarea
-                                    className="rounded-lg bg-slate-50 border border-slate-300 min-h-[148px] p-4 font-medium text-xs focus:border-indigo-500 transition-colors"
+                                    className={`rounded-lg bg-slate-50 border min-h-[148px] p-4 font-medium text-xs focus:border-indigo-500 transition-colors ${errors.description ? "border-rose-500" : "border-slate-300"}`}
                                     placeholder="Describe the department's core focus and responsibilities..."
+                                    maxLength={500}
                                     value={formData.description}
                                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                 />
+                                <div className="flex justify-between items-center">
+                                    {errors.description ? <p className="text-[10px] font-bold text-rose-500 ml-1">{errors.description}</p> : <span />}
+                                    <p className="text-[9px] font-bold text-slate-400 mr-1">{(formData.description || "").length}/500</p>
+                                </div>
                             </div>
                         </div>
                     </div>
 
                     <DialogFooter className="gap-2 pt-6 border-t border-slate-200 sm:justify-end">
                         <Button
-                            className="flex-1 bg-indigo-600 hover:bg-slate-900 text-white rounded-lg h-10 font-bold text-xs shadow-xl shadow-indigo-100 transition-all"
+                            className="flex-1 bg-indigo-600 hover:bg-slate-900 text-white rounded-lg h-10 font-bold text-xs shadow-xl shadow-indigo-100 transition-all disabled:opacity-50"
                             onClick={handleAddDepartment}
+                            disabled={isSaving}
                         >
-                            Create Department
+                            {isSaving ? "Creating..." : "Create Department"}
                         </Button>
-                        <Button variant="outline" className="h-11 px-6 rounded-xl font-bold border-slate-200 text-slate-600 text-xs" onClick={() => setIsAddDialogOpen(false)}>
+                        <Button variant="outline" className="h-11 px-6 rounded-xl font-bold border-slate-200 text-slate-600 text-xs" onClick={() => { setIsAddDialogOpen(false); resetForm(); }} disabled={isSaving}>
                             Cancel
                         </Button>
                     </DialogFooter>
@@ -516,12 +581,29 @@ const DepartmentsPage = () => {
                                         </SelectContent>
                                     </Select>
                                 </div>
+
+                                <div className="space-y-1">
+                                    <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Parent Department</Label>
+                                    <Select value={formData.parentDepartmentId || "none"} onValueChange={(v) => setFormData({ ...formData, parentDepartmentId: v === "none" ? "" : v })}>
+                                        <SelectTrigger className="h-10 rounded-lg bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors">
+                                            <SelectValue placeholder="None (Top Level)" />
+                                        </SelectTrigger>
+                                        <SelectContent className="rounded-xl border border-slate-200 shadow-2xl p-1 font-bold">
+                                            <SelectItem value="none" className="rounded-lg h-8 text-xs">None (Top Level)</SelectItem>
+                                            {departments.filter(d => d.id !== selectedDepartment?.id).map(dept => (
+                                                <SelectItem key={dept.id} value={dept.id} className="rounded-lg h-8 text-xs">
+                                                    {dept.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
                             </div>
 
                             <div className="space-y-1">
                                 <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Description</Label>
                                 <Textarea
-                                    className="rounded-lg bg-slate-50 border border-slate-300 min-h-[96px] p-4 font-medium text-xs focus:border-indigo-500 transition-colors"
+                                    className="rounded-lg bg-slate-50 border border-slate-300 min-h-[144px] p-4 font-medium text-xs focus:border-indigo-500 transition-colors"
                                     value={formData.description}
                                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                 />
@@ -531,12 +613,13 @@ const DepartmentsPage = () => {
 
                     <DialogFooter className="gap-2 pt-6 border-t border-slate-200 sm:justify-end">
                         <Button
-                            className="flex-1 bg-indigo-600 hover:bg-slate-900 text-white rounded-lg h-10 font-bold text-xs shadow-xl shadow-indigo-100 transition-all"
+                            className="flex-1 bg-indigo-600 hover:bg-slate-900 text-white rounded-lg h-10 font-bold text-xs shadow-xl shadow-indigo-100 transition-all disabled:opacity-50"
                             onClick={handleUpdateDepartment}
+                            disabled={isSaving}
                         >
-                            Save Changes
+                            {isSaving ? "Saving..." : "Save Changes"}
                         </Button>
-                        <Button variant="outline" className="h-10 px-6 rounded-lg font-bold border-slate-300 text-slate-600 text-xs" onClick={() => setIsEditDialogOpen(false)}>
+                        <Button variant="outline" className="h-10 px-6 rounded-lg font-bold border-slate-300 text-slate-600 text-xs" onClick={() => { setIsEditDialogOpen(false); resetForm(); }} disabled={isSaving}>
                             Cancel
                         </Button>
                     </DialogFooter>
@@ -567,7 +650,7 @@ const DepartmentsPage = () => {
                                     <div key={emp.id} className="flex items-center gap-3 p-3 rounded-2xl bg-slate-50 border border-slate-100/50">
                                         <Avatar className="h-10 w-10 border-2 border-white shadow-sm ring-1 ring-slate-100">
                                             <AvatarFallback className="bg-indigo-600 text-white font-bold text-xs">
-                                                {emp.profileImage}
+                                                {emp.firstName[0]}{emp.lastName[0]}
                                             </AvatarFallback>
                                         </Avatar>
                                         <div className="flex-1 min-w-0">

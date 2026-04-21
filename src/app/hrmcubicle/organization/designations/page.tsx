@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     Briefcase,
@@ -53,9 +53,22 @@ import {
 } from "@/shared/components/ui/select";
 import { Progress } from "@/shared/components/ui/progress";
 
+const TITLE_RE = /^[A-Za-z][A-Za-z0-9 &/\-]{1,59}$/;
+const CODE_RE = /^[A-Z0-9_-]{2,10}$/;
+const GRADE_RE = /^[A-Z0-9-]{1,8}$/;
+
 const DesignationsPage = () => {
     const { toast } = useToast();
-    const { designations, departments, employees, addDesignation, updateDesignation, deleteDesignation } = useOrganisationStore();
+    const designations = useOrganisationStore((s) => s.designations);
+    const departments = useOrganisationStore((s) => s.departments);
+    const employees = useOrganisationStore((s) => s.employees);
+    const loadDesignationsFromApi = useOrganisationStore((s) => s.loadDesignationsFromApi);
+    const loadDepartmentsFromApi = useOrganisationStore((s) => s.loadDepartmentsFromApi);
+    const createDesignationApi = useOrganisationStore((s) => s.createDesignationApi);
+    const updateDesignationApi = useOrganisationStore((s) => s.updateDesignationApi);
+    const deleteDesignationApi = useOrganisationStore((s) => s.deleteDesignationApi);
+
+    useEffect(() => { loadDesignationsFromApi().catch(() => {}); loadDepartmentsFromApi().catch(() => {}); }, []);
 
     const [searchQuery, setSearchQuery] = useState("");
     const [levelFilter, setLevelFilter] = useState<string>("All");
@@ -63,6 +76,8 @@ const DesignationsPage = () => {
     const [selectedDesignation, setSelectedDesignation] = useState<Designation | null>(null);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [isViewMembersDialogOpen, setIsViewMembersDialogOpen] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    const [errors, setErrors] = useState<Record<string, string>>({});
 
     const [formData, setFormData] = useState<Partial<Designation>>({
         title: "",
@@ -74,44 +89,87 @@ const DesignationsPage = () => {
         isActive: true
     });
 
-    const handleAddDesignation = () => {
-        if (!formData.title || !formData.code) {
-            toast({ title: "Validation Error", description: "Title and Code are required", variant: "destructive" });
-            return;
-        }
-
-        addDesignation({
-            ...formData,
-            level: formData.level || 1,
-            isActive: true
-        } as Omit<Designation, 'id' | 'employeeCount' | 'createdAt'>);
-
-        toast({ title: "Designation Created", description: `${formData.title} has been added to the career framework.` });
-        setIsAddDialogOpen(false);
-        setFormData({
-            title: "",
-            code: "",
-            level: 1,
-            grade: "",
-            departmentId: "",
-            description: "",
-            isActive: true
-        });
+    const resetForm = () => {
+        setFormData({ title: "", code: "", level: 1, grade: "", departmentId: "", description: "", isActive: true });
+        setErrors({});
     };
 
-    const handleUpdateDesignation = () => {
-        if (!selectedDesignation || !formData.title || !formData.code) {
-            toast({ title: "Validation Error", description: "Title and Code are required", variant: "destructive" });
-            return;
+    const validateForm = (mode: "add" | "edit"): boolean => {
+        const errs: Record<string, string> = {};
+        const title = (formData.title || "").trim();
+        const code = (formData.code || "").trim();
+        const grade = (formData.grade || "").trim();
+
+        if (!title) errs.title = "Title is required";
+        else if (!TITLE_RE.test(title)) errs.title = "2-60 chars, letters/numbers/&/-/space";
+
+        if (!code) errs.code = "Code is required";
+        else if (!CODE_RE.test(code)) errs.code = "2-10 uppercase letters/digits/-/_";
+        else {
+            const duplicate = designations.some((d) =>
+                d.code.toUpperCase() === code.toUpperCase() &&
+                (mode === "add" || d.id !== selectedDesignation?.id)
+            );
+            if (duplicate) errs.code = "A designation with this code already exists";
         }
 
-        updateDesignation(selectedDesignation.id, formData);
-        toast({ title: "Designation Updated", description: "Changes have been saved successfully." });
-        setIsEditDialogOpen(false);
-        setSelectedDesignation(null);
+        if (grade && !GRADE_RE.test(grade)) errs.grade = "1-8 uppercase letters/digits/-";
+
+        if (!formData.level || formData.level < 1 || formData.level > 5) errs.level = "Level must be 1-5";
+
+        if ((formData.description || "").length > 500) errs.description = "Description max 500 chars";
+
+        setErrors(errs);
+        return Object.keys(errs).length === 0;
     };
 
-    const handleDeleteDesignation = (id: string) => {
+    const handleAddDesignation = async () => {
+        if (!validateForm("add")) return;
+        if (!formData.departmentId) {
+            setErrors((p) => ({ ...p, departmentId: "Department is required" }));
+            return;
+        }
+        setIsSaving(true);
+        try {
+            await createDesignationApi({
+                department: formData.departmentId,
+                title: (formData.title || "").trim(),
+                level: String(formData.level || 1),
+                description: (formData.description || "").trim() || undefined,
+            });
+            toast({ title: "Designation Created", description: `${formData.title} has been added.` });
+            setIsAddDialogOpen(false);
+            resetForm();
+        } catch (err: any) {
+            // error toast already shown by hook
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleUpdateDesignation = async () => {
+        if (!selectedDesignation) return;
+        if (!validateForm("edit")) return;
+        setIsSaving(true);
+        try {
+            await updateDesignationApi(selectedDesignation.id, {
+                title: (formData.title || "").trim(),
+                level: String(formData.level || 1),
+                description: (formData.description || "").trim() || undefined,
+                departmentId: formData.departmentId || undefined,
+            });
+            toast({ title: "Designation Updated", description: "Changes saved successfully." });
+            setIsEditDialogOpen(false);
+            setSelectedDesignation(null);
+            resetForm();
+        } catch (err: any) {
+            // error toast already shown by hook
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleDeleteDesignation = async (id: string) => {
         const designationEmployees = employees.filter(e => e.designationId === id);
         if (designationEmployees.length > 0) {
             toast({
@@ -121,9 +179,13 @@ const DesignationsPage = () => {
             });
             return;
         }
-
-        deleteDesignation(id);
-        toast({ title: "Designation Deleted", description: "Designation has been removed from the system." });
+        if (!window.confirm("Delete this designation? This action cannot be undone.")) return;
+        try {
+            await deleteDesignationApi(id);
+            toast({ title: "Designation Deleted", description: "Designation has been removed." });
+        } catch (err: any) {
+            // error toast already shown by hook
+        }
     };
 
     const getLevelLabel = (level: number) => {
@@ -177,7 +239,7 @@ const DesignationsPage = () => {
 
                     <div className="flex items-center gap-2 w-full md:w-auto">
                         <Select value={levelFilter} onValueChange={setLevelFilter}>
-                            <SelectTrigger className="w-36 h-10 rounded-xl bg-slate-50 border-none font-bold text-xs shadow-none hover:bg-slate-100 transition-colors">
+                            <SelectTrigger className="w-36 h-10 rounded-xl bg-slate-50 border border-slate-200 font-bold text-xs shadow-none hover:bg-slate-100 transition-colors">
                                 <SelectValue placeholder="All Levels" />
                             </SelectTrigger>
                             <SelectContent className="rounded-xl border-none shadow-2xl p-2 font-bold">
@@ -194,7 +256,7 @@ const DesignationsPage = () => {
                             <Search className="absolute left-4 top-1/2 -transform -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
                             <Input
                                 placeholder="Search designations..."
-                                className="pl-11 h-10 rounded-xl bg-slate-50 border-none shadow-none font-medium text-xs focus-visible:ring-2 focus-visible:ring-slate-100 placeholder:text-slate-400"
+                                className="pl-11 h-10 rounded-xl bg-slate-50 border border-slate-200 shadow-none font-medium text-xs focus-visible:ring-2 focus-visible:ring-slate-100 placeholder:text-slate-400"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
@@ -219,11 +281,11 @@ const DesignationsPage = () => {
                             return designation?.level === level;
                         });
                         const cardColors = {
-                            1: "bg-blue-50/50 border-blue-100 hover:bg-blue-100/50 transition-colors",
-                            2: "bg-emerald-50/50 border-emerald-100 hover:bg-emerald-100/50 transition-colors",
-                            3: "bg-purple-50/50 border-purple-100 hover:bg-purple-100/50 transition-colors",
-                            4: "bg-amber-50/50 border-amber-100 hover:bg-amber-100/50 transition-colors",
-                            5: "bg-rose-50/50 border-rose-100 hover:bg-rose-100/50 transition-colors"
+                            1: "bg-blue-50/50 border-none hover:bg-blue-100/50 transition-colors",
+                            2: "bg-emerald-50/50 border-none hover:bg-emerald-100/50 transition-colors",
+                            3: "bg-purple-50/50 border-none hover:bg-purple-100/50 transition-colors",
+                            4: "bg-amber-50/50 border-none hover:bg-amber-100/50 transition-colors",
+                            5: "bg-rose-50/50 border-none hover:bg-rose-100/50 transition-colors"
                         };
                         const textColors = {
                             1: "text-blue-700",
@@ -234,7 +296,7 @@ const DesignationsPage = () => {
                         };
 
                         return (
-                            <Card key={level} className={`rounded-[1.5rem] border p-5 shadow-sm ${cardColors[level as keyof typeof cardColors]}`}>
+                            <Card key={level} className={`rounded-xl border-none p-5 shadow-sm ${cardColors[level as keyof typeof cardColors]}`}>
                                 <div className="space-y-2">
                                     <div className="flex items-center justify-between">
                                         <p className={`text-[11px] font-semibold ${textColors[level as keyof typeof textColors]}`}>{getLevelLabel(level)}</p>
@@ -303,6 +365,7 @@ const DesignationsPage = () => {
                                                             onClick={() => {
                                                                 setSelectedDesignation(designation);
                                                                 setFormData(designation);
+                                                                setErrors({});
                                                                 setIsEditDialogOpen(true);
                                                             }}
                                                         >
@@ -412,20 +475,24 @@ const DesignationsPage = () => {
                                     <div className="space-y-1">
                                         <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Designation Title *</Label>
                                         <Input
-                                            className="rounded-lg h-10 bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors"
+                                            className={`rounded-lg h-10 bg-slate-50 border font-bold px-4 text-xs focus:border-indigo-500 transition-colors ${errors.title ? "border-rose-500" : "border-slate-300"}`}
                                             placeholder="e.g., Senior Software Engineer"
+                                            maxLength={60}
                                             value={formData.title}
                                             onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                                         />
+                                        {errors.title && <p className="text-[10px] font-bold text-rose-500 ml-1">{errors.title}</p>}
                                     </div>
                                     <div className="space-y-1">
                                         <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Code *</Label>
                                         <Input
-                                            className="rounded-lg h-10 bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors"
+                                            className={`rounded-lg h-10 bg-slate-50 border font-bold px-4 text-xs focus:border-indigo-500 transition-colors ${errors.code ? "border-rose-500" : "border-slate-300"}`}
                                             placeholder="SSE"
+                                            maxLength={10}
                                             value={formData.code}
                                             onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
                                         />
+                                        {errors.code && <p className="text-[10px] font-bold text-rose-500 ml-1">{errors.code}</p>}
                                     </div>
                                 </div>
 
@@ -448,25 +515,27 @@ const DesignationsPage = () => {
                                     <div className="space-y-1">
                                         <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Grade</Label>
                                         <Input
-                                            className="rounded-lg h-10 bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors"
+                                            className={`rounded-lg h-10 bg-slate-50 border font-bold px-4 text-xs focus:border-indigo-500 transition-colors ${errors.grade ? "border-rose-500" : "border-slate-300"}`}
                                             placeholder="e.g., M2"
+                                            maxLength={8}
                                             value={formData.grade}
                                             onChange={(e) => setFormData({ ...formData, grade: e.target.value.toUpperCase() })}
                                         />
+                                        {errors.grade && <p className="text-[10px] font-bold text-rose-500 ml-1">{errors.grade}</p>}
                                     </div>
                                     <div className="space-y-1">
-                                        <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Department</Label>
-                                        <Select value={formData.departmentId} onValueChange={(v) => setFormData({ ...formData, departmentId: v })}>
-                                            <SelectTrigger className="h-10 rounded-lg bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors">
+                                        <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Department *</Label>
+                                        <Select value={formData.departmentId || ""} onValueChange={(v) => setFormData({ ...formData, departmentId: v })}>
+                                            <SelectTrigger className={`h-10 rounded-lg bg-slate-50 border font-bold px-4 text-xs focus:border-indigo-500 transition-colors ${errors.departmentId ? "border-rose-500" : "border-slate-300"}`}>
                                                 <SelectValue placeholder="Select" />
                                             </SelectTrigger>
                                             <SelectContent className="rounded-xl border border-slate-200 shadow-2xl p-1 font-bold">
-                                                <SelectItem value="none" className="rounded-lg h-8 text-xs">No Department</SelectItem>
                                                 {departments.map(dept => (
                                                     <SelectItem key={dept.id} value={dept.id} className="rounded-lg h-8 text-xs">{dept.name}</SelectItem>
                                                 ))}
                                             </SelectContent>
                                         </Select>
+                                        {errors.departmentId && <p className="text-[10px] font-bold text-rose-500 ml-1">{errors.departmentId}</p>}
                                     </div>
                                 </div>
                             </div>
@@ -474,23 +543,29 @@ const DesignationsPage = () => {
                             <div className="space-y-1">
                                 <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Role Description</Label>
                                 <Textarea
-                                    className="rounded-lg bg-slate-50 border border-slate-300 min-h-[148px] p-4 font-medium text-xs focus:border-indigo-500 transition-colors"
+                                    className={`rounded-lg bg-slate-50 border min-h-[148px] p-4 font-medium text-xs focus:border-indigo-500 transition-colors ${errors.description ? "border-rose-500" : "border-slate-300"}`}
                                     placeholder="Describe the core responsibilities and expectations for this role..."
+                                    maxLength={500}
                                     value={formData.description}
                                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                 />
+                                <div className="flex justify-between items-center">
+                                    {errors.description ? <p className="text-[10px] font-bold text-rose-500 ml-1">{errors.description}</p> : <span />}
+                                    <p className="text-[9px] font-bold text-slate-400 mr-1">{(formData.description || "").length}/500</p>
+                                </div>
                             </div>
                         </div>
                     </div>
 
                     <DialogFooter className="gap-2 pt-6 border-t border-slate-200 sm:justify-end">
                         <Button
-                            className="flex-1 bg-indigo-600 hover:bg-slate-900 text-white rounded-lg h-10 font-bold text-xs shadow-xl shadow-indigo-100 transition-all"
+                            className="flex-1 bg-indigo-600 hover:bg-slate-900 text-white rounded-lg h-10 font-bold text-xs shadow-xl shadow-indigo-100 transition-all disabled:opacity-50"
                             onClick={handleAddDesignation}
+                            disabled={isSaving}
                         >
-                            Create Designation
+                            {isSaving ? "Creating..." : "Create Designation"}
                         </Button>
-                        <Button variant="outline" className="h-10 px-6 rounded-lg font-bold border-slate-300 text-slate-600 text-xs" onClick={() => setIsAddDialogOpen(false)}>
+                        <Button variant="outline" className="h-10 px-6 rounded-lg font-bold border-slate-300 text-slate-600 text-xs" onClick={() => { setIsAddDialogOpen(false); resetForm(); }} disabled={isSaving}>
                             Cancel
                         </Button>
                     </DialogFooter>
@@ -586,12 +661,13 @@ const DesignationsPage = () => {
 
                     <DialogFooter className="gap-2 pt-6 border-t border-slate-200 sm:justify-end">
                         <Button
-                            className="flex-1 bg-indigo-600 hover:bg-slate-900 text-white rounded-lg h-10 font-bold text-xs shadow-xl shadow-indigo-100 transition-all"
+                            className="flex-1 bg-indigo-600 hover:bg-slate-900 text-white rounded-lg h-10 font-bold text-xs shadow-xl shadow-indigo-100 transition-all disabled:opacity-50"
                             onClick={handleUpdateDesignation}
+                            disabled={isSaving}
                         >
-                            Save Changes
+                            {isSaving ? "Saving..." : "Save Changes"}
                         </Button>
-                        <Button variant="outline" className="h-10 px-6 rounded-lg font-bold border-slate-300 text-slate-600 text-xs" onClick={() => setIsEditDialogOpen(false)}>
+                        <Button variant="outline" className="h-10 px-6 rounded-lg font-bold border-slate-300 text-slate-600 text-xs" onClick={() => { setIsEditDialogOpen(false); resetForm(); }} disabled={isSaving}>
                             Cancel
                         </Button>
                     </DialogFooter>

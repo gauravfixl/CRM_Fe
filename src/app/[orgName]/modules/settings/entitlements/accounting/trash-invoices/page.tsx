@@ -1,17 +1,71 @@
 "use client";
 
-import React, { useState } from "react";
-import { Trash2, Search, Filter, RotateCcw, FileX, ChevronRight } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Trash2, Search, Filter, RotateCcw, FileX, ChevronRight, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { getDeletedInvoices, restoreDeletedInvoice, hardDeleteInvoice } from "@/modules/crm/invoices/hooks/invoiceHooks";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 
 export default function TrashCancelledInvoicesPage() {
-    const [invoices, setInvoices] = useState([
-        { id: "1", number: "INV-2024-001", client: "Acme Corp", amount: "$5,240", reason: "Duplicate", deletedBy: "Admin", deletedDate: "2 days ago", status: "Cancelled" },
-        { id: "2", number: "INV-2024-045", client: "Tech Solutions", amount: "$12,800", reason: "Client Request", deletedBy: "Sarah M.", deletedDate: "5 days ago", status: "Trashed" },
-        { id: "3", number: "INV-2024-089", client: "Global Inc", amount: "$8,450", reason: "Error", deletedBy: "John D.", deletedDate: "1 week ago", status: "Cancelled" },
-    ]);
+    const [invoices, setInvoices] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+    const fetchData = async () => {
+        try {
+            setLoading(true);
+            const res = await getDeletedInvoices();
+            const data = res?.data?.data || res?.data || [];
+            const mapped = data.map((inv: any) => ({
+                id: inv._id || inv.id,
+                number: inv.invoiceNumber || inv.number || "-",
+                client: inv.clientName || inv.client?.name || inv.client || "-",
+                amount: inv.totalAmount != null ? `$${Number(inv.totalAmount).toLocaleString()}` : (inv.total != null ? `$${Number(inv.total).toLocaleString()}` : "$0"),
+                reason: inv.deleteReason || inv.reason || "-",
+                deletedBy: inv.deletedBy?.name || inv.deletedBy || "-",
+                deletedDate: inv.deletedAt ? new Date(inv.deletedAt).toLocaleDateString() : (inv.updatedAt ? new Date(inv.updatedAt).toLocaleDateString() : "-"),
+                status: inv.cancel ? "Cancelled" : "Trashed",
+                _raw: inv,
+            }));
+            setInvoices(mapped);
+        } catch (err: any) {
+            toast.error(err?.response?.data?.message || "Failed to load deleted invoices");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchData();
+    }, []);
+
+    const handleRestore = async (id: string) => {
+        try {
+            setActionLoading(id);
+            await restoreDeletedInvoice(id);
+            toast.success("Invoice restored successfully");
+            fetchData();
+        } catch (err: any) {
+            toast.error(err?.response?.data?.message || "Failed to restore invoice");
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    const handlePermanentDelete = async (id: string) => {
+        try {
+            setActionLoading(id);
+            await hardDeleteInvoice(id);
+            toast.success("Invoice permanently deleted");
+            fetchData();
+        } catch (err: any) {
+            toast.error(err?.response?.data?.message || "Failed to delete invoice");
+        } finally {
+            setActionLoading(null);
+        }
+    };
 
     return (
         <div className="space-y-6 text-[#1A1A1A]">
@@ -43,7 +97,7 @@ export default function TrashCancelledInvoicesPage() {
                 </div>
                 <div className="bg-white border border-zinc-200 p-4 rounded-xl shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
                     <p className="text-gray-600 text-xs">Total Value</p>
-                    <h3 className="text-xl font-semibold text-gray-900">$26,490</h3>
+                    <h3 className="text-xl font-semibold text-gray-900">${invoices.reduce((sum, inv) => sum + (parseFloat(inv.amount?.replace(/[$,]/g, '')) || 0), 0).toLocaleString()}</h3>
                     <p className="text-gray-600 text-[10px] mt-1">Deleted invoices</p>
                 </div>
             </div>
@@ -72,7 +126,22 @@ export default function TrashCancelledInvoicesPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-zinc-100">
-                            {invoices.map((invoice) => (
+                            {loading ? (
+                                <tr>
+                                    <td colSpan={8} className="px-4 py-12 text-center">
+                                        <div className="flex items-center justify-center gap-2 text-slate-500">
+                                            <Loader2 size={18} className="animate-spin" />
+                                            <span className="text-xs">Loading deleted invoices...</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ) : invoices.length === 0 ? (
+                                <tr>
+                                    <td colSpan={8} className="px-4 py-12 text-center">
+                                        <span className="text-xs text-slate-500">No deleted invoices found.</span>
+                                    </td>
+                                </tr>
+                            ) : invoices.map((invoice) => (
                                 <tr key={invoice.id} className="hover:bg-blue-50/30 transition-colors group">
                                     <td className="px-4 py-3">
                                         <div className="flex items-center gap-3">
@@ -93,9 +162,14 @@ export default function TrashCancelledInvoicesPage() {
                                         </Badge>
                                     </td>
                                     <td className="px-4 py-3 text-right">
-                                        <Button variant="outline" className="rounded-lg border-zinc-200 h-8 text-xs px-3 gap-1">
-                                            <RotateCcw size={12} /> Restore
-                                        </Button>
+                                        <div className="flex items-center gap-2 justify-end">
+                                            <Button onClick={() => handleRestore(invoice.id)} disabled={actionLoading === invoice.id} variant="outline" className="rounded-lg border-zinc-200 h-8 text-xs px-3 gap-1">
+                                                {actionLoading === invoice.id ? <Loader2 size={12} className="animate-spin" /> : <RotateCcw size={12} />} Restore
+                                            </Button>
+                                            <Button onClick={() => handlePermanentDelete(invoice.id)} disabled={actionLoading === invoice.id} variant="outline" className="rounded-lg border-red-200 h-8 text-xs px-3 gap-1 text-red-600 hover:bg-red-50">
+                                                <Trash2 size={12} /> Delete
+                                            </Button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}

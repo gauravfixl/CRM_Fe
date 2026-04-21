@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { GitBranch, Plus, Search, MoreHorizontal, Pencil, Trash2, GripVertical, ArrowRight, CheckCircle, Users, Star } from "lucide-react"
+import { useState, useEffect } from "react"
+import { GitBranch, Plus, Search, MoreHorizontal, Pencil, Trash2, GripVertical, ArrowRight, CheckCircle, Users, Star, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -13,6 +13,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import {
+    getAllJobs,
+    getAllCandidates,
+    getAllInterviews,
+    getAllOffers,
+    createJobPosting,
+    closeJobPosting,
+} from "@/modules/hrm/hooks/hrmHooks"
 
 interface PipelineStage {
     id: string
@@ -22,6 +30,7 @@ interface PipelineStage {
     isMandatory: boolean
     autoAdvance: boolean
     daysLimit: number
+    candidateCount?: number
 }
 
 interface ScorecardTemplate {
@@ -31,20 +40,34 @@ interface ScorecardTemplate {
     ratingScale: number
 }
 
-const INITIAL_STAGES: PipelineStage[] = [
-    { id: "1", name: "Application Review", order: 1, type: "Screening", isMandatory: true, autoAdvance: false, daysLimit: 3 },
-    { id: "2", name: "Phone Screening", order: 2, type: "Screening", isMandatory: true, autoAdvance: false, daysLimit: 5 },
-    { id: "3", name: "Technical Round", order: 3, type: "Interview", isMandatory: true, autoAdvance: false, daysLimit: 7 },
-    { id: "4", name: "Managerial Round", order: 4, type: "Interview", isMandatory: true, autoAdvance: false, daysLimit: 5 },
-    { id: "5", name: "HR Round", order: 5, type: "Interview", isMandatory: false, autoAdvance: false, daysLimit: 3 },
-    { id: "6", name: "Offer Approval", order: 6, type: "Decision", isMandatory: true, autoAdvance: false, daysLimit: 2 },
-    { id: "7", name: "Offer Release", order: 7, type: "Offer", isMandatory: true, autoAdvance: false, daysLimit: 3 },
+// Default pipeline stages derived from candidate status flow
+const DEFAULT_STAGES: PipelineStage[] = [
+    { id: "applied", name: "Applied", order: 1, type: "Screening", isMandatory: true, autoAdvance: false, daysLimit: 3, candidateCount: 0 },
+    { id: "screening", name: "Screening", order: 2, type: "Screening", isMandatory: true, autoAdvance: false, daysLimit: 5, candidateCount: 0 },
+    { id: "interview", name: "Interview", order: 3, type: "Interview", isMandatory: true, autoAdvance: false, daysLimit: 7, candidateCount: 0 },
+    { id: "offer", name: "Offer", order: 4, type: "Offer", isMandatory: true, autoAdvance: false, daysLimit: 5, candidateCount: 0 },
+    { id: "hired", name: "Hired", order: 5, type: "Decision", isMandatory: true, autoAdvance: false, daysLimit: 3, candidateCount: 0 },
+    { id: "rejected", name: "Rejected", order: 6, type: "Assessment", isMandatory: false, autoAdvance: false, daysLimit: 0, candidateCount: 0 },
 ]
 
-const INITIAL_SCORECARDS: ScorecardTemplate[] = [
-    { id: "1", name: "Technical Evaluation", criteria: [{ name: "Problem Solving", weight: 30 }, { name: "System Design", weight: 25 }, { name: "Coding", weight: 25 }, { name: "Communication", weight: 20 }], ratingScale: 5 },
-    { id: "2", name: "Cultural Fit", criteria: [{ name: "Team Collaboration", weight: 30 }, { name: "Values Alignment", weight: 30 }, { name: "Growth Mindset", weight: 20 }, { name: "Leadership Potential", weight: 20 }], ratingScale: 5 },
-]
+// Map candidate status strings to stage ids
+const STATUS_TO_STAGE: Record<string, string> = {
+    "Applied": "applied",
+    "New": "applied",
+    "Screening": "screening",
+    "Shortlisted": "screening",
+    "Interview": "interview",
+    "Interview Scheduled": "interview",
+    "Interviewed": "interview",
+    "Offer": "offer",
+    "Offer Extended": "offer",
+    "Offer Accepted": "offer",
+    "Hired": "hired",
+    "Onboarded": "hired",
+    "Rejected": "rejected",
+    "Disqualified": "rejected",
+    "Withdrawn": "rejected",
+}
 
 const STAGE_COLORS: Record<string, string> = {
     Screening: "bg-sky-50 text-sky-600 border-sky-100",
@@ -55,16 +78,166 @@ const STAGE_COLORS: Record<string, string> = {
 }
 
 export default function HiringPipelinePage() {
-    const [stages, setStages] = useState<PipelineStage[]>(INITIAL_STAGES)
-    const [scorecards, setScorecards] = useState<ScorecardTemplate[]>(INITIAL_SCORECARDS)
+    const [pageLoading, setPageLoading] = useState(true)
+    const [stages, setStages] = useState<PipelineStage[]>(DEFAULT_STAGES)
+    const [scorecards, setScorecards] = useState<ScorecardTemplate[]>([])
     const [isCreateStage, setIsCreateStage] = useState(false)
     const [isCreateScorecard, setIsCreateScorecard] = useState(false)
     const [newStage, setNewStage] = useState({ name: "", type: "Interview" as PipelineStage["type"], isMandatory: true, autoAdvance: false, daysLimit: 5 })
     const [newScorecard, setNewScorecard] = useState({ name: "", ratingScale: 5, criteria: [{ name: "", weight: 0 }] })
+    const [jobCount, setJobCount] = useState(0)
+    const [candidateCount, setCandidateCount] = useState(0)
+
+    const fetchAllData = async () => {
+        try {
+            const [jobsRes, candidatesRes, interviewsRes, offersRes] = await Promise.allSettled([
+                getAllJobs(),
+                getAllCandidates(),
+                getAllInterviews(),
+                getAllOffers(),
+            ])
+
+            // --- Jobs ---
+            let jobs: any[] = []
+            if (jobsRes.status === "fulfilled") {
+                jobs = jobsRes.value?.data?.data || jobsRes.value?.data?.jobs || []
+                if (!Array.isArray(jobs)) jobs = []
+                setJobCount(jobs.length)
+            }
+
+            // --- Candidates: compute pipeline stage counts ---
+            let candidates: any[] = []
+            if (candidatesRes.status === "fulfilled") {
+                candidates = candidatesRes.value?.data?.data || candidatesRes.value?.data?.candidates || []
+                if (!Array.isArray(candidates)) candidates = []
+                setCandidateCount(candidates.length)
+            }
+
+            // Build candidate count per stage
+            const stageCounts: Record<string, number> = {}
+            candidates.forEach((c: any) => {
+                const status = c.status || c.applicationStatus || "Applied"
+                const stageId = STATUS_TO_STAGE[status] || "applied"
+                stageCounts[stageId] = (stageCounts[stageId] || 0) + 1
+            })
+
+            setStages((prev) =>
+                prev.map((stage) => ({
+                    ...stage,
+                    candidateCount: stageCounts[stage.id] || 0,
+                }))
+            )
+
+            // --- Interviews: build scorecards from real data ---
+            let interviews: any[] = []
+            if (interviewsRes.status === "fulfilled") {
+                interviews = interviewsRes.value?.data?.data || interviewsRes.value?.data?.interviews || []
+                if (!Array.isArray(interviews)) interviews = []
+            }
+
+            // --- Offers ---
+            let offers: any[] = []
+            if (offersRes.status === "fulfilled") {
+                offers = offersRes.value?.data?.data || offersRes.value?.data?.offers || []
+                if (!Array.isArray(offers)) offers = []
+            }
+
+            // Build scorecard templates from interview data
+            // Group interviews by interviewType and extract feedback criteria
+            const scorecardMap: Record<string, ScorecardTemplate> = {}
+
+            interviews.forEach((interview: any) => {
+                const type = interview.interviewType || interview.type || "General"
+                const key = type.toLowerCase()
+
+                if (!scorecardMap[key]) {
+                    scorecardMap[key] = {
+                        id: key,
+                        name: `${type} Evaluation`,
+                        criteria: [],
+                        ratingScale: 5,
+                    }
+                }
+
+                // Extract criteria from feedback if available
+                const feedback = interview.feedback || interview.feedbacks || []
+                const feedbackArr = Array.isArray(feedback) ? feedback : [feedback]
+                feedbackArr.forEach((fb: any) => {
+                    if (fb?.criteria) {
+                        const criteriaArr = Array.isArray(fb.criteria) ? fb.criteria : []
+                        criteriaArr.forEach((cr: any) => {
+                            const existing = scorecardMap[key].criteria.find(
+                                (c) => c.name.toLowerCase() === (cr.name || cr.criterion || "").toLowerCase()
+                            )
+                            if (!existing && (cr.name || cr.criterion)) {
+                                scorecardMap[key].criteria.push({
+                                    name: cr.name || cr.criterion,
+                                    weight: cr.weight || Math.floor(100 / (feedbackArr.length || 1)),
+                                })
+                            }
+                        })
+                    }
+                })
+            })
+
+            const builtScorecards = Object.values(scorecardMap)
+
+            // If no scorecards could be derived from interviews, provide sensible defaults
+            if (builtScorecards.length === 0) {
+                // Build defaults based on whether we have interview data at all
+                const defaultScorecards: ScorecardTemplate[] = [
+                    {
+                        id: "technical",
+                        name: "Technical Evaluation",
+                        criteria: [
+                            { name: "Problem Solving", weight: 30 },
+                            { name: "System Design", weight: 25 },
+                            { name: "Coding", weight: 25 },
+                            { name: "Communication", weight: 20 },
+                        ],
+                        ratingScale: 5,
+                    },
+                    {
+                        id: "cultural",
+                        name: "Cultural Fit",
+                        criteria: [
+                            { name: "Team Collaboration", weight: 30 },
+                            { name: "Values Alignment", weight: 30 },
+                            { name: "Growth Mindset", weight: 20 },
+                            { name: "Leadership Potential", weight: 20 },
+                        ],
+                        ratingScale: 5,
+                    },
+                ]
+                setScorecards(defaultScorecards)
+            } else {
+                // Fill in default criteria for scorecards that have none
+                builtScorecards.forEach((sc) => {
+                    if (sc.criteria.length === 0) {
+                        sc.criteria = [
+                            { name: "Technical Skills", weight: 30 },
+                            { name: "Communication", weight: 25 },
+                            { name: "Problem Solving", weight: 25 },
+                            { name: "Cultural Fit", weight: 20 },
+                        ]
+                    }
+                })
+                setScorecards(builtScorecards)
+            }
+        } catch {
+            // Errors handled in individual hooks
+        } finally {
+            setPageLoading(false)
+        }
+    }
+
+    useEffect(() => {
+        fetchAllData()
+    }, [])
 
     const handleCreateStage = () => {
         if (!newStage.name) return toast.error("Stage name is required")
-        setStages([...stages, { ...newStage, id: Date.now().toString(), order: stages.length + 1 }])
+        setStages([...stages, { ...newStage, id: Date.now().toString(), order: stages.length + 1, candidateCount: 0 }])
         setIsCreateStage(false)
         setNewStage({ name: "", type: "Interview", isMandatory: true, autoAdvance: false, daysLimit: 5 })
         toast.success("Pipeline stage added")
@@ -90,6 +263,14 @@ export default function HiringPipelinePage() {
         toast.success("Scorecard deleted")
     }
 
+    if (pageLoading) {
+        return (
+            <div className="font-outfit flex items-center justify-center min-h-screen bg-[#fafafa]">
+                <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+            </div>
+        )
+    }
+
     return (
         <div className="font-outfit flex flex-col gap-6 p-6 min-h-screen bg-[#fafafa]">
             <div className="flex flex-col gap-1">
@@ -104,9 +285,9 @@ export default function HiringPipelinePage() {
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <SmallCard className="rounded-xl border bg-gradient-to-r from-primary/70 to-primary text-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1"><SmallCardContent className="p-4"><div className="flex items-center justify-between"><div><p className="text-xs text-white/80">Pipeline Stages</p><p className="text-xl font-semibold">{stages.length}</p><p className="text-[10px] text-white/70">Recruitment steps</p></div><GitBranch className="w-5 h-5 text-white/80" /></div></SmallCardContent></SmallCard>
-                <SmallCard className="rounded-xl border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1"><SmallCardContent className="p-4"><div className="flex items-center justify-between"><div><p className="text-xs text-gray-600">Mandatory</p><p className="text-xl font-semibold text-gray-900">{stages.filter((s) => s.isMandatory).length}</p><p className="text-[10px] text-gray-500">Required stages</p></div><CheckCircle className="w-5 h-5 text-gray-400" /></div></SmallCardContent></SmallCard>
+                <SmallCard className="rounded-xl border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1"><SmallCardContent className="p-4"><div className="flex items-center justify-between"><div><p className="text-xs text-gray-600">Total Candidates</p><p className="text-xl font-semibold text-gray-900">{candidateCount}</p><p className="text-[10px] text-gray-500">In pipeline</p></div><CheckCircle className="w-5 h-5 text-gray-400" /></div></SmallCardContent></SmallCard>
                 <SmallCard className="rounded-xl border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1"><SmallCardContent className="p-4"><div className="flex items-center justify-between"><div><p className="text-xs text-gray-600">Scorecards</p><p className="text-xl font-semibold text-gray-900">{scorecards.length}</p><p className="text-[10px] text-gray-500">Evaluation templates</p></div><Star className="w-5 h-5 text-gray-400" /></div></SmallCardContent></SmallCard>
-                <SmallCard className="rounded-xl border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1"><SmallCardContent className="p-4"><div className="flex items-center justify-between"><div><p className="text-xs text-gray-600">Avg Days</p><p className="text-xl font-semibold text-gray-900">{stages.reduce((s, st) => s + st.daysLimit, 0)}</p><p className="text-[10px] text-gray-500">Total pipeline time</p></div><Users className="w-5 h-5 text-gray-400" /></div></SmallCardContent></SmallCard>
+                <SmallCard className="rounded-xl border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1"><SmallCardContent className="p-4"><div className="flex items-center justify-between"><div><p className="text-xs text-gray-600">Open Jobs</p><p className="text-xl font-semibold text-gray-900">{jobCount}</p><p className="text-[10px] text-gray-500">Active postings</p></div><Users className="w-5 h-5 text-gray-400" /></div></SmallCardContent></SmallCard>
             </div>
 
             {/* Pipeline Stages */}
@@ -125,8 +306,9 @@ export default function HiringPipelinePage() {
                                     <div className="flex items-center gap-1.5 mt-0.5">
                                         <span className="text-[9px] font-medium opacity-70">{stage.type}</span>
                                         <span className="text-[9px] opacity-50">·</span>
-                                        <span className="text-[9px] font-medium opacity-70">{stage.daysLimit}d</span>
+                                        <span className="text-[9px] font-medium opacity-70">{stage.daysLimit > 0 ? `${stage.daysLimit}d` : "—"}</span>
                                         {stage.isMandatory && <Badge className="text-[7px] px-1 py-0 rounded bg-white/50 border-none font-bold">REQ</Badge>}
+                                        {(stage.candidateCount ?? 0) > 0 && <Badge className="text-[7px] px-1 py-0 rounded bg-white/70 border-none font-bold">{stage.candidateCount}</Badge>}
                                     </div>
                                 </div>
                                 <Button variant="ghost" className="h-5 w-5 p-0 hover:bg-white/50 rounded ml-1" onClick={() => deleteStage(stage.id)}>

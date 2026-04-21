@@ -112,7 +112,14 @@ export default function SLAPoliciesPage() {
 
     const validateForm = (form: PolicyForm): FormErrors => {
         const errors: FormErrors = {};
-        if (!form.name.trim()) errors.name = "Policy name is required";
+        const sanitizedName = form.name.trim();
+
+        if (!sanitizedName) {
+            errors.name = "Policy name is required";
+        } else if (/\d/.test(sanitizedName)) {
+            errors.name = "Policy name cannot contain numbers";
+        }
+
         if (!form.module) errors.module = "Module is required";
         if (!form.responseTime.trim()) errors.responseTime = "Response time is required";
         return errors;

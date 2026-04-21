@@ -8,7 +8,7 @@ const FlatCard = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "border border-white shadow-md bg-white text-gray-800 p-3",
+      "border border-zinc-200 dark:border-zinc-800 bg-card text-card-foreground p-3 shadow-md",
       "text-sm", // smaller text overall
       "transition-colors duration-200", // keep smooth color changes, no hover shadow/lift
       className
@@ -44,7 +44,7 @@ const FlatCardDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("text-xs text-gray-500", className)}
+    className={cn("text-xs text-muted-foreground", className)}
     {...props}
   />
 ));

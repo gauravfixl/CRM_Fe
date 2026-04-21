@@ -160,7 +160,7 @@ const MyLeavePage = () => {
   };
 
   return (
-    <div className="flex-1 min-h-screen bg-[#f8fafc] p-6 space-y-6 font-sans" style={{ zoom: "80%" }}>
+    <div className="flex-1 min-h-screen bg-[#f8fafc] p-6 space-y-6 font-sans" style={{ zoom: "90%" }}>
       <div className="flex flex-col md:flex-row justify-between md:items-center gap-6">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">My Leave</h1>
@@ -182,7 +182,7 @@ const MyLeavePage = () => {
               <div className="space-y-2">
                 <Label>Leave Type *</Label>
                 <Select value={leaveForm.type} onValueChange={(v) => setLeaveForm({ ...leaveForm, type: v })}>
-                  <SelectTrigger className="rounded-xl h-12 bg-slate-50 border-none">
+                  <SelectTrigger className="rounded-xl h-12 bg-slate-50 border border-slate-200">
                     <SelectValue placeholder="Select type" />
                   </SelectTrigger>
                   <SelectContent>
@@ -202,7 +202,7 @@ const MyLeavePage = () => {
                     min={leaveForm.type === "Sick Leave" ? undefined : new Date().toISOString().split("T")[0]}
                     value={leaveForm.startDate}
                     onChange={e => setLeaveForm({ ...leaveForm, startDate: e.target.value })}
-                    className="rounded-xl bg-slate-50 border-none h-12"
+                    className="rounded-xl bg-slate-50 border border-slate-200 h-12"
                   />
                 </div>
                 <div className="space-y-2">
@@ -212,7 +212,7 @@ const MyLeavePage = () => {
                     min={leaveForm.startDate || undefined}
                     value={leaveForm.endDate}
                     onChange={e => setLeaveForm({ ...leaveForm, endDate: e.target.value })}
-                    className="rounded-xl bg-slate-50 border-none h-12"
+                    className="rounded-xl bg-slate-50 border border-slate-200 h-12"
                   />
                 </div>
               </div>
@@ -223,7 +223,7 @@ const MyLeavePage = () => {
                   maxLength={500}
                   value={leaveForm.reason}
                   onChange={e => setLeaveForm({ ...leaveForm, reason: e.target.value })}
-                  className="rounded-xl bg-slate-50 border-none min-h-[100px]"
+                  className="rounded-xl bg-slate-50 border border-slate-200 min-h-[100px]"
                 />
                 <p className="text-[10px] text-slate-400">{leaveForm.reason.length}/500 chars</p>
               </div>

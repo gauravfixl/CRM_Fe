@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
     Download,
     Upload,
@@ -13,8 +13,10 @@ import {
     FileSpreadsheet,
     Users,
     Briefcase,
-    Package
+    Package,
+    Loader2,
 } from "lucide-react";
+import { listDataJobs, createDataJob } from "@/hooks/orgAdminHooks";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/shared/components/ui/progress";
@@ -35,18 +37,73 @@ import {
 } from "@/shared/components/ui/select";
 import { toast } from "sonner";
 
+interface DataJob {
+    id: string;
+    type: string;
+    module: string;
+    records: string;
+    status: string;
+    time: string;
+    user: string;
+}
+
 export default function ImportExportPage() {
     const [showImportModal, setShowImportModal] = useState(false);
     const [showExportModal, setShowExportModal] = useState(false);
     const [importing, setImporting] = useState(false);
     const [importProgress, setImportProgress] = useState(0);
 
-    const recentOperations = [
-        { id: "1", type: "Export", module: "Leads", records: "1,204", status: "Completed", time: "2 mins ago", user: "Admin" },
-        { id: "2", type: "Import", module: "Contacts", records: "856", status: "Completed", time: "15 mins ago", user: "Sarah M." },
-        { id: "3", type: "Export", module: "Deals", records: "342", status: "Completed", time: "1 hour ago", user: "Admin" },
-        { id: "4", type: "Import", module: "Products", records: "120", status: "Failed", time: "2 hours ago", user: "John D." },
-    ];
+    const [recentOperations, setRecentOperations] = useState<DataJob[]>([]);
+    const [loadingJobs, setLoadingJobs] = useState(true);
+    const [importModule, setImportModule] = useState<string>("");
+    const [exportModule, setExportModule] = useState<string>("");
+    const [exportFormat, setExportFormat] = useState<string>("csv");
+
+    const formatRelativeTime = (value: any): string => {
+        if (!value) return "—";
+        try {
+            const diffMs = Date.now() - new Date(value).getTime();
+            const diffMin = Math.floor(diffMs / 60000);
+            if (diffMin < 1) return "Just now";
+            if (diffMin < 60) return `${diffMin} mins ago`;
+            const diffH = Math.floor(diffMin / 60);
+            if (diffH < 24) return `${diffH} hour${diffH > 1 ? "s" : ""} ago`;
+            const diffD = Math.floor(diffH / 24);
+            return `${diffD} day${diffD > 1 ? "s" : ""} ago`;
+        } catch {
+            return "—";
+        }
+    };
+
+    const normalizeJob = (raw: any): DataJob => ({
+        id: raw?._id || raw?.id || "",
+        type: raw?.type || raw?.operation || "Export",
+        module: raw?.module || raw?.entity || "—",
+        records: (raw?.records || raw?.recordCount || 0).toLocaleString(),
+        status: raw?.status || "Pending",
+        time: formatRelativeTime(raw?.createdAt || raw?.startedAt),
+        user: raw?.user?.name || raw?.createdBy?.name || raw?.createdBy || "Admin",
+    });
+
+    const fetchJobs = async () => {
+        try {
+            setLoadingJobs(true);
+            const res = await listDataJobs();
+            const data = res?.data?.jobs || res?.data?.data || res?.data || [];
+            const list = Array.isArray(data) ? data : [];
+            setRecentOperations(list.map(normalizeJob));
+        } catch (err: any) {
+            console.error("Failed to load data jobs:", err);
+            toast.error(err?.response?.data?.message || "Failed to load recent operations");
+            setRecentOperations([]);
+        } finally {
+            setLoadingJobs(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchJobs();
+    }, []);
 
     const dataModules = [
         { name: "Leads", icon: Users, count: "2,847", color: "text-blue-600", bg: "bg-blue-50" },
@@ -55,31 +112,56 @@ export default function ImportExportPage() {
         { name: "Products", icon: Package, count: "892", color: "text-purple-600", bg: "bg-purple-50" },
     ];
 
-    const handleImport = () => {
-        setImporting(true);
-        setImportProgress(0);
-        const interval = setInterval(() => {
-            setImportProgress(prev => {
-                if (prev >= 100) {
-                    clearInterval(interval);
-                    setTimeout(() => {
-                        setImporting(false);
-                        setShowImportModal(false);
-                        setImportProgress(0);
-                        toast.success("Import completed successfully");
-                    }, 500);
-                    return 100;
-                }
-                return prev + 10;
+    const handleImport = async () => {
+        if (!importModule) {
+            toast.error("Please select a module to import");
+            return;
+        }
+        try {
+            setImporting(true);
+            setImportProgress(20);
+            await createDataJob({
+                type: "Import",
+                module: importModule,
+                status: "Queued",
             });
-        }, 300);
+            setImportProgress(100);
+            toast.success("Import job queued successfully");
+            setTimeout(() => {
+                setImporting(false);
+                setShowImportModal(false);
+                setImportProgress(0);
+                setImportModule("");
+                fetchJobs();
+            }, 400);
+        } catch (err: any) {
+            console.error("Import job failed:", err);
+            toast.error(err?.response?.data?.message || "Failed to start import");
+            setImporting(false);
+            setImportProgress(0);
+        }
     };
 
-    const handleExport = () => {
-        toast.success("Export started. Your file will be downloaded shortly.");
-        setTimeout(() => {
+    const handleExport = async () => {
+        if (!exportModule) {
+            toast.error("Please select a module to export");
+            return;
+        }
+        try {
+            await createDataJob({
+                type: "Export",
+                module: exportModule,
+                format: exportFormat,
+                status: "Queued",
+            });
+            toast.success("Export job queued. You'll be notified when ready.");
             setShowExportModal(false);
-        }, 500);
+            setExportModule("");
+            fetchJobs();
+        } catch (err: any) {
+            console.error("Export job failed:", err);
+            toast.error(err?.response?.data?.message || "Failed to start export");
+        }
     };
 
     return (
@@ -110,8 +192,8 @@ export default function ImportExportPage() {
             {/* Stats */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div className="bg-gradient-to-r from-primary/70 to-primary text-white p-6 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
-                    <p className="text-xs opacity-80">Total Operations</p>
-                    <h2 className="text-xl font-semibold">142</h2>
+                    <p className="text-xs font-semibold text-white">Total Operations</p>
+                    <h2 className="text-xl font-semibold text-white">142</h2>
                     <p className="text-[10px] mt-1 opacity-80">Last 30 days</p>
                 </div>
 
@@ -174,7 +256,22 @@ export default function ImportExportPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-zinc-100">
-                            {recentOperations.map((op) => (
+                            {loadingJobs && (
+                                <tr>
+                                    <td colSpan={6} className="px-6 py-12 text-center">
+                                        <Loader2 size={24} className="mx-auto animate-spin text-blue-600" />
+                                        <p className="text-xs text-gray-500 mt-2">Loading operations...</p>
+                                    </td>
+                                </tr>
+                            )}
+                            {!loadingJobs && recentOperations.length === 0 && (
+                                <tr>
+                                    <td colSpan={6} className="px-6 py-12 text-center text-sm text-gray-500">
+                                        No operations yet. Start your first import or export.
+                                    </td>
+                                </tr>
+                            )}
+                            {!loadingJobs && recentOperations.map((op) => (
                                 <tr key={op.id} className="hover:bg-blue-50/30 transition-colors group">
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-2">
@@ -247,7 +344,7 @@ export default function ImportExportPage() {
                     <div className="p-6 space-y-5 bg-white">
                         <div className="space-y-2">
                             <Label className="text-xs font-semibold text-gray-600">Select Module</Label>
-                            <Select>
+                            <Select value={importModule} onValueChange={setImportModule}>
                                 <SelectTrigger className="rounded-lg border-zinc-200 h-9">
                                     <SelectValue placeholder="Choose data module" />
                                 </SelectTrigger>
@@ -303,21 +400,21 @@ export default function ImportExportPage() {
                     <div className="p-6 space-y-5 bg-white">
                         <div className="space-y-2">
                             <Label className="text-xs font-semibold text-gray-600">Select Module</Label>
-                            <Select>
+                            <Select value={exportModule} onValueChange={setExportModule}>
                                 <SelectTrigger className="rounded-lg border-zinc-200 h-9">
                                     <SelectValue placeholder="Choose data module" />
                                 </SelectTrigger>
                                 <SelectContent className="rounded-lg">
-                                    <SelectItem value="leads">Leads (2,847 records)</SelectItem>
-                                    <SelectItem value="contacts">Contacts (1,523 records)</SelectItem>
-                                    <SelectItem value="deals">Deals (456 records)</SelectItem>
-                                    <SelectItem value="products">Products (892 records)</SelectItem>
+                                    <SelectItem value="leads">Leads</SelectItem>
+                                    <SelectItem value="contacts">Contacts</SelectItem>
+                                    <SelectItem value="deals">Deals</SelectItem>
+                                    <SelectItem value="products">Products</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
                         <div className="space-y-2">
                             <Label className="text-xs font-semibold text-gray-600">Export Format</Label>
-                            <Select defaultValue="csv">
+                            <Select value={exportFormat} onValueChange={setExportFormat}>
                                 <SelectTrigger className="rounded-lg border-zinc-200 h-9">
                                     <SelectValue />
                                 </SelectTrigger>

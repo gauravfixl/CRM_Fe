@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
-import axiosInstance from "@/lib/axios";
+import { getCurrentPlan } from "@/hooks/billingHooks";
 import {
     BarChart3,
     Zap,
@@ -46,8 +46,8 @@ export default function PlanUsagePage() {
         const fetchCurrentPlan = async () => {
             try {
                 setLoading(true);
-                const response = await axiosInstance.get("/OrgBilling/current-plan");
-                setApiPlan(response.data?.currentPlan || null);
+                const response = await getCurrentPlan();
+                setApiPlan(response?.data?.currentPlan || response?.data?.data || null);
             } catch (error) {
                 console.error("Failed to fetch current plan:", error);
                 setApiPlan(null);

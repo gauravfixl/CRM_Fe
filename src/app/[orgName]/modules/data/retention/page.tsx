@@ -93,13 +93,18 @@ export default function RetentionRulesPage() {
     };
 
     const handleCreate = () => {
-        if (!createForm.name || !createForm.dataType || !createForm.retention || !createForm.action) {
+        const sanitizedName = createForm.name.trim();
+        if (!sanitizedName || !createForm.dataType || !createForm.retention || !createForm.action) {
             toast.error("Please fill in all required fields");
+            return;
+        }
+        if (/\d/.test(sanitizedName)) {
+            toast.error("Rule name cannot contain numbers");
             return;
         }
         const newRule: RetentionRule = {
             id: Date.now().toString(),
-            name: createForm.name,
+            name: sanitizedName,
             dataType: createForm.dataType,
             retention: createForm.retention,
             action: createForm.action,
@@ -124,8 +129,13 @@ export default function RetentionRulesPage() {
     };
 
     const handleEdit = () => {
-        if (!editForm.name || !editForm.dataType || !editForm.retention || !editForm.action) {
+        const sanitizedName = editForm.name.trim();
+        if (!sanitizedName || !editForm.dataType || !editForm.retention || !editForm.action) {
             toast.error("Please fill in all required fields");
+            return;
+        }
+        if (/\d/.test(sanitizedName)) {
+            toast.error("Rule name cannot contain numbers");
             return;
         }
         if (!editItem) return;
@@ -237,8 +247,8 @@ export default function RetentionRulesPage() {
             {/* Stats */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div className="bg-gradient-to-r from-primary/70 to-primary text-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 p-6 rounded-xl">
-                    <p className="text-xs opacity-80">Active Rules</p>
-                    <h2 className="text-xl font-semibold">{retentionRules.filter((r) => r.status === "Active").length}</h2>
+                    <p className="text-xs font-semibold text-white">Active Rules</p>
+                    <h2 className="text-xl font-semibold text-white">{retentionRules.filter((r) => r.status === "Active").length}</h2>
                     <p className="text-[10px] mt-1 opacity-80">Currently running</p>
                 </div>
 

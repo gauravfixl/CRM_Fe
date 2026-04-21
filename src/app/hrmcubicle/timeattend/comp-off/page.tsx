@@ -128,6 +128,30 @@ const CompOffManagementPage = () => {
       toast({ title: "Error", description: "Please fill all required fields.", variant: "destructive" });
       return;
     }
+    if (newGrant.employee.trim().length < 3) {
+      toast({ title: "Name Too Short", description: "Employee name must be at least 3 characters.", variant: "destructive" });
+      return;
+    }
+    if (newGrant.employeeId && !/^E(MP)?\d{3,}$/i.test(newGrant.employeeId.trim())) {
+      toast({ title: "Invalid Employee ID", description: "Employee ID should match pattern E001 or EMP001.", variant: "destructive" });
+      return;
+    }
+    const worked = new Date(newGrant.workedDate);
+    const expiry = new Date(newGrant.expiryDate);
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    if (Number.isNaN(worked.getTime()) || Number.isNaN(expiry.getTime())) {
+      toast({ title: "Invalid Dates", description: "Please pick valid dates.", variant: "destructive" });
+      return;
+    }
+    if (worked > today) {
+      toast({ title: "Invalid Worked Date", description: "Worked date cannot be in the future.", variant: "destructive" });
+      return;
+    }
+    if (expiry <= worked) {
+      toast({ title: "Invalid Expiry", description: "Expiry date must be after worked date.", variant: "destructive" });
+      return;
+    }
     const co: CompOff = {
       id: `CO${String(compOffs.length + 1).padStart(3, "0")}`,
       employeeName: newGrant.employee,
@@ -155,7 +179,26 @@ const CompOffManagementPage = () => {
   };
 
   const handleAvail = () => {
-    if (!availDialog || !availDate) return;
+    if (!availDialog || !availDate) {
+      toast({ title: "Select Date", description: "Please pick a date to avail the comp-off.", variant: "destructive" });
+      return;
+    }
+    const avail = new Date(availDate);
+    const earned = new Date(availDialog.earnedDate);
+    const expiry = new Date(availDialog.expiryDate);
+    if (Number.isNaN(avail.getTime())) {
+      toast({ title: "Invalid Date", description: "Please pick a valid avail date.", variant: "destructive" });
+      return;
+    }
+    if (avail < earned || avail > expiry) {
+      toast({ title: "Outside Validity", description: `Avail date must fall between ${availDialog.earnedDate} and ${availDialog.expiryDate}.`, variant: "destructive" });
+      return;
+    }
+    const day = avail.getDay();
+    if (day === 0 || day === 6) {
+      toast({ title: "Weekend Selected", description: "Comp-off cannot be availed on a weekend. Pick a weekday.", variant: "destructive" });
+      return;
+    }
     setCompOffs((prev) => prev.map((c) => (c.id === availDialog.id ? { ...c, status: "Availed" as const, availDate } : c)));
     setAvailDialog(null);
     setAvailDate("");
@@ -163,14 +206,20 @@ const CompOffManagementPage = () => {
   };
 
   const handleExport = () => {
-    toast({ title: "Export Started", description: "Comp-off report is being generated." });
+    const header = "ID,Employee,Employee ID,Department,Earned Date,Reason,Expiry Date,Status,Avail Date\n";
+    const rows = compOffs.map(c => `${c.id},${c.employeeName},${c.employeeId},${c.department},${c.earnedDate},${c.reason},${c.expiryDate},${c.status},${c.availDate ?? ""}`).join("\n");
+    const csv = header + rows;
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = `comp_off_report_${new Date().toISOString().split("T")[0]}.csv`; a.click(); URL.revokeObjectURL(url);
+    toast({ title: "Exported", description: "Comp-off report downloaded as CSV." });
   };
 
   const statCards = [
-    { label: "Earned This Month", value: stats.earned, icon: Gift, color: "text-purple-600", bg: "bg-purple-50" },
-    { label: "Pending Approval", value: stats.pending, icon: Clock, color: "text-amber-600", bg: "bg-amber-50" },
-    { label: "Availed", value: stats.availed, icon: CalendarCheck, color: "text-green-600", bg: "bg-green-50" },
-    { label: "Expired / Lapsed", value: stats.expired, icon: CalendarX, color: "text-red-600", bg: "bg-red-50" },
+    { label: "Earned This Month", value: stats.earned, icon: Gift, color: "text-slate-800", bg: "bg-white/30", cardBg: "bg-[#CB9DF0]" },
+    { label: "Pending Approval", value: stats.pending, icon: Clock, color: "text-slate-800", bg: "bg-white/30", cardBg: "bg-[#F0C1E1]" },
+    { label: "Availed", value: stats.availed, icon: CalendarCheck, color: "text-slate-800", bg: "bg-white/30", cardBg: "bg-[#FFF9BF]" },
+    { label: "Expired / Lapsed", value: stats.expired, icon: CalendarX, color: "text-slate-800", bg: "bg-white/30", cardBg: "bg-[#FDDBBB]" },
   ];
 
   return (
@@ -193,14 +242,14 @@ const CompOffManagementPage = () => {
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {statCards.map((s) => (
-          <Card key={s.label} className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <Card key={s.label} className={cn("rounded-none border-none shadow-sm", s.cardBg)}>
             <CardContent className="p-5 flex items-center gap-4">
               <div className={cn("w-11 h-11 rounded-xl flex items-center justify-center", s.bg)}>
                 <s.icon className={cn("w-5 h-5", s.color)} />
               </div>
               <div>
+                <div className="text-xs font-medium text-slate-600 mb-1">{s.label}</div>
                 <div className="text-2xl font-bold text-slate-800">{s.value}</div>
-                <div className="text-xs text-slate-500">{s.label}</div>
               </div>
             </CardContent>
           </Card>
@@ -325,7 +374,7 @@ const CompOffManagementPage = () => {
 
       {/* Grant Dialog */}
       <Dialog open={grantDialog} onOpenChange={setGrantDialog}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md border-2 border-slate-200">
           <DialogHeader>
             <DialogTitle>Grant Comp-Off</DialogTitle>
             <DialogDescription>Grant compensatory off to an employee</DialogDescription>
@@ -355,7 +404,7 @@ const CompOffManagementPage = () => {
 
       {/* Avail Dialog */}
       <Dialog open={!!availDialog} onOpenChange={() => setAvailDialog(null)}>
-        <DialogContent className="sm:max-w-sm">
+        <DialogContent className="sm:max-w-sm border-2 border-slate-200">
           <DialogHeader>
             <DialogTitle>Avail Comp-Off</DialogTitle>
             <DialogDescription>Select date to avail comp-off for {availDialog?.employeeName}</DialogDescription>
@@ -373,7 +422,7 @@ const CompOffManagementPage = () => {
 
       {/* Auto Rules Dialog */}
       <Dialog open={rulesDialog} onOpenChange={setRulesDialog}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md border-2 border-slate-200">
           <DialogHeader>
             <DialogTitle>Auto-Grant Rules</DialogTitle>
             <DialogDescription>Configure automatic comp-off granting rules</DialogDescription>

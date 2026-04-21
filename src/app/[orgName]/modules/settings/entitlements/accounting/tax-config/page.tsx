@@ -1,7 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
-import { Calculator, Plus, Search, Filter, MoreVertical, Edit, Trash2, Globe, Building2, ChevronRight } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Calculator, Plus, Search, Filter, MoreVertical, Edit, Trash2, Globe, Building2, ChevronRight, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { getAllOrgTaxes, getGlobalTaxes, addGlobalTax, updateTax, enableTax, disableTax } from "@/hooks/taxHooks";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -14,15 +16,117 @@ import { Textarea } from "@/shared/components/ui/textarea";
 
 export default function TaxConfigPage() {
     const [showCreateModal, setShowCreateModal] = useState(false);
-    const [taxConfigs, setTaxConfigs] = useState([
-        { id: "1", name: "US Sales Tax", type: "Sales Tax", rate: "8.5%", scope: "Global", regions: "US", status: "Active" },
-        { id: "2", name: "EU VAT", type: "VAT", rate: "20%", scope: "Global", regions: "EU", status: "Active" },
-        { id: "3", name: "India GST", type: "GST", rate: "18%", scope: "Firm", regions: "India", status: "Active" },
-        { id: "4", name: "Canada HST", type: "HST", rate: "13%", scope: "Global", regions: "Canada", status: "Paused" },
-    ]);
+    const [taxConfigs, setTaxConfigs] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [actionLoading, setActionLoading] = useState<string | null>(null);
+    const [createLoading, setCreateLoading] = useState(false);
+    const [newTax, setNewTax] = useState({ name: "", type: "", rate: "", scope: "", regions: "", description: "" });
 
-    const toggleStatus = (id: string) => {
-        setTaxConfigs(prev => prev.map(t => t.id === id ? { ...t, status: t.status === "Active" ? "Paused" : "Active" } : t));
+    const fetchData = async () => {
+        try {
+            setLoading(true);
+            const [orgRes, globalRes] = await Promise.all([
+                getAllOrgTaxes(),
+                getGlobalTaxes(),
+            ]);
+            const orgTaxes = orgRes?.data?.data || orgRes?.data || [];
+            const globalTaxes = globalRes?.data?.data || globalRes?.data || [];
+
+            const seen = new Set<string>();
+            const merged: any[] = [];
+            for (const t of [...globalTaxes, ...orgTaxes]) {
+                const id = t._id || t.id;
+                if (!seen.has(id)) {
+                    seen.add(id);
+                    merged.push({
+                        id,
+                        name: t.name || t.taxName || "Tax",
+                        type: t.type || t.taxType || "Tax",
+                        rate: t.rate != null ? `${t.rate}%` : (t.taxRate != null ? `${t.taxRate}%` : "0%"),
+                        scope: t.isGlobal || t.scope === "Global" ? "Global" : "Firm",
+                        regions: t.region || t.regions || "-",
+                        status: t.disabled ? "Paused" : (t.isActive === false ? "Paused" : "Active"),
+                        _raw: t,
+                    });
+                }
+            }
+            setTaxConfigs(merged);
+        } catch (err: any) {
+            toast.error(err?.response?.data?.message || "Failed to load tax configurations");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchData();
+    }, []);
+
+    const toggleStatus = async (id: string, currentStatus: string) => {
+        try {
+            setActionLoading(id);
+            if (currentStatus === "Active") {
+                await disableTax(id);
+                toast.success("Tax disabled successfully");
+            } else {
+                await enableTax(id);
+                toast.success("Tax enabled successfully");
+            }
+            fetchData();
+        } catch (err: any) {
+            toast.error(err?.response?.data?.message || "Failed to toggle tax status");
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    const handleCreateTax = async () => {
+        if (!newTax.name.trim()) {
+            toast.error("Tax name is required");
+            return;
+        }
+
+        const nameRegex = /^[a-zA-Z\s]+$/;
+        if (!nameRegex.test(newTax.name.trim())) {
+            toast.error("Tax name should not contain numbers or special characters");
+            return;
+        }
+
+        if (!newTax.type) {
+            toast.error("Tax type is required");
+            return;
+        }
+
+        const rate = parseFloat(newTax.rate);
+        if (isNaN(rate) || rate < 0) {
+            toast.error("Please enter a valid positive tax rate");
+            return;
+        }
+
+        if (newTax.scope !== "global" && !newTax.regions.trim()) {
+            toast.error("Regions are required for firm-specific scope");
+            return;
+        }
+
+        try {
+            setCreateLoading(true);
+            await addGlobalTax({
+                name: newTax.name,
+                taxName: newTax.name,
+                type: newTax.type,
+                rate: rate,
+                region: newTax.regions,
+                description: newTax.description,
+            });
+            toast.success("Tax rule created successfully");
+            setShowCreateModal(false);
+            setNewTax({ name: "", type: "", rate: "", scope: "", regions: "", description: "" });
+            fetchData();
+        } catch (err: any) {
+            toast.error(err?.response?.data?.message || "Failed to create tax rule");
+        } finally {
+            setCreateLoading(false);
+        }
     };
 
     const deleteConfig = (id: string) => {
@@ -94,7 +198,22 @@ export default function TaxConfigPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-zinc-100">
-                            {taxConfigs.map((config) => (
+                            {loading ? (
+                                <tr>
+                                    <td colSpan={7} className="px-5 py-12 text-center">
+                                        <div className="flex items-center justify-center gap-2 text-slate-500">
+                                            <Loader2 size={18} className="animate-spin" />
+                                            <span className="text-xs">Loading tax rules...</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ) : taxConfigs.length === 0 ? (
+                                <tr>
+                                    <td colSpan={7} className="px-5 py-12 text-center">
+                                        <span className="text-xs text-slate-500">No tax rules found.</span>
+                                    </td>
+                                </tr>
+                            ) : taxConfigs.map((config) => (
                                 <tr key={config.id} className="hover:bg-blue-50/30 transition-colors group">
                                     <td className="px-5 py-3">
                                         <div className="flex items-center gap-3">
@@ -118,7 +237,7 @@ export default function TaxConfigPage() {
                                     <td className="px-5 py-3"><span className="text-xs text-gray-700">{config.regions}</span></td>
                                     <td className="px-5 py-3">
                                         <div className="flex items-center gap-2">
-                                            <Switch checked={config.status === "Active"} onCheckedChange={() => toggleStatus(config.id)} className="data-[state=checked]:bg-green-600" />
+                                            <Switch checked={config.status === "Active"} onCheckedChange={() => toggleStatus(config.id, config.status)} disabled={actionLoading === config.id} className="data-[state=checked]:bg-green-600" />
                                             <Badge className={`${config.status === "Active" ? "bg-green-600" : "bg-zinc-400"} text-white border-none rounded-md text-[10px] font-medium px-2 py-0.5`}>{config.status}</Badge>
                                         </div>
                                     </td>
@@ -164,36 +283,39 @@ export default function TaxConfigPage() {
                     <div className="p-5 space-y-4 bg-white">
                         <div className="space-y-2">
                             <Label className="text-xs font-medium text-slate-500">Tax Name</Label>
-                            <Input placeholder="e.g., US Sales Tax" className="rounded-lg border-zinc-200 h-9 text-xs" />
+                            <Input value={newTax.name} onChange={(e) => setNewTax(p => ({ ...p, name: e.target.value }))} placeholder="e.g., US Sales Tax" className="rounded-lg border-zinc-200 h-9 text-xs" />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label className="text-xs font-medium text-slate-500">Tax Type</Label>
-                                <Select><SelectTrigger className="rounded-lg border-zinc-200 h-9 text-xs"><SelectValue placeholder="Select type" /></SelectTrigger><SelectContent className="rounded-lg"><SelectItem value="sales">Sales Tax</SelectItem><SelectItem value="vat">VAT</SelectItem><SelectItem value="gst">GST</SelectItem><SelectItem value="hst">HST</SelectItem></SelectContent></Select>
+                                <Select value={newTax.type} onValueChange={(v) => setNewTax(p => ({ ...p, type: v }))}><SelectTrigger className="rounded-lg border-zinc-200 h-9 text-xs"><SelectValue placeholder="Select type" /></SelectTrigger><SelectContent className="rounded-lg"><SelectItem value="sales">Sales Tax</SelectItem><SelectItem value="vat">VAT</SelectItem><SelectItem value="gst">GST</SelectItem><SelectItem value="hst">HST</SelectItem></SelectContent></Select>
                             </div>
                             <div className="space-y-2">
                                 <Label className="text-xs font-medium text-slate-500">Tax Rate (%)</Label>
-                                <Input type="number" placeholder="e.g., 8.5" className="rounded-lg border-zinc-200 h-9 text-xs" />
+                                <Input type="number" value={newTax.rate} onChange={(e) => setNewTax(p => ({ ...p, rate: e.target.value }))} placeholder="e.g., 8.5" className="rounded-lg border-zinc-200 h-9 text-xs" />
                             </div>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label className="text-xs font-medium text-slate-500">Scope</Label>
-                                <Select><SelectTrigger className="rounded-lg border-zinc-200 h-9 text-xs"><SelectValue placeholder="Select scope" /></SelectTrigger><SelectContent className="rounded-lg"><SelectItem value="global">Global (Organization-wide)</SelectItem><SelectItem value="firm">Firm (Specific firm)</SelectItem></SelectContent></Select>
+                                <Select value={newTax.scope} onValueChange={(v) => setNewTax(p => ({ ...p, scope: v }))}><SelectTrigger className="rounded-lg border-zinc-200 h-9 text-xs"><SelectValue placeholder="Select scope" /></SelectTrigger><SelectContent className="rounded-lg"><SelectItem value="global">Global (Organization-wide)</SelectItem><SelectItem value="firm">Firm (Specific firm)</SelectItem></SelectContent></Select>
                             </div>
                             <div className="space-y-2">
                                 <Label className="text-xs font-medium text-slate-500">Regions</Label>
-                                <Input placeholder="e.g., US, EU" className="rounded-lg border-zinc-200 h-9 text-xs" />
+                                <Input value={newTax.regions} onChange={(e) => setNewTax(p => ({ ...p, regions: e.target.value }))} placeholder="e.g., US, EU" className="rounded-lg border-zinc-200 h-9 text-xs" />
                             </div>
                         </div>
                         <div className="space-y-2">
                             <Label className="text-xs font-medium text-slate-500">Description (Optional)</Label>
-                            <Textarea placeholder="Additional details about this tax rule..." className="rounded-lg border-zinc-200 min-h-[80px] text-xs" />
+                            <Textarea value={newTax.description} onChange={(e) => setNewTax(p => ({ ...p, description: e.target.value }))} placeholder="Additional details about this tax rule..." className="rounded-lg border-zinc-200 min-h-[80px] text-xs" />
                         </div>
                     </div>
                     <DialogFooter className="p-5 bg-zinc-50 border-t border-zinc-100 gap-4 sm:justify-end">
                         <Button variant="ghost" onClick={() => setShowCreateModal(false)} className="rounded-lg text-xs text-slate-500">Cancel</Button>
-                        <Button className="bg-green-600 hover:bg-green-700 rounded-lg text-xs font-medium px-4 h-8 shadow-sm">Create Tax Rule</Button>
+                        <Button onClick={handleCreateTax} disabled={createLoading} className="bg-green-600 hover:bg-green-700 rounded-lg text-xs font-medium px-4 h-8 shadow-sm">
+                            {createLoading && <Loader2 size={14} className="animate-spin mr-1" />}
+                            Create Tax Rule
+                        </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

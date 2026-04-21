@@ -94,14 +94,25 @@ export default function ValidationRulesPage() {
     };
 
     const handleCreate = () => {
-        if (!createForm.name || !createForm.field || !createForm.module || !createForm.type) {
+        const sanitizedName = createForm.name.trim();
+        const sanitizedField = createForm.field.trim();
+        
+        if (!sanitizedName || !sanitizedField || !createForm.module || !createForm.type) {
             toast.error("Please fill in all required fields");
+            return;
+        }
+        if (/\d/.test(sanitizedName)) {
+            toast.error("Rule name cannot contain numbers");
+            return;
+        }
+        if (/\d/.test(sanitizedField)) {
+            toast.error("Field name cannot contain numbers");
             return;
         }
         const newRule: ValidationRule = {
             id: Date.now().toString(),
-            name: createForm.name,
-            field: createForm.field,
+            name: sanitizedName,
+            field: sanitizedField,
             module: createForm.module,
             type: createForm.type,
             status: "Active",
@@ -125,8 +136,19 @@ export default function ValidationRulesPage() {
     };
 
     const handleEdit = () => {
-        if (!editForm.name || !editForm.field || !editForm.module || !editForm.type) {
+        const sanitizedName = editForm.name.trim();
+        const sanitizedField = editForm.field.trim();
+
+        if (!sanitizedName || !sanitizedField || !editForm.module || !editForm.type) {
             toast.error("Please fill in all required fields");
+            return;
+        }
+        if (/\d/.test(sanitizedName)) {
+            toast.error("Rule name cannot contain numbers");
+            return;
+        }
+        if (/\d/.test(sanitizedField)) {
+            toast.error("Field name cannot contain numbers");
             return;
         }
         if (!editItem) return;
@@ -237,8 +259,8 @@ export default function ValidationRulesPage() {
             {/* Stats */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div className="bg-gradient-to-r from-primary/70 to-primary text-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 p-6 rounded-xl">
-                    <p className="text-xs opacity-80">Active Rules</p>
-                    <h2 className="text-xl font-semibold">{validationRules.filter((r) => r.status === "Active").length}</h2>
+                    <p className="text-xs font-semibold text-white">Active Rules</p>
+                    <h2 className="text-xl font-semibold text-white">{validationRules.filter((r) => r.status === "Active").length}</h2>
                     <p className="text-[10px] mt-1 opacity-80">Currently enforced</p>
                 </div>
 

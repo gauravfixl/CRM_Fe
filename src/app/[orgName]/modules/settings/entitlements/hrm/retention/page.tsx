@@ -72,7 +72,7 @@ export default function EmployeeRetentionPage() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-xs text-white/80">Storage</p>
-                                <p className="text-xl font-semibold">{settings.retainProfiles} Yrs</p>
+                                <p className="text-xl font-semibold text-white tracking-tight">{settings.retainProfiles} Yrs</p>
                                 <p className="text-[10px] text-white/80">Profile retention</p>
                             </div>
                             <Database className="w-5 h-5 text-white/80" />

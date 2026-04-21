@@ -17,11 +17,14 @@ const tabs = [
 ]
 
 const TAB_BAR_HEIGHT = 48
-const SCROLL_OFFSET = TAB_BAR_HEIGHT + 8
+const NAVBAR_HEIGHT = 56 // LP2Navbar is fixed h-14 (56px)
+const SCROLL_OFFSET = TAB_BAR_HEIGHT + NAVBAR_HEIGHT + 8
 
 export default function LP2TabNavigation() {
   const activeSection = useActiveSection()
   const navBarRef = useRef<HTMLDivElement>(null)
+  const tabsScrollRef = useRef<HTMLDivElement>(null)
+  const tabButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({})
   const [isSticky, setIsSticky] = useState(false)
   const [currentBgColor, setCurrentBgColor] = useState("#FFFFFF")
   const naturalTop = useRef<number | null>(null)
@@ -38,7 +41,8 @@ export default function LP2TabNavigation() {
     const onScroll = () => {
       if (naturalTop.current === null) calcTop()
       if (naturalTop.current !== null) {
-        const isNowSticky = window.scrollY >= naturalTop.current
+        // Trigger sticky a bit earlier so the bar docks right under the fixed navbar
+        const isNowSticky = window.scrollY + NAVBAR_HEIGHT >= naturalTop.current
         setIsSticky(isNowSticky)
       }
     }
@@ -67,6 +71,14 @@ export default function LP2TabNavigation() {
 
     const top = el.getBoundingClientRect().top + window.scrollY - SCROLL_OFFSET
     window.scrollTo({ top, behavior: "smooth" })
+
+    const activeBtn = tabButtonRefs.current[sectionId]
+    const container = tabsScrollRef.current
+    if (activeBtn && container) {
+      const btnCenter = activeBtn.offsetLeft + activeBtn.offsetWidth / 2
+      const target = btnCenter - container.clientWidth / 2
+      container.scrollTo({ left: Math.max(0, target), behavior: "smooth" })
+    }
   }, [])
 
   return (
@@ -85,25 +97,29 @@ export default function LP2TabNavigation() {
           }
         `}
         style={{
-          top: isSticky ? 0 : undefined,
+          top: isSticky ? NAVBAR_HEIGHT : undefined,
           backgroundColor: currentBgColor,
           transition: 'background-color 0.5s ease-in-out',
         }}
       >
-        <div className="mx-auto max-w-[1280px] px-6 flex items-center justify-between"
+        <div className="mx-auto max-w-[1280px] px-3 sm:px-4 lg:px-6 flex items-center justify-between gap-2"
           style={{ height: TAB_BAR_HEIGHT }}
         >
-          {/* Tabs */}
-          <div className="flex items-center gap-8 lg:gap-10 h-full overflow-x-auto scrollbar-hide">
+          {/* Tabs (horizontally scrollable on mobile) */}
+          <div
+            ref={tabsScrollRef}
+            className="flex items-center gap-5 sm:gap-8 lg:gap-10 h-full overflow-x-auto scrollbar-hide flex-1 min-w-0 scroll-smooth"
+          >
             {tabs.map((tab) => {
               const isActive = activeSection === tab.id
               return (
                 <button
                   key={tab.id}
+                  ref={(el) => { tabButtonRefs.current[tab.id] = el }}
                   onClick={() => scrollToSection(tab.id)}
                   className={`
-                    relative whitespace-nowrap h-full flex items-center
-                    text-[14px] cursor-pointer transition-colors duration-150
+                    relative whitespace-nowrap h-full flex items-center shrink-0
+                    text-[12px] sm:text-[14px] cursor-pointer transition-colors duration-150
                     ${isActive
                       ? "text-[#1A1A1A] font-semibold"
                       : "text-[#505050] font-normal hover:text-[#1A1A1A]"
@@ -123,18 +139,6 @@ export default function LP2TabNavigation() {
               )
             })}
           </div>
-
-          {/* CTA button */}
-          <button
-            className="
-              ml-6 shrink-0 bg-[#1A1A1A] text-white
-              px-5 py-2 text-[13px] font-semibold rounded-sm
-              hover:bg-[#333] transition-colors duration-150
-              cursor-pointer
-            "
-          >
-            Try for free
-          </button>
         </div>
       </nav>
     </>

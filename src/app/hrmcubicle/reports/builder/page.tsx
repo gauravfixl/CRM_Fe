@@ -4,8 +4,7 @@ import React, { useState } from "react"
 import { useRouter } from "next/navigation"
 import {
   ArrowLeft, ArrowRight, Check, ChevronDown, ChevronUp, Download,
-  Eye, FileText, Filter, GripVertical, Layers, Play, Plus, Save,
-  Settings, Trash2, X
+  Filter, GripVertical, Play, Plus, Save, Trash2, X
 } from "lucide-react"
 import { Button } from "@/shared/components/ui/button"
 import { Card } from "@/shared/components/ui/card"
@@ -70,16 +69,19 @@ const steps = ["Data Source", "Columns", "Filters", "Preview", "Save / Export"]
 const CustomReportBuilderPage = () => {
   const router = useRouter()
   const { toast } = useToast()
-  const { addSavedReport, addReportRun } = useReportsStore()
+  const { savedReports, addSavedReport, addReportRun } = useReportsStore()
 
   const [currentStep, setCurrentStep] = useState(0)
   const [selectedSource, setSelectedSource] = useState<string | null>(null)
   const [selectedColumns, setSelectedColumns] = useState<string[]>([])
   const [filters, setFilters] = useState<ReportFilter[]>([])
-  const [groupBy, setGroupBy] = useState<string>("")
+  const [groupBy, setGroupBy] = useState<string>("none")
   const [saveDialogOpen, setSaveDialogOpen] = useState(false)
   const [reportName, setReportName] = useState("")
+  const [reportNameError, setReportNameError] = useState<string>("")
   const [reportSchedule, setReportSchedule] = useState<"none" | "daily" | "weekly" | "monthly">("none")
+  const [resetDialogOpen, setResetDialogOpen] = useState(false)
+  const [filterErrors, setFilterErrors] = useState<Record<number, string>>({})
 
   const sourceData = dataSources.find((ds) => ds.id === selectedSource)
   const availableColumns = sourceData?.columns || []
@@ -98,16 +100,59 @@ const CustomReportBuilderPage = () => {
     setSelectedColumns(newCols)
   }
 
+  const isNumericField = (field: string) => {
+    const f = field.toLowerCase()
+    return ["rating", "hours", "days", "count", "amount", "salary", "basic", "hra", "net", "ctc", "applications", "candidates"].some((k) => f.includes(k))
+  }
+  const isDateField = (field: string) => field.toLowerCase().includes("date")
+
+  const validateFilterValue = (filter: ReportFilter): string => {
+    if (!filter.field) return "Select a column"
+    if (!filter.value.trim()) return "Value is required"
+    if (isNumericField(filter.field)) {
+      if (isNaN(Number(filter.value))) return "Must be a number"
+      if (filter.operator === "between") {
+        if (!filter.value2?.trim()) return "Second value required"
+        if (isNaN(Number(filter.value2))) return "Second value must be a number"
+        if (Number(filter.value) > Number(filter.value2)) return "From must be ≤ To"
+      }
+    }
+    if (isDateField(filter.field)) {
+      if (isNaN(Date.parse(filter.value))) return "Invalid date (YYYY-MM-DD)"
+      if (filter.operator === "between") {
+        if (!filter.value2?.trim()) return "End date required"
+        if (isNaN(Date.parse(filter.value2))) return "Invalid end date"
+        if (new Date(filter.value) > new Date(filter.value2)) return "From date must be ≤ To"
+      }
+    }
+    if (filter.operator === "between" && !isNumericField(filter.field) && !isDateField(filter.field)) {
+      if (!filter.value2?.trim()) return "Second value required"
+    }
+    return ""
+  }
+
   const addFilter = () => {
     setFilters([...filters, { field: availableColumns[0] || "", operator: "equals", value: "" }])
   }
 
   const updateFilter = (index: number, updates: Partial<ReportFilter>) => {
-    setFilters(filters.map((f, i) => (i === index ? { ...f, ...updates } : f)))
+    const next = filters.map((f, i) => (i === index ? { ...f, ...updates } : f))
+    setFilters(next)
+    const err = validateFilterValue(next[index])
+    setFilterErrors((prev) => ({ ...prev, [index]: err }))
   }
 
   const removeFilter = (index: number) => {
     setFilters(filters.filter((_, i) => i !== index))
+    setFilterErrors((prev) => {
+      const { [index]: _dropped, ...rest } = prev
+      return rest
+    })
+  }
+
+  const filterStepValid = () => {
+    if (filters.length === 0) return true
+    return filters.every((f) => !validateFilterValue(f))
   }
 
   const previewData = selectedColumns.length > 0 && selectedSource
@@ -117,10 +162,38 @@ const CustomReportBuilderPage = () => {
   const canProceed = () => {
     if (currentStep === 0) return !!selectedSource
     if (currentStep === 1) return selectedColumns.length > 0
+    if (currentStep === 2) return filterStepValid()
     return true
   }
 
+  const validateReportName = (name: string): string => {
+    const trimmed = name.trim()
+    if (!trimmed) return "Report name is required"
+    if (trimmed.length < 3) return "Name must be at least 3 characters"
+    if (trimmed.length > 80) return "Name must be at most 80 characters"
+    if (!/^[\w\s\-()&',.]+$/.test(trimmed)) return "Only letters, numbers, spaces and - _ ( ) & , . ' allowed"
+    const dup = savedReports.find((r) => r.name.trim().toLowerCase() === trimmed.toLowerCase())
+    if (dup) return "A report with this name already exists"
+    return ""
+  }
+
+  const resetBuilder = () => {
+    setCurrentStep(0)
+    setSelectedSource(null)
+    setSelectedColumns([])
+    setFilters([])
+    setGroupBy("none")
+    setReportName("")
+    setReportSchedule("none")
+    setResetDialogOpen(false)
+    toast({ title: "Builder Reset", description: "All steps have been cleared." })
+  }
+
   const handleExport = (format: string) => {
+    if (!selectedSource || selectedColumns.length === 0) {
+      toast({ title: "Nothing to Export", description: "Pick a data source and at least one column first.", variant: "destructive" })
+      return
+    }
     addReportRun({
       id: `RR${Date.now()}`,
       reportName: reportName || "Custom Report",
@@ -134,8 +207,18 @@ const CustomReportBuilderPage = () => {
   }
 
   const handleSave = () => {
-    if (!reportName.trim()) {
-      toast({ title: "Error", description: "Please enter a report name.", variant: "destructive" })
+    const nameErr = validateReportName(reportName)
+    setReportNameError(nameErr)
+    if (nameErr) {
+      toast({ title: "Invalid Name", description: nameErr, variant: "destructive" })
+      return
+    }
+    if (!selectedSource || selectedColumns.length === 0) {
+      toast({ title: "Incomplete Report", description: "Pick a data source and columns before saving.", variant: "destructive" })
+      return
+    }
+    if (!filterStepValid()) {
+      toast({ title: "Filter Errors", description: "Fix filter errors before saving.", variant: "destructive" })
       return
     }
     addSavedReport({
@@ -156,14 +239,21 @@ const CustomReportBuilderPage = () => {
   return (
     <div className="flex-1 p-8 h-full flex flex-col bg-[#f8fafc] overflow-y-auto custom-scrollbar space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" onClick={() => router.push("/hrmcubicle/reports")} className="rounded-xl">
-          <ArrowLeft className="h-4 w-4 mr-1" /> Back
-        </Button>
-        <div>
-          <h1 className="text-2xl font-black tracking-tight text-slate-900">Custom Report Builder</h1>
-          <p className="text-sm text-slate-500">Build reports with your preferred data sources and columns</p>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="sm" onClick={() => router.push("/hrmcubicle/reports")} className="rounded-xl">
+            <ArrowLeft className="h-4 w-4 mr-1" /> Back
+          </Button>
+          <div>
+            <h1 className="text-2xl font-black tracking-tight text-slate-900">Custom Report Builder</h1>
+            <p className="text-sm text-slate-500">Build reports with your preferred data sources and columns</p>
+          </div>
         </div>
+        {(selectedSource || selectedColumns.length > 0 || filters.length > 0) && (
+          <Button variant="outline" size="sm" className="rounded-xl text-xs font-bold" onClick={() => setResetDialogOpen(true)}>
+            <X className="mr-1 h-3 w-3" /> Reset
+          </Button>
+        )}
       </div>
 
       {/* Steps */}
@@ -296,43 +386,54 @@ const CustomReportBuilderPage = () => {
               </div>
             ) : (
               <div className="space-y-3">
-                {filters.map((filter, idx) => (
-                  <div key={idx} className="flex items-center gap-3 p-3 rounded-xl border border-slate-100 bg-slate-50">
-                    <Select value={filter.field} onValueChange={(v) => updateFilter(idx, { field: v })}>
-                      <SelectTrigger className="w-44 rounded-lg text-xs"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {selectedColumns.map((col) => (
-                          <SelectItem key={col} value={col} className="text-xs">{col}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Select value={filter.operator} onValueChange={(v) => updateFilter(idx, { operator: v as ReportFilter["operator"] })}>
-                      <SelectTrigger className="w-36 rounded-lg text-xs"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {operators.map((op) => (
-                          <SelectItem key={op.value} value={op.value} className="text-xs">{op.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Input
-                      value={filter.value}
-                      onChange={(e) => updateFilter(idx, { value: e.target.value })}
-                      placeholder="Value..."
-                      className="flex-1 rounded-lg text-xs"
-                    />
-                    {filter.operator === "between" && (
-                      <Input
-                        value={filter.value2 || ""}
-                        onChange={(e) => updateFilter(idx, { value2: e.target.value })}
-                        placeholder="To..."
-                        className="w-32 rounded-lg text-xs"
-                      />
-                    )}
-                    <button onClick={() => removeFilter(idx)} className="p-2 hover:bg-red-50 rounded-lg">
-                      <Trash2 className="h-4 w-4 text-red-400" />
-                    </button>
-                  </div>
-                ))}
+                {filters.map((filter, idx) => {
+                  const err = filterErrors[idx] || ""
+                  const inputType = isDateField(filter.field) ? "date" : isNumericField(filter.field) ? "number" : "text"
+                  return (
+                    <div key={idx} className="rounded-xl border border-slate-100 bg-slate-50 p-3">
+                      <div className="flex items-center gap-3">
+                        <Select value={filter.field} onValueChange={(v) => updateFilter(idx, { field: v })}>
+                          <SelectTrigger className="w-44 rounded-lg text-xs"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {selectedColumns.map((col) => (
+                              <SelectItem key={col} value={col} className="text-xs">{col}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Select value={filter.operator} onValueChange={(v) => updateFilter(idx, { operator: v as ReportFilter["operator"] })}>
+                          <SelectTrigger className="w-36 rounded-lg text-xs"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {operators.map((op) => (
+                              <SelectItem key={op.value} value={op.value} className="text-xs">{op.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Input
+                          type={inputType}
+                          value={filter.value}
+                          onChange={(e) => updateFilter(idx, { value: e.target.value })}
+                          placeholder={isDateField(filter.field) ? "YYYY-MM-DD" : isNumericField(filter.field) ? "0" : "Value..."}
+                          className={cn("flex-1 rounded-lg text-xs", err && "border-red-400 focus-visible:ring-red-300")}
+                        />
+                        {filter.operator === "between" && (
+                          <Input
+                            type={inputType}
+                            value={filter.value2 || ""}
+                            onChange={(e) => updateFilter(idx, { value2: e.target.value })}
+                            placeholder={isDateField(filter.field) ? "YYYY-MM-DD" : "To..."}
+                            className={cn("w-32 rounded-lg text-xs", err && "border-red-400 focus-visible:ring-red-300")}
+                          />
+                        )}
+                        <button onClick={() => removeFilter(idx)} className="p-2 hover:bg-red-50 rounded-lg">
+                          <Trash2 className="h-4 w-4 text-red-400" />
+                        </button>
+                      </div>
+                      {err && (
+                        <p className="text-[11px] text-red-500 mt-1.5 ml-1 font-medium">{err}</p>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
             )}
 
@@ -358,30 +459,38 @@ const CustomReportBuilderPage = () => {
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-base font-bold text-slate-800">Preview</h3>
-                <p className="text-sm text-slate-500">Showing first 10 rows of mock data. Filters: {filters.length}, Group by: {groupBy || "None"}</p>
+                <p className="text-sm text-slate-500">Showing first 10 rows of mock data. Filters: {filters.length}, Group by: {groupBy === "none" ? "None" : groupBy}</p>
               </div>
               <Badge variant="outline" className="text-[10px] font-bold">{previewData.length} rows</Badge>
             </div>
-            <div className="overflow-x-auto rounded-xl border border-slate-100">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    {selectedColumns.map((col) => (
-                      <TableHead key={col} className="font-bold text-slate-300 text-[9px] uppercase tracking-widest whitespace-nowrap">{col}</TableHead>
-                    ))}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {previewData.map((row, i) => (
-                    <TableRow key={i} className="hover:bg-slate-50">
+            {selectedColumns.length === 0 ? (
+              <div className="text-center py-16 text-slate-400">
+                <Filter className="h-10 w-10 mx-auto mb-3 text-slate-300" />
+                <p className="text-sm font-medium">Nothing to preview</p>
+                <p className="text-xs mt-1">Go back and pick at least one column.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto rounded-xl border border-slate-100">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
                       {selectedColumns.map((col) => (
-                        <TableCell key={col} className="text-xs text-slate-600 whitespace-nowrap">{row[col]}</TableCell>
+                        <TableHead key={col} className="font-bold text-slate-300 text-[9px] uppercase tracking-widest whitespace-nowrap">{col}</TableHead>
                       ))}
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableHeader>
+                  <TableBody>
+                    {previewData.map((row, i) => (
+                      <TableRow key={i} className="hover:bg-slate-50">
+                        {selectedColumns.map((col) => (
+                          <TableCell key={col} className="text-xs text-slate-600 whitespace-nowrap">{row[col]}</TableCell>
+                        ))}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
           </div>
         )}
 
@@ -458,21 +567,50 @@ const CustomReportBuilderPage = () => {
         )}
       </div>
 
+      {/* Reset Confirmation */}
+      <Dialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
+        <DialogContent className="max-w-sm rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-black text-slate-900">Reset Builder</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-slate-500">This will clear the data source, columns, filters and start over. Continue?</p>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" className="rounded-xl" onClick={() => setResetDialogOpen(false)}>Cancel</Button>
+            <Button variant="destructive" className="rounded-xl font-bold" onClick={resetBuilder}>Reset</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Save Dialog */}
-      <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
+      <Dialog open={saveDialogOpen} onOpenChange={(open) => { setSaveDialogOpen(open); if (!open) setReportNameError("") }}>
         <DialogContent className="max-w-md rounded-2xl">
           <DialogHeader>
             <DialogTitle className="text-lg font-black text-slate-900">Save Report</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <label className="text-xs font-bold text-slate-500 mb-1 block">Report Name</label>
+              <label className="text-xs font-bold text-slate-500 mb-1 block">
+                Report Name <span className="text-red-500">*</span>
+              </label>
               <Input
                 value={reportName}
-                onChange={(e) => setReportName(e.target.value)}
-                placeholder="Enter report name..."
-                className="rounded-xl"
+                onChange={(e) => {
+                  setReportName(e.target.value)
+                  if (reportNameError) setReportNameError(validateReportName(e.target.value))
+                }}
+                onBlur={() => setReportNameError(validateReportName(reportName))}
+                placeholder="Enter report name (3-80 chars)..."
+                maxLength={80}
+                className={cn("rounded-xl", reportNameError && "border-red-400 focus-visible:ring-red-300")}
               />
+              <div className="flex items-center justify-between mt-1">
+                {reportNameError ? (
+                  <p className="text-[11px] text-red-500 font-medium">{reportNameError}</p>
+                ) : (
+                  <p className="text-[11px] text-slate-400">Min 3, max 80 characters.</p>
+                )}
+                <p className="text-[10px] text-slate-400">{reportName.length}/80</p>
+              </div>
             </div>
             <div>
               <label className="text-xs font-bold text-slate-500 mb-1 block">Schedule</label>
@@ -486,10 +624,20 @@ const CustomReportBuilderPage = () => {
                 </SelectContent>
               </Select>
             </div>
+            <div className="rounded-xl border border-slate-100 bg-slate-50 p-3 text-[11px] text-slate-500">
+              <p className="font-bold text-slate-600 mb-1">Saving with:</p>
+              <p>• Source: <span className="font-semibold text-slate-700 capitalize">{selectedSource || "—"}</span></p>
+              <p>• Columns: <span className="font-semibold text-slate-700">{selectedColumns.length}</span></p>
+              <p>• Filters: <span className="font-semibold text-slate-700">{filters.length}</span></p>
+            </div>
           </div>
           <DialogFooter className="gap-2">
             <Button variant="outline" className="rounded-xl" onClick={() => setSaveDialogOpen(false)}>Cancel</Button>
-            <Button className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white rounded-xl font-bold" onClick={handleSave}>
+            <Button
+              className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white rounded-xl font-bold disabled:opacity-50"
+              onClick={handleSave}
+              disabled={!!validateReportName(reportName)}
+            >
               <Save className="mr-1 h-4 w-4" /> Save
             </Button>
           </DialogFooter>

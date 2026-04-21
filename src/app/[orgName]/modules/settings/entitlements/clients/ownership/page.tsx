@@ -215,46 +215,54 @@ export default function ClientOwnershipRulesPage() {
             {/* STATS CARDS */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <SmallCard className="bg-gradient-to-r from-primary/70 to-primary border-none text-white rounded-xl shadow-sm">
-                    <SmallCardHeader className="flex flex-row items-center justify-between pb-1 px-4 pt-4">
-                        <p className="text-xs text-white font-medium">Active Rules</p>
-                        <Zap className="w-4 h-4 text-white" />
-                    </SmallCardHeader>
-                    <SmallCardContent className="px-4 pb-4">
-                        <p className="text-xl font-semibold text-white">{rules.filter(r => r.status === 'ACTIVE').length} Rules</p>
-                        <p className="text-[10px] text-white/80">Automated assignment</p>
+                    <SmallCardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-xs text-white font-medium">Active Rules</p>
+                                <p className="text-xl font-semibold text-white mt-1">{rules.filter(r => r.status === 'ACTIVE').length} Rules</p>
+                                <p className="text-[10px] text-white/80 mt-1">Automated assignment</p>
+                            </div>
+                            <Zap className="w-4 h-4 text-white" />
+                        </div>
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="border bg-white shadow-sm rounded-xl p-4">
-                    <SmallCardHeader className="flex flex-row items-center justify-between pb-1 px-4 pt-4">
-                        <p className="text-xs text-slate-500 font-medium">Assigned Today</p>
-                        <Users className="w-4 h-4 text-zinc-300" />
-                    </SmallCardHeader>
-                    <SmallCardContent className="px-4 pb-4">
-                        <p className="text-xl font-semibold text-zinc-900">24 Clients</p>
-                        <p className="text-[10px] text-zinc-400 font-medium">Via automation</p>
+                <SmallCard className="border bg-white shadow-sm rounded-xl">
+                    <SmallCardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-xs text-slate-500 font-medium">Assigned Today</p>
+                                <p className="text-xl font-semibold text-zinc-900 mt-1">24 Clients</p>
+                                <p className="text-[10px] text-zinc-400 font-medium mt-1">Via automation</p>
+                            </div>
+                            <Users className="w-4 h-4 text-zinc-300" />
+                        </div>
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="border bg-white shadow-sm rounded-xl p-4">
-                    <SmallCardHeader className="flex flex-row items-center justify-between pb-1 px-4 pt-4">
-                        <p className="text-xs text-slate-500 font-medium">Unassigned</p>
-                        <Target className="w-4 h-4 text-zinc-300" />
-                    </SmallCardHeader>
-                    <SmallCardContent className="px-4 pb-4">
-                        <p className="text-xl font-semibold text-zinc-900">8 Accounts</p>
-                        <p className="text-[10px] text-zinc-400 font-medium">Pending assignment</p>
+                <SmallCard className="border bg-white shadow-sm rounded-xl">
+                    <SmallCardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-xs text-slate-500 font-medium">Unassigned</p>
+                                <p className="text-xl font-semibold text-zinc-900 mt-1">8 Accounts</p>
+                                <p className="text-[10px] text-zinc-400 font-medium mt-1">Pending assignment</p>
+                            </div>
+                            <Target className="w-4 h-4 text-zinc-300" />
+                        </div>
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="border bg-white shadow-sm rounded-xl p-4">
-                    <SmallCardHeader className="flex flex-row items-center justify-between pb-1 px-4 pt-4">
-                        <p className="text-xs text-slate-500 font-medium">Success Rate</p>
-                        <Activity className="w-4 h-4 text-zinc-300" />
-                    </SmallCardHeader>
-                    <SmallCardContent className="px-4 pb-4">
-                        <p className="text-xl font-semibold text-zinc-900">98.5%</p>
-                        <p className="text-[10px] text-zinc-400 font-medium">Last 30 days</p>
+                <SmallCard className="border bg-white shadow-sm rounded-xl">
+                    <SmallCardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-xs text-slate-500 font-medium">Success Rate</p>
+                                <p className="text-xl font-semibold text-zinc-900 mt-1">98.5%</p>
+                                <p className="text-[10px] text-zinc-400 font-medium mt-1">Last 30 days</p>
+                            </div>
+                            <Activity className="w-4 h-4 text-zinc-300" />
+                        </div>
                     </SmallCardContent>
                 </SmallCard>
             </div>

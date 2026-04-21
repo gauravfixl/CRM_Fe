@@ -175,6 +175,113 @@ const data = {
     { value: "3x", label: "More qualified pipeline" },
     { value: "70%", label: "Less manual data entry" },
   ],
+  capabilities: [
+    {
+      title: "Multi-Channel Lead Capture Engine",
+      description:
+        "Aggregate leads from every acquisition channel into a single, deduplicated database. CubicleERP connects natively with web forms, landing page builders, advertising platforms, social media lead ads, email inboxes, and third-party data providers so every prospect is captured, enriched, and assigned within seconds of expressing interest.",
+      keyPoints: [
+        "Native integrations with Google Ads, Facebook Lead Ads, and LinkedIn forms",
+        "Automatic deduplication against existing leads, contacts, and customers",
+        "Real-time lead enrichment with company size, industry, and contact data",
+        "Custom web form builder with drag-and-drop fields and embedded tracking",
+      ],
+    },
+    {
+      title: "Behavioral Lead Scoring",
+      description:
+        "Move beyond static demographic scoring with a behavioral model that tracks every interaction a lead has with your brand. Website visits, email opens, content downloads, webinar attendance, and pricing page views all contribute to a dynamic score that identifies purchase intent in real time.",
+      keyPoints: [
+        "Configurable scoring rules combining demographic fit and behavioral signals",
+        "Score decay for leads that go inactive to keep prioritization current",
+        "Multiple scoring models for different product lines or market segments",
+        "Sales-readiness threshold triggers that automatically notify assigned reps",
+      ],
+    },
+    {
+      title: "Visual Workflow Automation",
+      description:
+        "Build sophisticated lead nurturing and routing workflows using an intuitive visual editor. Define triggers, conditions, delays, and actions to create multi-step automation sequences that respond to lead behavior in real time — from initial capture through qualification and handoff to sales.",
+      keyPoints: [
+        "Drag-and-drop workflow builder with branching logic and time delays",
+        "Event-based triggers including form submissions, page visits, and email engagement",
+        "Multi-channel action steps spanning email, SMS, task creation, and field updates",
+        "Workflow performance analytics showing conversion rates at each step",
+      ],
+    },
+    {
+      title: "Source Attribution and ROI Analysis",
+      description:
+        "Understand exactly which marketing channels, campaigns, and content pieces are generating your highest-quality leads. CubicleERP tracks first-touch and multi-touch attribution across the entire buyer journey, connecting marketing spend to pipeline generated and revenue closed.",
+      keyPoints: [
+        "First-touch and multi-touch attribution models with customizable credit weighting",
+        "Campaign-level ROI reporting connecting ad spend to closed revenue",
+        "Channel comparison dashboards showing cost per lead and cost per opportunity",
+        "UTM parameter tracking with automatic source and medium classification",
+      ],
+    },
+  ],
+  integrations: [
+    { name: "Google Ads", category: "Advertising" },
+    { name: "Facebook Ads", category: "Advertising" },
+    { name: "LinkedIn Sales Navigator", category: "Sales Intelligence" },
+    { name: "Mailchimp", category: "Email Marketing" },
+    { name: "HubSpot", category: "Marketing Automation" },
+    { name: "Calendly", category: "Scheduling" },
+    { name: "Slack", category: "Communication" },
+    { name: "Zoom", category: "Video Conferencing" },
+    { name: "Zapier", category: "Integration Platform" },
+    { name: "Google Analytics", category: "Analytics" },
+    { name: "Typeform", category: "Forms" },
+    { name: "Clearbit", category: "Data Enrichment" },
+  ],
+  testimonials: [
+    {
+      quote:
+        "CubicleERP Lead Management eliminated the black hole where our inbound leads used to disappear. Every lead is now captured, scored, and assigned within minutes. Our sales team's response time went from hours to under five minutes, and our conversion rate reflects it.",
+      author: "Michael Torres",
+      role: "VP of Sales",
+      company: "Apex Growth Partners",
+      metric: "35% increase in lead-to-opportunity conversion",
+    },
+    {
+      quote:
+        "The lead scoring model helped us stop treating all leads equally. Our reps now focus on the prospects showing real buying intent, and the rest are nurtured automatically until they are ready. Pipeline quality has improved dramatically.",
+      author: "Sanya Patel",
+      role: "Director of Marketing",
+      company: "BrightSignal Technologies",
+      metric: "3x increase in qualified pipeline volume",
+    },
+    {
+      quote:
+        "We track leads from over a dozen sources, and CubicleERP gives us clear attribution data for every one. For the first time, we can show the board exactly which campaigns are driving revenue and make confident decisions about where to invest our marketing budget.",
+      author: "David Hernandez",
+      role: "CMO",
+      company: "Velox SaaS Inc.",
+      metric: "50% improvement in marketing spend efficiency",
+    },
+  ],
+  comparisons: [
+    { feature: "Lead Capture", traditional: "Manual entry from forms", cubicleErp: "Auto-capture, all channels" },
+    { feature: "Lead Assignment", traditional: "Manual distribution", cubicleErp: "Instant auto-routing" },
+    { feature: "Lead Scoring", traditional: "Subjective rep judgment", cubicleErp: "Behavioral AI scoring" },
+    { feature: "Follow-Up", traditional: "Calendar reminders", cubicleErp: "Event-triggered automation" },
+    { feature: "Attribution", traditional: "Last-click guesswork", cubicleErp: "Multi-touch attribution" },
+    { feature: "Nurturing", traditional: "Sporadic manual emails", cubicleErp: "Automated drip sequences" },
+  ],
+  subNavItems: [
+    { label: "Overview", sectionId: "hero" },
+    { label: "Features", sectionId: "features" },
+    { label: "Capabilities", sectionId: "capabilities" },
+    { label: "Benefits", sectionId: "benefits" },
+    { label: "Integrations", sectionId: "integrations" },
+    { label: "How It Works", sectionId: "how-it-works" },
+    { label: "Use Cases", sectionId: "use-cases" },
+    { label: "FAQs", sectionId: "faqs" },
+    { label: "CRM", href: "/explore/crm" },
+    { label: "Email Marketing", href: "/explore/email-marketing" },
+    { label: "Analytics", href: "/explore/analytics" },
+  ],
 }
 
 export default function LeadManagementPage() {

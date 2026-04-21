@@ -206,7 +206,7 @@ const MyDocumentsPage = () => {
     };
 
     return (
-        <div className="flex flex-col min-h-screen bg-[#f8fafc] font-sans relative" style={{ zoom: "80%" }}>
+        <div className="flex flex-col min-h-screen bg-[#f8fafc] font-sans relative" style={{ zoom: "90%" }}>
             <header className="py-2.5 px-8 bg-white border-b border-slate-100 sticky top-0 z-30 shadow-sm rounded-b-3xl">
                 <div className="max-w-[1600px] mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div className="space-y-1 text-start">
@@ -456,7 +456,7 @@ const MyDocumentsPage = () => {
 
             {/* Dialogs */}
             <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
-                <DialogContent className="bg-white rounded-[2rem] border border-slate-200 p-8 max-w-lg shadow-2xl font-sans" style={{ zoom: "80%" }}>
+                <DialogContent className="bg-white rounded-[2rem] border border-slate-200 p-8 max-w-lg shadow-2xl font-sans" style={{ zoom: "90%" }}>
                     <DialogHeader className="space-y-2">
                         <div className="h-10 w-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
                             <Upload size={20} />
@@ -492,7 +492,7 @@ const MyDocumentsPage = () => {
                         <div className="space-y-2">
                             <Label className="text-[10px] font-bold text-slate-400 capitalize text-start block">Category</Label>
                             <Select defaultValue="Personal">
-                                <SelectTrigger className="rounded-xl bg-slate-50 border-none h-11 text-sm font-medium">
+                                <SelectTrigger className="rounded-xl bg-slate-50 border border-slate-200 h-11 text-sm font-medium">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -514,7 +514,7 @@ const MyDocumentsPage = () => {
             </Dialog>
 
             <Dialog open={isPreviewOpen} onOpenChange={(val) => { setIsPreviewOpen(val); if (!val) setIsDocUnlocked(false); }}>
-                <DialogContent className="bg-white border-slate-100 p-0 max-w-4xl overflow-hidden rounded-[2rem] h-[80vh] flex flex-col shadow-2xl font-sans" style={{ zoom: "80%" }}>
+                <DialogContent className="bg-white border-slate-100 p-0 max-w-4xl overflow-hidden rounded-[2rem] h-[80vh] flex flex-col shadow-2xl font-sans" style={{ zoom: "90%" }}>
                     <div className="flex items-center justify-between p-6 border-b border-slate-100 sticky top-0 bg-white z-10">
                         <div className="flex items-center gap-4">
                             <div className="h-10 w-10 rounded-xl bg-slate-50 flex items-center justify-center text-indigo-600 shadow-inner">
@@ -594,7 +594,7 @@ const MyDocumentsPage = () => {
             </Dialog>
 
             <Dialog open={isComplianceOpen} onOpenChange={setIsComplianceOpen}>
-                <DialogContent className="bg-white rounded-[2rem] border border-slate-200 p-8 max-w-lg shadow-2xl font-sans" style={{ zoom: "80%" }}>
+                <DialogContent className="bg-white rounded-[2rem] border border-slate-200 p-8 max-w-lg shadow-2xl font-sans" style={{ zoom: "90%" }}>
                     <DialogHeader className="space-y-4">
                         <div className="h-14 w-14 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-500 shadow-inner">
                             <AlertTriangle size={28} />

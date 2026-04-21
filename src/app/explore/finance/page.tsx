@@ -176,6 +176,111 @@ const data = {
     { value: "2x", label: "Faster month-end close" },
     { value: "40%", label: "Operational cost reduction" },
   ],
+  capabilities: [
+    {
+      title: "Intelligent Bank Reconciliation",
+      description:
+        "Automatically match bank transactions with ledger entries using smart matching rules that learn from your corrections. Reduce reconciliation time from hours to minutes while catching discrepancies human eyes would miss.",
+      keyPoints: [
+        "AI-assisted transaction matching with confidence scoring",
+        "Multi-bank feed support with real-time transaction import",
+        "Exception handling workflows for unmatched transactions",
+        "Historical reconciliation reports with full audit trail",
+      ],
+    },
+    {
+      title: "Revenue Recognition & Accrual Management",
+      description:
+        "Handle complex revenue recognition scenarios with automated schedules that comply with ASC 606 and IFRS 15 standards. Manage deferred revenue, milestone-based recognition, and subscription billing with confidence.",
+      keyPoints: [
+        "Automated revenue schedules for subscriptions and contracts",
+        "Milestone-based recognition tied to project delivery stages",
+        "Deferred revenue tracking with balance roll-forward reports",
+        "Compliance dashboards for ASC 606 and IFRS 15 requirements",
+      ],
+    },
+    {
+      title: "Multi-Entity Consolidation",
+      description:
+        "Consolidate financials across multiple subsidiaries, business units, and currencies into a single unified view. Automate intercompany eliminations, currency translations, and minority interest calculations for accurate group reporting.",
+      keyPoints: [
+        "Automatic intercompany transaction matching and elimination",
+        "Currency translation with configurable rate types per account",
+        "Consolidated trial balance, P&L, and balance sheet generation",
+      ],
+    },
+    {
+      title: "Accounts Payable Automation",
+      description:
+        "Streamline your entire payables process from invoice capture to payment execution. OCR-powered invoice scanning, three-way matching, and automated approval routing ensure you pay the right amount to the right vendor on time.",
+      keyPoints: [
+        "OCR invoice scanning with automatic field extraction",
+        "Three-way matching against purchase orders and receipts",
+        "Configurable approval hierarchies based on amount and category",
+        "Batch payment processing with multi-bank support",
+      ],
+    },
+  ],
+  integrations: [
+    { name: "Stripe", category: "Payments" },
+    { name: "Razorpay", category: "Payments" },
+    { name: "PayPal", category: "Payments" },
+    { name: "Plaid", category: "Banking" },
+    { name: "QuickBooks", category: "Accounting" },
+    { name: "Xero", category: "Accounting" },
+    { name: "Tally", category: "Accounting" },
+    { name: "Google Sheets", category: "Productivity" },
+    { name: "Zapier", category: "Automation" },
+    { name: "Shopify", category: "E-Commerce" },
+    { name: "Amazon Seller", category: "E-Commerce" },
+    { name: "Expensify", category: "Expense Management" },
+  ],
+  testimonials: [
+    {
+      quote:
+        "Our month-end close used to take eight business days. With CubicleERP Finance, we now close in three. The automated bank reconciliation and accrual management alone justified the switch from our legacy accounting system.",
+      author: "Neha Krishnan",
+      role: "CFO",
+      company: "Orion Digital Services",
+      metric: "63% faster month-end close",
+    },
+    {
+      quote:
+        "Managing invoicing across three currencies and two tax jurisdictions was a nightmare with spreadsheets. CubicleERP handles it all automatically, and our DSO dropped from 45 days to 28 days within the first quarter.",
+      author: "James Whitfield",
+      role: "Finance Manager",
+      company: "GlobalBridge Exports",
+      metric: "38% reduction in DSO",
+    },
+    {
+      quote:
+        "The expense tracking and approval workflows saved our finance team ten hours per week. Employees submit receipts from their phones, managers approve in one tap, and everything flows into the GL without manual entry.",
+      author: "Aisha Fernandez",
+      role: "Controller",
+      company: "Zenith Manufacturing",
+      metric: "90% reduction in manual data entry",
+    },
+  ],
+  comparisons: [
+    { feature: "Invoicing", traditional: "Manual PDF creation", cubicleErp: "Automated with payment links" },
+    { feature: "Bank Reconciliation", traditional: "Monthly manual matching", cubicleErp: "Daily auto-reconciliation" },
+    { feature: "Expense Tracking", traditional: "Paper receipts and forms", cubicleErp: "Mobile capture with OCR" },
+    { feature: "Tax Compliance", traditional: "Spreadsheet calculations", cubicleErp: "Auto tax rate lookups" },
+    { feature: "Financial Reporting", traditional: "Manual Excel reports", cubicleErp: "One-click live dashboards" },
+    { feature: "Multi-Currency", traditional: "Manual rate conversions", cubicleErp: "Auto exchange rate updates" },
+  ],
+  subNavItems: [
+    { label: "Overview", sectionId: "hero" },
+    { label: "Features", sectionId: "features" },
+    { label: "Capabilities", sectionId: "capabilities" },
+    { label: "Benefits", sectionId: "benefits" },
+    { label: "Integrations", sectionId: "integrations" },
+    { label: "Use Cases", sectionId: "use-cases" },
+    { label: "FAQs", sectionId: "faqs" },
+    { label: "Payroll", href: "/explore/payroll" },
+    { label: "Inventory", href: "/explore/inventory" },
+    { label: "Analytics", href: "/explore/analytics" },
+  ],
 }
 
 export default function FinancePage() {

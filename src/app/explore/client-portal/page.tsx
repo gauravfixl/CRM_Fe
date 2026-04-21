@@ -176,6 +176,111 @@ const data = {
     { value: "3x", label: "Faster approvals" },
     { value: "24/7", label: "Client availability" },
   ],
+  capabilities: [
+    {
+      title: "Granular Access Control & Permissions",
+      description:
+        "Define exactly what each client can see and do within their portal. Control visibility at the project, folder, and document level with role-based permissions that ensure sensitive data stays protected while still giving clients the transparency they need.",
+      keyPoints: [
+        "Role-based access with pre-built templates for common client tiers",
+        "Project-level visibility controls so clients only see their own work",
+        "Document-level permissions with view-only and download restrictions",
+        "Audit logs tracking every client login, download, and action",
+      ],
+    },
+    {
+      title: "Automated Client Notifications & Updates",
+      description:
+        "Keep clients informed without lifting a finger. Automated notifications trigger when milestones are reached, documents are uploaded, invoices are due, or tickets are updated — all branded with your company identity.",
+      keyPoints: [
+        "Configurable notification rules per event type and client preference",
+        "Branded email templates matching your portal's look and feel",
+        "Digest mode that batches updates into daily or weekly summaries",
+        "In-portal notification center with read and unread tracking",
+      ],
+    },
+    {
+      title: "Interactive Approval Workflows",
+      description:
+        "Replace email-based approval chains with structured in-portal workflows. Clients can review deliverables, leave inline feedback, request revisions, and provide formal sign-off — all with a complete audit trail.",
+      keyPoints: [
+        "Multi-stage approval workflows with sequential and parallel routing",
+        "Inline commenting and annotation on documents and deliverables",
+        "Digital signature capture for formal sign-off on milestones",
+      ],
+    },
+    {
+      title: "White-Label Customization Engine",
+      description:
+        "Make the portal entirely your own with deep branding controls that go beyond logos and colors. Custom domains, personalized login pages, branded email communications, and configurable navigation ensure your clients experience a seamless extension of your brand.",
+      keyPoints: [
+        "Custom domain setup with SSL certificate provisioning",
+        "Fully branded login page with your hero image and messaging",
+        "Configurable navigation menus and module visibility per client",
+        "Branded transactional emails with your sender domain and templates",
+      ],
+    },
+  ],
+  integrations: [
+    { name: "Slack", category: "Communication" },
+    { name: "Microsoft Teams", category: "Communication" },
+    { name: "Google Drive", category: "Storage" },
+    { name: "Dropbox", category: "Storage" },
+    { name: "OneDrive", category: "Storage" },
+    { name: "Stripe", category: "Payments" },
+    { name: "PayPal", category: "Payments" },
+    { name: "DocuSign", category: "Documents" },
+    { name: "Zapier", category: "Automation" },
+    { name: "Intercom", category: "Communication" },
+    { name: "Calendly", category: "Scheduling" },
+    { name: "Loom", category: "Video" },
+  ],
+  testimonials: [
+    {
+      quote:
+        "Our clients used to email us five times a week asking for status updates. Since launching the CubicleERP Client Portal, those emails dropped to near zero. Clients check progress on their own and love the transparency.",
+      author: "Rebecca Torres",
+      role: "Account Director",
+      company: "Catalyst Creative Agency",
+      metric: "50% reduction in support tickets",
+    },
+    {
+      quote:
+        "The approval workflow feature cut our average deliverable sign-off time from five days to under 24 hours. Clients can review, comment, and approve right in the portal — no more chasing email threads.",
+      author: "Vikram Malhotra",
+      role: "Operations Head",
+      company: "TechServe Solutions",
+      metric: "80% faster client approvals",
+    },
+    {
+      quote:
+        "We white-labeled the entire portal with our branding and custom domain. Our clients have no idea it is powered by CubicleERP, and the professional experience has directly contributed to higher retention and referral rates.",
+      author: "Laura Kim",
+      role: "Managing Director",
+      company: "Stratos Consulting",
+      metric: "30% increase in client retention",
+    },
+  ],
+  comparisons: [
+    { feature: "Status Updates", traditional: "Manual email updates", cubicleErp: "Real-time self-service view" },
+    { feature: "Document Sharing", traditional: "Email attachments", cubicleErp: "Versioned document hub" },
+    { feature: "Approvals", traditional: "Email reply chains", cubicleErp: "Structured workflow sign-off" },
+    { feature: "Invoicing Access", traditional: "PDF email attachments", cubicleErp: "Online invoice portal" },
+    { feature: "Branding", traditional: "Generic third-party look", cubicleErp: "Fully white-labeled portal" },
+    { feature: "Client Communication", traditional: "Scattered email threads", cubicleErp: "Threaded project messaging" },
+  ],
+  subNavItems: [
+    { label: "Overview", sectionId: "hero" },
+    { label: "Features", sectionId: "features" },
+    { label: "Capabilities", sectionId: "capabilities" },
+    { label: "Benefits", sectionId: "benefits" },
+    { label: "Integrations", sectionId: "integrations" },
+    { label: "Use Cases", sectionId: "use-cases" },
+    { label: "FAQs", sectionId: "faqs" },
+    { label: "CRM", href: "/explore/crm" },
+    { label: "Helpdesk", href: "/explore/helpdesk" },
+    { label: "Documents", href: "/explore/documents" },
+  ],
 }
 
 export default function ClientPortalPage() {

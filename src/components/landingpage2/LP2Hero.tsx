@@ -135,7 +135,7 @@ export default function LP2Hero() {
 
   return (
     <section
-      className="relative overflow-hidden pt-20 pb-16 min-h-[70vh] max-h-[75vh] flex items-center"
+      className="relative overflow-hidden pt-24 pb-12 sm:pt-20 sm:pb-16 lg:min-h-[70vh] lg:max-h-[75vh] flex items-center"
       style={{
         background:
           "linear-gradient(135deg, #E3F2FD 0%, #F3E5F5 25%, #E8F5E9 50%, #FFF8E1 75%, #FFF3E0 100%)",
@@ -183,8 +183,8 @@ export default function LP2Hero() {
         />
       </div>
 
-      <div className="relative z-[3] max-w-[1320px] mx-auto px-6 w-full">
-        <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-10">
+      <div className="relative z-[3] max-w-[1320px] mx-auto px-4 sm:px-6 w-full">
+        <div className="flex flex-col lg:flex-row items-center gap-8 sm:gap-12 lg:gap-10">
           {/* Left Content — 55% */}
           <motion.div
             className="w-full lg:w-[55%] flex-shrink-0"
@@ -204,7 +204,7 @@ export default function LP2Hero() {
             {/* Main heading with rotating word */}
             <motion.div variants={itemVariants} className="mt-6">
               <h1
-                className="text-[2.75rem] lg:text-[3.5rem] xl:text-[3.75rem] font-bold text-white leading-[1.15] tracking-tight"
+                className="text-[1.875rem] sm:text-[2.25rem] md:text-[2.75rem] lg:text-[3.5rem] xl:text-[3.75rem] font-bold text-white leading-[1.15] tracking-tight"
                 style={{ textShadow: "0 2px 12px rgba(0,0,0,0.3)" }}
               >
                 The new era of
@@ -217,10 +217,10 @@ export default function LP2Hero() {
             </motion.div>
 
             {/* Typewriter rotating text */}
-            <motion.div variants={itemVariants} className="mt-4 h-9 flex items-center gap-2">
-              <span className="text-lg text-white/80 font-medium" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.3)" }}>Built for</span>
+            <motion.div variants={itemVariants} className="mt-4 h-9 flex items-center gap-2 flex-wrap">
+              <span className="text-base sm:text-lg text-white/80 font-medium" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.3)" }}>Built for</span>
               <span
-                className="text-lg font-bold min-w-[6ch]"
+                className="text-base sm:text-lg font-bold min-w-[6ch]"
                 style={{ color: modules[currentWordIndex % modules.length].color, filter: "brightness(1.3)", textShadow: "0 1px 6px rgba(0,0,0,0.3)" }}
               >
                 {displayText}
@@ -231,13 +231,13 @@ export default function LP2Hero() {
                   transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
                 />
               </span>
-              <span className="text-lg text-white/80 font-medium" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.3)" }}>and beyond</span>
+              <span className="text-base sm:text-lg text-white/80 font-medium" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.3)" }}>and beyond</span>
             </motion.div>
 
             {/* Description */}
             <motion.p
               variants={itemVariants}
-              className="mt-5 text-lg text-white/75 max-w-xl leading-relaxed"
+              className="mt-5 text-sm sm:text-base md:text-lg text-white/75 max-w-xl leading-relaxed"
               style={{ textShadow: "0 1px 6px rgba(0,0,0,0.3)" }}
             >
               Adapt and innovate with intelligent CRM, HRM, and ERP business
@@ -263,17 +263,17 @@ export default function LP2Hero() {
             </motion.div>
 
             {/* CTA Buttons */}
-            <motion.div variants={itemVariants} className="mt-8 flex flex-wrap gap-4">
+            <motion.div variants={itemVariants} className="mt-6 sm:mt-8 flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4">
               <Link
                 href="/pricing"
-                className="group inline-flex items-center justify-center gap-2 bg-[#0067B8] text-white px-7 py-3.5 rounded-lg text-[15px] font-semibold transition-all duration-300 hover:bg-[#005DA6] hover:shadow-lg hover:shadow-[#0067B8]/25 hover:-translate-y-0.5"
+                className="group inline-flex items-center justify-center gap-2 bg-[#0067B8] text-white px-5 sm:px-7 py-3 sm:py-3.5 rounded-lg text-sm sm:text-[15px] font-semibold transition-all duration-300 hover:bg-[#005DA6] hover:shadow-lg hover:shadow-[#0067B8]/25 hover:-translate-y-0.5"
               >
                 See plans and pricing
                 <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
               </Link>
               <Link
                 href="/signup"
-                className="inline-flex items-center justify-center border-2 border-white/70 text-white px-7 py-3.5 rounded-lg text-[15px] font-semibold transition-all duration-300 hover:bg-white hover:text-[#1A1A1A] hover:-translate-y-0.5"
+                className="inline-flex items-center justify-center border-2 border-white/70 text-white px-5 sm:px-7 py-3 sm:py-3.5 rounded-lg text-sm sm:text-[15px] font-semibold transition-all duration-300 hover:bg-white hover:text-[#1A1A1A] hover:-translate-y-0.5"
               >
                 Try for free
               </Link>
@@ -283,13 +283,13 @@ export default function LP2Hero() {
 
           {/* Right Content — 45% Platform Visualization */}
           <motion.div
-            className="w-full lg:w-[45%] flex items-center justify-center"
+            className="w-full lg:w-[45%] flex items-center justify-center scale-[0.65] sm:scale-[0.9] md:scale-100 origin-center"
             variants={fadeInRight}
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, amount: 0.2 }}
           >
-            <div className="relative w-[380px] h-[380px] sm:w-[440px] sm:h-[440px]">
+            <div className="relative w-[440px] h-[440px]">
               {/* Glow effect behind the visualization */}
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] rounded-full bg-[#0067B8]/8 blur-3xl" />
 

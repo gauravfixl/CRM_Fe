@@ -9,13 +9,33 @@ import {
     ShieldCheck,
     UserPlus,
     Mail,
-    Download
+    Download,
+    Plus,
+    Loader2,
+    ShieldCheck as RoleIcon,
+    AtSign
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import SubHeader from "@/components/custom/SubHeader";
+import { CustomButton } from "@/components/custom/CustomButton";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Card, CardContent } from "@/components/ui/card";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -25,7 +45,6 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
-
 import { axiosInstance } from "@/lib/axios";
 
 type OrgUser = {
@@ -41,10 +60,91 @@ export default function UsersListPage() {
     const [searchQuery, setSearchQuery] = useState("");
     const [loading, setLoading] = useState(false);
     const [users, setUsers] = useState<OrgUser[]>([]);
+    
+    // Form and Dialog State
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [isInviting, setIsInviting] = useState(false);
+    const [inviteData, setInviteData] = useState({
+        name: "",
+        email: "",
+        role: ""
+    });
+    const [roles, setRoles] = useState<{name: string, id: string}[]>([]);
 
-    const handleInvite = () => {
-        // Redirect to invites page or show modal
-        toast.info("Redirecting to invite flow...");
+    useEffect(() => {
+        const fetchRoles = async () => {
+            try {
+                const res = await axiosInstance.get("/role-permission/all?scope=sc-org");
+                // The roles might be encrypted or nested based on other pages logic
+                // But for now we try to get a basic list
+                const data = res?.data?.permissions || res?.data?.roles || [];
+                // Simple extraction for the dropdown
+                if (Array.isArray(data)) {
+                    setRoles(data.map((r: any) => ({ name: r.name, id: r.role || r.name })));
+                }
+            } catch (e) {
+                console.error("Failed to load roles", e);
+            }
+        };
+        fetchRoles();
+    }, []);
+
+    const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const val = e.target.value;
+        // Validation: No numbers allowed in name
+        if (/\d/.test(val)) {
+            toast.error("Name should not contain numbers");
+            return;
+        }
+        setInviteData({ ...inviteData, name: val });
+    };
+
+    const handleInviteSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        
+        // Comprehensive Validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        
+        if (!inviteData.name?.trim()) {
+            toast.error("Please enter a full name");
+            return;
+        }
+
+        if (/\d/.test(inviteData.name)) {
+            toast.error("Name should not contain numbers");
+            return;
+        }
+
+        if (!inviteData.email?.trim()) {
+            toast.error("Please enter an email address");
+            return;
+        }
+
+        if (!emailRegex.test(inviteData.email)) {
+            toast.error("Please enter a valid email address");
+            return;
+        }
+
+        if (!inviteData.role) {
+            toast.error("Please select an assigned role");
+            return;
+        }
+
+        setIsInviting(true);
+        try {
+            await axiosInstance.post("/organization/createInvite", {
+                email: inviteData.email.trim(),
+                role: inviteData.role,
+                name: inviteData.name.trim() 
+            });
+            toast.success(`Invitation sent successfully to ${inviteData.email}`);
+            setIsDialogOpen(false);
+            setInviteData({ name: "", email: "", role: "" });
+        } catch (err: any) {
+            toast.error(err?.response?.data?.message || "Failed to send invitation");
+        } finally {
+            setIsInviting(false);
+        }
     };
 
     useEffect(() => {
@@ -76,125 +176,217 @@ export default function UsersListPage() {
     });
 
     return (
-        <div className="flex flex-col h-full w-full bg-slate-50/50 p-6 space-y-6 overflow-y-auto">
-            {/* HEADER */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
-                        <Users className="w-6 h-6 text-slate-600" />
-                        Organization Users
-                    </h1>
-                    <p className="text-sm text-slate-500 mt-1">Manage all staff members and their access levels.</p>
-                </div>
-                <div className="flex gap-3">
-                    <Button variant="outline" className="h-9 gap-2 border-slate-200 font-bold rounded-none hover:bg-slate-100 bg-white">
-                        <Download className="w-4 h-4" /> Export CSV
-                    </Button>
-                    <Button
-                        className="h-9 bg-blue-600 hover:bg-blue-700 text-white gap-2 font-bold shadow-lg shadow-blue-200 rounded-none transition-all hover:translate-y-[-1px]"
-                        onClick={handleInvite}
-                    >
-                        <UserPlus className="w-4 h-4" />
-                        Add User
-                    </Button>
-                </div>
-            </div>
+        <div className="relative min-h-screen bg-[#F8F9FC] dark:bg-zinc-950 font-outfit text-zinc-900 dark:text-zinc-100">
+            <SubHeader
+                title="Organization Users"
+                breadcrumbItems={[
+                    { label: "Org Admins", href: "#" },
+                    { label: "Org Staff", href: "#" },
+                    { label: "Users List", href: "#" }
+                ]}
+                rightControls={
+                    <div className="flex gap-2">
+                        <CustomButton variant="outline" className="rounded-xl h-10 px-4 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 font-semibold" onClick={() => toast.success("CSV export started")}>
+                            <Download className="w-4 h-4 mr-2" /> Export CSV
+                        </CustomButton>
+                        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                            <DialogTrigger asChild>
+                                <CustomButton
+                                    className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl h-10 px-6 font-semibold shadow-xl border-0"
+                                >
+                                    <UserPlus className="w-4 h-4 mr-2" />
+                                    Add User
+                                </CustomButton>
+                            </DialogTrigger>
+                            <DialogContent className="sm:max-w-[450px] rounded-3xl border-0 shadow-2xl p-0 overflow-hidden bg-white dark:bg-zinc-950">
+                                <div className="h-2 bg-indigo-600 w-full" />
+                                <div className="p-6 sm:p-8 space-y-6">
+                                    <DialogHeader>
+                                        <DialogTitle className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white flex items-center gap-2">
+                                            <UserPlus className="w-6 h-6 text-indigo-600" />
+                                            Add New User
+                                        </DialogTitle>
+                                        <DialogDescription className="font-medium text-zinc-500">
+                                            Invite a new member to join your organization team.
+                                        </DialogDescription>
+                                    </DialogHeader>
 
-            {/* FILTERS & SEARCH */}
-            <div className="flex items-center gap-4 bg-white p-4 border border-slate-200 shadow-sm rounded-none">
-                <div className="flex-1 relative">
-                    <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-                    <Input
-                        placeholder="Search by name or email..."
-                        className="pl-10 border-none shadow-none focus-visible:ring-0 p-0 text-sm font-medium h-9 w-full rounded-none"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                    />
-                </div>
-                <div className="h-6 w-px bg-slate-200" />
-                <Button variant="ghost" className="h-9 font-bold text-slate-500 hover:text-slate-900 gap-2 rounded-none">
-                    <Filter className="w-4 h-4" /> Filters
-                </Button>
-            </div>
-
-            {/* USERS TABLE */}
-            <Card className="border-none shadow-sm rounded-none overflow-hidden min-h-[400px]">
-                <CardContent className="p-0">
-                    <table className="w-full text-left">
-                        <thead className="bg-slate-50/50 text-[10px] uppercase text-slate-500 font-bold tracking-widest border-b border-slate-100">
-                            <tr>
-                                <th className="px-6 py-4">User</th>
-                                <th className="px-6 py-4">Role</th>
-                                <th className="px-6 py-4">Status</th>
-                                <th className="px-6 py-4">Last Active</th>
-                                <th className="px-6 py-4 text-right">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100 text-sm">
-                            {filtered.map((user) => (
-                                <tr key={user.memberId} className="group hover:bg-slate-50 transition-colors">
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center gap-3">
-                                            <Avatar className="h-9 w-9 rounded-full border border-slate-200">
-                                                <AvatarFallback className="font-bold bg-slate-100 text-slate-500">
-                                                    {(user.name?.[0] || "?").toUpperCase()}
-                                                </AvatarFallback>
-                                            </Avatar>
-                                            <div>
-                                                <p className="font-bold text-slate-900">{user.name}</p>
-                                                <p className="text-xs text-slate-400">{user.email}</p>
+                                    <form onSubmit={handleInviteSubmit} className="space-y-5">
+                                        <div className="space-y-2">
+                                            <label className="text-xs uppercase font-bold text-zinc-500 tracking-wider">Full Name</label>
+                                            <div className="relative">
+                                                <Users className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
+                                                <Input 
+                                                    placeholder="John Doe" 
+                                                    className="pl-11 rounded-xl h-12 bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 font-medium"
+                                                    value={inviteData.name}
+                                                    onChange={handleNameChange}
+                                                />
                                             </div>
                                         </div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center gap-2">
-                                            <ShieldCheck className="w-3.5 h-3.5 text-slate-400" />
-                                            <span className="font-medium text-slate-700">{user.role}</span>
+
+                                        <div className="space-y-2">
+                                            <label className="text-xs uppercase font-bold text-zinc-500 tracking-wider">Email Address <span className="text-red-500">*</span></label>
+                                            <div className="relative">
+                                                <AtSign className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
+                                                <Input 
+                                                    type="email"
+                                                    required
+                                                    placeholder="john@example.com" 
+                                                    className="pl-11 rounded-xl h-12 bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 font-medium"
+                                                    value={inviteData.email}
+                                                    onChange={(e) => setInviteData({ ...inviteData, email: e.target.value })}
+                                                />
+                                            </div>
                                         </div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <Badge
-                                            variant="outline"
-                                            className={`rounded-none border-none font-bold uppercase tracking-wider text-[10px] ${
-                                                user.orgActive ? "bg-emerald-50 text-emerald-600" : "bg-slate-100 text-slate-500"
-                                            }`}
-                                        >
-                                            {user.orgActive ? "Active" : "Inactive"}
-                                        </Badge>
-                                    </td>
-                                    <td className="px-6 py-4 text-slate-500 font-mono text-xs">
-                                        {user.joinedAt ? new Date(user.joinedAt).toLocaleDateString() : "—"}
-                                    </td>
-                                    <td className="px-6 py-4 text-right">
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-none hover:bg-slate-200">
-                                                    <MoreHorizontal className="w-4 h-4 text-slate-500" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end" className="rounded-none w-48">
-                                                <DropdownMenuLabel>User Actions</DropdownMenuLabel>
-                                                <DropdownMenuSeparator />
-                                                <DropdownMenuItem className="gap-2">
-                                                    <Mail className="w-4 h-4" /> Email User
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem className="gap-2">
-                                                    <ShieldCheck className="w-4 h-4" /> Change Role
-                                                </DropdownMenuItem>
-                                                <DropdownMenuSeparator />
-                                                <DropdownMenuItem className="gap-2 text-red-600 focus:text-red-700 focus:bg-red-50">
-                                                    Deactivate Access
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </td>
+
+                                        <div className="space-y-2">
+                                            <label className="text-xs uppercase font-bold text-zinc-500 tracking-wider">Assigned Role <span className="text-red-500">*</span></label>
+                                            <Select value={inviteData.role} onValueChange={(val) => setInviteData({ ...inviteData, role: val })}>
+                                                <SelectTrigger className="rounded-xl h-12 bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 font-medium">
+                                                    <div className="flex items-center gap-2">
+                                                        <RoleIcon className="h-4 w-4 text-zinc-400" />
+                                                        <SelectValue placeholder="Select a role" />
+                                                    </div>
+                                                </SelectTrigger>
+                                                <SelectContent className="rounded-2xl border-zinc-200 dark:border-zinc-800 shadow-xl">
+                                                    {roles.map((role) => (
+                                                        <SelectItem key={role.id} value={role.id} className="font-medium focus:bg-indigo-50 dark:focus:bg-indigo-950/20">
+                                                            {role.name}
+                                                        </SelectItem>
+                                                    ))}
+                                                    {roles.length === 0 && (
+                                                        <div className="p-4 text-center text-xs text-zinc-500">No roles found</div>
+                                                    )}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        <div className="pt-4 flex gap-3">
+                                            <CustomButton type="button" variant="ghost" className="flex-1 rounded-xl h-12 font-bold" onClick={() => setIsDialogOpen(false)}>
+                                                Cancel
+                                            </CustomButton>
+                                            <CustomButton 
+                                                type="submit" 
+                                                disabled={isInviting}
+                                                className="flex-[2] bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl h-12 shadow-lg shadow-indigo-200 dark:shadow-none transition-all active:scale-95"
+                                            >
+                                                {isInviting ? <Loader2 className="w-5 h-5 animate-spin" /> : "Send Invitation"}
+                                            </CustomButton>
+                                        </div>
+                                    </form>
+                                </div>
+                            </DialogContent>
+                        </Dialog>
+                    </div>
+                }
+            />
+
+            <div className="p-4 md:p-8 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                {/* FILTERS & SEARCH */}
+                <div className="flex items-center gap-4 bg-white dark:bg-zinc-900 p-2 border border-zinc-200 dark:border-zinc-800 shadow-sm rounded-2xl">
+                    <div className="flex-1 relative">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
+                        <Input
+                            placeholder="Search by name, email or role..."
+                            className="pl-11 border-none shadow-none focus-visible:ring-0 p-0 text-sm font-medium h-10 w-full bg-transparent"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                    </div>
+                    <div className="h-6 w-px bg-zinc-200 dark:bg-zinc-800" />
+                    <CustomButton variant="ghost" className="h-9 font-semibold text-zinc-500 hover:text-zinc-900 dark:hover:text-white gap-2 rounded-xl" onClick={() => toast.info("Opening advanced filters")}>
+                        <Filter className="w-4 h-4" /> Filters
+                    </CustomButton>
+                </div>
+
+                {/* USERS TABLE */}
+                <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm rounded-3xl overflow-hidden min-h-[400px]">
+                    <CardContent className="p-0">
+                        <table className="w-full text-left">
+                            <thead className="bg-zinc-50 dark:bg-zinc-900/50 text-xs text-zinc-500 font-semibold border-b border-zinc-100 dark:border-zinc-800">
+                                <tr>
+                                    <th className="px-6 py-4">User Details</th>
+                                    <th className="px-6 py-4">Role</th>
+                                    <th className="px-6 py-4">Status</th>
+                                    <th className="px-6 py-4">Last Active</th>
+                                    <th className="px-6 py-4 text-right">Actions</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </CardContent>
-            </Card>
-            {loading ? <p className="text-xs text-slate-500 mt-2">Loading...</p> : null}
+                            </thead>
+                            <tbody className="divide-y divide-zinc-50 dark:divide-zinc-800/50 text-sm">
+                                {loading && (
+                                    <tr>
+                                        <td colSpan={5} className="text-center py-10 text-zinc-400 font-medium">Loading user list...</td>
+                                    </tr>
+                                )}
+                                {!loading && filtered.length === 0 && (
+                                    <tr>
+                                        <td colSpan={5} className="text-center py-10 text-zinc-400 font-medium">No users found matching your search.</td>
+                                    </tr>
+                                )}
+                                {!loading && filtered.map((user) => (
+                                    <tr key={user.memberId} className="group hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition-colors">
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-4">
+                                                <Avatar className="h-10 w-10 rounded-full border border-zinc-200 dark:border-zinc-700">
+                                                    <AvatarFallback className="font-semibold bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300">
+                                                        {(user.name?.[0] || "?").toUpperCase()}
+                                                    </AvatarFallback>
+                                                </Avatar>
+                                                <div>
+                                                    <p className="font-semibold tracking-tight text-zinc-900 dark:text-white">{user.name}</p>
+                                                    <p className="text-xs text-zinc-500">{user.email}</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-2">
+                                                <ShieldCheck className="w-4 h-4 text-zinc-400" />
+                                                <span className="font-medium text-zinc-700 dark:text-zinc-300 tracking-wide text-xs">{user.role}</span>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <Badge
+                                                className={`rounded-full border-0 font-medium text-xs px-2 py-0.5 ${
+                                                    user.orgActive ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600" : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500"
+                                                }`}
+                                            >
+                                                {user.orgActive ? "Active" : "Inactive"}
+                                            </Badge>
+                                        </td>
+                                        <td className="px-6 py-4 text-zinc-500 font-medium text-xs">
+                                            {user.joinedAt ? new Date(user.joinedAt).toLocaleDateString() : "—"}
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <CustomButton variant="ghost" size="icon" className="h-8 w-8 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800">
+                                                        <MoreHorizontal className="w-4 h-4" />
+                                                    </CustomButton>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end" className="rounded-xl w-48 bg-white dark:bg-zinc-900 border-zinc-100 dark:border-zinc-800 shadow-xl">
+                                                    <DropdownMenuLabel className="text-xs font-semibold text-zinc-400">User Management</DropdownMenuLabel>
+                                                    <DropdownMenuSeparator className="bg-zinc-100 dark:bg-zinc-800" />
+                                                    <DropdownMenuItem className="gap-3 text-xs font-medium py-2.5 cursor-pointer" onClick={() => toast.info(`Emailing ${user.name}`)}>
+                                                        <Mail className="w-4 h-4 text-zinc-400" /> Send Message
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem className="gap-3 text-xs font-medium py-2.5 cursor-pointer" onClick={() => toast.info(`Viewing ${user.name}'s permissions`)}>
+                                                        <ShieldCheck className="w-4 h-4 text-zinc-400" /> Manage Privileges
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuSeparator className="bg-zinc-100 dark:bg-zinc-800" />
+                                                    <DropdownMenuItem className="gap-3 text-xs font-medium py-2.5 cursor-pointer text-red-600 focus:bg-red-50 dark:focus:bg-red-950/20" onClick={() => toast.error(`Revoked access for ${user.name}`)}>
+                                                        Deactivate Access
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </CardContent>
+                </Card>
+            </div>
         </div>
     );
 }

@@ -193,7 +193,7 @@ export default function HolidayCalendarPage() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-xs text-white/80">Total Holidays</p>
-                                <p className="text-xl font-semibold">{holidays.length}</p>
+                                <p className="text-xl font-semibold text-white tracking-tight">{holidays.length}</p>
                                 <p className="text-[10px] text-white/70">Year {selectedYear}</p>
                             </div>
                             <CalendarDays className="w-5 h-5 text-white/80" />

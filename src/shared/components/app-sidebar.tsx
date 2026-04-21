@@ -107,6 +107,22 @@ import { userById } from "@/hooks/userHooks"
 import { useLoaderStore } from "@/lib/loaderStore"
 import { useRoleAccess } from "@/shared/hooks/use-role-access"
 
+// Type definitions for sidebar navigation
+type FluentIcon = React.ComponentType<React.SVGProps<SVGSVGElement>>;
+
+interface SidebarNavSubItem {
+  title: string;
+  icon: FluentIcon;
+  url: string;
+}
+
+interface SidebarNavItem {
+  title: string;
+  icon: FluentIcon;
+  url?: string;
+  items?: SidebarNavSubItem[];
+}
+
 // Microsoft Entra-style icon colors
 const ICON_COLORS: Record<string, { bg: string; icon: string }> = {
   "SECURITY": { bg: "bg-red-100 dark:bg-red-950", icon: "text-red-500 dark:text-red-400" },
@@ -322,6 +338,8 @@ const authAdminMenuData = [
       { title: "Conditional Access", url: "/modules/settings/auth/conditional", icon: Lock },
       { title: "Password Policy", url: "/modules/settings/auth/password-policy", icon: Settings },
       { title: "Login Restrictions", icon: ShieldAlert, url: "/modules/settings/auth/restrictions" },
+      { title: "Login Policies", icon: ShieldCheck, url: "/modules/settings/auth/policies" },
+      { title: "Sessions", icon: History, url: "/modules/settings/auth/sessions" },
     ]
   }
 ];
@@ -648,9 +666,6 @@ const adminSidebarGroupsData = [
       { title: "Roles & Permissions", icon: Shield, url: "/modules/administration/roles" },
       { title: "Teams / Groups", icon: Network, url: "/modules/teams" },
       { title: "Authentication", icon: Key, url: "/modules/settings/auth" },
-      { title: "SSO & Identity Providers", icon: Globe, url: "/modules/settings/auth/sso" },
-      { title: "Login Policies", icon: ShieldCheck, url: "/modules/settings/auth/policies" },
-      { title: "Sessions", icon: History, url: "/modules/settings/auth/sessions" },
     ]
   },
   {
@@ -996,13 +1011,22 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
   const params = useParams() as { workspaceId?: string; orgName?: string }
   const pathname = usePathname();
   const router = useRouter();
-  const { state: sidebarState } = useSidebar();
+  const { state: sidebarState, isMobile, setOpenMobile } = useSidebar();
   const { showLoader } = useLoaderStore();
+
+  // Auto-close the mobile sidebar on route change
+  useEffect(() => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
 
   const [activeCategory, setActiveCategory] = useState<string>("DASHBOARD");
   const [isSubCollapsed, setIsSubCollapsed] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<string[]>(["CRM SYSTEM"]); // CRM SYSTEM open by default
   const [expandedSubItems, setExpandedSubItems] = useState<string[]>([]);
+  const [pendingPathname, setPendingPathname] = useState<string | null>(null);
 
   const [orgName, setOrgName] = useState("")
   const [currentUser, setCurrentUser] = useState<any>(null)
@@ -1050,14 +1074,14 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
   const finalSidebarGroups = useMemo(() => {
     return activeSidebarData.map(group => ({
       ...group,
-      items: group.items.map(item => {
-        let finalUrl = item.url;
-        if (currentOrg && !item.url.startsWith("/hrmcubicle")) {
-          finalUrl = `/${currentOrg}${item.url.startsWith("/") ? "" : "/"}${item.url}`;
+      items: group.items.map((item: SidebarNavItem) => {
+        let finalUrl = item.url ?? "";
+        if (currentOrg && !item.url?.startsWith("/hrmcubicle")) {
+          finalUrl = `/${currentOrg}${item.url?.startsWith("/") ? "" : "/"}${item.url}`;
         }
 
         // Handle nested items if they exist
-        const nestedItems = item.items?.map((subItem: any) => {
+        const nestedItems = item.items?.map((subItem: SidebarNavSubItem) => {
           let subUrl = subItem.url;
           if (currentOrg && !subUrl.startsWith("/hrmcubicle")) {
             subUrl = `/${currentOrg}${subUrl.startsWith("/") ? "" : "/"}${subUrl}`;
@@ -1073,9 +1097,10 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
   // Sync expanded states with current path
   useEffect(() => {
     if (!pathname) return;
+    setPendingPathname(null);
 
     finalSidebarGroups.forEach(group => {
-      group.items.forEach(item => {
+      group.items.forEach((item: SidebarNavItem) => {
         // Check if current path is in sub-items
         const isPathInSubItems = item.items?.some((sub: any) => pathname.includes(sub.url));
 
@@ -1084,7 +1109,7 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
           setExpandedGroups(prev => prev.includes(group.title) ? prev : [...prev, group.title]);
           setExpandedSubItems(prev => prev.includes(item.title) ? prev : [...prev, item.title]);
           setActiveCategory(group.title);
-        } else if (pathname.includes(item.url)) {
+        } else if (pathname.includes(item.url ?? "")) {
           // Expand group if sub-item is active
           setExpandedGroups(prev => prev.includes(group.title) ? prev : [...prev, group.title]);
           setActiveCategory(group.title);
@@ -1300,7 +1325,6 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
         items: [
           { title: "Firms List", url: `/modules/firm-management/firms`, icon: ListTree },
           { title: "Create Firm", url: `/modules/firm-management/firms/add`, icon: Plus },
-          { title: "Onboarding Status", url: `/modules/organization/onboarding`, icon: Clock },
         ]
       },
       {
@@ -1308,7 +1332,6 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
         items: [
           { title: "Firm Admins", url: `/modules/organization/admins`, icon: ShieldCheck },
           { title: "Module Access", url: `/modules/organization/access`, icon: Package },
-          { title: "Settings Summary", url: `/modules/organization/settings`, icon: Settings },
         ]
       }
     ].map(group => ({
@@ -1438,39 +1461,41 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
 
   // Determine Active Module based on Path AND Active Category
   const activeModule = useMemo(() => {
+    const activePath = pendingPathname || pathname;
+    
     // If we are in CALENDAR category, return specialized module name
     if (activeCategory === "CALENDAR") return "Calendar";
 
     // Admin Governance Drill-downs
     if (activeCategory === "IDENTITY & ACCESS") {
-      if (pathname?.includes("/modules/users")) return "UsersAdmin";
-      if (pathname?.includes("/modules/teams")) return "GroupsAdmin";
-      if (pathname?.includes("/modules/administration/roles")) return "RolesAdmin";
-      if (pathname?.includes("/modules/administration/permissions")) return "RolesAdmin";
-      if (pathname?.includes("/modules/administration/units")) return "RolesAdmin";
-      if (pathname?.includes("/modules/administration/security-baseline")) return "RolesAdmin";
-      if (pathname?.includes("/modules/administration/reviews")) return "RolesAdmin";
-      if (pathname?.includes("/modules/settings/auth")) return "AuthAdmin";
+      if (activePath?.includes("/modules/users")) return "UsersAdmin";
+      if (activePath?.includes("/modules/teams")) return "GroupsAdmin";
+      if (activePath?.includes("/modules/administration/roles")) return "RolesAdmin";
+      if (activePath?.includes("/modules/administration/permissions")) return "RolesAdmin";
+      if (activePath?.includes("/modules/administration/units")) return "RolesAdmin";
+      if (activePath?.includes("/modules/administration/security-baseline")) return "RolesAdmin";
+      if (activePath?.includes("/modules/administration/reviews")) return "RolesAdmin";
+      if (activePath?.includes("/modules/settings/auth")) return "AuthAdmin";
     }
 
     // Modules & Entitlements Governance - Detected independently of activeCategory for robustness
-    if (pathname?.includes("/modules/settings/entitlements/leads")) return "LeadGov";
-    if (pathname?.includes("/modules/settings/entitlements/clients")) return "ClientGov";
-    if (pathname?.includes("/modules/settings/entitlements/projects")) return "ProjectGov";
-    if (pathname?.includes("/modules/settings/entitlements/accounting")) return "AccountingGov";
-    if (pathname?.includes("/modules/settings/entitlements/hrm")) return "HrmGov";
-    if (pathname?.includes("/modules/settings/entitlements/automations")) return "AutomationGov";
-    if (pathname?.includes("/modules/settings/entitlements/campaigns")) return "CampaignGov";
-    if (pathname?.includes("/modules/settings/entitlements/pipeline")) return "PipelineGov";
+    if (activePath?.includes("/modules/settings/entitlements/leads")) return "LeadGov";
+    if (activePath?.includes("/modules/settings/entitlements/clients")) return "ClientGov";
+    if (activePath?.includes("/modules/settings/entitlements/projects")) return "ProjectGov";
+    if (activePath?.includes("/modules/settings/entitlements/accounting")) return "AccountingGov";
+    if (activePath?.includes("/modules/settings/entitlements/hrm")) return "HrmGov";
+    if (activePath?.includes("/modules/settings/entitlements/automations")) return "AutomationGov";
+    if (activePath?.includes("/modules/settings/entitlements/campaigns")) return "CampaignGov";
+    if (activePath?.includes("/modules/settings/entitlements/pipeline")) return "PipelineGov";
 
     // Organization Granular Drill-down
-    if (pathname?.includes("/modules/organization/overview")) return "OrgOverview";
-    if (pathname?.includes("/modules/firm-management/firms/deleted") || pathname?.includes("/modules/organization/trash")) return "OrgRecycleBin";
-    if (pathname?.includes("/modules/firm-management/firms") || pathname?.includes("/modules/organization/firms") || pathname.includes("/modules/organization/create") || pathname?.includes("/modules/organization/onboarding") || pathname?.includes("/modules/organization/admins") || pathname?.includes("/modules/organization/access")) return "OrgFirms";
-    if (pathname?.includes("/modules/organization/branding")) return "OrgBranding";
-    if (pathname?.includes("/modules/organization/settings")) return "OrgSettings";
-    if (pathname?.includes("/modules/organization/users")) return "OrgUsers";
-    if (pathname?.includes("/modules/organization/policies")) return "OrgPolicies";
+    if (activePath?.includes("/modules/organization/overview") || activePath?.includes("/modules/organization/onboarding")) return "OrgOverview";
+    if (activePath?.includes("/modules/firm-management/firms/deleted") || activePath?.includes("/modules/organization/trash")) return "OrgRecycleBin";
+    if (activePath?.includes("/modules/firm-management/firms") || activePath?.includes("/modules/organization/firms") || activePath?.includes("/modules/organization/create") || activePath?.includes("/modules/organization/admins") || activePath?.includes("/modules/organization/access")) return "OrgFirms";
+    if (activePath?.includes("/modules/organization/branding")) return "OrgBranding";
+    if (activePath?.includes("/modules/organization/settings")) return "OrgSettings";
+    if (activePath?.includes("/modules/organization/users")) return "OrgUsers";
+    if (activePath?.includes("/modules/organization/policies")) return "OrgPolicies";
     // Fallback if just clicked organization but not a specific page yet (unlikely if strictly routed)
     if (activeCategory === "ORGANIZATION") return "OrgOverview";
 
@@ -1478,22 +1503,33 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
     if (activeCategory !== "CRM SYSTEM") return null;
 
     // Check most specific paths first to avoid false matches
-    if (pathname?.includes("/modules/crm/campaigns")) return "Campaigns";
-    if (pathname?.includes("/modules/crm/pipeline")) return "Pipeline";
-    if (pathname?.includes("/modules/crm/clients")) return "Clients";
-    if (pathname?.includes("/modules/crm/deals")) return "Deals";
-    if (pathname?.includes("/modules/crm/leads")) return "Leads";
+    if (activePath?.includes("/modules/crm/campaigns")) return "Campaigns";
+    if (activePath?.includes("/modules/crm/pipeline")) return "Pipeline";
+    if (activePath?.includes("/modules/crm/clients")) return "Clients";
+    if (activePath?.includes("/modules/crm/deals")) return "Deals";
+    if (activePath?.includes("/modules/crm/leads")) return "Leads";
     // Add logic for other modules if they need drill-down
     return null;
-  }, [pathname, activeCategory]);
+  }, [pendingPathname, pathname, activeCategory]);
 
   // Synchronously compute active category from pathname to avoid effect delay
   const activeCategoryFromPath = useMemo(() => {
     if (!pathname) return activeCategory;
+
+    // Ensure URL match respects path segment boundaries
+    // e.g. "/security" should NOT match inside "/security-baseline"
+    const matchesPath = (url: string) => {
+      if (!url || url === '/') return pathname === url;
+      const idx = pathname.indexOf(url);
+      if (idx === -1) return false;
+      const end = idx + url.length;
+      return end >= pathname.length || '/?.#'.includes(pathname[end]);
+    };
+
     for (const group of activeSidebarData) {
-      if (group.url && pathname.includes(group.url)) return group.title;
+      if (group.url && matchesPath(group.url)) return group.title;
       if (group.items.length > 0) {
-        if (group.items.some(item => pathname.includes(item.url) || (item.url !== '/' && pathname.startsWith(item.url)))) {
+        if (group.items.some((item: any) => matchesPath(item.url))) {
           return group.title;
         }
       }
@@ -1568,8 +1604,8 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
       if (currentOrg && !group.url.startsWith("/hrmcubicle")) {
         finalUrl = `/${currentOrg}${group.url.startsWith("/") ? "" : "/"}${group.url}`;
       }
+      setPendingPathname(finalUrl);
       router.push(finalUrl);
-      showLoader();
     }
   };
 
@@ -1594,9 +1630,9 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
   return (
     <>
       {/* PRIMARY SIDEBAR - Categories & Inline Dropdowns */}
-      <Sidebar collapsible="icon" {...props} className="mt-[63px] h-[calc(100svh-63px)] border-r bg-white dark:bg-zinc-950 z-30">
+      <Sidebar collapsible="icon" {...props} className="border-r bg-white dark:bg-zinc-950 z-30 md:!top-[63px]">
         <SidebarHeader className="h-0 p-0 m-0" />
-        <SidebarContent className="bg-white dark:bg-zinc-950 pt-2 hover-scroll">
+        <SidebarContent className="bg-white dark:bg-zinc-950 pt-4 hover-scroll">
           <SidebarMenu>
             {finalSidebarGroups.map((group) => {
               const isActive = activeCategory === group.title;
@@ -1649,11 +1685,9 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
                                     href={subItem.url}
                                     prefetch={true}
                                     onClick={() => {
-                                      setActiveCategory(group.title);
                                       setIsSubCollapsed(false);
-                                      showLoader();
                                     }}
-                                    className={`text-xs font-light flex items-center gap-3 w-full hover:text-blue-600 dark:hover:text-blue-400 rounded-md transition-colors ${isCollapsed ? 'justify-center p-2' : 'p-3'
+                                    className={`text-xs font-light flex items-center gap-3 w-full hover:text-primary dark:hover:text-primary rounded-md transition-colors ${isCollapsed ? 'justify-center p-2' : 'p-3'
                                       }`}
                                     title={subItem.title}
                                   >
@@ -1674,7 +1708,7 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
 
                               {hasNestedItems && isSubExpanded && !isCollapsed && (
                                 <div className="ml-7 mt-1 space-y-1 border-l border-zinc-100 dark:border-zinc-800 p-1">
-                                  {subItem.items.map((nestedItem: any) => {
+                                  {(subItem.items ?? []).map((nestedItem: any) => {
                                     const isNestedActive = pathname === nestedItem.url;
                                     return (
                                       <Link
@@ -1682,14 +1716,12 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
                                         href={nestedItem.url}
                                         prefetch={true}
                                         onClick={() => {
-                                          setActiveCategory(group.title);
                                           setIsSubCollapsed(false);
-                                          showLoader();
                                         }}
                                         className={`text-[11px] font-light flex items-center gap-2 p-2 rounded-md transition-colors 
                                           ${isNestedActive
-                                            ? "text-blue-600 font-medium bg-blue-50/50 dark:bg-blue-900/20"
-                                            : "text-zinc-500 hover:text-blue-600 hover:bg-zinc-50 dark:hover:bg-zinc-900"
+                                            ? "text-primary font-medium bg-primary/10 dark:bg-primary/20"
+                                            : "text-zinc-500 hover:text-primary hover:bg-zinc-50 dark:hover:bg-zinc-900"
                                           }`}
                                       >
                                         <nestedItem.icon className="h-3 w-3" />
@@ -1713,13 +1745,73 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
               );
             })}
           </SidebarMenu>
+
+          {/* MOBILE: Inline sub-sidebar (drill-down) content inside the drawer */}
+          {isMobile && finalSubSidebarGroups.length > 0 && (
+            <div className="mt-2 border-t border-border pt-3 px-2 pb-6">
+              <h4 className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider mb-3 px-2">
+                {activeModule === "LeadGov" ? "Lead Management" :
+                  activeModule === "ClientGov" ? "Client Management" :
+                    activeModule === "ProjectGov" ? "Project Management" :
+                      activeModule === "AccountingGov" ? "Accounting" :
+                        activeModule === "HrmGov" ? "HRM" :
+                          activeModule === "AutomationGov" ? "Automations" :
+                            activeModule === "UsersAdmin" ? "Users Management" :
+                              activeModule === "GroupsAdmin" ? "Groups & Teams" :
+                                activeModule === "RolesAdmin" ? "Roles & Permissions" :
+                                  activeModule === "AuthAdmin" ? "Authentication" :
+                                    activeModule === "Leads" ? "Leads" :
+                                      activeModule === "Deals" ? "Deals / Opportunities" :
+                                        activeModule === "Pipeline" ? "Sales Pipeline" :
+                                          activeModule === "Clients" ? "Clients / Accounts" :
+                                            activeModule === "Campaigns" ? "Campaigns" :
+                                              activeModule === "Calendar" ? "Calendar" :
+                                                activeModule === "OrgOverview" ? "Organization Overview" :
+                                                  activeModule === "OrgFirms" ? "Business Units" :
+                                                    activeModule === "OrgRecycleBin" ? "Firm Recycle Bin" :
+                                                      activeModule === "OrgBranding" ? "Branding & Theme" :
+                                                        activeModule === "OrgSettings" ? "Organization Settings" :
+                                                          activeModule === "OrgUsers" ? "Org Admins" :
+                                                            activeModule === "OrgPolicies" ? "Org Policies" :
+                                                              activeModule ? activeModule.toUpperCase() : activeCategory}
+              </h4>
+              <div className="space-y-4">
+                {finalSubSidebarGroups.map((group, idx) => (
+                  <div key={idx} className="px-2">
+                    <h5 className="text-[10px] font-black text-zinc-400 mb-2 px-2 uppercase tracking-[0.2em]">{group.group}</h5>
+                    <div className="space-y-1">
+                      {group.items.map((item) => {
+                        const isActive = pathname === item.url;
+                        return (
+                          <Link
+                            key={item.title}
+                            href={item.url}
+                            prefetch={true}
+                            onClick={() => { setOpenMobile(false); }}
+                            className={`flex items-center gap-3 rounded-md text-xs font-light transition-all duration-200 px-3 py-2.5
+                              ${isActive
+                                ? "bg-primary text-white font-medium shadow-md"
+                                : "text-zinc-600 hover:text-foreground dark:hover:text-zinc-300 hover:bg-zinc-100/60 dark:hover:bg-zinc-800/60"
+                              }`}
+                          >
+                            <item.icon className={`h-4 w-4 flex-shrink-0 ${isActive ? "text-white" : getIconColor(item.title).icon}`} />
+                            <span className="truncate">{item.title}</span>
+                          </Link>
+                        )
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </SidebarContent>
         <SidebarRail />
       </Sidebar>
 
-      {/* SECONDARY SIDEBAR - Module Drill-down or Category List */}
+      {/* SECONDARY SIDEBAR - Module Drill-down or Category List (DESKTOP ONLY) */}
       {finalSubSidebarGroups.length > 0 && (
-        <aside className={`mt-[63px] h-[calc(100svh-63px)] border-r border-border bg-zinc-50 dark:bg-zinc-900 flex-shrink-0 relative hover-scroll hidden md:flex flex-col transition-all duration-300 ${isSubCollapsed ? "w-[60px]" : "w-64"}`}>
+        <aside className={`h-full border-r border-border bg-zinc-50 dark:bg-zinc-900 flex-shrink-0 relative hover-scroll hidden md:flex flex-col transition-all duration-300 ${isSubCollapsed ? "w-[60px]" : "w-64"}`}>
           <div className={`p-4 border-b border-border flex items-center sticky top-0 bg-inherit z-10 ${isSubCollapsed ? "justify-center" : "justify-between"}`}>
             {!isSubCollapsed && (
               <h3 className="font-bold text-sm text-foreground uppercase tracking-wide truncate">
@@ -1769,10 +1861,12 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
                           key={item.title}
                           href={item.url}
                           prefetch={true}
-                          onClick={() => showLoader()}
+                          onClick={() => {
+                            setPendingPathname(item.url);
+                          }}
                           className={`flex items-center gap-3 rounded-md text-xs font-light transition-all duration-200
                             ${isActive
-                              ? "bg-blue-600 text-white font-medium shadow-md"
+                              ? "bg-primary text-white font-medium shadow-md"
                               : "text-zinc-600 hover:text-foreground dark:hover:text-zinc-300 hover:bg-zinc-100/50 dark:hover:bg-zinc-800/50"
                             }
                                 ${isSubCollapsed ? "justify-center p-2.5 mx-1" : "px-3 py-2"}

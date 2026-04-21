@@ -60,14 +60,20 @@ import {
 import { useDocumentsStore, type IssuedLetter } from "@/shared/data/documents-store";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
+import { required, minLength, maxLength, isEmail, isEmployeeId, firstError } from "@/shared/utils/validators";
 
 const LettersPage = () => {
-    const { issuedLetters, issueLetter, updateLetterStatus, deleteLetter } = useDocumentsStore();
+    const { issuedLetters, letterTemplates, issueLetter, updateLetter, updateLetterStatus, deleteLetter } = useDocumentsStore();
     const [searchQuery, setSearchQuery] = useState("");
     const [statusFilter, setStatusFilter] = useState("all");
     const [isIssueDialogOpen, setIsIssueDialogOpen] = useState(false);
     const [selectedLetterIds, setSelectedLetterIds] = useState<string[]>([]);
     const [previewLetter, setPreviewLetter] = useState<IssuedLetter | null>(null);
+    const [editingLetter, setEditingLetter] = useState<IssuedLetter | null>(null);
+    const [archiveLetter, setArchiveLetter] = useState<IssuedLetter | null>(null);
+    const [emailLetter, setEmailLetter] = useState<IssuedLetter | null>(null);
+    const [emailRecipient, setEmailRecipient] = useState("");
+    const [deleteLetterId, setDeleteLetterId] = useState<string | null>(null);
 
     const [newLetter, setNewLetter] = useState({
         employeeId: "",
@@ -93,12 +99,31 @@ const LettersPage = () => {
         draft: issuedLetters.filter(l => l.status === "Draft").length
     };
 
+    const validateLetter = (l: { employeeName: string; employeeId: string; letterType: string; templateId: string; issuedBy: string }): string | null => {
+        const templateExists = !l.templateId || letterTemplates.some(t => t.id === l.templateId);
+        return firstError(
+            required(l.employeeName, "Employee name"),
+            minLength(l.employeeName, 2, "Employee name"),
+            maxLength(l.employeeName, 80, "Employee name"),
+            required(l.employeeId, "Employee ID"),
+            isEmployeeId(l.employeeId, "Employee ID"),
+            required(l.letterType, "Letter type"),
+            required(l.issuedBy, "Issued by"),
+            maxLength(l.issuedBy, 80, "Issued by"),
+            templateExists ? null : "Selected template no longer exists",
+        );
+    };
+
     const handleIssueLetter = () => {
-        if (!newLetter.employeeName || !newLetter.employeeId) {
-            toast.error("Please provide employee details");
-            return;
-        }
-        issueLetter(newLetter);
+        const err = validateLetter(newLetter);
+        if (err) { toast.error(err); return; }
+        issueLetter({
+            ...newLetter,
+            employeeName: newLetter.employeeName.trim(),
+            employeeId: newLetter.employeeId.trim(),
+            issuedBy: newLetter.issuedBy.trim(),
+            status: "Sent",
+        });
         setIsIssueDialogOpen(false);
         setNewLetter({
             employeeId: "",
@@ -132,9 +157,53 @@ const LettersPage = () => {
                 return <Badge className="bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 border-blue-500/20 font-bold">Sent</Badge>;
             case "Draft":
                 return <Badge variant="secondary" className="bg-slate-500/10 text-slate-500 hover:bg-slate-500/20 border-slate-500/20 font-bold">Draft</Badge>;
+            case "Archived":
+                return <Badge className="bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 border-amber-500/20 font-bold">Archived</Badge>;
             default:
                 return <Badge variant="outline">{status}</Badge>;
         }
+    };
+
+    const handleSaveEdit = () => {
+        if (!editingLetter) return;
+        const err = validateLetter(editingLetter);
+        if (err) { toast.error(err); return; }
+        updateLetter(editingLetter.id, {
+            ...editingLetter,
+            employeeName: editingLetter.employeeName.trim(),
+            employeeId: editingLetter.employeeId.trim(),
+            issuedBy: editingLetter.issuedBy.trim(),
+        });
+        toast.success("Letter updated successfully");
+        setEditingLetter(null);
+    };
+
+    const handleArchive = () => {
+        if (!archiveLetter) return;
+        updateLetter(archiveLetter.id, { status: "Archived" });
+        toast.success(`Letter for ${archiveLetter.employeeName} archived`);
+        setArchiveLetter(null);
+    };
+
+    const handleEmail = () => {
+        if (!emailLetter) return;
+        const trimmed = emailRecipient.trim();
+        const err = firstError(
+            required(trimmed, "Recipient email"),
+            isEmail(trimmed, "Recipient email"),
+            maxLength(trimmed, 254, "Recipient email"),
+        );
+        if (err) { toast.error(err); return; }
+        toast.success(`Encrypted PDF dispatched to ${trimmed}`);
+        setEmailLetter(null);
+        setEmailRecipient("");
+    };
+
+    const confirmDelete = () => {
+        if (!deleteLetterId) return;
+        deleteLetter(deleteLetterId);
+        toast.success("Letter deleted permanently");
+        setDeleteLetterId(null);
     };
 
     return (
@@ -188,7 +257,7 @@ const LettersPage = () => {
                                             <SelectTrigger className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 focus:bg-white transition-all shadow-sm">
                                                 <SelectValue />
                                             </SelectTrigger>
-                                            <SelectContent className="rounded-2xl border-none shadow-2xl p-2 font-bold text-xs font-sans">
+                                            <SelectContent className="rounded-2xl border border-slate-200 shadow-2xl p-2 font-bold text-xs font-sans">
                                                 <SelectItem value="Offer Letter" className="rounded-xl h-10">Offer Letter</SelectItem>
                                                 <SelectItem value="Appointment Letter" className="rounded-xl h-10">Appointment Letter</SelectItem>
                                                 <SelectItem value="Experience Letter" className="rounded-xl h-10">Experience Letter</SelectItem>
@@ -199,14 +268,19 @@ const LettersPage = () => {
                                     </div>
                                     <div className="space-y-3 text-start">
                                         <label className="text-[10px] font-black tracking-wide text-slate-400 ml-1">Select Template</label>
-                                        <Select defaultValue="standard">
+                                        <Select
+                                            value={newLetter.templateId}
+                                            onValueChange={(val) => setNewLetter({ ...newLetter, templateId: val })}
+                                        >
                                             <SelectTrigger className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 focus:bg-white transition-all shadow-sm">
-                                                <SelectValue placeholder="Standard Template" />
+                                                <SelectValue placeholder="Choose template" />
                                             </SelectTrigger>
-                                            <SelectContent className="rounded-2xl border-none shadow-2xl p-2 font-bold text-xs font-sans">
-                                                <SelectItem value="standard" className="rounded-xl h-10">Standard Business Template</SelectItem>
-                                                <SelectItem value="executive" className="rounded-xl h-10">Executive Level Template</SelectItem>
-                                                <SelectItem value="intern" className="rounded-xl h-10">Internship Template</SelectItem>
+                                            <SelectContent className="rounded-2xl border border-slate-200 shadow-2xl p-2 font-bold text-xs font-sans">
+                                                {letterTemplates.length === 0 ? (
+                                                    <div className="text-[10px] text-slate-400 px-3 py-2 italic">No templates available</div>
+                                                ) : letterTemplates.map(t => (
+                                                    <SelectItem key={t.id} value={t.id} className="rounded-xl h-10">{t.name}</SelectItem>
+                                                ))}
                                             </SelectContent>
                                         </Select>
                                     </div>
@@ -221,7 +295,28 @@ const LettersPage = () => {
                                     </div>
                                 </div>
                                 <DialogFooter className="gap-3">
-                                    <Button variant="ghost" onClick={() => setIsIssueDialogOpen(false)} className="h-12 rounded-xl font-bold text-[10px] tracking-wide transition-all px-6">Save Draft</Button>
+                                    <Button variant="ghost" onClick={() => {
+                                        const err = validateLetter(newLetter);
+                                        if (err) { toast.error(err); return; }
+                                        issueLetter({
+                                            ...newLetter,
+                                            employeeName: newLetter.employeeName.trim(),
+                                            employeeId: newLetter.employeeId.trim(),
+                                            issuedBy: newLetter.issuedBy.trim(),
+                                            status: "Draft",
+                                        });
+                                        setIsIssueDialogOpen(false);
+                                        setNewLetter({
+                                            employeeId: "",
+                                            employeeName: "",
+                                            letterType: "Offer Letter",
+                                            templateId: "TMP-001",
+                                            issuedBy: "HR Admin",
+                                            status: "Draft",
+                                            fileUrl: "#"
+                                        });
+                                        toast.success("Draft saved successfully");
+                                    }} className="h-12 rounded-xl font-bold text-[10px] tracking-wide transition-all px-6">Save Draft</Button>
                                     <Button className="bg-indigo-600 hover:bg-slate-900 text-white rounded-xl h-12 px-10 font-bold shadow-lg shadow-indigo-100 transition-all text-[10px] tracking-wide border-none" onClick={handleIssueLetter}>Issue Document</Button>
                                 </DialogFooter>
                             </DialogContent>
@@ -240,7 +335,7 @@ const LettersPage = () => {
                         { label: "Draft Communications", value: stats.draft, icon: Stamp, color: "text-slate-700", bg: "bg-slate-100", border: "border-slate-200" },
                     ].map((stat, i) => (
                         <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
-                            <Card className={`border ${stat.border} shadow-sm rounded-[2rem] ${stat.bg} overflow-hidden group hover:shadow-xl transition-all duration-300 h-full flex flex-col justify-between p-7`}>
+                            <Card className={`border ${stat.border} shadow-sm rounded-none ${stat.bg} overflow-hidden group hover:shadow-xl transition-all duration-300 h-full flex flex-col justify-between p-7`}>
                                 <div className="flex items-start justify-between">
                                     <div className="space-y-1">
                                         <p className="text-[10px] font-bold text-slate-400 tracking-wide">{stat.label}</p>
@@ -288,11 +383,12 @@ const LettersPage = () => {
                                             <span>Status</span>
                                         </div>
                                     </SelectTrigger>
-                                    <SelectContent className="rounded-xl border-none shadow-2xl p-2 font-bold text-xs">
+                                    <SelectContent className="rounded-xl border border-slate-200 shadow-2xl p-2 font-bold text-xs">
                                         <SelectItem value="all" className="rounded-lg h-10">All Status</SelectItem>
                                         <SelectItem value="Draft" className="rounded-lg h-10 text-slate-500">Draft</SelectItem>
                                         <SelectItem value="Sent" className="rounded-lg h-10 text-indigo-500">Sent</SelectItem>
                                         <SelectItem value="Signed" className="rounded-lg h-10 text-emerald-500">Signed</SelectItem>
+                                        <SelectItem value="Archived" className="rounded-lg h-10 text-amber-500">Archived</SelectItem>
                                     </SelectContent>
                                 </Select>
                                 <Button variant="outline" className="h-12 border-slate-200 rounded-xl font-bold text-[10px] tracking-wide px-6 hover:bg-slate-50 transition-all" onClick={() => {
@@ -393,7 +489,10 @@ const LettersPage = () => {
                                                             <Download size={16} />
                                                         </Button>
                                                         {letter.status === 'Draft' && (
-                                                            <Button variant="ghost" size="icon" title="Send" className="h-9 w-9 text-indigo-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all border-none" onClick={() => toast.success("Relaying document to employee inbox")}>
+                                                            <Button variant="ghost" size="icon" title="Send" className="h-9 w-9 text-indigo-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all border-none" onClick={() => {
+                                                                updateLetterStatus(letter.id, "Sent");
+                                                                toast.success("Letter sent to employee successfully");
+                                                            }}>
                                                                 <Send size={16} />
                                                             </Button>
                                                         )}
@@ -403,16 +502,19 @@ const LettersPage = () => {
                                                                     <MoreHorizontal size={16} className="text-slate-400" />
                                                                 </Button>
                                                             </DropdownMenuTrigger>
-                                                            <DropdownMenuContent align="end" className="w-56 p-2 rounded-2xl border-none shadow-2xl bg-white font-sans">
+                                                            <DropdownMenuContent align="end" className="w-56 p-2 rounded-2xl border border-slate-200 shadow-2xl bg-white font-sans">
                                                                 <DropdownMenuLabel className="px-3 py-2 text-[10px] font-bold text-slate-400 tracking-wide">Document Management</DropdownMenuLabel>
-                                                                <DropdownMenuItem className="gap-3 p-3 rounded-xl cursor-pointer font-bold text-xs hover:bg-indigo-50 text-start" onClick={() => toast.success("Record moved to historical archives")}>
+                                                                <DropdownMenuItem className="gap-3 p-3 rounded-xl cursor-pointer font-bold text-xs hover:bg-indigo-50 text-start" onClick={() => setEditingLetter(letter)}>
+                                                                    <PenTool className="w-4 h-4 text-indigo-500" /> Edit Details
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuItem className="gap-3 p-3 rounded-xl cursor-pointer font-bold text-xs hover:bg-indigo-50 text-start" onClick={() => setArchiveLetter(letter)} disabled={letter.status === 'Archived'}>
                                                                     <Stamp className="w-4 h-4 text-indigo-500" /> Archive Record
                                                                 </DropdownMenuItem>
-                                                                <DropdownMenuItem className="gap-3 p-3 rounded-xl cursor-pointer font-bold text-xs hover:bg-indigo-50 text-start" onClick={() => toast.success("Encrypted PDF dispatched via mail gateway")}>
+                                                                <DropdownMenuItem className="gap-3 p-3 rounded-xl cursor-pointer font-bold text-xs hover:bg-indigo-50 text-start" onClick={() => { setEmailLetter(letter); setEmailRecipient(""); }}>
                                                                     <Mail className="w-4 h-4 text-indigo-500" /> Email PDF Version
                                                                 </DropdownMenuItem>
                                                                 <DropdownMenuSeparator className="my-2 bg-slate-50" />
-                                                                <DropdownMenuItem className="gap-3 p-3 rounded-xl cursor-pointer font-bold text-xs text-rose-600 hover:bg-rose-50 text-start" onClick={() => deleteLetter(letter.id)}>
+                                                                <DropdownMenuItem className="gap-3 p-3 rounded-xl cursor-pointer font-bold text-xs text-rose-600 hover:bg-rose-50 text-start" onClick={() => setDeleteLetterId(letter.id)}>
                                                                     <Trash2 className="w-4 h-4" /> Delete Permanently
                                                                 </DropdownMenuItem>
                                                             </DropdownMenuContent>
@@ -481,6 +583,150 @@ const LettersPage = () => {
                     </div>
                     <DialogFooter className="gap-3">
                         <Button variant="ghost" onClick={() => setPreviewLetter(null)} className="h-12 rounded-xl font-bold text-[10px] tracking-wide transition-all px-6">Close</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Edit Letter Dialog */}
+            <Dialog open={!!editingLetter} onOpenChange={(open) => !open && setEditingLetter(null)}>
+                <DialogContent className="max-w-3xl bg-white rounded-[2rem] border border-slate-200 p-8 shadow-3xl font-sans" style={{ zoom: "80%" }}>
+                    <DialogHeader>
+                        <DialogTitle className="text-2xl font-black tracking-tight text-slate-900">Edit Letter Details</DialogTitle>
+                        <DialogDescription className="font-bold text-slate-400 text-[11px] tracking-tight mt-2">
+                            Update issued letter information.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid grid-cols-2 gap-6 py-6">
+                        <div className="space-y-3 text-start">
+                            <label className="text-[10px] font-black tracking-wide text-slate-400 ml-1">Employee Name</label>
+                            <Input
+                                value={editingLetter?.employeeName || ""}
+                                onChange={(e) => setEditingLetter(prev => prev ? { ...prev, employeeName: e.target.value } : null)}
+                                className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 focus:bg-white transition-all shadow-sm"
+                            />
+                        </div>
+                        <div className="space-y-3 text-start">
+                            <label className="text-[10px] font-black tracking-wide text-slate-400 ml-1">Employee Id</label>
+                            <Input
+                                value={editingLetter?.employeeId || ""}
+                                onChange={(e) => setEditingLetter(prev => prev ? { ...prev, employeeId: e.target.value } : null)}
+                                className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 focus:bg-white transition-all shadow-sm"
+                            />
+                        </div>
+                        <div className="space-y-3 text-start">
+                            <label className="text-[10px] font-black tracking-wide text-slate-400 ml-1">Letter Type</label>
+                            <Select
+                                value={editingLetter?.letterType}
+                                onValueChange={(val) => setEditingLetter(prev => prev ? { ...prev, letterType: val } : null)}
+                            >
+                                <SelectTrigger className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 focus:bg-white transition-all shadow-sm">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent className="rounded-2xl border border-slate-200 shadow-2xl p-2 font-bold text-xs font-sans">
+                                    <SelectItem value="Offer Letter" className="rounded-xl h-10">Offer Letter</SelectItem>
+                                    <SelectItem value="Appointment Letter" className="rounded-xl h-10">Appointment Letter</SelectItem>
+                                    <SelectItem value="Experience Letter" className="rounded-xl h-10">Experience Letter</SelectItem>
+                                    <SelectItem value="Relieving Letter" className="rounded-xl h-10">Relieving Letter</SelectItem>
+                                    <SelectItem value="Promotion Letter" className="rounded-xl h-10">Promotion Letter</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-3 text-start">
+                            <label className="text-[10px] font-black tracking-wide text-slate-400 ml-1">Status</label>
+                            <Select
+                                value={editingLetter?.status}
+                                onValueChange={(val: IssuedLetter['status']) => setEditingLetter(prev => prev ? { ...prev, status: val } : null)}
+                            >
+                                <SelectTrigger className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 focus:bg-white transition-all shadow-sm">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent className="rounded-2xl border border-slate-200 shadow-2xl p-2 font-bold text-xs font-sans">
+                                    <SelectItem value="Draft" className="rounded-xl h-10">Draft</SelectItem>
+                                    <SelectItem value="Sent" className="rounded-xl h-10">Sent</SelectItem>
+                                    <SelectItem value="Signed" className="rounded-xl h-10">Signed</SelectItem>
+                                    <SelectItem value="Archived" className="rounded-xl h-10">Archived</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-3 text-start col-span-2">
+                            <label className="text-[10px] font-black tracking-wide text-slate-400 ml-1">Issued By</label>
+                            <Input
+                                value={editingLetter?.issuedBy || ""}
+                                onChange={(e) => setEditingLetter(prev => prev ? { ...prev, issuedBy: e.target.value } : null)}
+                                className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 focus:bg-white transition-all shadow-sm"
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter className="gap-3">
+                        <Button variant="ghost" onClick={() => setEditingLetter(null)} className="h-12 rounded-xl font-bold text-[10px] tracking-wide transition-all px-6">Cancel</Button>
+                        <Button className="bg-indigo-600 hover:bg-slate-900 text-white rounded-xl h-12 px-10 font-bold shadow-lg shadow-indigo-100 transition-all text-[10px] tracking-wide border-none" onClick={handleSaveEdit}>Save Changes</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Archive Confirm Dialog */}
+            <Dialog open={!!archiveLetter} onOpenChange={(open) => !open && setArchiveLetter(null)}>
+                <DialogContent className="max-w-md bg-white rounded-[2rem] border border-slate-200 p-8 shadow-3xl font-sans" style={{ zoom: "80%" }}>
+                    <DialogHeader className="text-start">
+                        <div className="h-12 w-12 bg-amber-50 rounded-2xl flex items-center justify-center mb-3 border border-amber-100">
+                            <Stamp size={22} className="text-amber-500" />
+                        </div>
+                        <DialogTitle className="text-2xl font-black tracking-tight text-slate-900">Archive Letter?</DialogTitle>
+                        <DialogDescription className="font-bold text-slate-400 text-[11px] tracking-wide mt-2">
+                            This will move the letter for <span className="text-slate-700">{archiveLetter?.employeeName}</span> to historical archives. It will remain searchable but no longer active.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="gap-3 pt-4">
+                        <Button variant="ghost" onClick={() => setArchiveLetter(null)} className="h-12 rounded-xl font-bold text-[10px] tracking-wide px-6">Cancel</Button>
+                        <Button className="bg-amber-500 hover:bg-amber-600 text-white rounded-xl h-12 px-8 font-bold shadow-lg text-[10px] tracking-wide border-none" onClick={handleArchive}>Archive</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Email PDF Dialog */}
+            <Dialog open={!!emailLetter} onOpenChange={(open) => { if (!open) { setEmailLetter(null); setEmailRecipient(""); } }}>
+                <DialogContent className="max-w-md bg-white rounded-[2rem] border border-slate-200 p-8 shadow-3xl font-sans" style={{ zoom: "80%" }}>
+                    <DialogHeader className="text-start">
+                        <div className="h-12 w-12 bg-indigo-50 rounded-2xl flex items-center justify-center mb-3 border border-indigo-100">
+                            <Mail size={22} className="text-indigo-500" />
+                        </div>
+                        <DialogTitle className="text-2xl font-black tracking-tight text-slate-900">Email PDF Version</DialogTitle>
+                        <DialogDescription className="font-bold text-slate-400 text-[11px] tracking-wide mt-2">
+                            Send {emailLetter?.letterType} for {emailLetter?.employeeName} as an encrypted PDF.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-3 py-4 text-start">
+                        <label className="text-[10px] font-black tracking-wide text-slate-400 ml-1">Recipient Email</label>
+                        <Input
+                            type="email"
+                            placeholder="employee@email.com"
+                            value={emailRecipient}
+                            onChange={(e) => setEmailRecipient(e.target.value)}
+                            className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 focus:bg-white transition-all shadow-sm"
+                        />
+                    </div>
+                    <DialogFooter className="gap-3">
+                        <Button variant="ghost" onClick={() => { setEmailLetter(null); setEmailRecipient(""); }} className="h-12 rounded-xl font-bold text-[10px] tracking-wide px-6">Cancel</Button>
+                        <Button className="bg-indigo-600 hover:bg-slate-900 text-white rounded-xl h-12 px-8 font-bold shadow-lg text-[10px] tracking-wide border-none" onClick={handleEmail}>Send Email</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Delete Confirm Dialog */}
+            <Dialog open={!!deleteLetterId} onOpenChange={(open) => !open && setDeleteLetterId(null)}>
+                <DialogContent className="max-w-md bg-white rounded-[2rem] border border-slate-200 p-8 shadow-3xl font-sans" style={{ zoom: "80%" }}>
+                    <DialogHeader className="text-start">
+                        <div className="h-12 w-12 bg-rose-50 rounded-2xl flex items-center justify-center mb-3 border border-rose-100">
+                            <Trash2 size={22} className="text-rose-500" />
+                        </div>
+                        <DialogTitle className="text-2xl font-black tracking-tight text-slate-900">Delete Letter?</DialogTitle>
+                        <DialogDescription className="font-bold text-slate-400 text-[11px] tracking-wide mt-2">
+                            This action permanently removes the letter record. It cannot be undone.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="gap-3 pt-4">
+                        <Button variant="ghost" onClick={() => setDeleteLetterId(null)} className="h-12 rounded-xl font-bold text-[10px] tracking-wide px-6">Cancel</Button>
+                        <Button className="bg-rose-500 hover:bg-rose-600 text-white rounded-xl h-12 px-8 font-bold shadow-lg text-[10px] tracking-wide border-none" onClick={confirmDelete}>Delete Permanently</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

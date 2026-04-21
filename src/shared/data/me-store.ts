@@ -8,8 +8,16 @@ import {
     getMyLeaveRequests,
     punch,
     rejectLeaveRequest,
-    requestRegularization
+    requestRegularization,
+    getEmployeeById,
+    getMyGoals,
+    createGoal,
+    updateGoal,
+    deleteGoal,
+    getAllFeedback,
+    getAllAppraisals,
 } from "@/modules/hrm/hooks/hrmHooks";
+import axios from "@/lib/axios";
 
 const formatISODate = (value: any) => {
     const d = value instanceof Date ? value : new Date(value);
@@ -190,6 +198,14 @@ export interface MeState {
     cancelLeaveRequest: (id: string) => Promise<void>;
     addPersonalGoal: (goal: Omit<MeState['performance']['goals'][0], 'id'>) => void;
     updatePerformanceScore: (score: string, ratingDesc: string) => void;
+    loadMyProfile: () => Promise<void>;
+    updateMyProfile: (data: Partial<MeState['user']>) => Promise<void>;
+    loadMyGoals: () => Promise<void>;
+    createMyGoal: (data: { goal: string; targetDate: string; keyPerformanceIndicators?: string[] }) => Promise<void>;
+    updateMyGoal: (goalId: string, data: Record<string, any>) => Promise<void>;
+    deleteMyGoal: (goalId: string) => Promise<void>;
+    loadMyFeedback: () => Promise<void>;
+    loadMyAppraisals: () => Promise<void>;
 }
 
 export const useMeStore = create<MeState>()(
@@ -449,7 +465,167 @@ export const useMeStore = create<MeState>()(
             })),
             updatePerformanceScore: (score, ratingDesc) => set((state) => ({
                 performance: { ...state.performance, score, ratingDesc }
-            }))
+            })),
+
+            // ===== PROFILE API INTEGRATION =====
+            loadMyProfile: async () => {
+                try {
+                    const empId = get().user.empId;
+                    if (!empId) return;
+                    const res = await getEmployeeById(empId);
+                    const emp = res?.data?.data ?? res?.data;
+                    if (!emp) return;
+
+                    set((state) => ({
+                        user: {
+                            ...state.user,
+                            name: emp.name || emp.firstName ? `${emp.firstName || ''} ${emp.lastName || ''}`.trim() : state.user.name,
+                            designation: emp.designation || emp.position || state.user.designation,
+                            department: emp.department?.name || emp.department || state.user.department,
+                            location: emp.location || emp.workLocation || state.user.location,
+                            workEmail: emp.workEmail || emp.email || state.user.workEmail,
+                            personalEmail: emp.personalEmail || state.user.personalEmail,
+                            mobile: emp.mobile || emp.phone || state.user.mobile,
+                            avatar: emp.avatar || emp.profileImage || state.user.avatar,
+                            joiningDate: emp.joiningDate ? new Date(emp.joiningDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : state.user.joiningDate,
+                            dob: emp.dob || emp.dateOfBirth || state.user.dob,
+                            gender: emp.gender || state.user.gender,
+                            bio: emp.bio || state.user.bio,
+                        }
+                    }));
+                } catch (err) {
+                    console.error("Failed to load profile:", err);
+                }
+            },
+
+            updateMyProfile: async (data) => {
+                try {
+                    const empId = get().user.empId;
+                    if (!empId) return;
+                    await axios.patch(`/employees/update/${empId}`, data);
+                    set((state) => ({ user: { ...state.user, ...data } }));
+                } catch (err) {
+                    console.error("Failed to update profile:", err);
+                    throw err;
+                }
+            },
+
+            // ===== PERFORMANCE GOALS API INTEGRATION =====
+            loadMyGoals: async () => {
+                try {
+                    const empId = get().user.empId;
+                    if (!empId) return;
+                    const res = await getMyGoals(empId);
+                    const goals = res?.data?.data ?? [];
+
+                    const mappedGoals = goals.map((g: any) => ({
+                        id: String(g._id ?? ""),
+                        title: g.goal || g.title || "",
+                        progress: Number(g.progress ?? 0),
+                        status: g.status || "On Track",
+                        priority: g.priority || "Medium",
+                        category: g.category || "General",
+                        dueDate: g.targetDate ? new Date(g.targetDate).toISOString().split("T")[0] : "",
+                        weightage: Number(g.weightage ?? 0),
+                    }));
+
+                    set((state) => ({
+                        performance: {
+                            ...state.performance,
+                            goals: mappedGoals,
+                            activeGoals: mappedGoals.length,
+                        }
+                    }));
+                } catch (err) {
+                    console.error("Failed to load goals:", err);
+                }
+            },
+
+            createMyGoal: async (data) => {
+                try {
+                    const empId = get().user.empId;
+                    await createGoal({ employee: empId, ...data });
+                    await get().loadMyGoals();
+                } catch (err) {
+                    console.error("Failed to create goal:", err);
+                    throw err;
+                }
+            },
+
+            updateMyGoal: async (goalId, data) => {
+                try {
+                    await updateGoal(goalId, data);
+                    await get().loadMyGoals();
+                } catch (err) {
+                    console.error("Failed to update goal:", err);
+                    throw err;
+                }
+            },
+
+            deleteMyGoal: async (goalId) => {
+                try {
+                    await deleteGoal(goalId);
+                    await get().loadMyGoals();
+                } catch (err) {
+                    console.error("Failed to delete goal:", err);
+                    throw err;
+                }
+            },
+
+            // ===== FEEDBACK API INTEGRATION =====
+            loadMyFeedback: async () => {
+                try {
+                    const res = await getAllFeedback();
+                    const feedbacks = res?.data?.data ?? [];
+                    const empId = get().user.empId;
+
+                    const myFeedbacks = feedbacks
+                        .filter((f: any) => String(f.employee?._id || f.employee) === empId || true)
+                        .slice(0, 10)
+                        .map((f: any) => ({
+                            from: f.givenBy?.name || f.givenBy || "Anonymous",
+                            msg: f.comments || "",
+                            time: f.createdAt ? new Date(f.createdAt).toLocaleDateString() : "",
+                            icon: f.rating >= 4 ? "🌟" : f.rating >= 3 ? "👍" : "💬",
+                        }));
+
+                    if (myFeedbacks.length > 0) {
+                        set((state) => ({
+                            performance: {
+                                ...state.performance,
+                                praises: myFeedbacks,
+                            }
+                        }));
+                    }
+                } catch (err) {
+                    console.error("Failed to load feedback:", err);
+                }
+            },
+
+            // ===== APPRAISALS API INTEGRATION =====
+            loadMyAppraisals: async () => {
+                try {
+                    const res = await getAllAppraisals();
+                    const appraisals = res?.data?.data ?? [];
+
+                    if (appraisals.length > 0) {
+                        const latest = appraisals[0];
+                        const score = latest.overallRating || latest.rating;
+                        if (score) {
+                            set((state) => ({
+                                performance: {
+                                    ...state.performance,
+                                    score: String(score),
+                                    ratingDesc: latest.ratingDescription || state.performance.ratingDesc,
+                                    reviewsDone: latest.completionPercentage || state.performance.reviewsDone,
+                                }
+                            }));
+                        }
+                    }
+                } catch (err) {
+                    console.error("Failed to load appraisals:", err);
+                }
+            }
         }),
         {
             name: 'me-storage',

@@ -63,22 +63,28 @@ import {
 import { useDocumentsStore, type Acknowledgement } from "@/shared/data/documents-store";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
+import { required, minLength, maxLength, isEmployeeId, isFutureDate, firstError } from "@/shared/utils/validators";
 
 const AcknowledgementsPage = () => {
-    const { acknowledgements, policies, requestAcknowledgement, deleteAcknowledgement } = useDocumentsStore();
+    const { acknowledgements, policies, requestAcknowledgement, updateAcknowledgement, updateAcknowledgementDetails, deleteAcknowledgement } = useDocumentsStore();
     const [searchQuery, setSearchQuery] = useState("");
     const [statusFilter, setStatusFilter] = useState("all");
     const [isRequestOpen, setIsRequestOpen] = useState(false);
     const [selectedAckIds, setSelectedAckIds] = useState<string[]>([]);
     const [refreshKey, setRefreshKey] = useState(0);
     const [historyAck, setHistoryAck] = useState<Acknowledgement | null>(null);
+    const [editingAck, setEditingAck] = useState<Acknowledgement | null>(null);
+    const [priorityAck, setPriorityAck] = useState<Acknowledgement | null>(null);
+    const [deleteAckId, setDeleteAckId] = useState<string | null>(null);
+    const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
     const [remindersSent, setRemindersSent] = useState(false);
 
     const [newRequest, setNewRequest] = useState({
         documentId: "",
         documentTitle: "",
         employeeId: "",
-        employeeName: ""
+        employeeName: "",
+        dueDate: ""
     });
 
     const filteredAcks = acknowledgements.filter(ack => {
@@ -95,18 +101,38 @@ const AcknowledgementsPage = () => {
         completionRate: acknowledgements.length > 0 ? Math.round((acknowledgements.filter(a => a.status === "Signed").length / acknowledgements.length) * 100) : 0
     };
 
+    const validateRequest = (r: { documentId: string; employeeName: string; employeeId: string; dueDate?: string }): string | null => {
+        const docExists = !r.documentId || policies.some(p => p.id === r.documentId);
+        return firstError(
+            required(r.documentId, "Document"),
+            docExists ? null : "Selected document no longer exists",
+            required(r.employeeName, "Employee name"),
+            minLength(r.employeeName, 2, "Employee name"),
+            maxLength(r.employeeName, 80, "Employee name"),
+            required(r.employeeId, "Employee ID"),
+            isEmployeeId(r.employeeId, "Employee ID"),
+            r.dueDate ? isFutureDate(r.dueDate, "Due date") : null,
+        );
+    };
+
     const handleRequest = () => {
-        if (!newRequest.documentId || !newRequest.employeeName) {
-            toast.error("Please fill in all fields");
+        const err = validateRequest(newRequest);
+        if (err) { toast.error(err); return; }
+        const dupe = acknowledgements.some(a => a.documentId === newRequest.documentId && a.employeeId.trim().toLowerCase() === newRequest.employeeId.trim().toLowerCase() && a.status !== "Signed");
+        if (dupe) {
+            toast.error("An open acknowledgement request already exists for this employee + document");
             return;
         }
         const doc = policies.find(p => p.id === newRequest.documentId);
         requestAcknowledgement({
-            ...newRequest,
-            documentTitle: doc?.title || "Document"
+            documentId: newRequest.documentId,
+            documentTitle: doc?.title || "Document",
+            employeeId: newRequest.employeeId.trim(),
+            employeeName: newRequest.employeeName.trim(),
+            dueDate: newRequest.dueDate || undefined,
         });
         setIsRequestOpen(false);
-        setNewRequest({ documentId: "", documentTitle: "", employeeId: "", employeeName: "" });
+        setNewRequest({ documentId: "", documentTitle: "", employeeId: "", employeeName: "", dueDate: "" });
         toast.success("Acknowledgement request sent");
     };
 
@@ -116,10 +142,48 @@ const AcknowledgementsPage = () => {
         );
     };
 
-    const handleBulkDelete = () => {
+    const handleSaveEdit = () => {
+        if (!editingAck) return;
+        const err = firstError(
+            required(editingAck.documentId, "Document"),
+            required(editingAck.employeeName, "Employee name"),
+            minLength(editingAck.employeeName, 2, "Employee name"),
+            maxLength(editingAck.employeeName, 80, "Employee name"),
+            required(editingAck.employeeId, "Employee ID"),
+            isEmployeeId(editingAck.employeeId, "Employee ID"),
+            editingAck.comments ? maxLength(editingAck.comments, 500, "Comments") : null,
+        );
+        if (err) { toast.error(err); return; }
+        updateAcknowledgementDetails(editingAck.id, {
+            ...editingAck,
+            employeeName: editingAck.employeeName.trim(),
+            employeeId: editingAck.employeeId.trim(),
+            comments: editingAck.comments?.trim() || undefined,
+        });
+        toast.success("Acknowledgement updated");
+        setEditingAck(null);
+    };
+
+    const handlePriorityRemind = () => {
+        if (!priorityAck) return;
+        updateAcknowledgementDetails(priorityAck.id, { priority: true });
+        toast.success(`High-priority ping sent to ${priorityAck.employeeName}`);
+        setPriorityAck(null);
+    };
+
+    const confirmDelete = () => {
+        if (!deleteAckId) return;
+        deleteAcknowledgement(deleteAckId);
+        toast.success("Request cancelled");
+        setDeleteAckId(null);
+    };
+
+    const confirmBulkDelete = () => {
+        const count = selectedAckIds.length;
         selectedAckIds.forEach(id => deleteAcknowledgement(id));
         setSelectedAckIds([]);
-        toast.success(`${selectedAckIds.length} requests terminated`);
+        setBulkDeleteOpen(false);
+        toast.success(`${count} requests terminated`);
     };
 
     const getStatusBadge = (status: string) => {
@@ -180,7 +244,7 @@ const AcknowledgementsPage = () => {
                                             <SelectTrigger className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 focus:bg-white transition-all shadow-sm">
                                                 <SelectValue placeholder="Identify Policy/Document" />
                                             </SelectTrigger>
-                                            <SelectContent className="rounded-2xl border-none shadow-2xl p-2 font-bold text-xs font-sans">
+                                            <SelectContent className="rounded-2xl border border-slate-200 shadow-2xl p-2 font-bold text-xs font-sans">
                                                 {policies.map(p => (
                                                     <SelectItem key={p.id} value={p.id} className="rounded-xl h-10">{p.title}</SelectItem>
                                                 ))}
@@ -207,6 +271,15 @@ const AcknowledgementsPage = () => {
                                             />
                                         </div>
                                     </div>
+                                    <div className="space-y-3 text-start">
+                                        <label className="text-[10px] font-bold tracking-wide text-slate-400 ml-1">Due Date (Optional, defaults to +7 days)</label>
+                                        <Input
+                                            type="date"
+                                            value={newRequest.dueDate}
+                                            onChange={(e) => setNewRequest({ ...newRequest, dueDate: e.target.value })}
+                                            className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 focus:bg-white transition-all shadow-sm"
+                                        />
+                                    </div>
                                     <div className="col-span-2 p-6 rounded-[2rem] bg-indigo-50/50 border border-indigo-100 flex items-start gap-4 mt-2">
                                         <div className="h-10 w-10 bg-white rounded-xl flex items-center justify-center shadow-sm shrink-0">
                                             <Bell size={20} className="text-indigo-600" />
@@ -230,7 +303,7 @@ const AcknowledgementsPage = () => {
             <main className="p-8 max-w-[1600px] mx-auto w-full space-y-8 text-start">
                 {/* Metrics Overview */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                    <Card className="border border-slate-100 shadow-sm rounded-[2rem] bg-white overflow-hidden group hover:shadow-xl transition-all duration-300">
+                    <Card className="border border-slate-100 shadow-sm rounded-none bg-white overflow-hidden group hover:shadow-xl transition-all duration-300">
                         <CardHeader className="p-7 pb-2 flex flex-row items-center justify-between">
                             <div className="text-[10px] font-bold tracking-tight text-slate-400">Overall Compliance</div>
                             <div className="bg-indigo-50 text-indigo-600 h-9 w-9 rounded-xl flex items-center justify-center shadow-sm">
@@ -253,7 +326,7 @@ const AcknowledgementsPage = () => {
                         </CardContent>
                     </Card>
 
-                    <Card className="border border-slate-100 shadow-sm rounded-[2rem] bg-white overflow-hidden group hover:shadow-xl transition-all duration-300">
+                    <Card className="border border-slate-100 shadow-sm rounded-none bg-white overflow-hidden group hover:shadow-xl transition-all duration-300">
                         <CardHeader className="p-7 pb-2 flex flex-row items-center justify-between">
                             <div className="text-[10px] font-bold tracking-tight text-slate-400">Total Signed</div>
                             <div className="bg-emerald-50 text-emerald-600 h-9 w-9 rounded-xl flex items-center justify-center shadow-sm">
@@ -266,7 +339,7 @@ const AcknowledgementsPage = () => {
                         </CardContent>
                     </Card>
 
-                    <Card className="border border-slate-100 shadow-sm rounded-[2rem] bg-white overflow-hidden group hover:shadow-xl transition-all duration-300">
+                    <Card className="border border-slate-100 shadow-sm rounded-none bg-white overflow-hidden group hover:shadow-xl transition-all duration-300">
                         <CardHeader className="p-7 pb-2 flex flex-row items-center justify-between">
                             <div className="text-[10px] font-bold tracking-tight text-slate-400">Pending Actions</div>
                             <div className="bg-amber-50 text-amber-600 h-9 w-9 rounded-xl flex items-center justify-center shadow-sm">
@@ -279,7 +352,14 @@ const AcknowledgementsPage = () => {
                         </CardContent>
                     </Card>
 
-                    <Card className="border border-indigo-100 shadow-sm rounded-[2rem] bg-indigo-50/50 p-7 relative overflow-hidden group cursor-pointer hover:bg-white transition-all duration-500">
+                    <Card className="border border-indigo-100 shadow-sm rounded-none bg-indigo-50/50 p-7 relative overflow-hidden group cursor-pointer hover:bg-white transition-all duration-500" onClick={() => {
+                            const pendingCount = acknowledgements.filter(a => a.status === "Pending").length;
+                            if (pendingCount === 0) {
+                                toast.info("No pending acknowledgements to auto-nudge");
+                                return;
+                            }
+                            toast.success(`Auto-Nudge activated: ${pendingCount} pending employee(s) will receive smart reminders every 48 hours`);
+                        }}>
                         <div className="absolute top-[-10px] right-[-10px] h-24 w-24 bg-indigo-500/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700" />
                         <CardHeader className="p-0 pb-4 text-start">
                             <div className="bg-white text-indigo-600 h-9 w-9 rounded-xl flex items-center justify-center shadow-sm border border-indigo-100">
@@ -303,7 +383,7 @@ const AcknowledgementsPage = () => {
                                         variant="outline"
                                         size="sm"
                                         className="h-12 rounded-xl text-rose-600 font-bold border-rose-100 bg-rose-50/50"
-                                        onClick={handleBulkDelete}
+                                        onClick={() => setBulkDeleteOpen(true)}
                                     >
                                         Delete ({selectedAckIds.length})
                                     </Button>
@@ -326,7 +406,7 @@ const AcknowledgementsPage = () => {
                                             <span>Status</span>
                                         </div>
                                     </SelectTrigger>
-                                    <SelectContent className="rounded-xl border-none shadow-2xl p-2 font-bold text-xs">
+                                    <SelectContent className="rounded-xl border border-slate-200 shadow-2xl p-2 font-bold text-xs">
                                         <SelectItem value="all" className="rounded-lg h-10">All Status</SelectItem>
                                         <SelectItem value="Pending" className="rounded-lg h-10 text-slate-500">Pending</SelectItem>
                                         <SelectItem value="Viewed" className="rounded-lg h-10 text-amber-500">Viewed</SelectItem>
@@ -412,7 +492,14 @@ const AcknowledgementsPage = () => {
                                                     </div>
                                                 </TableCell>
                                                 <TableCell className="px-8 py-6">
-                                                    {getStatusBadge(ack.status)}
+                                                    <div className="flex items-center gap-2">
+                                                        {getStatusBadge(ack.status)}
+                                                        {ack.priority && (
+                                                            <Badge className="bg-rose-500/10 text-rose-600 border-rose-500/20 font-bold text-[9px] px-2 py-0.5 gap-1">
+                                                                <Bell size={10} /> Priority
+                                                            </Badge>
+                                                        )}
+                                                    </div>
                                                 </TableCell>
                                                 <TableCell className="px-8 py-6">
                                                     <div className="flex flex-col text-start">
@@ -449,16 +536,22 @@ const AcknowledgementsPage = () => {
                                                                     <MoreHorizontal size={16} className="text-slate-400" />
                                                                 </Button>
                                                             </DropdownMenuTrigger>
-                                                            <DropdownMenuContent align="end" className="w-56 p-2 rounded-2xl border-none shadow-2xl bg-white font-sans">
+                                                            <DropdownMenuContent align="end" className="w-56 p-2 rounded-2xl border border-slate-200 shadow-2xl bg-white font-sans">
                                                                 <DropdownMenuLabel className="px-3 py-2 text-[10px] font-bold text-slate-400 tracking-wide">Compliance Control</DropdownMenuLabel>
-                                                                <DropdownMenuItem className="gap-3 p-3 rounded-xl cursor-pointer font-bold text-xs hover:bg-indigo-50 text-start" onClick={() => toast.success("High-priority ping relayed to employee device")}>
+                                                                <DropdownMenuItem className="gap-3 p-3 rounded-xl cursor-pointer font-bold text-xs hover:bg-indigo-50 text-start" onClick={() => setEditingAck(ack)}>
+                                                                    <FileText className="w-4 h-4 text-indigo-500" /> Edit Details
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuItem className="gap-3 p-3 rounded-xl cursor-pointer font-bold text-xs hover:bg-indigo-50 text-start" onClick={() => setPriorityAck(ack)} disabled={ack.status === 'Signed'}>
                                                                     <Bell className="w-4 h-4 text-indigo-500" /> Priority Remind
                                                                 </DropdownMenuItem>
-                                                                <DropdownMenuItem className="gap-3 p-3 rounded-xl cursor-pointer font-bold text-xs hover:bg-indigo-50 text-start" onClick={() => toast.success("Document state updated to 'Manually Signed'")}>
+                                                                <DropdownMenuItem className="gap-3 p-3 rounded-xl cursor-pointer font-bold text-xs hover:bg-indigo-50 text-start" onClick={() => {
+                                                                    updateAcknowledgement(ack.id, "Signed", "Manually marked as signed by HR");
+                                                                    toast.success(`${ack.employeeName}'s acknowledgement force-marked as Signed`);
+                                                                }}>
                                                                     <UserCheck className="w-4 h-4 text-indigo-500" /> Force Mark Signed
                                                                 </DropdownMenuItem>
                                                                 <DropdownMenuSeparator className="my-2 bg-slate-50" />
-                                                                <DropdownMenuItem className="gap-3 p-3 rounded-xl cursor-pointer font-bold text-xs text-rose-600 hover:bg-rose-50 text-start" onClick={() => deleteAcknowledgement(ack.id)}>
+                                                                <DropdownMenuItem className="gap-3 p-3 rounded-xl cursor-pointer font-bold text-xs text-rose-600 hover:bg-rose-50 text-start" onClick={() => setDeleteAckId(ack.id)}>
                                                                     <Trash2 className="w-4 h-4" /> Cancel Request
                                                                 </DropdownMenuItem>
                                                             </DropdownMenuContent>
@@ -522,6 +615,154 @@ const AcknowledgementsPage = () => {
                     </div>
                     <DialogFooter>
                         <Button variant="ghost" className="h-12 rounded-xl font-bold text-[10px] tracking-wide transition-all px-6" onClick={() => setHistoryAck(null)}>Close</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Edit Acknowledgement Dialog */}
+            <Dialog open={!!editingAck} onOpenChange={(open) => !open && setEditingAck(null)}>
+                <DialogContent className="max-w-xl bg-white rounded-[2rem] border border-slate-200 p-8 shadow-3xl font-sans" style={{ zoom: "80%" }}>
+                    <DialogHeader>
+                        <DialogTitle className="text-2xl font-black tracking-tight text-slate-900">Edit Acknowledgement</DialogTitle>
+                        <DialogDescription className="font-bold text-slate-400 text-[11px] tracking-tight mt-2">
+                            Update acknowledgement request details.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-6 py-6">
+                        <div className="space-y-3 text-start">
+                            <label className="text-[10px] font-bold tracking-wide text-slate-400 ml-1">Document</label>
+                            <Select
+                                value={editingAck?.documentId}
+                                onValueChange={(val) => {
+                                    const doc = policies.find(p => p.id === val);
+                                    setEditingAck(prev => prev ? { ...prev, documentId: val, documentTitle: doc?.title || prev.documentTitle } : null);
+                                }}
+                            >
+                                <SelectTrigger className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 focus:bg-white transition-all shadow-sm">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent className="rounded-2xl border border-slate-200 shadow-2xl p-2 font-bold text-xs font-sans">
+                                    {policies.map(p => (
+                                        <SelectItem key={p.id} value={p.id} className="rounded-xl h-10">{p.title}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="grid grid-cols-2 gap-6">
+                            <div className="space-y-3 text-start">
+                                <label className="text-[10px] font-bold tracking-wide text-slate-400 ml-1">Employee Name</label>
+                                <Input
+                                    value={editingAck?.employeeName || ""}
+                                    onChange={(e) => setEditingAck(prev => prev ? { ...prev, employeeName: e.target.value } : null)}
+                                    className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 focus:bg-white transition-all shadow-sm"
+                                />
+                            </div>
+                            <div className="space-y-3 text-start">
+                                <label className="text-[10px] font-bold tracking-wide text-slate-400 ml-1">Employee Id</label>
+                                <Input
+                                    value={editingAck?.employeeId || ""}
+                                    onChange={(e) => setEditingAck(prev => prev ? { ...prev, employeeId: e.target.value } : null)}
+                                    className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 focus:bg-white transition-all shadow-sm"
+                                />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-6">
+                            <div className="space-y-3 text-start">
+                                <label className="text-[10px] font-bold tracking-wide text-slate-400 ml-1">Status</label>
+                                <Select
+                                    value={editingAck?.status}
+                                    onValueChange={(val: Acknowledgement['status']) => setEditingAck(prev => prev ? { ...prev, status: val, signedAt: val === 'Signed' ? (prev.signedAt || new Date().toISOString().split('T')[0]) : prev.signedAt } : null)}
+                                >
+                                    <SelectTrigger className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 focus:bg-white transition-all shadow-sm">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent className="rounded-2xl border border-slate-200 shadow-2xl p-2 font-bold text-xs font-sans">
+                                        <SelectItem value="Pending" className="rounded-xl h-10">Pending</SelectItem>
+                                        <SelectItem value="Viewed" className="rounded-xl h-10">Viewed</SelectItem>
+                                        <SelectItem value="Signed" className="rounded-xl h-10">Signed</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-3 text-start">
+                                <label className="text-[10px] font-bold tracking-wide text-slate-400 ml-1">Due Date</label>
+                                <Input
+                                    type="date"
+                                    value={editingAck?.dueDate || ""}
+                                    onChange={(e) => setEditingAck(prev => prev ? { ...prev, dueDate: e.target.value } : null)}
+                                    className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 focus:bg-white transition-all shadow-sm"
+                                />
+                            </div>
+                        </div>
+                        <div className="space-y-3 text-start">
+                            <label className="text-[10px] font-bold tracking-wide text-slate-400 ml-1">Comments</label>
+                            <Input
+                                placeholder="Optional notes"
+                                value={editingAck?.comments || ""}
+                                onChange={(e) => setEditingAck(prev => prev ? { ...prev, comments: e.target.value } : null)}
+                                className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 focus:bg-white transition-all shadow-sm"
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter className="gap-3">
+                        <Button variant="ghost" onClick={() => setEditingAck(null)} className="h-12 rounded-xl font-bold text-[10px] tracking-wide px-6">Cancel</Button>
+                        <Button className="bg-indigo-600 hover:bg-slate-900 text-white rounded-xl h-12 px-8 font-bold shadow-lg text-[10px] tracking-wide border-none" onClick={handleSaveEdit}>Save Changes</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Priority Remind Confirm */}
+            <Dialog open={!!priorityAck} onOpenChange={(open) => !open && setPriorityAck(null)}>
+                <DialogContent className="max-w-md bg-white rounded-[2rem] border border-slate-200 p-8 shadow-3xl font-sans" style={{ zoom: "80%" }}>
+                    <DialogHeader className="text-start">
+                        <div className="h-12 w-12 bg-rose-50 rounded-2xl flex items-center justify-center mb-3 border border-rose-100">
+                            <Bell size={22} className="text-rose-500" />
+                        </div>
+                        <DialogTitle className="text-2xl font-black tracking-tight text-slate-900">Send Priority Reminder?</DialogTitle>
+                        <DialogDescription className="font-bold text-slate-400 text-[11px] tracking-wide mt-2">
+                            A high-priority push notification and email will be sent to <span className="text-slate-700">{priorityAck?.employeeName}</span>. The request will be marked as priority.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="gap-3 pt-4">
+                        <Button variant="ghost" onClick={() => setPriorityAck(null)} className="h-12 rounded-xl font-bold text-[10px] tracking-wide px-6">Cancel</Button>
+                        <Button className="bg-rose-500 hover:bg-rose-600 text-white rounded-xl h-12 px-8 font-bold shadow-lg text-[10px] tracking-wide border-none" onClick={handlePriorityRemind}>Send Priority</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Delete Single */}
+            <Dialog open={!!deleteAckId} onOpenChange={(open) => !open && setDeleteAckId(null)}>
+                <DialogContent className="max-w-md bg-white rounded-[2rem] border border-slate-200 p-8 shadow-3xl font-sans" style={{ zoom: "80%" }}>
+                    <DialogHeader className="text-start">
+                        <div className="h-12 w-12 bg-rose-50 rounded-2xl flex items-center justify-center mb-3 border border-rose-100">
+                            <Trash2 size={22} className="text-rose-500" />
+                        </div>
+                        <DialogTitle className="text-2xl font-black tracking-tight text-slate-900">Cancel Request?</DialogTitle>
+                        <DialogDescription className="font-bold text-slate-400 text-[11px] tracking-wide mt-2">
+                            This acknowledgement request will be permanently removed.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="gap-3 pt-4">
+                        <Button variant="ghost" onClick={() => setDeleteAckId(null)} className="h-12 rounded-xl font-bold text-[10px] tracking-wide px-6">Keep Request</Button>
+                        <Button className="bg-rose-500 hover:bg-rose-600 text-white rounded-xl h-12 px-8 font-bold shadow-lg text-[10px] tracking-wide border-none" onClick={confirmDelete}>Cancel Request</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Bulk Delete */}
+            <Dialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
+                <DialogContent className="max-w-md bg-white rounded-[2rem] border border-slate-200 p-8 shadow-3xl font-sans" style={{ zoom: "80%" }}>
+                    <DialogHeader className="text-start">
+                        <div className="h-12 w-12 bg-rose-50 rounded-2xl flex items-center justify-center mb-3 border border-rose-100">
+                            <Trash2 size={22} className="text-rose-500" />
+                        </div>
+                        <DialogTitle className="text-2xl font-black tracking-tight text-slate-900">Cancel {selectedAckIds.length} Requests?</DialogTitle>
+                        <DialogDescription className="font-bold text-slate-400 text-[11px] tracking-wide mt-2">
+                            All selected acknowledgement requests will be permanently removed.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="gap-3 pt-4">
+                        <Button variant="ghost" onClick={() => setBulkDeleteOpen(false)} className="h-12 rounded-xl font-bold text-[10px] tracking-wide px-6">Cancel</Button>
+                        <Button className="bg-rose-500 hover:bg-rose-600 text-white rounded-xl h-12 px-8 font-bold shadow-lg text-[10px] tracking-wide border-none" onClick={confirmBulkDelete}>Delete All</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

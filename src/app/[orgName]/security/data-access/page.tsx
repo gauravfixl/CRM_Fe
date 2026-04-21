@@ -156,8 +156,34 @@ export default function DataAccessControlPage() {
   };
 
   const handleSaveRule = () => {
-    if (!form.module || !form.sensitive || !form.group || !form.accessType || !form.restriction) {
-      showWarning("Please fill in all fields");
+    const sanitizedSensitive = form.sensitive.trim();
+    const sanitizedGroup = form.group.trim();
+
+    if (!form.module) {
+      showWarning("Please select a module");
+      return;
+    }
+
+    if (!sanitizedSensitive) {
+      showWarning("Sensitive data description is required");
+      return;
+    }
+    if (/\d/.test(sanitizedSensitive)) {
+      showWarning("Sensitive data description cannot contain numbers");
+      return;
+    }
+
+    if (!sanitizedGroup) {
+      showWarning("User group is required");
+      return;
+    }
+    if (/\d/.test(sanitizedGroup)) {
+      showWarning("User group cannot contain numbers");
+      return;
+    }
+
+    if (!form.accessType || !form.restriction) {
+      showWarning("Please fill in all access and restriction levels");
       return;
     }
 

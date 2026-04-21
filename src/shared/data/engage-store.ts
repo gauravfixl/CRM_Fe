@@ -92,10 +92,17 @@ export interface EmployeeCelebration {
     id: string;
     employeeName: string;
     type: "Birthday" | "Work Anniversary";
-    date: string; // MM-DD format
+    date: string; // MM-DD or YYYY-MM-DD format
     department: string;
     years?: number;
     avatar?: string;
+}
+
+export interface WishTemplate {
+    id: string;
+    name: string;
+    message: string;
+    type: "Birthday" | "Anniversary";
 }
 
 interface EngageState {
@@ -105,6 +112,10 @@ interface EngageState {
     recognitions: Recognition[];
     events: Event[];
     celebrations: EmployeeCelebration[];
+    wishedCelebrations: string[]; // celebration IDs wished by current user
+    wishTemplates: WishTemplate[];
+    autoWishEnabled: boolean;
+    selectedCardTemplateId: string;
     userPoints: number;
 
     // Announcement Actions
@@ -134,6 +145,21 @@ interface EngageState {
     updateEvent: (id: string, updates: Partial<Event>) => void;
     toggleRegistration: (id: string) => void;
     deleteEvent: (id: string) => void;
+
+    // Celebration Actions
+    addCelebration: (cel: Omit<EmployeeCelebration, 'id'>) => void;
+    updateCelebration: (id: string, updates: Partial<EmployeeCelebration>) => void;
+    deleteCelebration: (id: string) => void;
+    sendWish: (celebrationId: string) => void;
+
+    // Template Actions
+    addTemplate: (tpl: Omit<WishTemplate, 'id'>) => void;
+    updateTemplate: (id: string, updates: Partial<WishTemplate>) => void;
+    deleteTemplate: (id: string) => void;
+
+    // Settings Actions
+    setAutoWishEnabled: (enabled: boolean) => void;
+    setSelectedCardTemplate: (id: string) => void;
 }
 
 export const useEngageStore = create<EngageState>()(
@@ -214,11 +240,29 @@ export const useEngageStore = create<EngageState>()(
                 { id: "EV03", title: "Project Management Workshop", category: "Professional", date: "2024-01-22", time: "02:00 PM - 05:00 PM", location: "Meeting Room A", attendees: 45, registered: true, eventType: "In-Person", budget: 1000 }
             ],
             celebrations: [
-                { id: "CEL01", employeeName: "Rahul Sharma", type: "Birthday", date: "01-20", department: "Engineering" },
-                { id: "CEL02", employeeName: "Aditi Iyer", type: "Work Anniversary", date: "01-22", department: "Finance", years: 3 },
-                { id: "CEL03", employeeName: "Kevin Varga", type: "Birthday", date: "01-25", department: "Sales" },
-                { id: "CEL04", employeeName: "Sneha Reddy", type: "Work Anniversary", date: "01-28", department: "HR", years: 5 },
+                { id: "CEL01", employeeName: "Priya Sharma", type: "Birthday", date: "04-20", department: "Engineering" },
+                { id: "CEL02", employeeName: "Rajesh Kumar", type: "Work Anniversary", date: "04-20", department: "Sales", years: 5 },
+                { id: "CEL03", employeeName: "Sneha Rao", type: "Birthday", date: "04-20", department: "Design" },
+                { id: "CEL04", employeeName: "Vikram Singh", type: "Work Anniversary", date: "04-20", department: "Marketing", years: 1 },
+                { id: "CEL05", employeeName: "Amit Joshi", type: "Birthday", date: "04-21", department: "Engineering" },
+                { id: "CEL06", employeeName: "Kavita Patel", type: "Work Anniversary", date: "04-22", department: "HR", years: 3 },
+                { id: "CEL07", employeeName: "Deepak Nair", type: "Birthday", date: "04-23", department: "Finance" },
+                { id: "CEL08", employeeName: "Meera Iyer", type: "Work Anniversary", date: "04-24", department: "Product", years: 10 },
+                { id: "CEL09", employeeName: "Arjun Reddy", type: "Birthday", date: "04-25", department: "QA" },
+                { id: "CEL10", employeeName: "Neha Gupta", type: "Birthday", date: "04-26", department: "Engineering" },
+                { id: "CEL11", employeeName: "Suresh Mehta", type: "Work Anniversary", date: "04-28", department: "Ops", years: 5 },
             ],
+            wishedCelebrations: [],
+            wishTemplates: [
+                { id: "T01", name: "Birthday - Standard", message: "Happy Birthday, {{name}}! Wishing you a wonderful day filled with joy!", type: "Birthday" },
+                { id: "T02", name: "Birthday - Fun", message: "It's party time! Happy Birthday {{name}}! Here's to an amazing year ahead!", type: "Birthday" },
+                { id: "T03", name: "Anniversary - 1 Year", message: "Congratulations {{name}} on completing 1 year with us! Here's to many more!", type: "Anniversary" },
+                { id: "T04", name: "Anniversary - 3 Years", message: "3 amazing years, {{name}}! Your dedication and growth inspire us all!", type: "Anniversary" },
+                { id: "T05", name: "Anniversary - 5 Years", message: "Half a decade of excellence! Thank you {{name}} for your incredible 5-year journey!", type: "Anniversary" },
+                { id: "T06", name: "Anniversary - 10 Years", message: "A legendary milestone! {{name}}, your 10 years of commitment have shaped our organization.", type: "Anniversary" }
+            ],
+            autoWishEnabled: true,
+            selectedCardTemplateId: "c1",
             userPoints: 450,
 
             addAnnouncement: (ann) => set((state) => ({
@@ -323,7 +367,44 @@ export const useEngageStore = create<EngageState>()(
             })),
             deleteEvent: (id) => set((state) => ({
                 events: state.events.filter(e => e.id !== id)
-            }))
+            })),
+
+            addCelebration: (cel) => set((state) => ({
+                celebrations: [
+                    { ...cel, id: `CEL-${String(state.celebrations.length + 1).padStart(3, '0')}` },
+                    ...state.celebrations
+                ]
+            })),
+            updateCelebration: (id, updates) => set((state) => ({
+                celebrations: state.celebrations.map(c => c.id === id ? { ...c, ...updates } : c)
+            })),
+            deleteCelebration: (id) => set((state) => ({
+                celebrations: state.celebrations.filter(c => c.id !== id),
+                wishedCelebrations: state.wishedCelebrations.filter(w => w !== id)
+            })),
+            sendWish: (celebrationId) => set((state) => {
+                if (state.wishedCelebrations.includes(celebrationId)) return state;
+                return {
+                    wishedCelebrations: [...state.wishedCelebrations, celebrationId],
+                    userPoints: state.userPoints + 5
+                };
+            }),
+
+            addTemplate: (tpl) => set((state) => ({
+                wishTemplates: [
+                    ...state.wishTemplates,
+                    { ...tpl, id: `T-${Date.now()}` }
+                ]
+            })),
+            updateTemplate: (id, updates) => set((state) => ({
+                wishTemplates: state.wishTemplates.map(t => t.id === id ? { ...t, ...updates } : t)
+            })),
+            deleteTemplate: (id) => set((state) => ({
+                wishTemplates: state.wishTemplates.filter(t => t.id !== id)
+            })),
+
+            setAutoWishEnabled: (enabled) => set({ autoWishEnabled: enabled }),
+            setSelectedCardTemplate: (id) => set({ selectedCardTemplateId: id })
         }),
         {
             name: 'engage-storage',

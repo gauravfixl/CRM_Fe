@@ -189,12 +189,17 @@ interface ReportsState {
 
   toggleFavorite: (templateId: string) => void;
   addSavedReport: (report: SavedReport) => void;
+  updateSavedReport: (id: string, updates: Partial<SavedReport>) => void;
   deleteSavedReport: (id: string) => void;
   addScheduledReport: (schedule: ScheduledReport) => void;
   updateScheduledReport: (id: string, updates: Partial<ScheduledReport>) => void;
   deleteScheduledReport: (id: string) => void;
   addReportRun: (run: ReportRun) => void;
+  deleteReportRun: (id: string) => void;
+  clearReportRuns: () => void;
   addScheduleHistory: (entry: ScheduleHistory) => void;
+  deleteScheduleHistory: (id: string) => void;
+  clearScheduleHistory: () => void;
 }
 
 export const useReportsStore = create<ReportsState>()(
@@ -216,6 +221,13 @@ export const useReportsStore = create<ReportsState>()(
       addSavedReport: (report) =>
         set((state) => ({ savedReports: [report, ...state.savedReports] })),
 
+      updateSavedReport: (id, updates) =>
+        set((state) => ({
+          savedReports: state.savedReports.map((r) =>
+            r.id === id ? { ...r, ...updates } : r
+          ),
+        })),
+
       deleteSavedReport: (id) =>
         set((state) => ({ savedReports: state.savedReports.filter((r) => r.id !== id) })),
 
@@ -235,8 +247,18 @@ export const useReportsStore = create<ReportsState>()(
       addReportRun: (run) =>
         set((state) => ({ recentRuns: [run, ...state.recentRuns].slice(0, 20) })),
 
+      deleteReportRun: (id) =>
+        set((state) => ({ recentRuns: state.recentRuns.filter((r) => r.id !== id) })),
+
+      clearReportRuns: () => set({ recentRuns: [] }),
+
       addScheduleHistory: (entry) =>
         set((state) => ({ scheduleHistory: [entry, ...state.scheduleHistory] })),
+
+      deleteScheduleHistory: (id) =>
+        set((state) => ({ scheduleHistory: state.scheduleHistory.filter((h) => h.id !== id) })),
+
+      clearScheduleHistory: () => set({ scheduleHistory: [] }),
     }),
     { name: 'reports-store' }
   )

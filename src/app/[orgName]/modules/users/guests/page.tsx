@@ -29,7 +29,8 @@ import {
 } from "@/shared/components/custom/CustomSelect"
 import { CustomLabel } from "@/shared/components/custom/CustomLabel"
 import { CustomInput } from "@/shared/components/custom/CustomInput"
-import { showSuccess, showWarning } from "@/utils/toast"
+import { showSuccess, showWarning, showError } from "@/utils/toast"
+import { createOrgInvite } from "@/modules/crm/organizations/hooks/orgHooks"
 
 interface GuestUser {
     id: string
@@ -126,24 +127,54 @@ export default function GuestUsersPage() {
     const expiredCount = allGuests.filter((g) => g.status === "Expired").length
     const domains = new Set(allGuests.map((g) => g.domain)).size
 
-    const handleInvite = () => {
-        if (!inviteName || !inviteEmail) return
-        const newGuest: GuestUser = {
-            id: `g-${Date.now()}`,
-            name: inviteName,
-            email: inviteEmail,
-            domain: inviteDomain || inviteEmail.split("@")[1] || "External",
-            accessLevel: inviteAccess,
-            status: "Active",
-            expires: "2027-03-27",
+    const handleInvite = async () => {
+        if (!inviteName.trim() || !inviteEmail.trim()) {
+            showWarning("Please fill in all fields")
+            return
         }
-        setStaticGuests((prev) => [...prev, newGuest])
-        showSuccess(`${inviteName} has been invited as a guest`)
-        setInviteOpen(false)
-        setInviteName("")
-        setInviteEmail("")
-        setInviteDomain("")
-        setInviteAccess("Viewer")
+
+        // Name validation (no numbers)
+        const nameRegex = /^[a-zA-Z\s]+$/;
+        if (!nameRegex.test(inviteName.trim())) {
+            showWarning("Name should not contain numbers or special characters")
+            return
+        }
+
+        // Email validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(inviteEmail.trim())) {
+            showWarning("Please enter a valid email address")
+            return
+        }
+
+        try {
+            setLoading(true)
+            await createOrgInvite({
+                email: inviteEmail.trim(),
+                role: inviteAccess
+            })
+
+            const newGuest: GuestUser = {
+                id: `g-${Date.now()}`,
+                name: inviteName.trim(),
+                email: inviteEmail.trim(),
+                domain: inviteDomain || inviteEmail.trim().split("@")[1] || "External",
+                accessLevel: inviteAccess,
+                status: "Active",
+                expires: "2027-03-27",
+            }
+            setStaticGuests((prev) => [...prev, newGuest])
+            showSuccess(`${inviteName.trim()} has been invited as a guest`)
+            setInviteOpen(false)
+            setInviteName("")
+            setInviteEmail("")
+            setInviteDomain("")
+            setInviteAccess("Viewer")
+        } catch (err: any) {
+            showError(err?.response?.data?.message || "Failed to invite guest user")
+        } finally {
+            setLoading(false)
+        }
     }
 
     const handleRevoke = () => {
