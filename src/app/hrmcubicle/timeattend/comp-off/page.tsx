@@ -128,6 +128,30 @@ const CompOffManagementPage = () => {
       toast({ title: "Error", description: "Please fill all required fields.", variant: "destructive" });
       return;
     }
+    if (newGrant.employee.trim().length < 3) {
+      toast({ title: "Name Too Short", description: "Employee name must be at least 3 characters.", variant: "destructive" });
+      return;
+    }
+    if (newGrant.employeeId && !/^E(MP)?\d{3,}$/i.test(newGrant.employeeId.trim())) {
+      toast({ title: "Invalid Employee ID", description: "Employee ID should match pattern E001 or EMP001.", variant: "destructive" });
+      return;
+    }
+    const worked = new Date(newGrant.workedDate);
+    const expiry = new Date(newGrant.expiryDate);
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    if (Number.isNaN(worked.getTime()) || Number.isNaN(expiry.getTime())) {
+      toast({ title: "Invalid Dates", description: "Please pick valid dates.", variant: "destructive" });
+      return;
+    }
+    if (worked > today) {
+      toast({ title: "Invalid Worked Date", description: "Worked date cannot be in the future.", variant: "destructive" });
+      return;
+    }
+    if (expiry <= worked) {
+      toast({ title: "Invalid Expiry", description: "Expiry date must be after worked date.", variant: "destructive" });
+      return;
+    }
     const co: CompOff = {
       id: `CO${String(compOffs.length + 1).padStart(3, "0")}`,
       employeeName: newGrant.employee,
@@ -155,7 +179,26 @@ const CompOffManagementPage = () => {
   };
 
   const handleAvail = () => {
-    if (!availDialog || !availDate) return;
+    if (!availDialog || !availDate) {
+      toast({ title: "Select Date", description: "Please pick a date to avail the comp-off.", variant: "destructive" });
+      return;
+    }
+    const avail = new Date(availDate);
+    const earned = new Date(availDialog.earnedDate);
+    const expiry = new Date(availDialog.expiryDate);
+    if (Number.isNaN(avail.getTime())) {
+      toast({ title: "Invalid Date", description: "Please pick a valid avail date.", variant: "destructive" });
+      return;
+    }
+    if (avail < earned || avail > expiry) {
+      toast({ title: "Outside Validity", description: `Avail date must fall between ${availDialog.earnedDate} and ${availDialog.expiryDate}.`, variant: "destructive" });
+      return;
+    }
+    const day = avail.getDay();
+    if (day === 0 || day === 6) {
+      toast({ title: "Weekend Selected", description: "Comp-off cannot be availed on a weekend. Pick a weekday.", variant: "destructive" });
+      return;
+    }
     setCompOffs((prev) => prev.map((c) => (c.id === availDialog.id ? { ...c, status: "Availed" as const, availDate } : c)));
     setAvailDialog(null);
     setAvailDate("");
@@ -163,7 +206,9 @@ const CompOffManagementPage = () => {
   };
 
   const handleExport = () => {
-    const csv = "Employee,Date Earned,Hours,Reason,Status,Expiry\n" + compOffs.map(c => `${c.empName},${c.date},${c.hours},${c.reason},${c.status},${c.expiryDate}`).join("\n");
+    const header = "ID,Employee,Employee ID,Department,Earned Date,Reason,Expiry Date,Status,Avail Date\n";
+    const rows = compOffs.map(c => `${c.id},${c.employeeName},${c.employeeId},${c.department},${c.earnedDate},${c.reason},${c.expiryDate},${c.status},${c.availDate ?? ""}`).join("\n");
+    const csv = header + rows;
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a"); a.href = url; a.download = `comp_off_report_${new Date().toISOString().split("T")[0]}.csv`; a.click(); URL.revokeObjectURL(url);

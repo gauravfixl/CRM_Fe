@@ -4,9 +4,7 @@ import React, { useMemo, useState } from "react";
 import {
     BarChart3,
     Download,
-    FileText,
     Calendar,
-    TrendingUp,
     Users,
     Layers,
     Plane,
@@ -14,8 +12,8 @@ import {
     ChevronRight,
     Eye,
     Filter,
-    X,
     Receipt,
+    X,
 } from "lucide-react";
 import { Card, CardContent } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
@@ -38,13 +36,6 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/shared/components/ui/dialog";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/shared/components/ui/select";
 import { useExpenseStore, type ExpenseCategory } from "@/shared/data/expense-store";
 import { useToast } from "@/shared/components/ui/use-toast";
 import { cn } from "@/lib/utils";
@@ -79,6 +70,18 @@ const categoryColors: Record<ExpenseCategory, string> = {
     Other: '#6B7280',
 };
 
+const downloadCSV = (filename: string, headers: string[], rows: (string | number)[][]) => {
+    const esc = (v: string | number) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const csv = [headers.map(esc).join(','), ...rows.map(r => r.map(esc).join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${filename.replace(/\s+/g, '_').toLowerCase()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+};
+
 const ExpenseReportsPage = () => {
     const { toast } = useToast();
     const { claims, travelRequests, policies } = useExpenseStore();
@@ -87,12 +90,16 @@ const ExpenseReportsPage = () => {
     const [dateTo, setDateTo] = useState('2026-03-31');
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
-    const filteredClaims = useMemo(() =>
-        claims.filter(c => c.date >= dateFrom && c.date <= dateTo),
-        [claims, dateFrom, dateTo]
-    );
+    const dateRangeInvalid = useMemo(() => {
+        if (!dateFrom || !dateTo) return false;
+        return new Date(dateFrom) > new Date(dateTo);
+    }, [dateFrom, dateTo]);
 
-    // Monthly data
+    const filteredClaims = useMemo(() => {
+        if (dateRangeInvalid) return [];
+        return claims.filter(c => c.date >= dateFrom && c.date <= dateTo);
+    }, [claims, dateFrom, dateTo, dateRangeInvalid]);
+
     const monthlyData = useMemo(() => {
         const months: Record<string, number> = {};
         filteredClaims.forEach(c => {
@@ -102,7 +109,6 @@ const ExpenseReportsPage = () => {
         return Object.entries(months).sort(([a], [b]) => a.localeCompare(b)).map(([month, amount]) => ({ month, amount }));
     }, [filteredClaims]);
 
-    // Department data
     const departmentData = useMemo(() => [
         { dept: 'Engineering', total: 28500, claims: 12, avg: 2375 },
         { dept: 'Sales', total: 22000, claims: 8, avg: 2750 },
@@ -111,7 +117,6 @@ const ExpenseReportsPage = () => {
         { dept: 'Operations', total: 6000, claims: 3, avg: 2000 },
     ], []);
 
-    // Category data
     const categoryData = useMemo(() => {
         const map: Record<string, { count: number; total: number }> = {};
         filteredClaims.forEach(c => {
@@ -127,7 +132,6 @@ const ExpenseReportsPage = () => {
         })).sort((a, b) => b.total - a.total);
     }, [filteredClaims]);
 
-    // Employee data
     const employeeData = useMemo(() => {
         const map: Record<string, { name: string; count: number; total: number }> = {};
         filteredClaims.forEach(c => {
@@ -143,7 +147,6 @@ const ExpenseReportsPage = () => {
         })).sort((a, b) => b.total - a.total);
     }, [filteredClaims]);
 
-    // Compliance data
     const complianceData = useMemo(() => {
         let totalClaims = filteredClaims.length;
         let violations = 0;
@@ -157,19 +160,53 @@ const ExpenseReportsPage = () => {
         return { totalClaims, violations, compliant: totalClaims - violations, complianceRate };
     }, [filteredClaims, policies]);
 
-    // Top spenders
     const topSpenders = useMemo(() => employeeData.slice(0, 5), [employeeData]);
 
-    const handleExportCSV = (reportName: string, headers: string[], rows: string[][]) => {
-        const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${reportName.replace(/\s+/g, '_').toLowerCase()}.csv`;
-        a.click();
-        URL.revokeObjectURL(url);
-        toast({ title: "Export Complete", description: `${reportName} has been exported.` });
+    const exportReport = (type: ReportType) => {
+        if (dateRangeInvalid) {
+            toast({ title: "Invalid range", description: "Please fix the date range before exporting.", variant: "destructive" });
+            return;
+        }
+        const title = reports.find(r => r.key === type)?.title || 'report';
+        let headers: string[] = [];
+        let rows: (string | number)[][] = [];
+        switch (type) {
+            case 'monthly':
+                headers = ['Month', 'Total Amount (INR)'];
+                rows = monthlyData.map(m => [m.month, m.amount]);
+                break;
+            case 'department':
+                headers = ['Department', 'Total (INR)', 'Claims', 'Average (INR)'];
+                rows = departmentData.map(d => [d.dept, d.total, d.claims, d.avg]);
+                break;
+            case 'category':
+                headers = ['Category', 'Claims', 'Total (INR)', 'Average (INR)'];
+                rows = categoryData.map(c => [c.category, c.count, c.total, c.avg]);
+                break;
+            case 'employee':
+                headers = ['Employee ID', 'Name', 'Claims', 'Total (INR)'];
+                rows = employeeData.map(e => [e.id, e.name, e.count, e.total]);
+                break;
+            case 'travel':
+                headers = ['ID', 'Employee', 'Destination', 'Budget (INR)', 'Actual Spent (INR)', 'Status'];
+                rows = travelRequests.map(t => [t.id, t.employeeName, t.destination, t.estimatedBudget, t.actualSpent, t.status]);
+                break;
+            case 'compliance':
+                headers = ['Metric', 'Value'];
+                rows = [
+                    ['Total Claims', complianceData.totalClaims],
+                    ['Compliant', complianceData.compliant],
+                    ['Violations', complianceData.violations],
+                    ['Compliance Rate (%)', complianceData.complianceRate],
+                ];
+                break;
+        }
+        if (rows.length === 0) {
+            toast({ title: "No data", description: "Nothing to export for selected range.", variant: "destructive" });
+            return;
+        }
+        downloadCSV(title, headers, rows);
+        toast({ title: "Export Complete", description: `${title} has been exported.` });
     };
 
     const openReport = (type: ReportType) => {
@@ -178,7 +215,6 @@ const ExpenseReportsPage = () => {
     };
 
     const totalExpenses = filteredClaims.reduce((s, c) => s + c.amount, 0);
-    const deptMax = Math.max(...departmentData.map(d => d.total));
 
     return (
         <div className="min-h-screen bg-[#f8fafc] p-6 space-y-6">
@@ -198,7 +234,7 @@ const ExpenseReportsPage = () => {
             {/* Date Filters */}
             <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
                 <CardContent className="p-4">
-                    <div className="flex items-center gap-4">
+                    <div className="flex flex-wrap items-center gap-4">
                         <Filter className="h-4 w-4 text-slate-400" />
                         <div className="flex items-center gap-2">
                             <Label className="text-xs font-bold text-slate-500">From</Label>
@@ -208,11 +244,20 @@ const ExpenseReportsPage = () => {
                             <Label className="text-xs font-bold text-slate-500">To</Label>
                             <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-[160px]" />
                         </div>
+                        <Button size="sm" variant="ghost" className="gap-1 text-slate-500" onClick={() => { setDateFrom('2026-01-01'); setDateTo('2026-03-31'); }}>
+                            <X className="h-3 w-3" /> Reset
+                        </Button>
                         <div className="ml-auto flex items-center gap-3 text-sm">
-                            <span className="text-slate-500">Total:</span>
-                            <span className="font-bold text-slate-900">₹{totalExpenses.toLocaleString()}</span>
-                            <span className="text-slate-300">|</span>
-                            <span className="text-slate-500">{filteredClaims.length} claims</span>
+                            {dateRangeInvalid ? (
+                                <span className="text-red-600 font-medium">From date must be on or before To date</span>
+                            ) : (
+                                <>
+                                    <span className="text-slate-500">Total:</span>
+                                    <span className="font-bold text-slate-900">₹{totalExpenses.toLocaleString()}</span>
+                                    <span className="text-slate-300">|</span>
+                                    <span className="text-slate-500">{filteredClaims.length} claims</span>
+                                </>
+                            )}
                         </div>
                     </div>
                 </CardContent>
@@ -237,10 +282,7 @@ const ExpenseReportsPage = () => {
                                 <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={(e) => { e.stopPropagation(); openReport(report.key); }}>
                                     <Eye className="h-3 w-3" /> Preview
                                 </Button>
-                                <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleExportCSV(report.title, ['ID', 'Employee', 'Category', 'Amount', 'Date', 'Status'], claims.map(c => [c.id, c.employeeName, c.category, c.amount.toString(), c.date, c.status]));
-                                }}>
+                                <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={(e) => { e.stopPropagation(); exportReport(report.key); }}>
                                     <Download className="h-3 w-3" /> Download
                                 </Button>
                             </div>
@@ -252,26 +294,35 @@ const ExpenseReportsPage = () => {
             {/* Top Spenders */}
             <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
                 <CardContent className="p-5">
-                    <h3 className="text-sm font-bold text-slate-900 mb-4">Top Spenders</h3>
-                    <div className="space-y-3">
-                        {topSpenders.map((emp, idx) => (
-                            <div key={emp.id} className="flex items-center gap-4">
-                                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-600">
-                                    {idx + 1}
-                                </div>
-                                <div className="flex-1">
-                                    <div className="flex justify-between mb-1">
-                                        <span className="text-sm font-medium text-slate-900">{emp.name}</span>
-                                        <span className="text-sm font-bold text-slate-900">₹{emp.total.toLocaleString()}</span>
-                                    </div>
-                                    <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                                        <div className="h-full bg-purple-400 rounded-full" style={{ width: `${(emp.total / (topSpenders[0]?.total || 1)) * 100}%` }} />
-                                    </div>
-                                </div>
-                                <span className="text-xs text-slate-400">{emp.count} claims</span>
-                            </div>
-                        ))}
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-sm font-bold text-slate-900">Top Spenders</h3>
+                        <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => exportReport('employee')}>
+                            <Download className="h-3 w-3" /> Export
+                        </Button>
                     </div>
+                    {topSpenders.length === 0 ? (
+                        <p className="text-sm text-slate-400 py-4 text-center">No data in the selected date range.</p>
+                    ) : (
+                        <div className="space-y-3">
+                            {topSpenders.map((emp, idx) => (
+                                <div key={emp.id} className="flex items-center gap-4">
+                                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-600">
+                                        {idx + 1}
+                                    </div>
+                                    <div className="flex-1">
+                                        <div className="flex justify-between mb-1">
+                                            <span className="text-sm font-medium text-slate-900">{emp.name}</span>
+                                            <span className="text-sm font-bold text-slate-900">₹{emp.total.toLocaleString()}</span>
+                                        </div>
+                                        <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                            <div className="h-full bg-purple-400 rounded-full" style={{ width: `${(emp.total / (topSpenders[0]?.total || 1)) * 100}%` }} />
+                                        </div>
+                                    </div>
+                                    <span className="text-xs text-slate-400">{emp.count} claims</span>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </CardContent>
             </Card>
 
@@ -309,7 +360,9 @@ const ExpenseReportsPage = () => {
                     </DialogHeader>
 
                     {activeReport === 'monthly' && (
-                        <div className="space-y-4">
+                        monthlyData.length === 0 ? (
+                            <p className="text-sm text-slate-400 py-8 text-center">No data in the selected date range.</p>
+                        ) : (
                             <Table>
                                 <TableHeader>
                                     <TableRow>
@@ -332,7 +385,7 @@ const ExpenseReportsPage = () => {
                                     ))}
                                 </TableBody>
                             </Table>
-                        </div>
+                        )
                     )}
 
                     {activeReport === 'department' && (
@@ -359,52 +412,60 @@ const ExpenseReportsPage = () => {
                     )}
 
                     {activeReport === 'category' && (
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead className="text-xs font-bold text-slate-500">Category</TableHead>
-                                    <TableHead className="text-xs font-bold text-slate-500 text-right">Claims</TableHead>
-                                    <TableHead className="text-xs font-bold text-slate-500 text-right">Total</TableHead>
-                                    <TableHead className="text-xs font-bold text-slate-500 text-right">Average</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {categoryData.map(c => (
-                                    <TableRow key={c.category}>
-                                        <TableCell>
-                                            <div className="flex items-center gap-2">
-                                                <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: categoryColors[c.category] }} />
-                                                <span className="text-sm font-medium text-slate-900">{c.category}</span>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="text-sm text-slate-600 text-right">{c.count}</TableCell>
-                                        <TableCell className="text-sm font-bold text-slate-900 text-right">₹{c.total.toLocaleString()}</TableCell>
-                                        <TableCell className="text-sm text-slate-600 text-right">₹{c.avg.toLocaleString()}</TableCell>
+                        categoryData.length === 0 ? (
+                            <p className="text-sm text-slate-400 py-8 text-center">No data in the selected date range.</p>
+                        ) : (
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead className="text-xs font-bold text-slate-500">Category</TableHead>
+                                        <TableHead className="text-xs font-bold text-slate-500 text-right">Claims</TableHead>
+                                        <TableHead className="text-xs font-bold text-slate-500 text-right">Total</TableHead>
+                                        <TableHead className="text-xs font-bold text-slate-500 text-right">Average</TableHead>
                                     </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
+                                </TableHeader>
+                                <TableBody>
+                                    {categoryData.map(c => (
+                                        <TableRow key={c.category}>
+                                            <TableCell>
+                                                <div className="flex items-center gap-2">
+                                                    <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: categoryColors[c.category] }} />
+                                                    <span className="text-sm font-medium text-slate-900">{c.category}</span>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="text-sm text-slate-600 text-right">{c.count}</TableCell>
+                                            <TableCell className="text-sm font-bold text-slate-900 text-right">₹{c.total.toLocaleString()}</TableCell>
+                                            <TableCell className="text-sm text-slate-600 text-right">₹{c.avg.toLocaleString()}</TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        )
                     )}
 
                     {activeReport === 'employee' && (
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead className="text-xs font-bold text-slate-500">Employee</TableHead>
-                                    <TableHead className="text-xs font-bold text-slate-500 text-right">Claims</TableHead>
-                                    <TableHead className="text-xs font-bold text-slate-500 text-right">Total Spent</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {employeeData.map(e => (
-                                    <TableRow key={e.id}>
-                                        <TableCell className="text-sm font-medium text-slate-900">{e.name}</TableCell>
-                                        <TableCell className="text-sm text-slate-600 text-right">{e.count}</TableCell>
-                                        <TableCell className="text-sm font-bold text-slate-900 text-right">₹{e.total.toLocaleString()}</TableCell>
+                        employeeData.length === 0 ? (
+                            <p className="text-sm text-slate-400 py-8 text-center">No data in the selected date range.</p>
+                        ) : (
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead className="text-xs font-bold text-slate-500">Employee</TableHead>
+                                        <TableHead className="text-xs font-bold text-slate-500 text-right">Claims</TableHead>
+                                        <TableHead className="text-xs font-bold text-slate-500 text-right">Total Spent</TableHead>
                                     </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
+                                </TableHeader>
+                                <TableBody>
+                                    {employeeData.map(e => (
+                                        <TableRow key={e.id}>
+                                            <TableCell className="text-sm font-medium text-slate-900">{e.name}</TableCell>
+                                            <TableCell className="text-sm text-slate-600 text-right">{e.count}</TableCell>
+                                            <TableCell className="text-sm font-bold text-slate-900 text-right">₹{e.total.toLocaleString()}</TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        )
                     )}
 
                     {activeReport === 'travel' && (
@@ -470,10 +531,7 @@ const ExpenseReportsPage = () => {
                     )}
 
                     <DialogFooter>
-                        <Button variant="outline" size="sm" className="gap-1.5" onClick={() => {
-                            const reportConfig = reports.find(r => r.key === activeReport);
-                            if (reportConfig) handleExportCSV(reportConfig.title, ['ID', 'Employee', 'Category', 'Amount', 'Date', 'Status'], claims.map(c => [c.id, c.employeeName, c.category, c.amount.toString(), c.date, c.status]));
-                        }}>
+                        <Button variant="outline" size="sm" className="gap-1.5" onClick={() => activeReport && exportReport(activeReport)}>
                             <Download className="h-4 w-4" /> Export CSV
                         </Button>
                     </DialogFooter>

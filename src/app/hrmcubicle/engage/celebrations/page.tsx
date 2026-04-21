@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Button } from "@/shared/components/ui/button";
 import { Badge } from "@/shared/components/ui/badge";
 import { Card, CardContent } from "@/shared/components/ui/card";
@@ -9,61 +9,32 @@ import { Label } from "@/shared/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/shared/components/ui/dialog";
+import { Textarea } from "@/shared/components/ui/textarea";
 import { useToast } from "@/shared/components/ui/use-toast";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/shared/components/ui/dropdown-menu";
 import {
     Cake,
     Star,
-    Calendar,
     Gift,
     PartyPopper,
-    Settings,
     Edit,
     Send,
     Heart,
     Sparkles,
-    Award,
-    Users,
     Trophy,
-    Clock
+    Plus,
+    Trash2,
+    MoreHorizontal,
+    CheckCircle2,
+    Search
 } from "lucide-react";
-
-type Celebration = {
-    id: string;
-    name: string;
-    department: string;
-    type: "birthday" | "anniversary";
-    date: string;
-    years?: number;
-    avatarInitials: string;
-};
-
-const today = "2026-04-02";
-
-const mockCelebrations: Celebration[] = [
-    { id: "1", name: "Priya Sharma", department: "Engineering", type: "birthday", date: "2026-04-02", avatarInitials: "PS" },
-    { id: "2", name: "Rajesh Kumar", department: "Sales", type: "anniversary", date: "2026-04-02", years: 5, avatarInitials: "RK" },
-    { id: "3", name: "Sneha Rao", department: "Design", type: "birthday", date: "2026-04-02", avatarInitials: "SR" },
-    { id: "4", name: "Vikram Singh", department: "Marketing", type: "anniversary", date: "2026-04-02", years: 1, avatarInitials: "VS" },
-    { id: "5", name: "Amit Joshi", department: "Engineering", type: "birthday", date: "2026-04-03", avatarInitials: "AJ" },
-    { id: "6", name: "Kavita Patel", department: "HR", type: "anniversary", date: "2026-04-04", years: 3, avatarInitials: "KP" },
-    { id: "7", name: "Deepak Nair", department: "Finance", type: "birthday", date: "2026-04-05", avatarInitials: "DN" },
-    { id: "8", name: "Meera Iyer", department: "Product", type: "anniversary", date: "2026-04-06", years: 10, avatarInitials: "MI" },
-    { id: "9", name: "Arjun Reddy", department: "QA", type: "birthday", date: "2026-04-07", avatarInitials: "AR" },
-    { id: "10", name: "Neha Gupta", department: "Engineering", type: "birthday", date: "2026-04-08", avatarInitials: "NG" },
-    { id: "11", name: "Suresh Mehta", department: "Ops", type: "anniversary", date: "2026-04-12", years: 5, avatarInitials: "SM" },
-    { id: "12", name: "Rahul Verma", department: "Sales", type: "birthday", date: "2026-04-15", avatarInitials: "RV" },
-    { id: "13", name: "Anita Desai", department: "Legal", type: "anniversary", date: "2026-04-20", years: 10, avatarInitials: "AD" },
-    { id: "14", name: "Karan Malhotra", department: "Engineering", type: "birthday", date: "2026-04-25", avatarInitials: "KM" },
-];
-
-const templates = [
-    { id: "t1", name: "Birthday - Standard", message: "Happy Birthday, {{name}}! Wishing you a wonderful day filled with joy!" },
-    { id: "t2", name: "Birthday - Fun", message: "It's party time! Happy Birthday {{name}}! Here's to an amazing year ahead!" },
-    { id: "t3", name: "Anniversary - 1 Year", message: "Congratulations {{name}} on completing 1 year with us! Here's to many more!" },
-    { id: "t4", name: "Anniversary - 3 Years", message: "3 amazing years, {{name}}! Your dedication and growth inspire us all!" },
-    { id: "t5", name: "Anniversary - 5 Years", message: "Half a decade of excellence! Thank you {{name}} for your incredible 5-year journey with us!" },
-    { id: "t6", name: "Anniversary - 10 Years", message: "A legendary milestone! {{name}}, your 10 years of commitment have shaped our organization. Thank you!" },
-];
+import { useEngageStore, type EmployeeCelebration, type WishTemplate } from "@/shared/data/engage-store";
+import { required, minLength, maxLength, rangeNumber, isValidDate, hasPlaceholder, runValidators } from "@/shared/utils/engage-validation";
 
 const cardTemplates = [
     { id: "c1", name: "Classic", gradient: "from-pink-400 to-purple-500" },
@@ -72,28 +43,256 @@ const cardTemplates = [
     { id: "c4", name: "Tropical", gradient: "from-emerald-400 to-teal-500" },
 ];
 
+const departments = ["Engineering", "Sales", "Design", "Marketing", "HR", "Finance", "Product", "QA", "Ops", "Legal"];
+
+// Fixed "today" for consistent demo. Matches MEMORY date.
+const TODAY_ISO = "2026-04-20";
+
+const getInitials = (name: string) => name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase();
+
+const toFullDate = (mmdd: string) => {
+    if (mmdd.length === 10) return mmdd; // already YYYY-MM-DD
+    return `2026-${mmdd}`;
+};
+
 const CelebrationsPage = () => {
     const { toast } = useToast();
-    const [autoWish, setAutoWish] = useState(true);
+    const {
+        celebrations,
+        wishedCelebrations,
+        wishTemplates,
+        autoWishEnabled,
+        selectedCardTemplateId,
+        userPoints,
+        addCelebration,
+        updateCelebration,
+        deleteCelebration,
+        sendWish,
+        addTemplate,
+        updateTemplate,
+        deleteTemplate,
+        setAutoWishEnabled,
+        setSelectedCardTemplate
+    } = useEngageStore();
+
+    // Dialogs
     const [isTemplateOpen, setIsTemplateOpen] = useState(false);
     const [isCardDesigner, setIsCardDesigner] = useState(false);
-    const [selectedCard, setSelectedCard] = useState("c1");
+    const [isCelebrationDialogOpen, setIsCelebrationDialogOpen] = useState(false);
+    const [isTemplateEditOpen, setIsTemplateEditOpen] = useState(false);
+    const [isWishDialogOpen, setIsWishDialogOpen] = useState(false);
 
-    const todayCelebrations = mockCelebrations.filter(c => c.date === today);
-    const upcoming = mockCelebrations.filter(c => {
-        const d = new Date(c.date);
-        const t = new Date(today);
-        const diff = (d.getTime() - t.getTime()) / (1000 * 60 * 60 * 24);
-        return diff > 0 && diff <= 7;
+    // Editing state
+    const [editingCelebration, setEditingCelebration] = useState<EmployeeCelebration | null>(null);
+    const [editingTemplate, setEditingTemplate] = useState<WishTemplate | null>(null);
+    const [wishingCelebration, setWishingCelebration] = useState<EmployeeCelebration | null>(null);
+
+    // Search
+    const [searchTerm, setSearchTerm] = useState("");
+
+    // Forms
+    const [celebrationForm, setCelebrationForm] = useState<Omit<EmployeeCelebration, 'id'>>({
+        employeeName: "",
+        department: "Engineering",
+        type: "Birthday",
+        date: TODAY_ISO,
+        years: undefined
     });
+    const [templateForm, setTemplateForm] = useState<Omit<WishTemplate, 'id'>>({
+        name: "",
+        message: "",
+        type: "Birthday"
+    });
+    const [wishMessage, setWishMessage] = useState("");
 
-    const birthdaysThisMonth = mockCelebrations.filter(c => c.type === "birthday").length;
-    const anniversariesThisMonth = mockCelebrations.filter(c => c.type === "anniversary").length;
-    const milestones = mockCelebrations.filter(c => c.type === "anniversary" && c.years && c.years >= 5).length;
+    const resetCelebrationForm = () => {
+        setCelebrationForm({ employeeName: "", department: "Engineering", type: "Birthday", date: TODAY_ISO, years: undefined });
+        setEditingCelebration(null);
+    };
 
-    // Calendar grid
-    const daysInMonth = 30; // April
-    const firstDayOffset = 2; // April 2026 starts on Wednesday (0=Sun)
+    const resetTemplateForm = () => {
+        setTemplateForm({ name: "", message: "", type: "Birthday" });
+        setEditingTemplate(null);
+    };
+
+    const openCreateCelebration = () => {
+        resetCelebrationForm();
+        setIsCelebrationDialogOpen(true);
+    };
+
+    const openEditCelebration = (c: EmployeeCelebration) => {
+        setEditingCelebration(c);
+        setCelebrationForm({
+            employeeName: c.employeeName,
+            department: c.department,
+            type: c.type,
+            date: toFullDate(c.date),
+            years: c.years
+        });
+        setIsCelebrationDialogOpen(true);
+    };
+
+    const handleSaveCelebration = () => {
+        const nameError = runValidators(
+            required(celebrationForm.employeeName, "employeeName", "Employee name"),
+            minLength(celebrationForm.employeeName, 2, "employeeName", "Employee name"),
+            maxLength(celebrationForm.employeeName, 80, "employeeName", "Employee name")
+        );
+        if (nameError) {
+            toast({ title: "Invalid Name", description: nameError.message, variant: "destructive" });
+            return;
+        }
+        const dateError = isValidDate(celebrationForm.date, "date", "Date");
+        if (dateError) {
+            toast({ title: "Invalid Date", description: dateError.message, variant: "destructive" });
+            return;
+        }
+        if (celebrationForm.type === "Work Anniversary") {
+            const yearsError = rangeNumber(celebrationForm.years ?? 0, 1, 50, "years", "Years");
+            if (yearsError) {
+                toast({ title: "Invalid Years", description: yearsError.message, variant: "destructive" });
+                return;
+            }
+        }
+        // Store date as MM-DD for consistency with the original seed format
+        const mmdd = celebrationForm.date.length === 10
+            ? celebrationForm.date.slice(5)
+            : celebrationForm.date;
+        const payload = { ...celebrationForm, date: mmdd };
+
+        if (editingCelebration) {
+            updateCelebration(editingCelebration.id, payload);
+            toast({ title: "Updated", description: `${payload.employeeName}'s celebration updated.` });
+        } else {
+            addCelebration(payload);
+            toast({ title: "Celebration Added", description: `${payload.employeeName} added to the calendar.` });
+        }
+        setIsCelebrationDialogOpen(false);
+        resetCelebrationForm();
+    };
+
+    const handleDeleteCelebration = (id: string, name: string) => {
+        deleteCelebration(id);
+        toast({ title: "Removed", description: `${name}'s celebration removed.` });
+    };
+
+    const openCreateTemplate = () => {
+        resetTemplateForm();
+        setIsTemplateEditOpen(true);
+    };
+
+    const openEditTemplate = (t: WishTemplate) => {
+        setEditingTemplate(t);
+        setTemplateForm({ name: t.name, message: t.message, type: t.type });
+        setIsTemplateEditOpen(true);
+    };
+
+    const handleSaveTemplate = () => {
+        const nameError = runValidators(
+            required(templateForm.name, "name", "Template name"),
+            minLength(templateForm.name, 3, "name", "Template name"),
+            maxLength(templateForm.name, 80, "name", "Template name")
+        );
+        if (nameError) {
+            toast({ title: "Invalid Name", description: nameError.message, variant: "destructive" });
+            return;
+        }
+        const messageError = runValidators(
+            required(templateForm.message, "message", "Message"),
+            minLength(templateForm.message, 10, "message", "Message"),
+            maxLength(templateForm.message, 500, "message", "Message"),
+            hasPlaceholder(templateForm.message, "{{name}}", "message", "Message")
+        );
+        if (messageError) {
+            toast({ title: "Invalid Message", description: messageError.message, variant: "destructive" });
+            return;
+        }
+        if (editingTemplate) {
+            updateTemplate(editingTemplate.id, templateForm);
+            toast({ title: "Template Updated" });
+        } else {
+            addTemplate(templateForm);
+            toast({ title: "Template Added" });
+        }
+        setIsTemplateEditOpen(false);
+        resetTemplateForm();
+    };
+
+    const handleDeleteTemplate = (id: string) => {
+        deleteTemplate(id);
+        toast({ title: "Template Removed" });
+    };
+
+    const openWishDialog = (c: EmployeeCelebration) => {
+        setWishingCelebration(c);
+        const matchingTemplate = wishTemplates.find(t =>
+            (c.type === "Birthday" && t.type === "Birthday") ||
+            (c.type === "Work Anniversary" && t.type === "Anniversary")
+        );
+        setWishMessage(
+            matchingTemplate
+                ? matchingTemplate.message.replace(/\{\{name\}\}/g, c.employeeName)
+                : `Happy ${c.type === "Birthday" ? "Birthday" : "Work Anniversary"}, ${c.employeeName}!`
+        );
+        setIsWishDialogOpen(true);
+    };
+
+    const handleSendWish = () => {
+        if (!wishingCelebration) return;
+        if (wishedCelebrations.includes(wishingCelebration.id)) {
+            toast({ title: "Already Wished", description: "You've already sent a wish to this person.", variant: "destructive" });
+            return;
+        }
+        const msgError = runValidators(
+            required(wishMessage, "wishMessage", "Wish message"),
+            minLength(wishMessage, 5, "wishMessage", "Wish message"),
+            maxLength(wishMessage, 500, "wishMessage", "Wish message")
+        );
+        if (msgError) {
+            toast({ title: "Invalid Wish", description: msgError.message, variant: "destructive" });
+            return;
+        }
+        sendWish(wishingCelebration.id);
+        toast({
+            title: "Wish Sent! 🎉",
+            description: `Your wish for ${wishingCelebration.employeeName} has been delivered. +5 culture points!`
+        });
+        setIsWishDialogOpen(false);
+        setWishingCelebration(null);
+        setWishMessage("");
+    };
+
+    // Derived data
+    const filteredCelebrations = useMemo(() => {
+        const term = searchTerm.toLowerCase();
+        return celebrations.filter(c =>
+            c.employeeName.toLowerCase().includes(term) || c.department.toLowerCase().includes(term)
+        );
+    }, [celebrations, searchTerm]);
+
+    const todayKey = TODAY_ISO.slice(5); // MM-DD
+    const todayCelebrations = filteredCelebrations.filter(c => c.date.slice(-5) === todayKey);
+
+    const upcomingCelebrations = useMemo(() => {
+        const today = new Date(TODAY_ISO);
+        return filteredCelebrations
+            .map(c => {
+                const dateStr = c.date.length === 10 ? c.date : `2026-${c.date}`;
+                const d = new Date(dateStr);
+                const diff = (d.getTime() - today.getTime()) / (1000 * 60 * 60 * 24);
+                return { c, diff, dateStr };
+            })
+            .filter(x => x.diff > 0 && x.diff <= 7)
+            .sort((a, b) => a.diff - b.diff);
+    }, [filteredCelebrations]);
+
+    const birthdaysThisMonth = celebrations.filter(c => c.type === "Birthday").length;
+    const anniversariesThisMonth = celebrations.filter(c => c.type === "Work Anniversary").length;
+    const milestones = celebrations.filter(c => c.type === "Work Anniversary" && c.years && c.years >= 5).length;
+
+    // Calendar (April 2026 starts on Wednesday; 0=Sun so offset=3)
+    const daysInMonth = 30;
+    const firstDayOffset = 3;
     const calendarCells = Array.from({ length: 42 }, (_, i) => {
         const day = i - firstDayOffset + 1;
         if (day < 1 || day > daysInMonth) return null;
@@ -101,8 +300,8 @@ const CelebrationsPage = () => {
     });
 
     const getCelebsForDay = (day: number) => {
-        const dateStr = `2026-04-${String(day).padStart(2, "0")}`;
-        return mockCelebrations.filter(c => c.date === dateStr);
+        const dd = String(day).padStart(2, "0");
+        return celebrations.filter(c => c.date.slice(-2) === dd && c.date.slice(-5, -3) === "04");
     };
 
     return (
@@ -118,15 +317,28 @@ const CelebrationsPage = () => {
                         <p className="text-sm font-medium text-slate-500">Birthdays, work anniversaries, and milestone celebrations.</p>
                     </div>
                 </div>
-                <div className="flex gap-3">
+                <div className="flex items-center gap-3">
+                    <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 font-bold">
+                        <Sparkles size={12} className="mr-1" /> {userPoints} pts
+                    </Badge>
                     <Button variant="outline" className="font-bold border-slate-200" onClick={() => setIsCardDesigner(true)}>
                         <Sparkles size={16} className="mr-2 text-pink-500" /> Card Designer
                     </Button>
                     <Button variant="outline" className="font-bold border-slate-200" onClick={() => setIsTemplateOpen(true)}>
                         <Edit size={16} className="mr-2 text-slate-400" /> Templates
                     </Button>
-                    <Button variant={autoWish ? "default" : "outline"} className={autoWish ? "bg-emerald-500 hover:bg-emerald-600 text-white font-bold" : "font-bold border-slate-200"} onClick={() => { setAutoWish(!autoWish); toast({ title: autoWish ? "Auto-Wish Disabled" : "Auto-Wish Enabled" }); }}>
-                        <Send size={16} className="mr-2" /> Auto-Wish {autoWish ? "ON" : "OFF"}
+                    <Button
+                        variant={autoWishEnabled ? "default" : "outline"}
+                        className={autoWishEnabled ? "bg-emerald-500 hover:bg-emerald-600 text-white font-bold" : "font-bold border-slate-200"}
+                        onClick={() => {
+                            setAutoWishEnabled(!autoWishEnabled);
+                            toast({ title: autoWishEnabled ? "Auto-Wish Disabled" : "Auto-Wish Enabled" });
+                        }}
+                    >
+                        <Send size={16} className="mr-2" /> Auto-Wish {autoWishEnabled ? "ON" : "OFF"}
+                    </Button>
+                    <Button className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white font-bold" onClick={openCreateCelebration}>
+                        <Plus size={16} className="mr-2" /> Add Celebration
                     </Button>
                 </div>
             </div>
@@ -155,11 +367,23 @@ const CelebrationsPage = () => {
 
             <div className="flex-1 overflow-auto px-8 pb-8">
                 <Tabs defaultValue="today" className="space-y-6">
-                    <TabsList className="bg-slate-100">
-                        <TabsTrigger value="today" className="font-bold">Today</TabsTrigger>
-                        <TabsTrigger value="upcoming" className="font-bold">Upcoming (7 days)</TabsTrigger>
-                        <TabsTrigger value="calendar" className="font-bold">Calendar View</TabsTrigger>
-                    </TabsList>
+                    <div className="flex items-center justify-between">
+                        <TabsList className="bg-slate-100">
+                            <TabsTrigger value="today" className="font-bold">Today</TabsTrigger>
+                            <TabsTrigger value="upcoming" className="font-bold">Upcoming (7 days)</TabsTrigger>
+                            <TabsTrigger value="all" className="font-bold">All Celebrations</TabsTrigger>
+                            <TabsTrigger value="calendar" className="font-bold">Calendar View</TabsTrigger>
+                        </TabsList>
+                        <div className="relative w-72">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                            <Input
+                                placeholder="Search by name or department..."
+                                className="pl-9 bg-white"
+                                value={searchTerm}
+                                onChange={e => setSearchTerm(e.target.value)}
+                            />
+                        </div>
+                    </div>
 
                     <TabsContent value="today" className="space-y-6">
                         {todayCelebrations.length === 0 ? (
@@ -168,58 +392,161 @@ const CelebrationsPage = () => {
                             </Card>
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-                                {todayCelebrations.map(c => (
-                                    <Card key={c.id} className="rounded-2xl overflow-hidden shadow-sm border-2" style={{ borderColor: c.type === "birthday" ? "#f9a8d4" : "#fbbf24" }}>
-                                        <div className={`h-3 ${c.type === "birthday" ? "bg-gradient-to-r from-pink-400 to-purple-500" : "bg-gradient-to-r from-amber-400 to-orange-500"}`} />
-                                        <CardContent className="p-6 text-center">
-                                            <div className={`h-16 w-16 rounded-full mx-auto mb-4 flex items-center justify-center text-white font-bold text-lg ${c.type === "birthday" ? "bg-gradient-to-br from-pink-400 to-purple-500" : "bg-gradient-to-br from-amber-400 to-orange-500"}`}>
-                                                {c.avatarInitials}
+                                {todayCelebrations.map(c => {
+                                    const wished = wishedCelebrations.includes(c.id);
+                                    return (
+                                        <Card key={c.id} className="rounded-2xl overflow-hidden shadow-sm border-2 relative" style={{ borderColor: c.type === "Birthday" ? "#f9a8d4" : "#fbbf24" }}>
+                                            <div className={`h-3 ${c.type === "Birthday" ? "bg-gradient-to-r from-pink-400 to-purple-500" : "bg-gradient-to-r from-amber-400 to-orange-500"}`} />
+                                            <div className="absolute top-2 right-2 z-10">
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button variant="ghost" size="icon" className="h-7 w-7 bg-white/80 hover:bg-white">
+                                                            <MoreHorizontal size={14} />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end">
+                                                        <DropdownMenuItem onClick={() => openEditCelebration(c)}>
+                                                            <Edit size={12} className="mr-2" /> Edit
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => handleDeleteCelebration(c.id, c.employeeName)} className="text-rose-500">
+                                                            <Trash2 size={12} className="mr-2" /> Delete
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
                                             </div>
-                                            <div className="mb-2">
-                                                {c.type === "birthday" ? <Cake size={20} className="inline text-pink-500 mr-1" /> : <Star size={20} className="inline text-amber-500 mr-1" />}
-                                            </div>
-                                            <h3 className="text-lg font-bold text-slate-900">{c.name}</h3>
-                                            <p className="text-sm text-slate-500">{c.department}</p>
-                                            <Badge className={`mt-3 ${c.type === "birthday" ? "bg-pink-100 text-pink-700 border-pink-200" : "bg-amber-100 text-amber-700 border-amber-200"}`} variant="outline">
-                                                {c.type === "birthday" ? "Birthday" : `${c.years} Year${c.years !== 1 ? "s" : ""} Anniversary`}
-                                            </Badge>
-                                            <div className="mt-4 flex gap-2 justify-center">
-                                                <Button size="sm" className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white text-xs font-bold">
-                                                    <Heart size={12} className="mr-1" /> Send Wish
-                                                </Button>
-                                            </div>
-                                        </CardContent>
-                                    </Card>
-                                ))}
+                                            <CardContent className="p-6 text-center">
+                                                <div className={`h-16 w-16 rounded-full mx-auto mb-4 flex items-center justify-center text-white font-bold text-lg ${c.type === "Birthday" ? "bg-gradient-to-br from-pink-400 to-purple-500" : "bg-gradient-to-br from-amber-400 to-orange-500"}`}>
+                                                    {getInitials(c.employeeName)}
+                                                </div>
+                                                <div className="mb-2">
+                                                    {c.type === "Birthday" ? <Cake size={20} className="inline text-pink-500 mr-1" /> : <Star size={20} className="inline text-amber-500 mr-1" />}
+                                                </div>
+                                                <h3 className="text-lg font-bold text-slate-900">{c.employeeName}</h3>
+                                                <p className="text-sm text-slate-500">{c.department}</p>
+                                                <Badge className={`mt-3 ${c.type === "Birthday" ? "bg-pink-100 text-pink-700 border-pink-200" : "bg-amber-100 text-amber-700 border-amber-200"}`} variant="outline">
+                                                    {c.type === "Birthday" ? "Birthday" : `${c.years ?? 1} Year${c.years !== 1 ? "s" : ""} Anniversary`}
+                                                </Badge>
+                                                <div className="mt-4 flex gap-2 justify-center">
+                                                    <Button
+                                                        size="sm"
+                                                        onClick={() => openWishDialog(c)}
+                                                        disabled={wished}
+                                                        className={wished ? "bg-emerald-500 text-white text-xs font-bold cursor-default" : "bg-[#8B5CF6] hover:bg-[#7C3AED] text-white text-xs font-bold"}
+                                                    >
+                                                        {wished ? <><CheckCircle2 size={12} className="mr-1" /> Wished</> : <><Heart size={12} className="mr-1" /> Send Wish</>}
+                                                    </Button>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    );
+                                })}
                             </div>
                         )}
                     </TabsContent>
 
                     <TabsContent value="upcoming" className="space-y-4">
-                        {upcoming.length === 0 ? (
+                        {upcomingCelebrations.length === 0 ? (
                             <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm p-12 text-center">
                                 <p className="text-slate-400 text-lg">No upcoming celebrations in the next 7 days.</p>
                             </Card>
                         ) : (
                             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm divide-y divide-slate-100">
-                                {upcoming.map(c => (
-                                    <div key={c.id} className="px-6 py-4 flex items-center gap-4 hover:bg-slate-50">
-                                        <div className={`h-10 w-10 rounded-full flex items-center justify-center text-white font-bold text-sm ${c.type === "birthday" ? "bg-pink-500" : "bg-amber-500"}`}>
-                                            {c.avatarInitials}
-                                        </div>
-                                        <div className="flex-1">
-                                            <p className="font-bold text-slate-900">{c.name}</p>
-                                            <p className="text-xs text-slate-500">{c.department}</p>
-                                        </div>
-                                        <div className="text-right">
-                                            <Badge variant="outline" className={c.type === "birthday" ? "bg-pink-50 text-pink-600 border-pink-200" : "bg-amber-50 text-amber-600 border-amber-200"}>
-                                                {c.type === "birthday" ? <Cake size={12} className="mr-1" /> : <Star size={12} className="mr-1" />}
-                                                {c.type === "birthday" ? "Birthday" : `${c.years}yr`}
+                                {upcomingCelebrations.map(({ c, dateStr }) => {
+                                    const wished = wishedCelebrations.includes(c.id);
+                                    return (
+                                        <div key={c.id} className="px-6 py-4 flex items-center gap-4 hover:bg-slate-50">
+                                            <div className={`h-10 w-10 rounded-full flex items-center justify-center text-white font-bold text-sm ${c.type === "Birthday" ? "bg-pink-500" : "bg-amber-500"}`}>
+                                                {getInitials(c.employeeName)}
+                                            </div>
+                                            <div className="flex-1">
+                                                <p className="font-bold text-slate-900">{c.employeeName}</p>
+                                                <p className="text-xs text-slate-500">{c.department}</p>
+                                            </div>
+                                            <Badge variant="outline" className={c.type === "Birthday" ? "bg-pink-50 text-pink-600 border-pink-200" : "bg-amber-50 text-amber-600 border-amber-200"}>
+                                                {c.type === "Birthday" ? <Cake size={12} className="mr-1" /> : <Star size={12} className="mr-1" />}
+                                                {c.type === "Birthday" ? "Birthday" : `${c.years ?? 1}yr`}
                                             </Badge>
-                                            <p className="text-xs text-slate-400 mt-1">{new Date(c.date).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}</p>
+                                            <p className="text-xs text-slate-400 min-w-[100px] text-right">{new Date(dateStr).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}</p>
+                                            <Button
+                                                size="sm"
+                                                onClick={() => openWishDialog(c)}
+                                                disabled={wished}
+                                                className={wished ? "bg-emerald-500 text-white text-xs font-bold cursor-default" : "bg-[#8B5CF6] hover:bg-[#7C3AED] text-white text-xs font-bold"}
+                                            >
+                                                {wished ? "Wished" : "Wish"}
+                                            </Button>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                        <MoreHorizontal size={14} />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    <DropdownMenuItem onClick={() => openEditCelebration(c)}>
+                                                        <Edit size={12} className="mr-2" /> Edit
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => handleDeleteCelebration(c.id, c.employeeName)} className="text-rose-500">
+                                                        <Trash2 size={12} className="mr-2" /> Delete
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
                                         </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </TabsContent>
+
+                    <TabsContent value="all" className="space-y-4">
+                        {filteredCelebrations.length === 0 ? (
+                            <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm p-12 text-center">
+                                <p className="text-slate-400 text-lg">No celebrations match your search.</p>
+                            </Card>
+                        ) : (
+                            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm divide-y divide-slate-100">
+                                {filteredCelebrations.map(c => {
+                                    const wished = wishedCelebrations.includes(c.id);
+                                    const dateStr = toFullDate(c.date);
+                                    return (
+                                        <div key={c.id} className="px-6 py-4 flex items-center gap-4 hover:bg-slate-50">
+                                            <div className={`h-10 w-10 rounded-full flex items-center justify-center text-white font-bold text-sm ${c.type === "Birthday" ? "bg-pink-500" : "bg-amber-500"}`}>
+                                                {getInitials(c.employeeName)}
+                                            </div>
+                                            <div className="flex-1">
+                                                <p className="font-bold text-slate-900">{c.employeeName}</p>
+                                                <p className="text-xs text-slate-500">{c.department}</p>
+                                            </div>
+                                            <Badge variant="outline" className={c.type === "Birthday" ? "bg-pink-50 text-pink-600 border-pink-200" : "bg-amber-50 text-amber-600 border-amber-200"}>
+                                                {c.type === "Birthday" ? <Cake size={12} className="mr-1" /> : <Star size={12} className="mr-1" />}
+                                                {c.type === "Birthday" ? "Birthday" : `${c.years ?? 1}yr`}
+                                            </Badge>
+                                            <p className="text-xs text-slate-400 min-w-[100px] text-right">{new Date(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</p>
+                                            <Button
+                                                size="sm"
+                                                onClick={() => openWishDialog(c)}
+                                                disabled={wished}
+                                                className={wished ? "bg-emerald-500 text-white text-xs font-bold cursor-default" : "bg-[#8B5CF6] hover:bg-[#7C3AED] text-white text-xs font-bold"}
+                                            >
+                                                {wished ? "Wished" : "Wish"}
+                                            </Button>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                        <MoreHorizontal size={14} />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    <DropdownMenuItem onClick={() => openEditCelebration(c)}>
+                                                        <Edit size={12} className="mr-2" /> Edit
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => handleDeleteCelebration(c.id, c.employeeName)} className="text-rose-500">
+                                                        <Trash2 size={12} className="mr-2" /> Delete
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </div>
+                                    );
+                                })}
                             </div>
                         )}
                     </TabsContent>
@@ -239,15 +566,15 @@ const CelebrationsPage = () => {
                                     {calendarCells.map((day, i) => {
                                         if (day === null) return <div key={i} className="h-20" />;
                                         const celebs = getCelebsForDay(day);
-                                        const isToday = day === 2;
+                                        const isToday = day === 20;
                                         return (
                                             <div key={i} className={`h-20 rounded-lg p-1.5 border ${isToday ? "border-[#8B5CF6] bg-purple-50" : "border-slate-100 hover:bg-slate-50"}`}>
                                                 <p className={`text-xs font-bold ${isToday ? "text-[#8B5CF6]" : "text-slate-600"}`}>{day}</p>
                                                 <div className="mt-1 space-y-0.5">
                                                     {celebs.slice(0, 2).map(c => (
                                                         <div key={c.id} className="flex items-center gap-1 text-[10px] truncate">
-                                                            {c.type === "birthday" ? <Cake size={10} className="text-pink-500 shrink-0" /> : <Star size={10} className="text-amber-500 shrink-0" />}
-                                                            <span className="truncate font-medium text-slate-600">{c.name.split(" ")[0]}</span>
+                                                            {c.type === "Birthday" ? <Cake size={10} className="text-pink-500 shrink-0" /> : <Star size={10} className="text-amber-500 shrink-0" />}
+                                                            <span className="truncate font-medium text-slate-600">{c.employeeName.split(" ")[0]}</span>
                                                         </div>
                                                     ))}
                                                     {celebs.length > 2 && <p className="text-[9px] text-slate-400">+{celebs.length - 2} more</p>}
@@ -262,21 +589,195 @@ const CelebrationsPage = () => {
                 </Tabs>
             </div>
 
-            {/* Templates Dialog */}
+            {/* Add/Edit Celebration Dialog */}
+            <Dialog open={isCelebrationDialogOpen} onOpenChange={(val) => { if (!val) resetCelebrationForm(); setIsCelebrationDialogOpen(val); }}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>{editingCelebration ? "Edit Celebration" : "Add Celebration"}</DialogTitle>
+                        <DialogDescription>Track a birthday or work anniversary.</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-2">
+                        <div className="space-y-2">
+                            <Label>Employee Name</Label>
+                            <Input
+                                value={celebrationForm.employeeName}
+                                maxLength={80}
+                                onChange={e => setCelebrationForm({ ...celebrationForm, employeeName: e.target.value })}
+                                placeholder="e.g. Priya Sharma"
+                            />
+                            <p className="text-[10px] text-slate-400">{celebrationForm.employeeName.length}/80 • min 2</p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-2">
+                                <Label>Department</Label>
+                                <Select value={celebrationForm.department} onValueChange={v => setCelebrationForm({ ...celebrationForm, department: v })}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        {departments.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Type</Label>
+                                <Select value={celebrationForm.type} onValueChange={v => setCelebrationForm({ ...celebrationForm, type: v as "Birthday" | "Work Anniversary" })}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="Birthday">Birthday</SelectItem>
+                                        <SelectItem value="Work Anniversary">Work Anniversary</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-2">
+                                <Label>Date</Label>
+                                <Input
+                                    type="date"
+                                    value={celebrationForm.date.length === 10 ? celebrationForm.date : `2026-${celebrationForm.date}`}
+                                    onChange={e => setCelebrationForm({ ...celebrationForm, date: e.target.value })}
+                                />
+                            </div>
+                            {celebrationForm.type === "Work Anniversary" && (
+                                <div className="space-y-2">
+                                    <Label>Years</Label>
+                                    <Input
+                                        type="number"
+                                        min={1}
+                                        max={50}
+                                        value={celebrationForm.years ?? ""}
+                                        onChange={e => setCelebrationForm({ ...celebrationForm, years: Number(e.target.value) || undefined })}
+                                        placeholder="e.g. 5"
+                                    />
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsCelebrationDialogOpen(false)}>Cancel</Button>
+                        <Button className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white font-bold" onClick={handleSaveCelebration}>
+                            {editingCelebration ? "Save Changes" : "Add Celebration"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Templates Library Dialog */}
             <Dialog open={isTemplateOpen} onOpenChange={setIsTemplateOpen}>
                 <DialogContent className="max-w-lg">
                     <DialogHeader>
-                        <DialogTitle>Message Templates</DialogTitle>
-                        <DialogDescription>Custom message templates for auto-wishes.</DialogDescription>
+                        <DialogTitle className="flex items-center justify-between">
+                            <span>Message Templates</span>
+                            <Button size="sm" variant="outline" onClick={openCreateTemplate}>
+                                <Plus size={14} className="mr-1" /> New
+                            </Button>
+                        </DialogTitle>
+                        <DialogDescription>Custom message templates for auto-wishes. Use {`{{name}}`} for the recipient's name.</DialogDescription>
                     </DialogHeader>
                     <div className="space-y-3 max-h-[400px] overflow-auto">
-                        {templates.map(t => (
+                        {wishTemplates.length === 0 ? (
+                            <p className="text-sm text-slate-400 text-center py-8">No templates yet. Create one!</p>
+                        ) : wishTemplates.map(t => (
                             <div key={t.id} className="p-4 bg-slate-50 rounded-xl border border-slate-200">
-                                <p className="text-xs font-bold text-slate-500 mb-1">{t.name}</p>
+                                <div className="flex items-start justify-between gap-2 mb-2">
+                                    <div>
+                                        <p className="text-xs font-bold text-slate-500">{t.name}</p>
+                                        <Badge variant="outline" className="text-[9px] mt-1">{t.type}</Badge>
+                                    </div>
+                                    <div className="flex gap-1">
+                                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEditTemplate(t)}>
+                                            <Edit size={12} />
+                                        </Button>
+                                        <Button size="icon" variant="ghost" className="h-7 w-7 text-rose-500 hover:text-rose-600" onClick={() => handleDeleteTemplate(t.id)}>
+                                            <Trash2 size={12} />
+                                        </Button>
+                                    </div>
+                                </div>
                                 <p className="text-sm text-slate-700">{t.message}</p>
                             </div>
                         ))}
                     </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* Template Add/Edit Dialog */}
+            <Dialog open={isTemplateEditOpen} onOpenChange={(val) => { if (!val) resetTemplateForm(); setIsTemplateEditOpen(val); }}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>{editingTemplate ? "Edit Template" : "New Template"}</DialogTitle>
+                        <DialogDescription>Use {`{{name}}`} as a placeholder for the recipient.</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                        <div className="space-y-2">
+                            <Label>Name</Label>
+                            <Input
+                                value={templateForm.name}
+                                maxLength={80}
+                                onChange={e => setTemplateForm({ ...templateForm, name: e.target.value })}
+                                placeholder="e.g. Birthday - Warm"
+                            />
+                            <p className="text-[10px] text-slate-400">{templateForm.name.length}/80 • min 3</p>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Type</Label>
+                            <Select value={templateForm.type} onValueChange={v => setTemplateForm({ ...templateForm, type: v as "Birthday" | "Anniversary" })}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Birthday">Birthday</SelectItem>
+                                    <SelectItem value="Anniversary">Anniversary</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Message</Label>
+                            <Textarea
+                                value={templateForm.message}
+                                maxLength={500}
+                                onChange={e => setTemplateForm({ ...templateForm, message: e.target.value })}
+                                placeholder="Happy Birthday, {{name}}!"
+                                rows={4}
+                            />
+                            <p className="text-[10px] text-slate-400">{templateForm.message.length}/500 • must include {`{{name}}`}</p>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsTemplateEditOpen(false)}>Cancel</Button>
+                        <Button className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white font-bold" onClick={handleSaveTemplate}>
+                            {editingTemplate ? "Save" : "Create"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Send Wish Dialog */}
+            <Dialog open={isWishDialogOpen} onOpenChange={setIsWishDialogOpen}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Send a Wish</DialogTitle>
+                        <DialogDescription>
+                            {wishingCelebration && `To ${wishingCelebration.employeeName} · ${wishingCelebration.type}`}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                        <div className={`h-20 rounded-xl bg-gradient-to-br ${cardTemplates.find(c => c.id === selectedCardTemplateId)?.gradient} flex items-center justify-center`}>
+                            <Gift size={32} className="text-white/90" />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Message</Label>
+                            <Textarea
+                                value={wishMessage}
+                                maxLength={500}
+                                onChange={e => setWishMessage(e.target.value)}
+                                rows={4}
+                            />
+                            <p className="text-[10px] text-slate-400">{wishMessage.length}/500 • min 5</p>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsWishDialogOpen(false)}>Cancel</Button>
+                        <Button className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white font-bold" onClick={handleSendWish}>
+                            <Send size={14} className="mr-1" /> Send Wish
+                        </Button>
+                    </DialogFooter>
                 </DialogContent>
             </Dialog>
 
@@ -291,8 +792,8 @@ const CelebrationsPage = () => {
                         {cardTemplates.map(ct => (
                             <div
                                 key={ct.id}
-                                onClick={() => setSelectedCard(ct.id)}
-                                className={`cursor-pointer rounded-xl overflow-hidden border-2 transition-all ${selectedCard === ct.id ? "border-[#8B5CF6] ring-2 ring-purple-200" : "border-slate-200"}`}
+                                onClick={() => setSelectedCardTemplate(ct.id)}
+                                className={`cursor-pointer rounded-xl overflow-hidden border-2 transition-all ${selectedCardTemplateId === ct.id ? "border-[#8B5CF6] ring-2 ring-purple-200" : "border-slate-200"}`}
                             >
                                 <div className={`h-24 bg-gradient-to-br ${ct.gradient} flex items-center justify-center`}>
                                     <PartyPopper size={32} className="text-white/80" />
@@ -304,7 +805,7 @@ const CelebrationsPage = () => {
                         ))}
                     </div>
                     <DialogFooter>
-                        <Button className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white font-bold" onClick={() => { setIsCardDesigner(false); toast({ title: "Template Selected", description: `"${cardTemplates.find(c => c.id === selectedCard)?.name}" template applied.` }); }}>
+                        <Button className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white font-bold" onClick={() => { setIsCardDesigner(false); toast({ title: "Template Selected", description: `"${cardTemplates.find(c => c.id === selectedCardTemplateId)?.name}" template applied.` }); }}>
                             Apply Template
                         </Button>
                     </DialogFooter>

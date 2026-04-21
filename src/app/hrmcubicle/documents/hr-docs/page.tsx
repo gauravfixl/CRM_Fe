@@ -69,6 +69,7 @@ import {
     TableRow,
 } from "@/shared/components/ui/table";
 import { useDocumentsStore, type HRDocument } from "@/shared/data/documents-store";
+import { required, minLength, maxLength, isUnique, firstError } from "@/shared/utils/validators";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 
@@ -98,13 +99,24 @@ const HRDocsPage = () => {
         fileUrl: "#"
     });
 
+    const validateDoc = (d: { name: string; category: string; status: string }, ignoreId?: string): string | null => {
+        const existingNames = hrDocuments.filter(x => x.id !== ignoreId).map(x => x.name);
+        return firstError(
+            required(d.name, "Document name"),
+            minLength(d.name, 3, "Document name"),
+            maxLength(d.name, 120, "Document name"),
+            isUnique(d.name, existingNames, "Document name"),
+            required(d.category, "Category"),
+            required(d.status, "Status"),
+        );
+    };
+
     const handleUpload = () => {
-        if (!newDoc.name) {
-            toast.error("Please enter a document name");
-            return;
-        }
+        const err = validateDoc(newDoc);
+        if (err) { toast.error(err); return; }
         addHRDocument({
             ...newDoc,
+            name: newDoc.name.trim(),
             size: "1.2 MB", // Mock size
             uploadedBy: "Admin"
         });
@@ -114,11 +126,10 @@ const HRDocsPage = () => {
     };
 
     const handleUpdate = () => {
-        if (!editingDoc?.name) {
-            toast.error("Document name cannot be empty");
-            return;
-        }
-        updateHRDocument(editingDoc.id, editingDoc);
+        if (!editingDoc) return;
+        const err = validateDoc(editingDoc, editingDoc.id);
+        if (err) { toast.error(err); return; }
+        updateHRDocument(editingDoc.id, { ...editingDoc, name: editingDoc.name.trim() });
         setEditingDoc(null);
         toast.success("Document updated successfully");
     };

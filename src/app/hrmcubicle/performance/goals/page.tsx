@@ -7,21 +7,14 @@ import {
     Plus,
     Search,
     Calendar,
-    MoreVertical,
     Edit,
     Trash2,
-    TrendingUp,
-    ShieldCheck,
-    ArrowRight,
-    Filter,
-    Activity,
     CheckCircle2,
     Clock,
-    Flame,
-    Zap,
-    ChevronDown,
     Network,
-    Scale
+    Scale,
+    AlertCircle,
+    Loader2,
 } from "lucide-react";
 import { Card, CardContent } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
@@ -30,7 +23,6 @@ import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { useToast } from "@/shared/components/ui/use-toast";
 import { usePerformanceStore, type Goal } from "@/shared/data/performance-store";
-import { createGoal as createGoalApi, deleteGoal as deleteGoalApi, getAllGoals, updateGoal as updateGoalApi } from "@/modules/hrm/hooks/hrmHooks";
 import {
     Dialog,
     DialogContent,
@@ -40,123 +32,236 @@ import {
     DialogTitle,
 } from "@/shared/components/ui/dialog";
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from "@/shared/components/ui/dropdown-menu";
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/shared/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
 import { Textarea } from "@/shared/components/ui/textarea";
+import {
+    createGoal as apiCreateGoal,
+    deleteGoal as apiDeleteGoal,
+    getAllEmployees,
+    getAllGoals,
+    updateGoal as apiUpdateGoal,
+} from "@/modules/hrm/hooks/hrmHooks";
+import {
+    firstError,
+    isFutureDate,
+    isNumberInRange,
+    maxLength,
+    required,
+    type ValidationErrors,
+} from "@/shared/utils/validators";
+
+interface EmployeeOpt { id: string; label: string; }
+
+const emptyGoalForm = {
+    title: "",
+    progress: 0,
+    status: "Draft" as Goal["status"],
+    dueDate: "",
+    description: "",
+    priority: "Medium" as Goal["priority"],
+    category: "Technical" as Goal["category"],
+    alignment: "Individual" as Goal["alignment"],
+    weightage: 20,
+    employee: "",
+};
+type GoalForm = typeof emptyGoalForm;
+
+// Map frontend status to backend enum (backend only supports 3 statuses)
+const toBackendStatus = (s: Goal["status"]): "In Progress" | "Completed" | "Delayed" => {
+    if (s === "Completed") return "Completed";
+    if (s === "At Risk" || s === "Behind") return "Delayed";
+    return "In Progress";
+};
 
 const GoalsPage = () => {
     const { toast } = useToast();
     const { goals, addGoal, updateGoal, deleteGoal, approveGoal } = usePerformanceStore();
-    const [apiGoals, setApiGoals] = useState<Goal[] | null>(null);
 
     const [searchQuery, setSearchQuery] = useState("");
     const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [deleteTarget, setDeleteTarget] = useState<Goal | null>(null);
     const [activeGoal, setActiveGoal] = useState<Goal | null>(null);
-    const [filterCategory, setFilterCategory] = useState<string | 'All'>('All');
+    const [filterCategory, setFilterCategory] = useState<string | "All">("All");
+    const [employees, setEmployees] = useState<EmployeeOpt[]>([]);
+    const [saving, setSaving] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [errors, setErrors] = useState<ValidationErrors>({});
 
-    const [formData, setFormData] = useState<Omit<Goal, 'id'>>({
-        title: "",
-        progress: 0,
-        status: "Draft",
-        dueDate: "",
-        description: "",
-        priority: "Medium",
-        category: "Technical",
-        alignment: "Individual",
-        weightage: 20
-    });
+    const [formData, setFormData] = useState<GoalForm>(emptyGoalForm);
 
+    // Load goals + employees from backend on mount (fall back to local store on failure)
     useEffect(() => {
+        let mounted = true;
         (async () => {
+            setLoading(true);
             try {
-                const res = await getAllGoals();
-                const rows = res?.data?.goals ?? res?.data?.data ?? [];
-                const mapped: Goal[] = rows.map((g: any) => ({
-                    id: String(g._id ?? g.id),
-                    title: g.goal ?? g.title ?? "Untitled Goal",
-                    progress: Number(g.progress ?? 0),
-                    status: (g.status ?? "On Track") as Goal["status"],
-                    dueDate: g.targetDate ? new Date(g.targetDate).toISOString().split("T")[0] : "",
-                    description: g.description ?? "",
-                    priority: (g.priority ?? "Medium") as Goal["priority"],
-                    category: (g.category ?? "Operations") as Goal["category"],
-                    alignment: (g.alignment ?? "Department") as Goal["alignment"],
-                    weightage: Number(g.weightage ?? 20)
-                }));
-                setApiGoals(mapped);
-            } catch (err) {
-                console.error("Goals API load failed:", err);
+                const [goalsRes, empRes] = await Promise.allSettled([getAllGoals(), getAllEmployees()]);
+                if (!mounted) return;
+
+                if (goalsRes.status === "fulfilled") {
+                    const rows = goalsRes.value?.data?.goals ?? goalsRes.value?.data?.data ?? [];
+                    rows.forEach((g: any) => {
+                        const id = String(g._id ?? g.id ?? "");
+                        if (!id) return;
+                        // Hydrate local store so the UI shows backend data immediately
+                        const existing = usePerformanceStore.getState().goals.find((x) => x.id === id);
+                        if (!existing) {
+                            addGoal({
+                                title: g.goal ?? g.title ?? "Untitled",
+                                progress: Number(g.progress ?? 0),
+                                status: (g.status === "Completed" ? "Completed" : g.status === "Delayed" ? "At Risk" : "On Track") as Goal["status"],
+                                dueDate: g.targetDate ? new Date(g.targetDate).toISOString().split("T")[0] : "",
+                                description: (g.keyPerformanceIndicators || []).join(" • "),
+                                priority: "Medium",
+                                category: "Operations",
+                                alignment: "Department",
+                                weightage: 20,
+                            });
+                            // Overwrite the fresh local id with backend id so subsequent updates hit the right record
+                            usePerformanceStore.setState((state) => ({
+                                goals: state.goals.map((x, i) => (i === 0 ? { ...x, id } : x)),
+                            }));
+                        }
+                    });
+                }
+
+                if (empRes.status === "fulfilled") {
+                    const list = empRes.value?.data?.employees ?? empRes.value?.data?.data ?? [];
+                    setEmployees(
+                        list.map((e: any) => ({
+                            id: String(e._id ?? e.id ?? ""),
+                            label: `${e.personalInfo?.fullName || e.firstName || e.name || ""} (${e.employeeId || e.personalInfo?.contact?.email || ""})`,
+                        })).filter((e: EmployeeOpt) => e.id)
+                    );
+                }
+            } finally {
+                if (mounted) setLoading(false);
             }
         })();
+        return () => { mounted = false; };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    const handleSave = () => {
-        if (!formData.title || !formData.dueDate) {
-            toast({ title: "Validation Error", description: "Title and Due Date are mandatory", variant: "destructive" });
+    const validate = (): ValidationErrors => {
+        const e: ValidationErrors = {};
+        const t = firstError(required(formData.title, "Title"), maxLength(formData.title, 200, "Title"));
+        if (t) e.title = t;
+        const d = firstError(required(formData.dueDate, "Due date"), isFutureDate(formData.dueDate, "Due date"));
+        if (d) e.dueDate = d;
+        const w = isNumberInRange(formData.weightage, 0, 100, "Weightage");
+        if (w) e.weightage = w;
+        const p = isNumberInRange(formData.progress, 0, 100, "Progress");
+        if (p) e.progress = p;
+        const desc = maxLength(formData.description, 1000, "Description");
+        if (desc) e.description = desc;
+        // Employee is required only when creating a new goal (backend requires it)
+        if (!activeGoal) {
+            const emp = required(formData.employee, "Employee");
+            if (emp) e.employee = emp;
+        }
+        return e;
+    };
+
+    const handleSave = async () => {
+        const v = validate();
+        setErrors(v);
+        if (Object.keys(v).length > 0) {
+            toast({ title: "Validation failed", description: "Please correct the highlighted fields.", variant: "destructive" });
             return;
         }
 
-        (async () => {
-            try {
-                if (activeGoal) {
-                    if (activeGoal.id.length >= 20) {
-                        await updateGoalApi(activeGoal.id, {
-                            goal: formData.title,
-                            targetDate: formData.dueDate,
-                            status: formData.status,
-                            progress: formData.progress,
-                            description: formData.description,
-                            priority: formData.priority,
-                            category: formData.category,
-                            alignment: formData.alignment,
-                            weightage: formData.weightage
-                        });
-                    } else {
-                        updateGoal(activeGoal.id, formData);
-                    }
-                    setApiGoals((prev) => prev ? prev.map((g) => g.id === activeGoal.id ? { ...g, ...formData } : g) : prev);
-                    toast({ title: "Objective Updated", description: "Goal progress and details updated successfully." });
-                } else {
-                    const employeeId = typeof window !== "undefined" ? localStorage.getItem("hrm_employee_id") : null;
-                    if (employeeId) {
-                        const res = await createGoalApi({
-                            employee: employeeId,
-                            goal: formData.title,
-                            targetDate: formData.dueDate,
-                            keyPerformanceIndicators: formData.description ? [formData.description] : []
-                        });
-                        const created = res?.data?.goal;
-                        if (created?._id) {
-                            const mapped: Goal = {
-                                id: String(created._id),
-                                title: created.goal ?? formData.title,
-                                progress: Number(created.progress ?? 0),
-                                status: (created.status ?? "Draft") as Goal["status"],
-                                dueDate: created.targetDate ? new Date(created.targetDate).toISOString().split("T")[0] : formData.dueDate,
-                                description: formData.description,
-                                priority: formData.priority,
-                                category: formData.category,
-                                alignment: formData.alignment,
-                                weightage: formData.weightage
-                            };
-                            setApiGoals((prev) => [mapped, ...(prev ?? [])]);
-                        }
-                    } else {
-                        addGoal(formData);
-                    }
-                    toast({ title: "Goal Created", description: "Goal has been saved." });
+        setSaving(true);
+        try {
+            if (activeGoal) {
+                // Try backend update if the id looks like a Mongo ObjectId
+                if (/^[a-f\d]{24}$/i.test(activeGoal.id)) {
+                    await apiUpdateGoal(activeGoal.id, {
+                        goal: formData.title,
+                        targetDate: formData.dueDate,
+                        status: toBackendStatus(formData.status),
+                        progress: formData.progress,
+                        keyPerformanceIndicators: formData.description ? formData.description.split(" • ") : [],
+                    });
                 }
-                setIsDialogOpen(false);
-                setActiveGoal(null);
-                setFormData({ title: "", progress: 0, status: "Draft", dueDate: "", description: "", priority: "Medium", category: "Technical", alignment: "Individual", weightage: 20 });
-            } catch (err) {
-                toast({ title: "Save Failed", description: "Could not save goal to backend.", variant: "destructive" });
+                // Always mirror the full frontend state locally so the UI stays rich
+                const { employee: _emp, ...local } = formData;
+                updateGoal(activeGoal.id, local);
+                toast({ title: "Objective Updated", description: "Goal updated successfully." });
+            } else {
+                let newId: string | null = null;
+                try {
+                    const res = await apiCreateGoal({
+                        employee: formData.employee,
+                        goal: formData.title,
+                        keyPerformanceIndicators: formData.description ? formData.description.split(" • ") : [],
+                        targetDate: formData.dueDate,
+                    });
+                    newId = res?.data?.goal?._id ? String(res.data.goal._id) : null;
+                } catch {
+                    // Backend unavailable — still save locally
+                }
+                const { employee: _emp, ...local } = formData;
+                addGoal(local);
+                if (newId) {
+                    // Rename the just-added local record with backend id
+                    usePerformanceStore.setState((state) => ({
+                        goals: state.goals.map((x, i) => (i === 0 ? { ...x, id: newId! } : x)),
+                    }));
+                }
+                toast({ title: "Goal Created", description: "New objective saved." });
             }
-        })();
+            setIsDialogOpen(false);
+            setActiveGoal(null);
+            setFormData(emptyGoalForm);
+            setErrors({});
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!deleteTarget) return;
+        try {
+            if (/^[a-f\d]{24}$/i.test(deleteTarget.id)) {
+                await apiDeleteGoal(deleteTarget.id);
+            }
+        } catch { /* ignore — will still remove locally */ }
+        deleteGoal(deleteTarget.id);
+        toast({ title: "Goal Removed", description: "Objective purged from the directory." });
+        setDeleteTarget(null);
+    };
+
+    const handleApprove = async (goal: Goal) => {
+        if (/^[a-f\d]{24}$/i.test(goal.id)) {
+            try { await apiUpdateGoal(goal.id, { status: "In Progress" }); } catch { /* ignore */ }
+        }
+        approveGoal(goal.id);
+        toast({ title: "Goal Approved", description: "Goal is now On Track." });
+    };
+
+    const handleExport = () => {
+        const rows = [["ID", "Title", "Status", "Progress", "Priority", "Category", "Alignment", "Weightage", "Due Date"]];
+        goals.forEach((g) => rows.push([g.id, g.title, g.status, `${g.progress}%`, g.priority, g.category, g.alignment, `${g.weightage}%`, g.dueDate]));
+        const csv = rows.map((r) => r.map((c) => `"${c}"`).join(",")).join("\n");
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `goals_${new Date().toISOString().slice(0, 10)}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        toast({ title: "Exported", description: `${goals.length} goals saved to CSV.` });
     };
 
     const getStatusStyles = (status: Goal['status']) => {
@@ -172,10 +277,13 @@ const GoalsPage = () => {
         return styles[status];
     };
 
-    const goalSource = apiGoals ?? goals;
-    const filteredGoals = goalSource.filter(g => {
+    const goalSource = goals;
+    const filteredGoals = goalSource.filter((g) => {
         const matchesSearch = g.title.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesCat = filterCategory === 'All' || g.category === filterCategory;
+        const matchesCat =
+            filterCategory === "All" ||
+            g.category === filterCategory ||
+            g.status === filterCategory;
         return matchesSearch && matchesCat;
     });
 
@@ -192,8 +300,16 @@ const GoalsPage = () => {
                     </div>
 
                     <div className="flex items-center gap-3">
+                        {loading && <Loader2 size={16} className="animate-spin text-indigo-500" />}
                         <Button
-                            onClick={() => { setActiveGoal(null); setIsDialogOpen(true); }}
+                            variant="outline"
+                            onClick={handleExport}
+                            className="rounded-xl h-11 px-5 font-bold gap-2 text-[10px] tracking-widest"
+                        >
+                            Export CSV
+                        </Button>
+                        <Button
+                            onClick={() => { setActiveGoal(null); setFormData(emptyGoalForm); setErrors({}); setIsDialogOpen(true); }}
                             className="bg-indigo-600 hover:bg-slate-900 text-white rounded-xl h-11 px-6 font-bold shadow-lg shadow-indigo-100 transition-all gap-2 text-[10px] tracking-widest border-none"
                         >
                             <Plus size={16} /> Configure New Goal
@@ -312,13 +428,10 @@ const GoalsPage = () => {
                                                 </div>
 
                                                 <div className="flex lg:flex-col justify-center gap-1.5 shrink-0 lg:border-l border-slate-50 lg:pl-5 min-w-[180px]">
-                                                    {(goal.status === 'Draft' || goal.status === 'Awaiting Approval') && (
+                                                    {(goal.status === "Draft" || goal.status === "Awaiting Approval") && (
                                                         <Button
                                                             className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl h-9 px-4 font-bold text-[10px] tracking-widest gap-2 transition-all border-none shadow-md shadow-emerald-100"
-                                                            onClick={() => {
-                                                                approveGoal(goal.id);
-                                                                setApiGoals((prev) => prev ? prev.map((g) => g.id === goal.id ? { ...g, status: "On Track" } : g) : prev);
-                                                            }}
+                                                            onClick={() => handleApprove(goal)}
                                                         >
                                                             <CheckCircle2 size={12} /> Approve Goal
                                                         </Button>
@@ -326,25 +439,30 @@ const GoalsPage = () => {
                                                     <Button
                                                         variant="ghost"
                                                         className="text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl h-9 px-4 font-bold text-[10px] tracking-widest gap-2 transition-all border border-transparent hover:border-indigo-100"
-                                                        onClick={() => { setActiveGoal(goal); setFormData(goal); setIsDialogOpen(true); }}
+                                                        onClick={() => {
+                                                            setActiveGoal(goal);
+                                                            setFormData({
+                                                                title: goal.title,
+                                                                progress: goal.progress,
+                                                                status: goal.status,
+                                                                dueDate: goal.dueDate,
+                                                                description: goal.description || "",
+                                                                priority: goal.priority,
+                                                                category: goal.category,
+                                                                alignment: goal.alignment,
+                                                                weightage: goal.weightage,
+                                                                employee: "",
+                                                            });
+                                                            setErrors({});
+                                                            setIsDialogOpen(true);
+                                                        }}
                                                     >
                                                         <Edit size={12} /> Edit Config
                                                     </Button>
                                                     <Button
                                                         variant="ghost"
                                                         className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl h-9 px-4 font-bold text-[10px] tracking-widest gap-2 transition-all"
-                                                        onClick={() => {
-                                                            (async () => {
-                                                                try {
-                                                                    if (goal.id.length >= 20) await deleteGoalApi(goal.id);
-                                                                    else deleteGoal(goal.id);
-                                                                    setApiGoals((prev) => prev ? prev.filter((g) => g.id !== goal.id) : prev);
-                                                                    toast({ title: "Goal Removed", description: "Objective purged from the directory." });
-                                                                } catch {
-                                                                    toast({ title: "Delete Failed", description: "Could not delete goal from backend.", variant: "destructive" });
-                                                                }
-                                                            })();
-                                                        }}
+                                                        onClick={() => setDeleteTarget(goal)}
                                                     >
                                                         <Trash2 size={12} /> Delete
                                                     </Button>
@@ -381,12 +499,38 @@ const GoalsPage = () => {
                                     <div className="md:col-span-2 lg:col-span-3 space-y-1.5">
                                         <Label className="text-[10px] font-bold text-slate-400 tracking-widest ml-1">Goal Outcome / Title *</Label>
                                         <Input
-                                            className="rounded-xl h-12 bg-slate-50 border-slate-200 font-bold px-5 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 transition-all text-sm"
+                                            maxLength={200}
+                                            className={`rounded-xl h-12 bg-slate-50 border-slate-200 font-bold px-5 focus:bg-white focus:ring-4 focus:ring-indigo-100 transition-all text-sm ${errors.title ? "border-rose-400 focus:border-rose-500" : "focus:border-indigo-500"}`}
                                             placeholder="e.g. Increase revenue by 20% in Q1"
                                             value={formData.title}
                                             onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                                         />
+                                        {errors.title && (
+                                            <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 ml-1"><AlertCircle size={10} /> {errors.title}</p>
+                                        )}
                                     </div>
+
+                                    {!activeGoal && (
+                                        <div className="md:col-span-2 lg:col-span-3 space-y-1.5">
+                                            <Label className="text-[10px] font-bold text-slate-400 tracking-widest ml-1">Assign Employee *</Label>
+                                            <Select value={formData.employee} onValueChange={(v) => setFormData({ ...formData, employee: v })}>
+                                                <SelectTrigger className={`h-12 rounded-xl bg-slate-50 border-slate-200 font-bold px-5 text-sm ${errors.employee ? "border-rose-400" : ""}`}>
+                                                    <SelectValue placeholder={employees.length ? "Select an employee" : "Loading employees…"} />
+                                                </SelectTrigger>
+                                                <SelectContent className="rounded-xl border-none shadow-2xl p-1.5 font-bold max-h-72 overflow-y-auto">
+                                                    {employees.length === 0 && (
+                                                        <div className="px-3 py-2 text-xs text-slate-400 italic">No employees available</div>
+                                                    )}
+                                                    {employees.map((e) => (
+                                                        <SelectItem key={e.id} value={e.id} className="rounded-lg h-9 text-[11px]">{e.label}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                            {errors.employee && (
+                                                <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 ml-1"><AlertCircle size={10} /> {errors.employee}</p>
+                                            )}
+                                        </div>
+                                    )}
 
                                     <div className="space-y-1.5">
                                         <Label className="text-[10px] font-bold text-slate-400 tracking-widest ml-1">Alignment Level</Label>
@@ -406,23 +550,32 @@ const GoalsPage = () => {
                                         <Label className="text-[10px] font-bold text-slate-400 tracking-widest ml-1">Goal Weightage (%)</Label>
                                         <Input
                                             type="number"
-                                            className="rounded-xl h-12 bg-slate-50 border-slate-200 font-bold px-5 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 transition-all text-sm"
+                                            min={0}
+                                            max={100}
+                                            className={`rounded-xl h-12 bg-slate-50 border-slate-200 font-bold px-5 focus:bg-white focus:ring-4 focus:ring-indigo-100 transition-all text-sm ${errors.weightage ? "border-rose-400" : "focus:border-indigo-500"}`}
                                             value={formData.weightage}
-                                            onChange={(e) => setFormData({ ...formData, weightage: parseInt(e.target.value) || 0 })}
+                                            onChange={(e) => setFormData({ ...formData, weightage: Math.max(0, Math.min(100, parseInt(e.target.value) || 0)) })}
                                         />
+                                        {errors.weightage && (
+                                            <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 ml-1"><AlertCircle size={10} /> {errors.weightage}</p>
+                                        )}
                                     </div>
 
                                     <div className="space-y-1.5">
-                                        <Label className="text-[10px] font-bold text-slate-400 tracking-widest ml-1">Target Due Date</Label>
+                                        <Label className="text-[10px] font-bold text-slate-400 tracking-widest ml-1">Target Due Date *</Label>
                                         <div className="relative">
                                             <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
                                             <Input
                                                 type="date"
-                                                className="rounded-xl h-12 pl-12 bg-slate-50 border-slate-200 font-bold pr-5 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 transition-all text-sm"
+                                                min={new Date().toISOString().split("T")[0]}
+                                                className={`rounded-xl h-12 pl-12 bg-slate-50 border-slate-200 font-bold pr-5 focus:bg-white focus:ring-4 focus:ring-indigo-100 transition-all text-sm ${errors.dueDate ? "border-rose-400" : "focus:border-indigo-500"}`}
                                                 value={formData.dueDate}
                                                 onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
                                             />
                                         </div>
+                                        {errors.dueDate && (
+                                            <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 ml-1"><AlertCircle size={10} /> {errors.dueDate}</p>
+                                        )}
                                     </div>
 
                                     <div className="space-y-1.5">
@@ -435,35 +588,109 @@ const GoalsPage = () => {
                                                 <SelectItem value="Draft" className="rounded-lg h-10 text-[11px] tracking-wide">Draft Mode</SelectItem>
                                                 <SelectItem value="Awaiting Approval" className="rounded-lg h-10 text-[11px] tracking-wide">Submit for Audit</SelectItem>
                                                 <SelectItem value="On Track" className="rounded-lg h-10 text-[11px] tracking-wide">Live (Effective)</SelectItem>
+                                                <SelectItem value="Ahead" className="rounded-lg h-10 text-[11px] tracking-wide">Ahead</SelectItem>
+                                                <SelectItem value="At Risk" className="rounded-lg h-10 text-[11px] tracking-wide">At Risk</SelectItem>
+                                                <SelectItem value="Behind" className="rounded-lg h-10 text-[11px] tracking-wide">Behind</SelectItem>
+                                                <SelectItem value="Completed" className="rounded-lg h-10 text-[11px] tracking-wide">Completed</SelectItem>
                                             </SelectContent>
                                         </Select>
                                     </div>
 
-                                    <div className="md:col-span-2 lg:col-span-2 space-y-1.5">
+                                    <div className="space-y-1.5">
+                                        <Label className="text-[10px] font-bold text-slate-400 tracking-widest ml-1">Priority</Label>
+                                        <Select value={formData.priority} onValueChange={(v) => setFormData({ ...formData, priority: v as any })}>
+                                            <SelectTrigger className="h-12 rounded-xl bg-slate-50 border-slate-200 font-bold px-5 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 transition-all text-sm">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent className="rounded-xl border-none shadow-2xl p-1.5 font-bold">
+                                                <SelectItem value="Low" className="rounded-lg h-10 text-[11px] tracking-wide">Low</SelectItem>
+                                                <SelectItem value="Medium" className="rounded-lg h-10 text-[11px] tracking-wide">Medium</SelectItem>
+                                                <SelectItem value="High" className="rounded-lg h-10 text-[11px] tracking-wide">High</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    <div className="space-y-1.5">
+                                        <Label className="text-[10px] font-bold text-slate-400 tracking-widest ml-1">Category</Label>
+                                        <Select value={formData.category} onValueChange={(v) => setFormData({ ...formData, category: v as any })}>
+                                            <SelectTrigger className="h-12 rounded-xl bg-slate-50 border-slate-200 font-bold px-5 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 transition-all text-sm">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent className="rounded-xl border-none shadow-2xl p-1.5 font-bold">
+                                                <SelectItem value="Technical" className="rounded-lg h-10 text-[11px] tracking-wide">Technical</SelectItem>
+                                                <SelectItem value="Soft Skills" className="rounded-lg h-10 text-[11px] tracking-wide">Soft Skills</SelectItem>
+                                                <SelectItem value="Leadership" className="rounded-lg h-10 text-[11px] tracking-wide">Leadership</SelectItem>
+                                                <SelectItem value="Sales" className="rounded-lg h-10 text-[11px] tracking-wide">Sales</SelectItem>
+                                                <SelectItem value="Operations" className="rounded-lg h-10 text-[11px] tracking-wide">Operations</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    <div className="space-y-1.5">
+                                        <Label className="text-[10px] font-bold text-slate-400 tracking-widest ml-1">Progress (%)</Label>
+                                        <Input
+                                            type="number"
+                                            min={0}
+                                            max={100}
+                                            className={`rounded-xl h-12 bg-slate-50 border-slate-200 font-bold px-5 focus:bg-white focus:ring-4 focus:ring-indigo-100 transition-all text-sm ${errors.progress ? "border-rose-400" : "focus:border-indigo-500"}`}
+                                            value={formData.progress}
+                                            onChange={(e) => setFormData({ ...formData, progress: Math.max(0, Math.min(100, parseInt(e.target.value) || 0)) })}
+                                        />
+                                        {errors.progress && (
+                                            <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 ml-1"><AlertCircle size={10} /> {errors.progress}</p>
+                                        )}
+                                    </div>
+
+                                    <div className="md:col-span-2 lg:col-span-3 space-y-1.5">
                                         <Label className="text-[10px] font-bold text-slate-400 tracking-widest ml-1">Operational Description</Label>
                                         <Textarea
-                                            className="rounded-xl bg-slate-50 border-slate-200 font-semibold p-4 min-h-[80px] text-sm focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 transition-all shadow-inner"
+                                            maxLength={1000}
+                                            className={`rounded-xl bg-slate-50 border-slate-200 font-semibold p-4 min-h-[80px] text-sm focus:bg-white focus:ring-4 focus:ring-indigo-100 transition-all shadow-inner ${errors.description ? "border-rose-400" : "focus:border-indigo-500"}`}
                                             placeholder="Details on key results and success metrics..."
                                             value={formData.description}
                                             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                         />
+                                        <p className="text-[10px] text-slate-400 ml-1">{formData.description.length}/1000</p>
+                                        {errors.description && (
+                                            <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 ml-1"><AlertCircle size={10} /> {errors.description}</p>
+                                        )}
                                     </div>
                                 </div>
                             </div>
 
                             <DialogFooter className="gap-3 mt-8 sm:justify-end">
-                                <Button variant="ghost" className="h-12 px-8 rounded-xl font-bold text-[10px] tracking-widest text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-all" onClick={() => setIsDialogOpen(false)}>Discard</Button>
+                                <Button variant="ghost" className="h-12 px-8 rounded-xl font-bold text-[10px] tracking-widest text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-all" onClick={() => setIsDialogOpen(false)} disabled={saving}>Discard</Button>
                                 <Button
-                                    className="bg-indigo-600 hover:bg-slate-900 text-white rounded-xl h-12 px-10 font-bold text-[11px] tracking-widest shadow-xl shadow-indigo-100 transition-all border-none"
+                                    className="bg-indigo-600 hover:bg-slate-900 text-white rounded-xl h-12 px-10 font-bold text-[11px] tracking-widest shadow-xl shadow-indigo-100 transition-all border-none gap-2"
                                     onClick={handleSave}
+                                    disabled={saving}
                                 >
-                                    Commit Objective Parameters
+                                    {saving && <Loader2 size={14} className="animate-spin" />}
+                                    {saving ? "Saving..." : "Commit Objective Parameters"}
                                 </Button>
                             </DialogFooter>
                         </div>
                     </div>
                 </DialogContent>
             </Dialog>
+
+            {/* Delete Confirmation */}
+            <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Remove this goal?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            <strong>{deleteTarget?.title}</strong> will be permanently purged from the directory.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction className="bg-rose-600 hover:bg-rose-700 text-white" onClick={handleDelete}>
+                            Delete
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 };

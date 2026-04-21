@@ -1,9 +1,7 @@
 "use client"
 
-import React, { useState, useMemo } from "react";
-import { motion } from "framer-motion";
+import React, { useState } from "react";
 import {
-  Fingerprint,
   Plus,
   Search,
   RefreshCw,
@@ -11,16 +9,9 @@ import {
   XCircle,
   AlertTriangle,
   Wifi,
-  WifiOff,
   Settings,
-  Clock,
   Users,
-  Download,
-  Eye,
   Activity,
-  Scan,
-  Server,
-  Shield,
 } from "lucide-react";
 import { Card, CardContent } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
@@ -116,7 +107,7 @@ const mockEnrollments: EnrollmentRecord[] = [
   { employeeName: "Karan Mehta", employeeId: "E007", devices: [], enrollDate: "-", status: "Not Enrolled" },
 ];
 
-const BiometricIntegrationPage = () => {
+const BiometricPanel = () => {
   const { toast } = useToast();
   const [devices, setDevices] = useState<BiometricDevice[]>(mockDevices);
   const [activeTab, setActiveTab] = useState("devices");
@@ -168,11 +159,11 @@ const BiometricIntegrationPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] p-6 space-y-6">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Biometric Integration</h1>
-          <p className="text-slate-500 text-sm mt-1">Manage biometric devices and attendance sync</p>
+          <h2 className="text-lg font-semibold text-slate-800">Biometric Integration</h2>
+          <p className="text-slate-500 text-xs mt-1">Manage biometric devices and attendance sync</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setSettingsOpen(true)} className="gap-2"><Settings className="w-4 h-4" /> Settings</Button>
@@ -181,7 +172,6 @@ const BiometricIntegrationPage = () => {
         </div>
       </div>
 
-      {/* Sync Dashboard */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {[
           { label: "Devices Online", value: `${onlineCount}/${devices.length}`, icon: Wifi, color: "text-slate-800", bg: "bg-white/30", cardBg: "bg-[#CB9DF0]" },
@@ -264,7 +254,6 @@ const BiometricIntegrationPage = () => {
                   </tbody>
                 </table>
               </div>
-              {/* Device Health */}
               <div className="mt-6 border-t border-slate-100 pt-4">
                 <h3 className="text-sm font-semibold text-slate-700 mb-3">Device Health Monitor</h3>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -288,7 +277,7 @@ const BiometricIntegrationPage = () => {
           <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-slate-800">Employee Enrollment Status</h2>
+                <h3 className="text-base font-semibold text-slate-800">Employee Enrollment Status</h3>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                   <Input placeholder="Search..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-9 w-56" />
@@ -332,7 +321,7 @@ const BiometricIntegrationPage = () => {
         <TabsContent value="logs" className="mt-4">
           <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
             <CardContent className="p-6">
-              <h2 className="text-lg font-semibold text-slate-800 mb-4">Raw Punch Log (Last 50)</h2>
+              <h3 className="text-base font-semibold text-slate-800 mb-4">Raw Punch Log (Last 50)</h3>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
@@ -370,7 +359,6 @@ const BiometricIntegrationPage = () => {
         </TabsContent>
       </Tabs>
 
-      {/* Add Device Dialog */}
       <Dialog open={addDeviceOpen} onOpenChange={setAddDeviceOpen}>
         <DialogContent className="sm:max-w-md border-2 border-slate-200">
           <DialogHeader>
@@ -415,7 +403,6 @@ const BiometricIntegrationPage = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Settings Dialog */}
       <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
         <DialogContent className="sm:max-w-md border-2 border-slate-200">
           <DialogHeader>
@@ -468,4 +455,4 @@ const BiometricIntegrationPage = () => {
   );
 };
 
-export default BiometricIntegrationPage;
+export default BiometricPanel;

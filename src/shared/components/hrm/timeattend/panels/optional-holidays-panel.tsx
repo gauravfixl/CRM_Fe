@@ -8,16 +8,12 @@ import {
   Search,
   Star,
   Settings,
-  Users,
-  CheckCircle2,
-  Clock,
   Calendar,
   Gift,
   Globe,
   Heart,
   MapPin,
   TrendingUp,
-  BarChart3,
 } from "lucide-react";
 import { Card, CardContent } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
@@ -106,12 +102,12 @@ const catIcons: Record<string, React.ElementType> = {
   National: Globe,
 };
 
-const OptionalHolidaysPage = () => {
+const OptionalHolidaysPanel = () => {
   const { toast } = useToast();
   const [holidays, setHolidays] = useState<Holiday[]>(mockHolidays);
   const [selections, setSelections] = useState<EmployeeSelection[]>(mockSelections);
   const [searchTerm, setSearchTerm] = useState("");
-  const [activeTab, setActiveTab] = useState("calendar");
+  const [activeTab, setActiveTab] = useState("optional");
   const [addHolidayDialog, setAddHolidayDialog] = useState(false);
   const [requestDialog, setRequestDialog] = useState(false);
   const [configDialog, setConfigDialog] = useState(false);
@@ -159,7 +155,6 @@ const OptionalHolidaysPage = () => {
       toast({ title: "Error", description: "Please select a holiday.", variant: "destructive" });
       return;
     }
-    // Simulate request for employee E001
     setSelections((prev) =>
       prev.map((s) => {
         if (s.employeeId !== "E001" || s.remaining <= 0) return s;
@@ -175,14 +170,12 @@ const OptionalHolidaysPage = () => {
     toast({ title: "Holiday Requested", description: `${selectedHolidayForRequest} has been selected.` });
   };
 
-  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
   return (
-    <div className="min-h-screen bg-[#f8fafc] p-6 space-y-6">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Optional / Restricted Holidays</h1>
-          <p className="text-slate-500 text-sm mt-1">Manage holiday selections and quotas</p>
+          <h2 className="text-lg font-semibold text-slate-800">Optional / Restricted Holidays</h2>
+          <p className="text-slate-500 text-xs mt-1">Manage holiday selections and quotas</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setConfigDialog(true)} className="gap-2"><Settings className="w-4 h-4" /> Config</Button>
@@ -191,18 +184,17 @@ const OptionalHolidaysPage = () => {
         </div>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {[
-          { label: "Mandatory Holidays", value: mandatoryHolidays.length, icon: Globe, color: "text-slate-800", bg: "bg-white/30", cardBg: "bg-[#F0C1E1]" },
-          { label: "Optional Holidays", value: optionalHolidays.length, icon: CalendarDays, color: "text-slate-800", bg: "bg-white/30", cardBg: "bg-[#CB9DF0]" },
-          { label: "Floating Holidays", value: floatingHolidays.length, icon: Gift, color: "text-slate-800", bg: "bg-white/30", cardBg: "bg-[#FFF9BF]" },
-          { label: "Utilization Rate", value: `${totalUtilization}%`, icon: TrendingUp, color: "text-slate-800", bg: "bg-white/30", cardBg: "bg-[#FDDBBB]" },
+          { label: "Mandatory Holidays", value: mandatoryHolidays.length, icon: Globe, cardBg: "bg-[#F0C1E1]" },
+          { label: "Optional Holidays", value: optionalHolidays.length, icon: CalendarDays, cardBg: "bg-[#CB9DF0]" },
+          { label: "Floating Holidays", value: floatingHolidays.length, icon: Gift, cardBg: "bg-[#FFF9BF]" },
+          { label: "Utilization Rate", value: `${totalUtilization}%`, icon: TrendingUp, cardBg: "bg-[#FDDBBB]" },
         ].map((s) => (
           <Card key={s.label} className={cn("rounded-none border-none shadow-sm", s.cardBg)}>
             <CardContent className="p-5 flex items-center gap-4">
-              <div className={cn("w-11 h-11 rounded-xl flex items-center justify-center", s.bg)}>
-                <s.icon className={cn("w-5 h-5", s.color)} />
+              <div className="w-11 h-11 rounded-xl flex items-center justify-center bg-white/30">
+                <s.icon className="w-5 h-5 text-slate-800" />
               </div>
               <div>
                 <div className="text-xs font-medium text-slate-600 mb-1">{s.label}</div>
@@ -215,59 +207,16 @@ const OptionalHolidaysPage = () => {
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="bg-slate-100">
-          <TabsTrigger value="calendar">Holiday Calendar</TabsTrigger>
           <TabsTrigger value="optional">Optional Holidays</TabsTrigger>
           <TabsTrigger value="selections">Employee Selections</TabsTrigger>
           <TabsTrigger value="stats">Stats</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="calendar" className="mt-4">
-          <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <CardContent className="p-6">
-              <h2 className="text-lg font-semibold text-slate-800 mb-4">2026 Holiday Calendar</h2>
-              <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
-                {months.map((month, mIdx) => {
-                  const monthHolidays = holidays.filter((h) => {
-                    if (h.date === "-") return false;
-                    return new Date(h.date).getMonth() === mIdx;
-                  });
-                  return (
-                    <div key={month} className="p-3 bg-slate-50 rounded-lg border border-slate-100">
-                      <div className="text-sm font-semibold text-slate-700 mb-2">{month} 2026</div>
-                      {monthHolidays.length === 0 ? (
-                        <div className="text-xs text-slate-400">No holidays</div>
-                      ) : (
-                        <div className="space-y-1">
-                          {monthHolidays.map((h) => {
-                            const tc = typeColors[h.type];
-                            return (
-                              <div key={h.id} className="flex items-center gap-1.5">
-                                <div className={cn("w-1.5 h-1.5 rounded-full", h.type === "Mandatory" ? "bg-red-500" : h.type === "Optional" ? "bg-blue-500" : "bg-purple-500")} />
-                                <span className="text-[10px] text-slate-600 truncate">{h.name}</span>
-                                <span className="text-[9px] text-slate-400">{new Date(h.date).getDate()}</span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-              <div className="flex items-center gap-4 mt-4 pt-4 border-t border-slate-100">
-                <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-red-500" /><span className="text-xs text-slate-500">Mandatory</span></div>
-                <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-blue-500" /><span className="text-xs text-slate-500">Optional</span></div>
-                <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-purple-500" /><span className="text-xs text-slate-500">Floating</span></div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
         <TabsContent value="optional" className="mt-4">
           <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-slate-800">Optional Holiday List</h2>
+                <h3 className="text-base font-semibold text-slate-800">Optional Holiday List</h3>
                 <Badge variant="outline">Max {maxOptional} per employee per year</Badge>
               </div>
               <div className="overflow-x-auto">
@@ -320,7 +269,7 @@ const OptionalHolidaysPage = () => {
           <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-slate-800">Employee Selections</h2>
+                <h3 className="text-base font-semibold text-slate-800">Employee Selections</h3>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                   <Input placeholder="Search..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-9 w-56" />
@@ -359,7 +308,7 @@ const OptionalHolidaysPage = () => {
         <TabsContent value="stats" className="mt-4">
           <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
             <CardContent className="p-6">
-              <h2 className="text-lg font-semibold text-slate-800 mb-4">Most Popular Optional Holidays</h2>
+              <h3 className="text-base font-semibold text-slate-800 mb-4">Most Popular Optional Holidays</h3>
               <div className="space-y-3">
                 {popularHolidays.map((h, i) => (
                   <div key={h.id} className="flex items-center gap-4">
@@ -382,7 +331,7 @@ const OptionalHolidaysPage = () => {
                 ))}
               </div>
               <div className="mt-6 p-4 bg-slate-50 rounded-lg">
-                <h3 className="text-sm font-semibold text-slate-700 mb-2">Overall Utilization</h3>
+                <h4 className="text-sm font-semibold text-slate-700 mb-2">Overall Utilization</h4>
                 <div className="flex items-center gap-3">
                   <div className="flex-1 h-5 bg-slate-200 rounded-full overflow-hidden">
                     <div className="h-full bg-[#8B5CF6] rounded-full" style={{ width: `${totalUtilization}%` }} />
@@ -395,7 +344,6 @@ const OptionalHolidaysPage = () => {
         </TabsContent>
       </Tabs>
 
-      {/* Add Holiday Dialog */}
       <Dialog open={addHolidayDialog} onOpenChange={setAddHolidayDialog}>
         <DialogContent className="sm:max-w-md border-2 border-slate-200">
           <DialogHeader>
@@ -436,7 +384,6 @@ const OptionalHolidaysPage = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Request Holiday Dialog */}
       <Dialog open={requestDialog} onOpenChange={setRequestDialog}>
         <DialogContent className="sm:max-w-md border-2 border-slate-200">
           <DialogHeader>
@@ -463,7 +410,6 @@ const OptionalHolidaysPage = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Config Dialog */}
       <Dialog open={configDialog} onOpenChange={setConfigDialog}>
         <DialogContent className="sm:max-w-sm border-2 border-slate-200">
           <DialogHeader>
@@ -489,4 +435,4 @@ const OptionalHolidaysPage = () => {
   );
 };
 
-export default OptionalHolidaysPage;
+export default OptionalHolidaysPanel;

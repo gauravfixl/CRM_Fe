@@ -2,6 +2,9 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import {
     getAllEmployees,
+    createEmployee,
+    updateEmployee,
+    deleteEmployee,
     getAllDepartments,
     createDepartment,
     updateDepartment,
@@ -14,6 +17,8 @@ import {
     createHoliday,
     updateHoliday,
     deleteHoliday,
+    getOrganizationById,
+    updateOrganizationDetails,
 } from "@/modules/hrm/hooks/hrmHooks";
 
 export interface Employee {
@@ -228,6 +233,10 @@ interface OrganisationState {
     loadDepartmentsFromApi: () => Promise<void>;
     loadDesignationsFromApi: () => Promise<void>;
     loadHolidaysFromApi: () => Promise<void>;
+    loadCompanyFromApi: (orgId: string) => Promise<void>;
+    createEmployeeApi: (data: { firstName: string; lastName: string; email: string; department: string; position: string; employmentType?: string; createdBy?: string }) => Promise<void>;
+    updateEmployeeApi: (id: string, data: Record<string, any>) => Promise<void>;
+    deleteEmployeeApi: (id: string) => Promise<void>;
     createDepartmentApi: (data: { name: string; description?: string; head?: string }) => Promise<void>;
     updateDepartmentApi: (id: string, data: Partial<Department>) => Promise<void>;
     deleteDepartmentApi: (id: string) => Promise<void>;
@@ -237,6 +246,7 @@ interface OrganisationState {
     createHolidayApi: (data: { name: string; date: string; type: "National" | "Optional"; isPaid?: boolean; isMandatory?: boolean }) => Promise<void>;
     updateHolidayApi: (id: string, data: Record<string, any>) => Promise<void>;
     deleteHolidayApi: (id: string) => Promise<void>;
+    updateCompanyApi: (data: Partial<Company>) => Promise<void>;
 }
 
 export const useOrganisationStore = create<OrganisationState>()(
@@ -758,18 +768,26 @@ export const useOrganisationStore = create<OrganisationState>()(
             loadDesignationsFromApi: async () => {
                 try {
                     const res = await getAllPositions();
-                    const data = res?.data?.data ?? res?.data ?? [];
-                    if (data.length > 0) {
-                        const mapped = data.map((p: any) => ({
-                            id: p._id || p.id,
-                            title: p.title || p.name || "",
-                            departmentId: p.department?._id || p.department || "",
-                            level: p.level || "1",
-                            description: p.description || "",
-                            isActive: p.isActive !== false,
-                            employeeCount: p.employeeCount || 0,
-                            createdAt: p.createdAt || "",
-                        }));
+                    const data = res?.data?.positions ?? res?.data?.data ?? res?.data ?? [];
+                    const levelStringToNum: Record<string, number> = { Junior: 1, Mid: 2, Senior: 3, Lead: 4, Executive: 5 };
+                    if (Array.isArray(data) && data.length > 0) {
+                        const mapped = data.map((p: any) => {
+                            const levelNum = typeof p.level === "number"
+                                ? p.level
+                                : (levelStringToNum[p.level] ?? parseInt(p.level) ?? 1);
+                            return {
+                                id: p._id || p.id,
+                                title: p.title || p.name || "",
+                                code: p.code || "",
+                                departmentId: p.department?._id || p.department || "",
+                                level: levelNum,
+                                grade: p.grade,
+                                description: p.description || "",
+                                isActive: p.isActive !== false,
+                                employeeCount: p.employeeCount || 0,
+                                createdAt: p.createdAt || "",
+                            };
+                        });
                         set({ designations: mapped });
                     }
                 } catch (err) { console.error("Failed to load designations from API:", err); }
@@ -795,6 +813,25 @@ export const useOrganisationStore = create<OrganisationState>()(
                 } catch (err) { console.error("Failed to load holidays from API:", err); }
             },
 
+            createEmployeeApi: async (data) => {
+                try {
+                    await createEmployee(data);
+                    await get().loadEmployeesFromApi();
+                } catch (err) { console.error("Failed to create employee:", err); throw err; }
+            },
+            updateEmployeeApi: async (id, data) => {
+                try {
+                    await updateEmployee(id, data);
+                    await get().loadEmployeesFromApi();
+                } catch (err) { console.error("Failed to update employee:", err); throw err; }
+            },
+            deleteEmployeeApi: async (id) => {
+                try {
+                    await deleteEmployee(id);
+                    await get().loadEmployeesFromApi();
+                } catch (err) { console.error("Failed to delete employee:", err); throw err; }
+            },
+
             createDepartmentApi: async (data) => {
                 try {
                     await createDepartment(data);
@@ -816,13 +853,27 @@ export const useOrganisationStore = create<OrganisationState>()(
 
             createDesignationApi: async (data) => {
                 try {
-                    await createPosition(data);
+                    const levelNumToString: Record<string, string> = { "1": "Junior", "2": "Mid", "3": "Senior", "4": "Lead", "5": "Executive" };
+                    const payload = {
+                        ...data,
+                        level: data.level ? (levelNumToString[String(data.level)] ?? data.level) : undefined,
+                    };
+                    await createPosition(payload as any);
                     await get().loadDesignationsFromApi();
                 } catch (err) { console.error("Failed to create designation:", err); throw err; }
             },
             updateDesignationApi: async (id, data) => {
                 try {
-                    await updatePosition(id, data);
+                    const levelNumToString: Record<string, string> = { "1": "Junior", "2": "Mid", "3": "Senior", "4": "Lead", "5": "Executive" };
+                    const payload: Record<string, any> = { ...data };
+                    if (payload.level !== undefined) {
+                        payload.level = levelNumToString[String(payload.level)] ?? payload.level;
+                    }
+                    if (payload.departmentId !== undefined) {
+                        payload.department = payload.departmentId;
+                        delete payload.departmentId;
+                    }
+                    await updatePosition(id, payload);
                     await get().loadDesignationsFromApi();
                 } catch (err) { console.error("Failed to update designation:", err); throw err; }
             },
@@ -850,6 +901,57 @@ export const useOrganisationStore = create<OrganisationState>()(
                     await deleteHoliday(id);
                     await get().loadHolidaysFromApi();
                 } catch (err) { console.error("Failed to delete holiday:", err); throw err; }
+            },
+
+            loadCompanyFromApi: async (orgId: string) => {
+                try {
+                    const res = await getOrganizationById(orgId);
+                    const o = res?.data ?? {};
+                    if (!o?.name && !o?.id) return;
+                    const mapped: Company = {
+                        name: o.name || "",
+                        tagline: o.tagline || get().company.tagline,
+                        logo: o.OrgLogo?.url || get().company.logo,
+                        website: o.website || get().company.website,
+                        industry: o.industry || get().company.industry,
+                        registrationNumber: o.registrationNumber || get().company.registrationNumber,
+                        panNumber: o.panNumber || get().company.panNumber,
+                        gstin: o.gstin || get().company.gstin,
+                        incorporationDate: o.incorporationDate || get().company.incorporationDate,
+                        contactEmail: o.contactEmail || "",
+                        contactPhone: o.contactPhone || "",
+                        supportEmail: o.supportEmail || get().company.supportEmail,
+                        address: {
+                            building: get().company.address.building,
+                            area: o.address || get().company.address.area,
+                            city: o.orgCity || get().company.address.city,
+                            state: o.orgState || get().company.address.state,
+                            country: o.orgCountry || get().company.address.country,
+                            pincode: get().company.address.pincode,
+                        },
+                        socialLinks: o.socialLinks || get().company.socialLinks,
+                    };
+                    set({ company: mapped });
+                } catch (err) { console.error("Failed to load company from API:", err); }
+            },
+
+            updateCompanyApi: async (data) => {
+                try {
+                    const payload: Record<string, any> = {};
+                    if (data.name !== undefined) payload.name = data.name;
+                    if (data.contactEmail !== undefined) payload.contactEmail = data.contactEmail;
+                    if (data.contactPhone !== undefined) payload.contactPhone = data.contactPhone;
+                    if (data.address) {
+                        const addrParts = [data.address.building, data.address.area].filter(Boolean).join(", ");
+                        if (addrParts) payload.address = addrParts;
+                        if (data.address.city !== undefined) payload.orgCity = data.address.city;
+                        if (data.address.state !== undefined) payload.orgState = data.address.state;
+                        if (data.address.country !== undefined) payload.orgCountry = data.address.country;
+                    }
+                    await updateOrganizationDetails(payload);
+                    // Persist all fields locally (backend only stores a subset)
+                    set((state) => ({ company: { ...state.company, ...data } }));
+                } catch (err) { console.error("Failed to update company:", err); throw err; }
             },
         }),
         {

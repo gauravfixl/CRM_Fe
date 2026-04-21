@@ -15,11 +15,13 @@ export interface ExpenseClaim {
     date: string;
     description: string;
     receiptUrl: string;
+    receiptName?: string;
     status: ClaimStatus;
     approvedBy: string;
     approvedDate: string;
     paidDate: string;
     project: string;
+    reviewNotes?: string;
 }
 
 export interface ItineraryItem {

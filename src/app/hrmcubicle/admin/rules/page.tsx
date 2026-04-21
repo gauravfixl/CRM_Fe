@@ -1,30 +1,24 @@
 "use client"
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     Zap,
     AlertCircle,
     Bell,
     Clock,
-    ArrowRight,
     ShieldCheck,
-    Smartphone,
-    Mail,
-    UserPlus,
-    UserMinus,
     Trophy,
-    Cake,
     Briefcase,
     Calendar,
     Settings,
     Plus,
     Trash2,
     ToggleLeft,
-    ChevronRight,
     Search,
-    Filter,
-    Play
+    Play,
+    Edit2,
+    Copy
 } from "lucide-react";
 import { Card, CardContent } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
@@ -32,20 +26,52 @@ import { Badge } from "@/shared/components/ui/badge";
 import { Switch } from "@/shared/components/ui/switch";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
+import { Textarea } from "@/shared/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+    DialogDescription
+} from "@/shared/components/ui/dialog";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle
+} from "@/shared/components/ui/alert-dialog";
 import { useToast } from "@/shared/components/ui/use-toast";
+import { automationRulesApi, extractApiError } from "@/shared/api/settings-api";
+import { validateAutomationRule, type ValidationErrors } from "@/shared/api/settings-validators";
+
+const FieldError = ({ msg }: { msg?: string }) =>
+    msg ? <p className="text-[11px] text-rose-600 font-medium mt-1">{msg}</p> : null;
+
+type RuleCategory = 'Attendance' | 'Leave' | 'Engagement' | 'Security' | 'Payroll';
 
 interface PolicyRule {
     id: string;
     name: string;
     description: string;
-    category: 'Attendance' | 'Leave' | 'Engagement' | 'Security' | 'Payroll';
+    category: RuleCategory;
     trigger: string;
     action: string;
     isActive: boolean;
     lastRun?: string;
+}
+
+interface GlobalConfig {
+    enableAllAutomations: boolean;
+    notifyOnFailure: boolean;
+    maxConcurrentRuns: number;
+    executionMode: 'realtime' | 'batch' | 'scheduled';
 }
 
 const INITIAL_RULES: PolicyRule[] = [
@@ -108,37 +134,210 @@ const INITIAL_RULES: PolicyRule[] = [
     }
 ];
 
+const emptyRule: Omit<PolicyRule, "id"> = {
+    name: "",
+    description: "",
+    category: "Attendance",
+    trigger: "",
+    action: "",
+    isActive: true,
+};
+
 const AutomationRulesPage = () => {
     const { toast } = useToast();
     const [rules, setRules] = useState<PolicyRule[]>(INITIAL_RULES);
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedCategory, setSelectedCategory] = useState<string>("All");
 
-    const categories = ["All", "Attendance", "Leave", "Engagement", "Security", "Payroll"];
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [editingRule, setEditingRule] = useState<PolicyRule | null>(null);
+    const [form, setForm] = useState<Omit<PolicyRule, "id">>(emptyRule);
 
-    const toggleRule = (id: string) => {
-        setRules(rules.map(r => r.id === id ? { ...r, isActive: !r.isActive } : r));
+    const [isConfigOpen, setIsConfigOpen] = useState(false);
+    const [globalConfig, setGlobalConfig] = useState<GlobalConfig>({
+        enableAllAutomations: true,
+        notifyOnFailure: true,
+        maxConcurrentRuns: 10,
+        executionMode: "realtime",
+    });
+
+    const [deleteId, setDeleteId] = useState<string | null>(null);
+
+    // API backed ids mapped to frontend rule ids
+    const [apiIdMap, setApiIdMap] = useState<Record<string, string>>({});
+    const [formErrors, setFormErrors] = useState<ValidationErrors>({});
+
+    const categories: (RuleCategory | "All")[] = ["All", "Attendance", "Leave", "Engagement", "Security", "Payroll"];
+
+    // Load existing automation rules from backend on mount
+    useEffect(() => {
+        let cancel = false;
+        (async () => {
+            try {
+                const res = await automationRulesApi.list();
+                if (cancel || !Array.isArray(res?.data)) return;
+                const mapped: PolicyRule[] = res.data.map((r) => ({
+                    id: `rule-${r._id}`,
+                    name: r.name,
+                    description: r.description || "",
+                    category: ((["Attendance", "Leave", "Engagement", "Security", "Payroll"].includes(r.module)
+                        ? r.module
+                        : "Attendance") as RuleCategory),
+                    trigger: (r.trigger?.event as string) || "",
+                    action: Array.isArray(r.actions) && r.actions[0] ? String(r.actions[0].type || r.actions[0].action || "custom") : "",
+                    isActive: !!r.enabled,
+                    lastRun: r.lastExecutedAt ? new Date(r.lastExecutedAt).toLocaleString() : undefined,
+                }));
+                const idMap: Record<string, string> = {};
+                res.data.forEach((r) => { idMap[`rule-${r._id}`] = r._id; });
+                if (mapped.length) {
+                    setRules(mapped);
+                    setApiIdMap(idMap);
+                }
+            } catch {
+                // ignore — fall back to INITIAL_RULES
+            }
+        })();
+        return () => { cancel = true; };
+    }, []);
+
+    const openCreateDialog = () => {
+        setEditingRule(null);
+        setForm(emptyRule);
+        setIsDialogOpen(true);
+    };
+
+    const openEditDialog = (rule: PolicyRule) => {
+        setEditingRule(rule);
+        const { id, ...rest } = rule;
+        setForm(rest);
+        setIsDialogOpen(true);
+    };
+
+    const handleSaveRule = async () => {
+        const errs = validateAutomationRule({
+            name: form.name,
+            trigger: form.trigger,
+            action: form.action,
+            category: form.category,
+        });
+        setFormErrors(errs);
+        if (Object.keys(errs).length > 0) {
+            toast({ title: "Please fix the highlighted fields", variant: "destructive" });
+            return;
+        }
+
+        const payload = {
+            name: form.name.trim(),
+            description: form.description,
+            module: form.category,
+            trigger: { event: form.trigger.trim(), source: "system" },
+            conditions: {},
+            actions: [{ type: form.action.trim() }],
+            enabled: form.isActive,
+        };
+
+        try {
+            if (editingRule) {
+                const backendId = apiIdMap[editingRule.id];
+                if (backendId) {
+                    await automationRulesApi.update(backendId, payload);
+                }
+                setRules(rules.map(r => r.id === editingRule.id ? { ...editingRule, ...form } : r));
+                toast({ title: "Rule Updated", description: `${form.name} has been updated.` });
+            } else {
+                const res = await automationRulesApi.create(payload);
+                const newId = res.data?._id ? `rule-${res.data._id}` : `rule-${Date.now()}`;
+                if (res.data?._id) setApiIdMap(prev => ({ ...prev, [newId]: res.data._id }));
+                const newRule: PolicyRule = { ...form, id: newId };
+                setRules([newRule, ...rules]);
+                toast({ title: "Rule Created", description: `${form.name} saved to backend.` });
+            }
+        } catch (e) {
+            // Graceful fallback — still save locally
+            if (editingRule) {
+                setRules(rules.map(r => r.id === editingRule.id ? { ...editingRule, ...form } : r));
+            } else {
+                const newRule: PolicyRule = { ...form, id: `rule-${Date.now()}` };
+                setRules([newRule, ...rules]);
+            }
+            toast({ title: "Saved Locally", description: extractApiError(e, "Backend unreachable — change kept locally."), variant: "destructive" });
+        }
+
+        setIsDialogOpen(false);
+        setEditingRule(null);
+        setForm(emptyRule);
+        setFormErrors({});
+    };
+
+    const toggleRule = async (id: string) => {
         const rule = rules.find(r => r.id === id);
+        const newState = !rule?.isActive;
+        setRules(rules.map(r => r.id === id ? { ...r, isActive: newState } : r));
         toast({
-            title: rule?.isActive ? "Rule Disabled" : "Rule Enabled",
-            description: `${rule?.name} automation is now ${rule?.isActive ? 'off' : 'on'}.`,
+            title: newState ? "Rule Enabled" : "Rule Disabled",
+            description: `${rule?.name} automation is now ${newState ? 'on' : 'off'}.`,
+        });
+        const backendId = apiIdMap[id];
+        if (backendId) {
+            try { await automationRulesApi.update(backendId, { enabled: newState }); } catch { /* non-fatal */ }
+        }
+    };
+
+    const runRuleManually = async (id: string, name: string) => {
+        const backendId = apiIdMap[id];
+        if (backendId) {
+            try {
+                await automationRulesApi.execute(backendId);
+                toast({ title: "Rule Executed", description: `'${name}' ran successfully on backend.` });
+                return;
+            } catch (e) {
+                toast({ title: "Execution Failed", description: extractApiError(e, "Backend execution failed."), variant: "destructive" });
+                return;
+            }
+        }
+        toast({
+            title: "Rule Triggered (local)",
+            description: `'${name}' ran in local mode (not persisted).`,
         });
     };
 
-    const runRuleManually = (name: string) => {
-        toast({
-            title: "Rule Triggered Manually",
-            description: `Manual execution of '${name}' completed successfully.`,
-        });
+    const duplicateRule = (rule: PolicyRule) => {
+        const copy: PolicyRule = {
+            ...rule,
+            id: `rule-${Date.now()}`,
+            name: `${rule.name} (Copy)`,
+            isActive: false,
+            lastRun: undefined,
+        };
+        setRules([copy, ...rules]);
+        toast({ title: "Rule Duplicated", description: `Created a copy of ${rule.name}.` });
     };
 
-    const deleteRule = (id: string) => {
-        setRules(rules.filter(r => r.id !== id));
-        toast({ title: "Rule Deleted", variant: "destructive" });
+    const confirmDelete = async () => {
+        if (!deleteId) return;
+        const rule = rules.find(r => r.id === deleteId);
+        setRules(rules.filter(r => r.id !== deleteId));
+        toast({ title: "Rule Deleted", description: `${rule?.name} has been removed.`, variant: "destructive" });
+        const backendId = apiIdMap[deleteId];
+        if (backendId) {
+            try { await automationRulesApi.remove(backendId); } catch (e) {
+                toast({ title: "Backend Sync Failed", description: extractApiError(e, "Rule deleted locally only."), variant: "destructive" });
+            }
+        }
+        setDeleteId(null);
+    };
+
+    const saveGlobalConfig = () => {
+        setIsConfigOpen(false);
+        toast({ title: "Global Config Saved", description: "Automation engine configuration updated." });
     };
 
     const filteredRules = rules.filter(r => {
-        const matchesSearch = r.name.toLowerCase().includes(searchTerm.toLowerCase()) || r.description.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesSearch =
+            r.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            r.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            r.trigger.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesCat = selectedCategory === "All" || r.category === selectedCategory;
         return matchesSearch && matchesCat;
     });
@@ -156,7 +355,6 @@ const AutomationRulesPage = () => {
 
     return (
         <div className="flex-1 flex flex-col h-full bg-[#f8fafc] overflow-hidden" style={{ zoom: '0.8' }}>
-            {/* Header */}
             <header className="h-24 px-10 flex justify-between items-center bg-white border-b border-slate-200 shrink-0">
                 <div className="flex items-center gap-5">
                     <div className="h-14 w-14 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-indigo-100 ring-4 ring-indigo-50">
@@ -169,17 +367,23 @@ const AutomationRulesPage = () => {
                 </div>
 
                 <div className="flex gap-4">
-                    <Button variant="outline" className="h-12 px-6 rounded-xl border-slate-200 font-bold text-slate-600 hover:bg-slate-50">
+                    <Button
+                        variant="outline"
+                        className="h-12 px-6 rounded-xl border-slate-200 font-bold text-slate-600 hover:bg-slate-50"
+                        onClick={() => setIsConfigOpen(true)}
+                    >
                         <Settings size={18} className="mr-2" /> Global Config
                     </Button>
-                    <Button className="h-12 px-8 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-black shadow-xl shadow-indigo-100">
+                    <Button
+                        className="h-12 px-8 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-black shadow-xl shadow-indigo-100"
+                        onClick={openCreateDialog}
+                    >
                         <Plus size={20} className="mr-2" /> Create New Automation
                     </Button>
                 </div>
             </header>
 
             <main className="flex-1 p-10 flex flex-col gap-8 overflow-hidden">
-                {/* Dashboard Stats */}
                 <div className="grid grid-cols-4 gap-6 shrink-0">
                     {[
                         { label: "Active Automations", value: rules.filter(r => r.isActive).length, color: "text-indigo-600", bg: "bg-indigo-50", icon: Zap },
@@ -201,7 +405,6 @@ const AutomationRulesPage = () => {
                     ))}
                 </div>
 
-                {/* Filter Bar */}
                 <div className="flex items-center gap-6 bg-white p-4 rounded-[2rem] shadow-sm border border-slate-100 shrink-0">
                     <div className="relative flex-1">
                         <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300" size={20} />
@@ -227,7 +430,6 @@ const AutomationRulesPage = () => {
                     </div>
                 </div>
 
-                {/* Rules List */}
                 <ScrollArea className="flex-1 -mx-4 px-4 overflow-y-auto">
                     <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 pb-10">
                         <AnimatePresence mode="popLayout">
@@ -309,15 +511,34 @@ const AutomationRulesPage = () => {
                                                             variant="ghost"
                                                             size="sm"
                                                             className="font-bold text-xs text-indigo-600 hover:bg-white rounded-lg h-9 px-4 gap-2 border border-transparent hover:border-slate-200"
-                                                            onClick={() => runRuleManually(rule.name)}
+                                                            onClick={() => runRuleManually(rule.id, rule.name)}
                                                         >
                                                             <Play size={14} /> Run Now
                                                         </Button>
                                                         <Button
                                                             variant="ghost"
                                                             size="icon"
+                                                            className="h-9 w-9 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg"
+                                                            onClick={() => openEditDialog(rule)}
+                                                            title="Edit rule"
+                                                        >
+                                                            <Edit2 size={16} />
+                                                        </Button>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-9 w-9 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg"
+                                                            onClick={() => duplicateRule(rule)}
+                                                            title="Duplicate rule"
+                                                        >
+                                                            <Copy size={16} />
+                                                        </Button>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
                                                             className="h-9 w-9 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg"
-                                                            onClick={() => deleteRule(rule.id)}
+                                                            onClick={() => setDeleteId(rule.id)}
+                                                            title="Delete rule"
                                                         >
                                                             <Trash2 size={16} />
                                                         </Button>
@@ -330,10 +551,10 @@ const AutomationRulesPage = () => {
                             })}
                         </AnimatePresence>
 
-                        {/* Blank Slate / Create New Card */}
                         <motion.button
                             whileHover={{ scale: 1.01 }}
                             whileTap={{ scale: 0.99 }}
+                            onClick={openCreateDialog}
                             className="border-4 border-dashed border-slate-200 rounded-[2.5rem] flex flex-col items-center justify-center p-12 text-slate-400 hover:text-indigo-500 hover:border-indigo-200 hover:bg-indigo-50/10 transition-all gap-4 min-h-[300px]"
                         >
                             <div className="h-20 w-20 bg-slate-50 rounded-full flex items-center justify-center text-slate-300 group-hover:text-indigo-400 transition-colors">
@@ -344,9 +565,206 @@ const AutomationRulesPage = () => {
                                 <p className="text-sm font-medium opacity-70">Design complex IF-THIS-THEN-THAT logic</p>
                             </div>
                         </motion.button>
+
+                        {filteredRules.length === 0 && (
+                            <div className="col-span-full text-center py-16 text-slate-400">
+                                <Bell size={48} className="mx-auto mb-4 opacity-50" />
+                                <p className="font-bold">No rules match your filters.</p>
+                            </div>
+                        )}
                     </div>
                 </ScrollArea>
             </main>
+
+            {/* Create / Edit Rule Dialog */}
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                        <DialogTitle className="text-2xl font-black">
+                            {editingRule ? "Edit Automation Rule" : "Create Automation Rule"}
+                        </DialogTitle>
+                        <DialogDescription>
+                            Define an IF-THIS-THEN-THAT rule to automate HR policy workflows.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-2">
+                        <div className="md:col-span-2 space-y-2">
+                            <Label htmlFor="rule-name">Rule Name *</Label>
+                            <Input
+                                id="rule-name"
+                                value={form.name}
+                                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                                placeholder="e.g. Late Arrival Notification"
+                                className={formErrors.name ? "border-rose-400" : ""}
+                            />
+                            <FieldError msg={formErrors.name} />
+                        </div>
+
+                        <div className="md:col-span-2 space-y-2">
+                            <Label htmlFor="rule-desc">Description</Label>
+                            <Textarea
+                                id="rule-desc"
+                                value={form.description}
+                                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                                placeholder="Brief description of what this rule does."
+                                rows={2}
+                                maxLength={500}
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label>Category *</Label>
+                            <Select value={form.category} onValueChange={(v: RuleCategory) => setForm({ ...form, category: v })}>
+                                <SelectTrigger className={formErrors.category ? "border-rose-400" : ""}><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Attendance">Attendance</SelectItem>
+                                    <SelectItem value="Leave">Leave</SelectItem>
+                                    <SelectItem value="Engagement">Engagement</SelectItem>
+                                    <SelectItem value="Security">Security</SelectItem>
+                                    <SelectItem value="Payroll">Payroll</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <FieldError msg={formErrors.category} />
+                        </div>
+
+                        <div className="space-y-2 flex flex-col">
+                            <Label>Status</Label>
+                            <div className="flex items-center gap-3 h-10">
+                                <Switch
+                                    checked={form.isActive}
+                                    onCheckedChange={(v) => setForm({ ...form, isActive: v })}
+                                    className="data-[state=checked]:bg-indigo-600"
+                                />
+                                <span className="text-sm font-medium text-slate-600">
+                                    {form.isActive ? "Active" : "Paused"}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="md:col-span-2 space-y-2">
+                            <Label htmlFor="rule-trigger">Trigger Condition (IF) *</Label>
+                            <Input
+                                id="rule-trigger"
+                                value={form.trigger}
+                                onChange={(e) => setForm({ ...form, trigger: e.target.value })}
+                                placeholder="e.g. Late Mark Count > 3"
+                                className={`font-mono text-sm ${formErrors.trigger ? "border-rose-400" : ""}`}
+                            />
+                            <FieldError msg={formErrors.trigger} />
+                        </div>
+
+                        <div className="md:col-span-2 space-y-2">
+                            <Label htmlFor="rule-action">Automated Action (THEN) *</Label>
+                            <Input
+                                id="rule-action"
+                                value={form.action}
+                                onChange={(e) => setForm({ ...form, action: e.target.value })}
+                                placeholder="e.g. Send Email Notification to Manager"
+                                className={`font-mono text-sm ${formErrors.action ? "border-rose-400" : ""}`}
+                            />
+                            <FieldError msg={formErrors.action} />
+                        </div>
+                    </div>
+
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
+                        <Button className="bg-indigo-600 hover:bg-indigo-700" onClick={handleSaveRule}>
+                            {editingRule ? "Save Changes" : "Create Rule"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Global Config Dialog */}
+            <Dialog open={isConfigOpen} onOpenChange={setIsConfigOpen}>
+                <DialogContent className="max-w-xl">
+                    <DialogHeader>
+                        <DialogTitle className="text-2xl font-black">Global Automation Config</DialogTitle>
+                        <DialogDescription>
+                            Engine-wide defaults applied to every automation rule.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="space-y-5 py-2">
+                        <div className="flex items-center justify-between p-4 rounded-xl bg-slate-50 border border-slate-100">
+                            <div>
+                                <p className="font-bold text-slate-800">Enable All Automations</p>
+                                <p className="text-xs text-slate-500">Master kill-switch for the entire engine.</p>
+                            </div>
+                            <Switch
+                                checked={globalConfig.enableAllAutomations}
+                                onCheckedChange={(v) => setGlobalConfig({ ...globalConfig, enableAllAutomations: v })}
+                                className="data-[state=checked]:bg-indigo-600"
+                            />
+                        </div>
+
+                        <div className="flex items-center justify-between p-4 rounded-xl bg-slate-50 border border-slate-100">
+                            <div>
+                                <p className="font-bold text-slate-800">Notify on Failure</p>
+                                <p className="text-xs text-slate-500">Email admin when any rule fails execution.</p>
+                            </div>
+                            <Switch
+                                checked={globalConfig.notifyOnFailure}
+                                onCheckedChange={(v) => setGlobalConfig({ ...globalConfig, notifyOnFailure: v })}
+                                className="data-[state=checked]:bg-indigo-600"
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label>Execution Mode</Label>
+                            <Select
+                                value={globalConfig.executionMode}
+                                onValueChange={(v: 'realtime' | 'batch' | 'scheduled') => setGlobalConfig({ ...globalConfig, executionMode: v })}
+                            >
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="realtime">Real-time</SelectItem>
+                                    <SelectItem value="batch">Batch (Hourly)</SelectItem>
+                                    <SelectItem value="scheduled">Scheduled (Nightly)</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="max-conc">Max Concurrent Runs</Label>
+                            <Input
+                                id="max-conc"
+                                type="number"
+                                min={1}
+                                max={100}
+                                value={globalConfig.maxConcurrentRuns}
+                                onChange={(e) => setGlobalConfig({ ...globalConfig, maxConcurrentRuns: Number(e.target.value) || 1 })}
+                            />
+                        </div>
+                    </div>
+
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsConfigOpen(false)}>Cancel</Button>
+                        <Button className="bg-indigo-600 hover:bg-indigo-700" onClick={saveGlobalConfig}>
+                            Save Config
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Delete Confirmation */}
+            <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete this automation rule?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will permanently remove the rule from the engine. This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction className="bg-rose-600 hover:bg-rose-700" onClick={confirmDelete}>
+                            Delete
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 };

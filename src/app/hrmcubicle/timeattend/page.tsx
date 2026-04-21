@@ -50,12 +50,30 @@ const TimeAttendDashboard = () => {
   });
   const [searchTerm, setSearchTerm] = useState("");
   const [filterDept, setFilterDept] = useState("All");
+  const [liveTeamData, setLiveTeamData] = useState<any[]>([]);
 
-  // Prevent Hydration Error
+  // Prevent Hydration Error + load from API
   useEffect(() => {
     setIsMounted(true);
     loadAttendanceFromApi();
   }, []);
+
+  // Derive live team data from store logs when available (today's entries)
+  useEffect(() => {
+    if (!logs || logs.length === 0) return;
+    const today = new Date().toISOString().split("T")[0];
+    const todayLogs = logs.filter(l => l.date === today);
+    if (todayLogs.length === 0) return;
+    const mapped = todayLogs.map(l => ({
+      id: l.empId,
+      name: l.empName,
+      status: l.status === "Present" ? "In" : l.status === "Late" ? "Late" : l.status === "On Leave" ? "Leave" : l.status === "Absent" ? "Absent" : l.status,
+      time: l.checkIn || "--",
+      avatar: (l.empName || "").split(" ").map(p => p[0]).join("").slice(0, 2).toUpperCase(),
+      dept: l.department || "Unassigned",
+    }));
+    setLiveTeamData(mapped);
+  }, [logs]);
 
   // Live Clock
   useEffect(() => {
@@ -63,8 +81,8 @@ const TimeAttendDashboard = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // Mock Team Data (In production, this would come from employee store)
-  const teamMembers = [
+  // Fallback mock data shown until live API data arrives
+  const mockTeamMembers = [
     { id: "EMP001", name: "Drashi Garg", status: "In", time: "09:28 AM", avatar: "DG", dept: "Engineering" },
     { id: "EMP002", name: "Aditya Singh", status: "In", time: "09:30 AM", avatar: "AS", dept: "Sales" },
     { id: "EMP003", name: "Rohan Gupta", status: "Late", time: "10:15 AM", avatar: "RG", dept: "Engineering" },
@@ -72,19 +90,37 @@ const TimeAttendDashboard = () => {
     { id: "EMP005", name: "Vikram Malhotra", status: "In", time: "09:45 AM", avatar: "VM", dept: "Product" },
     { id: "EMP006", name: "Priya Sharma", status: "Leave", time: "--", avatar: "PS", dept: "Marketing" },
   ];
+  const teamMembers = liveTeamData.length > 0 ? liveTeamData : mockTeamMembers;
 
   const handleManualEntry = () => {
-    if (!manualEntry.empId || !manualEntry.empName) {
+    const empId = manualEntry.empId.trim();
+    const empName = manualEntry.empName.trim();
+
+    if (!empId || !empName) {
       toast({ title: "Error", description: "Please fill all fields", variant: "destructive" });
       return;
     }
+    if (!/^E(MP)?\d{3,}$/i.test(empId)) {
+      toast({ title: "Invalid Employee ID", description: "ID must match pattern E001 or EMP001 (at least 3 digits).", variant: "destructive" });
+      return;
+    }
+    if (empName.length < 3) {
+      toast({ title: "Name Too Short", description: "Employee name must be at least 3 characters.", variant: "destructive" });
+      return;
+    }
+    if (!/^[a-zA-Z\s.'-]+$/.test(empName)) {
+      toast({ title: "Invalid Name", description: "Name can contain only letters, spaces, apostrophes, and hyphens.", variant: "destructive" });
+      return;
+    }
+
+    const department = teamMembers.find(m => m.id === empId)?.dept || "Unassigned";
 
     if (manualEntry.action === "in") {
-      clockIn(manualEntry.empId, manualEntry.empName);
-      toast({ title: "Attendance Marked", description: `${manualEntry.empName} clocked in successfully.` });
+      clockIn(empId, empName, department);
+      toast({ title: "Attendance Marked", description: `${empName} clocked in successfully.` });
     } else {
-      clockOut(manualEntry.empId);
-      toast({ title: "Checkout Recorded", description: `${manualEntry.empName} clocked out.` });
+      clockOut(empId);
+      toast({ title: "Checkout Recorded", description: `${empName} clocked out.` });
     }
 
     setIsManualEntryOpen(false);

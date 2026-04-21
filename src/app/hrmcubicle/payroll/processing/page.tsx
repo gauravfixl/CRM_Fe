@@ -40,6 +40,11 @@ import {
     CircleUser,
     ThumbsUp,
     ThumbsDown,
+    Landmark,
+    Receipt,
+    RefreshCw,
+    CalendarCheck,
+    Timer,
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/shared/components/ui/card"
 import { Button } from "@/shared/components/ui/button"
@@ -91,6 +96,50 @@ import { usePayrollStore, calculateEmployeeNet, type PayrollEmployee, type Appro
 import { useToast } from "@/shared/components/ui/use-toast"
 import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
+import {
+    getAllEmployees,
+    getAllDepartments,
+    getPendingLeaveRequests,
+    getEmployeeAttendance,
+} from "@/modules/hrm/hooks/hrmHooks"
+
+// ── Backend-derived shapes ──────────────────────────────
+type BackendEmployee = {
+    _id: string
+    employeeCode?: string
+    firstName?: string
+    lastName?: string
+    email?: string
+    phone?: string
+    departmentId?: { _id: string; name: string } | string | null
+    positionId?: { _id: string; name: string } | string | null
+    joinDate?: string
+    status?: string
+    salary?: number
+}
+
+type BackendDepartment = {
+    _id: string
+    name: string
+    description?: string
+    head?: string
+}
+
+type BackendLeaveRequest = {
+    _id: string
+    employeeId: string | { _id: string; employeeCode?: string }
+    leaveType?: string
+    startDate: string
+    endDate: string
+    isHalfDay?: boolean
+    status?: string
+}
+
+type BackendAttendanceRecord = {
+    _id?: string
+    date?: string
+    overtimeMinutes?: number
+}
 
 const DEPARTMENTS = [
     "Engineering",
@@ -161,8 +210,51 @@ const SalaryProcessingPage = () => {
         clonePayRun,
         applyBulkAdjustment,
         applyProRata,
+        syncLoanDeductionsToPayRun,
+        syncClaimReimbursementsToPayRun,
+        recomputeTdsFromDeclarations,
     } = usePayrollStore()
     const { toast } = useToast()
+
+    // ── Backend-fetched data (alongside store) ────────────
+    const [backendEmployees, setBackendEmployees] = useState<BackendEmployee[]>([])
+    const [backendDepartments, setBackendDepartments] = useState<BackendDepartment[]>([])
+    const [syncLopLoading, setSyncLopLoading] = useState(false)
+    const [syncOtLoading, setSyncOtLoading] = useState(false)
+
+    useEffect(() => {
+        let cancelled = false
+        ;(async () => {
+            try {
+                const res: any = await getAllEmployees()
+                const list: BackendEmployee[] = res?.data?.employees ?? res?.data?.data?.employees ?? []
+                if (!cancelled && Array.isArray(list)) setBackendEmployees(list)
+            } catch (err: any) {
+                if (err?.response?.status !== 401) {
+                    toast({
+                        title: "Employees unavailable",
+                        description: "Could not load backend employee master; using local data.",
+                        variant: "destructive",
+                    })
+                }
+            }
+            try {
+                const res: any = await getAllDepartments()
+                const list: BackendDepartment[] = res?.data?.departments ?? res?.data?.data?.departments ?? []
+                if (!cancelled && Array.isArray(list)) setBackendDepartments(list)
+            } catch (err: any) {
+                if (err?.response?.status !== 401) {
+                    toast({
+                        title: "Departments unavailable",
+                        description: "Could not load backend departments; falling back to local.",
+                        variant: "destructive",
+                    })
+                }
+            }
+        })()
+        return () => { cancelled = true }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
 
     // ── Active pay run selection ──────────────────────────
     const defaultActive = useMemo(
@@ -228,9 +320,38 @@ const SalaryProcessingPage = () => {
     }, [activeRunId])
 
     // ── Derived data ──────────────────────────────────────
+    // Merge store payrollEmployees with backend master data by empCode
+    const hydratedEmployees = useMemo(() => {
+        if (!backendEmployees.length) return payrollEmployees
+        const byCode = new Map<string, BackendEmployee>()
+        backendEmployees.forEach((be) => {
+            if (be?.employeeCode) byCode.set(be.employeeCode.toLowerCase(), be)
+        })
+        return payrollEmployees.map((e) => {
+            const match = byCode.get((e.empCode || "").toLowerCase())
+            if (!match) return e
+            const deptName =
+                typeof match.departmentId === "object" && match.departmentId
+                    ? match.departmentId.name
+                    : undefined
+            const posName =
+                typeof match.positionId === "object" && match.positionId
+                    ? match.positionId.name
+                    : undefined
+            const fullName = [match.firstName, match.lastName].filter(Boolean).join(" ").trim()
+            return {
+                ...e,
+                name: fullName || e.name,
+                dept: deptName || e.dept,
+                designation: posName || e.designation,
+                email: match.email || e.email,
+            }
+        })
+    }, [payrollEmployees, backendEmployees])
+
     const runEmployees = useMemo(
-        () => payrollEmployees.filter((e) => e.payRunId === activeRun?.id),
-        [payrollEmployees, activeRun?.id]
+        () => hydratedEmployees.filter((e) => e.payRunId === activeRun?.id),
+        [hydratedEmployees, activeRun?.id]
     )
 
     const filteredEmployees = useMemo(() => {
@@ -426,6 +547,214 @@ const SalaryProcessingPage = () => {
         })
         setCloneDialogOpen(false)
         setActiveRunId(newRunId)
+    }
+
+    // ─ Cross-page sync handlers ─
+    const handleSyncLoans = () => {
+        if (!activeRun || isFinalized) {
+            toast({ title: "Run locked", description: "Loan EMIs can only be synced while the run is active.", variant: "destructive" })
+            return
+        }
+        const { updated, totalEmi } = syncLoanDeductionsToPayRun(activeRun.id)
+        if (updated === 0) {
+            toast({ title: "Nothing to sync", description: "No active loans found for included employees." })
+        } else {
+            toast({
+                title: `${updated} EMI${updated > 1 ? "s" : ""} synced`,
+                description: `₹${Math.round(totalEmi).toLocaleString("en-IN")} added to Other Deductions.`,
+            })
+        }
+    }
+
+    const handleSyncClaims = () => {
+        if (!activeRun || isFinalized) {
+            toast({ title: "Run locked", description: "Claims can only be synced while the run is active.", variant: "destructive" })
+            return
+        }
+        const { reimbursed, total } = syncClaimReimbursementsToPayRun(activeRun.id)
+        if (reimbursed === 0) {
+            toast({ title: "Nothing to sync", description: "No approved claims awaiting payout for this run." })
+        } else {
+            toast({
+                title: `${reimbursed} employee${reimbursed > 1 ? "s" : ""} reimbursed`,
+                description: `₹${Math.round(total).toLocaleString("en-IN")} added to variable earnings.`,
+            })
+        }
+    }
+
+    const handleRecomputeTds = () => {
+        if (!activeRun || isFinalized) {
+            toast({ title: "Run locked", description: "TDS can only be recomputed while the run is active.", variant: "destructive" })
+            return
+        }
+        const { updated } = recomputeTdsFromDeclarations(activeRun.id)
+        if (updated === 0) {
+            toast({ title: "TDS already current", description: "No verified declarations changed the TDS." })
+        } else {
+            toast({
+                title: `TDS refreshed for ${updated}`,
+                description: "Monthly TDS recomputed from verified declarations + regime.",
+            })
+        }
+    }
+
+    // ─ Parse active run month ("February 2026") into {year, monthIdx (0-11)} ─
+    const parseRunMonth = (monthLabel: string): { year: number; monthIdx: number } | null => {
+        if (!monthLabel) return null
+        const parts = monthLabel.trim().split(/\s+/)
+        if (parts.length < 2) return null
+        const MONTHS = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"]
+        const monthIdx = MONTHS.indexOf(parts[0].toLowerCase())
+        const year = parseInt(parts[1], 10)
+        if (monthIdx < 0 || Number.isNaN(year)) return null
+        return { year, monthIdx }
+    }
+
+    const dateInRunMonth = (iso: string | undefined, y: number, m: number) => {
+        if (!iso) return false
+        const d = new Date(iso)
+        if (isNaN(d.getTime())) return false
+        return d.getFullYear() === y && d.getMonth() === m
+    }
+
+    const daysBetween = (startIso: string, endIso: string) => {
+        const s = new Date(startIso)
+        const e = new Date(endIso)
+        if (isNaN(s.getTime()) || isNaN(e.getTime())) return 0
+        const ms = e.getTime() - s.getTime()
+        return Math.max(1, Math.floor(ms / (1000 * 60 * 60 * 24)) + 1)
+    }
+
+    const handleSyncLopFromLeaves = async () => {
+        if (!activeRun || isFinalized) {
+            toast({ title: "Run locked", description: "LOP can only be synced while the run is active.", variant: "destructive" })
+            return
+        }
+        const parsed = parseRunMonth(activeRun.month)
+        if (!parsed) {
+            toast({ title: "Unsupported month format", description: `Cannot parse "${activeRun.month}".`, variant: "destructive" })
+            return
+        }
+        setSyncLopLoading(true)
+        try {
+            const res: any = await getPendingLeaveRequests()
+            const requests: BackendLeaveRequest[] = res?.data?.requests ?? res?.data?.data?.requests ?? []
+            // Build map of employeeCode -> LOP day count
+            const codeByBackendId = new Map<string, string>()
+            backendEmployees.forEach((be) => {
+                if (be?._id && be.employeeCode) codeByBackendId.set(String(be._id), be.employeeCode)
+            })
+            const lopByCode = new Map<string, number>()
+            requests.forEach((r) => {
+                if ((r.status || "").toLowerCase() !== "approved") return
+                const empRef = r.employeeId as any
+                const empCode =
+                    typeof empRef === "object" && empRef
+                        ? empRef.employeeCode || codeByBackendId.get(String(empRef._id))
+                        : codeByBackendId.get(String(empRef))
+                if (!empCode) return
+                if (!dateInRunMonth(r.startDate, parsed.year, parsed.monthIdx) &&
+                    !dateInRunMonth(r.endDate, parsed.year, parsed.monthIdx)) return
+                const days = r.isHalfDay ? 0.5 : daysBetween(r.startDate, r.endDate)
+                lopByCode.set(empCode.toLowerCase(), (lopByCode.get(empCode.toLowerCase()) || 0) + days)
+            })
+
+            let updatedCount = 0
+            runEmployees.forEach((emp) => {
+                if (!emp.included) return
+                const lop = lopByCode.get((emp.empCode || "").toLowerCase())
+                if (lop && lop > 0) {
+                    updatePayrollEmployee(emp.id, { lopDays: lop })
+                    updatedCount++
+                }
+            })
+
+            if (updatedCount === 0) {
+                toast({ title: "Nothing to sync", description: "No approved leaves found for this run's month." })
+            } else {
+                toast({
+                    title: `LOP synced for ${updatedCount}`,
+                    description: `Updated LOP days from approved leave requests.`,
+                })
+            }
+        } catch (err: any) {
+            if (err?.response?.status !== 401) {
+                toast({
+                    title: "Sync failed",
+                    description: err?.response?.data?.message || "Could not fetch leave requests.",
+                    variant: "destructive",
+                })
+            }
+        } finally {
+            setSyncLopLoading(false)
+        }
+    }
+
+    const handleSyncOtFromAttendance = async () => {
+        if (!activeRun || isFinalized) {
+            toast({ title: "Run locked", description: "OT can only be synced while the run is active.", variant: "destructive" })
+            return
+        }
+        const parsed = parseRunMonth(activeRun.month)
+        if (!parsed) {
+            toast({ title: "Unsupported month format", description: `Cannot parse "${activeRun.month}".`, variant: "destructive" })
+            return
+        }
+        setSyncOtLoading(true)
+        try {
+            const codeToBackendId = new Map<string, string>()
+            backendEmployees.forEach((be) => {
+                if (be?._id && be.employeeCode) codeToBackendId.set(be.employeeCode.toLowerCase(), String(be._id))
+            })
+            const included = runEmployees.filter((e) => e.included)
+            let updatedCount = 0
+            let totalOtHours = 0
+
+            for (const emp of included) {
+                const backendId = codeToBackendId.get((emp.empCode || "").toLowerCase())
+                if (!backendId) continue
+                try {
+                    const res: any = await getEmployeeAttendance(backendId)
+                    const records: BackendAttendanceRecord[] =
+                        res?.data?.attendance ?? res?.data?.data?.attendance ?? []
+                    let totalMinutes = 0
+                    records.forEach((rec) => {
+                        if (dateInRunMonth(rec.date, parsed.year, parsed.monthIdx)) {
+                            totalMinutes += Number(rec.overtimeMinutes) || 0
+                        }
+                    })
+                    if (totalMinutes > 0) {
+                        const hours = Math.round((totalMinutes / 60) * 100) / 100
+                        updatePayrollEmployee(emp.id, { otHours: hours })
+                        totalOtHours += hours
+                        updatedCount++
+                    }
+                } catch (err: any) {
+                    if (err?.response?.status !== 401) {
+                        console.error(`OT sync failed for ${emp.empCode}:`, err)
+                    }
+                }
+            }
+
+            if (updatedCount === 0) {
+                toast({ title: "No OT to sync", description: "No overtime minutes found for included employees." })
+            } else {
+                toast({
+                    title: `OT synced for ${updatedCount}`,
+                    description: `Total ${totalOtHours.toFixed(1)} hours applied from attendance.`,
+                })
+            }
+        } catch (err: any) {
+            if (err?.response?.status !== 401) {
+                toast({
+                    title: "Sync failed",
+                    description: err?.response?.data?.message || "Could not sync OT from attendance.",
+                    variant: "destructive",
+                })
+            }
+        } finally {
+            setSyncOtLoading(false)
+        }
     }
 
     const openAdjustDialog = () => {
@@ -975,6 +1304,76 @@ const SalaryProcessingPage = () => {
                             </DropdownMenuContent>
                         </DropdownMenu>
 
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    onClick={handleSyncLoans}
+                                    disabled={isFinalized}
+                                    className="h-9 rounded-lg border-blue-200 bg-white font-semibold text-xs gap-2 px-3 hover:bg-blue-50 text-blue-600"
+                                >
+                                    <Landmark size={14} /> <span className="hidden xl:inline">Sync loans</span>
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Pull active loan EMIs into Other Deductions</TooltipContent>
+                        </Tooltip>
+
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    onClick={handleSyncClaims}
+                                    disabled={isFinalized}
+                                    className="h-9 rounded-lg border-emerald-200 bg-white font-semibold text-xs gap-2 px-3 hover:bg-emerald-50 text-emerald-600"
+                                >
+                                    <Receipt size={14} /> <span className="hidden xl:inline">Sync claims</span>
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Add approved reimbursements into variable earnings</TooltipContent>
+                        </Tooltip>
+
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    onClick={handleRecomputeTds}
+                                    disabled={isFinalized}
+                                    className="h-9 rounded-lg border-amber-200 bg-white font-semibold text-xs gap-2 px-3 hover:bg-amber-50 text-amber-600"
+                                >
+                                    <RefreshCw size={14} /> <span className="hidden xl:inline">Recompute TDS</span>
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Recompute monthly TDS from verified declarations + regime</TooltipContent>
+                        </Tooltip>
+
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    onClick={handleSyncLopFromLeaves}
+                                    disabled={isFinalized || syncLopLoading}
+                                    className="h-9 rounded-lg border-amber-200 bg-white font-semibold text-xs gap-2 px-3 hover:bg-amber-50 text-amber-600"
+                                >
+                                    <CalendarCheck size={14} /> <span className="hidden xl:inline">{syncLopLoading ? "Syncing..." : "Sync LOP from leaves"}</span>
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Pull approved leave days into LOP days for this month</TooltipContent>
+                        </Tooltip>
+
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    onClick={handleSyncOtFromAttendance}
+                                    disabled={isFinalized || syncOtLoading}
+                                    className="h-9 rounded-lg border-blue-200 bg-white font-semibold text-xs gap-2 px-3 hover:bg-blue-50 text-blue-600"
+                                >
+                                    <Timer size={14} /> <span className="hidden xl:inline">{syncOtLoading ? "Syncing..." : "Sync OT from attendance"}</span>
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Sum overtime minutes from attendance records and apply to OT hours</TooltipContent>
+                        </Tooltip>
+
                         <Button
                             variant="outline"
                             onClick={openCloneDialog}
@@ -1172,7 +1571,10 @@ const SalaryProcessingPage = () => {
                                                             <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
                                                             <SelectContent>
                                                                 <SelectItem value="all">All departments</SelectItem>
-                                                                {Array.from(new Set(runEmployees.map((e) => e.dept))).map((d) => (
+                                                                {(backendDepartments.length > 0
+                                                                    ? Array.from(new Set(backendDepartments.map((d) => d.name).filter(Boolean)))
+                                                                    : Array.from(new Set(runEmployees.map((e) => e.dept)))
+                                                                ).map((d) => (
                                                                     <SelectItem key={d} value={d}>{d}</SelectItem>
                                                                 ))}
                                                             </SelectContent>

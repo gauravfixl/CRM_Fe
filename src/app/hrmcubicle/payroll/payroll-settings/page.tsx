@@ -42,7 +42,23 @@ import {
     AlertTriangle,
     Layers,
     KeyRound,
+    Briefcase,
+    CalendarDays,
 } from "lucide-react"
+import {
+    getAllDepartments,
+    createDepartment,
+    updateDepartment,
+    deleteDepartment,
+    getAllPositions,
+    createPosition,
+    updatePosition,
+    deletePosition,
+    getHolidaysByYear,
+    createHoliday,
+    updateHoliday,
+    deleteHoliday,
+} from "@/modules/hrm/hooks/hrmHooks"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/shared/components/ui/card"
 import { Button } from "@/shared/components/ui/button"
 import { Badge } from "@/shared/components/ui/badge"
@@ -179,8 +195,261 @@ const PayrollSettingsPage = () => {
 
     // ── UI state ───────────────────────────────────────────
     const [activeTab, setActiveTab] = useState<
-        "structure" | "statutory" | "cycle" | "bank" | "audit" | "snapshots" | "policies" | "validation" | "permissions"
+        "structure" | "statutory" | "cycle" | "masters" | "bank" | "audit" | "snapshots" | "policies" | "validation" | "permissions"
     >("structure")
+
+    // ── Masters (Backend-integrated) state ─────────────────
+    type DeptRow = { _id: string; name: string; description?: string; head?: string }
+    type PosRow = { _id: string; title: string; department?: any; level?: string; description?: string }
+    type HolidayRow = { _id: string; name: string; date: string; type: "National" | "Optional"; isPaid?: boolean; isMandatory?: boolean }
+
+    const [departments, setDepartments] = useState<DeptRow[]>([])
+    const [deptLoading, setDeptLoading] = useState(false)
+    const [deptFormOpen, setDeptFormOpen] = useState(false)
+    const [editingDept, setEditingDept] = useState<DeptRow | null>(null)
+    const [deptForm, setDeptForm] = useState<{ name: string; description: string; head: string }>({ name: "", description: "", head: "" })
+    const [deptDeleteOpen, setDeptDeleteOpen] = useState(false)
+    const [deptDeleteTarget, setDeptDeleteTarget] = useState<DeptRow | null>(null)
+
+    const [positions, setPositions] = useState<PosRow[]>([])
+    const [posLoading, setPosLoading] = useState(false)
+    const [posFormOpen, setPosFormOpen] = useState(false)
+    const [editingPos, setEditingPos] = useState<PosRow | null>(null)
+    const [posForm, setPosForm] = useState<{ title: string; department: string; level: string; description: string }>({ title: "", department: "", level: "", description: "" })
+    const [posDeleteOpen, setPosDeleteOpen] = useState(false)
+    const [posDeleteTarget, setPosDeleteTarget] = useState<PosRow | null>(null)
+
+    const [holidays, setHolidays] = useState<HolidayRow[]>([])
+    const [holidayLoading, setHolidayLoading] = useState(false)
+    const [holidayYear, setHolidayYear] = useState<string>(String(new Date().getFullYear()))
+    const [holidayFormOpen, setHolidayFormOpen] = useState(false)
+    const [editingHoliday, setEditingHoliday] = useState<HolidayRow | null>(null)
+    const [holidayForm, setHolidayForm] = useState<{ name: string; date: string; type: "National" | "Optional"; isPaid: boolean; isMandatory: boolean }>({ name: "", date: new Date().toISOString().split("T")[0], type: "National", isPaid: true, isMandatory: true })
+    const [holidayDeleteOpen, setHolidayDeleteOpen] = useState(false)
+    const [holidayDeleteTarget, setHolidayDeleteTarget] = useState<HolidayRow | null>(null)
+
+    // Fetch helpers
+    const fetchDepartments = async () => {
+        setDeptLoading(true)
+        try {
+            const res: any = await getAllDepartments()
+            const data = res?.data?.data ?? res?.data ?? []
+            setDepartments(Array.isArray(data) ? data : [])
+        } catch (err) {
+            toast({ title: "Failed to load departments", variant: "destructive" })
+        } finally {
+            setDeptLoading(false)
+        }
+    }
+
+    const fetchPositions = async () => {
+        setPosLoading(true)
+        try {
+            const res: any = await getAllPositions()
+            const data = res?.data?.data ?? res?.data ?? []
+            setPositions(Array.isArray(data) ? data : [])
+        } catch (err) {
+            toast({ title: "Failed to load positions", variant: "destructive" })
+        } finally {
+            setPosLoading(false)
+        }
+    }
+
+    const fetchHolidays = async (year: string) => {
+        setHolidayLoading(true)
+        try {
+            const res: any = await getHolidaysByYear(year)
+            const data = res?.data?.data ?? res?.data ?? []
+            setHolidays(Array.isArray(data) ? data : [])
+        } catch (err) {
+            toast({ title: "Failed to load holidays", variant: "destructive" })
+        } finally {
+            setHolidayLoading(false)
+        }
+    }
+
+    // Initial fetch on mount
+    useEffect(() => {
+        fetchDepartments()
+        fetchPositions()
+    }, [])
+
+    useEffect(() => {
+        fetchHolidays(holidayYear)
+    }, [holidayYear])
+
+    // Department handlers
+    const openAddDept = () => {
+        setEditingDept(null)
+        setDeptForm({ name: "", description: "", head: "" })
+        setDeptFormOpen(true)
+    }
+    const openEditDept = (d: DeptRow) => {
+        setEditingDept(d)
+        setDeptForm({ name: d.name || "", description: d.description || "", head: d.head || "" })
+        setDeptFormOpen(true)
+    }
+    const handleSaveDept = async () => {
+        if (!deptForm.name.trim()) {
+            toast({ title: "Name required", variant: "destructive" })
+            return
+        }
+        try {
+            if (editingDept) {
+                await updateDepartment(editingDept._id, {
+                    name: deptForm.name,
+                    description: deptForm.description || undefined,
+                    head: deptForm.head || undefined,
+                })
+                toast({ title: "Department updated" })
+            } else {
+                await createDepartment({
+                    name: deptForm.name,
+                    description: deptForm.description || undefined,
+                    head: deptForm.head || undefined,
+                })
+                toast({ title: "Department created" })
+            }
+            setDeptFormOpen(false)
+            fetchDepartments()
+        } catch (err: any) {
+            toast({ title: "Operation failed", description: err?.response?.data?.message || "Error", variant: "destructive" })
+        }
+    }
+    const handleDeleteDept = async () => {
+        if (!deptDeleteTarget) return
+        try {
+            await deleteDepartment(deptDeleteTarget._id)
+            toast({ title: "Department deleted", variant: "destructive" })
+            setDeptDeleteOpen(false)
+            setDeptDeleteTarget(null)
+            fetchDepartments()
+        } catch (err: any) {
+            toast({ title: "Delete failed", description: err?.response?.data?.message || "Error", variant: "destructive" })
+        }
+    }
+
+    // Position handlers
+    const openAddPos = () => {
+        setEditingPos(null)
+        setPosForm({ title: "", department: "", level: "", description: "" })
+        setPosFormOpen(true)
+    }
+    const openEditPos = (p: PosRow) => {
+        setEditingPos(p)
+        setPosForm({
+            title: p.title || "",
+            department: typeof p.department === "object" ? (p.department?._id || "") : (p.department || ""),
+            level: p.level || "",
+            description: p.description || "",
+        })
+        setPosFormOpen(true)
+    }
+    const handleSavePos = async () => {
+        if (!posForm.title.trim()) {
+            toast({ title: "Title required", variant: "destructive" })
+            return
+        }
+        try {
+            if (editingPos) {
+                await updatePosition(editingPos._id, {
+                    title: posForm.title,
+                    department: posForm.department || undefined,
+                    level: posForm.level || undefined,
+                    description: posForm.description || undefined,
+                })
+                toast({ title: "Position updated" })
+            } else {
+                if (!posForm.department) {
+                    toast({ title: "Department required", variant: "destructive" })
+                    return
+                }
+                await createPosition({
+                    title: posForm.title,
+                    department: posForm.department,
+                    level: posForm.level || undefined,
+                    description: posForm.description || undefined,
+                })
+                toast({ title: "Position created" })
+            }
+            setPosFormOpen(false)
+            fetchPositions()
+        } catch (err: any) {
+            toast({ title: "Operation failed", description: err?.response?.data?.message || "Error", variant: "destructive" })
+        }
+    }
+    const handleDeletePos = async () => {
+        if (!posDeleteTarget) return
+        try {
+            await deletePosition(posDeleteTarget._id)
+            toast({ title: "Position deleted", variant: "destructive" })
+            setPosDeleteOpen(false)
+            setPosDeleteTarget(null)
+            fetchPositions()
+        } catch (err: any) {
+            toast({ title: "Delete failed", description: err?.response?.data?.message || "Error", variant: "destructive" })
+        }
+    }
+
+    // Holiday handlers
+    const openAddHoliday = () => {
+        setEditingHoliday(null)
+        setHolidayForm({ name: "", date: `${holidayYear}-01-01`, type: "National", isPaid: true, isMandatory: true })
+        setHolidayFormOpen(true)
+    }
+    const openEditHoliday = (h: HolidayRow) => {
+        setEditingHoliday(h)
+        setHolidayForm({
+            name: h.name || "",
+            date: (h.date || "").split("T")[0],
+            type: (h.type as "National" | "Optional") || "National",
+            isPaid: h.isPaid ?? true,
+            isMandatory: h.isMandatory ?? true,
+        })
+        setHolidayFormOpen(true)
+    }
+    const handleSaveHoliday = async () => {
+        if (!holidayForm.name.trim() || !holidayForm.date) {
+            toast({ title: "Name & date required", variant: "destructive" })
+            return
+        }
+        try {
+            if (editingHoliday) {
+                await updateHoliday(editingHoliday._id, {
+                    name: holidayForm.name,
+                    type: holidayForm.type,
+                    isPaid: holidayForm.isPaid,
+                    isMandatory: holidayForm.isMandatory,
+                })
+                toast({ title: "Holiday updated" })
+            } else {
+                await createHoliday({
+                    name: holidayForm.name,
+                    date: holidayForm.date,
+                    type: holidayForm.type,
+                    isPaid: holidayForm.isPaid,
+                    isMandatory: holidayForm.isMandatory,
+                })
+                toast({ title: "Holiday created" })
+            }
+            setHolidayFormOpen(false)
+            fetchHolidays(holidayYear)
+        } catch (err: any) {
+            toast({ title: "Operation failed", description: err?.response?.data?.message || "Error", variant: "destructive" })
+        }
+    }
+    const handleDeleteHoliday = async () => {
+        if (!holidayDeleteTarget) return
+        try {
+            await deleteHoliday(holidayDeleteTarget._id)
+            toast({ title: "Holiday deleted", variant: "destructive" })
+            setHolidayDeleteOpen(false)
+            setHolidayDeleteTarget(null)
+            fetchHolidays(holidayYear)
+        } catch (err: any) {
+            toast({ title: "Delete failed", description: err?.response?.data?.message || "Error", variant: "destructive" })
+        }
+    }
 
     // Component dialogs
     const [compFormOpen, setCompFormOpen] = useState(false)
@@ -876,6 +1145,9 @@ const PayrollSettingsPage = () => {
                                     <Calendar size={13} /> Cycle
                                     {cycleDirty && <span className="h-1.5 w-1.5 rounded-full bg-amber-500 absolute top-1.5 right-1.5" />}
                                 </TabsTrigger>
+                                <TabsTrigger value="masters" className="rounded-lg px-4 h-9 font-bold text-xs data-[state=active]:bg-white data-[state=active]:text-[#8B5CF6] data-[state=active]:shadow-sm gap-1.5">
+                                    <Building2 size={13} /> Masters
+                                </TabsTrigger>
                                 <TabsTrigger value="bank" className="rounded-lg px-4 h-9 font-bold text-xs data-[state=active]:bg-white data-[state=active]:text-[#8B5CF6] data-[state=active]:shadow-sm gap-1.5">
                                     <Banknote size={13} /> Bank ({bankAccounts.length})
                                 </TabsTrigger>
@@ -1167,6 +1439,255 @@ const PayrollSettingsPage = () => {
                                             <Save size={13} /> Save cycle
                                         </Button>
                                     </div>
+                                </Card>
+                            </TabsContent>
+
+                            {/* ── Masters Tab (Backend-integrated) ─────────────── */}
+                            <TabsContent value="masters" className="mt-5 space-y-4">
+                                {/* Departments Section */}
+                                <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+                                    <CardHeader className="p-4 lg:p-5 border-b border-slate-100 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 space-y-0">
+                                        <div className="flex items-center gap-3">
+                                            <div className="h-10 w-10 rounded-xl bg-violet-100 flex items-center justify-center">
+                                                <Building2 className="text-[#8B5CF6]" size={18} />
+                                            </div>
+                                            <div>
+                                                <CardTitle className="text-base font-bold text-slate-900">Departments</CardTitle>
+                                                <CardDescription className="text-[11px] font-semibold text-slate-500 mt-0.5">
+                                                    Organization departments used across HR & payroll.
+                                                </CardDescription>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <Button
+                                                onClick={fetchDepartments}
+                                                disabled={deptLoading}
+                                                variant="outline"
+                                                className="h-9 px-3 rounded-lg font-bold text-xs border-slate-200 gap-2"
+                                            >
+                                                <RefreshCw size={13} className={cn(deptLoading && "animate-spin")} /> Refresh
+                                            </Button>
+                                            <Button onClick={openAddDept} className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-lg h-9 px-4 font-bold text-xs border-none gap-2">
+                                                <Plus size={14} /> Add department
+                                            </Button>
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent className="p-0">
+                                        {deptLoading ? (
+                                            <div className="p-10 text-center text-slate-400 text-sm font-semibold">Loading departments...</div>
+                                        ) : departments.length === 0 ? (
+                                            <div className="p-10 text-center text-slate-400 text-sm font-medium">
+                                                No departments yet. Click "Add department" to create one.
+                                            </div>
+                                        ) : (
+                                            <div className="overflow-x-auto">
+                                                <Table>
+                                                    <TableHeader>
+                                                        <TableRow className="bg-slate-50 hover:bg-slate-50">
+                                                            <TableHead className="text-[11px] font-bold text-slate-600 uppercase">Name</TableHead>
+                                                            <TableHead className="text-[11px] font-bold text-slate-600 uppercase">Description</TableHead>
+                                                            <TableHead className="text-[11px] font-bold text-slate-600 uppercase">Head</TableHead>
+                                                            <TableHead className="text-[11px] font-bold text-slate-600 uppercase text-right">Actions</TableHead>
+                                                        </TableRow>
+                                                    </TableHeader>
+                                                    <TableBody>
+                                                        {departments.map((d) => (
+                                                            <TableRow key={d._id} className="hover:bg-slate-50/60">
+                                                                <TableCell className="text-sm font-bold text-slate-900">{d.name}</TableCell>
+                                                                <TableCell className="text-sm font-medium text-slate-600">{d.description || "—"}</TableCell>
+                                                                <TableCell className="text-sm font-medium text-slate-600">{d.head || "—"}</TableCell>
+                                                                <TableCell className="text-right">
+                                                                    <div className="inline-flex gap-1">
+                                                                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0 rounded-lg hover:bg-violet-50 hover:text-[#8B5CF6]" onClick={() => openEditDept(d)}>
+                                                                            <Edit size={14} />
+                                                                        </Button>
+                                                                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0 rounded-lg hover:bg-rose-50 hover:text-rose-600" onClick={() => { setDeptDeleteTarget(d); setDeptDeleteOpen(true) }}>
+                                                                            <Trash2 size={14} />
+                                                                        </Button>
+                                                                    </div>
+                                                                </TableCell>
+                                                            </TableRow>
+                                                        ))}
+                                                    </TableBody>
+                                                </Table>
+                                            </div>
+                                        )}
+                                    </CardContent>
+                                </Card>
+
+                                {/* Positions Section */}
+                                <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+                                    <CardHeader className="p-4 lg:p-5 border-b border-slate-100 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 space-y-0">
+                                        <div className="flex items-center gap-3">
+                                            <div className="h-10 w-10 rounded-xl bg-violet-100 flex items-center justify-center">
+                                                <Briefcase className="text-[#8B5CF6]" size={18} />
+                                            </div>
+                                            <div>
+                                                <CardTitle className="text-base font-bold text-slate-900">Positions</CardTitle>
+                                                <CardDescription className="text-[11px] font-semibold text-slate-500 mt-0.5">
+                                                    Job titles and levels mapped to departments.
+                                                </CardDescription>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <Button
+                                                onClick={fetchPositions}
+                                                disabled={posLoading}
+                                                variant="outline"
+                                                className="h-9 px-3 rounded-lg font-bold text-xs border-slate-200 gap-2"
+                                            >
+                                                <RefreshCw size={13} className={cn(posLoading && "animate-spin")} /> Refresh
+                                            </Button>
+                                            <Button onClick={openAddPos} className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-lg h-9 px-4 font-bold text-xs border-none gap-2">
+                                                <Plus size={14} /> Add position
+                                            </Button>
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent className="p-0">
+                                        {posLoading ? (
+                                            <div className="p-10 text-center text-slate-400 text-sm font-semibold">Loading positions...</div>
+                                        ) : positions.length === 0 ? (
+                                            <div className="p-10 text-center text-slate-400 text-sm font-medium">
+                                                No positions yet. Click "Add position" to create one.
+                                            </div>
+                                        ) : (
+                                            <div className="overflow-x-auto">
+                                                <Table>
+                                                    <TableHeader>
+                                                        <TableRow className="bg-slate-50 hover:bg-slate-50">
+                                                            <TableHead className="text-[11px] font-bold text-slate-600 uppercase">Title</TableHead>
+                                                            <TableHead className="text-[11px] font-bold text-slate-600 uppercase">Department</TableHead>
+                                                            <TableHead className="text-[11px] font-bold text-slate-600 uppercase">Level</TableHead>
+                                                            <TableHead className="text-[11px] font-bold text-slate-600 uppercase text-right">Actions</TableHead>
+                                                        </TableRow>
+                                                    </TableHeader>
+                                                    <TableBody>
+                                                        {positions.map((p) => {
+                                                            const deptName = typeof p.department === "object" ? (p.department?.name || "—") : (departments.find(d => d._id === p.department)?.name || "—")
+                                                            return (
+                                                                <TableRow key={p._id} className="hover:bg-slate-50/60">
+                                                                    <TableCell className="text-sm font-bold text-slate-900">{p.title}</TableCell>
+                                                                    <TableCell className="text-sm font-medium text-slate-600">{deptName}</TableCell>
+                                                                    <TableCell className="text-sm font-medium text-slate-600">{p.level || "—"}</TableCell>
+                                                                    <TableCell className="text-right">
+                                                                        <div className="inline-flex gap-1">
+                                                                            <Button size="sm" variant="ghost" className="h-8 w-8 p-0 rounded-lg hover:bg-violet-50 hover:text-[#8B5CF6]" onClick={() => openEditPos(p)}>
+                                                                                <Edit size={14} />
+                                                                            </Button>
+                                                                            <Button size="sm" variant="ghost" className="h-8 w-8 p-0 rounded-lg hover:bg-rose-50 hover:text-rose-600" onClick={() => { setPosDeleteTarget(p); setPosDeleteOpen(true) }}>
+                                                                                <Trash2 size={14} />
+                                                                            </Button>
+                                                                        </div>
+                                                                    </TableCell>
+                                                                </TableRow>
+                                                            )
+                                                        })}
+                                                    </TableBody>
+                                                </Table>
+                                            </div>
+                                        )}
+                                    </CardContent>
+                                </Card>
+
+                                {/* Holidays Section */}
+                                <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+                                    <CardHeader className="p-4 lg:p-5 border-b border-slate-100 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 space-y-0">
+                                        <div className="flex items-center gap-3">
+                                            <div className="h-10 w-10 rounded-xl bg-violet-100 flex items-center justify-center">
+                                                <CalendarDays className="text-[#8B5CF6]" size={18} />
+                                            </div>
+                                            <div>
+                                                <CardTitle className="text-base font-bold text-slate-900">Holidays</CardTitle>
+                                                <CardDescription className="text-[11px] font-semibold text-slate-500 mt-0.5">
+                                                    Annual company holidays. Filter by year.
+                                                </CardDescription>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <Select value={holidayYear} onValueChange={(v) => setHolidayYear(v)}>
+                                                <SelectTrigger className="h-9 w-28 rounded-lg text-xs font-bold border-slate-200">
+                                                    <SelectValue placeholder="Year" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="2025">2025</SelectItem>
+                                                    <SelectItem value="2026">2026</SelectItem>
+                                                    <SelectItem value="2027">2027</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                            <Button
+                                                onClick={() => fetchHolidays(holidayYear)}
+                                                disabled={holidayLoading}
+                                                variant="outline"
+                                                className="h-9 px-3 rounded-lg font-bold text-xs border-slate-200 gap-2"
+                                            >
+                                                <RefreshCw size={13} className={cn(holidayLoading && "animate-spin")} /> Refresh
+                                            </Button>
+                                            <Button onClick={openAddHoliday} className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-lg h-9 px-4 font-bold text-xs border-none gap-2">
+                                                <Plus size={14} /> Add holiday
+                                            </Button>
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent className="p-0">
+                                        {holidayLoading ? (
+                                            <div className="p-10 text-center text-slate-400 text-sm font-semibold">Loading holidays...</div>
+                                        ) : holidays.length === 0 ? (
+                                            <div className="p-10 text-center text-slate-400 text-sm font-medium">
+                                                No holidays registered for {holidayYear}.
+                                            </div>
+                                        ) : (
+                                            <div className="overflow-x-auto">
+                                                <Table>
+                                                    <TableHeader>
+                                                        <TableRow className="bg-slate-50 hover:bg-slate-50">
+                                                            <TableHead className="text-[11px] font-bold text-slate-600 uppercase">Date</TableHead>
+                                                            <TableHead className="text-[11px] font-bold text-slate-600 uppercase">Name</TableHead>
+                                                            <TableHead className="text-[11px] font-bold text-slate-600 uppercase">Type</TableHead>
+                                                            <TableHead className="text-[11px] font-bold text-slate-600 uppercase">Paid?</TableHead>
+                                                            <TableHead className="text-[11px] font-bold text-slate-600 uppercase text-right">Actions</TableHead>
+                                                        </TableRow>
+                                                    </TableHeader>
+                                                    <TableBody>
+                                                        {holidays.map((h) => {
+                                                            const dateStr = (h.date || "").split("T")[0]
+                                                            return (
+                                                                <TableRow key={h._id} className="hover:bg-slate-50/60">
+                                                                    <TableCell className="text-sm font-bold text-slate-900 tabular-nums">{dateStr}</TableCell>
+                                                                    <TableCell className="text-sm font-medium text-slate-700">{h.name}</TableCell>
+                                                                    <TableCell>
+                                                                        <Badge className={cn(
+                                                                            "text-[10px] font-bold rounded-md px-2 py-0.5",
+                                                                            h.type === "National"
+                                                                                ? "bg-violet-100 text-[#8B5CF6] border-violet-200"
+                                                                                : "bg-slate-100 text-slate-700 border-slate-200"
+                                                                        )}>
+                                                                            {h.type}
+                                                                        </Badge>
+                                                                    </TableCell>
+                                                                    <TableCell>
+                                                                        {h.isPaid ? (
+                                                                            <Badge className="bg-emerald-100 text-emerald-700 text-[10px] font-bold rounded-md px-2 py-0.5 border-emerald-200">Paid</Badge>
+                                                                        ) : (
+                                                                            <Badge className="bg-slate-100 text-slate-600 text-[10px] font-bold rounded-md px-2 py-0.5 border-slate-200">Unpaid</Badge>
+                                                                        )}
+                                                                    </TableCell>
+                                                                    <TableCell className="text-right">
+                                                                        <div className="inline-flex gap-1">
+                                                                            <Button size="sm" variant="ghost" className="h-8 w-8 p-0 rounded-lg hover:bg-violet-50 hover:text-[#8B5CF6]" onClick={() => openEditHoliday(h)}>
+                                                                                <Edit size={14} />
+                                                                            </Button>
+                                                                            <Button size="sm" variant="ghost" className="h-8 w-8 p-0 rounded-lg hover:bg-rose-50 hover:text-rose-600" onClick={() => { setHolidayDeleteTarget(h); setHolidayDeleteOpen(true) }}>
+                                                                                <Trash2 size={14} />
+                                                                            </Button>
+                                                                        </div>
+                                                                    </TableCell>
+                                                                </TableRow>
+                                                            )
+                                                        })}
+                                                    </TableBody>
+                                                </Table>
+                                            </div>
+                                        )}
+                                    </CardContent>
                                 </Card>
                             </TabsContent>
 
@@ -2647,6 +3168,258 @@ const PayrollSettingsPage = () => {
                         <DialogFooter className="mt-4 gap-2">
                             <Button variant="ghost" onClick={() => setPermDeleteOpen(false)} className="h-10 font-semibold text-xs">Cancel</Button>
                             <Button onClick={handleConfirmDeletePerm} className="bg-rose-500 hover:bg-rose-600 text-white rounded-lg h-10 px-5 font-bold text-xs border-none">Delete</Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* ── Department Form Dialog ──────────── */}
+                <Dialog open={deptFormOpen} onOpenChange={setDeptFormOpen}>
+                    <DialogContent className="max-w-md bg-white rounded-2xl p-6 font-sans">
+                        <DialogHeader className="space-y-1">
+                            <div className="h-10 w-10 bg-[#8B5CF6]/10 rounded-xl flex items-center justify-center text-[#8B5CF6] mb-2">
+                                <Building2 size={20} />
+                            </div>
+                            <DialogTitle className="text-lg font-bold text-slate-900">
+                                {editingDept ? "Edit department" : "Add department"}
+                            </DialogTitle>
+                            <DialogDescription className="text-xs font-medium text-slate-500">
+                                Organization department used for grouping employees.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="grid gap-3 mt-3">
+                            <div className="space-y-1.5">
+                                <Label className="text-[11px] font-semibold text-slate-600">Name *</Label>
+                                <Input
+                                    value={deptForm.name}
+                                    onChange={(e) => setDeptForm({ ...deptForm, name: e.target.value })}
+                                    placeholder="e.g. Engineering"
+                                    className="h-10 text-sm"
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-[11px] font-semibold text-slate-600">Description</Label>
+                                <Textarea
+                                    value={deptForm.description}
+                                    onChange={(e) => setDeptForm({ ...deptForm, description: e.target.value })}
+                                    placeholder="Short description"
+                                    rows={2}
+                                    className="text-sm"
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-[11px] font-semibold text-slate-600">Head</Label>
+                                <Input
+                                    value={deptForm.head}
+                                    onChange={(e) => setDeptForm({ ...deptForm, head: e.target.value })}
+                                    placeholder="Head of department"
+                                    className="h-10 text-sm"
+                                />
+                            </div>
+                        </div>
+                        <DialogFooter className="mt-4 gap-2">
+                            <Button variant="ghost" onClick={() => setDeptFormOpen(false)} className="h-10 font-semibold text-xs gap-1">
+                                <X size={13} /> Cancel
+                            </Button>
+                            <Button onClick={handleSaveDept} className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-lg h-10 px-5 font-bold text-xs border-none">
+                                {editingDept ? "Save changes" : "Create"}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* ── Department Delete Confirm ──────── */}
+                <Dialog open={deptDeleteOpen} onOpenChange={setDeptDeleteOpen}>
+                    <DialogContent className="max-w-sm bg-white rounded-2xl p-6 font-sans">
+                        <DialogHeader className="space-y-1">
+                            <div className="h-10 w-10 bg-rose-50 rounded-xl flex items-center justify-center text-rose-500 mb-2">
+                                <Trash2 size={20} />
+                            </div>
+                            <DialogTitle className="text-lg font-bold text-slate-900">Delete department?</DialogTitle>
+                            <DialogDescription className="text-xs font-medium text-slate-500">
+                                {deptDeleteTarget?.name} will be removed. This may affect employees & positions.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <DialogFooter className="mt-4 gap-2">
+                            <Button variant="ghost" onClick={() => setDeptDeleteOpen(false)} className="h-10 font-semibold text-xs">Cancel</Button>
+                            <Button onClick={handleDeleteDept} className="bg-rose-500 hover:bg-rose-600 text-white rounded-lg h-10 px-5 font-bold text-xs border-none">Delete</Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* ── Position Form Dialog ──────────── */}
+                <Dialog open={posFormOpen} onOpenChange={setPosFormOpen}>
+                    <DialogContent className="max-w-md bg-white rounded-2xl p-6 font-sans">
+                        <DialogHeader className="space-y-1">
+                            <div className="h-10 w-10 bg-[#8B5CF6]/10 rounded-xl flex items-center justify-center text-[#8B5CF6] mb-2">
+                                <Briefcase size={20} />
+                            </div>
+                            <DialogTitle className="text-lg font-bold text-slate-900">
+                                {editingPos ? "Edit position" : "Add position"}
+                            </DialogTitle>
+                            <DialogDescription className="text-xs font-medium text-slate-500">
+                                Job title linked to a department.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="grid gap-3 mt-3">
+                            <div className="space-y-1.5">
+                                <Label className="text-[11px] font-semibold text-slate-600">Title *</Label>
+                                <Input
+                                    value={posForm.title}
+                                    onChange={(e) => setPosForm({ ...posForm, title: e.target.value })}
+                                    placeholder="e.g. Senior Engineer"
+                                    className="h-10 text-sm"
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-[11px] font-semibold text-slate-600">Department {!editingPos && "*"}</Label>
+                                <Select value={posForm.department} onValueChange={(v) => setPosForm({ ...posForm, department: v })}>
+                                    <SelectTrigger className="h-10 text-sm">
+                                        <SelectValue placeholder="Select department" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {departments.map((d) => (
+                                            <SelectItem key={d._id} value={d._id}>{d.name}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-[11px] font-semibold text-slate-600">Level</Label>
+                                <Input
+                                    value={posForm.level}
+                                    onChange={(e) => setPosForm({ ...posForm, level: e.target.value })}
+                                    placeholder="e.g. L3, Senior"
+                                    className="h-10 text-sm"
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-[11px] font-semibold text-slate-600">Description</Label>
+                                <Textarea
+                                    value={posForm.description}
+                                    onChange={(e) => setPosForm({ ...posForm, description: e.target.value })}
+                                    placeholder="Optional role description"
+                                    rows={2}
+                                    className="text-sm"
+                                />
+                            </div>
+                        </div>
+                        <DialogFooter className="mt-4 gap-2">
+                            <Button variant="ghost" onClick={() => setPosFormOpen(false)} className="h-10 font-semibold text-xs gap-1">
+                                <X size={13} /> Cancel
+                            </Button>
+                            <Button onClick={handleSavePos} className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-lg h-10 px-5 font-bold text-xs border-none">
+                                {editingPos ? "Save changes" : "Create"}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* ── Position Delete Confirm ──────── */}
+                <Dialog open={posDeleteOpen} onOpenChange={setPosDeleteOpen}>
+                    <DialogContent className="max-w-sm bg-white rounded-2xl p-6 font-sans">
+                        <DialogHeader className="space-y-1">
+                            <div className="h-10 w-10 bg-rose-50 rounded-xl flex items-center justify-center text-rose-500 mb-2">
+                                <Trash2 size={20} />
+                            </div>
+                            <DialogTitle className="text-lg font-bold text-slate-900">Delete position?</DialogTitle>
+                            <DialogDescription className="text-xs font-medium text-slate-500">
+                                {posDeleteTarget?.title} will be removed.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <DialogFooter className="mt-4 gap-2">
+                            <Button variant="ghost" onClick={() => setPosDeleteOpen(false)} className="h-10 font-semibold text-xs">Cancel</Button>
+                            <Button onClick={handleDeletePos} className="bg-rose-500 hover:bg-rose-600 text-white rounded-lg h-10 px-5 font-bold text-xs border-none">Delete</Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* ── Holiday Form Dialog ──────────── */}
+                <Dialog open={holidayFormOpen} onOpenChange={setHolidayFormOpen}>
+                    <DialogContent className="max-w-md bg-white rounded-2xl p-6 font-sans">
+                        <DialogHeader className="space-y-1">
+                            <div className="h-10 w-10 bg-[#8B5CF6]/10 rounded-xl flex items-center justify-center text-[#8B5CF6] mb-2">
+                                <CalendarDays size={20} />
+                            </div>
+                            <DialogTitle className="text-lg font-bold text-slate-900">
+                                {editingHoliday ? "Edit holiday" : "Add holiday"}
+                            </DialogTitle>
+                            <DialogDescription className="text-xs font-medium text-slate-500">
+                                Company holiday calendar entry.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="grid gap-3 mt-3">
+                            <div className="space-y-1.5">
+                                <Label className="text-[11px] font-semibold text-slate-600">Name *</Label>
+                                <Input
+                                    value={holidayForm.name}
+                                    onChange={(e) => setHolidayForm({ ...holidayForm, name: e.target.value })}
+                                    placeholder="e.g. Independence Day"
+                                    className="h-10 text-sm"
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-[11px] font-semibold text-slate-600">Date *</Label>
+                                <Input
+                                    type="date"
+                                    value={holidayForm.date}
+                                    onChange={(e) => setHolidayForm({ ...holidayForm, date: e.target.value })}
+                                    disabled={!!editingHoliday}
+                                    className="h-10 text-sm"
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-[11px] font-semibold text-slate-600">Type</Label>
+                                <Select value={holidayForm.type} onValueChange={(v) => setHolidayForm({ ...holidayForm, type: v as "National" | "Optional" })}>
+                                    <SelectTrigger className="h-10 text-sm">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="National">National</SelectItem>
+                                        <SelectItem value="Optional">Optional</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="flex items-center justify-between rounded-lg border border-slate-200 p-3">
+                                <div>
+                                    <p className="text-sm font-bold text-slate-900">Paid holiday</p>
+                                    <p className="text-[11px] font-medium text-slate-500">Employees are paid for this day.</p>
+                                </div>
+                                <Switch checked={holidayForm.isPaid} onCheckedChange={(c) => setHolidayForm({ ...holidayForm, isPaid: c })} className="data-[state=checked]:bg-[#8B5CF6]" />
+                            </div>
+                            <div className="flex items-center justify-between rounded-lg border border-slate-200 p-3">
+                                <div>
+                                    <p className="text-sm font-bold text-slate-900">Mandatory</p>
+                                    <p className="text-[11px] font-medium text-slate-500">Cannot be swapped by employees.</p>
+                                </div>
+                                <Switch checked={holidayForm.isMandatory} onCheckedChange={(c) => setHolidayForm({ ...holidayForm, isMandatory: c })} className="data-[state=checked]:bg-[#8B5CF6]" />
+                            </div>
+                        </div>
+                        <DialogFooter className="mt-4 gap-2">
+                            <Button variant="ghost" onClick={() => setHolidayFormOpen(false)} className="h-10 font-semibold text-xs gap-1">
+                                <X size={13} /> Cancel
+                            </Button>
+                            <Button onClick={handleSaveHoliday} className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-lg h-10 px-5 font-bold text-xs border-none">
+                                {editingHoliday ? "Save changes" : "Create"}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* ── Holiday Delete Confirm ──────── */}
+                <Dialog open={holidayDeleteOpen} onOpenChange={setHolidayDeleteOpen}>
+                    <DialogContent className="max-w-sm bg-white rounded-2xl p-6 font-sans">
+                        <DialogHeader className="space-y-1">
+                            <div className="h-10 w-10 bg-rose-50 rounded-xl flex items-center justify-center text-rose-500 mb-2">
+                                <Trash2 size={20} />
+                            </div>
+                            <DialogTitle className="text-lg font-bold text-slate-900">Delete holiday?</DialogTitle>
+                            <DialogDescription className="text-xs font-medium text-slate-500">
+                                {holidayDeleteTarget?.name} ({(holidayDeleteTarget?.date || "").split("T")[0]}) will be removed.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <DialogFooter className="mt-4 gap-2">
+                            <Button variant="ghost" onClick={() => setHolidayDeleteOpen(false)} className="h-10 font-semibold text-xs">Cancel</Button>
+                            <Button onClick={handleDeleteHoliday} className="bg-rose-500 hover:bg-rose-600 text-white rounded-lg h-10 px-5 font-bold text-xs border-none">Delete</Button>
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>

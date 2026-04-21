@@ -9,23 +9,24 @@ import { Label } from "@/shared/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/shared/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/shared/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 import { useToast } from "@/shared/components/ui/use-toast";
+import { validateEscalationRule, type ValidationErrors } from "@/shared/api/settings-validators";
 import {
     ArrowUpCircle,
     Plus,
     Search,
-    Clock,
     ToggleLeft,
     ToggleRight,
-    Bell,
-    AlertTriangle,
-    BarChart3,
     Zap,
     Mail,
     Smartphone,
     Edit,
-    Timer
+    Timer,
+    Trash2,
+    Download,
+    CheckCircle2
 } from "lucide-react";
 
 type EscalationRule = {
@@ -71,10 +72,16 @@ const mockHistory: EscalationHistory[] = [
 
 const EscalationRulesPage = () => {
     const { toast } = useToast();
-    const [rules, setRules] = useState(mockRules);
+    const [rules, setRules] = useState<EscalationRule[]>(mockRules);
+    const [history, setHistory] = useState<EscalationHistory[]>(mockHistory);
     const [searchTerm, setSearchTerm] = useState("");
+    const [moduleFilter, setModuleFilter] = useState<string>("All");
+    const [statusFilter, setStatusFilter] = useState<string>("All");
+    const [historySearch, setHistorySearch] = useState("");
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editRule, setEditRule] = useState<EscalationRule | null>(null);
+    const [deleteRuleId, setDeleteRuleId] = useState<string | null>(null);
+    const [formErrors, setFormErrors] = useState<ValidationErrors>({});
 
     const [form, setForm] = useState({
         module: "Leave" as EscalationRule["module"],
@@ -89,18 +96,53 @@ const EscalationRulesPage = () => {
         reminderFrequency: "Daily",
     });
 
-    const filtered = rules.filter(r =>
-        r.module.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        r.trigger.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        r.id.toLowerCase().includes(searchTerm.toLowerCase())
+    const filtered = rules.filter(r => {
+        const matchesSearch =
+            r.module.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            r.trigger.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            r.id.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesModule = moduleFilter === "All" || r.module === moduleFilter;
+        const matchesStatus = statusFilter === "All" || r.status === statusFilter;
+        return matchesSearch && matchesModule && matchesStatus;
+    });
+
+    const filteredHistory = history.filter(h =>
+        h.module.toLowerCase().includes(historySearch.toLowerCase()) ||
+        h.triggerItem.toLowerCase().includes(historySearch.toLowerCase()) ||
+        h.escalatedTo.toLowerCase().includes(historySearch.toLowerCase())
     );
 
     const toggleRule = (id: string) => {
-        setRules(rules.map(r => r.id === id ? { ...r, status: r.status === "Active" ? "Inactive" as const : "Active" as const } : r));
-        toast({ title: "Rule Updated", description: `Escalation rule ${id} toggled.` });
+        const rule = rules.find(r => r.id === id);
+        const nextStatus = rule?.status === "Active" ? "Inactive" : "Active";
+        setRules(rules.map(r => r.id === id ? { ...r, status: nextStatus as "Active" | "Inactive" } : r));
+        toast({ title: `Rule ${nextStatus}`, description: `Escalation rule ${id} is now ${nextStatus.toLowerCase()}.` });
+    };
+
+    const confirmDelete = () => {
+        if (!deleteRuleId) return;
+        const rule = rules.find(r => r.id === deleteRuleId);
+        setRules(rules.filter(r => r.id !== deleteRuleId));
+        toast({ title: "Rule Deleted", description: `${rule?.id} (${rule?.module}) removed.`, variant: "destructive" });
+        setDeleteRuleId(null);
+    };
+
+    const markResolved = (historyId: string) => {
+        setHistory(history.map(h => h.id === historyId ? { ...h, resolved: true, resolutionTime: h.resolutionTime || "Just now" } : h));
+        toast({ title: "Marked Resolved", description: `Escalation ${historyId} marked as resolved.` });
+    };
+
+    const exportHistory = () => {
+        toast({ title: "Exporting History", description: `Preparing CSV for ${filteredHistory.length} escalation records.` });
     };
 
     const handleSave = () => {
+        const errs = validateEscalationRule(form);
+        setFormErrors(errs);
+        if (Object.keys(errs).length > 0) {
+            toast({ title: "Please fix validation errors", description: Object.values(errs)[0], variant: "destructive" });
+            return;
+        }
         const newRule: EscalationRule = {
             id: editRule?.id || `ESC-${String(rules.length + 1).padStart(3, "0")}`,
             module: form.module,
@@ -120,6 +162,7 @@ const EscalationRulesPage = () => {
         }
         setIsDialogOpen(false);
         setEditRule(null);
+        setFormErrors({});
         toast({ title: editRule ? "Rule Updated" : "Rule Created", description: `Escalation rule for ${form.module} saved.` });
     };
 
@@ -174,10 +217,32 @@ const EscalationRulesPage = () => {
                     </div>
 
                     <TabsContent value="rules" className="flex-1 p-8 space-y-4">
-                        <div className="flex gap-4 items-center">
+                        <div className="flex flex-wrap gap-4 items-center">
                             <div className="relative w-80">
                                 <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
                                 <Input placeholder="Search rules..." className="pl-9 bg-slate-50 border-slate-200" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                            </div>
+                            <Select value={moduleFilter} onValueChange={setModuleFilter}>
+                                <SelectTrigger className="w-44"><SelectValue placeholder="Module" /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="All">All Modules</SelectItem>
+                                    <SelectItem value="Leave">Leave</SelectItem>
+                                    <SelectItem value="Expense">Expense</SelectItem>
+                                    <SelectItem value="Attendance">Attendance</SelectItem>
+                                    <SelectItem value="Payroll">Payroll</SelectItem>
+                                    <SelectItem value="General">General</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <Select value={statusFilter} onValueChange={setStatusFilter}>
+                                <SelectTrigger className="w-40"><SelectValue placeholder="Status" /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="All">All Statuses</SelectItem>
+                                    <SelectItem value="Active">Active</SelectItem>
+                                    <SelectItem value="Inactive">Inactive</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <div className="ml-auto text-xs font-semibold text-slate-500">
+                                {filtered.length} of {rules.length} rules
                             </div>
                         </div>
                         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
@@ -196,6 +261,13 @@ const EscalationRulesPage = () => {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
+                                    {filtered.length === 0 && (
+                                        <TableRow>
+                                            <TableCell colSpan={9} className="text-center py-12 text-slate-400 font-medium">
+                                                No escalation rules match your filters.
+                                            </TableCell>
+                                        </TableRow>
+                                    )}
                                     {filtered.map(rule => (
                                         <TableRow key={rule.id} className="hover:bg-slate-50/50">
                                             <TableCell>
@@ -227,15 +299,18 @@ const EscalationRulesPage = () => {
                                                 </Badge>
                                             </TableCell>
                                             <TableCell className="text-right">
-                                                <div className="flex justify-end gap-2">
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600" onClick={() => openEdit(rule)}>
+                                                <div className="flex justify-end gap-1">
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-indigo-600" onClick={() => openEdit(rule)} title="Edit rule">
                                                         <Edit size={14} />
                                                     </Button>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => toggleRule(rule.id)}>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => toggleRule(rule.id)} title="Toggle status">
                                                         {rule.status === "Active"
                                                             ? <ToggleRight size={18} className="text-emerald-500" />
                                                             : <ToggleLeft size={18} className="text-slate-400" />
                                                         }
+                                                    </Button>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-rose-600 hover:bg-rose-50" onClick={() => setDeleteRuleId(rule.id)} title="Delete rule">
+                                                        <Trash2 size={14} />
                                                     </Button>
                                                 </div>
                                             </TableCell>
@@ -246,7 +321,16 @@ const EscalationRulesPage = () => {
                         </div>
                     </TabsContent>
 
-                    <TabsContent value="history" className="flex-1 p-8">
+                    <TabsContent value="history" className="flex-1 p-8 space-y-4">
+                        <div className="flex gap-4 items-center">
+                            <div className="relative w-80">
+                                <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                                <Input placeholder="Search history..." className="pl-9 bg-slate-50 border-slate-200" value={historySearch} onChange={e => setHistorySearch(e.target.value)} />
+                            </div>
+                            <Button variant="outline" onClick={exportHistory} className="ml-auto">
+                                <Download size={14} className="mr-2" /> Export CSV
+                            </Button>
+                        </div>
                         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                             <Table>
                                 <TableHeader className="bg-slate-50">
@@ -258,10 +342,18 @@ const EscalationRulesPage = () => {
                                         <TableHead className="font-bold text-slate-500 uppercase text-xs">Level</TableHead>
                                         <TableHead className="font-bold text-slate-500 uppercase text-xs">Status</TableHead>
                                         <TableHead className="font-bold text-slate-500 uppercase text-xs">Resolution Time</TableHead>
+                                        <TableHead className="font-bold text-slate-500 uppercase text-xs text-right">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {mockHistory.map(h => (
+                                    {filteredHistory.length === 0 && (
+                                        <TableRow>
+                                            <TableCell colSpan={8} className="text-center py-12 text-slate-400 font-medium">
+                                                No escalation events match your search.
+                                            </TableCell>
+                                        </TableRow>
+                                    )}
+                                    {filteredHistory.map(h => (
                                         <TableRow key={h.id} className="hover:bg-slate-50/50">
                                             <TableCell className="text-sm text-slate-500">{h.date}</TableCell>
                                             <TableCell><Badge variant="outline" className="bg-blue-50 text-blue-600 border-blue-200">{h.module}</Badge></TableCell>
@@ -278,6 +370,15 @@ const EscalationRulesPage = () => {
                                                 </Badge>
                                             </TableCell>
                                             <TableCell className="text-sm text-slate-500">{h.resolutionTime || "-"}</TableCell>
+                                            <TableCell className="text-right">
+                                                {!h.resolved ? (
+                                                    <Button size="sm" variant="outline" className="text-emerald-600 border-emerald-200 hover:bg-emerald-50" onClick={() => markResolved(h.id)}>
+                                                        <CheckCircle2 size={14} className="mr-1" /> Resolve
+                                                    </Button>
+                                                ) : (
+                                                    <span className="text-xs text-slate-300">—</span>
+                                                )}
+                                            </TableCell>
                                         </TableRow>
                                     ))}
                                 </TableBody>
@@ -327,40 +428,47 @@ const EscalationRulesPage = () => {
                                 </Select>
                             </div>
                             <div className="space-y-2">
-                                <Label className="text-xs font-bold text-slate-500">Trigger After (days)</Label>
-                                <Input type="number" min={1} value={form.triggerDays} onChange={e => setForm({ ...form, triggerDays: parseInt(e.target.value) || 1 })} />
+                                <Label className="text-xs font-bold text-slate-500">Trigger After (days) *</Label>
+                                <Input type="number" min={1} value={form.triggerDays} onChange={e => setForm({ ...form, triggerDays: parseInt(e.target.value) || 1 })} className={formErrors.triggerDays ? "border-rose-400" : ""} />
+                                {formErrors.triggerDays && <p className="text-[11px] text-rose-600 font-medium">{formErrors.triggerDays}</p>}
                             </div>
                         </div>
                         <div className="bg-slate-50 rounded-xl p-4 space-y-3 border border-slate-200">
                             <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Escalation Chain</p>
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="space-y-1">
-                                    <Label className="text-[10px] text-slate-400">L1 Escalatee</Label>
-                                    <Input value={form.l1Escalatee} onChange={e => setForm({ ...form, l1Escalatee: e.target.value })} className="h-9" />
+                                    <Label className="text-[10px] text-slate-400">L1 Escalatee *</Label>
+                                    <Input value={form.l1Escalatee} onChange={e => setForm({ ...form, l1Escalatee: e.target.value })} className={`h-9 ${formErrors.l1Escalatee ? "border-rose-400" : ""}`} />
+                                    {formErrors.l1Escalatee && <p className="text-[10px] text-rose-600">{formErrors.l1Escalatee}</p>}
                                 </div>
                                 <div className="space-y-1">
-                                    <Label className="text-[10px] text-slate-400">After (days)</Label>
-                                    <Input type="number" value={form.l1Days} onChange={e => setForm({ ...form, l1Days: parseInt(e.target.value) || 1 })} className="h-9" />
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="space-y-1">
-                                    <Label className="text-[10px] text-slate-400">L2 Escalatee</Label>
-                                    <Input value={form.l2Escalatee} onChange={e => setForm({ ...form, l2Escalatee: e.target.value })} className="h-9" />
-                                </div>
-                                <div className="space-y-1">
-                                    <Label className="text-[10px] text-slate-400">After (days)</Label>
-                                    <Input type="number" value={form.l2Days} onChange={e => setForm({ ...form, l2Days: parseInt(e.target.value) || 1 })} className="h-9" />
+                                    <Label className="text-[10px] text-slate-400">After (days) *</Label>
+                                    <Input type="number" min={1} value={form.l1Days} onChange={e => setForm({ ...form, l1Days: parseInt(e.target.value) || 1 })} className={`h-9 ${formErrors.l1Days ? "border-rose-400" : ""}`} />
+                                    {formErrors.l1Days && <p className="text-[10px] text-rose-600">{formErrors.l1Days}</p>}
                                 </div>
                             </div>
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="space-y-1">
-                                    <Label className="text-[10px] text-slate-400">L3 Escalatee</Label>
-                                    <Input value={form.l3Escalatee} onChange={e => setForm({ ...form, l3Escalatee: e.target.value })} className="h-9" />
+                                    <Label className="text-[10px] text-slate-400">L2 Escalatee *</Label>
+                                    <Input value={form.l2Escalatee} onChange={e => setForm({ ...form, l2Escalatee: e.target.value })} className={`h-9 ${formErrors.l2Escalatee ? "border-rose-400" : ""}`} />
+                                    {formErrors.l2Escalatee && <p className="text-[10px] text-rose-600">{formErrors.l2Escalatee}</p>}
                                 </div>
                                 <div className="space-y-1">
-                                    <Label className="text-[10px] text-slate-400">After (days)</Label>
-                                    <Input type="number" value={form.l3Days} onChange={e => setForm({ ...form, l3Days: parseInt(e.target.value) || 1 })} className="h-9" />
+                                    <Label className="text-[10px] text-slate-400">After (days) *</Label>
+                                    <Input type="number" min={1} value={form.l2Days} onChange={e => setForm({ ...form, l2Days: parseInt(e.target.value) || 1 })} className={`h-9 ${formErrors.l2Days ? "border-rose-400" : ""}`} />
+                                    {formErrors.l2Days && <p className="text-[10px] text-rose-600">{formErrors.l2Days}</p>}
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-1">
+                                    <Label className="text-[10px] text-slate-400">L3 Escalatee *</Label>
+                                    <Input value={form.l3Escalatee} onChange={e => setForm({ ...form, l3Escalatee: e.target.value })} className={`h-9 ${formErrors.l3Escalatee ? "border-rose-400" : ""}`} />
+                                    {formErrors.l3Escalatee && <p className="text-[10px] text-rose-600">{formErrors.l3Escalatee}</p>}
+                                </div>
+                                <div className="space-y-1">
+                                    <Label className="text-[10px] text-slate-400">After (days) *</Label>
+                                    <Input type="number" min={1} value={form.l3Days} onChange={e => setForm({ ...form, l3Days: parseInt(e.target.value) || 1 })} className={`h-9 ${formErrors.l3Days ? "border-rose-400" : ""}`} />
+                                    {formErrors.l3Days && <p className="text-[10px] text-rose-600">{formErrors.l3Days}</p>}
                                 </div>
                             </div>
                         </div>
@@ -396,6 +504,21 @@ const EscalationRulesPage = () => {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            <AlertDialog open={!!deleteRuleId} onOpenChange={v => !v && setDeleteRuleId(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete this escalation rule?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This rule will stop firing immediately. Historical escalations will not be affected.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction className="bg-rose-600 hover:bg-rose-700" onClick={confirmDelete}>Delete</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 };

@@ -138,6 +138,7 @@ interface LifecycleState {
     // Candidate Actions
     addCandidate: (candidate: Candidate) => void;
     removeCandidate: (id: string) => void;
+    updateCandidate: (id: string, updates: Partial<Candidate>) => void;
     updateCandidateStatus: (id: string, status: Candidate['status']) => void;
     moveToOnboarding: (id: string, name: string) => void;
 
@@ -182,6 +183,7 @@ interface LifecycleState {
 
     // Offboarding Actions
     initiateExit: (id: string, reason: string, lwd: string) => void;
+    cancelExit: (id: string) => void;
     approveClearance: (id: string, dept: keyof ClearanceStatus) => void;
     completeClearance: (id: string) => void;
     finalizeSettlement: (id: string, amount: number) => void;
@@ -303,6 +305,9 @@ export const useLifecycleStore = create<LifecycleState>()(
             })),
             updateCandidateStatus: (id, status) => set((state) => ({
                 candidates: state.candidates.map(c => c.id === id ? { ...c, status } : c)
+            })),
+            updateCandidate: (id, updates) => set((state) => ({
+                candidates: state.candidates.map(c => c.id === id ? { ...c, ...updates } : c)
             })),
             moveToOnboarding: (id, name) => set((state) => {
                 const candidate = state.candidates.find(c => c.id === id);
@@ -605,6 +610,32 @@ export const useLifecycleStore = create<LifecycleState>()(
                         exitReason: reason,
                         lwd,
                         clearance: { it: false, finance: false, admin: false, manager: false }
+                    } : e),
+                    history: [historyEntry, ...state.history]
+                };
+            }),
+
+            cancelExit: (id) => set((state) => {
+                const employee = state.employees.find(e => e.id === id);
+                if (!employee || employee.status !== 'Notice Period') return state;
+
+                const historyEntry: HistoryLog = {
+                    id: `H${Date.now()}`,
+                    title: `Exit Withdrawn: ${employee.name}`,
+                    description: `Resignation withdrawn. Employee returned to Active status.`,
+                    date: new Date().toISOString().split('T')[0],
+                    type: 'neutral',
+                    employeeId: employee.id,
+                    employeeName: employee.name
+                };
+
+                return {
+                    employees: state.employees.map(e => e.id === id ? {
+                        ...e,
+                        status: 'Active',
+                        exitReason: undefined,
+                        lwd: undefined,
+                        clearance: undefined,
                     } : e),
                     history: [historyEntry, ...state.history]
                 };

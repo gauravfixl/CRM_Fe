@@ -39,6 +39,8 @@ interface AttendanceState {
     rejectBulkRegularization: (ids: string[]) => void;
     getLogsByEmployee: (empId: string) => AttendanceLog[];
     addBulkLogs: (logs: AttendanceLog[]) => void;
+    updateLog: (logId: string, patch: Partial<AttendanceLog>) => void;
+    deleteLog: (logId: string) => void;
 
     // Backend API Sync Methods
     loadAttendanceFromApi: () => Promise<void>;
@@ -161,6 +163,9 @@ export const useAttendanceStore = create<AttendanceState>()(
                         checkInTime: now.toISOString()
                     };
                 });
+
+                axios.post("/hrm/attendance/punch", { employeeId: empId, punchType: "IN" })
+                    .catch(err => console.warn("clockIn sync skipped:", err?.response?.status ?? err?.message));
             },
 
             clockOut: (empId) => {
@@ -178,32 +183,55 @@ export const useAttendanceStore = create<AttendanceState>()(
                     isCheckedIn: false,
                     checkInTime: null
                 }));
+
+                axios.post("/hrm/attendance/punch", { employeeId: empId, punchType: "OUT" })
+                    .catch(err => console.warn("clockOut sync skipped:", err?.response?.status ?? err?.message));
             },
 
             requestRegularization: (logId, reason) => set((state) => ({
                 logs: state.logs.map(l => l.id === logId ? { ...l, regularizationStatus: "Pending", remark: reason } : l)
             })),
 
-            approveRegularization: (logId) => set((state) => ({
-                logs: state.logs.map(l => l.id === logId ? { ...l, regularizationStatus: "Approved", isDiscrepancy: false } : l)
-            })),
+            approveRegularization: (logId) => {
+                set((state) => ({
+                    logs: state.logs.map(l => l.id === logId ? { ...l, regularizationStatus: "Approved", isDiscrepancy: false } : l)
+                }));
+                approveRegularizationApi(logId).catch(err => console.warn("approve sync skipped:", err?.response?.status ?? err?.message));
+            },
 
-            rejectRegularization: (logId) => set((state) => ({
-                logs: state.logs.map(l => l.id === logId ? { ...l, regularizationStatus: "Rejected" } : l)
-            })),
+            rejectRegularization: (logId) => {
+                set((state) => ({
+                    logs: state.logs.map(l => l.id === logId ? { ...l, regularizationStatus: "Rejected" } : l)
+                }));
+                rejectRegularizationApi(logId, "Rejected by HR admin").catch(err => console.warn("reject sync skipped:", err?.response?.status ?? err?.message));
+            },
 
-            approveBulkRegularization: (ids) => set((state) => ({
-                logs: state.logs.map(l => ids.includes(l.id) ? { ...l, regularizationStatus: "Approved", isDiscrepancy: false } : l)
-            })),
+            approveBulkRegularization: (ids) => {
+                set((state) => ({
+                    logs: state.logs.map(l => ids.includes(l.id) ? { ...l, regularizationStatus: "Approved", isDiscrepancy: false } : l)
+                }));
+                ids.forEach(id => approveRegularizationApi(id).catch(err => console.warn(`bulk approve ${id} sync skipped:`, err?.response?.status ?? err?.message)));
+            },
 
-            rejectBulkRegularization: (ids) => set((state) => ({
-                logs: state.logs.map(l => ids.includes(l.id) ? { ...l, regularizationStatus: "Rejected" } : l)
-            })),
+            rejectBulkRegularization: (ids) => {
+                set((state) => ({
+                    logs: state.logs.map(l => ids.includes(l.id) ? { ...l, regularizationStatus: "Rejected" } : l)
+                }));
+                ids.forEach(id => rejectRegularizationApi(id, "Rejected by HR admin").catch(err => console.warn(`bulk reject ${id} sync skipped:`, err?.response?.status ?? err?.message)));
+            },
 
             getLogsByEmployee: (empId) => get().logs.filter(l => l.empId === empId),
 
             addBulkLogs: (newLogs) => set((state) => ({
                 logs: [...newLogs, ...state.logs]
+            })),
+
+            updateLog: (logId, patch) => set((state) => ({
+                logs: state.logs.map(l => l.id === logId ? { ...l, ...patch } : l)
+            })),
+
+            deleteLog: (logId) => set((state) => ({
+                logs: state.logs.filter(l => l.id !== logId)
             })),
 
             // ==================== Backend API Sync Methods ====================
@@ -254,7 +282,11 @@ export const useAttendanceStore = create<AttendanceState>()(
 
             syncRegularizationToApi: async (logId, reason) => {
                 try {
-                    await requestRegularizationApi({ attendanceId: logId, reason, correctedPunchIn: "", correctedPunchOut: "" });
+                    // The hook expects attendanceDate (not logId). We look up the log to get the date;
+                    // if not found, fall back to today's date.
+                    const log = get().logs.find(l => l.id === logId);
+                    const attendanceDate = log?.date ?? new Date().toISOString().split("T")[0];
+                    await requestRegularizationApi({ attendanceDate, reason });
                 } catch (err) {
                     console.warn("Could not sync regularization to API:", err);
                 }

@@ -59,6 +59,7 @@ interface AttendanceSettingsState {
 
     // Holiday Management
     addHoliday: (holiday: Omit<Holiday, 'id'>) => void;
+    updateHoliday: (id: string, updates: Partial<Holiday>) => void;
     removeHoliday: (id: string) => void;
 
     // Roster Management
@@ -187,6 +188,10 @@ export const useAttendanceSettingsStore = create<AttendanceSettingsState>()(
 
             addHoliday: (holidayData) => set((state) => ({
                 holidays: [...state.holidays, { ...holidayData, id: `h-${Date.now()}` }]
+            })),
+
+            updateHoliday: (id, updates) => set((state) => ({
+                holidays: state.holidays.map(h => h.id === id ? { ...h, ...updates } : h)
             })),
 
             removeHoliday: (id) => set((state) => ({

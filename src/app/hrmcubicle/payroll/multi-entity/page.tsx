@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useMemo } from "react"
+import React, { useState, useMemo, useEffect } from "react"
 import {
     Building2,
     Plus,
@@ -97,6 +97,7 @@ import {
     type EntityComplianceSummary,
 } from "@/shared/data/salary-store"
 import { usePayrollStore } from "@/shared/data/payroll-store"
+import { getAllEmployees } from "@/modules/hrm/hooks/hrmHooks"
 import { motion } from "framer-motion"
 
 const formatINR = (amt: number) => `₹${Math.round(amt || 0).toLocaleString("en-IN")}`
@@ -186,6 +187,23 @@ const MultiEntityPage = () => {
     } = useSalaryStore()
 
     const payrollEmployees = usePayrollStore((s) => s.payrollEmployees)
+
+    // ─ Backend employees (real data) ─
+    type BackendEmployee = { _id: string; employeeCode?: string; firstName?: string; lastName?: string; email?: string; departmentId?: { name?: string } | string; positionId?: { name?: string } | string }
+    const [backendEmployees, setBackendEmployees] = useState<BackendEmployee[]>([])
+    useEffect(() => {
+        let cancelled = false
+        ;(async () => {
+            try {
+                const res: any = await getAllEmployees()
+                const list: BackendEmployee[] = res?.data?.employees ?? res?.data?.data?.employees ?? res?.data ?? []
+                if (!cancelled) setBackendEmployees(Array.isArray(list) ? list : [])
+            } catch {
+                // Silently ignore — fallback to store employees
+            }
+        })()
+        return () => { cancelled = true }
+    }, [])
 
     // ── UI state ───────────────────────────────────────────
     const [activeTab, setActiveTab] = useState<"entities" | "locations" | "registrations" | "payroll-status" | "transfers">("entities")
@@ -586,17 +604,36 @@ const MultiEntityPage = () => {
     }
 
     const employeeMatches = useMemo(() => {
-        if (!transferEmpQuery.trim()) return [] as typeof payrollEmployees
+        if (!transferEmpQuery.trim()) return [] as { empCode: string; name: string; dept?: string }[]
         const q = transferEmpQuery.toLowerCase()
-        // dedupe by empCode
         const seen = new Set<string>()
-        return payrollEmployees.filter((e) => {
-            if (seen.has(e.empCode)) return false
-            const matches = e.name.toLowerCase().includes(q) || e.empCode.toLowerCase().includes(q)
-            if (matches) { seen.add(e.empCode); return true }
-            return false
-        }).slice(0, 8)
-    }, [transferEmpQuery, payrollEmployees])
+        const out: { empCode: string; name: string; dept?: string }[] = []
+        // Prefer backend employees (real data)
+        for (const e of backendEmployees) {
+            const code = e.employeeCode ?? e._id
+            if (seen.has(code)) continue
+            const fullName = `${e.firstName ?? ""} ${e.lastName ?? ""}`.trim()
+            if (!fullName) continue
+            const dept = typeof e.departmentId === "object" && e.departmentId ? e.departmentId.name : undefined
+            if (fullName.toLowerCase().includes(q) || code.toLowerCase().includes(q)) {
+                seen.add(code)
+                out.push({ empCode: code, name: fullName, dept })
+                if (out.length >= 8) break
+            }
+        }
+        // Fallback: payroll store employees (for dev-mode when backend empty)
+        if (out.length < 8) {
+            for (const e of payrollEmployees) {
+                if (seen.has(e.empCode)) continue
+                if (e.name.toLowerCase().includes(q) || e.empCode.toLowerCase().includes(q)) {
+                    seen.add(e.empCode)
+                    out.push({ empCode: e.empCode, name: e.name, dept: e.dept })
+                    if (out.length >= 8) break
+                }
+            }
+        }
+        return out
+    }, [transferEmpQuery, payrollEmployees, backendEmployees])
 
     const handleConfirmTransfer = () => {
         if (!transferEmpId || !transferEmpName) {
@@ -1854,7 +1891,7 @@ const MultiEntityPage = () => {
                                         <div className="absolute z-40 left-0 right-0 top-[44px] bg-white border border-slate-200 rounded-xl shadow-lg max-h-[240px] overflow-y-auto">
                                             {employeeMatches.map((emp) => (
                                                 <button
-                                                    key={emp.id}
+                                                    key={emp.empCode}
                                                     type="button"
                                                     onClick={() => { setTransferEmpId(emp.empCode); setTransferEmpName(emp.name); setTransferEmpQuery(`${emp.empCode} — ${emp.name}`) }}
                                                     className="w-full text-left px-3 py-2 hover:bg-slate-50 border-b border-slate-100 last:border-none flex items-center gap-2"

@@ -3,23 +3,19 @@
 import React, { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  BarChart3,
   Download,
   Search,
-  Filter,
   ChevronDown,
   ChevronUp,
-  ArrowLeftRight,
   AlertTriangle,
-  CheckCircle2,
-  Users,
-  TrendingUp,
-  Percent,
-  History,
   RotateCcw,
-  Eye,
-  X,
+  History,
+  Plus,
+  Edit,
+  Trash2,
+  AlertCircle,
 } from "lucide-react";
+import { isNumberInRange, maxLength, required, type ValidationErrors } from "@/shared/utils/validators";
 import { Card, CardContent } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
 import { Badge } from "@/shared/components/ui/badge";
@@ -39,6 +35,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/shared/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/shared/components/ui/alert-dialog";
+import { Label } from "@/shared/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -69,7 +76,7 @@ const CATEGORIES = [
   { label: "Exceptional", expected: 5, color: "bg-purple-500", textColor: "text-purple-700", bgLight: "bg-purple-50" },
 ];
 
-const DEPARTMENTS = ["All Departments", "Engineering", "Marketing", "Sales", "HR", "Finance"];
+const DEPARTMENTS = ["Engineering", "Marketing", "Sales", "HR", "Finance"];
 
 const mockEmployees: CalibrationEmployee[] = [
   { id: "E001", name: "Aarav Sharma", department: "Engineering", managerRating: 4.5, selfRating: 4.2, peerRating: 4.0, finalRating: 4.3, percentile: 88, category: "Exceeds Expectations", ratingHistory: [{ cycle: "H1 2025", rating: 4.0 }, { cycle: "H2 2025", rating: 4.3 }] },
@@ -86,23 +93,46 @@ const mockEmployees: CalibrationEmployee[] = [
   { id: "E012", name: "Ritu Agarwal", department: "HR", managerRating: 2.5, selfRating: 3.0, peerRating: 2.3, finalRating: 2.5, percentile: 18, category: "Below Expectations", ratingHistory: [{ cycle: "H1 2025", rating: 2.8 }, { cycle: "H2 2025", rating: 2.5 }] },
 ];
 
+const categoryFromRating = (r: number) => {
+  if (r < 2) return "Needs Improvement";
+  if (r < 3) return "Below Expectations";
+  if (r < 4) return "Meets Expectations";
+  if (r < 4.5) return "Exceeds Expectations";
+  return "Exceptional";
+};
+
+const emptyEmployee: Omit<CalibrationEmployee, "id"> = {
+  name: "",
+  department: "Engineering",
+  managerRating: 3,
+  selfRating: 3,
+  peerRating: 3,
+  finalRating: 3,
+  percentile: 50,
+  category: "Meets Expectations",
+  ratingHistory: [],
+};
+
 const BellCurveCalibrationPage = () => {
   const { toast } = useToast();
   const [employees, setEmployees] = useState<CalibrationEmployee[]>(mockEmployees);
   const [searchTerm, setSearchTerm] = useState("");
-  const [deptFilter, setDeptFilter] = useState("All Departments");
   const [forceDistribution, setForceDistribution] = useState(false);
   const [historyDialog, setHistoryDialog] = useState<CalibrationEmployee | null>(null);
+  const [editDialog, setEditDialog] = useState<CalibrationEmployee | null>(null);
+  const [addDialog, setAddDialog] = useState(false);
+  const [deleteDialog, setDeleteDialog] = useState<CalibrationEmployee | null>(null);
+  const [formData, setFormData] = useState<Omit<CalibrationEmployee, "id">>(emptyEmployee);
   const [activeDeptTab, setActiveDeptTab] = useState("all");
+  const [formErrors, setFormErrors] = useState<ValidationErrors>({});
 
   const filteredEmployees = useMemo(() => {
     return employees.filter((e) => {
       const matchSearch = e.name.toLowerCase().includes(searchTerm.toLowerCase()) || e.id.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchDept = deptFilter === "All Departments" || e.department === deptFilter;
       const matchTab = activeDeptTab === "all" || e.department.toLowerCase() === activeDeptTab;
-      return matchSearch && matchDept && matchTab;
+      return matchSearch && matchTab;
     });
-  }, [employees, searchTerm, deptFilter, activeDeptTab]);
+  }, [employees, searchTerm, activeDeptTab]);
 
   const distribution = useMemo(() => {
     const total = filteredEmployees.length;
@@ -127,11 +157,113 @@ const BellCurveCalibrationPage = () => {
   };
 
   const handleNormalize = () => {
-    toast({ title: "Normalization Applied", description: "Ratings have been normalized to match expected bell curve distribution." });
+    // Re-bucket employees by their current final rating to enforce consistency
+    const normalized = employees.map((e) => ({
+      ...e,
+      category: categoryFromRating(e.finalRating),
+    }));
+    // Nudge to target distribution by shuffling borderline cases
+    const total = normalized.length;
+    const targetCount = CATEGORIES.reduce<Record<string, number>>((acc, c) => {
+      acc[c.label] = Math.round((c.expected / 100) * total);
+      return acc;
+    }, {});
+    const byCat: Record<string, CalibrationEmployee[]> = {};
+    normalized.forEach((e) => {
+      (byCat[e.category] ||= []).push(e);
+    });
+    // Sort each bucket by finalRating desc to find redistribution candidates
+    Object.keys(byCat).forEach((k) => byCat[k].sort((a, b) => b.finalRating - a.finalRating));
+    const orderedCats = CATEGORIES.map((c) => c.label);
+    for (let i = 0; i < orderedCats.length; i++) {
+      const cat = orderedCats[i];
+      const overflow = (byCat[cat] || []).length - (targetCount[cat] || 0);
+      if (overflow > 0 && i < orderedCats.length - 1) {
+        const moved = byCat[cat].splice(byCat[cat].length - overflow, overflow);
+        moved.forEach((m) => (m.category = orderedCats[i + 1]));
+        byCat[orderedCats[i + 1]] = [...(byCat[orderedCats[i + 1]] || []), ...moved];
+      }
+    }
+    setEmployees(Object.values(byCat).flat());
+    toast({ title: "Normalization Applied", description: "Ratings re-bucketed to match the target bell curve." });
   };
 
   const handleExport = () => {
-    toast({ title: "Export Started", description: "Calibration report is being generated." });
+    const rows = [
+      ["ID", "Name", "Department", "Manager", "Self", "Peer", "Final", "Percentile", "Category"],
+      ...filteredEmployees.map((e) => [
+        e.id,
+        e.name,
+        e.department,
+        e.managerRating.toFixed(1),
+        e.selfRating.toFixed(1),
+        e.peerRating.toFixed(1),
+        e.finalRating.toFixed(1),
+        `P${e.percentile}`,
+        e.category,
+      ]),
+    ];
+    const csv = rows.map((r) => r.map((c) => `"${c}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `calibration_report_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast({ title: "Report Exported", description: `${filteredEmployees.length} records exported.` });
+  };
+
+  const validateEmployee = (): ValidationErrors => {
+    const e: ValidationErrors = {};
+    const n = required(formData.name, "Employee name");
+    if (n) e.name = n;
+    else if (maxLength(formData.name, 100, "Name")) e.name = maxLength(formData.name, 100, "Name")!;
+    const mr = isNumberInRange(formData.managerRating, 0, 5, "Manager rating");
+    if (mr) e.managerRating = mr;
+    const sr = isNumberInRange(formData.selfRating, 0, 5, "Self rating");
+    if (sr) e.selfRating = sr;
+    const pr = isNumberInRange(formData.peerRating, 0, 5, "Peer rating");
+    if (pr) e.peerRating = pr;
+    const fr = isNumberInRange(formData.finalRating, 0, 5, "Final rating");
+    if (fr) e.finalRating = fr;
+    const pc = isNumberInRange(formData.percentile, 0, 100, "Percentile");
+    if (pc) e.percentile = pc;
+    return e;
+  };
+
+  const handleSaveEmployee = (isNew: boolean) => {
+    const v = validateEmployee();
+    setFormErrors(v);
+    if (Object.keys(v).length > 0) {
+      toast({ title: "Validation failed", description: "Please correct the highlighted fields.", variant: "destructive" });
+      return;
+    }
+    const category = categoryFromRating(formData.finalRating);
+    if (isNew) {
+      const id = `E${String(employees.length + 13).padStart(3, "0")}`;
+      setEmployees([
+        ...employees,
+        { ...formData, id, category, ratingHistory: formData.ratingHistory.length ? formData.ratingHistory : [{ cycle: "H1 2025", rating: formData.finalRating }] },
+      ]);
+      toast({ title: "Employee Added", description: `${formData.name} joined calibration pool.` });
+      setAddDialog(false);
+    } else if (editDialog) {
+      setEmployees(employees.map((e) => (e.id === editDialog.id ? { ...formData, id: editDialog.id, category } : e)));
+      toast({ title: "Employee Updated", description: `${formData.name}'s ratings saved.` });
+      setEditDialog(null);
+    }
+    setFormData(emptyEmployee);
+    setFormErrors({});
+  };
+
+  const handleDelete = () => {
+    if (!deleteDialog) return;
+    setEmployees(employees.filter((e) => e.id !== deleteDialog.id));
+    toast({ title: "Removed", description: `${deleteDialog.name} removed from pool.` });
+    setDeleteDialog(null);
   };
 
   const bellCurvePoints = [5, 15, 60, 15, 5];
@@ -146,6 +278,9 @@ const BellCurveCalibrationPage = () => {
           <p className="text-slate-500 text-sm mt-1">Calibrate performance ratings to match expected distribution</p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" onClick={() => { setFormData(emptyEmployee); setFormErrors({}); setAddDialog(true); }} className="gap-2">
+            <Plus className="w-4 h-4" /> Add Employee
+          </Button>
           <Button variant="outline" onClick={handleNormalize} className="gap-2">
             <RotateCcw className="w-4 h-4" /> Normalize
           </Button>
@@ -287,6 +422,37 @@ const BellCurveCalibrationPage = () => {
                             <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => setHistoryDialog(emp)} title="View History">
                               <History className="w-4 h-4" />
                             </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 w-7 p-0 text-indigo-500"
+                              title="Edit"
+                              onClick={() => {
+                                setEditDialog(emp);
+                                setFormData({
+                                  name: emp.name,
+                                  department: emp.department,
+                                  managerRating: emp.managerRating,
+                                  selfRating: emp.selfRating,
+                                  peerRating: emp.peerRating,
+                                  finalRating: emp.finalRating,
+                                  percentile: emp.percentile,
+                                  category: emp.category,
+                                  ratingHistory: emp.ratingHistory,
+                                });
+                              }}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 w-7 p-0 text-rose-500"
+                              title="Remove"
+                              onClick={() => setDeleteDialog(emp)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
                           </div>
                         </td>
                       </motion.tr>
@@ -336,6 +502,122 @@ const BellCurveCalibrationPage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Add / Edit Employee Dialog */}
+      <Dialog
+        open={addDialog || !!editDialog}
+        onOpenChange={(open) => { if (!open) { setAddDialog(false); setEditDialog(null); setFormData(emptyEmployee); setFormErrors({}); } }}
+      >
+        <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editDialog ? `Edit ${editDialog.name}` : "Add Calibration Employee"}</DialogTitle>
+            <DialogDescription>Enter ratings; category auto-computes from final rating.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Name *</Label>
+                <Input maxLength={100} value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className={formErrors.name ? "border-rose-400" : ""} />
+                {formErrors.name && <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 mt-1"><AlertCircle size={10} /> {formErrors.name}</p>}
+              </div>
+              <div>
+                <Label>Department</Label>
+                <Select value={formData.department} onValueChange={(v) => setFormData({ ...formData, department: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {DEPARTMENTS.map((d) => (
+                      <SelectItem key={d} value={d}>{d}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <Label>Manager Rating</Label>
+                <Input
+                  type="number" step="0.1" min={0} max={5}
+                  value={formData.managerRating}
+                  onChange={(e) => setFormData({ ...formData, managerRating: Math.max(0, Math.min(5, parseFloat(e.target.value) || 0)) })}
+                  className={formErrors.managerRating ? "border-rose-400" : ""}
+                />
+                {formErrors.managerRating && <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 mt-1"><AlertCircle size={10} /> {formErrors.managerRating}</p>}
+              </div>
+              <div>
+                <Label>Self Rating</Label>
+                <Input
+                  type="number" step="0.1" min={0} max={5}
+                  value={formData.selfRating}
+                  onChange={(e) => setFormData({ ...formData, selfRating: Math.max(0, Math.min(5, parseFloat(e.target.value) || 0)) })}
+                  className={formErrors.selfRating ? "border-rose-400" : ""}
+                />
+                {formErrors.selfRating && <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 mt-1"><AlertCircle size={10} /> {formErrors.selfRating}</p>}
+              </div>
+              <div>
+                <Label>Peer Rating</Label>
+                <Input
+                  type="number" step="0.1" min={0} max={5}
+                  value={formData.peerRating}
+                  onChange={(e) => setFormData({ ...formData, peerRating: Math.max(0, Math.min(5, parseFloat(e.target.value) || 0)) })}
+                  className={formErrors.peerRating ? "border-rose-400" : ""}
+                />
+                {formErrors.peerRating && <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 mt-1"><AlertCircle size={10} /> {formErrors.peerRating}</p>}
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Final Rating</Label>
+                <Input
+                  type="number" step="0.1" min={0} max={5}
+                  value={formData.finalRating}
+                  onChange={(e) => setFormData({ ...formData, finalRating: Math.max(0, Math.min(5, parseFloat(e.target.value) || 0)) })}
+                  className={formErrors.finalRating ? "border-rose-400" : ""}
+                />
+                {formErrors.finalRating && <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 mt-1"><AlertCircle size={10} /> {formErrors.finalRating}</p>}
+              </div>
+              <div>
+                <Label>Percentile</Label>
+                <Input
+                  type="number" min={0} max={100}
+                  value={formData.percentile}
+                  onChange={(e) => setFormData({ ...formData, percentile: Math.max(0, Math.min(100, parseInt(e.target.value) || 0)) })}
+                  className={formErrors.percentile ? "border-rose-400" : ""}
+                />
+                {formErrors.percentile && <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 mt-1"><AlertCircle size={10} /> {formErrors.percentile}</p>}
+              </div>
+            </div>
+            <div className="p-3 bg-slate-50 rounded-lg">
+              <p className="text-xs text-slate-500">
+                Auto-bucketed category: <strong>{categoryFromRating(formData.finalRating)}</strong>
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setAddDialog(false); setEditDialog(null); setFormData(emptyEmployee); setFormErrors({}); }}>Cancel</Button>
+            <Button className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white" onClick={() => handleSaveEmployee(!editDialog)}>
+              {editDialog ? "Save Changes" : "Add Employee"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deleteDialog} onOpenChange={(open) => { if (!open) setDeleteDialog(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove from calibration pool?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteDialog?.name} will be removed from the bell curve distribution.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction className="bg-rose-600 hover:bg-rose-700 text-white" onClick={handleDelete}>
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

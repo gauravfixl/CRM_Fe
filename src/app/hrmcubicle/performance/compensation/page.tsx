@@ -3,7 +3,6 @@
 import React, { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import {
-  DollarSign,
   Download,
   Search,
   TrendingUp,
@@ -15,14 +14,26 @@ import {
   Eye,
   ArrowUpRight,
   Star,
-  Filter,
-  Percent,
+  XCircle,
+  Edit,
+  Plus,
+  Trash2,
+  MoreVertical,
+  AlertCircle,
 } from "lucide-react";
+import {
+  firstError,
+  isNumberInRange,
+  maxLength,
+  required,
+  type ValidationErrors,
+} from "@/shared/utils/validators";
 import { Card, CardContent } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
 import { Badge } from "@/shared/components/ui/badge";
 import { useToast } from "@/shared/components/ui/use-toast";
 import { Input } from "@/shared/components/ui/input";
+import { Label } from "@/shared/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -31,6 +42,23 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/shared/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/shared/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/shared/components/ui/dropdown-menu";
 import {
   Select,
   SelectContent,
@@ -96,6 +124,18 @@ const statusConfig: Record<string, { color: string; bg: string }> = {
   Rejected: { color: "text-red-700", bg: "bg-red-50" },
 };
 
+const emptyForm: Omit<CompReview, "id"> = {
+  employeeName: "",
+  employeeId: "",
+  department: "Engineering",
+  role: "",
+  currentCTC: 1000000,
+  rating: 3,
+  recommendedIncrement: 7,
+  proposedCTC: 1070000,
+  status: "Pending",
+};
+
 const CompensationReviewPage = () => {
   const { toast } = useToast();
   const [reviews, setReviews] = useState<CompReview[]>(mockReviews);
@@ -104,6 +144,13 @@ const CompensationReviewPage = () => {
   const [statusFilter, setStatusFilter] = useState("All");
   const [comparisonDialog, setComparisonDialog] = useState(false);
   const [activeTab, setActiveTab] = useState("review");
+
+  const [formDialog, setFormDialog] = useState<"create" | "edit" | null>(null);
+  const [formData, setFormData] = useState<Omit<CompReview, "id">>(emptyForm);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [rejectTarget, setRejectTarget] = useState<CompReview | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<CompReview | null>(null);
+  const [formErrors, setFormErrors] = useState<ValidationErrors>({});
 
   const filtered = useMemo(() => {
     return reviews.filter((r) => {
@@ -140,7 +187,77 @@ const CompensationReviewPage = () => {
   };
 
   const handleExport = () => {
-    toast({ title: "Export Started", description: "Compensation review sheet is being exported." });
+    const rows = [["ID", "Employee", "Role", "Department", "Current CTC", "Rating", "Increment %", "Proposed CTC", "Status"]];
+    filtered.forEach((r) => rows.push([
+      r.id, r.employeeName, r.role, r.department,
+      String(r.currentCTC), String(r.rating), `${r.recommendedIncrement}%`,
+      String(r.proposedCTC), r.status,
+    ]));
+    const csv = rows.map((r) => r.map((c) => `"${c}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `compensation_review_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast({ title: "Exported", description: `${filtered.length} compensation records downloaded.` });
+  };
+
+  const handleReject = () => {
+    if (!rejectTarget) return;
+    setReviews((prev) => prev.map((r) => (r.id === rejectTarget.id ? { ...r, status: "Rejected" } : r)));
+    toast({ title: "Rejected", description: `Compensation for ${rejectTarget.employeeName} was rejected.` });
+    setRejectTarget(null);
+  };
+
+  const handleDelete = () => {
+    if (!deleteTarget) return;
+    setReviews((prev) => prev.filter((r) => r.id !== deleteTarget.id));
+    toast({ title: "Removed", description: `${deleteTarget.employeeName} removed from the review sheet.` });
+    setDeleteTarget(null);
+  };
+
+  const syncProposedCTC = (ctc: number, pct: number) => Math.round(ctc * (1 + pct / 100));
+
+  const validateForm = (): ValidationErrors => {
+    const e: ValidationErrors = {};
+    const n = firstError(required(formData.employeeName, "Employee name"), maxLength(formData.employeeName, 100, "Name"));
+    if (n) e.employeeName = n;
+    const r = firstError(required(formData.role, "Role"), maxLength(formData.role, 100, "Role"));
+    if (r) e.role = r;
+    const c = isNumberInRange(formData.currentCTC, 0, 1_000_000_000, "Current CTC");
+    if (c) e.currentCTC = c;
+    const inc = isNumberInRange(formData.recommendedIncrement, 0, 100, "Increment %");
+    if (inc) e.recommendedIncrement = inc;
+    const rt = isNumberInRange(formData.rating, 1, 5, "Rating");
+    if (rt) e.rating = rt;
+    return e;
+  };
+
+  const handleSaveForm = () => {
+    const v = validateForm();
+    setFormErrors(v);
+    if (Object.keys(v).length > 0) {
+      toast({ title: "Validation failed", description: "Please correct the highlighted fields.", variant: "destructive" });
+      return;
+    }
+    const proposedCTC = syncProposedCTC(formData.currentCTC, formData.recommendedIncrement);
+    if (formDialog === "create") {
+      const id = `CR${String(reviews.length + 11).padStart(3, "0")}`;
+      const employeeId = formData.employeeId || `E${String(Math.floor(Math.random() * 900) + 100).padStart(3, "0")}`;
+      setReviews([{ ...formData, proposedCTC, id, employeeId }, ...reviews]);
+      toast({ title: "Review Created", description: `New comp review for ${formData.employeeName}.` });
+    } else if (formDialog === "edit" && editId) {
+      setReviews((prev) => prev.map((r) => (r.id === editId ? { ...r, ...formData, proposedCTC } : r)));
+      toast({ title: "Review Updated", description: `${formData.employeeName} updated.` });
+    }
+    setFormDialog(null);
+    setEditId(null);
+    setFormData(emptyForm);
+    setFormErrors({});
   };
 
   // Comparison data: same role, different compensation
@@ -169,6 +286,7 @@ const CompensationReviewPage = () => {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setComparisonDialog(true)} className="gap-2"><Eye className="w-4 h-4" /> Equity Check</Button>
+          <Button variant="outline" onClick={() => { setFormData(emptyForm); setFormErrors({}); setFormDialog("create"); }} className="gap-2"><Plus className="w-4 h-4" /> New Review</Button>
           <Button onClick={handleExport} className="gap-2 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white"><Download className="w-4 h-4" /> Export</Button>
         </div>
       </div>
@@ -277,12 +395,53 @@ const CompensationReviewPage = () => {
                             <Badge className={cn("text-xs border-0", sc.bg, sc.color)}>{r.status}</Badge>
                           </td>
                           <td className="py-3 px-3 text-center">
-                            {r.status !== "Final Approved" && r.status !== "Rejected" && (
-                              <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => handleApprove(r.id)}>
-                                <CheckCircle2 className="w-3 h-3" /> Approve
-                              </Button>
-                            )}
-                            {r.status === "Final Approved" && <CheckCircle2 className="w-4 h-4 text-green-500 mx-auto" />}
+                            <div className="flex items-center justify-center gap-1">
+                              {r.status !== "Final Approved" && r.status !== "Rejected" && (
+                                <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => handleApprove(r.id)}>
+                                  <CheckCircle2 className="w-3 h-3" /> Approve
+                                </Button>
+                              )}
+                              {r.status === "Final Approved" && <CheckCircle2 className="w-4 h-4 text-green-500" />}
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0">
+                                    <MoreVertical className="w-3.5 h-3.5" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="rounded-xl p-1.5 w-48 font-bold shadow-2xl border-none">
+                                  <DropdownMenuItem
+                                    className="rounded-lg text-[11px]"
+                                    onClick={() => {
+                                      setEditId(r.id);
+                                      setFormData({
+                                        employeeName: r.employeeName, employeeId: r.employeeId, department: r.department,
+                                        role: r.role, currentCTC: r.currentCTC, rating: r.rating,
+                                        recommendedIncrement: r.recommendedIncrement, proposedCTC: r.proposedCTC, status: r.status,
+                                      });
+                                      setFormErrors({});
+                                      setFormDialog("edit");
+                                    }}
+                                  >
+                                    <Edit className="w-3.5 h-3.5 mr-2" /> Edit
+                                  </DropdownMenuItem>
+                                  {r.status !== "Rejected" && r.status !== "Final Approved" && (
+                                    <DropdownMenuItem
+                                      className="rounded-lg text-[11px] text-rose-600 focus:bg-rose-50"
+                                      onClick={() => setRejectTarget(r)}
+                                    >
+                                      <XCircle className="w-3.5 h-3.5 mr-2" /> Reject
+                                    </DropdownMenuItem>
+                                  )}
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    className="rounded-lg text-[11px] text-rose-600 focus:bg-rose-50"
+                                    onClick={() => setDeleteTarget(r)}
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
                           </td>
                         </motion.tr>
                       );
@@ -362,6 +521,152 @@ const CompensationReviewPage = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Create / Edit Dialog */}
+      <Dialog open={!!formDialog} onOpenChange={(open) => { if (!open) { setFormDialog(null); setEditId(null); setFormData(emptyForm); setFormErrors({}); } }}>
+        <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{formDialog === "edit" ? `Edit Compensation — ${formData.employeeName}` : "New Compensation Review"}</DialogTitle>
+            <DialogDescription>Create or adjust a compensation review record.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Employee Name *</Label>
+                <Input
+                  maxLength={100}
+                  value={formData.employeeName}
+                  onChange={(e) => setFormData({ ...formData, employeeName: e.target.value })}
+                  className={formErrors.employeeName ? "border-rose-400" : ""}
+                />
+                {formErrors.employeeName && <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 mt-1"><AlertCircle size={10} /> {formErrors.employeeName}</p>}
+              </div>
+              <div><Label>Employee ID</Label><Input maxLength={50} value={formData.employeeId} placeholder="E###" onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })} /></div>
+              <div>
+                <Label>Role *</Label>
+                <Input
+                  maxLength={100}
+                  value={formData.role}
+                  onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                  className={formErrors.role ? "border-rose-400" : ""}
+                />
+                {formErrors.role && <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 mt-1"><AlertCircle size={10} /> {formErrors.role}</p>}
+              </div>
+              <div>
+                <Label>Department</Label>
+                <Select value={formData.department} onValueChange={(v) => setFormData({ ...formData, department: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Engineering">Engineering</SelectItem>
+                    <SelectItem value="Marketing">Marketing</SelectItem>
+                    <SelectItem value="Sales">Sales</SelectItem>
+                    <SelectItem value="HR">HR</SelectItem>
+                    <SelectItem value="Finance">Finance</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Current CTC (₹) *</Label>
+                <Input
+                  type="number" min={0}
+                  value={formData.currentCTC}
+                  onChange={(e) => setFormData({ ...formData, currentCTC: Math.max(0, parseInt(e.target.value) || 0) })}
+                  className={formErrors.currentCTC ? "border-rose-400" : ""}
+                />
+                {formErrors.currentCTC && <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 mt-1"><AlertCircle size={10} /> {formErrors.currentCTC}</p>}
+              </div>
+              <div>
+                <Label>Rating *</Label>
+                <Select value={String(formData.rating)} onValueChange={(v) => setFormData({ ...formData, rating: parseInt(v) })}>
+                  <SelectTrigger className={formErrors.rating ? "border-rose-400" : ""}><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="5">5 — Exceptional</SelectItem>
+                    <SelectItem value="4">4 — Exceeds</SelectItem>
+                    <SelectItem value="3">3 — Meets</SelectItem>
+                    <SelectItem value="2">2 — Below</SelectItem>
+                    <SelectItem value="1">1 — Needs Improvement</SelectItem>
+                  </SelectContent>
+                </Select>
+                {formErrors.rating && <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 mt-1"><AlertCircle size={10} /> {formErrors.rating}</p>}
+              </div>
+              <div>
+                <Label>Increment % *</Label>
+                <Input
+                  type="number" min={0} max={100}
+                  value={formData.recommendedIncrement}
+                  onChange={(e) => setFormData({ ...formData, recommendedIncrement: Math.max(0, Math.min(100, parseInt(e.target.value) || 0)) })}
+                  className={formErrors.recommendedIncrement ? "border-rose-400" : ""}
+                />
+                <p className="text-[10px] text-slate-400 mt-1">
+                  Recommended for rating {formData.rating}: {incrementRanges[formData.rating]?.label}
+                </p>
+                {formErrors.recommendedIncrement && <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 mt-1"><AlertCircle size={10} /> {formErrors.recommendedIncrement}</p>}
+              </div>
+              <div>
+                <Label>Status</Label>
+                <Select value={formData.status} onValueChange={(v) => setFormData({ ...formData, status: v as CompReview["status"] })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Pending">Pending</SelectItem>
+                    <SelectItem value="Manager Approved">Manager Approved</SelectItem>
+                    <SelectItem value="HR Approved">HR Approved</SelectItem>
+                    <SelectItem value="Final Approved">Final Approved</SelectItem>
+                    <SelectItem value="Rejected">Rejected</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="p-3 bg-slate-50 rounded-lg text-xs">
+              Proposed CTC will be:{" "}
+              <strong>{formatCurrency(syncProposedCTC(formData.currentCTC, formData.recommendedIncrement))}</strong>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setFormDialog(null); setEditId(null); setFormData(emptyForm); setFormErrors({}); }}>Cancel</Button>
+            <Button className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white" onClick={handleSaveForm}>
+              {formDialog === "edit" ? "Save Changes" : "Create Review"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reject Confirmation */}
+      <AlertDialog open={!!rejectTarget} onOpenChange={(open) => { if (!open) setRejectTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reject compensation review?</AlertDialogTitle>
+            <AlertDialogDescription>
+              The proposed increment for {rejectTarget?.employeeName} will be marked as rejected.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction className="bg-rose-600 hover:bg-rose-700 text-white" onClick={handleReject}>
+              Reject
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete compensation review?</AlertDialogTitle>
+            <AlertDialogDescription>
+              The record for {deleteTarget?.employeeName} will be removed from the sheet.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction className="bg-rose-600 hover:bg-rose-700 text-white" onClick={handleDelete}>
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Equity Comparison Dialog */}
       <Dialog open={comparisonDialog} onOpenChange={setComparisonDialog}>

@@ -3,14 +3,17 @@
 import React, { useState } from "react"
 import { useRouter } from "next/navigation"
 import {
-  ArrowLeft, BarChart3, Eye, Filter, Heart, Layers, Play, Search,
+  ArrowLeft, Eye, Filter, Layers, Play, Search, X,
   Star, FileText, Users, DollarSign, Clock, CalendarDays, TrendingUp,
-  ShieldCheck, Briefcase, Receipt
+  ShieldCheck, Briefcase, Receipt, ArrowDownAZ, ArrowUpAZ, Flame, Heart
 } from "lucide-react"
 import { Button } from "@/shared/components/ui/button"
 import { Card } from "@/shared/components/ui/card"
 import { Badge } from "@/shared/components/ui/badge"
 import { Input } from "@/shared/components/ui/input"
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/shared/components/ui/select"
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/shared/components/ui/table"
@@ -53,14 +56,24 @@ const ReportTemplatesPage = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>("all")
   const [previewOpen, setPreviewOpen] = useState(false)
   const [previewTemplate, setPreviewTemplate] = useState<ReportTemplate | null>(null)
+  const [sortBy, setSortBy] = useState<"popularity" | "name-asc" | "name-desc" | "favorites">("popularity")
+  const [showOnlyFavorites, setShowOnlyFavorites] = useState(false)
 
   const categories = ["all", ...Array.from(new Set(templates.map((t) => t.category)))]
 
   const filtered = templates
     .filter((t) => selectedCategory === "all" || t.category === selectedCategory)
+    .filter((t) => !showOnlyFavorites || t.isFavorite)
     .filter((t) =>
       !search || t.name.toLowerCase().includes(search.toLowerCase()) || t.description.toLowerCase().includes(search.toLowerCase())
     )
+    .sort((a, b) => {
+      if (sortBy === "popularity") return b.popularity - a.popularity
+      if (sortBy === "name-asc") return a.name.localeCompare(b.name)
+      if (sortBy === "name-desc") return b.name.localeCompare(a.name)
+      if (sortBy === "favorites") return Number(b.isFavorite) - Number(a.isFavorite)
+      return 0
+    })
 
   const favorites = templates.filter((t) => t.isFavorite)
 
@@ -82,6 +95,25 @@ const ReportTemplatesPage = () => {
     setPreviewOpen(true)
   }
 
+  const handleToggleFavorite = (tmpl: ReportTemplate) => {
+    toggleFavorite(tmpl.id)
+    toast({
+      title: tmpl.isFavorite ? "Unpinned" : "Pinned",
+      description: tmpl.isFavorite
+        ? `"${tmpl.name}" removed from pinned templates.`
+        : `"${tmpl.name}" added to pinned templates.`,
+    })
+  }
+
+  const clearFilters = () => {
+    setSearch("")
+    setSelectedCategory("all")
+    setShowOnlyFavorites(false)
+    setSortBy("popularity")
+  }
+
+  const hasActiveFilters = !!search || selectedCategory !== "all" || showOnlyFavorites || sortBy !== "popularity"
+
   const getPreviewData = () => {
     if (!previewTemplate) return []
     const idx = templates.indexOf(previewTemplate) % sampleData.length
@@ -101,14 +133,42 @@ const ReportTemplatesPage = () => {
             <p className="text-sm text-slate-500">Browse and generate from pre-built report templates</p>
           </div>
         </div>
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-          <Input
-            placeholder="Search templates..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 w-64 rounded-xl"
-          />
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Input
+              placeholder="Search templates..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9 pr-9 w-64 rounded-xl"
+            />
+            {search && (
+              <button
+                onClick={() => setSearch("")}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-100 rounded-full"
+                aria-label="Clear search"
+              >
+                <X className="h-3.5 w-3.5 text-slate-400" />
+              </button>
+            )}
+          </div>
+          <Select value={sortBy} onValueChange={(v) => setSortBy(v as typeof sortBy)}>
+            <SelectTrigger className="w-44 rounded-xl text-xs"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="popularity"><div className="flex items-center gap-2 text-xs"><Flame className="h-3.5 w-3.5" /> Popularity</div></SelectItem>
+              <SelectItem value="favorites"><div className="flex items-center gap-2 text-xs"><Star className="h-3.5 w-3.5" /> Pinned First</div></SelectItem>
+              <SelectItem value="name-asc"><div className="flex items-center gap-2 text-xs"><ArrowDownAZ className="h-3.5 w-3.5" /> Name A→Z</div></SelectItem>
+              <SelectItem value="name-desc"><div className="flex items-center gap-2 text-xs"><ArrowUpAZ className="h-3.5 w-3.5" /> Name Z→A</div></SelectItem>
+            </SelectContent>
+          </Select>
+          <Button
+            variant={showOnlyFavorites ? "default" : "outline"}
+            size="sm"
+            className={cn("rounded-xl text-xs font-bold", showOnlyFavorites && "bg-amber-500 hover:bg-amber-600")}
+            onClick={() => setShowOnlyFavorites((v) => !v)}
+          >
+            <Heart className={cn("mr-1 h-3.5 w-3.5", showOnlyFavorites && "fill-white")} /> Pinned
+          </Button>
         </div>
       </div>
 
@@ -160,7 +220,15 @@ const ReportTemplatesPage = () => {
             {cat === "all" ? "All" : cat}
           </Button>
         ))}
+        {hasActiveFilters && (
+          <Button variant="ghost" size="sm" className="rounded-full text-xs text-slate-400 ml-auto" onClick={clearFilters}>
+            <X className="mr-1 h-3 w-3" /> Clear Filters
+          </Button>
+        )}
       </div>
+      <p className="text-xs text-slate-400 font-medium -mt-2">
+        Showing {filtered.length} of {templates.length} templates
+      </p>
 
       {/* Template Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -174,8 +242,9 @@ const ReportTemplatesPage = () => {
                   <Icon className="h-5 w-5" />
                 </div>
                 <button
-                  onClick={(e) => { e.stopPropagation(); toggleFavorite(tmpl.id) }}
+                  onClick={(e) => { e.stopPropagation(); handleToggleFavorite(tmpl) }}
                   className="p-1 hover:bg-slate-100 rounded-lg transition-colors"
+                  title={tmpl.isFavorite ? "Unpin template" : "Pin template"}
                 >
                   <Star className={cn("h-4 w-4", tmpl.isFavorite ? "text-amber-400 fill-amber-400" : "text-slate-300")} />
                 </button>
@@ -220,6 +289,11 @@ const ReportTemplatesPage = () => {
           <Layers className="h-12 w-12 mx-auto text-slate-300 mb-3" />
           <p className="text-sm font-medium text-slate-400">No templates found</p>
           <p className="text-xs text-slate-300 mt-1">Try adjusting your search or filter</p>
+          {hasActiveFilters && (
+            <Button variant="outline" size="sm" className="rounded-xl text-xs font-bold mt-4" onClick={clearFilters}>
+              <X className="mr-1 h-3 w-3" /> Clear Filters
+            </Button>
+          )}
         </div>
       )}
 

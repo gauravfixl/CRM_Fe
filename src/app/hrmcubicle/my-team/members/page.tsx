@@ -47,19 +47,85 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/shared/components/ui/tabs";
+import TeamDocumentsPanel from "@/shared/components/hrm/my-team/panels/team-documents-panel";
+import { createEmployee, updateEmployee, deleteEmployee, getAllEmployees } from "@/modules/hrm/hooks/hrmHooks";
+import { validateMemberForm, ValidationErrors } from "@/shared/utils/form-validation";
+
+const mapBackendEmployee = (emp: any) => {
+    const firstName = emp?.firstName || emp?.first_name || "";
+    const lastName = emp?.lastName || emp?.last_name || "";
+    const fullName = `${firstName} ${lastName}`.trim() || emp?.name || "Unknown";
+    return {
+        id: String(emp?._id || emp?.id || emp?.employeeId || ""),
+        workspaceId: "ws-1",
+        name: fullName,
+        email: emp?.email || "",
+        phone: emp?.phone || emp?.phoneNumber || "",
+        avatar: fullName.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2),
+        role: "MEMBER" as const,
+        joinedAt: emp?.createdAt || new Date().toISOString(),
+        projectsCount: 0,
+        designation: typeof emp?.position === "object" ? emp?.position?.title : (emp?.position || emp?.designation || ""),
+        department: typeof emp?.department === "object" ? emp?.department?.name : (emp?.department || ""),
+        status: emp?.status === "Active" || !emp?.status ? "Active" as const : emp?.status as any,
+        joiningDate: emp?.joiningDate || emp?.createdAt,
+        documents: [],
+    };
+};
+
+const splitName = (fullName: string) => {
+    const parts = fullName.trim().split(/\s+/);
+    return {
+        firstName: parts[0] || "",
+        lastName: parts.slice(1).join(" ") || parts[0] || "",
+    };
+};
 
 const TeamMembersPage = () => {
     const { toast } = useToast();
-    const { members, addMember, updateMember, removeMember, loadHrmEmployees, hrmEmployees } = useTeamStore();
+    const { members, addMember, updateMember, removeMember } = useTeamStore();
 
-    // Load employees from API on mount
+    // Backend sync state
+    const [apiSyncing, setApiSyncing] = useState(false);
+    const [backendAvailable, setBackendAvailable] = useState(true);
+
+    // Load employees from backend API on mount, sync to local store
     React.useEffect(() => {
-        loadHrmEmployees().catch(() => {});
+        const syncFromBackend = async () => {
+            setApiSyncing(true);
+            try {
+                const res = await getAllEmployees();
+                const rawEmployees = res?.data?.data ?? res?.data ?? [];
+                if (Array.isArray(rawEmployees) && rawEmployees.length > 0) {
+                    // Map and sync to local store — clear and re-add
+                    const store = useTeamStore.getState();
+                    const currentIds = new Set(store.members.map((m: any) => m.id));
+                    rawEmployees.forEach((emp: any) => {
+                        const mapped = mapBackendEmployee(emp);
+                        if (!currentIds.has(mapped.id)) {
+                            store.addMember(mapped as any);
+                        } else {
+                            store.updateMember(mapped.id, mapped as any);
+                        }
+                    });
+                    setBackendAvailable(true);
+                }
+            } catch (err: any) {
+                console.warn("Backend unavailable, using local store", err);
+                setBackendAvailable(false);
+            } finally {
+                setApiSyncing(false);
+            }
+        };
+        syncFromBackend();
     }, []);
+
     const [searchTerm, setSearchTerm] = useState("");
     const [filterStatus, setFilterStatus] = useState<'All' | 'Active' | 'On Leave'>('All');
     const [isAddOpen, setIsAddOpen] = useState(false);
     const [isEditOpen, setIsEditOpen] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [selectedMember, setSelectedMember] = useState<any>(null);
     const [memberForm, setMemberForm] = useState({
         name: '',
@@ -68,11 +134,20 @@ const TeamMembersPage = () => {
         designation: '',
         department: '',
     });
+    const [formErrors, setFormErrors] = useState<ValidationErrors>({});
     const [showVault, setShowVault] = useState(false);
+    const [activeTab, setActiveTab] = useState("members");
+    const [deleteTarget, setDeleteTarget] = useState<any>(null);
+
+    const resetForm = () => {
+        setMemberForm({ name: '', email: '', phone: '', designation: '', department: '' });
+        setFormErrors({});
+    };
 
     const filteredMembers = members.filter(m => {
-        const matchesSearch = m.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            m.designation.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesSearch = (m.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (m.designation || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (m.email || "").toLowerCase().includes(searchTerm.toLowerCase());
         const matchesFilter = filterStatus === 'All' || m.status === filterStatus;
         return matchesSearch && matchesFilter;
     });
@@ -83,69 +158,167 @@ const TeamMembersPage = () => {
         { label: "On Leave", value: members.filter(m => m.status === 'On Leave').length, color: "bg-amber-100", icon: <Calendar className="text-amber-600" />, textColor: "text-amber-900" },
     ];
 
-    const handleAdd = () => {
-        if (!memberForm.name || !memberForm.email) {
-            toast({ title: "Error", description: "Name and Email are required", variant: "destructive" });
+    const handleAdd = async () => {
+        const errors = validateMemberForm(memberForm);
+        if (Object.keys(errors).length > 0) {
+            setFormErrors(errors);
+            toast({ title: "Please fix form errors", description: "Some fields are invalid.", variant: "destructive" });
             return;
         }
+        setFormErrors({});
+        setIsSubmitting(true);
 
-        const avatar = memberForm.name.split(' ').map(n => n[0]).join('').toUpperCase();
-        addMember({
-            ...memberForm,
-            avatar,
-            status: 'Active',
-            joiningDate: new Date().toISOString()
-        } as any);
+        const avatar = memberForm.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+        const { firstName, lastName } = splitName(memberForm.name);
 
-        setIsAddOpen(false);
-        setMemberForm({ name: '', email: '', phone: '', designation: '', department: '' });
-        toast({ title: "Team Member Added", description: `${memberForm.name} is now part of your team.` });
+        try {
+            if (backendAvailable) {
+                const res = await createEmployee({
+                    firstName,
+                    lastName,
+                    email: memberForm.email,
+                    department: memberForm.department,
+                    position: memberForm.designation,
+                });
+                const created = res?.data?.data ?? res?.data;
+                if (created) {
+                    addMember(mapBackendEmployee(created) as any);
+                    toast({ title: "Team Member Added", description: `${memberForm.name} saved to backend.` });
+                    setIsAddOpen(false);
+                    resetForm();
+                    return;
+                }
+            }
+            // Fallback: local only
+            addMember({
+                ...memberForm,
+                avatar,
+                status: 'Active',
+                joiningDate: new Date().toISOString()
+            } as any);
+            toast({ title: "Team Member Added", description: `${memberForm.name} added locally.` });
+            setIsAddOpen(false);
+            resetForm();
+        } catch (err: any) {
+            // Error toast is handled by hrmHooks; save locally as backup
+            addMember({
+                ...memberForm,
+                avatar,
+                status: 'Active',
+                joiningDate: new Date().toISOString()
+            } as any);
+            toast({ title: "Saved Locally", description: "Backend failed; member added to local cache.", variant: "destructive" });
+            setIsAddOpen(false);
+            resetForm();
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     const handleEdit = (member: any) => {
         setSelectedMember(member);
         setMemberForm({
-            name: member.name,
-            email: member.email,
-            phone: member.phone,
-            designation: member.designation,
-            department: member.department,
+            name: member.name || '',
+            email: member.email || '',
+            phone: member.phone || '',
+            designation: member.designation || '',
+            department: member.department || '',
         });
+        setFormErrors({});
         setIsEditOpen(true);
     };
 
-    const handleUpdate = () => {
+    const handleUpdate = async () => {
         if (!selectedMember) return;
-        updateMember(selectedMember.id, memberForm as any);
-        setIsEditOpen(false);
-        toast({ title: "Profile Updated", description: "Team member details saved." });
+        const errors = validateMemberForm(memberForm);
+        if (Object.keys(errors).length > 0) {
+            setFormErrors(errors);
+            toast({ title: "Please fix form errors", description: "Some fields are invalid.", variant: "destructive" });
+            return;
+        }
+        setFormErrors({});
+        setIsSubmitting(true);
+
+        const { firstName, lastName } = splitName(memberForm.name);
+
+        try {
+            if (backendAvailable) {
+                await updateEmployee(selectedMember.id, {
+                    firstName,
+                    lastName,
+                    email: memberForm.email,
+                    phone: memberForm.phone,
+                    department: memberForm.department,
+                    position: memberForm.designation,
+                });
+            }
+            updateMember(selectedMember.id, memberForm as any);
+            toast({ title: "Profile Updated", description: "Team member details saved." });
+            setIsEditOpen(false);
+            resetForm();
+        } catch (err: any) {
+            updateMember(selectedMember.id, memberForm as any);
+            toast({ title: "Saved Locally", description: "Backend update failed; local cache updated.", variant: "destructive" });
+            setIsEditOpen(false);
+            resetForm();
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     const handleDelete = (member: any) => {
-        if (confirm(`Remove ${member.name} from your team?`)) {
-            removeMember(member.id);
-            toast({ title: "Member Removed" });
+        setDeleteTarget(member);
+    };
+
+    const confirmDelete = async () => {
+        if (!deleteTarget) return;
+        setIsSubmitting(true);
+        try {
+            if (backendAvailable) {
+                await deleteEmployee(deleteTarget.id);
+            }
+            removeMember(deleteTarget.id);
+            toast({ title: "Member Removed", description: `${deleteTarget.name} has been expelled from the team.`, variant: "destructive" });
+        } catch (err) {
+            removeMember(deleteTarget.id);
+            toast({ title: "Removed Locally", description: "Backend delete failed; local cache updated.", variant: "destructive" });
+        } finally {
+            setDeleteTarget(null);
+            setIsSubmitting(false);
         }
     };
 
     return (
         <div className="flex-1 min-h-screen bg-[#f8fafc] p-5 space-y-5" style={{ zoom: "90%" }}>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-5">
             <div className="flex flex-col md:flex-row justify-between md:items-center gap-6">
                 <div>
                     <h1 className="text-xl font-bold text-slate-900 tracking-tight leading-none">Team Members</h1>
                     <p className="text-slate-500 font-medium text-[11px] mt-1.5">View and manage your team members.</p>
                 </div>
+                <TabsList className="bg-white border border-slate-200 rounded-xl p-1 h-auto">
+                    <TabsTrigger value="members" className="rounded-lg font-bold text-xs px-5 py-2 data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-sm flex items-center gap-2">
+                        <Users size={14} /> Members
+                    </TabsTrigger>
+                    <TabsTrigger value="documents" className="rounded-lg font-bold text-xs px-5 py-2 data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-sm flex items-center gap-2">
+                        <FileText size={14} /> Documents
+                    </TabsTrigger>
+                </TabsList>
 
-                <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+                {activeTab === "members" && (
+                <Dialog open={isAddOpen} onOpenChange={(o) => { setIsAddOpen(o); if (!o) resetForm(); }}>
                     <DialogTrigger asChild>
                         <Button className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl h-10 px-6 shadow-md font-bold transition-all border-none">
                             <Plus className="mr-2 h-4 w-4" /> Add Team Member
                         </Button>
                     </DialogTrigger>
-                    <DialogContent className="bg-gradient-to-br from-indigo-50/80 via-white to-white rounded-[2rem] border border-slate-200 shadow-2xl p-10 max-w-2xl max-h-[70vh] overflow-y-auto custom-scrollbar !top-[15%] !translate-y-0">
+                    <DialogContent className="bg-gradient-to-br from-indigo-50/80 via-white to-white rounded-[2rem] border border-slate-200 shadow-2xl p-10 max-w-2xl max-h-[80vh] overflow-y-auto custom-scrollbar !top-[10%] !translate-y-0">
                         <DialogHeader>
                             <DialogTitle className="text-2xl font-bold tracking-tight text-slate-900">Add Team Member</DialogTitle>
-                            <DialogDescription className="font-medium text-slate-500 text-sm mt-1">Invite a new person to join your department.</DialogDescription>
+                            <DialogDescription className="font-medium text-slate-500 text-sm mt-1">
+                                Invite a new person to join your department.
+                                {!backendAvailable && <span className="text-amber-600"> (Offline — saving locally)</span>}
+                            </DialogDescription>
                         </DialogHeader>
                         <div className="grid grid-cols-2 gap-6 py-6 font-display">
                             <div className="space-y-2">
@@ -153,9 +326,10 @@ const TeamMembersPage = () => {
                                 <Input
                                     placeholder="Employee name"
                                     value={memberForm.name}
-                                    onChange={e => setMemberForm({ ...memberForm, name: e.target.value })}
-                                    className="rounded-xl bg-slate-50 border border-slate-200 h-12"
+                                    onChange={e => { setMemberForm({ ...memberForm, name: e.target.value }); if (formErrors.name) setFormErrors({ ...formErrors, name: "" }); }}
+                                    className={`rounded-xl bg-slate-50 border h-12 ${formErrors.name ? 'border-rose-400 focus:ring-rose-200' : 'border-slate-200'}`}
                                 />
+                                {formErrors.name && <p className="text-[11px] font-medium text-rose-500">{formErrors.name}</p>}
                             </div>
                             <div className="space-y-2">
                                 <Label className="font-bold text-slate-700">Work Email *</Label>
@@ -163,38 +337,52 @@ const TeamMembersPage = () => {
                                     type="email"
                                     placeholder="email@company.com"
                                     value={memberForm.email}
-                                    onChange={e => setMemberForm({ ...memberForm, email: e.target.value })}
-                                    className="rounded-xl bg-slate-50 border border-slate-200 h-12"
+                                    onChange={e => { setMemberForm({ ...memberForm, email: e.target.value }); if (formErrors.email) setFormErrors({ ...formErrors, email: "" }); }}
+                                    className={`rounded-xl bg-slate-50 border h-12 ${formErrors.email ? 'border-rose-400' : 'border-slate-200'}`}
                                 />
+                                {formErrors.email && <p className="text-[11px] font-medium text-rose-500">{formErrors.email}</p>}
                             </div>
                             <div className="space-y-2">
                                 <Label className="font-bold text-slate-700">Phone</Label>
                                 <Input
                                     placeholder="+91..."
                                     value={memberForm.phone}
-                                    onChange={e => setMemberForm({ ...memberForm, phone: e.target.value })}
-                                    className="rounded-xl bg-slate-50 border border-slate-200 h-12"
+                                    onChange={e => { setMemberForm({ ...memberForm, phone: e.target.value }); if (formErrors.phone) setFormErrors({ ...formErrors, phone: "" }); }}
+                                    className={`rounded-xl bg-slate-50 border h-12 ${formErrors.phone ? 'border-rose-400' : 'border-slate-200'}`}
                                 />
+                                {formErrors.phone && <p className="text-[11px] font-medium text-rose-500">{formErrors.phone}</p>}
                             </div>
                             <div className="space-y-2">
                                 <Label className="font-bold text-slate-700">Designation</Label>
                                 <Input
                                     placeholder="e.g. UX Designer"
                                     value={memberForm.designation}
-                                    onChange={e => setMemberForm({ ...memberForm, designation: e.target.value })}
+                                    onChange={e => { setMemberForm({ ...memberForm, designation: e.target.value }); if (formErrors.designation) setFormErrors({ ...formErrors, designation: "" }); }}
+                                    className={`rounded-xl bg-slate-50 border h-12 ${formErrors.designation ? 'border-rose-400' : 'border-slate-200'}`}
+                                />
+                                {formErrors.designation && <p className="text-[11px] font-medium text-rose-500">{formErrors.designation}</p>}
+                            </div>
+                            <div className="space-y-2 col-span-2">
+                                <Label className="font-bold text-slate-700">Department</Label>
+                                <Input
+                                    placeholder="e.g. Engineering"
+                                    value={memberForm.department}
+                                    onChange={e => setMemberForm({ ...memberForm, department: e.target.value })}
                                     className="rounded-xl bg-slate-50 border border-slate-200 h-12"
                                 />
                             </div>
                         </div>
                         <DialogFooter>
-                            <Button className="w-full bg-slate-900 text-white rounded-xl h-11 font-bold text-sm shadow-lg hover:bg-slate-800 transition-all border-none" onClick={handleAdd}>
-                                Confirm Admission <ArrowRight className="ml-2 h-4 w-4" />
+                            <Button disabled={isSubmitting} className="w-full bg-slate-900 text-white rounded-xl h-11 font-bold text-sm shadow-lg hover:bg-slate-800 transition-all border-none disabled:opacity-50" onClick={handleAdd}>
+                                {isSubmitting ? "Saving..." : "Confirm Admission"} <ArrowRight className="ml-2 h-4 w-4" />
                             </Button>
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
+                )}
             </div>
 
+            <TabsContent value="members" className="space-y-5 mt-0">
             {/* Stats */}
             <div className="flex flex-wrap gap-5">
                 {stats.map((stat, i) => (
@@ -384,6 +572,97 @@ const TeamMembersPage = () => {
                     </DialogContent>
                 </Dialog>
             </div>
+            </TabsContent>
+
+            <TabsContent value="documents" className="mt-0">
+                <TeamDocumentsPanel />
+            </TabsContent>
+          </Tabs>
+
+          {/* Edit Member Dialog */}
+          <Dialog open={isEditOpen} onOpenChange={(o) => { setIsEditOpen(o); if (!o) resetForm(); }}>
+              <DialogContent className="bg-gradient-to-br from-indigo-50/80 via-white to-white rounded-[2rem] border border-slate-200 shadow-2xl p-10 max-w-2xl max-h-[80vh] overflow-y-auto custom-scrollbar !top-[10%] !translate-y-0">
+                  <DialogHeader>
+                      <DialogTitle className="text-2xl font-bold tracking-tight text-slate-900">Edit Team Member</DialogTitle>
+                      <DialogDescription className="font-medium text-slate-500 text-sm mt-1">
+                          Update {selectedMember?.name}'s details.
+                          {!backendAvailable && <span className="text-amber-600"> (Offline — updating locally)</span>}
+                      </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid grid-cols-2 gap-6 py-6">
+                      <div className="space-y-2">
+                          <Label className="font-bold text-slate-700">Full Name *</Label>
+                          <Input
+                              value={memberForm.name}
+                              onChange={e => { setMemberForm({ ...memberForm, name: e.target.value }); if (formErrors.name) setFormErrors({ ...formErrors, name: "" }); }}
+                              className={`rounded-xl bg-slate-50 border h-12 ${formErrors.name ? 'border-rose-400' : 'border-slate-200'}`}
+                          />
+                          {formErrors.name && <p className="text-[11px] font-medium text-rose-500">{formErrors.name}</p>}
+                      </div>
+                      <div className="space-y-2">
+                          <Label className="font-bold text-slate-700">Work Email *</Label>
+                          <Input
+                              type="email"
+                              value={memberForm.email}
+                              onChange={e => { setMemberForm({ ...memberForm, email: e.target.value }); if (formErrors.email) setFormErrors({ ...formErrors, email: "" }); }}
+                              className={`rounded-xl bg-slate-50 border h-12 ${formErrors.email ? 'border-rose-400' : 'border-slate-200'}`}
+                          />
+                          {formErrors.email && <p className="text-[11px] font-medium text-rose-500">{formErrors.email}</p>}
+                      </div>
+                      <div className="space-y-2">
+                          <Label className="font-bold text-slate-700">Phone</Label>
+                          <Input
+                              value={memberForm.phone}
+                              onChange={e => { setMemberForm({ ...memberForm, phone: e.target.value }); if (formErrors.phone) setFormErrors({ ...formErrors, phone: "" }); }}
+                              className={`rounded-xl bg-slate-50 border h-12 ${formErrors.phone ? 'border-rose-400' : 'border-slate-200'}`}
+                          />
+                          {formErrors.phone && <p className="text-[11px] font-medium text-rose-500">{formErrors.phone}</p>}
+                      </div>
+                      <div className="space-y-2">
+                          <Label className="font-bold text-slate-700">Designation</Label>
+                          <Input
+                              value={memberForm.designation}
+                              onChange={e => { setMemberForm({ ...memberForm, designation: e.target.value }); if (formErrors.designation) setFormErrors({ ...formErrors, designation: "" }); }}
+                              className={`rounded-xl bg-slate-50 border h-12 ${formErrors.designation ? 'border-rose-400' : 'border-slate-200'}`}
+                          />
+                          {formErrors.designation && <p className="text-[11px] font-medium text-rose-500">{formErrors.designation}</p>}
+                      </div>
+                      <div className="space-y-2 col-span-2">
+                          <Label className="font-bold text-slate-700">Department</Label>
+                          <Input
+                              value={memberForm.department}
+                              onChange={e => setMemberForm({ ...memberForm, department: e.target.value })}
+                              className="rounded-xl bg-slate-50 border border-slate-200 h-12"
+                          />
+                      </div>
+                  </div>
+                  <DialogFooter className="gap-2">
+                      <Button variant="outline" className="rounded-xl h-11 font-bold" onClick={() => { setIsEditOpen(false); resetForm(); }}>Cancel</Button>
+                      <Button disabled={isSubmitting} className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl h-11 font-bold text-sm shadow-lg border-none disabled:opacity-50" onClick={handleUpdate}>
+                          {isSubmitting ? "Saving..." : "Save Changes"}
+                      </Button>
+                  </DialogFooter>
+              </DialogContent>
+          </Dialog>
+
+          {/* Delete Confirmation Dialog */}
+          <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+              <DialogContent className="bg-white rounded-2xl border border-slate-200 shadow-2xl p-8 max-w-md">
+                  <DialogHeader>
+                      <DialogTitle className="text-xl font-bold text-slate-900">Expel Team Member</DialogTitle>
+                      <DialogDescription className="text-slate-500 text-sm mt-2">
+                          Are you sure you want to remove <span className="font-bold text-rose-600">{deleteTarget?.name}</span> from the team? This action will also remove their attendance, leave and performance records.
+                          {!backendAvailable && <span className="block mt-2 text-amber-600">(Offline — will only remove locally)</span>}
+                      </DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter className="gap-2 mt-4">
+                      <Button variant="outline" className="rounded-xl h-10 font-bold" onClick={() => setDeleteTarget(null)}>Cancel</Button>
+                      <Button disabled={isSubmitting} className="bg-rose-500 hover:bg-rose-600 text-white rounded-xl h-10 font-bold text-sm border-none disabled:opacity-50" onClick={confirmDelete}>
+                          <Trash2 className="mr-2 h-4 w-4" /> {isSubmitting ? "Removing..." : "Remove Member"}
+                      </Button>
+                  </DialogFooter>
+              </DialogContent>
+          </Dialog>
         </div>
     );
 };

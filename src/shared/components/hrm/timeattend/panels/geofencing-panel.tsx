@@ -1,12 +1,10 @@
 "use client"
 
-import React, { useState, useMemo } from "react";
-import { motion } from "framer-motion";
+import React, { useState } from "react";
 import {
   MapPin,
   Plus,
   Search,
-  Shield,
   AlertTriangle,
   CheckCircle2,
   XCircle,
@@ -17,7 +15,6 @@ import {
   Clock,
   Edit,
   Trash2,
-  Eye,
 } from "lucide-react";
 import { Card, CardContent } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
@@ -97,7 +94,7 @@ const mockPunches: GPSPunch[] = [
   { id: "P008", employeeName: "Deepika Nair", employeeId: "E008", punchTime: "09:20 AM", lat: 12.9350, lng: 77.6240, zone: "Tech Park", inZone: true, distance: 55 },
 ];
 
-const GeoFencingPage = () => {
+const GeoFencingPanel = () => {
   const { toast } = useToast();
   const [zones, setZones] = useState<GeoZone[]>(mockZones);
   const [punches] = useState<GPSPunch[]>(mockPunches);
@@ -157,11 +154,11 @@ const GeoFencingPage = () => {
   const typeIcons: Record<string, React.ElementType> = { Office: Building2, Site: MapPin, Client: Users };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] p-6 space-y-6">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Geo-fencing / GPS Attendance</h1>
-          <p className="text-slate-500 text-sm mt-1">Location-based attendance management</p>
+          <h2 className="text-lg font-semibold text-slate-800">Geo-fencing / GPS Attendance</h2>
+          <p className="text-slate-500 text-xs mt-1">Location-based attendance management</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setPolicyDialog(true)} className="gap-2"><Settings className="w-4 h-4" /> Policy</Button>
@@ -182,8 +179,7 @@ const GeoFencingPage = () => {
         <TabsContent value="map" className="mt-4">
           <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
             <CardContent className="p-6">
-              <h2 className="text-lg font-semibold text-slate-800 mb-4">Geo-fence Zones Map</h2>
-              {/* Map placeholder */}
+              <h3 className="text-base font-semibold text-slate-800 mb-4">Geo-fence Zones Map</h3>
               <div className="relative w-full h-[400px] bg-slate-50 rounded-xl border border-slate-200 overflow-hidden"
                 style={{ backgroundImage: "linear-gradient(rgba(148,163,184,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,184,0.1) 1px, transparent 1px)", backgroundSize: "30px 30px" }}>
                 {zones.filter((z) => z.status === "Active").map((zone) => {
@@ -277,7 +273,7 @@ const GeoFencingPage = () => {
           <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-slate-800">Today&apos;s GPS Punches</h2>
+                <h3 className="text-base font-semibold text-slate-800">Today&apos;s GPS Punches</h3>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                   <Input placeholder="Search..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-9 w-56" />
@@ -324,7 +320,7 @@ const GeoFencingPage = () => {
         <TabsContent value="alerts" className="mt-4">
           <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
             <CardContent className="p-6">
-              <h2 className="text-lg font-semibold text-slate-800 mb-4">Out-of-Zone Alerts</h2>
+              <h3 className="text-base font-semibold text-slate-800 mb-4">Out-of-Zone Alerts</h3>
               {outOfZoneAlerts.length === 0 ? (
                 <div className="text-center py-12 text-slate-400">No out-of-zone alerts today.</div>
               ) : (
@@ -344,10 +340,9 @@ const GeoFencingPage = () => {
             </CardContent>
           </Card>
 
-          {/* WFH Location Config */}
           <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm mt-4">
             <CardContent className="p-6">
-              <h2 className="text-lg font-semibold text-slate-800 mb-2">WFH Location Configuration</h2>
+              <h3 className="text-base font-semibold text-slate-800 mb-2">WFH Location Configuration</h3>
               <p className="text-sm text-slate-500 mb-4">Employees working from home can register their home location for attendance verification.</p>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 {[{ name: "Aarav Sharma", address: "HSR Layout, Bangalore", status: "Verified" }, { name: "Priya Patel", address: "Indiranagar, Bangalore", status: "Verified" }, { name: "Rahul Verma", address: "Andheri, Mumbai", status: "Pending" }].map((wfh) => (
@@ -366,7 +361,6 @@ const GeoFencingPage = () => {
         </TabsContent>
       </Tabs>
 
-      {/* Add/Edit Zone Dialog */}
       <Dialog open={zoneDialog} onOpenChange={setZoneDialog}>
         <DialogContent className="sm:max-w-md border-2 border-slate-200">
           <DialogHeader>
@@ -413,7 +407,6 @@ const GeoFencingPage = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Policy Dialog */}
       <Dialog open={policyDialog} onOpenChange={setPolicyDialog}>
         <DialogContent className="sm:max-w-md border-2 border-slate-200">
           <DialogHeader>
@@ -460,4 +453,4 @@ const GeoFencingPage = () => {
   );
 };
 
-export default GeoFencingPage;
+export default GeoFencingPanel;
