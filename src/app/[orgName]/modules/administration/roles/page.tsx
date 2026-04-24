@@ -364,15 +364,9 @@ export default function RolesAndPermissionsPage() {
                   </div>
                   <div>
                     <h3 className="text-sm font-semibold text-zinc-900">Permission Matrix Overview</h3>
-                    <p className="text-[10px] text-zinc-400 font-medium">Read-only view of role-to-module access mappings</p>
+                    <p className="text-[10px] text-zinc-400 font-medium">View and edit role-to-module access mappings for each role</p>
                   </div>
                 </div>
-                <CustomButton
-                  className="rounded-lg bg-primary text-white px-6 font-semibold text-xs h-10"
-                  onClick={() => toast.info("Matrix editor coming soon")}
-                >
-                  Open Matrix Editor <ChevronRight className="ml-2 w-4 h-4" />
-                </CustomButton>
               </div>
               <div className="overflow-x-auto">
                 <Table>
@@ -383,6 +377,7 @@ export default function RolesAndPermissionsPage() {
                       <TableHead className="p-4 text-xs font-semibold text-gray-500 text-center">Modules</TableHead>
                       <TableHead className="p-4 text-xs font-semibold text-gray-500 text-center">Total Actions</TableHead>
                       <TableHead className="p-4 text-xs font-semibold text-gray-500">Module Breakdown</TableHead>
+                      <TableHead className="p-4 text-xs font-semibold text-gray-500 text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody className="divide-y divide-zinc-50">
@@ -433,6 +428,18 @@ export default function RolesAndPermissionsPage() {
                                   </Badge>
                                 )}
                               </div>
+                            </TableCell>
+                            <TableCell className="p-4 text-right">
+                              <Link href={`/${orgName}/modules/administration/roles/${role._id}/edit`}>
+                                <CustomButton
+                                  variant="outline"
+                                  size="sm"
+                                  className="rounded-lg border-zinc-200 text-xs font-semibold h-8 px-4 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 transition-all"
+                                >
+                                  <Edit className="w-3.5 h-3.5 mr-1.5" />
+                                  Edit Matrix
+                                </CustomButton>
+                              </Link>
                             </TableCell>
                           </TableRow>
                         )

@@ -341,11 +341,11 @@ const LeavePage = () => {
                                         <Label className="font-bold ml-2 text-slate-600">Leave category</Label>
                                         <Select value={newLeave.leaveTypeId} onValueChange={(v) => setNewLeave({ ...newLeave, leaveTypeId: v })}>
                                             <SelectTrigger className="h-16 rounded-2xl bg-white border-2 border-slate-300 px-6 font-bold text-xl">
-                                                <SelectValue />
+                                                <SelectValue placeholder="Select leave type..." />
                                             </SelectTrigger>
                                             <SelectContent className="rounded-2xl border-2 border-slate-200 shadow-2xl p-2 font-bold">
                                                 {leaveTypes.length === 0 ? (
-                                                    <SelectItem value="" className="rounded-xl p-3">Loading...</SelectItem>
+                                                    <div className="p-3 text-center text-slate-500">Loading leave types...</div>
                                                 ) : (
                                                     leaveTypes.map((lt: any) => (
                                                         <SelectItem key={String(lt._id)} value={String(lt._id)} className="rounded-xl p-3">

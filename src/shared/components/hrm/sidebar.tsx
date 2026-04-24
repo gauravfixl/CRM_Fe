@@ -408,16 +408,58 @@ function SidebarComponent({ ...props }: React.ComponentProps<typeof ShadcnSideba
                                             </CollapsibleTrigger>
                                             <CollapsibleContent className="transition-all duration-300 ease-in-out">
                                                 <SidebarMenuSub className="border-l-slate-200 ml-2">
-                                                    {item.items.map((subItem) => (
-                                                        <SidebarMenuSubItem key={subItem.title}>
-                                                            <SidebarMenuSubButton asChild isActive={pathname === subItem.url} className="text-slate-500 h-8 text-[12.5px] hover:text-slate-900 hover:bg-slate-100 rounded-md">
-                                                                <Link href={subItem.url} prefetch={true} className="flex w-full items-center">
-                                                                    <span className="shrink-0 text-[13px]">{subItem.icon}</span>
-                                                                    <span className="ml-1 truncate" title={subItem.title}>{subItem.title}</span>
-                                                                </Link>
-                                                            </SidebarMenuSubButton>
-                                                        </SidebarMenuSubItem>
-                                                    ))}
+                                                    {item.items.map((subItem) => {
+                                                        const hasNestedItems = subItem.items && subItem.items.length > 0;
+                                                        const isSubItemActive = isBranchActive(subItem);
+
+                                                        if (hasNestedItems) {
+                                                            // Nested dropdown (3rd level)
+                                                            return (
+                                                                <Collapsible
+                                                                    key={subItem.title}
+                                                                    asChild
+                                                                    defaultOpen={isSubItemActive}
+                                                                    className="group/nested-collapsible"
+                                                                >
+                                                                    <SidebarMenuSubItem>
+                                                                        <CollapsibleTrigger asChild>
+                                                                            <SidebarMenuSubButton className="text-slate-500 h-8 text-[12.5px] hover:text-slate-900 hover:bg-slate-100 rounded-md">
+                                                                                <span className="shrink-0 text-[13px]">{subItem.icon}</span>
+                                                                                <span className="ml-1 truncate" title={subItem.title}>{subItem.title}</span>
+                                                                                <ChevronRight className="ml-auto w-3 h-3 text-slate-400 transition-transform duration-200 group-data-[state=open]/nested-collapsible:rotate-90" />
+                                                                            </SidebarMenuSubButton>
+                                                                        </CollapsibleTrigger>
+                                                                        <CollapsibleContent className="transition-all duration-300 ease-in-out">
+                                                                            <SidebarMenuSub className="border-l-slate-200 ml-2">
+                                                                                {subItem.items.map((nestedItem: any) => (
+                                                                                    <SidebarMenuSubItem key={nestedItem.title}>
+                                                                                        <SidebarMenuSubButton asChild isActive={pathname === nestedItem.url} className="text-slate-500 h-7 text-[12px] hover:text-slate-900 hover:bg-slate-100 rounded-md pl-6">
+                                                                                            <Link href={nestedItem.url} prefetch={true} className="flex w-full items-center">
+                                                                                                <span className="shrink-0 text-[12px]">{nestedItem.icon}</span>
+                                                                                                <span className="ml-1 truncate" title={nestedItem.title}>{nestedItem.title}</span>
+                                                                                            </Link>
+                                                                                        </SidebarMenuSubButton>
+                                                                                    </SidebarMenuSubItem>
+                                                                                ))}
+                                                                            </SidebarMenuSub>
+                                                                        </CollapsibleContent>
+                                                                    </SidebarMenuSubItem>
+                                                                </Collapsible>
+                                                            );
+                                                        }
+
+                                                        // Regular 2nd level item
+                                                        return (
+                                                            <SidebarMenuSubItem key={subItem.title}>
+                                                                <SidebarMenuSubButton asChild isActive={pathname === subItem.url} className="text-slate-500 h-8 text-[12.5px] hover:text-slate-900 hover:bg-slate-100 rounded-md">
+                                                                    <Link href={subItem.url} prefetch={true} className="flex w-full items-center">
+                                                                        <span className="shrink-0 text-[13px]">{subItem.icon}</span>
+                                                                        <span className="ml-1 truncate" title={subItem.title}>{subItem.title}</span>
+                                                                    </Link>
+                                                                </SidebarMenuSubButton>
+                                                            </SidebarMenuSubItem>
+                                                        );
+                                                    })}
                                                 </SidebarMenuSub>
                                             </CollapsibleContent>
                                         </SidebarMenuItem>

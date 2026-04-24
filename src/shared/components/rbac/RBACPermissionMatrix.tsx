@@ -201,16 +201,54 @@ interface RBACPermissionMatrixProps {
 export function RBACPermissionMatrix({ value, onChange }: RBACPermissionMatrixProps) {
   const [searchQuery, setSearchQuery] = useState("")
 
+  // Build dynamic module list from both hardcoded modules AND backend data
+  const dynamicModules = useMemo(() => {
+    const moduleMap = new Map<string, ModuleDef>()
+
+    // First, add all hardcoded modules
+    ALL_MODULES.forEach(mod => {
+      moduleMap.set(mod.id, mod)
+    })
+
+    // Then, add any modules from backend that aren't in our hardcoded list
+    value.forEach(perm => {
+      if (!moduleMap.has(perm.module)) {
+        // Create a dynamic module definition for backend modules we don't know about
+        const displayName = perm.module
+          .split('_')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+          .join(' ')
+
+        moduleMap.set(perm.module, {
+          id: perm.module,
+          name: displayName,
+          actions: perm.actions, // Use the actions from backend
+          group: "Other",
+        })
+      } else {
+        // If module exists in hardcoded list, merge actions from backend
+        const existing = moduleMap.get(perm.module)!
+        const allActions = new Set([...existing.actions, ...perm.actions])
+        moduleMap.set(perm.module, {
+          ...existing,
+          actions: Array.from(allActions),
+        })
+      }
+    })
+
+    return Array.from(moduleMap.values())
+  }, [value])
+
   const filteredModules = useMemo(() => {
     const q = searchQuery.trim().toLowerCase()
-    if (!q) return ALL_MODULES
-    return ALL_MODULES.filter(
+    if (!q) return dynamicModules
+    return dynamicModules.filter(
       (m) =>
         m.name.toLowerCase().includes(q) ||
         m.id.toLowerCase().includes(q) ||
         m.group.toLowerCase().includes(q)
     )
-  }, [searchQuery])
+  }, [searchQuery, dynamicModules])
 
   const groupedModules = useMemo(() => {
     const groups: Record<string, ModuleDef[]> = {}
@@ -293,18 +331,16 @@ export function RBACPermissionMatrix({ value, onChange }: RBACPermissionMatrixPr
                 return (
                   <Card
                     key={module.id}
-                    className={`bg-white border-zinc-200 rounded-xl shadow-sm transition-all overflow-hidden ${
-                      isModuleActive ? "border-l-4 border-l-indigo-600" : ""
-                    }`}
+                    className={`bg-white border-zinc-200 rounded-xl shadow-sm transition-all overflow-hidden ${isModuleActive ? "border-l-4 border-l-indigo-600" : ""
+                      }`}
                   >
                     <CardHeader className="flex flex-row items-center justify-between pb-3">
                       <div className="flex items-center gap-3">
                         <div
-                          className={`h-9 w-9 rounded-lg flex items-center justify-center border transition-colors ${
-                            isModuleActive
-                              ? "bg-indigo-600 text-white border-indigo-600"
-                              : "bg-white text-zinc-400 border-zinc-200"
-                          }`}
+                          className={`h-9 w-9 rounded-lg flex items-center justify-center border transition-colors ${isModuleActive
+                            ? "bg-indigo-600 text-white border-indigo-600"
+                            : "bg-white text-zinc-400 border-zinc-200"
+                            }`}
                         >
                           <LayoutGrid className="w-4 h-4" />
                         </div>
@@ -342,29 +378,26 @@ export function RBACPermissionMatrix({ value, onChange }: RBACPermissionMatrixPr
                             type="button"
                             key={action}
                             onClick={() => toggleAction(module.id, action)}
-                            className={`p-3 border rounded-lg cursor-pointer flex items-center gap-3 transition-all text-left ${
-                              selected
-                                ? "bg-indigo-50 border-indigo-200"
-                                : "bg-white border-zinc-100 hover:border-zinc-300"
-                            }`}
+                            className={`p-3 border rounded-lg cursor-pointer flex items-center gap-3 transition-all text-left ${selected
+                              ? "bg-indigo-50 border-indigo-200"
+                              : "bg-white border-zinc-100 hover:border-zinc-300"
+                              }`}
                           >
                             <div
-                              className={`h-4 w-4 rounded-sm border flex items-center justify-center shrink-0 transition-all ${
-                                selected
-                                  ? "bg-indigo-600 border-indigo-600"
-                                  : "bg-white border-zinc-300"
-                              }`}
+                              className={`h-4 w-4 rounded-sm border flex items-center justify-center shrink-0 transition-all ${selected
+                                ? "bg-indigo-600 border-indigo-600"
+                                : "bg-white border-zinc-300"
+                                }`}
                             >
                               {selected && (
                                 <Check className="w-3 h-3 text-white stroke-[3px]" />
                               )}
                             </div>
                             <span
-                              className={`text-xs font-medium capitalize ${
-                                selected ? "text-indigo-900" : "text-zinc-600"
-                              }`}
+                              className={`text-xs font-medium capitalize ${selected ? "text-indigo-900" : "text-zinc-600"
+                                }`}
                             >
-                              {action.replaceAll("_", " ").toLowerCase()}
+                              {action ? action.replaceAll("_", " ").toLowerCase() : ""}
                             </span>
                           </button>
                         )

@@ -51,6 +51,13 @@ const MODULES_MAP: Record<string, { label: string; url: string; icon: React.Reac
   hrms: { label: "HRM Dashboard", url: "/hrmcubicle", icon: <LayoutDashboard size={18} /> },
 }
 
+// ============================================
+// FEATURE FLAG: Enable/Disable Firm Switching
+// Set to true to enable firm switching in header
+// Set to false to disable (firms accessible via Business Units page)
+// ============================================
+const ENABLE_FIRM_SWITCHING = false
+
 // Color constants for org and firm avatars
 const ORG_COLORS = {
   bg: "bg-indigo-600",
@@ -74,15 +81,19 @@ export default function ToggleOverlayPanel() {
   const [open, setOpen] = useState(false)
   const [selectedOrg, setSelectedOrg] = useState<string | null>(null)
   const [OrgTokenData, setOrgTokenData] = useState<any>(null)
+
+  // Firm-related state (only used when ENABLE_FIRM_SWITCHING is true)
   const [firms, setFirms] = useState<any[]>([])
   const [firmsLoading, setFirmsLoading] = useState(false)
+
   const params = useParams() as { orgName?: string }
   const [orgNameFromStorage, setOrgNameFromStorage] = useState("")
 
   useEffect(() => {
     setOrgNameFromStorage(localStorage.getItem("orgName") || "")
-    // Hydrate currentFirm from localStorage if not already set
-    if (!currentFirm) {
+
+    // Hydrate currentFirm from localStorage if not already set (only if feature enabled)
+    if (ENABLE_FIRM_SWITCHING && !currentFirm) {
       const storedFirmId = localStorage.getItem("firmId")
       const storedFirmName = localStorage.getItem("firmName")
       if (storedFirmId && storedFirmName) {
@@ -123,8 +134,10 @@ export default function ToggleOverlayPanel() {
     }
   }, [])
 
-  // Fetch firms for the current organization
+  // Fetch firms for the current organization (only if feature enabled)
   useEffect(() => {
+    if (!ENABLE_FIRM_SWITCHING) return
+
     const fetchFirms = async () => {
       setFirmsLoading(true)
       try {
@@ -160,10 +173,14 @@ export default function ToggleOverlayPanel() {
       localStorage.setItem("orgToken", res?.token)
       localStorage.setItem("orgID", org.orgId)
       localStorage.setItem("orgName", org.orgName)
-      // Clear firm selection when switching org
-      setCurrentFirm(null)
-      localStorage.removeItem("firmId")
-      localStorage.removeItem("firmName")
+
+      // Clear firm selection when switching org (only if feature enabled)
+      if (ENABLE_FIRM_SWITCHING) {
+        setCurrentFirm(null)
+        localStorage.removeItem("firmId")
+        localStorage.removeItem("firmName")
+      }
+
       showSuccess(`Switched to ${org.orgName}`)
       window.location.reload()
     } catch (err) {
@@ -172,6 +189,8 @@ export default function ToggleOverlayPanel() {
   }
 
   const handleSwitchFirm = async (firm: any) => {
+    if (!ENABLE_FIRM_SWITCHING) return
+
     const firmId = firm._id
     const firmName = firm.FirmName
 
@@ -242,8 +261,8 @@ export default function ToggleOverlayPanel() {
                         </TooltipContent>
                       </Tooltip>
 
-                      {/* Firms under this org (only show for selected/current org) */}
-                      {isSelectedOrg && firms.length > 0 && (
+                      {/* Firms under this org (only show if feature enabled and for selected/current org) */}
+                      {ENABLE_FIRM_SWITCHING && isSelectedOrg && firms.length > 0 && (
                         <>
                           {/* Separator between org and its firms */}
                           <div className="w-7 my-0.5 border-t border-muted-foreground/25" />
@@ -279,8 +298,8 @@ export default function ToggleOverlayPanel() {
                         </>
                       )}
 
-                      {/* Firms loading state */}
-                      {isSelectedOrg && firmsLoading && (
+                      {/* Firms loading state (only if feature enabled) */}
+                      {ENABLE_FIRM_SWITCHING && isSelectedOrg && firmsLoading && (
                         <>
                           <div className="w-7 my-0.5 border-t border-muted-foreground/25" />
                           <div className="h-8 w-8 rounded-md bg-muted-foreground/20 animate-pulse shrink-0" />
@@ -301,8 +320,8 @@ export default function ToggleOverlayPanel() {
           {/* Right Scrollable Section - Modules */}
           <ScrollArea className="flex-1 h-full">
             <div className="p-2">
-              {/* Current context indicator */}
-              {currentFirm && (
+              {/* Current context indicator (only if feature enabled and firm is selected) */}
+              {ENABLE_FIRM_SWITCHING && currentFirm && (
                 <div className="mx-2 mb-2 px-3 py-2 rounded-md bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800">
                   <div className="flex items-center gap-2">
                     <Building2 size={14} className="text-emerald-600 shrink-0" />
