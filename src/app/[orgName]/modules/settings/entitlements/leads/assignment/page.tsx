@@ -43,15 +43,8 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogDescription,
-    DialogFooter,
-} from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet"
 import {
     Select,
     SelectContent,
@@ -154,17 +147,49 @@ export default function LeadAssignmentRulesPage() {
         setIsRuleOpen(true)
     }
 
-    const saveRule = () => {
-        if (!editingRule.name || !editingRule.conditions) {
-            toast.error("Please fill all fields")
+    const saveRule = (e: React.FormEvent) => {
+        e.preventDefault()
+        const name = (editingRule?.name || "").trim()
+        const conditions = (editingRule?.conditions || "").trim()
+        const target = (editingRule?.target || "").trim()
+
+        if (!name) {
+            toast.error("Rule name is required")
             return
         }
+        if (name.length < 3) {
+            toast.error("Name must be at least 3 characters")
+            return
+        }
+        if (name.length > 80) {
+            toast.error("Name too long (max 80)")
+            return
+        }
+        if (!conditions) {
+            toast.error("Conditions expression is required")
+            return
+        }
+        if (conditions.length < 3) {
+            toast.error("Conditions too short")
+            return
+        }
+        if (!target) {
+            toast.error("Assignment target is required")
+            return
+        }
+        const priority = Number(editingRule.priority)
+        if (!Number.isInteger(priority) || priority < 1 || priority > 999) {
+            toast.error("Priority must be a whole number between 1 and 999")
+            return
+        }
+
         setRules(prev => {
             const exists = prev.find(r => r.id === editingRule.id)
+            const cleaned = { ...editingRule, name, conditions, target, priority }
             if (exists) {
-                return prev.map(r => r.id === editingRule.id ? editingRule : r)
+                return prev.map(r => r.id === editingRule.id ? cleaned : r)
             }
-            return [...prev, editingRule]
+            return [...prev, cleaned]
         })
         setIsRuleOpen(false)
         toast.success("Rule saved successfully")
@@ -413,46 +438,58 @@ export default function LeadAssignmentRulesPage() {
                 </div>
             </div>
 
-            {/* Rule Configuration Dialog */}
-            <Dialog open={isRuleOpen} onOpenChange={setIsRuleOpen}>
-                <DialogContent className="sm:max-w-[500px] rounded-2xl border-none shadow-2xl">
-                    <DialogHeader>
-                        <DialogTitle className="text-xl font-semibold flex items-center gap-2">
-                            <Target className="w-5 h-5 text-blue-600" />
-                            {editingRule?.id.startsWith('0x') ? 'Edit Rule' : 'New Rule Definition'}
-                        </DialogTitle>
-                        <DialogDescription className="text-xs font-medium text-zinc-400">
-                            Configure conditional logic to automate lead routing.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-5 py-4">
-                        <div className="grid gap-2">
-                            <Label className="text-[10px] font-medium text-zinc-400">Rule Name</Label>
+            {/* Rule Configuration — side sheet */}
+            <SideFormSheet
+                open={isRuleOpen}
+                onOpenChange={(o) => {
+                    setIsRuleOpen(o)
+                    if (!o) setEditingRule(null)
+                }}
+                title={editingRule && rules.some(r => r.id === editingRule.id) ? "Edit Rule" : "New Rule Definition"}
+                description="Configure conditional logic to automate lead routing."
+                icon={<Target className="w-5 h-5" />}
+                width="md"
+                onSubmit={saveRule}
+                submitLabel="Save Logic"
+            >
+                {editingRule && (
+                    <div className="space-y-4">
+                        <Field
+                            label="Rule Name"
+                            required
+                            hint="3-80 characters"
+                        >
                             <Input
                                 placeholder="e.g. Website Capture Round Robin"
-                                value={editingRule?.name}
+                                value={editingRule.name || ""}
                                 onChange={(e) => setEditingRule({ ...editingRule, name: e.target.value })}
-                                className="rounded-xl bg-zinc-50 border-zinc-100 focus:ring-blue-100 h-11 text-sm font-medium"
+                                className="h-11 rounded-lg bg-white border-[#E5E7EB] focus:border-primary"
+                                maxLength={80}
                             />
-                        </div>
-                        <div className="grid gap-2">
-                            <Label className="text-[10px] font-medium text-zinc-400">Conditions (Dsl)</Label>
+                        </Field>
+
+                        <Field
+                            label="Conditions (DSL)"
+                            required
+                            hint="e.g. Value > 1000 AND Region == 'EMEA'"
+                        >
                             <Input
-                                placeholder="e.g. Value > 1000 AND Region == 'EMEA'"
-                                value={editingRule?.conditions}
+                                placeholder="Value > 1000 AND Region == 'EMEA'"
+                                value={editingRule.conditions || ""}
                                 onChange={(e) => setEditingRule({ ...editingRule, conditions: e.target.value })}
-                                className="rounded-xl bg-zinc-50 border-zinc-100 focus:ring-blue-100 h-11 text-sm font-medium"
+                                className="h-11 rounded-lg bg-white border-[#E5E7EB] focus:border-primary font-mono text-[13px]"
+                                maxLength={300}
                             />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="grid gap-2">
-                                <Label className="text-[10px] font-medium text-zinc-400">Assignment Target</Label>
+                        </Field>
+
+                        <div className="grid grid-cols-2 gap-3">
+                            <Field label="Assignment Target" required>
                                 {orgUsers.length > 0 ? (
                                     <Select
-                                        value={editingRule?.target}
+                                        value={editingRule.target || undefined}
                                         onValueChange={(v) => setEditingRule({ ...editingRule, target: v })}
                                     >
-                                        <SelectTrigger className="h-11 rounded-xl bg-zinc-50 border-zinc-100">
+                                        <SelectTrigger className="h-11 rounded-lg border-[#E5E7EB] bg-white">
                                             <SelectValue placeholder="Select user or team" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -466,19 +503,19 @@ export default function LeadAssignmentRulesPage() {
                                 ) : (
                                     <Input
                                         placeholder="Team or User ID"
-                                        value={editingRule?.target}
+                                        value={editingRule.target || ""}
                                         onChange={(e) => setEditingRule({ ...editingRule, target: e.target.value })}
-                                        className="rounded-xl bg-zinc-50 border-zinc-100 focus:ring-blue-100 h-11 text-sm font-medium"
+                                        className="h-11 rounded-lg bg-white border-[#E5E7EB] focus:border-primary"
+                                        maxLength={80}
                                     />
                                 )}
-                            </div>
-                            <div className="grid gap-2">
-                                <Label className="text-[10px] font-medium text-zinc-400">Method</Label>
+                            </Field>
+                            <Field label="Method" required>
                                 <Select
-                                    value={editingRule?.method}
+                                    value={editingRule.method || "Round Robin"}
                                     onValueChange={(v) => setEditingRule({ ...editingRule, method: v })}
                                 >
-                                    <SelectTrigger className="h-11 rounded-xl bg-zinc-50 border-zinc-100">
+                                    <SelectTrigger className="h-11 rounded-lg border-[#E5E7EB] bg-white">
                                         <SelectValue placeholder="Select method" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -488,17 +525,38 @@ export default function LeadAssignmentRulesPage() {
                                         <SelectItem value="Random">Random</SelectItem>
                                     </SelectContent>
                                 </Select>
-                            </div>
+                            </Field>
+                        </div>
+
+                        <Field
+                            label="Priority"
+                            required
+                            hint="Lower number = evaluated first (1-999)"
+                        >
+                            <Input
+                                type="number"
+                                min={1}
+                                max={999}
+                                value={editingRule.priority || 1}
+                                onChange={(e) =>
+                                    setEditingRule({
+                                        ...editingRule,
+                                        priority: e.target.value.replace(/[^0-9]/g, ""),
+                                    })
+                                }
+                                className="h-11 rounded-lg bg-white border-[#E5E7EB] focus:border-primary font-mono w-32"
+                            />
+                        </Field>
+
+                        <div className="flex items-start gap-2 p-3 bg-[#F0F7FF] border border-[#DBEAFE] rounded-lg">
+                            <Target className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                            <p className="text-[11.5px] text-[#475569] leading-relaxed">
+                                Rules are evaluated in priority order. The first matching rule will assign the lead.
+                            </p>
                         </div>
                     </div>
-                    <DialogFooter>
-                        <Button variant="ghost" onClick={() => setIsRuleOpen(false)} className="rounded-xl font-medium text-[10px]">Cancel</Button>
-                        <Button onClick={saveRule} className="bg-blue-600 hover:bg-blue-700 rounded-xl px-10 font-medium text-[10px] shadow-lg shadow-blue-200">
-                            Save Logic
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                )}
+            </SideFormSheet>
         </div>
     )
 }

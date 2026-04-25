@@ -22,6 +22,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui
 import { Button } from "@/shared/components/ui/button";
 import { Badge } from "@/shared/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import { Label } from "@/shared/components/ui/label";
 import { Textarea } from "@/shared/components/ui/textarea";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/shared/components/ui/dropdown-menu";
@@ -243,34 +244,26 @@ export default function MyPayslipsPage() {
                 </DialogContent>
             </Dialog>
 
-            <Dialog open={!!correctionOpen} onOpenChange={v => !v && setCorrectionOpen(null)}>
-                <DialogContent className="bg-white rounded-2xl border-none p-8 max-w-lg">
-                    <DialogHeader className="space-y-3">
-                        <div className="h-12 w-12 bg-amber-50 rounded-xl flex items-center justify-center">
-                            <AlertCircle className="text-amber-600" size={24} />
-                        </div>
-                        <DialogTitle className="text-2xl font-bold">Request Correction</DialogTitle>
-                        <DialogDescription>
-                            Payslip: <strong>{correctionOpen?.month}</strong> · This will raise a ticket with the Payroll team.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 mt-2">
-                        <div>
-                            <Label className="text-xs font-semibold">What needs correction?</Label>
-                            <Textarea rows={5} value={correctionText} onChange={e => setCorrectionText(e.target.value)} placeholder="Describe the issue (e.g., LTA reimbursement is missing, PF deduction is incorrect, bonus not reflected...)" className="mt-1" />
-                        </div>
-                        <div className="bg-slate-50 rounded-xl p-3 text-[11px] text-slate-600">
-                            A ticket will be auto-created in Helpdesk with category "Payroll" and high priority. You'll get updates via email.
-                        </div>
+            <SideFormSheet
+                open={!!correctionOpen}
+                onOpenChange={v => !v && setCorrectionOpen(null)}
+                title="Request Correction"
+                description={correctionOpen ? `Payslip: ${correctionOpen.month} · This will raise a ticket with the Payroll team.` : undefined}
+                icon={<AlertCircle size={20} />}
+                accentColor="#d97706"
+                width="md"
+                submitLabel="Raise Ticket"
+                onSubmit={(e) => { e.preventDefault(); submitCorrection(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="What needs correction?" required>
+                        <Textarea rows={6} value={correctionText} onChange={e => setCorrectionText(e.target.value)} placeholder="Describe the issue (e.g., LTA reimbursement is missing, PF deduction is incorrect, bonus not reflected...)" />
+                    </Field>
+                    <div className="bg-slate-50 rounded-xl p-3 text-[11px] text-slate-600">
+                        A ticket will be auto-created in Helpdesk with category "Payroll" and high priority. You'll get updates via email.
                     </div>
-                    <DialogFooter className="gap-3 mt-4">
-                        <Button variant="ghost" onClick={() => { setCorrectionOpen(null); setCorrectionText(""); }}>Cancel</Button>
-                        <Button onClick={submitCorrection} className="flex-1 bg-amber-600 hover:bg-amber-700 text-white rounded-xl">
-                            <Send size={14} className="mr-2" /> Raise Ticket
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                </div>
+            </SideFormSheet>
 
             <Dialog open={!!emailOpen} onOpenChange={v => !v && setEmailOpen(null)}>
                 <DialogContent className="bg-white rounded-2xl border-none p-8 max-w-md">

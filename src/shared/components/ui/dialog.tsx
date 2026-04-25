@@ -6,7 +6,23 @@ import { X } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
-const Dialog = DialogPrimitive.Root
+// Radix bug workaround: when a Dialog is opened via a DropdownMenu/menu item,
+// `pointer-events: none` can remain stuck on document.body after close,
+// freezing the whole page. For controlled dialogs only, watch `open` prop
+// and force-clear the stuck style after the close animation settles.
+const Dialog: React.FC<React.ComponentProps<typeof DialogPrimitive.Root>> = (props) => {
+  React.useEffect(() => {
+    if (props.open !== false) return;
+    const timer = window.setTimeout(() => {
+      if (document.body.style.pointerEvents === "none") {
+        document.body.style.pointerEvents = "";
+      }
+    }, 500);
+    return () => window.clearTimeout(timer);
+  }, [props.open]);
+
+  return <DialogPrimitive.Root {...props} />;
+};
 
 const DialogTrigger = DialogPrimitive.Trigger
 

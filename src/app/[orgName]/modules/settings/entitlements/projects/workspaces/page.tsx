@@ -1,190 +1,207 @@
 "use client"
 
 import React, { useState } from "react"
-import { useParams } from "next/navigation"
 import {
     Building2,
     Save,
     Lock,
     Users,
     Globe,
-    UserPlus
+    UserPlus,
 } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Switch } from "@/components/ui/switch"
-import { Label } from "@/components/ui/label"
-import { SmallCard, SmallCardContent } from "@/components/custom/SmallCard"
-import { toast } from "sonner"
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from "@/components/ui/card"
+import { Button } from "@/shared/components/ui/button"
+import { Switch } from "@/shared/components/ui/switch"
+import { Label } from "@/shared/components/ui/label"
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from "@/components/ui/select"
+} from "@/shared/components/ui/select"
+import { showSuccess } from "@/shared/utils/toast"
 
 export default function WorkspaceDefaultsPage() {
-    const params = useParams()
-    const [isLoading, setIsLoading] = useState(false)
+    const [isSaving, setIsSaving] = useState(false)
     const [settings, setSettings] = useState({
         defaultVisibility: "private",
         allowGuestInvites: false,
         autoJoinDomain: true,
-        defaultRole: "member"
+        defaultRole: "member",
     })
 
-    const handleAction = (msg: string) => {
-        setIsLoading(true)
-        setTimeout(() => {
-            setIsLoading(false)
-            toast.success(msg)
-        }, 800)
+    const handleSave = async () => {
+        setIsSaving(true)
+        try {
+            await new Promise((r) => setTimeout(r, 500))
+            showSuccess("Workspace settings saved successfully")
+        } finally {
+            setIsSaving(false)
+        }
     }
 
     return (
-        <div className="font-outfit flex flex-col gap-6 p-6 min-h-screen bg-[#fafafa]">
-            {/* PAGE HEADER */}
-            <div className="flex flex-col gap-1">
-                <div className="flex items-center gap-2 text-xs font-medium text-gray-400">
-                    <span>Project governance</span>
-                    <span>/</span>
-                    <span className="text-gray-900 font-semibold">Workspaces</span>
-                </div>
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mt-2">
+        <div className="flex flex-col min-h-screen bg-transparent">
+            <div className="p-6 pb-0">
+                <div className="flex items-center justify-between mb-1">
                     <div>
-                        <h1 className="text-xl font-semibold text-gray-900 tracking-tight">Workspace Defaults</h1>
-                        <p className="text-xs text-gray-500 font-medium">Configure initialization settings for new workspaces.</p>
+                        <h1 className="text-2xl font-bold tracking-tight text-zinc-900">Workspace Defaults</h1>
+                        <p className="text-sm text-zinc-500 mt-1">
+                            Configure initialization settings for every new workspace.
+                        </p>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <Button
-                            className="rounded-xl bg-blue-600 hover:bg-blue-700 font-semibold text-xs h-10 gap-2 shadow-lg px-5"
-                            onClick={() => handleAction("Workspace settings saved")}
-                            disabled={isLoading}
-                        >
-                            <Save className="w-3.5 h-3.5" />
-                            Save Config
-                        </Button>
-                    </div>
+                    <Button
+                        onClick={handleSave}
+                        disabled={isSaving}
+                        size="sm"
+                        className="rounded-none bg-primary hover:bg-primary/90 h-8 text-xs font-medium gap-2 px-5"
+                    >
+                        <Save size={14} />
+                        {isSaving ? "Saving..." : "Save Changes"}
+                    </Button>
                 </div>
             </div>
 
-            {/* STATS CARDS */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <SmallCard className="border bg-gradient-to-r from-primary/70 to-primary text-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
-                    <SmallCardContent className="px-4 py-4">
-                        <div className="flex items-center justify-between pb-1">
-                            <p className="text-xs text-white/80">Visibility</p>
-                            <Lock className="w-4 h-4 text-white" />
-                        </div>
-                        <p className="text-xl font-semibold text-white capitalize">{settings.defaultVisibility}</p>
-                        <p className="text-[10px] text-white/80">Security level</p>
-                    </SmallCardContent>
-                </SmallCard>
+            <div className="flex-1 p-6 space-y-6">
+                {/* Stats Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="bg-gradient-to-br from-primary/80 to-primary p-6 rounded-none shadow-xl shadow-primary/20 text-white">
+                        <p className="text-white text-xs opacity-80">Visibility</p>
+                        <p className="text-white text-xl font-semibold mt-1 capitalize">{settings.defaultVisibility}</p>
+                        <p className="text-white text-[10px] mt-1 opacity-70">Security level</p>
+                    </div>
 
-                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
-                    <SmallCardContent className="px-4 py-4">
-                        <div className="flex items-center justify-between pb-1">
-                            <p className="text-xs text-gray-600">Default role</p>
-                            <Users className="w-4 h-4 text-gray-400" />
-                        </div>
-                        <p className="text-xl font-semibold text-gray-900 capitalize">{settings.defaultRole}</p>
-                        <p className="text-[10px] text-gray-500">New members</p>
-                    </SmallCardContent>
-                </SmallCard>
+                    <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
+                        <p className="text-zinc-500 text-xs">Default Role</p>
+                        <p className="text-xl font-semibold text-zinc-900 mt-1 capitalize">{settings.defaultRole}</p>
+                        <p className="text-primary text-[10px] mt-1">New members</p>
+                    </div>
 
-                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
-                    <SmallCardContent className="px-4 py-4">
-                        <div className="flex items-center justify-between pb-1">
-                            <p className="text-xs text-gray-600">Auto-join domain</p>
-                            <Globe className="w-4 h-4 text-gray-400" />
-                        </div>
-                        <p className="text-xl font-semibold text-gray-900">{settings.autoJoinDomain ? "Enabled" : "Disabled"}</p>
-                        <p className="text-[10px] text-gray-500">Domain matching</p>
-                    </SmallCardContent>
-                </SmallCard>
+                    <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
+                        <p className="text-zinc-500 text-xs">Auto-join Domain</p>
+                        <p className="text-xl font-semibold text-zinc-900 mt-1">{settings.autoJoinDomain ? "Enabled" : "Disabled"}</p>
+                        <p className="text-emerald-600 text-[10px] mt-1">Domain matching</p>
+                    </div>
 
-                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
-                    <SmallCardContent className="px-4 py-4">
-                        <div className="flex items-center justify-between pb-1">
-                            <p className="text-xs text-gray-600">Guest invites</p>
-                            <UserPlus className="w-4 h-4 text-gray-400" />
-                        </div>
-                        <p className="text-xl font-semibold text-gray-900">{settings.allowGuestInvites ? "Allowed" : "Blocked"}</p>
-                        <p className="text-[10px] text-gray-500">External access</p>
-                    </SmallCardContent>
-                </SmallCard>
-            </div>
+                    <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
+                        <p className="text-zinc-500 text-xs">Guest Invites</p>
+                        <p className="text-xl font-semibold text-zinc-900 mt-1">{settings.allowGuestInvites ? "Allowed" : "Blocked"}</p>
+                        <p className="text-zinc-400 text-[10px] mt-1">External access</p>
+                    </div>
+                </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Card className="rounded-xl border shadow-sm bg-white">
-                    <CardHeader>
-                        <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                            <Building2 className="w-4 h-4 text-gray-500" />
-                            Creation Policies
-                        </CardTitle>
-                        <CardDescription className="text-xs">Settings applied when a workspace is created.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="grid gap-2">
-                            <Label className="text-xs font-semibold text-gray-700">Default visibility</Label>
-                            <Select value={settings.defaultVisibility} onValueChange={(v) => setSettings({ ...settings, defaultVisibility: v })}>
-                                <SelectTrigger className="h-9 rounded-lg">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="private">Private (Invite Only)</SelectItem>
-                                    <SelectItem value="public">Organization Public</SelectItem>
-                                </SelectContent>
-                            </Select>
+                {/* Content */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Creation Policies */}
+                    <div className="bg-white border border-gray-200 rounded-none">
+                        <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
+                            <Building2 size={16} className="text-primary" />
+                            <h3 className="text-sm font-semibold text-gray-900">Creation Policies</h3>
                         </div>
-                        <div className="grid gap-2">
-                            <Label className="text-xs font-semibold text-gray-700">Default member role</Label>
-                            <Select value={settings.defaultRole} onValueChange={(v) => setSettings({ ...settings, defaultRole: v })}>
-                                <SelectTrigger className="h-9 rounded-lg">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="admin">Admin</SelectItem>
-                                    <SelectItem value="member">Member</SelectItem>
-                                    <SelectItem value="viewer">Viewer</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </CardContent>
-                </Card>
+                        <div className="p-5 space-y-5">
+                            <div className="space-y-1.5">
+                                <Label className="text-xs font-medium text-zinc-600">Default Visibility</Label>
+                                <Select
+                                    value={settings.defaultVisibility}
+                                    onValueChange={(v) => setSettings({ ...settings, defaultVisibility: v })}
+                                >
+                                    <SelectTrigger className="rounded-none h-9 text-sm">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="private">Private (Invite Only)</SelectItem>
+                                        <SelectItem value="public">Organization Public</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
 
-                <Card className="rounded-xl border shadow-sm bg-white">
-                    <CardHeader>
-                        <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                            <Users className="w-4 h-4 text-gray-500" />
-                            Access & Enrollment
-                        </CardTitle>
-                        <CardDescription className="text-xs">How users join workspaces.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                        <div className="flex items-center justify-between space-x-2">
-                            <Label htmlFor="domain" className="flex flex-col space-y-1">
-                                <span className="text-xs font-semibold text-gray-700">Auto-join by domain</span>
-                                <span className="font-normal text-[10px] text-gray-500">Allow users with organization email to join public workspaces automatically.</span>
-                            </Label>
-                            <Switch id="domain" checked={settings.autoJoinDomain} onCheckedChange={(v) => setSettings({ ...settings, autoJoinDomain: v })} />
+                            <div className="space-y-1.5">
+                                <Label className="text-xs font-medium text-zinc-600">Default Member Role</Label>
+                                <Select
+                                    value={settings.defaultRole}
+                                    onValueChange={(v) => setSettings({ ...settings, defaultRole: v })}
+                                >
+                                    <SelectTrigger className="rounded-none h-9 text-sm">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="admin">Admin</SelectItem>
+                                        <SelectItem value="member">Member</SelectItem>
+                                        <SelectItem value="viewer">Viewer</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
                         </div>
-                        <div className="flex items-center justify-between space-x-2">
-                            <Label htmlFor="guest" className="flex flex-col space-y-1">
-                                <span className="text-xs font-semibold text-gray-700">Allow guest invites</span>
-                                <span className="font-normal text-[10px] text-gray-500">Admins can invite external email addresses.</span>
-                            </Label>
-                            <Switch id="guest" checked={settings.allowGuestInvites} onCheckedChange={(v) => setSettings({ ...settings, allowGuestInvites: v })} />
+                    </div>
+
+                    {/* Access & Enrollment */}
+                    <div className="bg-white border border-gray-200 rounded-none">
+                        <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
+                            <Users size={16} className="text-primary" />
+                            <h3 className="text-sm font-semibold text-gray-900">Access &amp; Enrollment</h3>
                         </div>
-                    </CardContent>
-                </Card>
+                        <div className="p-5 space-y-5">
+                            <div className="flex items-center justify-between py-1">
+                                <div className="flex-1 pr-4">
+                                    <p className="text-xs font-medium text-zinc-700">Auto-join by domain</p>
+                                    <p className="text-[11px] text-zinc-500 mt-0.5">Users with an organization email can join public workspaces automatically.</p>
+                                </div>
+                                <Switch
+                                    checked={settings.autoJoinDomain}
+                                    onCheckedChange={(v) => setSettings({ ...settings, autoJoinDomain: v })}
+                                />
+                            </div>
+
+                            <div className="flex items-center justify-between py-1 border-t border-zinc-100 pt-4">
+                                <div className="flex-1 pr-4">
+                                    <p className="text-xs font-medium text-zinc-700">Allow guest invites</p>
+                                    <p className="text-[11px] text-zinc-500 mt-0.5">Admins can invite external email addresses.</p>
+                                </div>
+                                <Switch
+                                    checked={settings.allowGuestInvites}
+                                    onCheckedChange={(v) => setSettings({ ...settings, allowGuestInvites: v })}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Info cards */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bg-white border border-gray-200 rounded-none p-5 flex items-start gap-3">
+                        <div className="p-2 bg-primary/10 rounded-none">
+                            <Lock size={18} className="text-primary" />
+                        </div>
+                        <div>
+                            <h3 className="text-sm font-semibold text-gray-900">Privacy first</h3>
+                            <p className="text-xs text-gray-600 mt-0.5 leading-relaxed">
+                                Private workspaces restrict access to invited members only.
+                            </p>
+                        </div>
+                    </div>
+                    <div className="bg-white border border-gray-200 rounded-none p-5 flex items-start gap-3">
+                        <div className="p-2 bg-primary/10 rounded-none">
+                            <Globe size={18} className="text-primary" />
+                        </div>
+                        <div>
+                            <h3 className="text-sm font-semibold text-gray-900">Domain matching</h3>
+                            <p className="text-xs text-gray-600 mt-0.5 leading-relaxed">
+                                Automatically provision users whose email matches your verified domain.
+                            </p>
+                        </div>
+                    </div>
+                    <div className="bg-white border border-gray-200 rounded-none p-5 flex items-start gap-3">
+                        <div className="p-2 bg-primary/10 rounded-none">
+                            <UserPlus size={18} className="text-primary" />
+                        </div>
+                        <div>
+                            <h3 className="text-sm font-semibold text-gray-900">Guest collaboration</h3>
+                            <p className="text-xs text-gray-600 mt-0.5 leading-relaxed">
+                                Invite clients or partners with scoped viewer access when needed.
+                            </p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     )

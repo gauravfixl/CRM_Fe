@@ -1,231 +1,411 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useMemo } from "react"
 import {
     TrendingUp,
     Plus,
     Search,
-    Activity,
-    Target,
-    Zap,
-    BarChart3
+    MoreVertical,
+    Edit,
+    Trash2,
+    Pencil,
 } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { Button } from "@/shared/components/ui/button"
+import { Input } from "@/shared/components/ui/input"
+import { Textarea } from "@/shared/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import {
-    Dialog,
-    DialogContent,
-    DialogFooter,
-    DialogTitle
-} from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label"
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger
+} from "@/shared/components/ui/dropdown-menu"
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue
-} from "@/components/ui/select"
-import { SmallCard, SmallCardHeader, SmallCardContent } from "@/shared/components/custom/SmallCard"
-import { toast } from "sonner"
+} from "@/shared/components/ui/select"
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet"
+import { showSuccess, showWarning } from "@/shared/utils/toast"
+
+type AttributionModel = {
+    id: string
+    name: string
+    type: "Single Touch" | "Multi Touch"
+    weight: string
+    description: string
+    status: "Active" | "Paused"
+    campaigns: number
+}
+
+const modelTypes = ["Single Touch", "Multi Touch"] as const
 
 export default function AttributionModelsPage() {
-    const [showCreateModal, setShowCreateModal] = useState(false)
+    const [showFormModal, setShowFormModal] = useState(false)
+    const [editingId, setEditingId] = useState<string | null>(null)
+    const [submitting, setSubmitting] = useState(false)
     const [searchQuery, setSearchQuery] = useState("")
-    const [models, setModels] = useState([
+    const [models, setModels] = useState<AttributionModel[]>([
         { id: "1", name: "First Touch", type: "Single Touch", weight: "100%", description: "Credits first interaction", status: "Active", campaigns: 45 },
         { id: "2", name: "Last Touch", type: "Single Touch", weight: "100%", description: "Credits last interaction", status: "Active", campaigns: 89 },
         { id: "3", name: "Linear", type: "Multi Touch", weight: "Equal", description: "Equal credit to all touchpoints", status: "Active", campaigns: 24 },
         { id: "4", name: "Time Decay", type: "Multi Touch", weight: "Weighted", description: "More recent gets more credit", status: "Paused", campaigns: 12 },
     ])
 
-    const toggleStatus = (id: string) => {
-        setModels(prev => prev.map(m => m.id === id ? { ...m, status: m.status === "Active" ? "Paused" : "Active" } : m))
-        toast.success("Attribution model status updated.")
+    const [form, setForm] = useState({
+        name: "",
+        type: "Single Touch" as "Single Touch" | "Multi Touch",
+        weight: "100%",
+        description: "",
+    })
+    const [touched, setTouched] = useState<Record<string, boolean>>({})
+
+    const errors = useMemo(() => {
+        const e: Record<string, string> = {}
+        if (touched.name) {
+            if (!form.name.trim()) e.name = "Model name is required"
+            else if (form.name.trim().length < 2) e.name = "Name too short"
+        }
+        if (touched.description && form.description.length > 200)
+            e.description = "Description too long (max 200)"
+        return e
+    }, [form, touched])
+
+    const resetForm = () => {
+        setForm({ name: "", type: "Single Touch", weight: "100%", description: "" })
+        setTouched({})
+        setEditingId(null)
     }
 
-    const handleCreate = (e: React.FormEvent<HTMLFormElement>) => {
+    const openCreateModal = () => {
+        resetForm()
+        setShowFormModal(true)
+    }
+
+    const openEditModal = (m: AttributionModel) => {
+        setEditingId(m.id)
+        setForm({
+            name: m.name,
+            type: m.type,
+            weight: m.weight,
+            description: m.description,
+        })
+        setTouched({})
+        setShowFormModal(true)
+    }
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-        const formData = new FormData(e.currentTarget)
-        const name = formData.get("modelName") as string
-        if (!name) return toast.error("Model name is required")
-        setModels(prev => [...prev, {
-            id: String(Date.now()),
-            name,
-            type: formData.get("modelType") as string || "Single Touch",
-            weight: "100%",
-            description: formData.get("description") as string || "",
-            status: "Active",
-            campaigns: 0
-        }])
-        setShowCreateModal(false)
-        toast.success(`${name} attribution model created.`)
+        setTouched({ name: true, description: true })
+        if (!form.name.trim()) return showWarning("Model name is required")
+
+        setSubmitting(true)
+        try {
+            await new Promise((r) => setTimeout(r, 300))
+            if (editingId) {
+                setModels((prev) =>
+                    prev.map((m) =>
+                        m.id === editingId
+                            ? {
+                                  ...m,
+                                  name: form.name.trim(),
+                                  type: form.type,
+                                  weight: form.weight.trim() || "100%",
+                                  description: form.description.trim(),
+                              }
+                            : m
+                    )
+                )
+                showSuccess(`${form.name} updated successfully`)
+            } else {
+                setModels((prev) => [
+                    ...prev,
+                    {
+                        id: String(Date.now()),
+                        name: form.name.trim(),
+                        type: form.type,
+                        weight: form.weight.trim() || "100%",
+                        description: form.description.trim(),
+                        status: "Active",
+                        campaigns: 0,
+                    },
+                ])
+                showSuccess(`${form.name} attribution model created`)
+            }
+            setShowFormModal(false)
+            resetForm()
+        } finally {
+            setSubmitting(false)
+        }
     }
 
-    const filtered = models.filter(m => m.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    const toggleStatus = (id: string) => {
+        setModels((prev) =>
+            prev.map((m) =>
+                m.id === id ? { ...m, status: m.status === "Active" ? "Paused" : "Active" } : m
+            )
+        )
+        showSuccess("Attribution model status updated")
+    }
+
+    const deleteModel = (id: string) => {
+        const m = models.find((x) => x.id === id)
+        if (!m) return
+        const ok = window.confirm(`Delete ${m.name}?`)
+        if (!ok) return
+        setModels((prev) => prev.filter((x) => x.id !== id))
+        showSuccess("Attribution model deleted")
+    }
+
+    const filtered = models.filter((m) =>
+        m.name.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+
+    const activeCount = models.filter((m) => m.status === "Active").length
+    const totalCampaigns = models.reduce((sum, m) => sum + m.campaigns, 0)
 
     return (
-        <div className="flex flex-col h-full w-full bg-slate-50/50 p-6 space-y-8 overflow-y-auto font-sans">
-            {/* HERO */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-emerald-600 to-teal-700 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-emerald-500/20">
-                        <TrendingUp className="w-6 h-6" />
-                    </div>
+        <div className="flex flex-col min-h-screen bg-transparent">
+            {/* Header */}
+            <div className="p-6 pb-0">
+                <div className="flex items-center justify-between mb-1">
                     <div>
-                        <h1 className="text-3xl font-black tracking-tight text-slate-900 leading-none">Attribution Models</h1>
-                        <p className="text-sm text-slate-500 mt-2 font-medium max-w-lg">Configure how campaign success is attributed across touchpoints.</p>
+                        <h1 className="text-2xl font-bold tracking-tight text-zinc-900">Attribution Models</h1>
+                        <p className="text-sm text-zinc-500 mt-1">
+                            Configure how campaign success is attributed across touchpoints.
+                        </p>
                     </div>
-                </div>
-                <Button onClick={() => setShowCreateModal(true)} className="h-11 bg-blue-600 hover:bg-blue-700 text-white gap-2 font-bold text-[11px] shadow-xl shadow-blue-500/20 px-6 rounded-2xl transition-all active:scale-95">
-                    <Plus className="w-4 h-4" /> Create Model
-                </Button>
-            </div>
-
-            {/* TOP STATS */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <SmallCard className="bg-gradient-to-br from-blue-600 to-indigo-800 border-none shadow-[0_20px_40px_rgba(37,99,235,0.25)] hover:-translate-y-1 transition-transform">
-                    <SmallCardHeader className="pb-2">
-                        <p className="text-[10px] font-bold text-blue-100 tracking-wider">Attribution Models</p>
-                    </SmallCardHeader>
-                    <SmallCardContent>
-                        <p className="text-3xl font-black text-white">{models.length}</p>
-                        <p className="text-[10px] text-blue-100 font-bold flex items-center gap-1 mt-1">
-                            <BarChart3 className="w-3 h-3" /> Configured
-                        </p>
-                    </SmallCardContent>
-                </SmallCard>
-
-                <SmallCard className="bg-white border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all">
-                    <SmallCardHeader className="pb-2 text-left">
-                        <p className="text-[10px] font-bold text-slate-400 tracking-wider">Active Models</p>
-                    </SmallCardHeader>
-                    <SmallCardContent className="text-left">
-                        <p className="text-3xl font-black text-slate-900">{models.filter(m => m.status === "Active").length}</p>
-                        <p className="text-[10px] text-emerald-600 font-bold flex items-center gap-1 mt-1">
-                            <Activity className="w-3 h-3" /> In use
-                        </p>
-                    </SmallCardContent>
-                </SmallCard>
-
-                <SmallCard className="bg-white border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all">
-                    <SmallCardHeader className="pb-2 text-left">
-                        <p className="text-[10px] font-bold text-slate-400 tracking-wider">Total Campaigns</p>
-                    </SmallCardHeader>
-                    <SmallCardContent className="text-left">
-                        <p className="text-3xl font-black text-slate-900">{models.reduce((sum, m) => sum + m.campaigns, 0)}</p>
-                        <p className="text-[10px] text-blue-500 font-bold flex items-center gap-1 mt-1">
-                            <Zap className="w-3 h-3" /> Using attribution
-                        </p>
-                    </SmallCardContent>
-                </SmallCard>
-
-                <SmallCard className="bg-white border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all">
-                    <SmallCardHeader className="pb-2 text-left">
-                        <p className="text-[10px] font-bold text-slate-400 tracking-wider">Accuracy</p>
-                    </SmallCardHeader>
-                    <SmallCardContent className="text-left">
-                        <p className="text-3xl font-black text-emerald-600">92%</p>
-                        <p className="text-[10px] text-slate-400 font-bold flex items-center gap-1 mt-1">
-                            <Target className="w-3 h-3" /> Model performance
-                        </p>
-                    </SmallCardContent>
-                </SmallCard>
-            </div>
-
-            {/* TABLE */}
-            <div className="bg-white border border-slate-200 rounded-3xl shadow-sm overflow-hidden">
-                <div className="p-6 border-b border-slate-100 bg-slate-50/50">
-                    <div className="relative w-full md:w-96">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-                        <Input
-                            placeholder="Search models..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="pl-11 rounded-2xl border-slate-200 h-11 text-sm bg-white font-medium"
-                        />
-                    </div>
-                </div>
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                        <thead>
-                            <tr className="bg-slate-50/50 border-b border-slate-100">
-                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 tracking-wider">Model Name</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 tracking-wider">Type</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 tracking-wider">Weight</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 tracking-wider">Description</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 tracking-wider">Campaigns</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 tracking-wider">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                            {filtered.map((model) => (
-                                <tr key={model.id} className="hover:bg-slate-50 transition-colors group">
-                                    <td className="px-6 py-5">
-                                        <div className="flex items-center gap-3">
-                                            <div className="p-2 bg-emerald-50 text-emerald-600 rounded-xl border border-emerald-100 group-hover:bg-emerald-600 group-hover:text-white transition-all">
-                                                <TrendingUp className="w-4 h-4" />
-                                            </div>
-                                            <span className="text-sm font-black text-slate-900">{model.name}</span>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-5">
-                                        <Badge className="bg-blue-50 text-blue-700 border-none rounded-full text-[10px] font-bold px-3 py-1">{model.type}</Badge>
-                                    </td>
-                                    <td className="px-6 py-5"><span className="text-sm font-black text-slate-900">{model.weight}</span></td>
-                                    <td className="px-6 py-5"><span className="text-sm text-slate-500 font-medium">{model.description}</span></td>
-                                    <td className="px-6 py-5"><span className="text-sm font-black text-slate-900">{model.campaigns}</span></td>
-                                    <td className="px-6 py-5">
-                                        <div className="flex items-center gap-2">
-                                            <Switch checked={model.status === "Active"} onCheckedChange={() => toggleStatus(model.id)} />
-                                            <Badge className={`${model.status === "Active" ? "bg-emerald-600" : "bg-slate-400"} text-white border-none rounded-full text-[10px] font-bold px-2 py-0.5`}>{model.status}</Badge>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                    <Button
+                        onClick={openCreateModal}
+                        className="rounded-none bg-primary hover:bg-primary/90 text-xs font-medium h-8 gap-1.5 px-4 shadow-md shadow-primary/20"
+                    >
+                        <Plus size={14} />
+                        Create Model
+                    </Button>
                 </div>
             </div>
 
-            {/* CREATE MODAL */}
-            <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
-                <DialogContent className="sm:max-w-[500px] p-0 border-none rounded-3xl overflow-hidden shadow-2xl">
-                    <div className="bg-gradient-to-br from-emerald-600 to-teal-700 p-8 text-white relative">
-                        <TrendingUp className="w-16 h-16 text-white/10 absolute right-4 top-4" />
-                        <DialogTitle className="text-2xl font-black tracking-tight">Create Attribution Model</DialogTitle>
-                        <p className="text-emerald-100 text-xs font-medium mt-2">Define how campaign touchpoints are credited.</p>
+            <div className="flex-1 p-6 space-y-6">
+                {/* Stats Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="bg-gradient-to-br from-primary/80 to-primary p-6 rounded-none shadow-xl shadow-primary/20 text-white">
+                        <p className="text-white text-xs opacity-80">Attribution Models</p>
+                        <p className="text-white text-xl font-semibold mt-1">{models.length}</p>
+                        <p className="text-white text-[10px] mt-1 opacity-70">Configured</p>
                     </div>
-                    <form onSubmit={handleCreate} className="p-8 space-y-6 bg-white">
-                        <div className="space-y-2">
-                            <Label className="text-[10px] font-bold text-slate-400">Model Name</Label>
-                            <Input name="modelName" placeholder="e.g., First Touch" className="h-12 bg-slate-50 border-slate-100 rounded-2xl font-bold" />
+
+                    <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
+                        <p className="text-zinc-500 text-xs">Active Models</p>
+                        <p className="text-xl font-semibold text-zinc-900 mt-1">{activeCount}</p>
+                        <p className="text-emerald-600 text-[10px] mt-1">In use</p>
+                    </div>
+
+                    <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
+                        <p className="text-zinc-500 text-xs">Total Campaigns</p>
+                        <p className="text-xl font-semibold text-zinc-900 mt-1">{totalCampaigns}</p>
+                        <p className="text-primary text-[10px] mt-1">Using attribution</p>
+                    </div>
+
+                    <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
+                        <p className="text-zinc-500 text-xs">Accuracy</p>
+                        <p className="text-xl font-semibold text-zinc-900 mt-1">92%</p>
+                        <p className="text-emerald-600 text-[10px] mt-1">Model performance</p>
+                    </div>
+                </div>
+
+                {/* Table */}
+                <div className="bg-white border border-gray-200 rounded-none overflow-hidden">
+                    <div className="p-4 border-b border-gray-100 flex flex-col sm:flex-row gap-3 items-center justify-between">
+                        <div className="relative w-full sm:w-80">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+                            <Input
+                                placeholder="Search models..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="pl-9 rounded-none border-gray-200 h-9 text-xs focus:ring-primary bg-white"
+                            />
                         </div>
-                        <div className="space-y-2">
-                            <Label className="text-[10px] font-bold text-slate-400">Model Type</Label>
-                            <Select name="modelType">
-                                <SelectTrigger className="h-12 bg-slate-50 border-slate-100 rounded-2xl font-bold">
+                    </div>
+
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left">
+                            <thead>
+                                <tr className="border-b border-gray-100 bg-gray-50/50">
+                                    <th className="px-4 py-3 text-xs font-medium text-gray-500">Model Name</th>
+                                    <th className="px-4 py-3 text-xs font-medium text-gray-500">Type</th>
+                                    <th className="px-4 py-3 text-xs font-medium text-gray-500">Weight</th>
+                                    <th className="px-4 py-3 text-xs font-medium text-gray-500">Description</th>
+                                    <th className="px-4 py-3 text-xs font-medium text-gray-500">Campaigns</th>
+                                    <th className="px-4 py-3 text-xs font-medium text-gray-500">Status</th>
+                                    <th className="px-4 py-3 text-xs font-medium text-gray-500 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-50">
+                                {filtered.map((m) => (
+                                    <tr key={m.id} className="hover:bg-gray-50/50 transition-colors">
+                                        <td className="px-4 py-3">
+                                            <div className="flex items-center gap-2">
+                                                <TrendingUp size={14} className="text-gray-400" />
+                                                <span className="text-sm font-medium text-gray-900">{m.name}</span>
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <Badge className="rounded-none bg-primary/10 text-primary border border-primary/20 text-[10px] font-medium px-2 py-0.5 hover:bg-primary/10">
+                                                {m.type}
+                                            </Badge>
+                                        </td>
+                                        <td className="px-4 py-3 text-sm font-semibold text-gray-900">{m.weight}</td>
+                                        <td className="px-4 py-3 text-xs text-gray-500 max-w-xs truncate">{m.description}</td>
+                                        <td className="px-4 py-3 text-sm text-gray-700">{m.campaigns}</td>
+                                        <td className="px-4 py-3">
+                                            <div className="flex items-center gap-2">
+                                                <Switch
+                                                    checked={m.status === "Active"}
+                                                    onCheckedChange={() => toggleStatus(m.id)}
+                                                />
+                                                <Badge
+                                                    className={`rounded-none text-[10px] font-medium px-2 py-0.5 ${
+                                                        m.status === "Active"
+                                                            ? "bg-green-50 text-green-700 border border-green-200 hover:bg-green-50"
+                                                            : "bg-zinc-100 text-zinc-600 border border-zinc-200 hover:bg-zinc-100"
+                                                    }`}
+                                                >
+                                                    {m.status}
+                                                </Badge>
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-3 text-right">
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <button className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-50 rounded-none transition-colors">
+                                                        <MoreVertical size={14} />
+                                                    </button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end" className="rounded-none min-w-[150px]">
+                                                    <DropdownMenuLabel className="text-[10px] font-medium text-zinc-400">
+                                                        Actions
+                                                    </DropdownMenuLabel>
+                                                    <DropdownMenuItem
+                                                        onClick={() => openEditModal(m)}
+                                                        className="text-xs font-medium cursor-pointer gap-2"
+                                                    >
+                                                        <Edit size={13} />
+                                                        Edit model
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuSeparator />
+                                                    <DropdownMenuItem
+                                                        onClick={() => deleteModel(m.id)}
+                                                        className="text-xs font-medium text-red-600 focus:text-red-600 cursor-pointer gap-2"
+                                                    >
+                                                        <Trash2 size={13} />
+                                                        Delete
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </td>
+                                    </tr>
+                                ))}
+                                {filtered.length === 0 && (
+                                    <tr>
+                                        <td colSpan={7} className="px-4 py-10 text-center text-xs text-gray-400">
+                                            No attribution models found.
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div className="px-4 py-3 border-t border-gray-100 bg-gray-50/30">
+                        <p className="text-xs text-gray-500">
+                            Showing {filtered.length} of {models.length} models
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Create / Edit side sheet */}
+            <SideFormSheet
+                open={showFormModal}
+                onOpenChange={(o) => {
+                    setShowFormModal(o)
+                    if (!o) resetForm()
+                }}
+                title={editingId ? "Edit Attribution Model" : "Create Attribution Model"}
+                description={
+                    editingId
+                        ? "Update the attribution model details below."
+                        : "Define how campaign touchpoints are credited."
+                }
+                icon={editingId ? <Pencil className="w-5 h-5" /> : <TrendingUp className="w-5 h-5" />}
+                width="md"
+                onSubmit={handleSubmit}
+                submitLabel={editingId ? "Save Changes" : "Create Model"}
+                loading={submitting}
+            >
+                <div className="space-y-4">
+                    <Field label="Model Name" required error={errors.name}>
+                        <Input
+                            placeholder="e.g. First Touch"
+                            value={form.name}
+                            onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                            onBlur={() => setTouched((t) => ({ ...t, name: true }))}
+                            className="h-11 rounded-lg bg-white border-[#E5E7EB] focus:border-primary"
+                            maxLength={60}
+                        />
+                    </Field>
+
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Model Type">
+                            <Select
+                                value={form.type}
+                                onValueChange={(v) => setForm((f) => ({ ...f, type: v as "Single Touch" | "Multi Touch" }))}
+                            >
+                                <SelectTrigger className="h-11 rounded-lg border-[#E5E7EB] bg-white">
                                     <SelectValue placeholder="Select type" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="Single Touch">Single Touch</SelectItem>
-                                    <SelectItem value="Multi Touch">Multi Touch</SelectItem>
+                                    {modelTypes.map((t) => (
+                                        <SelectItem key={t} value={t}>
+                                            {t}
+                                        </SelectItem>
+                                    ))}
                                 </SelectContent>
                             </Select>
-                        </div>
-                        <div className="space-y-2">
-                            <Label className="text-[10px] font-bold text-slate-400">Description</Label>
-                            <Input name="description" placeholder="Describe how this model works..." className="h-12 bg-slate-50 border-slate-100 rounded-2xl font-bold" />
-                        </div>
-                        <DialogFooter className="gap-3">
-                            <Button type="button" variant="ghost" onClick={() => setShowCreateModal(false)} className="rounded-2xl text-sm text-slate-500 font-bold">Cancel</Button>
-                            <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700 rounded-2xl text-sm px-8 h-12 shadow-xl shadow-emerald-500/20 font-bold transition-all active:scale-95">Create Model</Button>
-                        </DialogFooter>
-                    </form>
-                </DialogContent>
-            </Dialog>
+                        </Field>
+
+                        <Field label="Weight" hint="e.g. 100%, Equal, Weighted">
+                            <Input
+                                placeholder="100%"
+                                value={form.weight}
+                                onChange={(e) => setForm((f) => ({ ...f, weight: e.target.value }))}
+                                className="h-11 rounded-lg bg-white border-[#E5E7EB] focus:border-primary"
+                                maxLength={20}
+                            />
+                        </Field>
+                    </div>
+
+                    <Field
+                        label="Description"
+                        error={errors.description}
+                        hint={`${form.description.length}/200 characters (optional)`}
+                    >
+                        <Textarea
+                            placeholder="Describe how this model works..."
+                            value={form.description}
+                            onChange={(e) =>
+                                setForm((f) => ({ ...f, description: e.target.value.slice(0, 200) }))
+                            }
+                            className="rounded-lg bg-white border-[#E5E7EB] focus:border-primary text-[13px] min-h-[90px]"
+                        />
+                    </Field>
+                </div>
+            </SideFormSheet>
         </div>
     )
 }

@@ -25,6 +25,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui
 import { Button } from "@/shared/components/ui/button";
 import { Badge } from "@/shared/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { Textarea } from "@/shared/components/ui/textarea";
@@ -309,55 +310,46 @@ export default function MyHelpdeskPage() {
                 </Card>
             </div>
 
-            <Dialog open={newOpen} onOpenChange={setNewOpen}>
-                <DialogContent className="bg-white rounded-2xl border-none p-8 max-w-lg">
-                    <DialogHeader className="space-y-3">
-                        <div className="h-12 w-12 bg-indigo-50 rounded-xl flex items-center justify-center">
-                            <Ticket className="text-indigo-600" size={24} />
-                        </div>
-                        <DialogTitle className="text-2xl font-bold">Raise New Ticket</DialogTitle>
-                        <DialogDescription>Describe your issue and we'll route it to the right team.</DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 mt-2">
-                        <div>
-                            <Label className="text-xs font-semibold">Subject (5-200 chars)</Label>
-                            <Input maxLength={200} value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="e.g., Cannot access HR portal" className="mt-1" />
-                            <p className="text-[10px] text-slate-400 mt-1">{form.title.length}/200 chars</p>
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                            <div>
-                                <Label className="text-xs font-semibold">Category</Label>
-                                <Select value={form.category} onValueChange={v => setForm({ ...form, category: v })}>
-                                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        {Object.keys(categoryIcons).map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div>
-                                <Label className="text-xs font-semibold">Priority</Label>
-                                <Select value={form.priority} onValueChange={v => setForm({ ...form, priority: v })}>
-                                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="High">High</SelectItem>
-                                        <SelectItem value="Medium">Medium</SelectItem>
-                                        <SelectItem value="Low">Low</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-                        <div>
-                            <Label className="text-xs font-semibold">Description (20-2000 chars)</Label>
-                            <Textarea rows={4} maxLength={2000} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="Provide as much detail as possible..." className="mt-1" />
-                            <p className="text-[10px] text-slate-400 mt-1">{form.description.length}/2000 chars</p>
-                        </div>
+            <SideFormSheet
+                open={newOpen}
+                onOpenChange={setNewOpen}
+                title="Raise New Ticket"
+                description="Describe your issue and we'll route it to the right team."
+                icon={<Ticket size={20} />}
+                accentColor="#4f46e5"
+                width="md"
+                submitLabel="Submit Ticket"
+                onSubmit={(e) => { e.preventDefault(); handleCreate(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Subject" required hint={`${form.title.length}/200 chars · 5-200`}>
+                        <Input maxLength={200} value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="e.g., Cannot access HR portal" />
+                    </Field>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Category">
+                            <Select value={form.category} onValueChange={v => setForm({ ...form, category: v })}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    {Object.keys(categoryIcons).map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <Field label="Priority">
+                            <Select value={form.priority} onValueChange={v => setForm({ ...form, priority: v })}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="High">High</SelectItem>
+                                    <SelectItem value="Medium">Medium</SelectItem>
+                                    <SelectItem value="Low">Low</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
                     </div>
-                    <DialogFooter className="gap-3 mt-4">
-                        <Button variant="ghost" onClick={() => setNewOpen(false)}>Cancel</Button>
-                        <Button onClick={handleCreate} className="flex-1 bg-indigo-600 hover:bg-indigo-700 rounded-xl">Submit Ticket</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    <Field label="Description" required hint={`${form.description.length}/2000 chars · 20-2000`}>
+                        <Textarea rows={5} maxLength={2000} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="Provide as much detail as possible..." />
+                    </Field>
+                </div>
+            </SideFormSheet>
 
             <Dialog open={!!detailOpen} onOpenChange={v => !v && setDetailOpen(null)}>
                 <DialogContent className="bg-white rounded-2xl border-none p-0 max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">

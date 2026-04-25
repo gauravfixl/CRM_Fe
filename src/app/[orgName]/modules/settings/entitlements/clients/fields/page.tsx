@@ -43,15 +43,8 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogDescription,
-    DialogFooter,
-} from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet"
 import {
     Select,
     SelectContent,
@@ -103,15 +96,30 @@ export default function ClientFieldsLayoutsPage() {
         setIsFieldOpen(true)
     }
 
-    const saveField = () => {
-        if (!editingField.label) {
-            toast.error("Label is required")
+    const saveField = (e: React.FormEvent) => {
+        e.preventDefault()
+        const label = (editingField?.label || "").trim()
+        if (!label) {
+            toast.error("Display label is required")
+            return
+        }
+        if (label.length < 2) {
+            toast.error("Label must be at least 2 characters")
+            return
+        }
+        if (label.length > 50) {
+            toast.error("Label too long (max 50 characters)")
+            return
+        }
+        if (!/^[A-Za-z0-9\s&()./-]+$/.test(label)) {
+            toast.error("Label can only contain letters, numbers, spaces and & ( ) . / -")
             return
         }
         setFields(prev => {
             const exists = prev.find(f => f.id === editingField.id)
-            if (exists) return prev.map(f => f.id === editingField.id ? editingField : f)
-            return [...prev, editingField]
+            const next = { ...editingField, label }
+            if (exists) return prev.map(f => f.id === editingField.id ? next : f)
+            return [...prev, next]
         })
         setIsFieldOpen(false)
         toast.success(`Client schema updated`)
@@ -324,38 +332,52 @@ export default function ClientFieldsLayoutsPage() {
                 </Table>
             </div>
 
-            {/* FIELD CONFIGURATION DIALOG */}
-            <Dialog open={isFieldOpen} onOpenChange={setIsFieldOpen}>
-                <DialogContent className="sm:max-w-[450px] rounded-xl p-5 border-none shadow-sm">
-                    <DialogHeader>
-                        <DialogTitle className="text-sm font-semibold flex items-center gap-2 text-indigo-600">
-                            <Columns className="w-5 h-5" />
-                            Attribute Definition
-                        </DialogTitle>
-                        <DialogDescription className="text-[10px] font-medium text-zinc-400">
-                            Modify global client schema for all future account records.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                        <div className="grid gap-2">
-                            <Label className="text-xs font-medium text-zinc-500">Display Label</Label>
+            {/* Attribute Definition — side sheet */}
+            <SideFormSheet
+                open={isFieldOpen}
+                onOpenChange={setIsFieldOpen}
+                title={editingField && fields.some(f => f.id === editingField.id) ? "Edit Attribute" : "Add Client Attribute"}
+                description="Modify global client schema for all future account records."
+                icon={<Columns className="w-5 h-5" />}
+                width="md"
+                onSubmit={saveField}
+                submitLabel="Commit Schema"
+                submitDisabled={editingField?.system}
+            >
+                {editingField && (
+                    <div className="space-y-4">
+                        {editingField.system && (
+                            <div className="flex items-start gap-2.5 p-3 rounded-lg bg-indigo-50 border border-indigo-100">
+                                <Lock className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
+                                <div className="text-[12px] text-indigo-900 leading-relaxed">
+                                    <strong>System-fixed attribute.</strong> Core fields cannot be modified to preserve schema integrity.
+                                </div>
+                            </div>
+                        )}
+
+                        <Field
+                            label="Display Label"
+                            required
+                            hint="2–50 chars. Letters, numbers, spaces, and & ( ) . / -"
+                        >
                             <Input
                                 placeholder="e.g. Contract Renewal Date"
-                                value={editingField?.label}
-                                onChange={(e) => setEditingField({ ...editingField, label: e.target.value })}
-                                disabled={editingField?.system}
-                                className="rounded-lg bg-zinc-50 border-zinc-100 focus:ring-indigo-100 h-9 text-xs font-medium"
+                                value={editingField.label || ""}
+                                onChange={(e) => setEditingField({ ...editingField, label: e.target.value.slice(0, 50) })}
+                                disabled={editingField.system}
+                                maxLength={50}
+                                className="h-11 rounded-lg bg-white border-[#E5E7EB] focus:border-primary disabled:bg-[#F8FAFC]"
                             />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="grid gap-2">
-                                <Label className="text-xs font-medium text-zinc-500">Data Type</Label>
+                        </Field>
+
+                        <div className="grid grid-cols-2 gap-3">
+                            <Field label="Data Type">
                                 <Select
-                                    value={editingField?.type}
+                                    value={editingField.type}
                                     onValueChange={(v) => setEditingField({ ...editingField, type: v })}
-                                    disabled={editingField?.system}
+                                    disabled={editingField.system}
                                 >
-                                    <SelectTrigger className="h-9 rounded-lg bg-zinc-50 border-zinc-100">
+                                    <SelectTrigger className="h-11 rounded-lg border-[#E5E7EB] bg-white disabled:bg-[#F8FAFC]">
                                         <SelectValue placeholder="Select type" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -366,18 +388,17 @@ export default function ClientFieldsLayoutsPage() {
                                         <SelectItem value="Checkbox">True/False</SelectItem>
                                     </SelectContent>
                                 </Select>
-                            </div>
-                            <div className="grid gap-2">
-                                <Label className="text-xs font-medium text-zinc-500">Security Group</Label>
+                            </Field>
+                            <Field label="Security Group" hint="Controls which roles can view this attribute">
                                 <Select
-                                    disabled={editingField?.system}
                                     value={securityGroup}
                                     onValueChange={(v) => {
                                         setSecurityGroup(v)
                                         toast.info(`Security group set to "${v}"`)
                                     }}
+                                    disabled={editingField.system}
                                 >
-                                    <SelectTrigger className="h-9 rounded-lg bg-zinc-50 border-zinc-100">
+                                    <SelectTrigger className="h-11 rounded-lg border-[#E5E7EB] bg-white disabled:bg-[#F8FAFC]">
                                         <SelectValue placeholder="Select group" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -386,32 +407,29 @@ export default function ClientFieldsLayoutsPage() {
                                         <SelectItem value="finance">Financial Only</SelectItem>
                                     </SelectContent>
                                 </Select>
-                            </div>
+                            </Field>
                         </div>
-                        <div className="flex flex-col gap-4 mt-2">
-                            <div className="flex items-center space-x-3">
-                                <Checkbox
-                                    id="req"
-                                    checked={editingField?.required}
-                                    onCheckedChange={(v) => setEditingField({ ...editingField, required: v })}
-                                    disabled={editingField?.system}
-                                />
-                                <Label htmlFor="req" className="text-xs font-medium text-zinc-700 cursor-pointer">Relationship Mandatory (Required for Save)</Label>
+
+                        <div className="flex items-start gap-3 p-3.5 rounded-xl bg-[#FAFBFC] border border-[#EEF1F6]">
+                            <Checkbox
+                                id="req"
+                                checked={editingField.required}
+                                onCheckedChange={(v) => setEditingField({ ...editingField, required: v })}
+                                disabled={editingField.system}
+                                className="mt-0.5"
+                            />
+                            <div>
+                                <Label htmlFor="req" className="text-[13px] font-semibold text-zinc-900 cursor-pointer">
+                                    Required field
+                                </Label>
+                                <p className="text-[11.5px] text-zinc-500 mt-0.5 leading-relaxed">
+                                    Client records cannot be saved without a value for this attribute.
+                                </p>
                             </div>
                         </div>
                     </div>
-                    <DialogFooter>
-                        <Button variant="ghost" onClick={() => setIsFieldOpen(false)} className="rounded-lg font-medium text-xs h-8">Cancel</Button>
-                        <Button
-                            onClick={saveField}
-                            disabled={editingField?.system}
-                            className="bg-primary hover:bg-primary/90 rounded-lg px-6 font-medium text-xs h-8 shadow-sm"
-                        >
-                            Commit Schema
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                )}
+            </SideFormSheet>
         </div>
     )
 }

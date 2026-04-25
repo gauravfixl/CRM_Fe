@@ -7,18 +7,10 @@ import Link from "next/link"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
-import { Button } from "@/components/ui/button"
-import SubHeader from "@/components/custom/SubHeader"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card"
+import { Button } from "@/shared/components/ui/button"
+import { Input } from "@/shared/components/ui/input"
+import { Label } from "@/shared/components/ui/label"
+import { Textarea } from "@/shared/components/ui/textarea"
 import { toast } from "sonner"
 import {
   updateRole,
@@ -80,49 +72,49 @@ export default function EditRolePage() {
   } = form
 
   useEffect(() => {
-    const org =
-      (params.orgName as string) || localStorage.getItem("orgName") || ""
+    const org = (params.orgName as string) || localStorage.getItem("orgName") || ""
     setOrgName(org)
-      ; (async () => {
-        setIsLoading(true)
-        try {
-          const res = await getAllRolesNPermissions({ scope: "sc-org" })
+    ;(async () => {
+      setIsLoading(true)
+      try {
+        const res = await getAllRolesNPermissions({ scope: "sc-org" })
 
-          let rolesList: any[] = []
-          if (res?.data?.permissions && res?.data?.iv) {
-            rolesList = decryptData(res.data.permissions, res.data.iv) || []
-          } else if (Array.isArray(res?.data?.roles)) {
-            rolesList = res.data.roles
-          } else if (Array.isArray(res?.data)) {
-            rolesList = res.data
-          }
-
-          const target = rolesList.find((r: any) => r._id === roleId)
-          if (!target) {
-            toast.error("Role not found")
-            router.push(`/${org}/modules/administration/roles`)
-            return
-          }
-
-          reset({
-            name: target.name || "",
-            description: target.description || "",
-            permissions: (target.permissions || []).map((p: any) => ({
-              module: p.module,
-              actions: Array.isArray(p.actions) ? p.actions : [],
-            })),
-          })
-        } catch (error) {
-          console.error("Error fetching role:", error)
-          toast.error("Failed to load role details")
-        } finally {
-          setIsLoading(false)
+        let rolesList: any[] = []
+        if (res?.data?.permissions && res?.data?.iv) {
+          rolesList = decryptData(res.data.permissions, res.data.iv) || []
+        } else if (Array.isArray(res?.data?.roles)) {
+          rolesList = res.data.roles
+        } else if (Array.isArray(res?.data)) {
+          rolesList = res.data
         }
-      })()
+
+        const target = rolesList.find((r: any) => r._id === roleId)
+        if (!target) {
+          toast.error("Role not found")
+          router.push(`/${org}/modules/administration/roles`)
+          return
+        }
+
+        reset({
+          name: target.name || "",
+          description: target.description || "",
+          permissions: (target.permissions || []).map((p: any) => ({
+            module: p.module,
+            actions: Array.isArray(p.actions) ? p.actions : [],
+          })),
+        })
+      } catch (error) {
+        console.error("Error fetching role:", error)
+        toast.error("Failed to load role details")
+      } finally {
+        setIsLoading(false)
+      }
+    })()
   }, [params.orgName, params.id])
 
   const permissions = watch("permissions")
   const totalActions = permissions.reduce((acc, p) => acc + p.actions.length, 0)
+  const currentName = watch("name")
 
   const onSubmit = async (values: RoleFormValues) => {
     try {
@@ -143,37 +135,33 @@ export default function EditRolePage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#F8F9FC] flex flex-col items-center justify-center space-y-4 font-outfit">
-        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
-        <span className="text-sm font-medium text-gray-500">
-          Loading role details...
-        </span>
+      <div className="min-h-screen bg-transparent flex flex-col items-center justify-center space-y-3">
+        <Loader2 className="w-7 h-7 text-primary animate-spin" />
+        <span className="text-xs font-medium text-zinc-500">Loading role details...</span>
       </div>
     )
   }
 
-  const currentName = watch("name")
-
   return (
-    <div className="relative min-h-screen bg-[#F8F9FC] font-outfit pb-20">
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <SubHeader
-          title={`Edit Role: ${currentName || ""}`}
-          breadcrumbItems={[
-            { label: "Identity & Access", href: "#" },
-            {
-              label: "Roles",
-              href: `/${orgName}/modules/administration/roles`,
-            },
-            { label: "Modify", href: "#" },
-          ]}
-          rightControls={
-            <div className="flex gap-2">
+    <div className="flex flex-col min-h-screen bg-transparent">
+      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col flex-1">
+        <div className="p-6 pb-0">
+          <div className="flex items-center justify-between mb-1">
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight text-zinc-900">
+                Edit Role{currentName ? `: ${currentName}` : ""}
+              </h1>
+              <p className="text-sm text-zinc-500 mt-1">
+                Update the role definition and adjust its assigned permissions.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
               <Link href={`/${orgName}/modules/administration/roles`}>
                 <Button
                   type="button"
                   variant="outline"
-                  className="rounded-xl h-10 px-6 font-semibold text-xs bg-white border-zinc-200"
+                  size="sm"
+                  className="rounded-none border-zinc-200 font-medium text-xs h-8 px-4"
                 >
                   Cancel
                 </Button>
@@ -181,112 +169,91 @@ export default function EditRolePage() {
               <Button
                 type="submit"
                 disabled={isSubmitting || !isValid}
-                className="rounded-xl bg-blue-600 hover:bg-blue-700 text-white h-10 px-6 font-semibold text-xs"
+                size="sm"
+                className="rounded-none bg-primary hover:bg-primary/90 h-8 text-xs font-medium gap-2 px-5"
               >
                 {isSubmitting ? (
                   <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    <Loader2 size={14} className="animate-spin" />
                     Updating...
                   </>
                 ) : (
                   <>
-                    Save Changes <Save className="ml-2 w-4 h-4" />
+                    <Save size={14} />
+                    Save Changes
                   </>
                 )}
               </Button>
             </div>
-          }
-        />
+          </div>
+        </div>
 
-        <div className="p-4 md:p-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* Left Column: Form Info */}
+        <div className="flex-1 p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Left: Metadata */}
           <div className="lg:col-span-4 space-y-6">
-            <Card className="bg-white border-zinc-200 rounded-xl shadow-sm overflow-hidden">
-              <CardHeader>
-                <CardTitle className="text-sm font-semibold">
-                  Role Metadata
-                </CardTitle>
-                <CardDescription className="text-xs font-medium">
+            <div className="bg-white border border-zinc-200 rounded-none">
+              <div className="px-5 py-4 border-b border-zinc-100">
+                <h3 className="text-sm font-semibold text-gray-900">Role Metadata</h3>
+                <p className="text-xs text-zinc-500 mt-0.5">
                   Modify the core identity of this custom role.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
+                </p>
+              </div>
+              <div className="p-5 space-y-5">
                 <div className="space-y-1.5">
-                  <Label
-                    htmlFor="name"
-                    className="text-xs font-semibold text-gray-700"
-                  >
-                    Role Name <span className="text-red-500">*</span>
+                  <Label htmlFor="name" className="text-xs font-medium text-zinc-600">
+                    Role Name <span className="text-rose-500">*</span>
                   </Label>
-                  <Input
-                    id="name"
-                    className="rounded-lg h-9 border-zinc-200 focus:ring-indigo-500/10"
-                    {...register("name")}
-                  />
+                  <Input id="name" className="rounded-none h-9 text-sm" {...register("name")} />
                   {errors.name?.message && (
-                    <p className="text-[11px] text-red-600 font-medium">
-                      {errors.name.message}
-                    </p>
+                    <p className="text-[11px] text-rose-600 font-medium">{errors.name.message}</p>
                   )}
                 </div>
                 <div className="space-y-1.5">
-                  <Label
-                    htmlFor="desc"
-                    className="text-xs font-semibold text-gray-700"
-                  >
-                    Description <span className="text-red-500">*</span>
+                  <Label htmlFor="desc" className="text-xs font-medium text-zinc-600">
+                    Description <span className="text-rose-500">*</span>
                   </Label>
                   <Textarea
                     id="desc"
-                    className="rounded-lg min-h-[120px] border-zinc-200 focus:ring-indigo-500/10"
+                    className="rounded-none text-sm min-h-[120px]"
                     {...register("description")}
                   />
                   {errors.description?.message && (
-                    <p className="text-[11px] text-red-600 font-medium">
-                      {errors.description.message}
-                    </p>
+                    <p className="text-[11px] text-rose-600 font-medium">{errors.description.message}</p>
                   )}
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
 
-            <div className="bg-blue-50/50 border border-blue-100 p-6 rounded-xl space-y-4">
-              <div className="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
-                <Info className="w-5 h-5 text-blue-600" />
+            <div className="bg-white border border-gray-200 rounded-none p-5 flex items-start gap-3">
+              <div className="p-2 bg-primary/10 rounded-none">
+                <Info size={18} className="text-primary" />
               </div>
               <div>
-                <h6 className="text-sm font-semibold text-blue-900">
-                  Modification Notice
-                </h6>
-                <p className="text-xs text-blue-700/80 leading-relaxed font-medium mt-1">
-                  Updates to this role immediately affect all assigned users.
-                  Users might need to refresh their session to see new
-                  permissions.
+                <h3 className="text-sm font-semibold text-gray-900">Modification Notice</h3>
+                <p className="text-xs text-gray-600 mt-0.5 leading-relaxed">
+                  Updates to this role immediately affect all assigned users. Users might need to
+                  refresh their session to see new permissions.
                 </p>
               </div>
             </div>
 
-            <Card className="bg-white border-zinc-200 rounded-xl p-6 shadow-sm">
-              <div className="space-y-2">
-                <h5 className="text-xs font-semibold text-gray-700">
-                  Active Scope
-                </h5>
-                <div className="text-2xl font-semibold text-gray-900">
-                  {permissions.length} Modules
-                </div>
-                <div className="text-xs font-medium text-gray-500">
-                  Total Actions: {totalActions}
-                </div>
-                {errors.permissions?.message && (
-                  <p className="text-[11px] text-red-600 font-medium pt-2">
-                    {errors.permissions.message as string}
-                  </p>
-                )}
+            <div className="bg-white border border-zinc-200 rounded-none p-5 space-y-2">
+              <h5 className="text-xs font-medium text-zinc-600">Active Scope</h5>
+              <div className="text-2xl font-bold tracking-tight text-zinc-900">
+                {permissions.length} Modules
               </div>
-            </Card>
+              <div className="text-xs font-medium text-zinc-500">
+                Total Actions: <span className="text-primary font-semibold">{totalActions}</span>
+              </div>
+              {errors.permissions?.message && (
+                <p className="text-[11px] text-rose-600 font-medium pt-2">
+                  {errors.permissions.message as string}
+                </p>
+              )}
+            </div>
           </div>
 
-          {/* Right Column: Permission Matrix */}
+          {/* Right: Permission Matrix */}
           <div className="lg:col-span-8 space-y-6">
             <Controller
               control={control}
@@ -299,12 +266,13 @@ export default function EditRolePage() {
               )}
             />
 
-            <div className="flex items-center justify-end gap-3 pt-6">
+            <div className="flex items-center justify-end gap-2 pt-2">
               <Link href={`/${orgName}/modules/administration/roles`}>
                 <Button
                   type="button"
                   variant="outline"
-                  className="rounded-xl h-10 px-6 font-semibold text-xs border-zinc-200"
+                  size="sm"
+                  className="rounded-none border-zinc-200 font-medium text-xs h-8 px-4"
                 >
                   Cancel
                 </Button>
@@ -312,15 +280,19 @@ export default function EditRolePage() {
               <Button
                 type="submit"
                 disabled={isSubmitting || !isValid}
-                className="rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs h-10 px-6"
+                size="sm"
+                className="rounded-none bg-primary hover:bg-primary/90 h-8 text-xs font-medium gap-2 px-5"
               >
                 {isSubmitting ? (
                   <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    <Loader2 size={14} className="animate-spin" />
                     Updating...
                   </>
                 ) : (
-                  "Save Changes"
+                  <>
+                    <Save size={14} />
+                    Save Changes
+                  </>
                 )}
               </Button>
             </div>

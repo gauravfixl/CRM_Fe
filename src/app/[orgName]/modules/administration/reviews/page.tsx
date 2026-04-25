@@ -12,19 +12,35 @@ import {
     AlertCircle,
     FileText,
     PlayCircle,
-    BarChart3
+    BarChart3,
 } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
-import { Card, CardContent } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { toast } from "sonner"
+import { Button } from "@/shared/components/ui/button"
+import { Progress } from "@/shared/components/ui/progress"
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/shared/components/ui/dropdown-menu"
+import { showSuccess } from "@/shared/utils/toast"
+
+type Review = {
+    id: string
+    resource: string
+    target: string
+    progress: number
+    status: "In Progress" | "Completed" | "Scheduled"
+    type: "Role Review" | "Resource Review" | "Application Review"
+    reviewer: string
+    dueDate: string
+}
 
 export default function AccessReviewsPage() {
     const [loading, setLoading] = useState(false)
 
-    const reviews = [
+    const reviews: Review[] = [
         { id: "r1", resource: "Global Admin Access", target: "5 Users", progress: 60, status: "In Progress", type: "Role Review", reviewer: "Admin Group", dueDate: "Jan 30, 2026" },
         { id: "r2", resource: "Azure Subscription", target: "12 Users", progress: 100, status: "Completed", type: "Resource Review", reviewer: "FinOps Leads", dueDate: "Jan 15, 2026" },
         { id: "r3", resource: "Salesforce Federated", target: "182 Users", progress: 0, status: "Scheduled", type: "Application Review", reviewer: "Auto-Review", dueDate: "Feb 01, 2026" },
@@ -35,194 +51,222 @@ export default function AccessReviewsPage() {
     const completed = reviews.filter((r) => r.status === "Completed").length
     const scheduled = reviews.filter((r) => r.status === "Scheduled").length
 
-    const handleRefresh = () => {
+    const handleRefresh = async () => {
         setLoading(true)
-        setTimeout(() => {
+        try {
+            await new Promise((r) => setTimeout(r, 600))
+            showSuccess("Access reviews sync complete")
+        } finally {
             setLoading(false)
-            toast.info("Access reviews sync complete")
-        }, 1000)
+        }
+    }
+
+    const renderStatus = (status: Review["status"]) => {
+        if (status === "Completed") {
+            return (
+                <div className="inline-flex items-center gap-2 px-2 py-1 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-none">
+                    <CheckCircle2 size={12} />
+                    <span className="text-[10px] font-medium">Completed</span>
+                </div>
+            )
+        }
+        if (status === "In Progress") {
+            return (
+                <div className="inline-flex items-center gap-2 px-2 py-1 bg-primary/10 text-primary border border-primary/20 rounded-none">
+                    <PlayCircle size={12} />
+                    <span className="text-[10px] font-medium">In Progress</span>
+                </div>
+            )
+        }
+        return (
+            <div className="inline-flex items-center gap-2 px-2 py-1 bg-amber-50 text-amber-600 border border-amber-100 rounded-none">
+                <Calendar size={12} />
+                <span className="text-[10px] font-medium">Scheduled</span>
+            </div>
+        )
     }
 
     return (
-        <div className="font-outfit relative min-h-screen bg-[#F8F9FC]">
-            {/* Header */}
-            <div className="px-4 md:px-8 pt-6 pb-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div>
-                    <div className="flex items-center gap-1.5 mb-1">
-                        <span className="text-xs font-medium text-gray-400">Identity & Access</span>
-                        <span className="text-xs text-gray-300">/</span>
-                        <span className="text-xs font-medium text-gray-400">Governance</span>
-                        <span className="text-xs text-gray-300">/</span>
-                        <span className="text-xs font-semibold text-gray-900">Reviews</span>
+        <div className="flex flex-col min-h-screen bg-transparent">
+            <div className="p-6 pb-0">
+                <div className="flex items-center justify-between mb-1">
+                    <div>
+                        <h1 className="text-2xl font-bold tracking-tight text-zinc-900">Access Reviews</h1>
+                        <p className="text-sm text-zinc-500 mt-1">
+                            Periodically validate user access against your governance policies.
+                        </p>
                     </div>
-                    <h1 className="text-xl font-semibold text-gray-900 tracking-tight">Access Reviews</h1>
-                </div>
-                <div className="flex gap-2">
-                    <Button
-                        variant="outline"
-                        onClick={handleRefresh}
-                        disabled={loading}
-                        className="rounded-xl font-semibold text-xs h-10 px-4"
-                    >
-                        <RefreshCw className={`w-3.5 h-3.5 mr-2 ${loading ? "animate-spin" : ""}`} /> Sync Metrics
-                    </Button>
-                    <Button
-                        className="rounded-xl font-semibold text-xs h-10 px-6"
-                        onClick={() => toast.success("New review workflow started")}
-                    >
-                        <ClipboardCheck className="w-4 h-4 mr-2" /> Start New Review
-                    </Button>
+                    <div className="flex items-center gap-2">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleRefresh}
+                            disabled={loading}
+                            className="rounded-none border-zinc-200 font-medium text-xs h-8 gap-1.5 px-4"
+                        >
+                            <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
+                            Sync Metrics
+                        </Button>
+                        <Button
+                            onClick={() => showSuccess("New review workflow started")}
+                            size="sm"
+                            className="rounded-none bg-primary hover:bg-primary/90 h-8 text-xs font-medium gap-2 px-5"
+                        >
+                            <ClipboardCheck size={14} />
+                            Start New Review
+                        </Button>
+                    </div>
                 </div>
             </div>
 
-            <div className="p-4 md:px-8 space-y-6">
-                {/* Stat Cards */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <Card className="rounded-xl bg-gradient-to-r from-primary/70 to-primary text-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 border-0">
-                        <CardContent className="p-5">
-                            <div className="flex items-center justify-between mb-2">
-                                <BarChart3 className="w-5 h-5 text-white/80" />
-                            </div>
-                            <p className="text-xs text-white/80">Total Reviews</p>
-                            <p className="text-xl font-semibold text-white">{totalReviews}</p>
-                            <p className="text-[10px] text-white/60 mt-0.5">All review cycles</p>
-                        </CardContent>
-                    </Card>
-                    <Card className="rounded-xl border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
-                        <CardContent className="p-5">
-                            <div className="flex items-center justify-between mb-2">
-                                <PlayCircle className="w-5 h-5 text-blue-500" />
-                            </div>
-                            <p className="text-xs text-gray-600">In Progress</p>
-                            <p className="text-xl font-semibold text-gray-900">{inProgress}</p>
-                            <p className="text-[10px] text-gray-400 mt-0.5">Currently running</p>
-                        </CardContent>
-                    </Card>
-                    <Card className="rounded-xl border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
-                        <CardContent className="p-5">
-                            <div className="flex items-center justify-between mb-2">
-                                <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-                            </div>
-                            <p className="text-xs text-gray-600">Completed</p>
-                            <p className="text-xl font-semibold text-gray-900">{completed}</p>
-                            <p className="text-[10px] text-gray-400 mt-0.5">Finished reviews</p>
-                        </CardContent>
-                    </Card>
-                    <Card className="rounded-xl border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
-                        <CardContent className="p-5">
-                            <div className="flex items-center justify-between mb-2">
-                                <Calendar className="w-5 h-5 text-orange-500" />
-                            </div>
-                            <p className="text-xs text-gray-600">Scheduled</p>
-                            <p className="text-xl font-semibold text-gray-900">{scheduled}</p>
-                            <p className="text-[10px] text-gray-400 mt-0.5">Upcoming reviews</p>
-                        </CardContent>
-                    </Card>
+            <div className="flex-1 p-6 space-y-6">
+                {/* Stats Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="bg-gradient-to-br from-primary/80 to-primary p-6 rounded-none shadow-xl shadow-primary/20 text-white">
+                        <p className="text-white text-xs opacity-80">Total Reviews</p>
+                        <p className="text-white text-xl font-semibold mt-1">{totalReviews}</p>
+                        <p className="text-white text-[10px] mt-1 opacity-70">All review cycles</p>
+                    </div>
+
+                    <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
+                        <p className="text-zinc-500 text-xs">In Progress</p>
+                        <p className="text-xl font-semibold text-zinc-900 mt-1">{inProgress}</p>
+                        <p className="text-primary text-[10px] mt-1">Currently running</p>
+                    </div>
+
+                    <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
+                        <p className="text-zinc-500 text-xs">Completed</p>
+                        <p className="text-xl font-semibold text-zinc-900 mt-1">{completed}</p>
+                        <p className="text-emerald-600 text-[10px] mt-1">Finished reviews</p>
+                    </div>
+
+                    <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
+                        <p className="text-zinc-500 text-xs">Scheduled</p>
+                        <p className="text-xl font-semibold text-zinc-900 mt-1">{scheduled}</p>
+                        <p className="text-amber-600 text-[10px] mt-1">Upcoming reviews</p>
+                    </div>
                 </div>
 
                 {/* Reviews Table */}
-                <div className="bg-white border border-zinc-200 rounded-xl shadow-sm overflow-hidden">
-                    <div className="p-5 border-b border-zinc-100 flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <h4 className="text-sm font-semibold text-gray-900">Active Reviews</h4>
-                            <Badge className="rounded-full bg-zinc-100 text-zinc-600 border-0 text-[10px] font-semibold px-2.5">
+                <div className="bg-white border border-zinc-200 rounded-none shadow-lg overflow-hidden">
+                    <div className="p-4 border-b border-zinc-100 flex items-center justify-between bg-zinc-50/50">
+                        <div className="flex items-center gap-2">
+                            <BarChart3 size={16} className="text-primary" />
+                            <h3 className="text-sm font-semibold text-gray-900">Active Reviews</h3>
+                            <span className="text-[10px] font-medium text-zinc-500 bg-zinc-100 px-2 py-0.5 rounded-none">
                                 {reviews.length} items
-                            </Badge>
+                            </span>
                         </div>
                         <Button
                             variant="outline"
-                            className="rounded-xl font-semibold text-xs h-9 px-4"
-                            onClick={() => toast.info("Filtering all review types")}
+                            size="sm"
+                            className="rounded-none border-zinc-200 font-medium text-xs h-8 gap-1.5 px-3"
+                            onClick={() => showSuccess("Filtering all review types")}
                         >
                             All Review Types
                         </Button>
                     </div>
 
                     <div className="overflow-x-auto">
-                        <Table>
-                            <TableHeader>
-                                <TableRow className="border-b border-zinc-100 hover:bg-transparent bg-zinc-50/50">
-                                    <TableHead className="p-4 text-xs font-semibold text-gray-500">Resource Scope</TableHead>
-                                    <TableHead className="p-4 text-xs font-semibold text-gray-500">Review Cycle</TableHead>
-                                    <TableHead className="p-4 text-xs font-semibold text-gray-500">Status & Progress</TableHead>
-                                    <TableHead className="p-4 text-xs font-semibold text-gray-500">Expiration</TableHead>
-                                    <TableHead className="p-4 text-right w-12"></TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody className="divide-y divide-zinc-50">
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="bg-zinc-100/50 border-b border-zinc-100">
+                                    <th className="px-6 py-3 text-[11px] font-medium text-gray-500">Resource Scope</th>
+                                    <th className="px-6 py-3 text-[11px] font-medium text-gray-500">Review Cycle</th>
+                                    <th className="px-6 py-3 text-[11px] font-medium text-gray-500">Status &amp; Progress</th>
+                                    <th className="px-6 py-3 text-[11px] font-medium text-gray-500">Expiration</th>
+                                    <th className="px-6 py-3 text-[11px] font-medium text-gray-500 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-zinc-100">
                                 {reviews.map((r) => (
-                                    <TableRow key={r.id} className="hover:bg-zinc-50/50 transition-all group">
-                                        <TableCell className="p-4">
+                                    <tr key={r.id} className="hover:bg-primary/5 transition-colors">
+                                        <td className="px-6 py-3">
                                             <div className="flex items-center gap-3">
-                                                <div className="h-9 w-9 rounded-lg bg-zinc-100 flex items-center justify-center text-zinc-400 group-hover:scale-105 transition-transform">
+                                                <div className="w-8 h-8 rounded-none bg-primary/10 flex items-center justify-center text-primary">
                                                     {r.type === "Role Review" ? <Shield className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
                                                 </div>
-                                                <div className="flex flex-col">
-                                                    <span className="text-sm font-semibold text-gray-900 tracking-tight">{r.resource}</span>
-                                                    <span className="text-[10px] font-medium text-gray-400">{r.target} identified</span>
+                                                <div>
+                                                    <span className="text-sm font-semibold text-gray-900 block">{r.resource}</span>
+                                                    <span className="text-[10px] font-medium text-zinc-500">{r.target} identified</span>
                                                 </div>
                                             </div>
-                                        </TableCell>
-                                        <TableCell className="p-4">
-                                            <div className="space-y-1">
-                                                <span className="text-xs font-semibold text-gray-600">{r.type}</span>
-                                                <p className="text-[10px] font-medium text-gray-400">Assigned: {r.reviewer}</p>
+                                        </td>
+                                        <td className="px-6 py-3">
+                                            <div className="flex flex-col">
+                                                <span className="text-xs font-semibold text-zinc-700">{r.type}</span>
+                                                <span className="text-[10px] font-medium text-zinc-500">Assigned: {r.reviewer}</span>
                                             </div>
-                                        </TableCell>
-                                        <TableCell className="p-4">
+                                        </td>
+                                        <td className="px-6 py-3">
                                             <div className="flex items-center gap-3">
-                                                <div className="flex-1 w-24">
-                                                    <Progress value={r.progress} className={`h-1.5 rounded-full ${
-                                                        r.status === "Completed" ? "bg-emerald-100" : "bg-zinc-100"
-                                                    }`} />
+                                                <div className="w-24">
+                                                    <Progress value={r.progress} className="h-1.5 rounded-none bg-zinc-100" />
                                                 </div>
-                                                <Badge className={`rounded-full border-0 text-[10px] font-semibold ${
-                                                    r.status === "Completed" ? "bg-emerald-50 text-emerald-600" :
-                                                    r.status === "In Progress" ? "bg-blue-50 text-blue-600" : "bg-zinc-100 text-zinc-500"
-                                                }`}>
-                                                    {r.status}
-                                                </Badge>
+                                                {renderStatus(r.status)}
                                             </div>
-                                        </TableCell>
-                                        <TableCell className="p-4">
+                                        </td>
+                                        <td className="px-6 py-3">
                                             <div className="flex items-center gap-2">
-                                                <Clock className="w-3.5 h-3.5 text-zinc-300" />
-                                                <span className="text-xs font-medium text-gray-500">{r.dueDate}</span>
+                                                <Clock className="w-3.5 h-3.5 text-zinc-400" />
+                                                <span className="text-xs font-medium text-zinc-600">{r.dueDate}</span>
                                             </div>
-                                        </TableCell>
-                                        <TableCell className="p-4 text-right">
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="text-zinc-400 hover:text-indigo-600 h-8 w-8"
-                                                onClick={() => toast.info(`Options for ${r.resource}`)}
-                                            >
-                                                <MoreVertical className="w-4 h-4" />
-                                            </Button>
-                                        </TableCell>
-                                    </TableRow>
+                                        </td>
+                                        <td className="px-6 py-3 text-right">
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" className="h-8 w-8 p-0 rounded-none hover:bg-zinc-100 text-zinc-400 hover:text-zinc-900">
+                                                        <MoreVertical size={16} />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end" className="rounded-none border-zinc-200 shadow-lg p-2 min-w-[160px]">
+                                                    <DropdownMenuLabel className="text-[10px] font-medium text-gray-400 mb-1">Actions</DropdownMenuLabel>
+                                                    <DropdownMenuItem className="text-xs font-medium p-2 rounded-md cursor-pointer" onClick={() => showSuccess(`Viewing ${r.resource}`)}>
+                                                        View Details
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem className="text-xs font-medium p-2 rounded-md cursor-pointer" onClick={() => showSuccess(`Re-running ${r.resource}`)}>
+                                                        Re-run Review
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuSeparator className="my-1" />
+                                                    <DropdownMenuItem className="text-xs font-medium p-2 rounded-md cursor-pointer" onClick={() => showSuccess(`Exporting ${r.resource}`)}>
+                                                        Export Report
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </td>
+                                    </tr>
                                 ))}
-                            </TableBody>
-                        </Table>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div className="p-4 border-t border-zinc-100 bg-zinc-50/50">
+                        <p className="text-[11px] font-medium text-zinc-500">
+                            Showing <span className="text-zinc-900 font-semibold">{reviews.length}</span> review cycles
+                        </p>
                     </div>
                 </div>
 
-                {/* Footer Info Cards */}
-                <div className="flex flex-col md:flex-row gap-4">
-                    <div className="flex-1 p-5 bg-emerald-50 border border-emerald-100 rounded-xl flex items-start gap-4">
-                        <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
-                        <div className="space-y-1">
-                            <h6 className="text-sm font-semibold text-emerald-900">Governance Recommendation</h6>
-                            <p className="text-xs text-emerald-700/80 leading-relaxed font-medium">
-                                Your last administrative review was clean. We recommend scheduling an Automated Purge for guest accounts that haven't signed in for 90 days.
+                {/* Footer info cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-white border border-gray-200 rounded-none p-5 flex items-start gap-3">
+                        <div className="p-2 bg-emerald-50 rounded-none">
+                            <CheckCircle2 size={18} className="text-emerald-600" />
+                        </div>
+                        <div>
+                            <h3 className="text-sm font-semibold text-gray-900">Governance Recommendation</h3>
+                            <p className="text-xs text-gray-600 mt-0.5 leading-relaxed">
+                                Your last administrative review was clean. Schedule an automated purge for guest accounts inactive for 90+ days.
                             </p>
                         </div>
                     </div>
-                    <div className="flex-1 p-5 bg-blue-50 border border-blue-100 rounded-xl flex items-start gap-4">
-                        <AlertCircle className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
-                        <div className="space-y-1">
-                            <h6 className="text-sm font-semibold text-blue-900">Privileged Identity Review</h6>
-                            <p className="text-xs text-blue-700/80 leading-relaxed font-medium">
+                    <div className="bg-white border border-gray-200 rounded-none p-5 flex items-start gap-3">
+                        <div className="p-2 bg-primary/10 rounded-none">
+                            <AlertCircle size={18} className="text-primary" />
+                        </div>
+                        <div>
+                            <h3 className="text-sm font-semibold text-gray-900">Privileged Identity Review</h3>
+                            <p className="text-xs text-gray-600 mt-0.5 leading-relaxed">
                                 Highly privileged roles (e.g. Org Admin) should be reviewed monthly to maintain zero-trust principles.
                             </p>
                         </div>

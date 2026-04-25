@@ -6,29 +6,28 @@ import {
     Search,
     UserPlus,
     ShieldCheck,
+    AlertTriangle,
 } from "lucide-react"
 import { CustomButton } from "@/components/custom/CustomButton"
 import SubHeader from "@/components/custom/SubHeader"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/shared/components/ui/input"
 import { getAllUsers } from "@/modules/crm/users/hooks/userHooks"
 import { useParams } from "next/navigation"
 import {
-    CustomDialog,
-    CustomDialogContent,
-    CustomDialogHeader,
-    CustomDialogTitle,
-    CustomDialogDescription,
-    CustomDialogFooter,
-} from "@/shared/components/custom/CustomDialog"
+    Dialog,
+    DialogContent,
+    DialogFooter,
+} from "@/shared/components/ui/dialog"
 import {
-    CustomSelect,
-    CustomSelectTrigger,
-    CustomSelectValue,
-    CustomSelectContent,
-    CustomSelectItem,
-} from "@/shared/components/custom/CustomSelect"
-import { CustomLabel } from "@/shared/components/custom/CustomLabel"
-import { CustomInput } from "@/shared/components/custom/CustomInput"
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/shared/components/ui/select"
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet"
 import { showSuccess, showWarning, showError } from "@/utils/toast"
 import { createOrgInvite } from "@/modules/crm/organizations/hooks/orgHooks"
 
@@ -57,9 +56,42 @@ export default function GuestUsersPage() {
     const [inviteEmail, setInviteEmail] = useState("")
     const [inviteDomain, setInviteDomain] = useState("")
     const [inviteAccess, setInviteAccess] = useState("Viewer")
+    const [inviteTouched, setInviteTouched] = useState<Record<string, boolean>>({})
+    const [inviting, setInviting] = useState(false)
 
     // Revoke state
     const [revokeTarget, setRevokeTarget] = useState<GuestUser | null>(null)
+    const [revoking, setRevoking] = useState(false)
+
+    const inviteErrors = useMemo(() => {
+        const e: Record<string, string> = {}
+        if (inviteTouched.name) {
+            const v = inviteName.trim()
+            if (!v) e.name = "Name is required"
+            else if (v.length < 2) e.name = "Name too short"
+            else if (!/^[a-zA-Z][a-zA-Z\s.'-]*$/.test(v))
+                e.name = "Letters, spaces, and . ' - only"
+        }
+        if (inviteTouched.email) {
+            const v = inviteEmail.trim()
+            if (!v) e.email = "Email is required"
+            else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v))
+                e.email = "Enter a valid email"
+        }
+        if (inviteTouched.domain && inviteDomain) {
+            if (!/^[a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}$/.test(inviteDomain.trim()))
+                e.domain = "Enter a valid domain (e.g. company.com)"
+        }
+        return e
+    }, [inviteName, inviteEmail, inviteDomain, inviteTouched])
+
+    const resetInvite = () => {
+        setInviteName("")
+        setInviteEmail("")
+        setInviteDomain("")
+        setInviteAccess("Viewer")
+        setInviteTouched({})
+    }
 
     // Static guest data
     const [staticGuests, setStaticGuests] = useState<GuestUser[]>([
@@ -127,61 +159,60 @@ export default function GuestUsersPage() {
     const expiredCount = allGuests.filter((g) => g.status === "Expired").length
     const domains = new Set(allGuests.map((g) => g.domain)).size
 
-    const handleInvite = async () => {
-        if (!inviteName.trim() || !inviteEmail.trim()) {
-            showWarning("Please fill in all fields")
-            return
-        }
+    const handleInvite = async (e: React.FormEvent) => {
+        e.preventDefault()
+        setInviteTouched({ name: true, email: true, domain: true })
 
-        // Name validation (no numbers)
-        const nameRegex = /^[a-zA-Z\s]+$/;
-        if (!nameRegex.test(inviteName.trim())) {
-            showWarning("Name should not contain numbers or special characters")
-            return
-        }
-
-        // Email validation
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(inviteEmail.trim())) {
-            showWarning("Please enter a valid email address")
-            return
+        const name = inviteName.trim()
+        const email = inviteEmail.trim()
+        if (!name) return showWarning("Name is required")
+        if (!/^[a-zA-Z][a-zA-Z\s.'-]*$/.test(name))
+            return showWarning("Name contains invalid characters")
+        if (!email) return showWarning("Email is required")
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+            return showWarning("Enter a valid email address")
+        if (
+            inviteDomain &&
+            !/^[a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}$/.test(inviteDomain.trim())
+        ) {
+            return showWarning("Enter a valid domain (e.g. company.com)")
         }
 
         try {
-            setLoading(true)
+            setInviting(true)
             await createOrgInvite({
-                email: inviteEmail.trim(),
-                role: inviteAccess
+                email,
+                role: inviteAccess,
             })
 
             const newGuest: GuestUser = {
                 id: `g-${Date.now()}`,
-                name: inviteName.trim(),
-                email: inviteEmail.trim(),
-                domain: inviteDomain || inviteEmail.trim().split("@")[1] || "External",
+                name,
+                email,
+                domain: inviteDomain.trim() || email.split("@")[1] || "External",
                 accessLevel: inviteAccess,
                 status: "Active",
                 expires: "2027-03-27",
             }
             setStaticGuests((prev) => [...prev, newGuest])
-            showSuccess(`${inviteName.trim()} has been invited as a guest`)
+            showSuccess(`${name} has been invited as a guest`)
             setInviteOpen(false)
-            setInviteName("")
-            setInviteEmail("")
-            setInviteDomain("")
-            setInviteAccess("Viewer")
+            resetInvite()
         } catch (err: any) {
             showError(err?.response?.data?.message || "Failed to invite guest user")
         } finally {
-            setLoading(false)
+            setInviting(false)
         }
     }
 
-    const handleRevoke = () => {
+    const handleRevoke = async () => {
         if (!revokeTarget) return
+        setRevoking(true)
+        await new Promise((r) => setTimeout(r, 200))
         setStaticGuests((prev) => prev.filter((g) => g.id !== revokeTarget.id))
         showWarning(`Access revoked for ${revokeTarget.name}`)
         setRevokeTarget(null)
+        setRevoking(false)
     }
 
     const accessBadge = (level: string) => {
@@ -342,86 +373,128 @@ export default function GuestUsersPage() {
                 </div>
             </div>
 
-            {/* Invite guest modal */}
-            <CustomDialog open={inviteOpen} onOpenChange={setInviteOpen}>
-                <CustomDialogContent className="max-w-md rounded-none p-0 overflow-hidden">
-                    <div className="bg-primary px-5 py-4">
-                        <CustomDialogTitle className="text-white text-sm font-semibold">Invite external user</CustomDialogTitle>
-                    </div>
-                    <div className="px-5 py-4 space-y-4">
-                        <div>
-                            <CustomLabel>Name</CustomLabel>
-                            <CustomInput
-                                placeholder="Full name"
-                                value={inviteName}
-                                onChange={(e) => setInviteName(e.target.value)}
-                                className="rounded-none"
-                            />
-                        </div>
-                        <div>
-                            <CustomLabel>Email</CustomLabel>
-                            <CustomInput
-                                placeholder="user@example.com"
-                                value={inviteEmail}
-                                onChange={(e) => setInviteEmail(e.target.value)}
-                                className="rounded-none"
-                            />
-                        </div>
-                        <div>
-                            <CustomLabel>Domain</CustomLabel>
-                            <CustomInput
-                                placeholder="company.com"
-                                value={inviteDomain}
-                                onChange={(e) => setInviteDomain(e.target.value)}
-                                className="rounded-none"
-                            />
-                        </div>
-                        <div>
-                            <CustomLabel>Access level</CustomLabel>
-                            <CustomSelect value={inviteAccess} onValueChange={setInviteAccess}>
-                                <CustomSelectTrigger className="w-full rounded-none">
-                                    <CustomSelectValue />
-                                </CustomSelectTrigger>
-                                <CustomSelectContent className="rounded-none">
-                                    <CustomSelectItem value="Viewer">Viewer</CustomSelectItem>
-                                    <CustomSelectItem value="Editor">Editor</CustomSelectItem>
-                                    <CustomSelectItem value="Admin">Admin</CustomSelectItem>
-                                </CustomSelectContent>
-                            </CustomSelect>
-                        </div>
-                    </div>
-                    <CustomDialogFooter className="px-5 pb-4">
-                        <CustomButton variant="outline" size="sm" className="rounded-none" onClick={() => setInviteOpen(false)}>
-                            Cancel
-                        </CustomButton>
-                        <CustomButton size="sm" className="rounded-none bg-primary text-white" onClick={handleInvite}>
-                            Send invite
-                        </CustomButton>
-                    </CustomDialogFooter>
-                </CustomDialogContent>
-            </CustomDialog>
+            {/* Invite external user — side sheet */}
+            <SideFormSheet
+                open={inviteOpen}
+                onOpenChange={(o) => {
+                    setInviteOpen(o)
+                    if (!o) resetInvite()
+                }}
+                title="Invite external user"
+                description="Send an invitation to a guest user outside your organization."
+                icon={<UserPlus className="w-5 h-5" />}
+                width="md"
+                onSubmit={handleInvite}
+                submitLabel="Send invite"
+                loading={inviting}
+            >
+                <div className="space-y-4">
+                    <Field
+                        label="Full name"
+                        required
+                        error={inviteErrors.name}
+                        hint="Letters, spaces, and . ' - only"
+                    >
+                        <Input
+                            placeholder="Jane Doe"
+                            value={inviteName}
+                            onChange={(e) =>
+                                setInviteName(e.target.value.replace(/[^a-zA-Z\s.'-]/g, ""))
+                            }
+                            onBlur={() => setInviteTouched((t) => ({ ...t, name: true }))}
+                            maxLength={60}
+                            className="h-11 rounded-lg bg-white border-[#E5E7EB] focus:border-primary"
+                        />
+                    </Field>
 
-            {/* Revoke access confirmation dialog */}
-            <CustomDialog open={!!revokeTarget} onOpenChange={(open) => !open && setRevokeTarget(null)}>
-                <CustomDialogContent className="max-w-md rounded-none p-0 overflow-hidden">
-                    <div className="bg-primary px-5 py-4">
-                        <CustomDialogTitle className="text-white text-sm font-semibold">Revoke access</CustomDialogTitle>
+                    <Field label="Email" required error={inviteErrors.email}>
+                        <Input
+                            type="email"
+                            placeholder="user@partner.com"
+                            value={inviteEmail}
+                            onChange={(e) => setInviteEmail(e.target.value)}
+                            onBlur={() => setInviteTouched((t) => ({ ...t, email: true }))}
+                            className="h-11 rounded-lg bg-white border-[#E5E7EB] focus:border-primary"
+                            autoComplete="email"
+                        />
+                    </Field>
+
+                    <Field
+                        label="Domain"
+                        error={inviteErrors.domain}
+                        hint="Optional — auto-detected from email if blank"
+                    >
+                        <Input
+                            placeholder="company.com"
+                            value={inviteDomain}
+                            onChange={(e) => setInviteDomain(e.target.value)}
+                            onBlur={() => setInviteTouched((t) => ({ ...t, domain: true }))}
+                            className="h-11 rounded-lg bg-white border-[#E5E7EB] focus:border-primary"
+                        />
+                    </Field>
+
+                    <Field label="Access level" required hint="Viewer is recommended for external collaborators">
+                        <Select value={inviteAccess} onValueChange={setInviteAccess}>
+                            <SelectTrigger className="h-11 rounded-lg border-[#E5E7EB] bg-white">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Viewer">Viewer</SelectItem>
+                                <SelectItem value="Editor">Editor</SelectItem>
+                                <SelectItem value="Admin">Admin</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                </div>
+            </SideFormSheet>
+
+            {/* Revoke access — confirmation dialog */}
+            <Dialog open={!!revokeTarget} onOpenChange={(open) => !open && setRevokeTarget(null)}>
+                <DialogContent className="sm:max-w-[440px] rounded-xl p-0 overflow-hidden border-none shadow-2xl">
+                    <div className="p-5 pb-4 border-b border-slate-100">
+                        <div className="flex items-start gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center shrink-0">
+                                <AlertTriangle className="w-5 h-5 text-red-600" />
+                            </div>
+                            <div>
+                                <h2 className="text-base font-semibold text-slate-900">Revoke access?</h2>
+                                <p className="text-[12.5px] text-slate-500 mt-1 leading-relaxed">
+                                    They will no longer be able to access any resources in your organization.
+                                </p>
+                            </div>
+                        </div>
                     </div>
-                    <div className="px-5 py-4">
-                        <CustomDialogDescription className="text-sm text-gray-600">
-                            Are you sure you want to revoke access for <span className="font-semibold text-gray-900">{revokeTarget?.name}</span>? They will no longer be able to access any resources in your organization.
-                        </CustomDialogDescription>
-                    </div>
-                    <CustomDialogFooter className="px-5 pb-4">
-                        <CustomButton variant="outline" size="sm" className="rounded-none" onClick={() => setRevokeTarget(null)}>
+                    {revokeTarget && (
+                        <div className="px-5 py-4">
+                            <div className="p-3 rounded-lg bg-slate-50 border border-slate-100">
+                                <p className="text-[13px] font-semibold text-gray-900">{revokeTarget.name}</p>
+                                <p className="text-[11.5px] text-gray-500 mt-0.5">{revokeTarget.email}</p>
+                            </div>
+                        </div>
+                    )}
+                    <DialogFooter className="px-5 py-3.5 bg-slate-50 border-t border-slate-100 gap-2 sm:justify-end">
+                        <Button
+                            variant="outline"
+                            onClick={() => setRevokeTarget(null)}
+                            disabled={revoking}
+                            className="h-9 text-[13px] font-medium rounded-lg"
+                        >
                             Cancel
-                        </CustomButton>
-                        <CustomButton variant="destructive" size="sm" className="rounded-none" onClick={handleRevoke}>
+                        </Button>
+                        <Button
+                            onClick={handleRevoke}
+                            disabled={revoking}
+                            variant="destructive"
+                            className="h-9 text-[13px] font-medium rounded-lg gap-2"
+                        >
+                            {revoking && (
+                                <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            )}
                             Revoke access
-                        </CustomButton>
-                    </CustomDialogFooter>
-                </CustomDialogContent>
-            </CustomDialog>
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }

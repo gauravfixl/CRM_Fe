@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useMemo } from "react"
 import { useParams } from "next/navigation"
 import {
     ShieldCheck,
@@ -35,21 +35,13 @@ import {
     TableRow,
 } from "@/components/ui/table"
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from "@/components/ui/dialog"
-import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -76,6 +68,23 @@ export default function ClientVisibilityPage() {
         editAccess: false,
         deleteAccess: false
     })
+    const [roleTouched, setRoleTouched] = useState<Record<string, boolean>>({})
+    const [submitting, setSubmitting] = useState(false)
+
+    const roleErrors = useMemo(() => {
+        const e: Record<string, string> = {}
+        if (roleTouched.role) {
+            const r = newRole.role.trim()
+            if (!r) e.role = "Role name is required"
+            else if (r.length < 2) e.role = "Name too short (min 2 chars)"
+            else if (r.length > 60) e.role = "Name too long (max 60 chars)"
+            else if (!/^[A-Za-z0-9\s&()./-]+$/.test(r))
+                e.role = "Only letters, numbers, spaces and & ( ) . / -"
+            else if (visibilityRules.some(v => v.role.toLowerCase() === r.toLowerCase()))
+                e.role = "A rule for this role already exists"
+        }
+        return e
+    }, [newRole, roleTouched, visibilityRules])
 
     const handleAction = (msg: string) => {
         setIsLoading(true)
@@ -95,15 +104,24 @@ export default function ClientVisibilityPage() {
         toast.info(`${type === 'edit' ? 'Edit' : 'Delete'} access updated`)
     }
 
-    const handleAddRole = () => {
-        if (!newRole.role) {
-            toast.error("Please enter a role name")
-            return
-        }
+    const handleAddRole = async (e: React.FormEvent) => {
+        e.preventDefault()
+        setRoleTouched({ role: true })
+
+        const roleName = newRole.role.trim()
+        if (!roleName) return toast.error("Role name is required")
+        if (roleName.length < 2) return toast.error("Role name too short")
+        if (!/^[A-Za-z0-9\s&()./-]+$/.test(roleName))
+            return toast.error("Role name contains invalid characters")
+        if (visibilityRules.some(v => v.role.toLowerCase() === roleName.toLowerCase()))
+            return toast.error("A visibility rule for this role already exists")
+
+        setSubmitting(true)
+        await new Promise((r) => setTimeout(r, 300))
 
         const newEntry = {
             id: Math.random().toString(36).substr(2, 9),
-            role: newRole.role,
+            role: roleName,
             viewLevel: newRole.viewLevel,
             editAccess: newRole.editAccess,
             deleteAccess: newRole.deleteAccess
@@ -112,6 +130,8 @@ export default function ClientVisibilityPage() {
         setVisibilityRules([...visibilityRules, newEntry])
         setShowAddRoleDialog(false)
         setNewRole({ role: "", viewLevel: "Assigned Only", editAccess: false, deleteAccess: false })
+        setRoleTouched({})
+        setSubmitting(false)
         toast.success("New role visibility rule added")
     }
 
@@ -298,68 +318,86 @@ export default function ClientVisibilityPage() {
                 </Table>
             </div>
 
-            {/* ADD ROLE DIALOG */}
-            <Dialog open={showAddRoleDialog} onOpenChange={setShowAddRoleDialog}>
-                <DialogContent className="sm:max-w-lg rounded-xl p-5">
-                    <DialogHeader>
-                        <DialogTitle className="text-sm font-semibold">Add Role Visibility</DialogTitle>
-                        <DialogDescription className="text-xs text-slate-500">
-                            Define visibility and access permissions for a specific role.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                        <div className="grid gap-2">
-                            <Label htmlFor="role" className="text-xs text-zinc-600">Role Name</Label>
-                            <Input
-                                id="role"
-                                value={newRole.role}
-                                onChange={(e) => setNewRole({ ...newRole, role: e.target.value })}
-                                className="col-span-3 h-9 rounded-lg"
-                                placeholder="e.g. Marketing Manager"
-                            />
-                        </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="viewLevel" className="text-xs text-zinc-600">View Level</Label>
-                            <Select
-                                value={newRole.viewLevel}
-                                onValueChange={(val) => setNewRole({ ...newRole, viewLevel: val })}
-                            >
-                                <SelectTrigger className="h-9 rounded-lg">
-                                    <SelectValue placeholder="Select level" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="Assigned Only">Assigned Only</SelectItem>
-                                    <SelectItem value="Team Accounts">Team Accounts</SelectItem>
-                                    <SelectItem value="All Clients">All Clients</SelectItem>
-                                    <SelectItem value="Global Access">Global Access</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="flex items-center justify-between p-3 bg-zinc-50 rounded-xl border border-zinc-100">
-                            <Label htmlFor="editAccess" className="text-xs text-zinc-600">Edit Access</Label>
+            {/* Add Role Visibility — side sheet */}
+            <SideFormSheet
+                open={showAddRoleDialog}
+                onOpenChange={(o) => {
+                    setShowAddRoleDialog(o)
+                    if (!o) {
+                        setRoleTouched({})
+                        setNewRole({ role: "", viewLevel: "Assigned Only", editAccess: false, deleteAccess: false })
+                    }
+                }}
+                title="Add Role Visibility"
+                description="Define visibility and access permissions for a specific role."
+                icon={<Eye className="w-5 h-5" />}
+                width="md"
+                onSubmit={handleAddRole}
+                submitLabel="Add Rule"
+                loading={submitting}
+            >
+                <div className="space-y-4">
+                    <Field label="Role Name" required error={roleErrors.role} hint="2–60 chars. Must be unique">
+                        <Input
+                            value={newRole.role}
+                            onChange={(e) => setNewRole({ ...newRole, role: e.target.value.slice(0, 60) })}
+                            onBlur={() => setRoleTouched((t) => ({ ...t, role: true }))}
+                            placeholder="e.g. Marketing Manager"
+                            maxLength={60}
+                            className="h-11 rounded-lg bg-white border-[#E5E7EB] focus:border-primary"
+                        />
+                    </Field>
+
+                    <Field label="View Level" hint="What client records this role can see">
+                        <Select
+                            value={newRole.viewLevel}
+                            onValueChange={(val) => setNewRole({ ...newRole, viewLevel: val })}
+                        >
+                            <SelectTrigger className="h-11 rounded-lg border-[#E5E7EB] bg-white">
+                                <SelectValue placeholder="Select level" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Assigned Only">Assigned Only</SelectItem>
+                                <SelectItem value="Team Accounts">Team Accounts</SelectItem>
+                                <SelectItem value="All Clients">All Clients</SelectItem>
+                                <SelectItem value="Global Access">Global Access</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </Field>
+
+                    <div className="space-y-2.5">
+                        <p className="text-[13px] font-semibold text-[#374151]">Permissions</p>
+                        <div className="flex items-center justify-between p-3.5 bg-[#FAFBFC] rounded-xl border border-[#EEF1F6]">
+                            <div>
+                                <Label htmlFor="editAccess" className="text-[13px] font-semibold text-zinc-900 cursor-pointer">
+                                    Edit Access
+                                </Label>
+                                <p className="text-[11.5px] text-zinc-500 mt-0.5">Role can modify client records in their visibility scope</p>
+                            </div>
                             <Switch
                                 id="editAccess"
                                 checked={newRole.editAccess}
                                 onCheckedChange={(checked) => setNewRole({ ...newRole, editAccess: checked })}
-                                className="data-[state=checked]:bg-blue-600 scale-75"
+                                className="data-[state=checked]:bg-primary"
                             />
                         </div>
-                        <div className="flex items-center justify-between p-3 bg-zinc-50 rounded-xl border border-zinc-100">
-                            <Label htmlFor="deleteAccess" className="text-xs text-zinc-600">Delete Access</Label>
+                        <div className="flex items-center justify-between p-3.5 bg-[#FAFBFC] rounded-xl border border-[#EEF1F6]">
+                            <div>
+                                <Label htmlFor="deleteAccess" className="text-[13px] font-semibold text-zinc-900 cursor-pointer">
+                                    Delete Access
+                                </Label>
+                                <p className="text-[11.5px] text-zinc-500 mt-0.5">Role can archive or permanently remove client records</p>
+                            </div>
                             <Switch
                                 id="deleteAccess"
                                 checked={newRole.deleteAccess}
                                 onCheckedChange={(checked) => setNewRole({ ...newRole, deleteAccess: checked })}
-                                className="data-[state=checked]:bg-rose-600 scale-75"
+                                className="data-[state=checked]:bg-rose-600"
                             />
                         </div>
                     </div>
-                    <DialogFooter>
-                        <Button variant="ghost" onClick={() => setShowAddRoleDialog(false)} className="h-8 text-xs font-medium rounded-lg">Cancel</Button>
-                        <Button onClick={handleAddRole} className="h-8 bg-primary hover:bg-primary/90 text-xs font-medium rounded-lg">Add Rule</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                </div>
+            </SideFormSheet>
 
             {/* SECURITY NOTICE */}
             <div className="p-5 bg-zinc-900 rounded-xl text-white shadow-lg relative overflow-hidden">
