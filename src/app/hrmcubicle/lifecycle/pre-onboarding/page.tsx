@@ -34,9 +34,8 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
 } from "@/shared/components/ui/dialog";
-import { Label } from "@/shared/components/ui/label";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 
 const DEPT_OPTIONS = ["Engineering", "Design", "Product", "Marketing", "Sales", "HR", "Finance", "Operations"];
 const EMPTY_FORM = { name: "", role: "", department: "Engineering", email: "", joiningDate: "", salary: "" };
@@ -361,56 +360,43 @@ const PreOnboardingPage = () => {
                 </div>
             </Card>
 
-            {/* Create / Edit shared form dialog content */}
-            {(isCreateOpen || isEditOpen) && (
-                <Dialog open={isCreateOpen || isEditOpen} onOpenChange={(o) => { if (!o) { setIsCreateOpen(false); setIsEditOpen(false); } }}>
-                    <DialogContent className="bg-white rounded-[2rem] border-2 border-slate-200 shadow-2xl p-8 max-w-3xl">
-                        <DialogHeader>
-                            <DialogTitle className="text-xl font-bold text-slate-900 tracking-tight">{isEditOpen ? 'Edit Candidate' : 'New Candidate Offer'}</DialogTitle>
-                            <DialogDescription className="text-[10px] font-bold text-slate-400">{isEditOpen ? 'Update candidate details.' : 'Stage 0: Generate offer letter & profile.'}</DialogDescription>
-                        </DialogHeader>
-                        <form onSubmit={isEditOpen ? handleEdit : handleCreate} className="space-y-6 py-4">
-                            <div className="grid grid-cols-2 gap-x-8 gap-y-5">
-                                <div className="space-y-1.5">
-                                    <Label htmlFor="name" className="text-[11px] font-bold text-slate-700 ml-1">Full Name</Label>
-                                    <Input id="name" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="rounded-xl h-10 border-slate-100 bg-slate-50/50" />
-                                    {formErrors.name && <p className="text-[10px] font-bold text-rose-500 ml-1">{formErrors.name}</p>}
-                                </div>
-                                <div className="space-y-1.5">
-                                    <Label htmlFor="email" className="text-[11px] font-bold text-slate-700 ml-1">Email Address</Label>
-                                    <Input id="email" type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} className="rounded-xl h-10 border-slate-100 bg-slate-50/50" />
-                                    {formErrors.email && <p className="text-[10px] font-bold text-rose-500 ml-1">{formErrors.email}</p>}
-                                </div>
-                                <div className="space-y-1.5">
-                                    <Label htmlFor="role" className="text-[11px] font-bold text-slate-700 ml-1">Role</Label>
-                                    <Input id="role" value={formData.role} onChange={e => setFormData({ ...formData, role: e.target.value })} className="rounded-xl h-10 border-slate-100 bg-slate-50/50" />
-                                    {formErrors.role && <p className="text-[10px] font-bold text-rose-500 ml-1">{formErrors.role}</p>}
-                                </div>
-                                <div className="space-y-1.5">
-                                    <Label htmlFor="dept" className="text-[11px] font-bold text-slate-700 ml-1">Department</Label>
-                                    <select id="dept" value={formData.department} onChange={e => setFormData({ ...formData, department: e.target.value })} className="w-full rounded-xl h-10 border border-slate-100 bg-slate-50/50 px-3 text-xs font-bold text-slate-700 outline-none">
-                                        {DEPT_OPTIONS.map(d => <option key={d} value={d}>{d}</option>)}
-                                    </select>
-                                </div>
-                                <div className="space-y-1.5">
-                                    <Label htmlFor="salary" className="text-[11px] font-bold text-slate-700 ml-1">Annual CTC (₹)</Label>
-                                    <Input id="salary" placeholder="e.g. 12,00,000" value={formData.salary} onChange={e => setFormData({ ...formData, salary: e.target.value })} className="rounded-xl h-10 border-slate-100 bg-slate-50/50" />
-                                    {formErrors.salary && <p className="text-[10px] font-bold text-rose-500 ml-1">{formErrors.salary}</p>}
-                                </div>
-                                <div className="space-y-1.5">
-                                    <Label htmlFor="date" className="text-[11px] font-bold text-slate-700 ml-1">Expected Joining</Label>
-                                    <Input id="date" type="date" value={formData.joiningDate} onChange={e => setFormData({ ...formData, joiningDate: e.target.value })} className="rounded-xl h-10 border-slate-100 bg-slate-50/50" />
-                                    {formErrors.joiningDate && <p className="text-[10px] font-bold text-rose-500 ml-1">{formErrors.joiningDate}</p>}
-                                </div>
-                            </div>
-                            <DialogFooter className="mt-4 flex gap-2">
-                                <Button type="button" variant="outline" onClick={() => { setIsCreateOpen(false); setIsEditOpen(false); }} className="rounded-xl h-11 px-6 font-bold border-slate-200 text-xs">Cancel</Button>
-                                <Button type="submit" className="flex-1 bg-[#CB9DF0] hover:bg-[#b580e0] text-white font-bold rounded-xl h-11 shadow-lg shadow-purple-100">{isEditOpen ? 'Save Changes' : 'Generate Offer'}</Button>
-                            </DialogFooter>
-                        </form>
-                    </DialogContent>
-                </Dialog>
-            )}
+            {/* Create / Edit Side Form */}
+            <SideFormSheet
+                open={isCreateOpen || isEditOpen}
+                onOpenChange={(o) => { if (!o) { setIsCreateOpen(false); setIsEditOpen(false); } }}
+                title={isEditOpen ? 'Edit Candidate' : 'New Candidate Offer'}
+                description={isEditOpen ? 'Update candidate details.' : 'Stage 0: Generate offer letter & profile.'}
+                icon={isEditOpen ? <Pencil size={20} /> : <Plus size={20} />}
+                accentColor={isEditOpen ? '#7c3aed' : '#4f46e5'}
+                width="lg"
+                submitLabel={isEditOpen ? 'Save Changes' : 'Generate Offer'}
+                onSubmit={(e) => { if (isEditOpen) { handleEdit(e); } else { handleCreate(e); } }}
+            >
+                <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Full Name" required error={formErrors.name || undefined}>
+                            <Input id="name" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
+                        </Field>
+                        <Field label="Email Address" required error={formErrors.email || undefined}>
+                            <Input id="email" type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
+                        </Field>
+                        <Field label="Role" required error={formErrors.role || undefined}>
+                            <Input id="role" value={formData.role} onChange={e => setFormData({ ...formData, role: e.target.value })} />
+                        </Field>
+                        <Field label="Department">
+                            <select id="dept" value={formData.department} onChange={e => setFormData({ ...formData, department: e.target.value })} className="w-full h-10 rounded-md bg-white border border-[#E5E7EB] px-3 text-sm outline-none focus:border-indigo-300">
+                                {DEPT_OPTIONS.map(d => <option key={d} value={d}>{d}</option>)}
+                            </select>
+                        </Field>
+                        <Field label="Annual CTC (₹)" required error={formErrors.salary || undefined}>
+                            <Input id="salary" placeholder="e.g. 12,00,000" value={formData.salary} onChange={e => setFormData({ ...formData, salary: e.target.value })} />
+                        </Field>
+                        <Field label="Expected Joining" error={formErrors.joiningDate || undefined}>
+                            <Input id="date" type="date" value={formData.joiningDate} onChange={e => setFormData({ ...formData, joiningDate: e.target.value })} />
+                        </Field>
+                    </div>
+                </div>
+            </SideFormSheet>
 
             {/* Delete Confirmation */}
             <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>

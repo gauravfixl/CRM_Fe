@@ -32,6 +32,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import { Input } from "@/shared/components/ui/input";
 import { Textarea } from "@/shared/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
@@ -350,92 +351,77 @@ const NotificationsPage = () => {
             </main>
 
             {/* Compose Notification Dialog */}
-            <Dialog open={isComposeOpen} onOpenChange={(open) => { setIsComposeOpen(open); if (!open) resetCompose(); }}>
-                <DialogContent className="bg-white rounded-3xl border-none p-10 max-w-xl shadow-2xl">
-                    <DialogHeader className="space-y-4">
-                        <div className="h-12 w-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 mb-2">
-                            <Send size={24} />
-                        </div>
-                        <DialogTitle className="text-2xl font-bold tracking-tight text-slate-900">Broadcast Notification</DialogTitle>
-                        <DialogDescription className="text-slate-500 font-medium">Compose an alert that will appear in the notification feed for employees.</DialogDescription>
-                    </DialogHeader>
+            <SideFormSheet
+                open={isComposeOpen}
+                onOpenChange={(open) => { setIsComposeOpen(open); if (!open) resetCompose(); }}
+                title="Broadcast Notification"
+                description="Compose an alert that will appear in the notification feed for employees."
+                icon={<Send size={20} />}
+                accentColor="#4f46e5"
+                width="md"
+                submitLabel="Broadcast Now"
+                submitDisabled={!isComposeValid}
+                onSubmit={(e) => { e.preventDefault(); handleBroadcast(); }}
+            >
+                <div className="space-y-4">
+                    <Field
+                        label="Title"
+                        required
+                        error={composeTitleError || undefined}
+                        hint={composeTitleError ? undefined : `${composeTitleTrimmed.length}/100`}
+                    >
+                        <Input
+                            placeholder="e.g. Quarterly Townhall Scheduled"
+                            value={composeTitle}
+                            maxLength={120}
+                            onChange={(e) => setComposeTitle(e.target.value)}
+                            aria-invalid={!!composeTitleError}
+                        />
+                    </Field>
 
-                    <div className="py-4 space-y-5">
-                        <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                                <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Title *</Label>
-                                <span className={`text-[10px] font-bold tabular-nums ${composeTitleTrimmed.length > 100 ? 'text-rose-500' : 'text-slate-300'}`}>{composeTitleTrimmed.length}/100</span>
-                            </div>
-                            <Input
-                                className={`rounded-2xl bg-slate-50 focus:bg-white h-12 font-medium px-4 ${composeTitleError ? 'border-rose-300 focus:border-rose-400' : 'border-slate-200'}`}
-                                placeholder="e.g. Quarterly Townhall Scheduled"
-                                value={composeTitle}
-                                maxLength={120}
-                                onChange={(e) => setComposeTitle(e.target.value)}
-                                aria-invalid={!!composeTitleError}
-                            />
-                            {composeTitleError && <p className="text-[11px] font-semibold text-rose-500 ml-1">{composeTitleError}</p>}
-                        </div>
-                        <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                                <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Message *</Label>
-                                <span className={`text-[10px] font-bold tabular-nums ${composeMessageTrimmed.length > 500 ? 'text-rose-500' : 'text-slate-300'}`}>{composeMessageTrimmed.length}/500</span>
-                            </div>
-                            <Textarea
-                                className={`rounded-2xl bg-slate-50 focus:bg-white min-h-[110px] font-medium p-4 ${composeMessageError ? 'border-rose-300 focus:border-rose-400' : 'border-slate-200'}`}
-                                placeholder="Write the announcement body..."
-                                value={composeMessage}
-                                maxLength={550}
-                                onChange={(e) => setComposeMessage(e.target.value)}
-                                aria-invalid={!!composeMessageError}
-                            />
-                            {composeMessageError && <p className="text-[11px] font-semibold text-rose-500 ml-1">{composeMessageError}</p>}
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Category</Label>
-                                <Select value={composeCategory} onValueChange={(v) => setComposeCategory(v as NotificationCategory)}>
-                                    <SelectTrigger className="h-12 rounded-2xl bg-slate-50 border-slate-200 font-medium">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="Announcement">Announcement</SelectItem>
-                                        <SelectItem value="Policy">Policy</SelectItem>
-                                        <SelectItem value="Payroll">Payroll</SelectItem>
-                                        <SelectItem value="Performance">Performance</SelectItem>
-                                        <SelectItem value="System">System</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Type</Label>
-                                <Select value={composeType} onValueChange={(v) => setComposeType(v as NotificationType)}>
-                                    <SelectTrigger className="h-12 rounded-2xl bg-slate-50 border-slate-200 font-medium">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="Info">Info</SelectItem>
-                                        <SelectItem value="Success">Success</SelectItem>
-                                        <SelectItem value="Warning">Warning</SelectItem>
-                                        <SelectItem value="Error">Error</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
+                    <Field
+                        label="Message"
+                        required
+                        error={composeMessageError || undefined}
+                        hint={composeMessageError ? undefined : `${composeMessageTrimmed.length}/500`}
+                    >
+                        <Textarea
+                            className="min-h-[120px]"
+                            placeholder="Write the announcement body..."
+                            value={composeMessage}
+                            maxLength={550}
+                            onChange={(e) => setComposeMessage(e.target.value)}
+                            aria-invalid={!!composeMessageError}
+                        />
+                    </Field>
+
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Category">
+                            <Select value={composeCategory} onValueChange={(v) => setComposeCategory(v as NotificationCategory)}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Announcement">Announcement</SelectItem>
+                                    <SelectItem value="Policy">Policy</SelectItem>
+                                    <SelectItem value="Payroll">Payroll</SelectItem>
+                                    <SelectItem value="Performance">Performance</SelectItem>
+                                    <SelectItem value="System">System</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <Field label="Type">
+                            <Select value={composeType} onValueChange={(v) => setComposeType(v as NotificationType)}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Info">Info</SelectItem>
+                                    <SelectItem value="Success">Success</SelectItem>
+                                    <SelectItem value="Warning">Warning</SelectItem>
+                                    <SelectItem value="Error">Error</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
                     </div>
-
-                    <DialogFooter className="gap-3">
-                        <Button variant="outline" className="rounded-xl h-12 font-bold px-8" onClick={() => { setIsComposeOpen(false); resetCompose(); }}>Cancel</Button>
-                        <Button
-                            className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl h-12 font-bold shadow-lg shadow-indigo-100 gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
-                            onClick={handleBroadcast}
-                            disabled={!isComposeValid}
-                        >
-                            <Send size={16} /> Broadcast Now
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                </div>
+            </SideFormSheet>
         </div>
     );
 };

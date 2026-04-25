@@ -9,6 +9,7 @@ import { Label } from "@/shared/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/shared/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 import { useToast } from "@/shared/components/ui/use-toast";
@@ -405,105 +406,88 @@ const EscalationRulesPage = () => {
                 </Tabs>
             </div>
 
-            {/* Create/Edit Dialog */}
-            <Dialog open={isDialogOpen} onOpenChange={v => { setIsDialogOpen(v); if (!v) setEditRule(null); }}>
-                <DialogContent className="max-w-lg">
-                    <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2"><Zap size={20} className="text-[#8B5CF6]" /> {editRule ? "Edit" : "Create"} Escalation Rule</DialogTitle>
-                        <DialogDescription>Define conditions and escalation chain for automatic alerts.</DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label className="text-xs font-bold text-slate-500">Module</Label>
-                                <Select value={form.module} onValueChange={v => setForm({ ...form, module: v as EscalationRule["module"] })}>
-                                    <SelectTrigger><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="Leave">Leave</SelectItem>
-                                        <SelectItem value="Expense">Expense</SelectItem>
-                                        <SelectItem value="Attendance">Attendance</SelectItem>
-                                        <SelectItem value="Payroll">Payroll</SelectItem>
-                                        <SelectItem value="General">General</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="text-xs font-bold text-slate-500">Trigger After (days) *</Label>
-                                <Input type="number" min={1} value={form.triggerDays} onChange={e => setForm({ ...form, triggerDays: parseInt(e.target.value) || 1 })} className={formErrors.triggerDays ? "border-rose-400" : ""} />
-                                {formErrors.triggerDays && <p className="text-[11px] text-rose-600 font-medium">{formErrors.triggerDays}</p>}
-                            </div>
+            {/* Create/Edit Escalation Rule Sheet */}
+            <SideFormSheet
+                open={isDialogOpen}
+                onOpenChange={v => { setIsDialogOpen(v); if (!v) setEditRule(null); }}
+                title={`${editRule ? "Edit" : "Create"} Escalation Rule`}
+                description="Define conditions and escalation chain for automatic alerts."
+                icon={<Zap size={20} />}
+                accentColor={editRule ? "#7c3aed" : "#4f46e5"}
+                width="md"
+                submitLabel={`${editRule ? "Update" : "Create"} Rule`}
+                onSubmit={(e) => { e.preventDefault(); handleSave(); }}
+            >
+                <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Module">
+                            <Select value={form.module} onValueChange={v => setForm({ ...form, module: v as EscalationRule["module"] })}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Leave">Leave</SelectItem>
+                                    <SelectItem value="Expense">Expense</SelectItem>
+                                    <SelectItem value="Attendance">Attendance</SelectItem>
+                                    <SelectItem value="Payroll">Payroll</SelectItem>
+                                    <SelectItem value="General">General</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <Field label="Trigger After (days)" required error={formErrors.triggerDays || undefined}>
+                            <Input type="number" min={1} value={form.triggerDays} onChange={e => setForm({ ...form, triggerDays: parseInt(e.target.value) || 1 })} />
+                        </Field>
+                    </div>
+                    <div className="bg-slate-50 rounded-xl p-4 space-y-3 border border-slate-200">
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Escalation Chain</p>
+                        <div className="grid grid-cols-2 gap-3">
+                            <Field label="L1 Escalatee" required error={formErrors.l1Escalatee || undefined}>
+                                <Input value={form.l1Escalatee} onChange={e => setForm({ ...form, l1Escalatee: e.target.value })} />
+                            </Field>
+                            <Field label="After (days)" required error={formErrors.l1Days || undefined}>
+                                <Input type="number" min={1} value={form.l1Days} onChange={e => setForm({ ...form, l1Days: parseInt(e.target.value) || 1 })} />
+                            </Field>
                         </div>
-                        <div className="bg-slate-50 rounded-xl p-4 space-y-3 border border-slate-200">
-                            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Escalation Chain</p>
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="space-y-1">
-                                    <Label className="text-[10px] text-slate-400">L1 Escalatee *</Label>
-                                    <Input value={form.l1Escalatee} onChange={e => setForm({ ...form, l1Escalatee: e.target.value })} className={`h-9 ${formErrors.l1Escalatee ? "border-rose-400" : ""}`} />
-                                    {formErrors.l1Escalatee && <p className="text-[10px] text-rose-600">{formErrors.l1Escalatee}</p>}
-                                </div>
-                                <div className="space-y-1">
-                                    <Label className="text-[10px] text-slate-400">After (days) *</Label>
-                                    <Input type="number" min={1} value={form.l1Days} onChange={e => setForm({ ...form, l1Days: parseInt(e.target.value) || 1 })} className={`h-9 ${formErrors.l1Days ? "border-rose-400" : ""}`} />
-                                    {formErrors.l1Days && <p className="text-[10px] text-rose-600">{formErrors.l1Days}</p>}
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="space-y-1">
-                                    <Label className="text-[10px] text-slate-400">L2 Escalatee *</Label>
-                                    <Input value={form.l2Escalatee} onChange={e => setForm({ ...form, l2Escalatee: e.target.value })} className={`h-9 ${formErrors.l2Escalatee ? "border-rose-400" : ""}`} />
-                                    {formErrors.l2Escalatee && <p className="text-[10px] text-rose-600">{formErrors.l2Escalatee}</p>}
-                                </div>
-                                <div className="space-y-1">
-                                    <Label className="text-[10px] text-slate-400">After (days) *</Label>
-                                    <Input type="number" min={1} value={form.l2Days} onChange={e => setForm({ ...form, l2Days: parseInt(e.target.value) || 1 })} className={`h-9 ${formErrors.l2Days ? "border-rose-400" : ""}`} />
-                                    {formErrors.l2Days && <p className="text-[10px] text-rose-600">{formErrors.l2Days}</p>}
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="space-y-1">
-                                    <Label className="text-[10px] text-slate-400">L3 Escalatee *</Label>
-                                    <Input value={form.l3Escalatee} onChange={e => setForm({ ...form, l3Escalatee: e.target.value })} className={`h-9 ${formErrors.l3Escalatee ? "border-rose-400" : ""}`} />
-                                    {formErrors.l3Escalatee && <p className="text-[10px] text-rose-600">{formErrors.l3Escalatee}</p>}
-                                </div>
-                                <div className="space-y-1">
-                                    <Label className="text-[10px] text-slate-400">After (days) *</Label>
-                                    <Input type="number" min={1} value={form.l3Days} onChange={e => setForm({ ...form, l3Days: parseInt(e.target.value) || 1 })} className={`h-9 ${formErrors.l3Days ? "border-rose-400" : ""}`} />
-                                    {formErrors.l3Days && <p className="text-[10px] text-rose-600">{formErrors.l3Days}</p>}
-                                </div>
-                            </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <Field label="L2 Escalatee" required error={formErrors.l2Escalatee || undefined}>
+                                <Input value={form.l2Escalatee} onChange={e => setForm({ ...form, l2Escalatee: e.target.value })} />
+                            </Field>
+                            <Field label="After (days)" required error={formErrors.l2Days || undefined}>
+                                <Input type="number" min={1} value={form.l2Days} onChange={e => setForm({ ...form, l2Days: parseInt(e.target.value) || 1 })} />
+                            </Field>
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label className="text-xs font-bold text-slate-500">Notification</Label>
-                                <Select value={form.notification} onValueChange={v => setForm({ ...form, notification: v as EscalationRule["notification"] })}>
-                                    <SelectTrigger><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="Email">Email</SelectItem>
-                                        <SelectItem value="In-app">In-app</SelectItem>
-                                        <SelectItem value="Both">Both</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="text-xs font-bold text-slate-500">Reminder Frequency</Label>
-                                <Select value={form.reminderFrequency} onValueChange={v => setForm({ ...form, reminderFrequency: v })}>
-                                    <SelectTrigger><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="Every 12 hours">Every 12 hours</SelectItem>
-                                        <SelectItem value="Daily">Daily</SelectItem>
-                                        <SelectItem value="Every 2 days">Every 2 days</SelectItem>
-                                        <SelectItem value="Weekly">Weekly</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <Field label="L3 Escalatee" required error={formErrors.l3Escalatee || undefined}>
+                                <Input value={form.l3Escalatee} onChange={e => setForm({ ...form, l3Escalatee: e.target.value })} />
+                            </Field>
+                            <Field label="After (days)" required error={formErrors.l3Days || undefined}>
+                                <Input type="number" min={1} value={form.l3Days} onChange={e => setForm({ ...form, l3Days: parseInt(e.target.value) || 1 })} />
+                            </Field>
                         </div>
                     </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => { setIsDialogOpen(false); setEditRule(null); }}>Cancel</Button>
-                        <Button className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white font-bold" onClick={handleSave}>{editRule ? "Update" : "Create"} Rule</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Notification">
+                            <Select value={form.notification} onValueChange={v => setForm({ ...form, notification: v as EscalationRule["notification"] })}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Email">Email</SelectItem>
+                                    <SelectItem value="In-app">In-app</SelectItem>
+                                    <SelectItem value="Both">Both</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <Field label="Reminder Frequency">
+                            <Select value={form.reminderFrequency} onValueChange={v => setForm({ ...form, reminderFrequency: v })}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Every 12 hours">Every 12 hours</SelectItem>
+                                    <SelectItem value="Daily">Daily</SelectItem>
+                                    <SelectItem value="Every 2 days">Every 2 days</SelectItem>
+                                    <SelectItem value="Weekly">Weekly</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                    </div>
+                </div>
+            </SideFormSheet>
 
             <AlertDialog open={!!deleteRuleId} onOpenChange={v => !v && setDeleteRuleId(null)}>
                 <AlertDialogContent>

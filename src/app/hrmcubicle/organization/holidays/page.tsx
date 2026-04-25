@@ -35,6 +35,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import {
     Select,
     SelectContent,
@@ -445,232 +446,181 @@ const HolidayCalendarPage = () => {
                 </div>
             </main>
 
-            {/* Add Holiday Dialog */}
-            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-                <DialogContent className="bg-white rounded-[2.5rem] border border-slate-300 p-8 max-w-lg shadow-3xl">
-                    <DialogHeader className="space-y-2">
-                        <div className="h-11 w-11 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600 mb-1 shadow-inner">
-                            <Calendar size={24} />
-                        </div>
-                        <DialogTitle className="text-2xl font-bold tracking-tight text-slate-900">Add Holiday</DialogTitle>
-                        <DialogDescription className="text-slate-500 font-medium text-xs">
-                            Define a new public or company holiday for your employees.
-                        </DialogDescription>
-                    </DialogHeader>
+            {/* Add Holiday Sheet */}
+            <SideFormSheet
+                open={isAddDialogOpen}
+                onOpenChange={(o) => { setIsAddDialogOpen(o); if (!o) resetForm(); }}
+                title="Add Holiday"
+                description="Define a new public or company holiday for your employees."
+                icon={<Calendar size={20} />}
+                accentColor="#4f46e5"
+                width="md"
+                loading={isSaving}
+                submitLabel={isSaving ? "Saving..." : "Confirm Holiday"}
+                onSubmit={(e) => { e.preventDefault(); handleAddHoliday(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Holiday Name" required error={errors.name || undefined}>
+                        <Input
+                            placeholder="e.g. Independence Day"
+                            maxLength={80}
+                            value={formData.name}
+                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        />
+                    </Field>
 
-                    <div className="py-6 space-y-5">
-                        <div className="space-y-1.5">
-                            <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Holiday Name *</Label>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Date" required error={errors.date || undefined}>
                             <Input
-                                className={`rounded-lg h-10 bg-slate-50 border font-bold px-4 text-xs focus:border-indigo-500 transition-colors ${errors.name ? "border-rose-500" : "border-slate-300"}`}
-                                placeholder="e.g. Independence Day"
-                                maxLength={80}
-                                value={formData.name}
-                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                type="date"
+                                value={formData.date}
+                                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                             />
-                            {errors.name && <p className="text-[10px] font-bold text-rose-500 ml-1">{errors.name}</p>}
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-5">
-                            <div className="space-y-1.5">
-                                <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Date *</Label>
-                                <Input
-                                    type="date"
-                                    className={`rounded-lg h-10 bg-slate-50 border font-bold px-4 text-xs focus:border-indigo-500 transition-colors ${errors.date ? "border-rose-500" : "border-slate-300"}`}
-                                    value={formData.date}
-                                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                                />
-                                {errors.date && <p className="text-[10px] font-bold text-rose-500 ml-1">{errors.date}</p>}
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Holiday Type</Label>
-                                <Select value={formData.type} onValueChange={(v) => setFormData({ ...formData, type: v as any })}>
-                                    <SelectTrigger className="h-10 rounded-lg bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent className="rounded-xl border-none shadow-2xl p-2 font-bold">
-                                        <SelectItem value="Public" className="rounded-lg h-9">Public</SelectItem>
-                                        <SelectItem value="Optional" className="rounded-lg h-9">Optional</SelectItem>
-                                        <SelectItem value="Company" className="rounded-lg h-9">Company</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-
-                        <div className="space-y-1.5">
-                            <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Applicable Locations</Label>
-                            <Select value={formData.locationIds?.[0]} onValueChange={(v) => setFormData({ ...formData, locationIds: [v] })}>
-                                <SelectTrigger className="h-10 rounded-lg bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent className="rounded-xl border-none shadow-2xl p-2 font-bold">
-                                    <SelectItem value="All" className="rounded-lg h-9 text-xs">All (Global)</SelectItem>
-                                    {locations.map(loc => (
-                                        <SelectItem key={loc.id} value={loc.id} className="rounded-lg h-9 text-xs">{loc.name}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </div>
-
-                    <DialogFooter className="gap-2 pt-6 border-t border-slate-200 sm:justify-end">
-                        <Button
-                            className="flex-1 bg-indigo-600 hover:bg-slate-900 text-white rounded-lg h-10 font-bold text-xs shadow-xl shadow-indigo-100 transition-all font-outfit disabled:opacity-50"
-                            onClick={handleAddHoliday}
-                            disabled={isSaving}
-                        >
-                            {isSaving ? "Saving..." : "Confirm Holiday"}
-                        </Button>
-                        <Button variant="outline" className="h-10 px-6 rounded-lg font-bold border-slate-300 text-slate-600 text-xs" onClick={() => { setIsAddDialogOpen(false); resetForm(); }} disabled={isSaving}>
-                            Cancel
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            {/* Edit Holiday Dialog */}
-            <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-                <DialogContent className="bg-white rounded-[2.5rem] border border-slate-300 p-8 max-w-lg shadow-3xl">
-                    <DialogHeader className="space-y-2">
-                        <div className="h-11 w-11 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 mb-1 shadow-inner">
-                            <Edit size={24} />
-                        </div>
-                        <DialogTitle className="text-2xl font-bold tracking-tight text-slate-900">Edit Holiday</DialogTitle>
-                        <DialogDescription className="text-slate-500 font-medium text-xs">
-                            Update the details for the selected holiday.
-                        </DialogDescription>
-                    </DialogHeader>
-
-                    <div className="py-6 space-y-5">
-                        <div className="space-y-1.5">
-                            <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Holiday Name *</Label>
-                            <Input
-                                className="rounded-lg h-10 bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors"
-                                value={formData.name}
-                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                            />
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-5">
-                            <div className="space-y-1.5">
-                                <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Date *</Label>
-                                <Input
-                                    type="date"
-                                    className="rounded-lg h-10 bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors"
-                                    value={formData.date}
-                                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                                />
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Holiday Type</Label>
-                                <Select value={formData.type} onValueChange={(v) => setFormData({ ...formData, type: v as any })}>
-                                    <SelectTrigger className="h-10 rounded-lg bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent className="rounded-xl border-none shadow-2xl p-2 font-bold">
-                                        <SelectItem value="Public" className="rounded-lg h-9">Public</SelectItem>
-                                        <SelectItem value="Optional" className="rounded-lg h-9">Optional</SelectItem>
-                                        <SelectItem value="Company" className="rounded-lg h-9">Company</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-
-                        <div className="space-y-1.5">
-                            <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Applicable Locations</Label>
-                            <Select value={formData.locationIds?.[0]} onValueChange={(v) => setFormData({ ...formData, locationIds: [v] })}>
-                                <SelectTrigger className="h-10 rounded-lg bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent className="rounded-xl border-none shadow-2xl p-2 font-bold">
-                                    <SelectItem value="All" className="rounded-lg h-9 text-xs">All (Global)</SelectItem>
-                                    {locations.map(loc => (
-                                        <SelectItem key={loc.id} value={loc.id} className="rounded-lg h-9 text-xs">{loc.name}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </div>
-
-                    <DialogFooter className="gap-2 pt-6 border-t border-slate-200 sm:justify-end">
-                        <Button
-                            className="flex-1 bg-indigo-600 hover:bg-slate-900 text-white rounded-lg h-10 font-bold text-xs shadow-xl shadow-indigo-100 transition-all font-outfit disabled:opacity-50"
-                            onClick={handleUpdateHoliday}
-                            disabled={isSaving}
-                        >
-                            {isSaving ? "Saving..." : "Save Changes"}
-                        </Button>
-                        <Button variant="outline" className="h-10 px-6 rounded-lg font-bold border-slate-300 text-slate-600 text-xs" onClick={() => { setIsEditDialogOpen(false); resetForm(); }} disabled={isSaving}>
-                            Cancel
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            {/* Advanced Filter Dialog */}
-            <Dialog open={isAdvancedOpen} onOpenChange={setIsAdvancedOpen}>
-                <DialogContent className="bg-white rounded-[2.5rem] border border-slate-300 p-8 max-w-lg">
-                    <DialogHeader>
-                        <div className="h-11 w-11 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600 mb-1">
-                            <Filter size={22} />
-                        </div>
-                        <DialogTitle className="text-2xl font-bold tracking-tight text-slate-900">Advanced Filters</DialogTitle>
-                        <DialogDescription className="text-slate-500 font-medium text-xs">
-                            Narrow holidays by type, month, or weekday.
-                        </DialogDescription>
-                    </DialogHeader>
-
-                    <div className="py-6 space-y-5">
-                        <div className="space-y-1.5">
-                            <Label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest ml-1">Holiday Type</Label>
-                            <Select value={typeFilter} onValueChange={setTypeFilter}>
-                                <SelectTrigger className="h-10 rounded-lg bg-slate-50 border border-slate-300 font-bold px-4 text-xs"><SelectValue /></SelectTrigger>
-                                <SelectContent className="rounded-xl">
-                                    <SelectItem value="All">All Types</SelectItem>
+                        </Field>
+                        <Field label="Holiday Type">
+                            <Select value={formData.type} onValueChange={(v) => setFormData({ ...formData, type: v as any })}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
                                     <SelectItem value="Public">Public</SelectItem>
                                     <SelectItem value="Optional">Optional</SelectItem>
                                     <SelectItem value="Company">Company</SelectItem>
                                 </SelectContent>
                             </Select>
-                        </div>
-
-                        <div className="space-y-1.5">
-                            <Label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest ml-1">Month</Label>
-                            <Select value={monthFilter} onValueChange={setMonthFilter}>
-                                <SelectTrigger className="h-10 rounded-lg bg-slate-50 border border-slate-300 font-bold px-4 text-xs"><SelectValue /></SelectTrigger>
-                                <SelectContent className="rounded-xl max-h-[240px]">
-                                    <SelectItem value="All">All Months</SelectItem>
-                                    {["January","February","March","April","May","June","July","August","September","October","November","December"].map((m, idx) => (
-                                        <SelectItem key={m} value={String(idx + 1)}>{m}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        <div className="space-y-1.5">
-                            <Label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest ml-1">Weekday</Label>
-                            <Select value={dayFilter} onValueChange={setDayFilter}>
-                                <SelectTrigger className="h-10 rounded-lg bg-slate-50 border border-slate-300 font-bold px-4 text-xs"><SelectValue /></SelectTrigger>
-                                <SelectContent className="rounded-xl">
-                                    <SelectItem value="All">Any Day</SelectItem>
-                                    {["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"].map((d) => (
-                                        <SelectItem key={d} value={d}>{d}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
+                        </Field>
                     </div>
 
-                    <DialogFooter className="gap-2 pt-6 border-t border-slate-200">
-                        <Button variant="outline" className="h-10 px-6 rounded-lg font-bold border-slate-300 text-slate-600 text-xs" onClick={resetAdvancedFilters}>
+                    <Field label="Applicable Locations">
+                        <Select value={formData.locationIds?.[0]} onValueChange={(v) => setFormData({ ...formData, locationIds: [v] })}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="All">All (Global)</SelectItem>
+                                {locations.map(loc => (
+                                    <SelectItem key={loc.id} value={loc.id}>{loc.name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                </div>
+            </SideFormSheet>
+
+            {/* Edit Holiday Sheet */}
+            <SideFormSheet
+                open={isEditDialogOpen}
+                onOpenChange={(o) => { setIsEditDialogOpen(o); if (!o) resetForm(); }}
+                title="Edit Holiday"
+                description="Update the details for the selected holiday."
+                icon={<Edit size={20} />}
+                accentColor="#7c3aed"
+                width="md"
+                loading={isSaving}
+                submitLabel={isSaving ? "Saving..." : "Save Changes"}
+                onSubmit={(e) => { e.preventDefault(); handleUpdateHoliday(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Holiday Name" required error={errors.name || undefined}>
+                        <Input
+                            value={formData.name}
+                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        />
+                    </Field>
+
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Date" required error={errors.date || undefined}>
+                            <Input
+                                type="date"
+                                value={formData.date}
+                                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                            />
+                        </Field>
+                        <Field label="Holiday Type">
+                            <Select value={formData.type} onValueChange={(v) => setFormData({ ...formData, type: v as any })}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Public">Public</SelectItem>
+                                    <SelectItem value="Optional">Optional</SelectItem>
+                                    <SelectItem value="Company">Company</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                    </div>
+
+                    <Field label="Applicable Locations">
+                        <Select value={formData.locationIds?.[0]} onValueChange={(v) => setFormData({ ...formData, locationIds: [v] })}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="All">All (Global)</SelectItem>
+                                {locations.map(loc => (
+                                    <SelectItem key={loc.id} value={loc.id}>{loc.name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                </div>
+            </SideFormSheet>
+
+            {/* Advanced Filter Sheet */}
+            <SideFormSheet
+                open={isAdvancedOpen}
+                onOpenChange={setIsAdvancedOpen}
+                title="Advanced Filters"
+                description="Narrow holidays by type, month, or weekday."
+                icon={<Filter size={20} />}
+                accentColor="#4f46e5"
+                width="md"
+                submitLabel="Apply Filters"
+                onSubmit={(e) => { e.preventDefault(); setIsAdvancedOpen(false); }}
+                footer={
+                    <>
+                        <Button type="button" variant="outline" onClick={resetAdvancedFilters} className="h-10 px-5 rounded-lg border-[#E5E7EB] text-[#374151] hover:bg-[#F3F4F6] mr-auto">
                             Reset All
                         </Button>
-                        <Button className="flex-1 bg-indigo-600 hover:bg-slate-900 text-white rounded-lg h-10 font-bold text-xs" onClick={() => setIsAdvancedOpen(false)}>
+                        <Button type="button" variant="outline" onClick={() => setIsAdvancedOpen(false)} className="h-10 px-5 rounded-lg border-[#E5E7EB] text-[#374151] hover:bg-[#F3F4F6]">
+                            Cancel
+                        </Button>
+                        <Button type="submit" className="h-10 px-5 rounded-lg text-white hover:brightness-110" style={{ backgroundColor: "#4f46e5", boxShadow: "0 4px 12px #4f46e533" }}>
                             Apply Filters
                         </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    </>
+                }
+            >
+                <div className="space-y-4">
+                    <Field label="Holiday Type">
+                        <Select value={typeFilter} onValueChange={setTypeFilter}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="All">All Types</SelectItem>
+                                <SelectItem value="Public">Public</SelectItem>
+                                <SelectItem value="Optional">Optional</SelectItem>
+                                <SelectItem value="Company">Company</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </Field>
+
+                    <Field label="Month">
+                        <Select value={monthFilter} onValueChange={setMonthFilter}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent className="max-h-[240px]">
+                                <SelectItem value="All">All Months</SelectItem>
+                                {["January","February","March","April","May","June","July","August","September","October","November","December"].map((m, idx) => (
+                                    <SelectItem key={m} value={String(idx + 1)}>{m}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </Field>
+
+                    <Field label="Weekday">
+                        <Select value={dayFilter} onValueChange={setDayFilter}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="All">Any Day</SelectItem>
+                                {["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"].map((d) => (
+                                    <SelectItem key={d} value={d}>{d}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                </div>
+            </SideFormSheet>
         </div>
     );
 };

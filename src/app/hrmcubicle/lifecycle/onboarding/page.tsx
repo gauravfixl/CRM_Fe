@@ -22,7 +22,6 @@ import {
     MessageSquare,
     History,
     Settings,
-    Send,
 } from "lucide-react";
 import { Card, CardContent } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
@@ -36,8 +35,8 @@ import {
     DialogDescription,
     DialogFooter,
 } from "@/shared/components/ui/dialog";
-import { Label } from "@/shared/components/ui/label";
 import { Input } from "@/shared/components/ui/input";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 import {
     DropdownMenu,
@@ -238,70 +237,67 @@ const KanbanCard = ({ hire, index }: { hire: NewHire, index: number }) => {
                 </CardContent>
             </Card>
 
-            {/* Add Task */}
-            <Dialog open={isTaskDialogOpen} onOpenChange={setIsTaskDialogOpen}>
-                <DialogContent className="bg-white rounded-2xl border-2 border-slate-200 p-6 max-w-sm shadow-2xl">
-                    <DialogHeader>
-                        <DialogTitle className="text-lg font-bold text-slate-900 tracking-tight">New Milestone</DialogTitle>
-                        <DialogDescription className="text-[10px] font-bold text-slate-400">Create a goal for {hire.name}</DialogDescription>
-                    </DialogHeader>
-                    <div className="py-2">
-                        <Input autoFocus placeholder="e.g. System Access Grant" value={newTaskTitle} onChange={e => setNewTaskTitle(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleAddTask()} className="rounded-xl h-10 bg-slate-50 border border-slate-100 font-bold px-4 text-xs" />
-                    </div>
-                    <DialogFooter className="gap-2">
-                        <Button variant="ghost" onClick={() => setIsTaskDialogOpen(false)} className="rounded-xl font-bold text-slate-400 h-9 px-4 text-xs">Cancel</Button>
-                        <Button onClick={handleAddTask} className="bg-[#CB9DF0] hover:bg-[#b580e0] text-white rounded-xl px-6 font-bold shadow-md shadow-purple-50 h-9 text-xs">Add Milestone</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            {/* Add Task Side Form */}
+            <SideFormSheet
+                open={isTaskDialogOpen}
+                onOpenChange={setIsTaskDialogOpen}
+                title="New Milestone"
+                description={`Create a goal for ${hire.name}`}
+                icon={<Plus size={20} />}
+                accentColor="#4f46e5"
+                width="sm"
+                submitLabel="Add Milestone"
+                onSubmit={(e) => { e.preventDefault(); handleAddTask(); }}
+            >
+                <Field label="Milestone Title" required>
+                    <Input autoFocus placeholder="e.g. System Access Grant" value={newTaskTitle} onChange={e => setNewTaskTitle(e.target.value)} />
+                </Field>
+            </SideFormSheet>
 
-            {/* Edit */}
-            <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-                <DialogContent className="bg-white rounded-2xl border-2 border-slate-200 p-6 max-w-sm shadow-2xl">
-                    <DialogHeader>
-                        <DialogTitle className="text-lg font-bold text-slate-900 tracking-tight">Edit Profile</DialogTitle>
-                        <DialogDescription className="text-[10px] font-bold text-slate-400">Update candidate information.</DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
-                        <div className="space-y-1">
-                            <Label className="text-[10px] font-bold text-slate-500 ml-1">Full Name</Label>
-                            <Input value={editFormData.name} onChange={e => setEditFormData({ ...editFormData, name: e.target.value })} className="rounded-xl h-9 bg-slate-50/50 border-slate-100 font-bold px-4 text-xs" />
-                        </div>
-                        <div className="space-y-1">
-                            <Label className="text-[10px] font-bold text-slate-500 ml-1">Position</Label>
-                            <Input value={editFormData.position} onChange={e => setEditFormData({ ...editFormData, position: e.target.value })} className="rounded-xl h-9 bg-slate-50/50 border-slate-100 font-bold px-4 text-xs" />
-                        </div>
-                        <div className="space-y-1">
-                            <Label className="text-[10px] font-bold text-slate-500 ml-1">Mentor</Label>
-                            <select value={editFormData.mentor} onChange={e => setEditFormData({ ...editFormData, mentor: e.target.value })} className="w-full h-9 rounded-xl bg-slate-50/50 border border-slate-100 font-bold px-4 text-xs outline-none">
-                                <option value="TBD">No Mentor (TBD)</option>
-                                {mentorOptions.map(m => <option key={m} value={m}>{m}</option>)}
-                            </select>
-                        </div>
-                    </div>
-                    <DialogFooter className="gap-2">
-                        <Button variant="ghost" onClick={() => setIsEditDialogOpen(false)} className="rounded-xl font-bold text-slate-400 h-9 px-4 text-xs">Cancel</Button>
-                        <Button onClick={handleSaveEdit} className="bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl px-6 font-bold shadow-md shadow-indigo-50 h-9 text-xs">Save Changes</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            {/* Edit Side Form */}
+            <SideFormSheet
+                open={isEditDialogOpen}
+                onOpenChange={setIsEditDialogOpen}
+                title="Edit Profile"
+                description="Update candidate information."
+                icon={<Edit size={20} />}
+                accentColor="#7c3aed"
+                width="sm"
+                submitLabel="Save Changes"
+                onSubmit={(e) => { e.preventDefault(); handleSaveEdit(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Full Name" required>
+                        <Input value={editFormData.name} onChange={e => setEditFormData({ ...editFormData, name: e.target.value })} />
+                    </Field>
+                    <Field label="Position" required>
+                        <Input value={editFormData.position} onChange={e => setEditFormData({ ...editFormData, position: e.target.value })} />
+                    </Field>
+                    <Field label="Mentor">
+                        <select value={editFormData.mentor} onChange={e => setEditFormData({ ...editFormData, mentor: e.target.value })} className="w-full h-10 rounded-md bg-white border border-[#E5E7EB] px-3 text-sm outline-none focus:border-indigo-300">
+                            <option value="TBD">No Mentor (TBD)</option>
+                            {mentorOptions.map(m => <option key={m} value={m}>{m}</option>)}
+                        </select>
+                    </Field>
+                </div>
+            </SideFormSheet>
 
-            {/* Say Hello */}
-            <Dialog open={isHelloDialogOpen} onOpenChange={setIsHelloDialogOpen}>
-                <DialogContent className="bg-white rounded-2xl border-2 border-slate-200 p-6 max-w-md shadow-2xl">
-                    <DialogHeader>
-                        <DialogTitle className="text-lg font-bold text-slate-900">Send Welcome Message</DialogTitle>
-                        <DialogDescription className="text-[10px] font-bold text-slate-400">Personal note to {hire.name}.</DialogDescription>
-                    </DialogHeader>
-                    <div className="py-3">
-                        <textarea value={helloMessage} onChange={e => setHelloMessage(e.target.value)} rows={5} className="w-full rounded-xl bg-slate-50 border border-slate-100 p-3 text-xs font-medium text-slate-700 outline-none focus:border-indigo-200 resize-none" />
-                    </div>
-                    <DialogFooter className="gap-2">
-                        <Button variant="ghost" onClick={() => setIsHelloDialogOpen(false)} className="rounded-xl font-bold text-slate-400 h-9 px-4 text-xs">Cancel</Button>
-                        <Button onClick={handleSendHello} className="bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl px-6 font-bold h-9 text-xs"><Send className="h-3 w-3 mr-2" /> Send</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            {/* Say Hello Side Form */}
+            <SideFormSheet
+                open={isHelloDialogOpen}
+                onOpenChange={setIsHelloDialogOpen}
+                title="Send Welcome Message"
+                description={`Personal note to ${hire.name}.`}
+                icon={<MessageSquare size={20} />}
+                accentColor="#0ea5e9"
+                width="md"
+                submitLabel="Send"
+                onSubmit={(e) => { e.preventDefault(); handleSendHello(); }}
+            >
+                <Field label="Message" required>
+                    <textarea value={helloMessage} onChange={e => setHelloMessage(e.target.value)} rows={6} className="w-full rounded-md bg-white border border-[#E5E7EB] p-3 text-sm text-slate-700 outline-none focus:border-indigo-300 resize-none" />
+                </Field>
+            </SideFormSheet>
 
             {/* Delete Confirm */}
             <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
@@ -508,69 +504,60 @@ const OnboardingPage = () => {
                 </TabsContent>
             </Tabs>
 
-            {/* Settings Dialog */}
-            <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
-                <DialogContent className="bg-white rounded-2xl border-2 border-slate-200 p-6 max-w-xs shadow-2xl">
-                    <DialogHeader>
-                        <DialogTitle className="text-lg font-bold text-slate-900">Hub Settings</DialogTitle>
-                        <DialogDescription className="text-[10px] font-bold text-slate-400">Configure global onboarding parameters.</DialogDescription>
-                    </DialogHeader>
-                    <div className="py-4 space-y-3">
-                        <div className="space-y-1.5">
-                            <Label className="text-[11px] font-bold text-slate-700">Journey Duration (Days)</Label>
-                            <Input type="number" min={7} max={365} value={onboardingDuration} onChange={e => setOnboardingDuration(Math.max(7, Number(e.target.value) || 90))} className="h-10 rounded-xl bg-slate-50 border-slate-100 text-xs font-bold" />
-                            <p className="text-[9px] text-slate-400 font-bold">Standard framework is 90 days.</p>
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button onClick={() => { setIsSettingsOpen(false); toast({ title: "Settings saved" }); }} className="bg-[#CB9DF0] hover:bg-[#b580e0] text-white rounded-xl h-10 px-8 font-bold w-full text-xs">Save</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            {/* Settings Side Form */}
+            <SideFormSheet
+                open={isSettingsOpen}
+                onOpenChange={setIsSettingsOpen}
+                title="Hub Settings"
+                description="Configure global onboarding parameters."
+                icon={<Settings size={20} />}
+                accentColor="#7c3aed"
+                width="sm"
+                submitLabel="Save"
+                onSubmit={(e) => { e.preventDefault(); setIsSettingsOpen(false); toast({ title: "Settings saved" }); }}
+            >
+                <Field label="Journey Duration (Days)" hint="Standard framework is 90 days.">
+                    <Input type="number" min={7} max={365} value={onboardingDuration} onChange={e => setOnboardingDuration(Math.max(7, Number(e.target.value) || 90))} />
+                </Field>
+            </SideFormSheet>
 
-            {/* Add Hire Dialog */}
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="bg-white rounded-[2rem] border-2 border-slate-200 shadow-2xl p-8 max-w-2xl">
-                    <DialogHeader>
-                        <DialogTitle className="text-xl font-bold text-slate-900 tracking-tight">Manual Candidate Entry</DialogTitle>
-                        <DialogDescription className="text-[10px] font-bold text-slate-400">Add a new hire directly to the onboarding pipeline.</DialogDescription>
-                    </DialogHeader>
-                    <div className="grid grid-cols-2 gap-x-6 gap-y-4 py-6">
-                        <div className="space-y-1.5">
-                            <Label className="text-[11px] font-bold text-slate-700 ml-1">Full Name</Label>
-                            <Input value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="rounded-xl h-10 bg-slate-50/50 border-slate-100 font-bold px-4 text-xs" />
-                            {formErrors.name && <p className="text-[10px] font-bold text-rose-500 ml-1">{formErrors.name}</p>}
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label className="text-[11px] font-bold text-slate-700 ml-1">Role / Position</Label>
-                            <Input value={formData.position} onChange={e => setFormData({ ...formData, position: e.target.value })} className="rounded-xl h-10 bg-slate-50/50 border-slate-100 font-bold px-4 text-xs" />
-                            {formErrors.position && <p className="text-[10px] font-bold text-rose-500 ml-1">{formErrors.position}</p>}
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label className="text-[11px] font-bold text-slate-700 ml-1">Department</Label>
-                            <select value={formData.department} onChange={e => setFormData({ ...formData, department: e.target.value })} className="w-full h-10 rounded-xl bg-slate-50/50 border border-slate-100 font-bold px-4 text-xs outline-none">
+            {/* Add Hire Side Form */}
+            <SideFormSheet
+                open={isDialogOpen}
+                onOpenChange={(o) => { setIsDialogOpen(o); if (!o) resetForm(); }}
+                title="Manual Candidate Entry"
+                description="Add a new hire directly to the onboarding pipeline."
+                icon={<UserPlus size={20} />}
+                accentColor="#4f46e5"
+                width="lg"
+                submitLabel="Launch Journey"
+                onSubmit={(e) => { e.preventDefault(); handleSaveHire(); }}
+            >
+                <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Full Name" required error={formErrors.name || undefined}>
+                            <Input value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
+                        </Field>
+                        <Field label="Role / Position" required error={formErrors.position || undefined}>
+                            <Input value={formData.position} onChange={e => setFormData({ ...formData, position: e.target.value })} />
+                        </Field>
+                        <Field label="Department">
+                            <select value={formData.department} onChange={e => setFormData({ ...formData, department: e.target.value })} className="w-full h-10 rounded-md bg-white border border-[#E5E7EB] px-3 text-sm outline-none focus:border-indigo-300">
                                 {DEPT_OPTIONS.map(d => <option key={d} value={d}>{d}</option>)}
                             </select>
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label className="text-[11px] font-bold text-slate-700 ml-1">Start Date</Label>
-                            <Input type="date" min={TODAY} value={formData.startDate} onChange={e => setFormData({ ...formData, startDate: e.target.value })} className="rounded-xl h-10 bg-slate-50/50 border-slate-100 font-bold px-4 text-xs" />
-                            {formErrors.startDate && <p className="text-[10px] font-bold text-rose-500 ml-1">{formErrors.startDate}</p>}
-                        </div>
-                        <div className="space-y-1.5 col-span-2">
-                            <Label className="text-[11px] font-bold text-slate-700 ml-1">Mentor</Label>
-                            <select value={formData.mentor} onChange={e => setFormData({ ...formData, mentor: e.target.value })} className="w-full h-10 rounded-xl bg-slate-50/50 border border-slate-100 font-bold px-4 text-xs outline-none">
-                                <option value="TBD">Assign later (TBD)</option>
-                                {mentorOptions.map(m => <option key={m} value={m}>{m}</option>)}
-                            </select>
-                        </div>
+                        </Field>
+                        <Field label="Start Date" required error={formErrors.startDate || undefined}>
+                            <Input type="date" min={TODAY} value={formData.startDate} onChange={e => setFormData({ ...formData, startDate: e.target.value })} />
+                        </Field>
                     </div>
-                    <DialogFooter className="gap-2">
-                        <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="rounded-xl h-10 px-6 font-bold border-slate-200 text-xs">Cancel</Button>
-                        <Button onClick={handleSaveHire} className="bg-[#CB9DF0] hover:bg-[#b580e0] text-white rounded-xl h-10 px-8 font-bold flex-1 shadow-lg shadow-purple-100 text-xs">Launch Journey</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    <Field label="Mentor">
+                        <select value={formData.mentor} onChange={e => setFormData({ ...formData, mentor: e.target.value })} className="w-full h-10 rounded-md bg-white border border-[#E5E7EB] px-3 text-sm outline-none focus:border-indigo-300">
+                            <option value="TBD">Assign later (TBD)</option>
+                            {mentorOptions.map(m => <option key={m} value={m}>{m}</option>)}
+                        </select>
+                    </Field>
+                </div>
+            </SideFormSheet>
         </div>
     );
 };

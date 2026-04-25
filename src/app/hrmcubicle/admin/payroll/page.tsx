@@ -23,6 +23,7 @@ import { validateSalaryComponent, validateStatutorySettings, type ValidationErro
 const FieldError = ({ msg }: { msg?: string }) =>
     msg ? <p className="text-[11px] text-rose-600 font-medium mt-1">{msg}</p> : null;
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/shared/components/ui/alert-dialog";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
@@ -468,71 +469,57 @@ const PayrollSettingsPage = () => {
                 </div>
             </ScrollArea>
 
-            {/* Component Dialog */}
-            <Dialog open={componentDialogOpen} onOpenChange={(v) => { setComponentDialogOpen(v); if (!v) setCurrentComponent({}); }}>
-                <DialogContent className="rounded-2xl border-none p-8 max-w-lg">
-                    <DialogHeader>
-                        <DialogTitle className="text-xl font-bold">
-                            {currentComponent.id ? `Edit ${currentComponent.type}` : `Add ${currentComponent.type || 'Component'}`}
-                        </DialogTitle>
-                        <DialogDescription>
-                            {currentComponent.id ? "Modify an existing salary component." : "Create a new earning or deduction component."}
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-6 py-4">
-                        <div className="grid gap-2">
-                            <Label>Component Name *</Label>
-                            <Input value={currentComponent.name || ""} onChange={e => setCurrentComponent({ ...currentComponent, name: e.target.value })} className={`bg-slate-50 font-medium ${formErrors.name ? "border-rose-400" : ""}`} />
-                            <FieldError msg={formErrors.name} />
-                        </div>
-                        <div className="grid gap-2">
-                            <Label>Type *</Label>
-                            <Select value={currentComponent.type} onValueChange={(val: any) => setCurrentComponent({ ...currentComponent, type: val })}>
-                                <SelectTrigger className={`bg-slate-50 ${formErrors.type ? "border-rose-400" : ""}`}><SelectValue /></SelectTrigger>
+            {/* Salary Component Sheet */}
+            <SideFormSheet
+                open={componentDialogOpen}
+                onOpenChange={(v) => { setComponentDialogOpen(v); if (!v) setCurrentComponent({}); }}
+                title={currentComponent.id ? `Edit ${currentComponent.type}` : `Add ${currentComponent.type || 'Component'}`}
+                description={currentComponent.id ? "Modify an existing salary component." : "Create a new earning or deduction component."}
+                icon={<Coins size={20} />}
+                accentColor={currentComponent.id ? "#7c3aed" : "#059669"}
+                width="md"
+                submitLabel={currentComponent.id ? "Save Changes" : "Create Component"}
+                onSubmit={(e) => { e.preventDefault(); saveComponent(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Component Name" required error={formErrors.name || undefined}>
+                        <Input value={currentComponent.name || ""} onChange={e => setCurrentComponent({ ...currentComponent, name: e.target.value })} />
+                    </Field>
+                    <Field label="Type" required error={formErrors.type || undefined}>
+                        <Select value={currentComponent.type} onValueChange={(val: any) => setCurrentComponent({ ...currentComponent, type: val })}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Earning">Earning</SelectItem>
+                                <SelectItem value="Deduction">Deduction</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Calculation" required error={formErrors.amountType || undefined}>
+                            <Select value={currentComponent.amountType} onValueChange={(val: any) => setCurrentComponent({ ...currentComponent, amountType: val })}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="Earning">Earning</SelectItem>
-                                    <SelectItem value="Deduction">Deduction</SelectItem>
+                                    <SelectItem value="Fixed">Fixed Amount</SelectItem>
+                                    <SelectItem value="Percentage of Basic">% of Basic</SelectItem>
                                 </SelectContent>
                             </Select>
-                            <FieldError msg={formErrors.type} />
+                        </Field>
+                        <Field label="Value" required error={formErrors.value || undefined}>
+                            <Input type="number" min="0" step="0.01" value={currentComponent.value ?? ""} onChange={e => setCurrentComponent({ ...currentComponent, value: parseFloat(e.target.value) })} />
+                        </Field>
+                    </div>
+                    <div className="flex items-center gap-6 mt-2">
+                        <div className="flex items-center gap-2">
+                            <Switch checked={currentComponent.isTaxable} onCheckedChange={(val) => setCurrentComponent({ ...currentComponent, isTaxable: val })} />
+                            <Label className="text-sm text-slate-600">Taxable</Label>
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="grid gap-2">
-                                <Label>Calculation *</Label>
-                                <Select value={currentComponent.amountType} onValueChange={(val: any) => setCurrentComponent({ ...currentComponent, amountType: val })}>
-                                    <SelectTrigger className={`bg-slate-50 ${formErrors.amountType ? "border-rose-400" : ""}`}><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="Fixed">Fixed Amount</SelectItem>
-                                        <SelectItem value="Percentage of Basic">% of Basic</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                <FieldError msg={formErrors.amountType} />
-                            </div>
-                            <div className="grid gap-2">
-                                <Label>Value *</Label>
-                                <Input type="number" min="0" step="0.01" value={currentComponent.value ?? ""} onChange={e => setCurrentComponent({ ...currentComponent, value: parseFloat(e.target.value) })} className={`bg-slate-50 font-bold ${formErrors.value ? "border-rose-400" : ""}`} />
-                                <FieldError msg={formErrors.value} />
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-6 mt-2">
-                            <div className="flex items-center gap-2">
-                                <Switch checked={currentComponent.isTaxable} onCheckedChange={(val) => setCurrentComponent({ ...currentComponent, isTaxable: val })} />
-                                <Label className="text-sm text-slate-600">Taxable</Label>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <Switch checked={currentComponent.isStatutory} onCheckedChange={(val) => setCurrentComponent({ ...currentComponent, isStatutory: val })} />
-                                <Label className="text-sm text-slate-600">Statutory</Label>
-                            </div>
+                        <div className="flex items-center gap-2">
+                            <Switch checked={currentComponent.isStatutory} onCheckedChange={(val) => setCurrentComponent({ ...currentComponent, isStatutory: val })} />
+                            <Label className="text-sm text-slate-600">Statutory</Label>
                         </div>
                     </div>
-                    <DialogFooter className="gap-2">
-                        <Button variant="outline" onClick={() => { setComponentDialogOpen(false); setCurrentComponent({}); }}>Cancel</Button>
-                        <Button onClick={saveComponent} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold">
-                            {currentComponent.id ? "Save Changes" : "Create Component"}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                </div>
+            </SideFormSheet>
 
             {/* Delete Confirmation */}
             <AlertDialog open={!!deleteTarget} onOpenChange={(v) => !v && setDeleteTarget(null)}>

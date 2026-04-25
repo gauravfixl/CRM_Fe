@@ -3,9 +3,10 @@
 import React, { useState } from "react"
 import { useRouter } from "next/navigation"
 import {
-  ArrowLeft, Edit, Mail, Pause, Play, Plus, RefreshCw, Search, Send,
+  ArrowLeft, CalendarClock, Edit, Mail, Pause, Play, Plus, RefreshCw, Search, Send,
   Trash2, X, CheckCircle2, AlertCircle
 } from "lucide-react"
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet"
 import { Button } from "@/shared/components/ui/button"
 import { Card } from "@/shared/components/ui/card"
 import { Badge } from "@/shared/components/ui/badge"
@@ -410,155 +411,133 @@ const ScheduledReportsPage = () => {
       </Tabs>
 
       {/* New/Edit Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) setFormErrors({}) }}>
-        <DialogContent className="max-w-lg rounded-2xl">
-          <DialogHeader>
-            <DialogTitle className="text-lg font-black text-slate-900">
-              {editingId ? "Edit Schedule" : "New Scheduled Report"}
-            </DialogTitle>
-          </DialogHeader>
-          {savedReports.length === 0 ? (
-            <div className="py-8 text-center">
-              <AlertCircle className="h-10 w-10 mx-auto text-amber-400 mb-3" />
-              <p className="text-sm font-bold text-slate-700">No saved reports yet</p>
-              <p className="text-xs text-slate-500 mt-1">Create and save a report from the Report Builder first.</p>
-              <Button
-                className="mt-4 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white rounded-xl font-bold"
-                onClick={() => { setDialogOpen(false); router.push("/hrmcubicle/reports/builder") }}
-              >
-                Go to Builder
-              </Button>
-            </div>
-          ) : (
-          <div className="space-y-4">
-            <div>
-              <label className="text-xs font-bold text-slate-500 mb-1 block">
-                Saved Report <span className="text-red-500">*</span>
-              </label>
-              <Select
-                value={form.reportId}
-                onValueChange={(v) => {
-                  const r = savedReports.find((sr) => sr.id === v)
-                  const next = { ...form, reportId: v, reportName: r?.name || "" }
-                  setForm(next)
-                  if (Object.keys(formErrors).length > 0) setFormErrors(validateForm(next))
-                }}
-              >
-                <SelectTrigger className={cn("rounded-xl", formErrors.reportId && "border-red-400 focus:ring-red-300")}>
-                  <SelectValue placeholder="Select a saved report..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {savedReports.map((sr) => (
-                    <SelectItem key={sr.id} value={sr.id} className="text-xs">{sr.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {formErrors.reportId && <p className="text-[11px] text-red-500 mt-1 font-medium">{formErrors.reportId}</p>}
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-xs font-bold text-slate-500 mb-1 block">Frequency</label>
-                <Select value={form.frequency} onValueChange={(v) => updateField("frequency", v as typeof form.frequency)}>
-                  <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="daily">Daily</SelectItem>
-                    <SelectItem value="weekly">Weekly</SelectItem>
-                    <SelectItem value="monthly">Monthly</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              {form.frequency !== "daily" && (
-                <div>
-                  <label className="text-xs font-bold text-slate-500 mb-1 block">
-                    {form.frequency === "weekly" ? "Day of Week" : "Day of Month"} <span className="text-red-500">*</span>
-                  </label>
-                  {form.frequency === "weekly" ? (
-                    <Select value={form.day} onValueChange={(v) => updateField("day", v)}>
-                      <SelectTrigger className={cn("rounded-xl", formErrors.day && "border-red-400 focus:ring-red-300")}>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"].map((d) => (
-                          <SelectItem key={d} value={d}>{d}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <Select value={form.day} onValueChange={(v) => updateField("day", v)}>
-                      <SelectTrigger className={cn("rounded-xl", formErrors.day && "border-red-400 focus:ring-red-300")}>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {["1", "5", "10", "15", "20", "25", "Last Day"].map((d) => (
-                          <SelectItem key={d} value={d}>{d}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                  {formErrors.day && <p className="text-[11px] text-red-500 mt-1 font-medium">{formErrors.day}</p>}
-                </div>
-              )}
-            </div>
-            <div>
-              <label className="text-xs font-bold text-slate-500 mb-1 block">
-                Time <span className="text-red-500">*</span>
-              </label>
-              <Input
-                value={form.time}
-                onChange={(e) => updateField("time", e.target.value)}
-                type="time"
-                className={cn("rounded-xl", formErrors.time && "border-red-400 focus-visible:ring-red-300")}
-              />
-              {formErrors.time && <p className="text-[11px] text-red-500 mt-1 font-medium">{formErrors.time}</p>}
-            </div>
-            <div>
-              <label className="text-xs font-bold text-slate-500 mb-1 block">
-                Recipients <span className="text-red-500">*</span> <span className="text-slate-400 font-normal">(comma-separated emails, max 20)</span>
-              </label>
-              <Input
-                value={form.recipients}
-                onChange={(e) => updateField("recipients", e.target.value)}
-                onBlur={() => setFormErrors(validateForm(form))}
-                placeholder="hr@company.com, admin@company.com"
-                className={cn("rounded-xl", formErrors.recipients && "border-red-400 focus-visible:ring-red-300")}
-              />
-              {formErrors.recipients ? (
-                <p className="text-[11px] text-red-500 mt-1 font-medium">{formErrors.recipients}</p>
-              ) : (
-                parseRecipients(form.recipients).length > 0 && (
-                  <p className="text-[11px] text-emerald-600 mt-1 font-medium">
-                    {parseRecipients(form.recipients).length} valid recipient(s)
-                  </p>
-                )
-              )}
-            </div>
-            <div>
-              <label className="text-xs font-bold text-slate-500 mb-1 block">Format</label>
-              <Select value={form.format} onValueChange={(v) => updateField("format", v as typeof form.format)}>
+      <SideFormSheet
+        open={dialogOpen}
+        onOpenChange={(open) => { setDialogOpen(open); if (!open) setFormErrors({}) }}
+        title={editingId ? "Edit Schedule" : "New Scheduled Report"}
+        description="Automate report generation and email delivery on a recurring schedule."
+        icon={<CalendarClock size={20} />}
+        accentColor={editingId ? "#7c3aed" : "#8B5CF6"}
+        width="lg"
+        submitLabel={editingId ? "Update Schedule" : "Create Schedule"}
+        submitDisabled={Object.keys(validateForm(form)).length > 0}
+        onSubmit={(e) => { e.preventDefault(); handleSave() }}
+        hideFooter={savedReports.length === 0}
+      >
+        {savedReports.length === 0 ? (
+          <div className="py-8 text-center">
+            <AlertCircle className="h-10 w-10 mx-auto text-amber-400 mb-3" />
+            <p className="text-sm font-bold text-slate-700">No saved reports yet</p>
+            <p className="text-xs text-slate-500 mt-1">Create and save a report from the Report Builder first.</p>
+            <Button
+              className="mt-4 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white rounded-xl font-bold"
+              onClick={() => { setDialogOpen(false); router.push("/hrmcubicle/reports/builder") }}
+            >
+              Go to Builder
+            </Button>
+          </div>
+        ) : (
+        <div className="space-y-4">
+          <Field label="Saved Report" required error={formErrors.reportId || undefined}>
+            <Select
+              value={form.reportId}
+              onValueChange={(v) => {
+                const r = savedReports.find((sr) => sr.id === v)
+                const next = { ...form, reportId: v, reportName: r?.name || "" }
+                setForm(next)
+                if (Object.keys(formErrors).length > 0) setFormErrors(validateForm(next))
+              }}
+            >
+              <SelectTrigger className="rounded-xl">
+                <SelectValue placeholder="Select a saved report..." />
+              </SelectTrigger>
+              <SelectContent>
+                {savedReports.map((sr) => (
+                  <SelectItem key={sr.id} value={sr.id} className="text-xs">{sr.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Frequency">
+              <Select value={form.frequency} onValueChange={(v) => updateField("frequency", v as typeof form.frequency)}>
                 <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="PDF">PDF</SelectItem>
-                  <SelectItem value="Excel">Excel</SelectItem>
-                  <SelectItem value="CSV">CSV</SelectItem>
+                  <SelectItem value="daily">Daily</SelectItem>
+                  <SelectItem value="weekly">Weekly</SelectItem>
+                  <SelectItem value="monthly">Monthly</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
+            </Field>
+            {form.frequency !== "daily" && (
+              <Field
+                label={form.frequency === "weekly" ? "Day of Week" : "Day of Month"}
+                required
+                error={formErrors.day || undefined}
+              >
+                {form.frequency === "weekly" ? (
+                  <Select value={form.day} onValueChange={(v) => updateField("day", v)}>
+                    <SelectTrigger className="rounded-xl">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"].map((d) => (
+                        <SelectItem key={d} value={d}>{d}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Select value={form.day} onValueChange={(v) => updateField("day", v)}>
+                    <SelectTrigger className="rounded-xl">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {["1", "5", "10", "15", "20", "25", "Last Day"].map((d) => (
+                        <SelectItem key={d} value={d}>{d}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </Field>
+            )}
           </div>
-          )}
-          {savedReports.length > 0 && (
-          <DialogFooter className="gap-2">
-            <Button variant="outline" className="rounded-xl" onClick={() => setDialogOpen(false)}>Cancel</Button>
-            <Button
-              className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white rounded-xl font-bold disabled:opacity-50"
-              onClick={handleSave}
-              disabled={Object.keys(validateForm(form)).length > 0}
-            >
-              {editingId ? "Update" : "Create"} Schedule
-            </Button>
-          </DialogFooter>
-          )}
-        </DialogContent>
-      </Dialog>
+          <Field label="Time" required error={formErrors.time || undefined}>
+            <Input
+              value={form.time}
+              onChange={(e) => updateField("time", e.target.value)}
+              type="time"
+            />
+          </Field>
+          <Field
+            label="Recipients"
+            required
+            error={formErrors.recipients || undefined}
+            hint={
+              !formErrors.recipients && parseRecipients(form.recipients).length > 0
+                ? `${parseRecipients(form.recipients).length} valid recipient(s)`
+                : "Comma-separated emails, max 20"
+            }
+          >
+            <Input
+              value={form.recipients}
+              onChange={(e) => updateField("recipients", e.target.value)}
+              onBlur={() => setFormErrors(validateForm(form))}
+              placeholder="hr@company.com, admin@company.com"
+            />
+          </Field>
+          <Field label="Format">
+            <Select value={form.format} onValueChange={(v) => updateField("format", v as typeof form.format)}>
+              <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="PDF">PDF</SelectItem>
+                <SelectItem value="Excel">Excel</SelectItem>
+                <SelectItem value="CSV">CSV</SelectItem>
+              </SelectContent>
+            </Select>
+          </Field>
+        </div>
+        )}
+      </SideFormSheet>
 
       {/* Delete Confirmation */}
       <Dialog open={!!deleteConfirmId} onOpenChange={() => setDeleteConfirmId(null)}>

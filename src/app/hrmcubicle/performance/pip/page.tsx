@@ -27,14 +27,6 @@ import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { Textarea } from "@/shared/components/ui/textarea";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/shared/components/ui/dialog";
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -58,6 +50,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import { cn } from "@/lib/utils";
 import { useEffect } from "react";
 import {
@@ -742,168 +735,157 @@ const PIPTrackingPage = () => {
         </CardContent>
       </Card>
 
-      {/* New / Edit PIP Dialog */}
-      <Dialog open={newPipOpen} onOpenChange={(open) => { setNewPipOpen(open); if (!open) { setEditPip(null); setNewPip(emptyPipForm); } }}>
-        <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{editPip ? `Edit PIP — ${editPip.employeeName}` : "Create New PIP"}</DialogTitle>
-            <DialogDescription>{editPip ? "Update the plan details." : "Set up a Performance Improvement Plan for an employee"}</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>Employee *</Label>
-                {editPip ? (
-                  <Input value={newPip.employee} onChange={(e) => setNewPip({ ...newPip, employee: e.target.value })} className={pipErrors.employee ? "border-rose-400" : ""} />
-                ) : (
-                  <Select value={newPip.employeeId} onValueChange={(v) => {
-                    const emp = employees.find((e) => e.id === v);
-                    setNewPip({
-                      ...newPip,
-                      employeeId: v,
-                      employee: emp?.name || "",
-                      employeeCode: emp?.empCode || "",
-                      department: emp?.department || newPip.department,
-                    });
-                  }}>
-                    <SelectTrigger className={pipErrors.employee ? "border-rose-400" : ""}>
-                      <SelectValue placeholder={employees.length ? "Choose employee" : "Loading employees…"} />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-72 overflow-y-auto">
-                      {employees.length === 0 && <div className="px-3 py-2 text-xs text-slate-400 italic">No employees available</div>}
-                      {employees.map((e) => (
-                        <SelectItem key={e.id} value={e.id}>{e.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-                {pipErrors.employee && <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 mt-1"><AlertCircle size={10} /> {pipErrors.employee}</p>}
-              </div>
-              <div><Label>Department</Label><Input value={newPip.department} onChange={(e) => setNewPip({ ...newPip, department: e.target.value })} /></div>
+      {/* New / Edit PIP SideFormSheet */}
+      <SideFormSheet
+        open={newPipOpen}
+        onOpenChange={(open) => { setNewPipOpen(open); if (!open) { setEditPip(null); setNewPip(emptyPipForm); setPipErrors({}); } }}
+        title={editPip ? `Edit PIP — ${editPip.employeeName}` : "Create New PIP"}
+        description={editPip ? "Update the plan details." : "Set up a Performance Improvement Plan for an employee"}
+        icon={editPip ? <Edit size={20} /> : <Plus size={20} />}
+        accentColor={editPip ? "#7c3aed" : "#e11d48"}
+        width="lg"
+        loading={saving}
+        submitLabel={saving ? "Saving..." : editPip ? "Save Changes" : "Create PIP"}
+        onSubmit={(e) => { e.preventDefault(); handleCreatePip(); }}
+      >
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Employee" required error={pipErrors.employee || undefined}>
+              {editPip ? (
+                <Input value={newPip.employee} onChange={(e) => setNewPip({ ...newPip, employee: e.target.value })} />
+              ) : (
+                <Select value={newPip.employeeId} onValueChange={(v) => {
+                  const emp = employees.find((e) => e.id === v);
+                  setNewPip({
+                    ...newPip,
+                    employeeId: v,
+                    employee: emp?.name || "",
+                    employeeCode: emp?.empCode || "",
+                    department: emp?.department || newPip.department,
+                  });
+                }}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={employees.length ? "Choose employee" : "Loading employees…"} />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-72 overflow-y-auto">
+                    {employees.length === 0 && <div className="px-3 py-2 text-xs text-slate-400 italic">No employees available</div>}
+                    {employees.map((e) => (
+                      <SelectItem key={e.id} value={e.id}>{e.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </Field>
+            <Field label="Department">
+              <Input value={newPip.department} onChange={(e) => setNewPip({ ...newPip, department: e.target.value })} />
+            </Field>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Start Date" required error={pipErrors.startDate || undefined}>
+              <Input type="date" value={newPip.startDate} onChange={(e) => setNewPip({ ...newPip, startDate: e.target.value })} />
+            </Field>
+            <Field label="End Date" required error={pipErrors.endDate || undefined}>
+              <Input type="date" value={newPip.endDate} onChange={(e) => setNewPip({ ...newPip, endDate: e.target.value })} />
+            </Field>
+          </div>
+          <Field label="Manager">
+            <Input value={newPip.manager} onChange={(e) => setNewPip({ ...newPip, manager: e.target.value })} />
+          </Field>
+          <Field label="Review Frequency">
+            <Select value={newPip.reviewFrequency} onValueChange={(v) => setNewPip({ ...newPip, reviewFrequency: v })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Weekly">Weekly</SelectItem>
+                <SelectItem value="Bi-weekly">Bi-weekly</SelectItem>
+                <SelectItem value="Monthly">Monthly</SelectItem>
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field label="Improvement Areas" required error={pipErrors.areas || undefined}>
+            <div className="flex flex-wrap gap-2 p-2 rounded-md border border-slate-200 bg-white">
+              {improvementOptions.map((opt) => (
+                <button
+                  type="button"
+                  key={opt}
+                  onClick={() => setNewPip({ ...newPip, areas: newPip.areas.includes(opt) ? newPip.areas.filter((a) => a !== opt) : [...newPip.areas, opt] })}
+                  className={cn("px-3 py-1 text-xs rounded-full border transition-colors", newPip.areas.includes(opt) ? "bg-[#8B5CF6] text-white border-[#8B5CF6]" : "bg-white text-slate-600 border-slate-200 hover:border-[#8B5CF6]")}
+                >
+                  {opt}
+                </button>
+              ))}
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>Start Date *</Label>
-                <Input type="date" value={newPip.startDate} onChange={(e) => setNewPip({ ...newPip, startDate: e.target.value })} className={pipErrors.startDate ? "border-rose-400" : ""} />
-                {pipErrors.startDate && <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 mt-1"><AlertCircle size={10} /> {pipErrors.startDate}</p>}
+          </Field>
+          <Field label="Goals" required error={pipErrors.goals || undefined} hint={`${newPip.goals.length}/1000`}>
+            <Textarea
+              maxLength={1000}
+              value={newPip.goals}
+              onChange={(e) => setNewPip({ ...newPip, goals: e.target.value })}
+              rows={3}
+            />
+          </Field>
+        </div>
+      </SideFormSheet>
+
+      {/* Milestone Manager SideFormSheet */}
+      <SideFormSheet
+        open={!!milestonePip}
+        onOpenChange={(open) => { if (!open) { setMilestonePip(null); setNewMilestone({ title: "", dueDate: "", status: "Pending", notes: "" }); setMilestoneErrors({}); } }}
+        title={`Milestones — ${milestonePip?.employeeName || ""}`}
+        description="Add, update status, or remove milestones. Progress updates automatically."
+        icon={<CheckCircle2 size={20} />}
+        accentColor="#0ea5e9"
+        width="lg"
+        hideFooter
+      >
+        <div className="space-y-3">
+          {(milestonePip?.milestones || []).length === 0 && (
+            <p className="text-xs text-slate-400 italic p-3 bg-slate-50 rounded">No milestones yet.</p>
+          )}
+          {(milestonePip?.milestones || []).map((m, i) => (
+            <div key={i} className="p-3 bg-slate-50 rounded-lg space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm font-bold text-slate-700">{m.title}</span>
+                <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-rose-500" onClick={() => handleRemoveMilestone(i)}>
+                  <Trash2 className="w-3.5 h-3.5" />
+                </Button>
               </div>
-              <div>
-                <Label>End Date *</Label>
-                <Input type="date" value={newPip.endDate} onChange={(e) => setNewPip({ ...newPip, endDate: e.target.value })} className={pipErrors.endDate ? "border-rose-400" : ""} />
-                {pipErrors.endDate && <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 mt-1"><AlertCircle size={10} /> {pipErrors.endDate}</p>}
-              </div>
-            </div>
-            <div><Label>Manager</Label><Input value={newPip.manager} onChange={(e) => setNewPip({ ...newPip, manager: e.target.value })} /></div>
-            <div>
-              <Label>Review Frequency</Label>
-              <Select value={newPip.reviewFrequency} onValueChange={(v) => setNewPip({ ...newPip, reviewFrequency: v })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+              <p className="text-xs text-slate-400">Due: {m.dueDate}{m.notes ? ` — ${m.notes}` : ""}</p>
+              <Select value={m.status} onValueChange={(v) => handleUpdateMilestoneStatus(i, v as Milestone["status"])}>
+                <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Weekly">Weekly</SelectItem>
-                  <SelectItem value="Bi-weekly">Bi-weekly</SelectItem>
-                  <SelectItem value="Monthly">Monthly</SelectItem>
+                  <SelectItem value="Pending">Pending</SelectItem>
+                  <SelectItem value="In Progress">In Progress</SelectItem>
+                  <SelectItem value="Completed">Completed</SelectItem>
+                  <SelectItem value="Overdue">Overdue</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <Label>Improvement Areas *</Label>
-              <div className={cn("flex flex-wrap gap-2 mt-1 p-2 rounded border", pipErrors.areas ? "border-rose-400" : "border-transparent")}>
-                {improvementOptions.map((opt) => (
-                  <button
-                    type="button"
-                    key={opt}
-                    onClick={() => setNewPip({ ...newPip, areas: newPip.areas.includes(opt) ? newPip.areas.filter((a) => a !== opt) : [...newPip.areas, opt] })}
-                    className={cn("px-3 py-1 text-xs rounded-full border transition-colors", newPip.areas.includes(opt) ? "bg-[#8B5CF6] text-white border-[#8B5CF6]" : "bg-white text-slate-600 border-slate-200 hover:border-[#8B5CF6]")}
-                  >
-                    {opt}
-                  </button>
-                ))}
-              </div>
-              {pipErrors.areas && <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 mt-1"><AlertCircle size={10} /> {pipErrors.areas}</p>}
-            </div>
-            <div>
-              <Label>Goals *</Label>
-              <Textarea
-                maxLength={1000}
-                value={newPip.goals}
-                onChange={(e) => setNewPip({ ...newPip, goals: e.target.value })}
-                rows={3}
-                className={pipErrors.goals ? "border-rose-400" : ""}
-              />
-              <p className="text-[10px] text-slate-400 mt-0.5">{newPip.goals.length}/1000</p>
-              {pipErrors.goals && <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 mt-1"><AlertCircle size={10} /> {pipErrors.goals}</p>}
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => { setNewPipOpen(false); setEditPip(null); setNewPip(emptyPipForm); }} disabled={saving}>Cancel</Button>
-            <Button onClick={handleCreatePip} className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white gap-2" disabled={saving}>
-              {saving && <Loader2 className="w-3 h-3 animate-spin" />}
-              {saving ? "Saving..." : editPip ? "Save Changes" : "Create PIP"}
+          ))}
+
+          <div className="mt-3 p-3 bg-indigo-50 rounded-lg space-y-2">
+            <Label className="text-[10px] uppercase tracking-widest text-indigo-600 font-bold">Add Milestone</Label>
+            <Input
+              maxLength={200}
+              placeholder="Title *"
+              value={newMilestone.title}
+              onChange={(e) => setNewMilestone({ ...newMilestone, title: e.target.value })}
+              className={milestoneErrors.title ? "border-rose-400" : ""}
+            />
+            {milestoneErrors.title && <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1"><AlertCircle size={10} /> {milestoneErrors.title}</p>}
+            <Input
+              type="date"
+              value={newMilestone.dueDate}
+              onChange={(e) => setNewMilestone({ ...newMilestone, dueDate: e.target.value })}
+              className={milestoneErrors.dueDate ? "border-rose-400" : ""}
+            />
+            {milestoneErrors.dueDate && <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1"><AlertCircle size={10} /> {milestoneErrors.dueDate}</p>}
+            <Input maxLength={500} placeholder="Notes (optional)" value={newMilestone.notes} onChange={(e) => setNewMilestone({ ...newMilestone, notes: e.target.value })} />
+            <Button type="button" className="w-full bg-[#8B5CF6] hover:bg-[#7C3AED] text-white" onClick={handleAddMilestone}>
+              <Plus className="w-3.5 h-3.5 mr-1" /> Add
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Milestone Manager */}
-      <Dialog open={!!milestonePip} onOpenChange={(open) => { if (!open) { setMilestonePip(null); setNewMilestone({ title: "", dueDate: "", status: "Pending", notes: "" }); } }}>
-        <DialogContent className="sm:max-w-xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Milestones — {milestonePip?.employeeName}</DialogTitle>
-            <DialogDescription>Add, update status, or remove milestones. Progress updates automatically.</DialogDescription>
-          </DialogHeader>
-          <div className="py-2 space-y-3">
-            {(milestonePip?.milestones || []).length === 0 && (
-              <p className="text-xs text-slate-400 italic p-3 bg-slate-50 rounded">No milestones yet.</p>
-            )}
-            {(milestonePip?.milestones || []).map((m, i) => (
-              <div key={i} className="p-3 bg-slate-50 rounded-lg space-y-2">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-sm font-bold text-slate-700">{m.title}</span>
-                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-rose-500" onClick={() => handleRemoveMilestone(i)}>
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </Button>
-                </div>
-                <p className="text-xs text-slate-400">Due: {m.dueDate}{m.notes ? ` — ${m.notes}` : ""}</p>
-                <Select value={m.status} onValueChange={(v) => handleUpdateMilestoneStatus(i, v as Milestone["status"])}>
-                  <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Pending">Pending</SelectItem>
-                    <SelectItem value="In Progress">In Progress</SelectItem>
-                    <SelectItem value="Completed">Completed</SelectItem>
-                    <SelectItem value="Overdue">Overdue</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            ))}
-
-            <div className="mt-3 p-3 bg-indigo-50 rounded-lg space-y-2">
-              <Label className="text-[10px] uppercase tracking-widest text-indigo-600 font-bold">Add Milestone</Label>
-              <Input
-                maxLength={200}
-                placeholder="Title *"
-                value={newMilestone.title}
-                onChange={(e) => setNewMilestone({ ...newMilestone, title: e.target.value })}
-                className={milestoneErrors.title ? "border-rose-400" : ""}
-              />
-              {milestoneErrors.title && <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1"><AlertCircle size={10} /> {milestoneErrors.title}</p>}
-              <Input
-                type="date"
-                value={newMilestone.dueDate}
-                onChange={(e) => setNewMilestone({ ...newMilestone, dueDate: e.target.value })}
-                className={milestoneErrors.dueDate ? "border-rose-400" : ""}
-              />
-              {milestoneErrors.dueDate && <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1"><AlertCircle size={10} /> {milestoneErrors.dueDate}</p>}
-              <Input maxLength={500} placeholder="Notes (optional)" value={newMilestone.notes} onChange={(e) => setNewMilestone({ ...newMilestone, notes: e.target.value })} />
-              <Button className="w-full bg-[#8B5CF6] hover:bg-[#7C3AED] text-white" onClick={handleAddMilestone}>
-                <Plus className="w-3.5 h-3.5 mr-1" /> Add
-              </Button>
-            </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setMilestonePip(null)}>Close</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        </div>
+      </SideFormSheet>
 
       {/* Delete Confirmation */}
       <AlertDialog open={!!deletePip} onOpenChange={(open) => { if (!open) setDeletePip(null); }}>
@@ -923,49 +905,42 @@ const PIPTrackingPage = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Review Dialog */}
-      <Dialog open={!!reviewDialog} onOpenChange={() => setReviewDialog(null)}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>PIP Review - {reviewDialog?.employeeName}</DialogTitle>
-            <DialogDescription>Submit a progress review for this PIP</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div>
-              <Label>Progress Notes *</Label>
-              <Textarea
-                maxLength={1000}
-                value={reviewNote}
-                onChange={(e) => setReviewNote(e.target.value)}
-                rows={3}
-                placeholder="Enter review notes..."
-                className={reviewErrors.reviewNote ? "border-rose-400" : ""}
-              />
-              <p className="text-[10px] text-slate-400 mt-0.5">{reviewNote.length}/1000</p>
-              {reviewErrors.reviewNote && <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 mt-1"><AlertCircle size={10} /> {reviewErrors.reviewNote}</p>}
-            </div>
-            <div>
-              <Label>Recommendation</Label>
-              <Select value={reviewRecommendation} onValueChange={setReviewRecommendation}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Continue">Continue</SelectItem>
-                  <SelectItem value="Extend">Extend</SelectItem>
-                  <SelectItem value="Complete">Complete Successfully</SelectItem>
-                  <SelectItem value="Terminate">Terminate</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => { setReviewDialog(null); setReviewErrors({}); }} disabled={saving}>Cancel</Button>
-            <Button onClick={handleReviewSubmit} className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white gap-2" disabled={saving}>
-              {saving && <Loader2 className="w-3 h-3 animate-spin" />}
-              {saving ? "Submitting..." : "Submit Review"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Review SideFormSheet */}
+      <SideFormSheet
+        open={!!reviewDialog}
+        onOpenChange={(open) => { if (!open) { setReviewDialog(null); setReviewErrors({}); } }}
+        title={`PIP Review — ${reviewDialog?.employeeName || ""}`}
+        description="Submit a progress review for this PIP"
+        icon={<CheckCircle2 size={20} />}
+        accentColor="#4f46e5"
+        width="md"
+        loading={saving}
+        submitLabel={saving ? "Submitting..." : "Submit Review"}
+        onSubmit={(e) => { e.preventDefault(); handleReviewSubmit(); }}
+      >
+        <div className="space-y-4">
+          <Field label="Progress Notes" required error={reviewErrors.reviewNote || undefined} hint={`${reviewNote.length}/1000`}>
+            <Textarea
+              maxLength={1000}
+              value={reviewNote}
+              onChange={(e) => setReviewNote(e.target.value)}
+              rows={3}
+              placeholder="Enter review notes..."
+            />
+          </Field>
+          <Field label="Recommendation">
+            <Select value={reviewRecommendation} onValueChange={setReviewRecommendation}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Continue">Continue</SelectItem>
+                <SelectItem value="Extend">Extend</SelectItem>
+                <SelectItem value="Complete">Complete Successfully</SelectItem>
+                <SelectItem value="Terminate">Terminate</SelectItem>
+              </SelectContent>
+            </Select>
+          </Field>
+        </div>
+      </SideFormSheet>
     </div>
   );
 };

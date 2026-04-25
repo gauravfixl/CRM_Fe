@@ -22,7 +22,6 @@ import { useToast } from "@/shared/components/ui/use-toast";
 import { useLifecycleStore } from "@/shared/data/lifecycle-store";
 import { Badge } from "@/shared/components/ui/badge";
 import { Input } from "@/shared/components/ui/input";
-import { Label } from "@/shared/components/ui/label";
 import {
     Dialog,
     DialogContent,
@@ -31,6 +30,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 
 function downloadTextFile(filename: string, content: string) {
     const blob = new Blob([content], { type: "text/plain" });
@@ -403,33 +403,32 @@ const SettlementPage = () => {
                 </DialogContent>
             </Dialog>
 
-            {/* Edit Amounts */}
-            <Dialog open={isCustomAmountOpen} onOpenChange={setIsCustomAmountOpen}>
-                <DialogContent className="bg-white rounded-2xl border-2 border-slate-200 p-6 max-w-md shadow-2xl">
-                    <DialogHeader>
-                        <DialogTitle className="text-lg font-bold text-slate-900">Edit Settlement Amounts</DialogTitle>
-                        <DialogDescription className="text-xs font-bold text-slate-400">Adjust the individual components. All values in ₹.</DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-3 py-3">
-                        {[
-                            { key: 'basicSalary', label: 'Basic Salary' },
-                            { key: 'leaveEncashment', label: 'Leave Encashment' },
-                            { key: 'performanceIncentive', label: 'Performance Incentive' },
-                            { key: 'tds', label: 'TDS Deduction' },
-                            { key: 'gratuity', label: 'Gratuity' },
-                        ].map(f => (
-                            <div key={f.key} className="space-y-1">
-                                <Label className="text-[10px] font-bold text-slate-600 uppercase tracking-wide ml-1">{f.label} (₹)</Label>
-                                <Input type="number" min={0} value={(draftAmounts as any)[f.key]} onChange={e => setDraftAmounts({ ...draftAmounts, [f.key]: e.target.value })} className="rounded-xl h-9 bg-slate-50/50 border border-slate-200 font-bold px-4 text-xs" />
-                            </div>
-                        ))}
-                    </div>
-                    <DialogFooter className="gap-2">
-                        <Button variant="outline" onClick={() => setIsCustomAmountOpen(false)} className="rounded-xl h-10 font-bold border-slate-200 text-xs">Cancel</Button>
-                        <Button onClick={saveDraftAmounts} className="bg-[#CB9DF0] hover:bg-[#b580e0] text-white rounded-xl font-bold h-10 text-xs flex-1">Save Changes</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            {/* Edit Amounts Side Form */}
+            <SideFormSheet
+                open={isCustomAmountOpen}
+                onOpenChange={setIsCustomAmountOpen}
+                title="Edit Settlement Amounts"
+                description="Adjust the individual components. All values in ₹."
+                icon={<Calculator size={20} />}
+                accentColor="#7c3aed"
+                width="md"
+                submitLabel="Save Changes"
+                onSubmit={(e) => { e.preventDefault(); saveDraftAmounts(); }}
+            >
+                <div className="space-y-4">
+                    {[
+                        { key: 'basicSalary', label: 'Basic Salary' },
+                        { key: 'leaveEncashment', label: 'Leave Encashment' },
+                        { key: 'performanceIncentive', label: 'Performance Incentive' },
+                        { key: 'tds', label: 'TDS Deduction' },
+                        { key: 'gratuity', label: 'Gratuity' },
+                    ].map(f => (
+                        <Field key={f.key} label={`${f.label} (₹)`}>
+                            <Input type="number" min={0} value={(draftAmounts as any)[f.key]} onChange={e => setDraftAmounts({ ...draftAmounts, [f.key]: e.target.value })} />
+                        </Field>
+                    ))}
+                </div>
+            </SideFormSheet>
         </div>
     );
 };

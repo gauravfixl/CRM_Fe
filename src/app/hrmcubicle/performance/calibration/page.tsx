@@ -53,6 +53,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/shared/components/ui/select";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import { cn } from "@/lib/utils";
 
 interface CalibrationEmployee {
@@ -503,103 +504,80 @@ const BellCurveCalibrationPage = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Add / Edit Employee Dialog */}
-      <Dialog
+      {/* Add / Edit Employee SideFormSheet */}
+      <SideFormSheet
         open={addDialog || !!editDialog}
         onOpenChange={(open) => { if (!open) { setAddDialog(false); setEditDialog(null); setFormData(emptyEmployee); setFormErrors({}); } }}
+        title={editDialog ? `Edit ${editDialog.name}` : "Add Calibration Employee"}
+        description="Enter ratings; category auto-computes from final rating."
+        icon={editDialog ? <Edit size={20} /> : <Plus size={20} />}
+        accentColor={editDialog ? "#7c3aed" : "#4f46e5"}
+        width="lg"
+        submitLabel={editDialog ? "Save Changes" : "Add Employee"}
+        onSubmit={(e) => { e.preventDefault(); handleSaveEmployee(!editDialog); }}
       >
-        <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{editDialog ? `Edit ${editDialog.name}` : "Add Calibration Employee"}</DialogTitle>
-            <DialogDescription>Enter ratings; category auto-computes from final rating.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>Name *</Label>
-                <Input maxLength={100} value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className={formErrors.name ? "border-rose-400" : ""} />
-                {formErrors.name && <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 mt-1"><AlertCircle size={10} /> {formErrors.name}</p>}
-              </div>
-              <div>
-                <Label>Department</Label>
-                <Select value={formData.department} onValueChange={(v) => setFormData({ ...formData, department: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {DEPARTMENTS.map((d) => (
-                      <SelectItem key={d} value={d}>{d}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="grid grid-cols-3 gap-3">
-              <div>
-                <Label>Manager Rating</Label>
-                <Input
-                  type="number" step="0.1" min={0} max={5}
-                  value={formData.managerRating}
-                  onChange={(e) => setFormData({ ...formData, managerRating: Math.max(0, Math.min(5, parseFloat(e.target.value) || 0)) })}
-                  className={formErrors.managerRating ? "border-rose-400" : ""}
-                />
-                {formErrors.managerRating && <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 mt-1"><AlertCircle size={10} /> {formErrors.managerRating}</p>}
-              </div>
-              <div>
-                <Label>Self Rating</Label>
-                <Input
-                  type="number" step="0.1" min={0} max={5}
-                  value={formData.selfRating}
-                  onChange={(e) => setFormData({ ...formData, selfRating: Math.max(0, Math.min(5, parseFloat(e.target.value) || 0)) })}
-                  className={formErrors.selfRating ? "border-rose-400" : ""}
-                />
-                {formErrors.selfRating && <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 mt-1"><AlertCircle size={10} /> {formErrors.selfRating}</p>}
-              </div>
-              <div>
-                <Label>Peer Rating</Label>
-                <Input
-                  type="number" step="0.1" min={0} max={5}
-                  value={formData.peerRating}
-                  onChange={(e) => setFormData({ ...formData, peerRating: Math.max(0, Math.min(5, parseFloat(e.target.value) || 0)) })}
-                  className={formErrors.peerRating ? "border-rose-400" : ""}
-                />
-                {formErrors.peerRating && <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 mt-1"><AlertCircle size={10} /> {formErrors.peerRating}</p>}
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>Final Rating</Label>
-                <Input
-                  type="number" step="0.1" min={0} max={5}
-                  value={formData.finalRating}
-                  onChange={(e) => setFormData({ ...formData, finalRating: Math.max(0, Math.min(5, parseFloat(e.target.value) || 0)) })}
-                  className={formErrors.finalRating ? "border-rose-400" : ""}
-                />
-                {formErrors.finalRating && <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 mt-1"><AlertCircle size={10} /> {formErrors.finalRating}</p>}
-              </div>
-              <div>
-                <Label>Percentile</Label>
-                <Input
-                  type="number" min={0} max={100}
-                  value={formData.percentile}
-                  onChange={(e) => setFormData({ ...formData, percentile: Math.max(0, Math.min(100, parseInt(e.target.value) || 0)) })}
-                  className={formErrors.percentile ? "border-rose-400" : ""}
-                />
-                {formErrors.percentile && <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 mt-1"><AlertCircle size={10} /> {formErrors.percentile}</p>}
-              </div>
-            </div>
-            <div className="p-3 bg-slate-50 rounded-lg">
-              <p className="text-xs text-slate-500">
-                Auto-bucketed category: <strong>{categoryFromRating(formData.finalRating)}</strong>
-              </p>
-            </div>
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Name" required error={formErrors.name || undefined}>
+              <Input maxLength={100} value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
+            </Field>
+            <Field label="Department">
+              <Select value={formData.department} onValueChange={(v) => setFormData({ ...formData, department: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {DEPARTMENTS.map((d) => (
+                    <SelectItem key={d} value={d}>{d}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => { setAddDialog(false); setEditDialog(null); setFormData(emptyEmployee); setFormErrors({}); }}>Cancel</Button>
-            <Button className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white" onClick={() => handleSaveEmployee(!editDialog)}>
-              {editDialog ? "Save Changes" : "Add Employee"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          <div className="grid grid-cols-3 gap-3">
+            <Field label="Manager Rating" error={formErrors.managerRating || undefined}>
+              <Input
+                type="number" step="0.1" min={0} max={5}
+                value={formData.managerRating}
+                onChange={(e) => setFormData({ ...formData, managerRating: Math.max(0, Math.min(5, parseFloat(e.target.value) || 0)) })}
+              />
+            </Field>
+            <Field label="Self Rating" error={formErrors.selfRating || undefined}>
+              <Input
+                type="number" step="0.1" min={0} max={5}
+                value={formData.selfRating}
+                onChange={(e) => setFormData({ ...formData, selfRating: Math.max(0, Math.min(5, parseFloat(e.target.value) || 0)) })}
+              />
+            </Field>
+            <Field label="Peer Rating" error={formErrors.peerRating || undefined}>
+              <Input
+                type="number" step="0.1" min={0} max={5}
+                value={formData.peerRating}
+                onChange={(e) => setFormData({ ...formData, peerRating: Math.max(0, Math.min(5, parseFloat(e.target.value) || 0)) })}
+              />
+            </Field>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Final Rating" error={formErrors.finalRating || undefined}>
+              <Input
+                type="number" step="0.1" min={0} max={5}
+                value={formData.finalRating}
+                onChange={(e) => setFormData({ ...formData, finalRating: Math.max(0, Math.min(5, parseFloat(e.target.value) || 0)) })}
+              />
+            </Field>
+            <Field label="Percentile" error={formErrors.percentile || undefined}>
+              <Input
+                type="number" min={0} max={100}
+                value={formData.percentile}
+                onChange={(e) => setFormData({ ...formData, percentile: Math.max(0, Math.min(100, parseInt(e.target.value) || 0)) })}
+              />
+            </Field>
+          </div>
+          <div className="p-3 bg-slate-50 rounded-lg">
+            <p className="text-xs text-slate-500">
+              Auto-bucketed category: <strong>{categoryFromRating(formData.finalRating)}</strong>
+            </p>
+          </div>
+        </div>
+      </SideFormSheet>
 
       {/* Delete Confirmation */}
       <AlertDialog open={!!deleteDialog} onOpenChange={(open) => { if (!open) setDeleteDialog(null); }}>

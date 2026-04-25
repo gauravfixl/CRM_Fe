@@ -35,6 +35,7 @@ import { Label } from "@/shared/components/ui/label";
 import { Textarea } from "@/shared/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import { Sheet, SheetContent, SheetTitle, SheetDescription } from "@/shared/components/ui/sheet";
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
 import { Separator } from "@/shared/components/ui/separator";
@@ -569,181 +570,172 @@ const MyTicketsPage = () => {
                 </ScrollArea>
             </div>
 
-            {/* Create Ticket Dialog */}
-            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-                <DialogContent className="max-w-xl p-0 overflow-hidden border-2 border-slate-200 rounded-2xl shadow-3xl bg-white">
-                    <div className="bg-slate-50 border-b border-slate-200 p-6 flex items-center gap-4">
-                        <div className="h-10 w-10 bg-white border border-slate-200 rounded-lg flex items-center justify-center text-indigo-600 shadow-sm">
-                            <Plus size={20} />
+            {/* Create Ticket Side Sheet */}
+            <SideFormSheet
+                open={isCreateDialogOpen}
+                onOpenChange={(o) => { setIsCreateDialogOpen(o); if (!o) { setCreateForm(defaultForm); setCreateErrors({}); } }}
+                title="Raise Support Request"
+                description="Describe your issue for priority resolution"
+                icon={<Plus size={20} />}
+                accentColor="#4f46e5"
+                width="lg"
+                loading={isSubmitting}
+                onSubmit={(e) => { e.preventDefault(); handleCreateTicket(false); }}
+                footer={
+                    <>
+                        <Button type="button" variant="ghost" disabled={isSubmitting} onClick={() => { setIsCreateDialogOpen(false); setCreateForm(defaultForm); setCreateErrors({}); }} className="h-10 px-5 font-bold text-slate-400 text-xs uppercase tracking-widest">Discard</Button>
+                        <Button type="button" variant="outline" disabled={isSubmitting} onClick={() => handleCreateTicket(true)} className="h-10 px-5 font-bold text-xs uppercase tracking-widest gap-2"><Save size={14} /> Save Draft</Button>
+                        <Button type="button" disabled={isSubmitting} onClick={() => handleCreateTicket(false)} className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg h-10 px-6 font-bold text-xs uppercase tracking-widest shadow-lg shadow-indigo-100 gap-2 disabled:opacity-50">
+                            <Send size={14} /> {isSubmitting ? "Raising..." : "Raise Ticket"}
+                        </Button>
+                    </>
+                }
+            >
+                <div className="space-y-5">
+                    {backendAvailable === false && (
+                        <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-[11px] font-bold text-amber-700">
+                            Offline mode — backend unavailable. Ticket will be saved locally.
                         </div>
-                        <div>
-                            <DialogTitle className="text-xl font-bold text-slate-900 leading-none">Raise Support Request</DialogTitle>
-                            <DialogDescription className="text-xs font-semibold text-slate-500 mt-1 uppercase tracking-wider">Describe your issue for priority resolution</DialogDescription>
-                        </div>
+                    )}
+                    <Field
+                        label="Subject Headline"
+                        required
+                        error={createErrors.subject || undefined}
+                        hint={`${createForm.subject.length}/${SUBJECT_MAX}`}
+                    >
+                        <Input
+                            placeholder="e.g. Printer not mapping in HR Cabin 04"
+                            value={createForm.subject}
+                            onChange={e => { setCreateForm({ ...createForm, subject: e.target.value }); if (createErrors.subject) setCreateErrors({ ...createErrors, subject: "" }); }}
+                            maxLength={SUBJECT_MAX + 20}
+                        />
+                    </Field>
+
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Category">
+                            <Select value={createForm.category} onValueChange={v => setCreateForm({ ...createForm, category: v })}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    {categories.map(c => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <Field label="Urgency">
+                            <Select value={createForm.priority} onValueChange={v => setCreateForm({ ...createForm, priority: v as any })}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Low">Low - Not Urgent</SelectItem>
+                                    <SelectItem value="Medium">Medium - Regular</SelectItem>
+                                    <SelectItem value="High">High - Important</SelectItem>
+                                    <SelectItem value="Urgent">Urgent - Work Stopper</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
                     </div>
 
-                    <div className="p-8 space-y-6 max-h-[70vh] overflow-y-auto">
-                        {backendAvailable === false && (
-                            <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-[11px] font-bold text-amber-700">
-                                Offline mode — backend unavailable. Ticket will be saved locally.
+                    <Field
+                        label="Detailed Description"
+                        required
+                        error={createErrors.description || undefined}
+                        hint={`${createForm.description.length}/${DESC_MAX}`}
+                    >
+                        <Textarea
+                            placeholder="Explain the context and steps to reproduce the issue..."
+                            value={createForm.description}
+                            onChange={e => { setCreateForm({ ...createForm, description: e.target.value }); if (createErrors.description) setCreateErrors({ ...createErrors, description: "" }); }}
+                            maxLength={DESC_MAX + 100}
+                            className="min-h-[140px]"
+                        />
+                    </Field>
+
+                    <div className="space-y-2">
+                        <div className="flex items-center gap-3 p-4 bg-indigo-50/30 rounded-xl border border-indigo-50">
+                            <div className="h-8 w-8 rounded-lg bg-white border border-indigo-100 flex items-center justify-center text-indigo-600">
+                                <Paperclip size={14} />
+                            </div>
+                            <div className="flex-1">
+                                <span className="text-[11px] font-bold text-slate-700 block">Attach Evidence</span>
+                                <span className="text-[10px] font-semibold text-slate-400">Screenshots or Log files</span>
+                            </div>
+                            <Button type="button" variant="ghost" className="h-8 text-[10px] font-bold text-indigo-600 uppercase border border-indigo-100 px-3 bg-white" onClick={() => fileInputRef.current?.click()}>Browse</Button>
+                            <input type="file" ref={fileInputRef} className="hidden" accept=".png,.jpg,.jpeg,.pdf,.log,.txt" onChange={handleCreateFileAttach} />
+                        </div>
+                        {createForm.attachments.length > 0 && (
+                            <div className="flex flex-wrap gap-2 pt-1">
+                                {createForm.attachments.map((name, i) => (
+                                    <Badge key={i} className="bg-slate-100 text-slate-600 border-slate-200 font-bold text-[10px] h-6 px-2 gap-1.5">
+                                        <Paperclip size={10} />
+                                        {name}
+                                        <X size={11} className="cursor-pointer hover:text-rose-500" onClick={() => setCreateForm({ ...createForm, attachments: createForm.attachments.filter((_, idx) => idx !== i) })} />
+                                    </Badge>
+                                ))}
                             </div>
                         )}
-                        <div className="space-y-2">
-                            <div className="flex items-center justify-between px-1">
-                                <Label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Subject Headline *</Label>
-                                <span className={`text-[10px] font-bold ${createForm.subject.length > SUBJECT_MAX ? 'text-rose-500' : 'text-slate-400'}`}>{createForm.subject.length}/{SUBJECT_MAX}</span>
-                            </div>
-                            <Input
-                                placeholder="e.g. Printer not mapping in HR Cabin 04"
-                                value={createForm.subject}
-                                onChange={e => { setCreateForm({ ...createForm, subject: e.target.value }); if (createErrors.subject) setCreateErrors({ ...createErrors, subject: "" }); }}
-                                maxLength={SUBJECT_MAX + 20}
-                                className={`h-12 border-slate-200 rounded-xl px-4 font-bold text-slate-900 bg-slate-50/50 shadow-sm focus-visible:ring-indigo-600 ${createErrors.subject ? 'border-rose-300 focus-visible:ring-rose-500' : ''}`}
-                            />
-                            {createErrors.subject && <p className="text-[11px] text-rose-500 font-bold px-1">{createErrors.subject}</p>}
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <Label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest px-1">Category</Label>
-                                <Select value={createForm.category} onValueChange={v => setCreateForm({ ...createForm, category: v })}>
-                                    <SelectTrigger className="h-11 border-slate-200 rounded-xl font-bold bg-white shadow-sm"><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        {categories.map(c => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest px-1">Urgency</Label>
-                                <Select value={createForm.priority} onValueChange={v => setCreateForm({ ...createForm, priority: v as any })}>
-                                    <SelectTrigger className="h-11 border-slate-200 rounded-xl font-bold bg-white shadow-sm"><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="Low">Low - Not Urgent</SelectItem>
-                                        <SelectItem value="Medium">Medium - Regular</SelectItem>
-                                        <SelectItem value="High">High - Important</SelectItem>
-                                        <SelectItem value="Urgent">Urgent - Work Stopper</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-
-                        <div className="space-y-2">
-                            <div className="flex items-center justify-between px-1">
-                                <Label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Detailed Description *</Label>
-                                <span className={`text-[10px] font-bold ${createForm.description.length > DESC_MAX ? 'text-rose-500' : 'text-slate-400'}`}>{createForm.description.length}/{DESC_MAX}</span>
-                            </div>
-                            <Textarea
-                                placeholder="Explain the context and steps to reproduce the issue..."
-                                value={createForm.description}
-                                onChange={e => { setCreateForm({ ...createForm, description: e.target.value }); if (createErrors.description) setCreateErrors({ ...createErrors, description: "" }); }}
-                                maxLength={DESC_MAX + 100}
-                                className={`min-h-[140px] border-slate-200 rounded-2xl p-4 font-medium text-sm leading-relaxed focus-visible:ring-indigo-600 bg-slate-50/20 ${createErrors.description ? 'border-rose-300 focus-visible:ring-rose-500' : ''}`}
-                            />
-                            {createErrors.description && <p className="text-[11px] text-rose-500 font-bold px-1">{createErrors.description}</p>}
-                        </div>
-
-                        <div className="space-y-2">
-                            <div className="flex items-center gap-3 p-4 bg-indigo-50/30 rounded-xl border border-indigo-50">
-                                <div className="h-8 w-8 rounded-lg bg-white border border-indigo-100 flex items-center justify-center text-indigo-600">
-                                    <Paperclip size={14} />
-                                </div>
-                                <div className="flex-1">
-                                    <span className="text-[11px] font-bold text-slate-700 block">Attach Evidence</span>
-                                    <span className="text-[10px] font-semibold text-slate-400">Screenshots or Log files</span>
-                                </div>
-                                <Button type="button" variant="ghost" className="h-8 text-[10px] font-bold text-indigo-600 uppercase border border-indigo-100 px-3 bg-white" onClick={() => fileInputRef.current?.click()}>Browse</Button>
-                                <input type="file" ref={fileInputRef} className="hidden" accept=".png,.jpg,.jpeg,.pdf,.log,.txt" onChange={handleCreateFileAttach} />
-                            </div>
-                            {createForm.attachments.length > 0 && (
-                                <div className="flex flex-wrap gap-2 pt-1">
-                                    {createForm.attachments.map((name, i) => (
-                                        <Badge key={i} className="bg-slate-100 text-slate-600 border-slate-200 font-bold text-[10px] h-6 px-2 gap-1.5">
-                                            <Paperclip size={10} />
-                                            {name}
-                                            <X size={11} className="cursor-pointer hover:text-rose-500" onClick={() => setCreateForm({ ...createForm, attachments: createForm.attachments.filter((_, idx) => idx !== i) })} />
-                                        </Badge>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
                     </div>
+                </div>
+            </SideFormSheet>
 
-                    <DialogFooter className="p-6 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
-                        <Button variant="ghost" disabled={isSubmitting} onClick={() => { setIsCreateDialogOpen(false); setCreateForm(defaultForm); setCreateErrors({}); }} className="h-11 px-6 font-bold text-slate-400 text-xs uppercase tracking-widest">Discard</Button>
-                        <div className="flex items-center gap-2">
-                            <Button variant="outline" disabled={isSubmitting} onClick={() => handleCreateTicket(true)} className="h-11 px-5 font-bold text-xs uppercase tracking-widest gap-2"><Save size={14} /> Save Draft</Button>
-                            <Button disabled={isSubmitting} onClick={() => handleCreateTicket(false)} className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl h-11 px-8 font-bold text-xs uppercase tracking-widest shadow-lg shadow-indigo-100 gap-2 disabled:opacity-50">
-                                <Send size={16} /> {isSubmitting ? "Raising..." : "Raise Ticket"}
-                            </Button>
-                        </div>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            {/* Edit Ticket Dialog */}
-            <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-                <DialogContent className="max-w-xl p-0 overflow-hidden rounded-2xl">
-                    <DialogHeader className="bg-slate-50 border-b border-slate-200 p-6">
-                        <DialogTitle className="text-xl font-bold text-slate-900">Edit Ticket</DialogTitle>
-                        <DialogDescription className="text-xs text-slate-500">Update your request details</DialogDescription>
-                    </DialogHeader>
-                    <div className="p-8 space-y-5 max-h-[70vh] overflow-y-auto">
-                        <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                                <Label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Subject *</Label>
-                                <span className={`text-[10px] font-bold ${editForm.subject.length > SUBJECT_MAX ? 'text-rose-500' : 'text-slate-400'}`}>{editForm.subject.length}/{SUBJECT_MAX}</span>
-                            </div>
-                            <Input
-                                value={editForm.subject}
-                                onChange={e => { setEditForm({ ...editForm, subject: e.target.value }); if (editErrors.subject) setEditErrors({ ...editErrors, subject: "" }); }}
-                                maxLength={SUBJECT_MAX + 20}
-                                className={`h-11 rounded-xl ${editErrors.subject ? 'border-rose-300 focus-visible:ring-rose-500' : ''}`}
-                            />
-                            {editErrors.subject && <p className="text-[11px] text-rose-500 font-bold">{editErrors.subject}</p>}
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Category</Label>
-                                <Select value={editForm.category} onValueChange={v => setEditForm({ ...editForm, category: v })}>
-                                    <SelectTrigger className="h-11 rounded-xl"><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        {categories.map(c => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Priority</Label>
-                                <Select value={editForm.priority} onValueChange={v => setEditForm({ ...editForm, priority: v as any })}>
-                                    <SelectTrigger className="h-11 rounded-xl"><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="Low">Low</SelectItem>
-                                        <SelectItem value="Medium">Medium</SelectItem>
-                                        <SelectItem value="High">High</SelectItem>
-                                        <SelectItem value="Urgent">Urgent</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-                        <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                                <Label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Description *</Label>
-                                <span className={`text-[10px] font-bold ${editForm.description.length > DESC_MAX ? 'text-rose-500' : 'text-slate-400'}`}>{editForm.description.length}/{DESC_MAX}</span>
-                            </div>
-                            <Textarea
-                                value={editForm.description}
-                                onChange={e => { setEditForm({ ...editForm, description: e.target.value }); if (editErrors.description) setEditErrors({ ...editErrors, description: "" }); }}
-                                maxLength={DESC_MAX + 100}
-                                className={`min-h-[140px] rounded-xl ${editErrors.description ? 'border-rose-300 focus-visible:ring-rose-500' : ''}`}
-                            />
-                            {editErrors.description && <p className="text-[11px] text-rose-500 font-bold">{editErrors.description}</p>}
-                        </div>
+            {/* Edit Ticket Side Sheet */}
+            <SideFormSheet
+                open={isEditDialogOpen}
+                onOpenChange={setIsEditDialogOpen}
+                title="Edit Ticket"
+                description="Update your request details"
+                icon={<Pencil size={20} />}
+                accentColor="#7c3aed"
+                width="lg"
+                submitLabel="Save Changes"
+                onSubmit={(e) => { e.preventDefault(); handleUpdateTicket(); }}
+            >
+                <div className="space-y-5">
+                    <Field
+                        label="Subject"
+                        required
+                        error={editErrors.subject || undefined}
+                        hint={`${editForm.subject.length}/${SUBJECT_MAX}`}
+                    >
+                        <Input
+                            value={editForm.subject}
+                            onChange={e => { setEditForm({ ...editForm, subject: e.target.value }); if (editErrors.subject) setEditErrors({ ...editErrors, subject: "" }); }}
+                            maxLength={SUBJECT_MAX + 20}
+                        />
+                    </Field>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Category">
+                            <Select value={editForm.category} onValueChange={v => setEditForm({ ...editForm, category: v })}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    {categories.map(c => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <Field label="Priority">
+                            <Select value={editForm.priority} onValueChange={v => setEditForm({ ...editForm, priority: v as any })}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Low">Low</SelectItem>
+                                    <SelectItem value="Medium">Medium</SelectItem>
+                                    <SelectItem value="High">High</SelectItem>
+                                    <SelectItem value="Urgent">Urgent</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
                     </div>
-                    <DialogFooter className="p-4 bg-slate-50 border-t border-slate-200">
-                        <Button variant="ghost" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
-                        <Button onClick={handleUpdateTicket} className="bg-indigo-600 hover:bg-indigo-700 text-white">Save Changes</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    <Field
+                        label="Description"
+                        required
+                        error={editErrors.description || undefined}
+                        hint={`${editForm.description.length}/${DESC_MAX}`}
+                    >
+                        <Textarea
+                            value={editForm.description}
+                            onChange={e => { setEditForm({ ...editForm, description: e.target.value }); if (editErrors.description) setEditErrors({ ...editErrors, description: "" }); }}
+                            maxLength={DESC_MAX + 100}
+                            className="min-h-[140px]"
+                        />
+                    </Field>
+                </div>
+            </SideFormSheet>
 
             {/* Ticket Detail Sheet */}
             <Sheet open={isDetailSheetOpen} onOpenChange={setIsDetailSheetOpen}>

@@ -9,6 +9,7 @@ import { Label } from "@/shared/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/shared/components/ui/dropdown-menu";
 import { useDocumentsStore, type BulkLetterRecord } from "@/shared/data/documents-store";
@@ -573,87 +574,82 @@ const BulkLettersPage = () => {
             </Dialog>
 
             {/* Edit Letter */}
-            <Dialog open={!!editingLetter} onOpenChange={(open) => !open && setEditingLetter(null)}>
-                <DialogContent className="max-w-lg border-2 border-slate-200">
-                    <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2"><Pencil size={20} className="text-[#8B5CF6]" /> Edit Letter</DialogTitle>
-                        <DialogDescription>Update letter details.</DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label className="text-xs font-bold text-slate-500">Employee Name</Label>
-                                <Input value={editingLetter?.employee || ""} onChange={e => setEditingLetter(prev => prev ? { ...prev, employee: e.target.value } : null)} />
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="text-xs font-bold text-slate-500">Employee ID</Label>
-                                <Input value={editingLetter?.employeeId || ""} onChange={e => setEditingLetter(prev => prev ? { ...prev, employeeId: e.target.value } : null)} />
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label className="text-xs font-bold text-slate-500">Department</Label>
-                                <Input value={editingLetter?.department || ""} onChange={e => setEditingLetter(prev => prev ? { ...prev, department: e.target.value } : null)} />
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="text-xs font-bold text-slate-500">Designation</Label>
-                                <Input value={editingLetter?.designation || ""} onChange={e => setEditingLetter(prev => prev ? { ...prev, designation: e.target.value } : null)} />
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label className="text-xs font-bold text-slate-500">Letter Type</Label>
-                                <Select value={editingLetter?.letterType} onValueChange={(v) => setEditingLetter(prev => prev ? { ...prev, letterType: v } : null)}>
-                                    <SelectTrigger><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="Offer">Offer</SelectItem>
-                                        <SelectItem value="Appointment">Appointment</SelectItem>
-                                        <SelectItem value="Confirmation">Confirmation</SelectItem>
-                                        <SelectItem value="Relieving">Relieving</SelectItem>
-                                        <SelectItem value="Experience">Experience</SelectItem>
-                                        <SelectItem value="Appraisal">Appraisal</SelectItem>
-                                        <SelectItem value="Custom">Custom</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="text-xs font-bold text-slate-500">Status</Label>
-                                <Select value={editingLetter?.status} onValueChange={(v: LetterStatus) => setEditingLetter(prev => prev ? { ...prev, status: v } : null)}>
-                                    <SelectTrigger><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="Draft">Draft</SelectItem>
-                                        <SelectItem value="Generated">Generated</SelectItem>
-                                        <SelectItem value="Sent">Sent</SelectItem>
-                                        <SelectItem value="Signed">Signed</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
+            <SideFormSheet
+                open={!!editingLetter}
+                onOpenChange={(o) => { if (!o) setEditingLetter(null); }}
+                title="Edit Letter"
+                description="Update letter details."
+                icon={<Pencil size={20} />}
+                accentColor="#7c3aed"
+                width="md"
+                submitLabel="Save Changes"
+                onSubmit={(e) => { e.preventDefault(); handleSaveEdit(); }}
+            >
+                <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Employee Name" required>
+                            <Input value={editingLetter?.employee || ""} onChange={e => setEditingLetter(prev => prev ? { ...prev, employee: e.target.value } : null)} />
+                        </Field>
+                        <Field label="Employee ID" required>
+                            <Input value={editingLetter?.employeeId || ""} onChange={e => setEditingLetter(prev => prev ? { ...prev, employeeId: e.target.value } : null)} />
+                        </Field>
                     </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setEditingLetter(null)}>Cancel</Button>
-                        <Button className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white font-bold" onClick={handleSaveEdit}>Save Changes</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Department" required>
+                            <Input value={editingLetter?.department || ""} onChange={e => setEditingLetter(prev => prev ? { ...prev, department: e.target.value } : null)} />
+                        </Field>
+                        <Field label="Designation">
+                            <Input value={editingLetter?.designation || ""} onChange={e => setEditingLetter(prev => prev ? { ...prev, designation: e.target.value } : null)} />
+                        </Field>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Letter Type" required>
+                            <Select value={editingLetter?.letterType} onValueChange={(v) => setEditingLetter(prev => prev ? { ...prev, letterType: v } : null)}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Offer">Offer</SelectItem>
+                                    <SelectItem value="Appointment">Appointment</SelectItem>
+                                    <SelectItem value="Confirmation">Confirmation</SelectItem>
+                                    <SelectItem value="Relieving">Relieving</SelectItem>
+                                    <SelectItem value="Experience">Experience</SelectItem>
+                                    <SelectItem value="Appraisal">Appraisal</SelectItem>
+                                    <SelectItem value="Custom">Custom</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <Field label="Status" required>
+                            <Select value={editingLetter?.status} onValueChange={(v: LetterStatus) => setEditingLetter(prev => prev ? { ...prev, status: v } : null)}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Draft">Draft</SelectItem>
+                                    <SelectItem value="Generated">Generated</SelectItem>
+                                    <SelectItem value="Sent">Sent</SelectItem>
+                                    <SelectItem value="Signed">Signed</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                    </div>
+                </div>
+            </SideFormSheet>
 
             {/* Send via email */}
-            <Dialog open={!!sendLetter} onOpenChange={(open) => { if (!open) { setSendLetter(null); setSendEmail(""); } }}>
-                <DialogContent className="max-w-md border-2 border-slate-200">
-                    <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2"><Send size={20} className="text-[#8B5CF6]" /> Send Letter</DialogTitle>
-                        <DialogDescription>Email {sendLetter?.letterType} letter to {sendLetter?.employee}.</DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-3 py-4">
-                        <Label className="text-xs font-bold text-slate-500">Recipient Email</Label>
+            <SideFormSheet
+                open={!!sendLetter}
+                onOpenChange={(o) => { if (!o) { setSendLetter(null); setSendEmail(""); } }}
+                title="Send Letter"
+                description={sendLetter ? `Email ${sendLetter.letterType} letter to ${sendLetter.employee}.` : undefined}
+                icon={<Send size={20} />}
+                accentColor="#4f46e5"
+                width="sm"
+                submitLabel="Send"
+                onSubmit={(e) => { e.preventDefault(); handleSendEmail(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Recipient Email" required>
                         <Input type="email" placeholder="employee@email.com" value={sendEmail} onChange={e => setSendEmail(e.target.value)} />
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => { setSendLetter(null); setSendEmail(""); }}>Cancel</Button>
-                        <Button className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white font-bold" onClick={handleSendEmail}>Send</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    </Field>
+                </div>
+            </SideFormSheet>
 
             {/* Delete single */}
             <Dialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>

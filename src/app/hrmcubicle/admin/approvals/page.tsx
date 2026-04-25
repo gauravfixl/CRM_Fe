@@ -27,6 +27,7 @@ import { useToast } from "@/shared/components/ui/use-toast";
 import { useApprovalMatrixStore, type ApprovalType, type ApprovalFlow, type ApprovalLevel, type EscalationRule } from "@/shared/data/approval-matrix-store";
 import { useTeamStore } from "@/shared/data/team-store";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
@@ -457,73 +458,75 @@ const ApprovalMatrixPage = () => {
                 </Tabs>
             </div>
 
-            {/* Create Dialog */}
-            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-                <DialogContent className="rounded-2xl border-none p-6">
-                    <DialogHeader>
-                        <DialogTitle>Create Workflow</DialogTitle>
-                        <DialogDescription>Initialize a new approval chain.</DialogDescription>
-                    </DialogHeader>
-                    {/* Simple creation inputs omitted for brevity, focusing on main logic */}
-                    <div className="grid gap-4 py-4">
-                        <Button onClick={() => handleCreate("New Leave Policy", "Leave")} className="bg-indigo-600 text-white">Initialize Standard Leave Flow</Button>
-                    </div>
-                </DialogContent>
-            </Dialog>
+            {/* Create Workflow Sheet */}
+            <SideFormSheet
+                open={isCreateDialogOpen}
+                onOpenChange={setIsCreateDialogOpen}
+                title="Create Workflow"
+                description="Initialize a new approval chain."
+                icon={<GitBranch size={20} />}
+                accentColor="#4f46e5"
+                width="md"
+                hideFooter
+            >
+                <div className="grid gap-4 py-4">
+                    <Button onClick={() => handleCreate("New Leave Policy", "Leave")} className="bg-indigo-600 text-white">Initialize Standard Leave Flow</Button>
+                </div>
+            </SideFormSheet>
 
-            {/* User Mapping Dialog */}
-            <Dialog open={!!mappingRole} onOpenChange={(open) => !open && setMappingRole(null)}>
-                <DialogContent className="max-w-md rounded-2xl border-none p-6">
-                    <DialogHeader>
-                        <DialogTitle>Assign Users to "{mappingRole}"</DialogTitle>
-                        <DialogDescription>Select employees who satisfy this role requirement.</DialogDescription>
-                    </DialogHeader>
+            {/* User Mapping Sheet */}
+            <SideFormSheet
+                open={!!mappingRole}
+                onOpenChange={(open) => !open && setMappingRole(null)}
+                title={`Assign Users to "${mappingRole || ''}"`}
+                description="Select employees who satisfy this role requirement."
+                icon={<UserCog size={20} />}
+                accentColor="#4f46e5"
+                width="md"
+                hideFooter
+            >
+                <div className="space-y-4">
+                    <Field label="Add Employee">
+                        <Select onValueChange={(val) => mappingRole && handleMapUser(mappingRole, val)}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Search employee..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {teamMembers.map(m => (
+                                    <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </Field>
 
-                    <div className="space-y-4 py-4">
+                    <Field label="Assigned Users">
                         <div className="space-y-2">
-                            <Label>Add Employee</Label>
-                            <Select onValueChange={(val) => mappingRole && handleMapUser(mappingRole, val)}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Search employee..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {teamMembers.map(m => (
-                                        <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label>Assigned Users</Label>
-                            <div className="space-y-2">
-                                {mappingRole && (roleMappings[mappingRole] || []).map(userId => {
-                                    const user = teamMembers.find(m => m.id === userId);
-                                    return (
-                                        <div key={userId} className="flex justify-between items-center bg-slate-50 p-3 rounded-lg">
-                                            <div className="flex items-center gap-3">
-                                                <Avatar className="h-8 w-8"><AvatarFallback>{user?.avatar}</AvatarFallback></Avatar>
-                                                <div>
-                                                    <p className="text-sm font-bold">{user?.name}</p>
-                                                    <p className="text-xs text-slate-500">{user?.designation}</p>
-                                                </div>
+                            {mappingRole && (roleMappings[mappingRole] || []).map(userId => {
+                                const user = teamMembers.find(m => m.id === userId);
+                                return (
+                                    <div key={userId} className="flex justify-between items-center bg-slate-50 p-3 rounded-lg">
+                                        <div className="flex items-center gap-3">
+                                            <Avatar className="h-8 w-8"><AvatarFallback>{user?.avatar}</AvatarFallback></Avatar>
+                                            <div>
+                                                <p className="text-sm font-bold">{user?.name}</p>
+                                                <p className="text-xs text-slate-500">{user?.designation}</p>
                                             </div>
-                                            <Button
-                                                size="icon"
-                                                variant="ghost"
-                                                className="h-8 w-8 text-rose-500 hover:bg-rose-50"
-                                                onClick={() => handleUnmapUser(mappingRole!, userId)}
-                                            >
-                                                <Trash2 size={14} />
-                                            </Button>
                                         </div>
-                                    )
-                                })}
-                            </div>
+                                        <Button
+                                            size="icon"
+                                            variant="ghost"
+                                            className="h-8 w-8 text-rose-500 hover:bg-rose-50"
+                                            onClick={() => handleUnmapUser(mappingRole!, userId)}
+                                        >
+                                            <Trash2 size={14} />
+                                        </Button>
+                                    </div>
+                                )
+                            })}
                         </div>
-                    </div>
-                </DialogContent>
-            </Dialog>
+                    </Field>
+                </div>
+            </SideFormSheet>
 
             {/* Chevron/Icons helper components */}
             <div className="hidden">

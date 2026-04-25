@@ -23,16 +23,7 @@ import { Button } from "@/shared/components/ui/button";
 import { Badge } from "@/shared/components/ui/badge";
 import { useToast } from "@/shared/components/ui/use-toast";
 import { Input } from "@/shared/components/ui/input";
-import { Label } from "@/shared/components/ui/label";
-import { Textarea } from "@/shared/components/ui/textarea";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import {
   Select,
   SelectContent,
@@ -372,105 +363,112 @@ const CompOffManagementPage = () => {
         </TabsContent>
       </Tabs>
 
-      {/* Grant Dialog */}
-      <Dialog open={grantDialog} onOpenChange={setGrantDialog}>
-        <DialogContent className="sm:max-w-md border-2 border-slate-200">
-          <DialogHeader>
-            <DialogTitle>Grant Comp-Off</DialogTitle>
-            <DialogDescription>Grant compensatory off to an employee</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div><Label>Employee Name *</Label><Input value={newGrant.employee} onChange={(e) => setNewGrant({ ...newGrant, employee: e.target.value })} /></div>
-            <div><Label>Worked Date *</Label><Input type="date" value={newGrant.workedDate} onChange={(e) => setNewGrant({ ...newGrant, workedDate: e.target.value })} /></div>
-            <div>
-              <Label>Reason</Label>
-              <Select value={newGrant.reason} onValueChange={(v) => setNewGrant({ ...newGrant, reason: v as CompOff["reason"] })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Weekend Work">Weekend Work</SelectItem>
-                  <SelectItem value="Holiday Work">Holiday Work</SelectItem>
-                  <SelectItem value="Extra Hours">Extra Hours</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div><Label>Expiry Date *</Label><Input type="date" value={newGrant.expiryDate} onChange={(e) => setNewGrant({ ...newGrant, expiryDate: e.target.value })} /></div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setGrantDialog(false)}>Cancel</Button>
-            <Button onClick={handleGrant} className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white">Grant</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Grant Comp-Off */}
+      <SideFormSheet
+        open={grantDialog}
+        onOpenChange={setGrantDialog}
+        title="Grant Comp-Off"
+        description="Grant compensatory off to an employee"
+        icon={<Gift size={20} />}
+        accentColor="#4f46e5"
+        width="md"
+        submitLabel="Grant"
+        onSubmit={(e) => { e.preventDefault(); handleGrant(); }}
+      >
+        <div className="space-y-4">
+          <Field label="Employee Name" required>
+            <Input value={newGrant.employee} onChange={(e) => setNewGrant({ ...newGrant, employee: e.target.value })} />
+          </Field>
+          <Field label="Worked Date" required>
+            <Input type="date" value={newGrant.workedDate} onChange={(e) => setNewGrant({ ...newGrant, workedDate: e.target.value })} />
+          </Field>
+          <Field label="Reason">
+            <Select value={newGrant.reason} onValueChange={(v) => setNewGrant({ ...newGrant, reason: v as CompOff["reason"] })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Weekend Work">Weekend Work</SelectItem>
+                <SelectItem value="Holiday Work">Holiday Work</SelectItem>
+                <SelectItem value="Extra Hours">Extra Hours</SelectItem>
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field label="Expiry Date" required>
+            <Input type="date" value={newGrant.expiryDate} onChange={(e) => setNewGrant({ ...newGrant, expiryDate: e.target.value })} />
+          </Field>
+        </div>
+      </SideFormSheet>
 
-      {/* Avail Dialog */}
-      <Dialog open={!!availDialog} onOpenChange={() => setAvailDialog(null)}>
-        <DialogContent className="sm:max-w-sm border-2 border-slate-200">
-          <DialogHeader>
-            <DialogTitle>Avail Comp-Off</DialogTitle>
-            <DialogDescription>Select date to avail comp-off for {availDialog?.employeeName}</DialogDescription>
-          </DialogHeader>
-          <div className="py-2">
-            <Label>Avail Date *</Label>
+      {/* Avail Comp-Off */}
+      <SideFormSheet
+        open={!!availDialog}
+        onOpenChange={(o) => { if (!o) setAvailDialog(null); }}
+        title="Avail Comp-Off"
+        description={availDialog ? `Select date to avail comp-off for ${availDialog.employeeName}` : undefined}
+        icon={<CalendarCheck size={20} />}
+        accentColor="#059669"
+        width="sm"
+        submitLabel="Avail"
+        onSubmit={(e) => { e.preventDefault(); handleAvail(); }}
+      >
+        <div className="space-y-4">
+          <Field label="Avail Date" required>
             <Input type="date" value={availDate} onChange={(e) => setAvailDate(e.target.value)} />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setAvailDialog(null)}>Cancel</Button>
-            <Button onClick={handleAvail} className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white">Avail</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </Field>
+        </div>
+      </SideFormSheet>
 
-      {/* Auto Rules Dialog */}
-      <Dialog open={rulesDialog} onOpenChange={setRulesDialog}>
-        <DialogContent className="sm:max-w-md border-2 border-slate-200">
-          <DialogHeader>
-            <DialogTitle>Auto-Grant Rules</DialogTitle>
-            <DialogDescription>Configure automatic comp-off granting rules</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-              <div>
-                <div className="text-sm font-medium text-slate-700">Holiday Work Auto Comp-Off</div>
-                <div className="text-xs text-slate-400">Automatically grant comp-off when employee works on a holiday</div>
-              </div>
-              <button
-                onClick={() => setAutoRules({ ...autoRules, holidayAuto: !autoRules.holidayAuto })}
-                className={cn("relative w-11 h-6 rounded-full transition-colors", autoRules.holidayAuto ? "bg-[#8B5CF6]" : "bg-slate-300")}
-              >
-                <span className={cn("absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform shadow", autoRules.holidayAuto && "translate-x-5")} />
-              </button>
-            </div>
-            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-              <div>
-                <div className="text-sm font-medium text-slate-700">Weekend Work Auto Comp-Off</div>
-                <div className="text-xs text-slate-400">Automatically grant comp-off for weekend attendance</div>
-              </div>
-              <button
-                onClick={() => setAutoRules({ ...autoRules, weekendAuto: !autoRules.weekendAuto })}
-                className={cn("relative w-11 h-6 rounded-full transition-colors", autoRules.weekendAuto ? "bg-[#8B5CF6]" : "bg-slate-300")}
-              >
-                <span className={cn("absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform shadow", autoRules.weekendAuto && "translate-x-5")} />
-              </button>
-            </div>
+      {/* Auto-Grant Rules */}
+      <SideFormSheet
+        open={rulesDialog}
+        onOpenChange={setRulesDialog}
+        title="Auto-Grant Rules"
+        description="Configure automatic comp-off granting rules"
+        icon={<Settings size={20} />}
+        accentColor="#7c3aed"
+        width="md"
+        submitLabel="Save Rules"
+        onSubmit={(e) => { e.preventDefault(); setRulesDialog(false); toast({ title: "Rules Saved" }); }}
+      >
+        <div className="space-y-4">
+          <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
             <div>
-              <Label>Extra Hours Threshold (hours)</Label>
-              <Select value={String(autoRules.extraHoursThreshold)} onValueChange={(v) => setAutoRules({ ...autoRules, extraHoursThreshold: parseInt(v) })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="2">2 hours</SelectItem>
-                  <SelectItem value="4">4 hours</SelectItem>
-                  <SelectItem value="6">6 hours</SelectItem>
-                  <SelectItem value="8">8 hours</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="text-sm font-medium text-slate-700">Holiday Work Auto Comp-Off</div>
+              <div className="text-xs text-slate-400">Automatically grant comp-off when employee works on a holiday</div>
             </div>
+            <button
+              type="button"
+              onClick={() => setAutoRules({ ...autoRules, holidayAuto: !autoRules.holidayAuto })}
+              className={cn("relative w-11 h-6 rounded-full transition-colors", autoRules.holidayAuto ? "bg-[#8B5CF6]" : "bg-slate-300")}
+            >
+              <span className={cn("absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform shadow", autoRules.holidayAuto && "translate-x-5")} />
+            </button>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setRulesDialog(false)}>Cancel</Button>
-            <Button onClick={() => { setRulesDialog(false); toast({ title: "Rules Saved" }); }} className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white">Save Rules</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+            <div>
+              <div className="text-sm font-medium text-slate-700">Weekend Work Auto Comp-Off</div>
+              <div className="text-xs text-slate-400">Automatically grant comp-off for weekend attendance</div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setAutoRules({ ...autoRules, weekendAuto: !autoRules.weekendAuto })}
+              className={cn("relative w-11 h-6 rounded-full transition-colors", autoRules.weekendAuto ? "bg-[#8B5CF6]" : "bg-slate-300")}
+            >
+              <span className={cn("absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform shadow", autoRules.weekendAuto && "translate-x-5")} />
+            </button>
+          </div>
+          <Field label="Extra Hours Threshold (hours)">
+            <Select value={String(autoRules.extraHoursThreshold)} onValueChange={(v) => setAutoRules({ ...autoRules, extraHoursThreshold: parseInt(v) })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="2">2 hours</SelectItem>
+                <SelectItem value="4">4 hours</SelectItem>
+                <SelectItem value="6">6 hours</SelectItem>
+                <SelectItem value="8">8 hours</SelectItem>
+              </SelectContent>
+            </Select>
+          </Field>
+        </div>
+      </SideFormSheet>
     </div>
   );
 };

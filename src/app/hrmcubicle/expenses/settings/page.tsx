@@ -29,14 +29,7 @@ import {
     TableHeader,
     TableRow,
 } from "@/shared/components/ui/table";
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -646,98 +639,87 @@ const ExpenseSettingsPage = () => {
                 </div>
             )}
 
-            {/* Add/Edit Policy Dialog */}
-            <Dialog open={isPolicyDialogOpen} onOpenChange={(o) => { setIsPolicyDialogOpen(o); if (!o) setEditingPolicy(null); }}>
-                <DialogContent className="max-w-md border-2 border-slate-200">
-                    <DialogHeader>
-                        <DialogTitle>{editingPolicy ? 'Edit' : 'New'} Expense Policy</DialogTitle>
-                        <DialogDescription>Configure expense limits and requirements for a category.</DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-2">
-                        <div className="space-y-1.5">
-                            <Label className="text-xs font-bold text-slate-500">Category *</Label>
-                            <Select value={policyForm.category || undefined} onValueChange={(v) => setPolicyForm({ ...policyForm, category: v as ExpenseCategory })}>
-                                <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+            {/* Add/Edit Policy Sheet */}
+            <SideFormSheet
+                open={isPolicyDialogOpen}
+                onOpenChange={(o) => { setIsPolicyDialogOpen(o); if (!o) setEditingPolicy(null); }}
+                title={editingPolicy ? 'Edit Expense Policy' : 'New Expense Policy'}
+                description="Configure expense limits and requirements for a category."
+                icon={editingPolicy ? <Edit3 size={20} /> : <Plus size={20} />}
+                accentColor={editingPolicy ? "#7c3aed" : "#4f46e5"}
+                width="md"
+                submitLabel={editingPolicy ? 'Update Policy' : 'Create Policy'}
+                onSubmit={(e) => { e.preventDefault(); handleSavePolicy(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Category" required>
+                        <Select value={policyForm.category || undefined} onValueChange={(v) => setPolicyForm({ ...policyForm, category: v as ExpenseCategory })}>
+                            <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+                            <SelectContent>
+                                {categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Max Amount (INR)" required>
+                            <Input type="number" min="0" placeholder="0" value={policyForm.maxAmount} onChange={(e) => setPolicyForm({ ...policyForm, maxAmount: e.target.value })} />
+                        </Field>
+                        <Field label="Per Diem Rate (INR)">
+                            <Input type="number" min="0" placeholder="0" value={policyForm.perDiem} onChange={(e) => setPolicyForm({ ...policyForm, perDiem: e.target.value })} />
+                        </Field>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Approval Level">
+                            <Select value={policyForm.approvalLevel} onValueChange={(v) => setPolicyForm({ ...policyForm, approvalLevel: v })}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
                                 <SelectContent>
-                                    {categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                                    <SelectItem value="Manager">Manager</SelectItem>
+                                    <SelectItem value="HR">HR</SelectItem>
+                                    <SelectItem value="Finance">Finance</SelectItem>
+                                    <SelectItem value="Director">Director</SelectItem>
                                 </SelectContent>
                             </Select>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-1.5">
-                                <Label className="text-xs font-bold text-slate-500">Max Amount (INR) *</Label>
-                                <Input type="number" min="0" placeholder="0" value={policyForm.maxAmount} onChange={(e) => setPolicyForm({ ...policyForm, maxAmount: e.target.value })} />
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-xs font-bold text-slate-500">Per Diem Rate (INR)</Label>
-                                <Input type="number" min="0" placeholder="0" value={policyForm.perDiem} onChange={(e) => setPolicyForm({ ...policyForm, perDiem: e.target.value })} />
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-1.5">
-                                <Label className="text-xs font-bold text-slate-500">Approval Level</Label>
-                                <Select value={policyForm.approvalLevel} onValueChange={(v) => setPolicyForm({ ...policyForm, approvalLevel: v })}>
-                                    <SelectTrigger><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="Manager">Manager</SelectItem>
-                                        <SelectItem value="HR">HR</SelectItem>
-                                        <SelectItem value="Finance">Finance</SelectItem>
-                                        <SelectItem value="Director">Director</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-xs font-bold text-slate-500">Mileage Rate (₹/km)</Label>
-                                <Input type="number" min="0" placeholder="0" value={policyForm.mileageRate} onChange={(e) => setPolicyForm({ ...policyForm, mileageRate: e.target.value })} />
-                            </div>
-                        </div>
-                        <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                            <Label className="text-sm text-slate-700">Receipt Required</Label>
-                            <Switch checked={policyForm.requiresReceipt} onCheckedChange={(v) => setPolicyForm({ ...policyForm, requiresReceipt: v })} />
-                        </div>
+                        </Field>
+                        <Field label="Mileage Rate (₹/km)">
+                            <Input type="number" min="0" placeholder="0" value={policyForm.mileageRate} onChange={(e) => setPolicyForm({ ...policyForm, mileageRate: e.target.value })} />
+                        </Field>
                     </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsPolicyDialogOpen(false)}>Cancel</Button>
-                        <Button onClick={handleSavePolicy} className="bg-[#8B5CF6] hover:bg-[#7C3AED]">
-                            {editingPolicy ? 'Update' : 'Create'} Policy
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                        <Label className="text-sm text-slate-700">Receipt Required</Label>
+                        <Switch checked={policyForm.requiresReceipt} onCheckedChange={(v) => setPolicyForm({ ...policyForm, requiresReceipt: v })} />
+                    </div>
+                </div>
+            </SideFormSheet>
 
-            {/* Add / Edit Card Dialog */}
-            <Dialog open={isCardDialogOpen} onOpenChange={(o) => { setIsCardDialogOpen(o); if (!o) setEditingCard(null); }}>
-                <DialogContent className="max-w-md border-2 border-slate-200">
-                    <DialogHeader>
-                        <DialogTitle>{editingCard ? 'Edit Corporate Card' : 'Add Corporate Card'}</DialogTitle>
-                        <DialogDescription>{editingCard ? 'Update the card details.' : 'Assign a new corporate card to an employee.'}</DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-2">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-1.5">
-                                <Label className="text-xs font-bold text-slate-500">Employee Name *</Label>
-                                <Input placeholder="Full name" value={cardForm.employeeName} onChange={(e) => setCardForm({ ...cardForm, employeeName: e.target.value })} />
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-xs font-bold text-slate-500">Employee ID</Label>
-                                <Input placeholder="E001" value={cardForm.employeeId} onChange={(e) => setCardForm({ ...cardForm, employeeId: e.target.value })} />
-                            </div>
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label className="text-xs font-bold text-slate-500">Card Number *</Label>
-                            <Input placeholder="Last 4 digits will be visible" value={cardForm.cardNumber} onChange={(e) => setCardForm({ ...cardForm, cardNumber: e.target.value })} />
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label className="text-xs font-bold text-slate-500">Card Limit (INR) *</Label>
-                            <Input type="number" min="0" placeholder="0" value={cardForm.limit} onChange={(e) => setCardForm({ ...cardForm, limit: e.target.value })} />
-                        </div>
+            {/* Add / Edit Card Sheet */}
+            <SideFormSheet
+                open={isCardDialogOpen}
+                onOpenChange={(o) => { setIsCardDialogOpen(o); if (!o) setEditingCard(null); }}
+                title={editingCard ? 'Edit Corporate Card' : 'Add Corporate Card'}
+                description={editingCard ? 'Update the card details.' : 'Assign a new corporate card to an employee.'}
+                icon={editingCard ? <Edit3 size={20} /> : <CreditCard size={20} />}
+                accentColor={editingCard ? "#7c3aed" : "#4f46e5"}
+                width="md"
+                submitLabel={editingCard ? 'Update Card' : 'Add Card'}
+                onSubmit={(e) => { e.preventDefault(); handleSaveCard(); }}
+            >
+                <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Employee Name" required>
+                            <Input placeholder="Full name" value={cardForm.employeeName} onChange={(e) => setCardForm({ ...cardForm, employeeName: e.target.value })} />
+                        </Field>
+                        <Field label="Employee ID">
+                            <Input placeholder="E001" value={cardForm.employeeId} onChange={(e) => setCardForm({ ...cardForm, employeeId: e.target.value })} />
+                        </Field>
                     </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsCardDialogOpen(false)}>Cancel</Button>
-                        <Button onClick={handleSaveCard} className="bg-[#8B5CF6] hover:bg-[#7C3AED]">{editingCard ? 'Update Card' : 'Add Card'}</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    <Field label="Card Number" required>
+                        <Input placeholder="Last 4 digits will be visible" value={cardForm.cardNumber} onChange={(e) => setCardForm({ ...cardForm, cardNumber: e.target.value })} />
+                    </Field>
+                    <Field label="Card Limit (INR)" required>
+                        <Input type="number" min="0" placeholder="0" value={cardForm.limit} onChange={(e) => setCardForm({ ...cardForm, limit: e.target.value })} />
+                    </Field>
+                </div>
+            </SideFormSheet>
 
             {/* Delete Confirmation */}
             <AlertDialog open={!!pendingDelete} onOpenChange={(o) => { if (!o) setPendingDelete(null); }}>

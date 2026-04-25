@@ -53,6 +53,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/shared/components/ui/dialog"
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -1552,104 +1553,95 @@ ${rows.map(r => `<tr>${def.columns.map(c => `<td>${r[c] ?? ""}</td>`).join("")}<
                     </div>
                 </div>
 
-                {/* ── Scheduled Form Dialog ─────────── */}
-                <Dialog open={scheduledFormOpen} onOpenChange={setScheduledFormOpen}>
-                    <DialogContent className="max-w-lg bg-white rounded-2xl p-6 font-sans">
-                        <DialogHeader className="space-y-1">
-                            <div className="h-10 w-10 bg-[#8B5CF6]/10 rounded-xl flex items-center justify-center text-[#8B5CF6] mb-2">
-                                {editingScheduled ? <Edit size={20} /> : <Plus size={20} />}
-                            </div>
-                            <DialogTitle className="text-lg font-bold text-slate-900">
-                                {editingScheduled ? "Edit scheduled report" : "Schedule a report"}
-                            </DialogTitle>
-                            <DialogDescription className="text-xs font-medium text-slate-500">
-                                Auto-generated and emailed to recipients on schedule.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="mt-4 space-y-3">
-                            <FormField label="Name" required>
-                                <Input value={scheduledForm.name} onChange={(e) => setScheduledForm({ ...scheduledForm, name: e.target.value })} className="h-10 text-sm font-medium" placeholder="Monthly Payroll Register" />
-                            </FormField>
-                            <div className="grid grid-cols-2 gap-3">
-                                <FormField label="Report type" required>
-                                    <Select value={scheduledForm.reportType} onValueChange={(v) => setScheduledForm({ ...scheduledForm, reportType: v as ScheduledReport["reportType"] })}>
-                                        <SelectTrigger className="h-10 text-sm"><SelectValue /></SelectTrigger>
-                                        <SelectContent>
-                                            {REPORT_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                                        </SelectContent>
-                                    </Select>
-                                </FormField>
-                                <FormField label="Frequency">
-                                    <Select value={scheduledForm.frequency} onValueChange={(v) => setScheduledForm({ ...scheduledForm, frequency: v as ScheduledReport["frequency"] })}>
-                                        <SelectTrigger className="h-10 text-sm"><SelectValue /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="Daily">Daily</SelectItem>
-                                            <SelectItem value="Weekly">Weekly</SelectItem>
-                                            <SelectItem value="Monthly">Monthly</SelectItem>
-                                            <SelectItem value="Quarterly">Quarterly</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </FormField>
-                                <FormField label="Next run date" required>
-                                    <Input type="date" value={scheduledForm.nextRun} onChange={(e) => setScheduledForm({ ...scheduledForm, nextRun: e.target.value })} className="h-10 text-sm font-medium" />
-                                </FormField>
-                                <FormField label="Format">
-                                    <Select value={scheduledForm.format} onValueChange={(v) => setScheduledForm({ ...scheduledForm, format: v as ScheduledReport["format"] })}>
-                                        <SelectTrigger className="h-10 text-sm"><SelectValue /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="CSV">CSV</SelectItem>
-                                            <SelectItem value="Excel">Excel</SelectItem>
-                                            <SelectItem value="PDF">PDF</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </FormField>
-                            </div>
-                            <FormField label="Recipients (emails)" required>
-                                <div className="flex gap-2">
-                                    <Input
-                                        value={recipientInput}
-                                        onChange={(e) => setRecipientInput(e.target.value)}
-                                        onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAddRecipient())}
-                                        className="h-10 text-sm font-medium flex-1"
-                                        placeholder="finance@fixl.com"
-                                        type="email"
-                                    />
-                                    <Button size="sm" onClick={handleAddRecipient} className="h-10 bg-[#8B5CF6] hover:bg-[#7c4dff] text-white font-semibold text-xs border-none px-3">
-                                        <Plus size={13} />
-                                    </Button>
-                                </div>
-                                {scheduledForm.recipients.length > 0 && (
-                                    <div className="flex flex-wrap gap-1.5 mt-2">
-                                        {scheduledForm.recipients.map((email) => (
-                                            <Badge key={email} className="bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-semibold gap-1 pr-1">
-                                                <Mail size={10} /> {email}
-                                                <button onClick={() => handleRemoveRecipient(email)} className="ml-1 hover:text-blue-900">
-                                                    <XCircle size={10} />
-                                                </button>
-                                            </Badge>
-                                        ))}
-                                    </div>
-                                )}
-                            </FormField>
-                            <FormField label="Notes">
-                                <Textarea value={scheduledForm.notes ?? ""} onChange={(e) => setScheduledForm({ ...scheduledForm, notes: e.target.value })} className="min-h-[50px] text-xs font-medium" />
-                            </FormField>
-                            <div className="flex items-center justify-between p-2.5 bg-slate-50 rounded-lg border border-slate-200">
-                                <div>
-                                    <Label className="text-xs font-bold text-slate-700">Active</Label>
-                                    <p className="text-[10px] font-medium text-slate-500 mt-0.5">Schedule will auto-run when enabled</p>
-                                </div>
-                                <Switch checked={scheduledForm.isActive} onCheckedChange={(v) => setScheduledForm({ ...scheduledForm, isActive: v })} className="data-[state=checked]:bg-[#8B5CF6]" />
-                            </div>
+                {/* Scheduled Form Sheet */}
+                <SideFormSheet
+                    open={scheduledFormOpen}
+                    onOpenChange={setScheduledFormOpen}
+                    title={editingScheduled ? "Edit scheduled report" : "Schedule a report"}
+                    description="Auto-generated and emailed to recipients on schedule."
+                    icon={editingScheduled ? <Edit size={20} /> : <CalendarIcon size={20} />}
+                    accentColor={editingScheduled ? "#7c3aed" : "#4f46e5"}
+                    width="lg"
+                    submitLabel={editingScheduled ? "Save" : "Schedule report"}
+                    onSubmit={(e) => { e.preventDefault(); handleSaveScheduled(); }}
+                >
+                    <div className="space-y-4">
+                        <Field label="Name" required>
+                            <Input value={scheduledForm.name} onChange={(e) => setScheduledForm({ ...scheduledForm, name: e.target.value })} placeholder="Monthly Payroll Register" />
+                        </Field>
+                        <div className="grid grid-cols-2 gap-3">
+                            <Field label="Report type" required>
+                                <Select value={scheduledForm.reportType} onValueChange={(v) => setScheduledForm({ ...scheduledForm, reportType: v as ScheduledReport["reportType"] })}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        {REPORT_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                            </Field>
+                            <Field label="Frequency">
+                                <Select value={scheduledForm.frequency} onValueChange={(v) => setScheduledForm({ ...scheduledForm, frequency: v as ScheduledReport["frequency"] })}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="Daily">Daily</SelectItem>
+                                        <SelectItem value="Weekly">Weekly</SelectItem>
+                                        <SelectItem value="Monthly">Monthly</SelectItem>
+                                        <SelectItem value="Quarterly">Quarterly</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </Field>
+                            <Field label="Next run date" required>
+                                <Input type="date" value={scheduledForm.nextRun} onChange={(e) => setScheduledForm({ ...scheduledForm, nextRun: e.target.value })} />
+                            </Field>
+                            <Field label="Format">
+                                <Select value={scheduledForm.format} onValueChange={(v) => setScheduledForm({ ...scheduledForm, format: v as ScheduledReport["format"] })}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="CSV">CSV</SelectItem>
+                                        <SelectItem value="Excel">Excel</SelectItem>
+                                        <SelectItem value="PDF">PDF</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </Field>
                         </div>
-                        <DialogFooter className="mt-4 gap-2">
-                            <Button variant="ghost" onClick={() => setScheduledFormOpen(false)} className="h-10 font-semibold text-xs">Cancel</Button>
-                            <Button onClick={handleSaveScheduled} className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-lg h-10 px-5 font-bold text-xs border-none">
-                                {editingScheduled ? "Save" : "Schedule report"}
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                        <Field label="Recipients (emails)" required>
+                            <div className="flex gap-2">
+                                <Input
+                                    value={recipientInput}
+                                    onChange={(e) => setRecipientInput(e.target.value)}
+                                    onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAddRecipient())}
+                                    className="flex-1"
+                                    placeholder="finance@fixl.com"
+                                    type="email"
+                                />
+                                <Button type="button" size="sm" onClick={handleAddRecipient} className="h-10 bg-[#8B5CF6] hover:bg-[#7c4dff] text-white font-semibold text-xs border-none px-3">
+                                    <Plus size={13} />
+                                </Button>
+                            </div>
+                            {scheduledForm.recipients.length > 0 && (
+                                <div className="flex flex-wrap gap-1.5 mt-2">
+                                    {scheduledForm.recipients.map((email) => (
+                                        <Badge key={email} className="bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-semibold gap-1 pr-1">
+                                            <Mail size={10} /> {email}
+                                            <button type="button" onClick={() => handleRemoveRecipient(email)} className="ml-1 hover:text-blue-900">
+                                                <XCircle size={10} />
+                                            </button>
+                                        </Badge>
+                                    ))}
+                                </div>
+                            )}
+                        </Field>
+                        <Field label="Notes">
+                            <Textarea value={scheduledForm.notes ?? ""} onChange={(e) => setScheduledForm({ ...scheduledForm, notes: e.target.value })} />
+                        </Field>
+                        <div className="flex items-center justify-between p-2.5 bg-slate-50 rounded-lg border border-slate-200">
+                            <div>
+                                <Label className="text-xs font-bold text-slate-700">Active</Label>
+                                <p className="text-[10px] font-medium text-slate-500 mt-0.5">Schedule will auto-run when enabled</p>
+                            </div>
+                            <Switch checked={scheduledForm.isActive} onCheckedChange={(v) => setScheduledForm({ ...scheduledForm, isActive: v })} className="data-[state=checked]:bg-[#8B5CF6]" />
+                        </div>
+                    </div>
+                </SideFormSheet>
 
                 {/* ── Delete Confirm ───────── */}
                 <Dialog open={scheduledDeleteOpen} onOpenChange={setScheduledDeleteOpen}>
@@ -1689,22 +1681,19 @@ ${rows.map(r => `<tr>${def.columns.map(c => `<td>${r[c] ?? ""}</td>`).join("")}<
                     </DialogContent>
                 </Dialog>
 
-                {/* ── Custom Report Builder Dialog ─────── */}
-                <Dialog open={customBuilderOpen} onOpenChange={setCustomBuilderOpen}>
-                    <DialogContent className="max-w-3xl bg-white rounded-2xl p-0 font-sans max-h-[92vh] overflow-hidden flex flex-col">
-                        <DialogHeader className="p-6 pb-4 border-b border-slate-100 space-y-1 shrink-0">
-                            <div className="h-10 w-10 bg-[#8B5CF6]/10 rounded-xl flex items-center justify-center text-[#8B5CF6] mb-2">
-                                <Wand2 size={20} />
-                            </div>
-                            <DialogTitle className="text-lg font-bold text-slate-900">
-                                {editingCustom ? "Edit custom report" : "New custom report"}
-                            </DialogTitle>
-                            <DialogDescription className="text-xs font-medium text-slate-500">
-                                Configure columns, filters, grouping and pivoting on live payroll data.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <ScrollArea className="flex-1 overflow-y-auto">
-                            <div className="p-6 space-y-6">
+                {/* Custom Report Builder Sheet */}
+                <SideFormSheet
+                    open={customBuilderOpen}
+                    onOpenChange={setCustomBuilderOpen}
+                    title={editingCustom ? "Edit custom report" : "New custom report"}
+                    description="Configure columns, filters, grouping and pivoting on live payroll data."
+                    icon={<Wand2 size={20} />}
+                    accentColor={editingCustom ? "#7c3aed" : "#4f46e5"}
+                    width="xl"
+                    submitLabel={editingCustom ? "Save changes" : "Create report"}
+                    onSubmit={(e) => { e.preventDefault(); handleSaveCustom(); }}
+                >
+                    <div className="space-y-6">
                                 {/* Step 1: Name + Source */}
                                 <section className="space-y-3">
                                     <SectionHeader step={1} title="Name & data source" icon={FileText} />
@@ -1868,15 +1857,7 @@ ${rows.map(r => `<tr>${def.columns.map(c => `<td>${r[c] ?? ""}</td>`).join("")}<
                                     </div>
                                 </section>
                             </div>
-                        </ScrollArea>
-                        <DialogFooter className="p-6 pt-4 border-t border-slate-100 gap-2 shrink-0">
-                            <Button variant="ghost" onClick={() => setCustomBuilderOpen(false)} className="h-10 font-semibold text-xs">Cancel</Button>
-                            <Button onClick={handleSaveCustom} className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-lg h-10 px-5 font-bold text-xs border-none gap-2">
-                                <Sparkles size={13} /> {editingCustom ? "Save changes" : "Create report"}
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                </SideFormSheet>
 
                 {/* ── Custom Delete Confirm ─────── */}
                 <Dialog open={customDeleteOpen} onOpenChange={setCustomDeleteOpen}>

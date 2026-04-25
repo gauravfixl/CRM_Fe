@@ -64,6 +64,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import {
     Sheet,
     SheetContent,
@@ -2126,21 +2127,23 @@ const AddEditCandidateDialog: React.FC<{
     };
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-3xl rounded-2xl p-0 overflow-hidden border-slate-200 bg-white shadow-2xl">
-                <DialogHeader className="px-6 pt-5 pb-3 border-b border-slate-100">
-                    <DialogTitle className="text-lg font-bold text-slate-900 tracking-tight">
-                        {editing ? "Edit candidate" : "Add new candidate"}
-                    </DialogTitle>
-                    <DialogDescription className="text-[11px] text-slate-500">
-                        {editing
-                            ? "Update candidate information across personal, professional, and stage tabs."
-                            : "Create a new candidate entry and choose the starting stage."}
-                    </DialogDescription>
-                </DialogHeader>
-
-                <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="flex-1">
-                    <div className="px-6 pt-3 border-b border-slate-100">
+        <SideFormSheet
+            open={open}
+            onOpenChange={onOpenChange}
+            title={editing ? "Edit candidate" : "Add new candidate"}
+            description={editing
+                ? "Update candidate information across personal, professional, and stage tabs."
+                : "Create a new candidate entry and choose the starting stage."}
+            icon={<UserPlus className="h-5 w-5" />}
+            accentColor={editing ? "#7c3aed" : "#4f46e5"}
+            width="xl"
+            loading={saving}
+            submitLabel={saving ? "Saving..." : editing ? "Save changes" : "Add candidate"}
+            submitDisabled={!canSave}
+            onSubmit={(e) => { e.preventDefault(); handleSave(); }}
+        >
+            <Tabs value={tab} onValueChange={(v) => setTab(v as any)}>
+                <div className="border-b border-slate-100">
                         <TabsList className="bg-transparent h-9 p-0 gap-5">
                             <TabsTrigger
                                 value="personal"
@@ -2468,25 +2471,7 @@ const AddEditCandidateDialog: React.FC<{
                         </TabsContent>
                     </ScrollArea>
                 </Tabs>
-
-                <DialogFooter className="px-6 py-3 border-t border-slate-100 bg-slate-50/60 gap-2">
-                    <Button
-                        variant="outline"
-                        onClick={() => onOpenChange(false)}
-                        className="h-9 rounded-lg text-[11px] font-semibold border-slate-200"
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        onClick={handleSave}
-                        disabled={!canSave || saving}
-                        className="h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-[11px] font-semibold disabled:opacity-50"
-                    >
-                        {saving ? "Saving..." : editing ? "Save changes" : "Add candidate"}
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+        </SideFormSheet>
     );
 };
 
@@ -2993,17 +2978,20 @@ const MoveStageDialog: React.FC<{
     };
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-lg rounded-2xl border-slate-200 bg-white shadow-2xl">
-                <DialogHeader>
-                    <DialogTitle className="text-base font-bold text-slate-900">
-                        Move candidate stage
-                    </DialogTitle>
-                    <DialogDescription className="text-[11px] text-slate-500">
-                        {c.firstName} {c.lastName}
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="flex items-center justify-center gap-3 py-4">
+        <SideFormSheet
+            open={open}
+            onOpenChange={onOpenChange}
+            title="Move candidate stage"
+            description={`${c.firstName} ${c.lastName}`}
+            icon={<ChevronRight className="h-5 w-5" />}
+            accentColor="#7c3aed"
+            width="md"
+            loading={moving}
+            submitLabel={`Move to ${target}`}
+            onSubmit={(e) => { e.preventDefault(); handleMove(); }}
+        >
+            <div className="space-y-4">
+                <div className="flex items-center justify-center gap-3">
                     <div
                         className={`flex-1 rounded-xl border ${from.border} ${from.col} p-3 text-center`}
                     >
@@ -3025,55 +3013,33 @@ const MoveStageDialog: React.FC<{
                     </div>
                 </div>
 
-                <div className="space-y-1.5">
-                    <Label className="text-[11px] font-semibold text-slate-600">
-                        Select new stage
-                    </Label>
+                <Field label="Select new stage" required>
                     <Select value={target} onValueChange={(v) => setTarget(v as StageId)}>
-                        <SelectTrigger className="h-9 rounded-lg border-slate-200 text-[11px]">
+                        <SelectTrigger>
                             <SelectValue />
                         </SelectTrigger>
-                        <SelectContent className="rounded-xl">
+                        <SelectContent>
                             {STAGES.map((s) => (
-                                <SelectItem key={s.id} value={s.id} className="text-[11px]">
+                                <SelectItem key={s.id} value={s.id}>
                                     {s.title}
                                 </SelectItem>
                             ))}
                         </SelectContent>
                     </Select>
-                </div>
+                </Field>
 
                 {target === "Rejected" && (
-                    <div className="space-y-1.5">
-                        <Label className="text-[11px] font-semibold text-slate-600">
-                            Reason (optional)
-                        </Label>
+                    <Field label="Reason (optional)">
                         <Textarea
                             value={reason}
                             onChange={(e) => setReason(e.target.value)}
                             placeholder="Why is this candidate being rejected?"
-                            className="min-h-[70px] rounded-lg border-slate-200 text-[11px]"
+                            className="min-h-[70px]"
                         />
-                    </div>
+                    </Field>
                 )}
-
-                <DialogFooter className="gap-2">
-                    <Button
-                        variant="outline"
-                        onClick={() => onOpenChange(false)}
-                        className="h-9 rounded-lg text-[11px] font-semibold border-slate-200"
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        onClick={handleMove}
-                        className="h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-[11px] font-semibold"
-                    >
-                        Move to {target}
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+            </div>
+        </SideFormSheet>
     );
 };
 
@@ -3124,76 +3090,52 @@ const RejectDialog: React.FC<{
     };
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-md rounded-2xl border-slate-200 bg-white shadow-2xl">
-                <DialogHeader>
-                    <DialogTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
-                        <XCircle className="h-4 w-4 text-rose-600" />
-                        Reject candidate
-                    </DialogTitle>
-                    <DialogDescription className="text-[11px] text-slate-500">
-                        Reject {c.firstName} {c.lastName}. This action is reversible.
-                    </DialogDescription>
-                </DialogHeader>
-
-                <div className="space-y-3">
-                    <div className="space-y-1.5">
-                        <Label className="text-[11px] font-semibold text-slate-600">
-                            Reason
-                        </Label>
-                        <Select value={reason} onValueChange={setReason}>
-                            <SelectTrigger className="h-9 rounded-lg border-slate-200 text-[11px]">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent className="rounded-xl">
-                                {REJECT_REASONS.map((r) => (
-                                    <SelectItem key={r} value={r} className="text-[11px]">
-                                        {r}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="space-y-1.5">
-                        <Label className="text-[11px] font-semibold text-slate-600">
-                            Additional notes
-                        </Label>
-                        <Textarea
-                            value={notes}
-                            onChange={(e) => setNotes(e.target.value)}
-                            placeholder="Feedback for the hiring team..."
-                            className="min-h-[80px] rounded-lg border-slate-200 text-[11px]"
-                        />
-                    </div>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                        <Checkbox
-                            checked={addRejectTag}
-                            onCheckedChange={(v) => setAddRejectTag(!!v)}
-                            className="h-3.5 w-3.5 data-[state=checked]:bg-violet-500 data-[state=checked]:border-violet-500"
-                        />
-                        <span className="text-[11px] text-slate-600 font-medium">
-                            Add tag "Rejected: {reason}" to candidate
-                        </span>
-                    </label>
-                </div>
-
-                <DialogFooter className="gap-2">
-                    <Button
-                        variant="outline"
-                        onClick={() => onOpenChange(false)}
-                        className="h-9 rounded-lg text-[11px] font-semibold border-slate-200"
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        onClick={handleReject}
-                        className="h-9 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-[11px] font-semibold"
-                    >
-                        Reject candidate
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+        <SideFormSheet
+            open={open}
+            onOpenChange={onOpenChange}
+            title="Reject candidate"
+            description={`Reject ${c.firstName} ${c.lastName}. This action is reversible.`}
+            icon={<XCircle className="h-5 w-5" />}
+            accentColor="#e11d48"
+            width="md"
+            submitLabel="Reject candidate"
+            onSubmit={(e) => { e.preventDefault(); handleReject(); }}
+        >
+            <div className="space-y-4">
+                <Field label="Reason" required>
+                    <Select value={reason} onValueChange={setReason}>
+                        <SelectTrigger>
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {REJECT_REASONS.map((r) => (
+                                <SelectItem key={r} value={r}>
+                                    {r}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </Field>
+                <Field label="Additional notes">
+                    <Textarea
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
+                        placeholder="Feedback for the hiring team..."
+                        className="min-h-[80px]"
+                    />
+                </Field>
+                <label className="flex items-center gap-2 cursor-pointer">
+                    <Checkbox
+                        checked={addRejectTag}
+                        onCheckedChange={(v) => setAddRejectTag(!!v)}
+                        className="h-3.5 w-3.5 data-[state=checked]:bg-violet-500 data-[state=checked]:border-violet-500"
+                    />
+                    <span className="text-[11px] text-slate-600 font-medium">
+                        Add tag "Rejected: {reason}" to candidate
+                    </span>
+                </label>
+            </div>
+        </SideFormSheet>
     );
 };
 
@@ -3232,63 +3174,42 @@ const BulkMoveDialog: React.FC<{
     };
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-md rounded-2xl border-slate-200 bg-white shadow-2xl">
-                <DialogHeader>
-                    <DialogTitle className="text-base font-bold text-slate-900">
-                        Bulk move stage
-                    </DialogTitle>
-                    <DialogDescription className="text-[11px] text-slate-500">
-                        Move {candidateIds.length} selected candidates to a new stage.
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-3">
-                    <div className="space-y-1.5">
-                        <Label className="text-[11px] font-semibold text-slate-600">
-                            Target stage
-                        </Label>
-                        <Select value={target} onValueChange={(v) => setTarget(v as StageId)}>
-                            <SelectTrigger className="h-9 rounded-lg border-slate-200 text-[11px]">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent className="rounded-xl">
-                                {STAGES.map((s) => (
-                                    <SelectItem key={s.id} value={s.id} className="text-[11px]">
-                                        {s.title}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="space-y-1.5">
-                        <Label className="text-[11px] font-semibold text-slate-600">
-                            Shared note (optional)
-                        </Label>
-                        <Textarea
-                            value={note}
-                            onChange={(e) => setNote(e.target.value)}
-                            placeholder="Added to each candidate's notes..."
-                            className="min-h-[70px] rounded-lg border-slate-200 text-[11px]"
-                        />
-                    </div>
-                </div>
-                <DialogFooter className="gap-2">
-                    <Button
-                        variant="outline"
-                        onClick={() => onOpenChange(false)}
-                        className="h-9 rounded-lg text-[11px] font-semibold border-slate-200"
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        onClick={handleMove}
-                        className="h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-[11px] font-semibold"
-                    >
-                        Move {candidateIds.length} to {target}
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+        <SideFormSheet
+            open={open}
+            onOpenChange={onOpenChange}
+            title="Bulk move stage"
+            description={`Move ${candidateIds.length} selected candidates to a new stage.`}
+            icon={<ChevronRight className="h-5 w-5" />}
+            accentColor="#7c3aed"
+            width="md"
+            submitLabel={`Move ${candidateIds.length} to ${target}`}
+            onSubmit={(e) => { e.preventDefault(); handleMove(); }}
+        >
+            <div className="space-y-4">
+                <Field label="Target stage" required>
+                    <Select value={target} onValueChange={(v) => setTarget(v as StageId)}>
+                        <SelectTrigger>
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {STAGES.map((s) => (
+                                <SelectItem key={s.id} value={s.id}>
+                                    {s.title}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </Field>
+                <Field label="Shared note (optional)">
+                    <Textarea
+                        value={note}
+                        onChange={(e) => setNote(e.target.value)}
+                        placeholder="Added to each candidate's notes..."
+                        className="min-h-[70px]"
+                    />
+                </Field>
+            </div>
+        </SideFormSheet>
     );
 };
 
@@ -3340,74 +3261,52 @@ const AddTagDialog: React.FC<{
     };
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-md rounded-2xl border-slate-200 bg-white shadow-2xl">
-                <DialogHeader>
-                    <DialogTitle className="text-base font-bold text-slate-900">
-                        Add tags
-                    </DialogTitle>
-                    <DialogDescription className="text-[11px] text-slate-500">
-                        Apply tags to {candidateIds.length} selected candidates.
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-3">
-                    <div>
-                        <Label className="text-[11px] font-semibold text-slate-600 mb-2 block">
-                            Common tags
-                        </Label>
-                        <div className="flex flex-wrap gap-1.5">
-                            {Array.from(new Set([...COMMON_TAGS, ...existingTags])).map((t) => {
-                                const active = selected.includes(t);
-                                return (
-                                    <button
-                                        key={t}
-                                        type="button"
-                                        onClick={() =>
-                                            setSelected((p) =>
-                                                active ? p.filter((x) => x !== t) : [...p, t]
-                                            )
-                                        }
-                                        className={`px-2 py-1 rounded-full text-[10px] font-medium transition-all border ${active
-                                                ? "bg-violet-50 text-violet-700 border-violet-200"
-                                                : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
-                                            }`}
-                                    >
-                                        {active && <CheckCircle2 className="h-2.5 w-2.5 inline mr-1" />}
-                                        {t}
-                                    </button>
-                                );
-                            })}
-                        </div>
+        <SideFormSheet
+            open={open}
+            onOpenChange={onOpenChange}
+            title="Add tags"
+            description={`Apply tags to ${candidateIds.length} selected candidates.`}
+            icon={<Tag className="h-5 w-5" />}
+            accentColor="#4f46e5"
+            width="md"
+            submitLabel="Apply tags"
+            onSubmit={(e) => { e.preventDefault(); handleApply(); }}
+        >
+            <div className="space-y-4">
+                <Field label="Common tags">
+                    <div className="flex flex-wrap gap-1.5">
+                        {Array.from(new Set([...COMMON_TAGS, ...existingTags])).map((t) => {
+                            const active = selected.includes(t);
+                            return (
+                                <button
+                                    key={t}
+                                    type="button"
+                                    onClick={() =>
+                                        setSelected((p) =>
+                                            active ? p.filter((x) => x !== t) : [...p, t]
+                                        )
+                                    }
+                                    className={`px-2 py-1 rounded-full text-[10px] font-medium transition-all border ${active
+                                            ? "bg-violet-50 text-violet-700 border-violet-200"
+                                            : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
+                                        }`}
+                                >
+                                    {active && <CheckCircle2 className="h-2.5 w-2.5 inline mr-1" />}
+                                    {t}
+                                </button>
+                            );
+                        })}
                     </div>
-                    <div className="space-y-1.5">
-                        <Label className="text-[11px] font-semibold text-slate-600">
-                            Custom tag
-                        </Label>
-                        <Input
-                            value={custom}
-                            onChange={(e) => setCustom(e.target.value)}
-                            placeholder="Type a custom tag"
-                            className="h-9 rounded-lg border-slate-200 text-[11px]"
-                        />
-                    </div>
-                </div>
-                <DialogFooter className="gap-2">
-                    <Button
-                        variant="outline"
-                        onClick={() => onOpenChange(false)}
-                        className="h-9 rounded-lg text-[11px] font-semibold border-slate-200"
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        onClick={handleApply}
-                        className="h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-[11px] font-semibold"
-                    >
-                        Apply tags
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+                </Field>
+                <Field label="Custom tag">
+                    <Input
+                        value={custom}
+                        onChange={(e) => setCustom(e.target.value)}
+                        placeholder="Type a custom tag"
+                    />
+                </Field>
+            </div>
+        </SideFormSheet>
     );
 };
 
@@ -3475,24 +3374,19 @@ const SendEmailDialog: React.FC<{
     };
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-2xl rounded-2xl border-slate-200 bg-white shadow-2xl p-0 overflow-hidden">
-                <DialogHeader className="px-6 pt-5 pb-3 border-b border-slate-100">
-                    <DialogTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
-                        <Mail className="h-4 w-4 text-violet-600" />
-                        Send email
-                    </DialogTitle>
-                    <DialogDescription className="text-[11px] text-slate-500">
-                        Compose an email to {targets.length} candidate(s). Use merge tags like
-                        <code className="bg-slate-100 text-violet-700 px-1 py-0.5 rounded ml-1">
-                            {"{{firstName}}"}
-                        </code>
-                        .
-                    </DialogDescription>
-                </DialogHeader>
-
-                <Tabs value={tab} onValueChange={setTab}>
-                    <div className="px-6 pt-3 border-b border-slate-100">
+        <SideFormSheet
+            open={open}
+            onOpenChange={onOpenChange}
+            title="Send email"
+            description={`Compose an email to ${targets.length} candidate(s). Use merge tags like {{firstName}}.`}
+            icon={<Mail className="h-5 w-5" />}
+            accentColor="#4f46e5"
+            width="xl"
+            submitLabel={`Send ${targets.length} email${targets.length === 1 ? "" : "s"}`}
+            onSubmit={(e) => { e.preventDefault(); handleSend(); }}
+        >
+            <Tabs value={tab} onValueChange={setTab}>
+                <div className="border-b border-slate-100">
                         <TabsList className="bg-transparent h-9 p-0 gap-5">
                             <TabsTrigger
                                 value="compose"
@@ -3608,26 +3502,8 @@ const SendEmailDialog: React.FC<{
                             </div>
                         </div>
                     </TabsContent>
-                </Tabs>
-
-                <DialogFooter className="px-6 py-3 border-t border-slate-100 bg-slate-50/60 gap-2">
-                    <Button
-                        variant="outline"
-                        onClick={() => onOpenChange(false)}
-                        className="h-9 rounded-lg text-[11px] font-semibold border-slate-200"
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        onClick={handleSend}
-                        className="h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-[11px] font-semibold"
-                    >
-                        <Send className="h-3 w-3 mr-1" /> Send {targets.length} email
-                        {targets.length === 1 ? "" : "s"}
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+            </Tabs>
+        </SideFormSheet>
     );
 };
 
@@ -3765,20 +3641,57 @@ const ImportCsvDialog: React.FC<{
     };
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-2xl rounded-2xl border-slate-200 bg-white shadow-2xl p-0 overflow-hidden">
-                <DialogHeader className="px-6 pt-5 pb-3 border-b border-slate-100">
-                    <DialogTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
-                        <Upload className="h-4 w-4 text-violet-600" />
-                        Import candidates (CSV)
-                    </DialogTitle>
-                    <DialogDescription className="text-[11px] text-slate-500">
-                        Upload a CSV file, map columns, and preview before importing.
-                    </DialogDescription>
-                </DialogHeader>
-
-                <ScrollArea className="max-h-[60vh]">
-                    <div className="px-6 py-4">
+        <SideFormSheet
+            open={open}
+            onOpenChange={onOpenChange}
+            title="Import candidates (CSV)"
+            description="Upload a CSV file, map columns, and preview before importing."
+            icon={<Upload className="h-5 w-5" />}
+            accentColor="#4f46e5"
+            width="xl"
+            footer={
+                <div className="flex items-center justify-end gap-2 w-full">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => onOpenChange(false)}
+                        className="h-9 rounded-lg text-[11px] font-semibold border-slate-200"
+                    >
+                        Cancel
+                    </Button>
+                    {step === "map" && (
+                        <Button
+                            type="button"
+                            onClick={() => setStep("preview")}
+                            className="h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-[11px] font-semibold"
+                        >
+                            Preview
+                        </Button>
+                    )}
+                    {step === "preview" && (
+                        <>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => setStep("map")}
+                                className="h-9 rounded-lg text-[11px] font-semibold border-slate-200"
+                            >
+                                Back
+                            </Button>
+                            <Button
+                                type="button"
+                                onClick={handleImport}
+                                disabled={validCount === 0}
+                                className="h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-[11px] font-semibold disabled:opacity-50"
+                            >
+                                Import {validCount} candidates
+                            </Button>
+                        </>
+                    )}
+                </div>
+            }
+        >
+            <div>
                         {step === "upload" && (
                             <div className="rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/60 p-8 text-center">
                                 <input
@@ -3878,7 +3791,7 @@ const ImportCsvDialog: React.FC<{
                                         imported. Duplicates and invalid emails are skipped.
                                     </p>
                                 </div>
-                                <div className="rounded-xl border border-slate-200 overflow-hidden">
+                                <div className="rounded-xl border border-slate-200 overflow-hidden max-h-[400px] overflow-y-auto">
                                     <Table>
                                         <TableHeader className="bg-slate-50">
                                             <TableRow>
@@ -3930,46 +3843,8 @@ const ImportCsvDialog: React.FC<{
                                 </div>
                             </div>
                         )}
-                    </div>
-                </ScrollArea>
-
-                <DialogFooter className="px-6 py-3 border-t border-slate-100 bg-slate-50/60 gap-2">
-                    <Button
-                        variant="outline"
-                        onClick={() => onOpenChange(false)}
-                        className="h-9 rounded-lg text-[11px] font-semibold border-slate-200"
-                    >
-                        Cancel
-                    </Button>
-                    {step === "map" && (
-                        <Button
-                            onClick={() => setStep("preview")}
-                            className="h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-[11px] font-semibold"
-                        >
-                            Preview
-                        </Button>
-                    )}
-                    {step === "preview" && (
-                        <>
-                            <Button
-                                variant="outline"
-                                onClick={() => setStep("map")}
-                                className="h-9 rounded-lg text-[11px] font-semibold border-slate-200"
-                            >
-                                Back
-                            </Button>
-                            <Button
-                                onClick={handleImport}
-                                disabled={validCount === 0}
-                                className="h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-[11px] font-semibold disabled:opacity-50"
-                            >
-                                Import {validCount} candidates
-                            </Button>
-                        </>
-                    )}
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+            </div>
+        </SideFormSheet>
     );
 };
 
@@ -4057,52 +3932,35 @@ const ExportCsvDialog: React.FC<{
     };
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-md rounded-2xl border-slate-200 bg-white shadow-2xl">
-                <DialogHeader>
-                    <DialogTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
-                        <Download className="h-4 w-4 text-violet-600" />
-                        Export candidates
-                    </DialogTitle>
-                    <DialogDescription className="text-[11px] text-slate-500">
-                        Select which columns to include in your CSV download ({candidates.length}{" "}
-                        candidates).
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-2 max-h-[320px] overflow-y-auto pr-2">
-                    {CSV_COLUMNS.map((col) => (
-                        <label
-                            key={col.key}
-                            className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white p-2.5 cursor-pointer hover:bg-slate-50"
-                        >
-                            <span className="text-[11px] font-medium text-slate-700">
-                                {col.label}
-                            </span>
-                            <Checkbox
-                                checked={columns.includes(col.key)}
-                                onCheckedChange={() => toggleCol(col.key)}
+        <SideFormSheet
+            open={open}
+            onOpenChange={onOpenChange}
+            title="Export candidates"
+            description={`Select which columns to include in your CSV download (${candidates.length} candidates).`}
+            icon={<Download className="h-5 w-5" />}
+            accentColor="#4f46e5"
+            width="md"
+            submitLabel="Download CSV"
+            onSubmit={(e) => { e.preventDefault(); handleExport(); }}
+        >
+            <div className="space-y-2">
+                {CSV_COLUMNS.map((col) => (
+                    <label
+                        key={col.key}
+                        className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white p-2.5 cursor-pointer hover:bg-slate-50"
+                    >
+                        <span className="text-[11px] font-medium text-slate-700">
+                            {col.label}
+                        </span>
+                        <Checkbox
+                            checked={columns.includes(col.key)}
+                            onCheckedChange={() => toggleCol(col.key)}
                                 className="h-3.5 w-3.5 data-[state=checked]:bg-violet-500 data-[state=checked]:border-violet-500"
                             />
-                        </label>
-                    ))}
-                </div>
-                <DialogFooter className="gap-2">
-                    <Button
-                        variant="outline"
-                        onClick={() => onOpenChange(false)}
-                        className="h-9 rounded-lg text-[11px] font-semibold border-slate-200"
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        onClick={handleExport}
-                        className="h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-[11px] font-semibold"
-                    >
-                        <Download className="h-3 w-3 mr-1" /> Download CSV
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+                    </label>
+                ))}
+            </div>
+        </SideFormSheet>
     );
 };
 

@@ -12,7 +12,8 @@ import { Coins, UserCheck, Settings, CheckCircle2, MoreHorizontal, Download, Sea
 import { Select as SelectUI, SelectContent as SelectContentUI, SelectItem as SelectItemUI, SelectTrigger as SelectTriggerUI, SelectValue as SelectValueUI } from "@/shared/components/ui/select";
 import { useToast } from "@/shared/components/ui/use-toast";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/shared/components/ui/dropdown-menu";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/shared/components/ui/dialog";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import { motion, AnimatePresence } from "framer-motion";
 
 const INITIAL_EMPLOYEES = [
@@ -880,36 +881,30 @@ const ShiftAllowancePage = () => {
                     </TabsContent>
                 </Tabs>
 
-                {/* Rule Modal (Create/Edit) */}
-                <Dialog open={isRuleModalOpen} onOpenChange={setIsRuleModalOpen}>
-                    <DialogContent className="sm:max-w-4xl rounded-[3rem] border-2 border-slate-200 p-12 bg-white shadow-3xl" style={{ zoom: '0.75' } as React.CSSProperties}>
-                        <DialogHeader>
-                            <DialogTitle className="text-3xl font-bold tracking-tight">{editingRule ? "Modify Allowance Rule" : "Create Global Policy"}</DialogTitle>
-                            <DialogDescription className="font-bold text-slate-400 text-lg">Define the financial weight for shift transitions.</DialogDescription>
-                        </DialogHeader>
-                        <form onSubmit={handleSaveRule} className="grid grid-cols-1 md:grid-cols-3 gap-8 py-8">
-                            <div className="grid gap-3">
-                                <Label className="font-bold ml-2 text-slate-600">Shift variant identifier</Label>
-                                <Input name="shiftName" defaultValue={editingRule?.shiftName} required className="h-16 rounded-2xl bg-white border-2 border-slate-300 px-6 font-bold text-xl" placeholder="e.g. Late Night Shift" />
-                            </div>
-                            <div className="grid gap-3">
-                                <Label className="font-bold ml-2 text-slate-600">Unit rate (₹)</Label>
-                                <Input name="amount" type="number" defaultValue={editingRule?.amount} required className="h-16 rounded-2xl bg-white border-2 border-slate-300 px-6 font-bold text-xl" />
-                            </div>
-                            <div className="grid gap-3">
-                                <Label className="font-bold ml-2 text-slate-600">Activation time</Label>
-                                <Input name="startTime" defaultValue={editingRule?.startTime} required className="h-16 rounded-2xl bg-white border-2 border-slate-300 px-6 font-bold text-xl" placeholder="10:00 PM" />
-                            </div>
-
-                            <DialogFooter className="mt-4 flex gap-4 col-span-full">
-                                <Button type="button" variant="ghost" className="rounded-2xl font-bold text-slate-400 h-16 flex-1 text-lg" onClick={() => setIsRuleModalOpen(false)}>Discard</Button>
-                                <Button type="submit" className="bg-slate-900 h-16 rounded-2xl font-bold text-white shadow-xl shadow-slate-200 flex-1 text-lg">
-                                    {editingRule ? "Commit changes" : "Deploy policy"}
-                                </Button>
-                            </DialogFooter>
-                        </form>
-                    </DialogContent>
-                </Dialog>
+                {/* Rule (Create/Edit) */}
+                <SideFormSheet
+                    open={isRuleModalOpen}
+                    onOpenChange={setIsRuleModalOpen}
+                    title={editingRule ? "Modify Allowance Rule" : "Create Global Policy"}
+                    description="Define the financial weight for shift transitions."
+                    icon={<Coins size={20} />}
+                    accentColor={editingRule ? "#7c3aed" : "#4f46e5"}
+                    width="md"
+                    submitLabel={editingRule ? "Commit Changes" : "Deploy Policy"}
+                    onSubmit={handleSaveRule}
+                >
+                    <div className="space-y-4">
+                        <Field label="Shift Variant Identifier" required>
+                            <Input name="shiftName" defaultValue={editingRule?.shiftName} required placeholder="e.g. Late Night Shift" />
+                        </Field>
+                        <Field label="Unit Rate (₹)" required>
+                            <Input name="amount" type="number" defaultValue={editingRule?.amount} required />
+                        </Field>
+                        <Field label="Activation Time" required>
+                            <Input name="startTime" defaultValue={editingRule?.startTime} required placeholder="10:00 PM" />
+                        </Field>
+                    </div>
+                </SideFormSheet>
 
                 {/* Timesheet Insight Modal */}
                 <Dialog open={isTimesheetOpen} onOpenChange={setIsTimesheetOpen}>
@@ -968,131 +963,109 @@ const ShiftAllowancePage = () => {
                     </DialogContent>
                 </Dialog>
 
-                {/* Pay Code Create/Edit Dialog */}
-                <Dialog open={isPayCodeDialogOpen} onOpenChange={setIsPayCodeDialogOpen}>
-                    <DialogContent className="sm:max-w-[500px] rounded-2xl p-8 bg-white border-2 border-slate-200 shadow-2xl">
-                        <DialogHeader>
-                            <DialogTitle className="text-xl font-bold text-slate-900">
-                                {editingPayCode ? "Edit Pay Code" : "Register New Pay Code"}
-                            </DialogTitle>
-                            <DialogDescription className="text-slate-500">
-                                Define a formula-based payment rule. Example formulas: <span className="font-mono">[Basic]*0.2</span>, <span className="font-mono">[Gross]*0.1</span>, <span className="font-mono">500</span>.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="grid gap-4 py-4">
-                            <div className="grid gap-2">
-                                <Label className="font-semibold text-slate-700">Pay Code Name</Label>
-                                <Input
-                                    placeholder="e.g. Night Shift India"
-                                    value={payCodeForm.name}
-                                    onChange={(e) => setPayCodeForm({ ...payCodeForm, name: e.target.value })}
-                                    className="h-11 rounded-lg border border-slate-200"
-                                />
-                            </div>
-                            <div className="grid gap-2">
-                                <Label className="font-semibold text-slate-700">Identifier Code (optional)</Label>
-                                <Input
-                                    placeholder="Auto-derived from name if empty (e.g. NIPC)"
-                                    value={payCodeForm.code}
-                                    onChange={(e) => setPayCodeForm({ ...payCodeForm, code: e.target.value.toUpperCase() })}
-                                    className="h-11 rounded-lg border border-slate-200 uppercase"
-                                />
-                            </div>
-                            <div className="grid gap-2">
-                                <Label className="font-semibold text-slate-700">Payment Formula</Label>
-                                <Input
-                                    placeholder="e.g. [Basic]*0.2 or 500"
-                                    value={payCodeForm.formula}
-                                    onChange={(e) => setPayCodeForm({ ...payCodeForm, formula: e.target.value })}
-                                    className="h-11 rounded-lg border border-slate-200 font-mono"
-                                />
-                            </div>
-                            <div className="grid gap-2">
-                                <Label className="font-semibold text-slate-700">Frequency</Label>
-                                <SelectUI value={payCodeForm.frequency} onValueChange={(v) => setPayCodeForm({ ...payCodeForm, frequency: v as PayCode["frequency"] })}>
-                                    <SelectTriggerUI className="h-11 rounded-lg border border-slate-200">
-                                        <SelectValueUI />
-                                    </SelectTriggerUI>
-                                    <SelectContentUI>
-                                        <SelectItemUI value="Lump Sum">Lump Sum</SelectItemUI>
-                                        <SelectItemUI value="Per Shift">Per Shift</SelectItemUI>
-                                        <SelectItemUI value="Per Hour">Per Hour</SelectItemUI>
-                                    </SelectContentUI>
-                                </SelectUI>
-                            </div>
-                        </div>
-                        <DialogFooter className="flex gap-2">
-                            <Button variant="ghost" onClick={() => setIsPayCodeDialogOpen(false)}>Cancel</Button>
-                            <Button className="bg-[#CB9DF0] hover:bg-[#b580e0]" onClick={handleSavePayCode}>
-                                {editingPayCode ? "Save Changes" : "Register Pay Code"}
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                {/* Pay Code (Create/Edit) */}
+                <SideFormSheet
+                    open={isPayCodeDialogOpen}
+                    onOpenChange={setIsPayCodeDialogOpen}
+                    title={editingPayCode ? "Edit Pay Code" : "Register New Pay Code"}
+                    description="Define a formula-based payment rule. Example formulas: [Basic]*0.2, [Gross]*0.1, 500."
+                    icon={<FileCode2 size={20} />}
+                    accentColor={editingPayCode ? "#7c3aed" : "#4f46e5"}
+                    width="md"
+                    submitLabel={editingPayCode ? "Save Changes" : "Register Pay Code"}
+                    onSubmit={(e) => { e.preventDefault(); handleSavePayCode(); }}
+                >
+                    <div className="space-y-4">
+                        <Field label="Pay Code Name" required>
+                            <Input
+                                placeholder="e.g. Night Shift India"
+                                value={payCodeForm.name}
+                                onChange={(e) => setPayCodeForm({ ...payCodeForm, name: e.target.value })}
+                            />
+                        </Field>
+                        <Field label="Identifier Code" hint="Auto-derived from name if empty (e.g. NIPC)">
+                            <Input
+                                placeholder="e.g. NIPC"
+                                value={payCodeForm.code}
+                                onChange={(e) => setPayCodeForm({ ...payCodeForm, code: e.target.value.toUpperCase() })}
+                                className="uppercase"
+                            />
+                        </Field>
+                        <Field label="Payment Formula" required>
+                            <Input
+                                placeholder="e.g. [Basic]*0.2 or 500"
+                                value={payCodeForm.formula}
+                                onChange={(e) => setPayCodeForm({ ...payCodeForm, formula: e.target.value })}
+                                className="font-mono"
+                            />
+                        </Field>
+                        <Field label="Frequency" required>
+                            <SelectUI value={payCodeForm.frequency} onValueChange={(v) => setPayCodeForm({ ...payCodeForm, frequency: v as PayCode["frequency"] })}>
+                                <SelectTriggerUI>
+                                    <SelectValueUI />
+                                </SelectTriggerUI>
+                                <SelectContentUI>
+                                    <SelectItemUI value="Lump Sum">Lump Sum</SelectItemUI>
+                                    <SelectItemUI value="Per Shift">Per Shift</SelectItemUI>
+                                    <SelectItemUI value="Per Hour">Per Hour</SelectItemUI>
+                                </SelectContentUI>
+                            </SelectUI>
+                        </Field>
+                    </div>
+                </SideFormSheet>
 
-                {/* Policy Create/Edit Dialog */}
-                <Dialog open={isPolicyDialogOpen} onOpenChange={setIsPolicyDialogOpen}>
-                    <DialogContent className="sm:max-w-[500px] rounded-2xl p-8 bg-white border-2 border-slate-200 shadow-2xl">
-                        <DialogHeader>
-                            <DialogTitle className="text-xl font-bold text-slate-900">
-                                {editingPolicy ? "Edit Policy" : "Create New Policy"}
-                            </DialogTitle>
-                            <DialogDescription className="text-slate-500">
-                                Bind a pay code to a department or staff group to establish an allowance policy.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="grid gap-4 py-4">
-                            <div className="grid gap-2">
-                                <Label className="font-semibold text-slate-700">Policy Name</Label>
-                                <Input
-                                    placeholder="e.g. Evening Shift India"
-                                    value={policyForm.name}
-                                    onChange={(e) => setPolicyForm({ ...policyForm, name: e.target.value })}
-                                    className="h-11 rounded-lg border border-slate-200"
-                                />
-                            </div>
-                            <div className="grid gap-2">
-                                <Label className="font-semibold text-slate-700">Linked Pay Code</Label>
-                                <SelectUI value={policyForm.payCodeId} onValueChange={(v) => setPolicyForm({ ...policyForm, payCodeId: v })}>
-                                    <SelectTriggerUI className="h-11 rounded-lg border border-slate-200">
-                                        <SelectValueUI placeholder="Select a pay code" />
-                                    </SelectTriggerUI>
-                                    <SelectContentUI>
-                                        {payCodes.map(pc => (
-                                            <SelectItemUI key={pc.id} value={pc.id}>
-                                                {pc.name} ({pc.code}) — {pc.formula}
-                                            </SelectItemUI>
-                                        ))}
-                                    </SelectContentUI>
-                                </SelectUI>
-                            </div>
-                            <div className="grid gap-2">
-                                <Label className="font-semibold text-slate-700">Department</Label>
-                                <Input
-                                    placeholder="e.g. Operations (leave blank for All)"
-                                    value={policyForm.department}
-                                    onChange={(e) => setPolicyForm({ ...policyForm, department: e.target.value })}
-                                    className="h-11 rounded-lg border border-slate-200"
-                                />
-                            </div>
-                            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200">
-                                <Label className="font-semibold text-slate-700">Active on creation</Label>
-                                <input
-                                    type="checkbox"
-                                    checked={policyForm.isActive}
-                                    onChange={(e) => setPolicyForm({ ...policyForm, isActive: e.target.checked })}
-                                    className="h-5 w-5 accent-[#10b981]"
-                                />
-                            </div>
+                {/* Policy (Create/Edit) */}
+                <SideFormSheet
+                    open={isPolicyDialogOpen}
+                    onOpenChange={setIsPolicyDialogOpen}
+                    title={editingPolicy ? "Edit Policy" : "Create New Policy"}
+                    description="Bind a pay code to a department or staff group to establish an allowance policy."
+                    icon={<FolderKanban size={20} />}
+                    accentColor={editingPolicy ? "#7c3aed" : "#059669"}
+                    width="md"
+                    submitLabel={editingPolicy ? "Save Changes" : "Create Policy"}
+                    onSubmit={(e) => { e.preventDefault(); handleSavePolicy(); }}
+                >
+                    <div className="space-y-4">
+                        <Field label="Policy Name" required>
+                            <Input
+                                placeholder="e.g. Evening Shift India"
+                                value={policyForm.name}
+                                onChange={(e) => setPolicyForm({ ...policyForm, name: e.target.value })}
+                            />
+                        </Field>
+                        <Field label="Linked Pay Code" required>
+                            <SelectUI value={policyForm.payCodeId} onValueChange={(v) => setPolicyForm({ ...policyForm, payCodeId: v })}>
+                                <SelectTriggerUI>
+                                    <SelectValueUI placeholder="Select a pay code" />
+                                </SelectTriggerUI>
+                                <SelectContentUI>
+                                    {payCodes.map(pc => (
+                                        <SelectItemUI key={pc.id} value={pc.id}>
+                                            {pc.name} ({pc.code}) — {pc.formula}
+                                        </SelectItemUI>
+                                    ))}
+                                </SelectContentUI>
+                            </SelectUI>
+                        </Field>
+                        <Field label="Department">
+                            <Input
+                                placeholder="e.g. Operations (leave blank for All)"
+                                value={policyForm.department}
+                                onChange={(e) => setPolicyForm({ ...policyForm, department: e.target.value })}
+                            />
+                        </Field>
+                        <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200">
+                            <Label className="font-semibold text-slate-700">Active on creation</Label>
+                            <input
+                                type="checkbox"
+                                checked={policyForm.isActive}
+                                onChange={(e) => setPolicyForm({ ...policyForm, isActive: e.target.checked })}
+                                className="h-5 w-5 accent-[#10b981]"
+                            />
                         </div>
-                        <DialogFooter className="flex gap-2">
-                            <Button variant="ghost" onClick={() => setIsPolicyDialogOpen(false)}>Cancel</Button>
-                            <Button className="bg-[#10b981] hover:bg-[#059669] text-white" onClick={handleSavePolicy}>
-                                {editingPolicy ? "Save Changes" : "Create Policy"}
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                    </div>
+                </SideFormSheet>
 
             </div>
         </div >

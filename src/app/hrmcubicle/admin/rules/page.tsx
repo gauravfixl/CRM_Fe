@@ -37,6 +37,7 @@ import {
     DialogFooter,
     DialogDescription
 } from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -576,47 +577,43 @@ const AutomationRulesPage = () => {
                 </ScrollArea>
             </main>
 
-            {/* Create / Edit Rule Dialog */}
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="max-w-2xl">
-                    <DialogHeader>
-                        <DialogTitle className="text-2xl font-black">
-                            {editingRule ? "Edit Automation Rule" : "Create Automation Rule"}
-                        </DialogTitle>
-                        <DialogDescription>
-                            Define an IF-THIS-THEN-THAT rule to automate HR policy workflows.
-                        </DialogDescription>
-                    </DialogHeader>
+            {/* Create / Edit Rule Sheet */}
+            <SideFormSheet
+                open={isDialogOpen}
+                onOpenChange={setIsDialogOpen}
+                title={editingRule ? "Edit Automation Rule" : "Create Automation Rule"}
+                description="Define an IF-THIS-THEN-THAT rule to automate HR policy workflows."
+                icon={<Zap size={20} />}
+                accentColor={editingRule ? "#7c3aed" : "#4f46e5"}
+                width="lg"
+                submitLabel={editingRule ? "Save Changes" : "Create Rule"}
+                onSubmit={(e) => { e.preventDefault(); handleSaveRule(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Rule Name" required error={formErrors.name || undefined}>
+                        <Input
+                            id="rule-name"
+                            value={form.name}
+                            onChange={(e) => setForm({ ...form, name: e.target.value })}
+                            placeholder="e.g. Late Arrival Notification"
+                        />
+                    </Field>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-2">
-                        <div className="md:col-span-2 space-y-2">
-                            <Label htmlFor="rule-name">Rule Name *</Label>
-                            <Input
-                                id="rule-name"
-                                value={form.name}
-                                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                                placeholder="e.g. Late Arrival Notification"
-                                className={formErrors.name ? "border-rose-400" : ""}
-                            />
-                            <FieldError msg={formErrors.name} />
-                        </div>
+                    <Field label="Description">
+                        <Textarea
+                            id="rule-desc"
+                            value={form.description}
+                            onChange={(e) => setForm({ ...form, description: e.target.value })}
+                            placeholder="Brief description of what this rule does."
+                            rows={2}
+                            maxLength={500}
+                        />
+                    </Field>
 
-                        <div className="md:col-span-2 space-y-2">
-                            <Label htmlFor="rule-desc">Description</Label>
-                            <Textarea
-                                id="rule-desc"
-                                value={form.description}
-                                onChange={(e) => setForm({ ...form, description: e.target.value })}
-                                placeholder="Brief description of what this rule does."
-                                rows={2}
-                                maxLength={500}
-                            />
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label>Category *</Label>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Category" required error={formErrors.category || undefined}>
                             <Select value={form.category} onValueChange={(v: RuleCategory) => setForm({ ...form, category: v })}>
-                                <SelectTrigger className={formErrors.category ? "border-rose-400" : ""}><SelectValue /></SelectTrigger>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="Attendance">Attendance</SelectItem>
                                     <SelectItem value="Leave">Leave</SelectItem>
@@ -625,11 +622,9 @@ const AutomationRulesPage = () => {
                                     <SelectItem value="Payroll">Payroll</SelectItem>
                                 </SelectContent>
                             </Select>
-                            <FieldError msg={formErrors.category} />
-                        </div>
+                        </Field>
 
-                        <div className="space-y-2 flex flex-col">
-                            <Label>Status</Label>
+                        <Field label="Status">
                             <div className="flex items-center gap-3 h-10">
                                 <Switch
                                     checked={form.isActive}
@@ -640,113 +635,94 @@ const AutomationRulesPage = () => {
                                     {form.isActive ? "Active" : "Paused"}
                                 </span>
                             </div>
-                        </div>
-
-                        <div className="md:col-span-2 space-y-2">
-                            <Label htmlFor="rule-trigger">Trigger Condition (IF) *</Label>
-                            <Input
-                                id="rule-trigger"
-                                value={form.trigger}
-                                onChange={(e) => setForm({ ...form, trigger: e.target.value })}
-                                placeholder="e.g. Late Mark Count > 3"
-                                className={`font-mono text-sm ${formErrors.trigger ? "border-rose-400" : ""}`}
-                            />
-                            <FieldError msg={formErrors.trigger} />
-                        </div>
-
-                        <div className="md:col-span-2 space-y-2">
-                            <Label htmlFor="rule-action">Automated Action (THEN) *</Label>
-                            <Input
-                                id="rule-action"
-                                value={form.action}
-                                onChange={(e) => setForm({ ...form, action: e.target.value })}
-                                placeholder="e.g. Send Email Notification to Manager"
-                                className={`font-mono text-sm ${formErrors.action ? "border-rose-400" : ""}`}
-                            />
-                            <FieldError msg={formErrors.action} />
-                        </div>
+                        </Field>
                     </div>
 
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
-                        <Button className="bg-indigo-600 hover:bg-indigo-700" onClick={handleSaveRule}>
-                            {editingRule ? "Save Changes" : "Create Rule"}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    <Field label="Trigger Condition (IF)" required error={formErrors.trigger || undefined}>
+                        <Input
+                            id="rule-trigger"
+                            value={form.trigger}
+                            onChange={(e) => setForm({ ...form, trigger: e.target.value })}
+                            placeholder="e.g. Late Mark Count > 3"
+                            className="font-mono text-sm"
+                        />
+                    </Field>
 
-            {/* Global Config Dialog */}
-            <Dialog open={isConfigOpen} onOpenChange={setIsConfigOpen}>
-                <DialogContent className="max-w-xl">
-                    <DialogHeader>
-                        <DialogTitle className="text-2xl font-black">Global Automation Config</DialogTitle>
-                        <DialogDescription>
-                            Engine-wide defaults applied to every automation rule.
-                        </DialogDescription>
-                    </DialogHeader>
+                    <Field label="Automated Action (THEN)" required error={formErrors.action || undefined}>
+                        <Input
+                            id="rule-action"
+                            value={form.action}
+                            onChange={(e) => setForm({ ...form, action: e.target.value })}
+                            placeholder="e.g. Send Email Notification to Manager"
+                            className="font-mono text-sm"
+                        />
+                    </Field>
+                </div>
+            </SideFormSheet>
 
-                    <div className="space-y-5 py-2">
-                        <div className="flex items-center justify-between p-4 rounded-xl bg-slate-50 border border-slate-100">
-                            <div>
-                                <p className="font-bold text-slate-800">Enable All Automations</p>
-                                <p className="text-xs text-slate-500">Master kill-switch for the entire engine.</p>
-                            </div>
-                            <Switch
-                                checked={globalConfig.enableAllAutomations}
-                                onCheckedChange={(v) => setGlobalConfig({ ...globalConfig, enableAllAutomations: v })}
-                                className="data-[state=checked]:bg-indigo-600"
-                            />
+            {/* Global Config Sheet */}
+            <SideFormSheet
+                open={isConfigOpen}
+                onOpenChange={setIsConfigOpen}
+                title="Global Automation Config"
+                description="Engine-wide defaults applied to every automation rule."
+                icon={<Settings size={20} />}
+                accentColor="#4f46e5"
+                width="md"
+                submitLabel="Save Config"
+                onSubmit={(e) => { e.preventDefault(); saveGlobalConfig(); }}
+            >
+                <div className="space-y-5">
+                    <div className="flex items-center justify-between p-4 rounded-xl bg-slate-50 border border-slate-100">
+                        <div>
+                            <p className="font-bold text-slate-800">Enable All Automations</p>
+                            <p className="text-xs text-slate-500">Master kill-switch for the entire engine.</p>
                         </div>
-
-                        <div className="flex items-center justify-between p-4 rounded-xl bg-slate-50 border border-slate-100">
-                            <div>
-                                <p className="font-bold text-slate-800">Notify on Failure</p>
-                                <p className="text-xs text-slate-500">Email admin when any rule fails execution.</p>
-                            </div>
-                            <Switch
-                                checked={globalConfig.notifyOnFailure}
-                                onCheckedChange={(v) => setGlobalConfig({ ...globalConfig, notifyOnFailure: v })}
-                                className="data-[state=checked]:bg-indigo-600"
-                            />
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label>Execution Mode</Label>
-                            <Select
-                                value={globalConfig.executionMode}
-                                onValueChange={(v: 'realtime' | 'batch' | 'scheduled') => setGlobalConfig({ ...globalConfig, executionMode: v })}
-                            >
-                                <SelectTrigger><SelectValue /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="realtime">Real-time</SelectItem>
-                                    <SelectItem value="batch">Batch (Hourly)</SelectItem>
-                                    <SelectItem value="scheduled">Scheduled (Nightly)</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="max-conc">Max Concurrent Runs</Label>
-                            <Input
-                                id="max-conc"
-                                type="number"
-                                min={1}
-                                max={100}
-                                value={globalConfig.maxConcurrentRuns}
-                                onChange={(e) => setGlobalConfig({ ...globalConfig, maxConcurrentRuns: Number(e.target.value) || 1 })}
-                            />
-                        </div>
+                        <Switch
+                            checked={globalConfig.enableAllAutomations}
+                            onCheckedChange={(v) => setGlobalConfig({ ...globalConfig, enableAllAutomations: v })}
+                            className="data-[state=checked]:bg-indigo-600"
+                        />
                     </div>
 
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsConfigOpen(false)}>Cancel</Button>
-                        <Button className="bg-indigo-600 hover:bg-indigo-700" onClick={saveGlobalConfig}>
-                            Save Config
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    <div className="flex items-center justify-between p-4 rounded-xl bg-slate-50 border border-slate-100">
+                        <div>
+                            <p className="font-bold text-slate-800">Notify on Failure</p>
+                            <p className="text-xs text-slate-500">Email admin when any rule fails execution.</p>
+                        </div>
+                        <Switch
+                            checked={globalConfig.notifyOnFailure}
+                            onCheckedChange={(v) => setGlobalConfig({ ...globalConfig, notifyOnFailure: v })}
+                            className="data-[state=checked]:bg-indigo-600"
+                        />
+                    </div>
+
+                    <Field label="Execution Mode">
+                        <Select
+                            value={globalConfig.executionMode}
+                            onValueChange={(v: 'realtime' | 'batch' | 'scheduled') => setGlobalConfig({ ...globalConfig, executionMode: v })}
+                        >
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="realtime">Real-time</SelectItem>
+                                <SelectItem value="batch">Batch (Hourly)</SelectItem>
+                                <SelectItem value="scheduled">Scheduled (Nightly)</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </Field>
+
+                    <Field label="Max Concurrent Runs">
+                        <Input
+                            id="max-conc"
+                            type="number"
+                            min={1}
+                            max={100}
+                            value={globalConfig.maxConcurrentRuns}
+                            onChange={(e) => setGlobalConfig({ ...globalConfig, maxConcurrentRuns: Number(e.target.value) || 1 })}
+                        />
+                    </Field>
+                </div>
+            </SideFormSheet>
 
             {/* Delete Confirmation */}
             <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>

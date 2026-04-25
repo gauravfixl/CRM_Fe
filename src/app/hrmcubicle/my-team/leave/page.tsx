@@ -38,6 +38,7 @@ import {
     DialogFooter,
     DialogDescription,
 } from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import {
     Select,
     SelectContent,
@@ -538,80 +539,60 @@ const TeamLeavePage = () => {
                 </DialogContent>
             </Dialog>
 
-            {/* Add Leave Dialog */}
-            <Dialog open={addOpen} onOpenChange={(o) => { setAddOpen(o); if (!o) setFormErrors({}); }}>
-                <DialogContent className="bg-white rounded-2xl border border-slate-200 shadow-2xl p-8 max-w-md">
-                    <DialogHeader>
-                        <DialogTitle className="text-xl font-bold text-slate-900">Apply Leave on Behalf</DialogTitle>
-                        <DialogDescription className="text-slate-500 text-sm mt-1">
-                            Submit a leave application for a team member.
-                            {!backendAvailable && <span className="text-amber-600"> (Offline — local only)</span>}
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
-                        <div className="space-y-1">
-                            <Label className="font-bold text-slate-700 text-xs">Employee *</Label>
-                            <Select value={leaveForm.empId} onValueChange={v => { setLeaveForm({ ...leaveForm, empId: v }); if (formErrors.empId) setFormErrors({ ...formErrors, empId: "" }); }}>
-                                <SelectTrigger className={`rounded-xl bg-slate-50 border h-11 font-bold text-sm ${formErrors.empId ? 'border-rose-400' : 'border-slate-200'}`}>
-                                    <SelectValue placeholder="Select team member" />
-                                </SelectTrigger>
-                                <SelectContent className="rounded-xl border-none shadow-xl bg-white">
-                                    {(members || []).map(m => (
-                                        <SelectItem key={m.id} value={m.id} className="font-bold text-xs">{m.name} • {m.designation}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            {formErrors.empId && <p className="text-[11px] font-medium text-rose-500">{formErrors.empId}</p>}
-                        </div>
-                        <div className="space-y-1">
-                            <Label className="font-bold text-slate-700 text-xs">Leave Type *</Label>
-                            <Select value={leaveForm.type} onValueChange={v => setLeaveForm({ ...leaveForm, type: v })}>
-                                <SelectTrigger className="rounded-xl bg-slate-50 border border-slate-200 h-11 font-bold text-sm">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent className="rounded-xl border-none shadow-xl bg-white">
-                                    {leaveTypes.length > 0
-                                        ? leaveTypes.map((lt: any) => (
-                                            <SelectItem key={lt._id || lt.name} value={lt.name} className="font-bold text-xs">{lt.name}</SelectItem>
-                                        ))
-                                        : [
-                                            "Casual Leave", "Sick Leave", "Earned Leave", "Maternity Leave", "Paternity Leave"
-                                        ].map(t => (
-                                            <SelectItem key={t} value={t} className="font-bold text-xs">{t}</SelectItem>
-                                        ))
-                                    }
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-1">
-                                <Label className="font-bold text-slate-700 text-xs">Start Date *</Label>
-                                <Input type="date" value={leaveForm.startDate} onChange={e => { setLeaveForm({ ...leaveForm, startDate: e.target.value }); if (formErrors.startDate) setFormErrors({ ...formErrors, startDate: "" }); }} className={`rounded-xl bg-slate-50 border h-11 font-bold text-sm ${formErrors.startDate ? 'border-rose-400' : 'border-slate-200'}`} />
-                                {formErrors.startDate && <p className="text-[11px] font-medium text-rose-500">{formErrors.startDate}</p>}
-                            </div>
-                            <div className="space-y-1">
-                                <Label className="font-bold text-slate-700 text-xs">End Date *</Label>
-                                <Input type="date" value={leaveForm.endDate} onChange={e => { setLeaveForm({ ...leaveForm, endDate: e.target.value }); if (formErrors.endDate) setFormErrors({ ...formErrors, endDate: "" }); }} className={`rounded-xl bg-slate-50 border h-11 font-bold text-sm ${formErrors.endDate ? 'border-rose-400' : 'border-slate-200'}`} />
-                                {formErrors.endDate && <p className="text-[11px] font-medium text-rose-500">{formErrors.endDate}</p>}
-                            </div>
-                        </div>
-                        {leaveForm.startDate && leaveForm.endDate && !formErrors.endDate && (
-                            <div className="text-xs font-bold text-indigo-600">Total: {calculateDays(leaveForm.startDate, leaveForm.endDate)} day(s)</div>
-                        )}
-                        <div className="space-y-1">
-                            <Label className="font-bold text-slate-700 text-xs">Reason * (min 10 chars)</Label>
-                            <Textarea value={leaveForm.reason} onChange={e => { setLeaveForm({ ...leaveForm, reason: e.target.value }); if (formErrors.reason) setFormErrors({ ...formErrors, reason: "" }); }} rows={3} placeholder="Purpose of the leave..." className={`rounded-xl bg-slate-50 border font-medium text-sm ${formErrors.reason ? 'border-rose-400' : 'border-slate-200'}`} />
-                            {formErrors.reason && <p className="text-[11px] font-medium text-rose-500">{formErrors.reason}</p>}
-                        </div>
+            {/* Add Leave Sheet */}
+            <SideFormSheet
+                open={addOpen}
+                onOpenChange={(o) => { setAddOpen(o); if (!o) setFormErrors({}); }}
+                title="Apply Leave on Behalf"
+                description={`Submit a leave application for a team member.${!backendAvailable ? " (Offline — local only)" : ""}`}
+                accentColor="#4f46e5"
+                width="md"
+                loading={isSubmitting}
+                submitLabel="Submit Application"
+                onSubmit={(e) => { e.preventDefault(); handleAddLeave(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Employee" required error={formErrors.empId || undefined}>
+                        <Select value={leaveForm.empId} onValueChange={v => { setLeaveForm({ ...leaveForm, empId: v }); if (formErrors.empId) setFormErrors({ ...formErrors, empId: "" }); }}>
+                            <SelectTrigger><SelectValue placeholder="Select team member" /></SelectTrigger>
+                            <SelectContent>
+                                {(members || []).map(m => (
+                                    <SelectItem key={m.id} value={m.id}>{m.name} • {m.designation}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                    <Field label="Leave Type" required>
+                        <Select value={leaveForm.type} onValueChange={v => setLeaveForm({ ...leaveForm, type: v })}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                {leaveTypes.length > 0
+                                    ? leaveTypes.map((lt: any) => (
+                                        <SelectItem key={lt._id || lt.name} value={lt.name}>{lt.name}</SelectItem>
+                                    ))
+                                    : ["Casual Leave", "Sick Leave", "Earned Leave", "Maternity Leave", "Paternity Leave"].map(t => (
+                                        <SelectItem key={t} value={t}>{t}</SelectItem>
+                                    ))
+                                }
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Start Date" required error={formErrors.startDate || undefined}>
+                            <Input type="date" value={leaveForm.startDate} onChange={e => { setLeaveForm({ ...leaveForm, startDate: e.target.value }); if (formErrors.startDate) setFormErrors({ ...formErrors, startDate: "" }); }} />
+                        </Field>
+                        <Field label="End Date" required error={formErrors.endDate || undefined}>
+                            <Input type="date" value={leaveForm.endDate} onChange={e => { setLeaveForm({ ...leaveForm, endDate: e.target.value }); if (formErrors.endDate) setFormErrors({ ...formErrors, endDate: "" }); }} />
+                        </Field>
                     </div>
-                    <DialogFooter className="gap-2">
-                        <Button variant="outline" className="rounded-xl h-10 font-bold" onClick={() => { setAddOpen(false); setFormErrors({}); }}>Cancel</Button>
-                        <Button disabled={isSubmitting} className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl h-10 font-bold border-none disabled:opacity-50" onClick={handleAddLeave}>
-                            {isSubmitting ? "Submitting..." : "Submit Application"}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    {leaveForm.startDate && leaveForm.endDate && !formErrors.endDate && (
+                        <div className="text-xs font-bold text-indigo-600">Total: {calculateDays(leaveForm.startDate, leaveForm.endDate)} day(s)</div>
+                    )}
+                    <Field label="Reason" required hint="min 10 chars" error={formErrors.reason || undefined}>
+                        <Textarea value={leaveForm.reason} onChange={e => { setLeaveForm({ ...leaveForm, reason: e.target.value }); if (formErrors.reason) setFormErrors({ ...formErrors, reason: "" }); }} rows={4} placeholder="Purpose of the leave..." />
+                    </Field>
+                </div>
+            </SideFormSheet>
         </div>
     );
 };

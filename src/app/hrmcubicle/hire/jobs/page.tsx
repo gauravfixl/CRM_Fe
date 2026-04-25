@@ -17,6 +17,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import {
     Sheet,
     SheetContent,
@@ -1597,43 +1598,83 @@ const JobOpeningsPage = () => {
             {/* ─────────────────────────────────────────────────────────
                 Dialog 1 — Create / Edit Job (3-step)
             ───────────────────────────────────────────────────────── */}
-            <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-                <DialogContent className="max-h-[90vh] overflow-y-auto rounded-2xl border-slate-200 bg-white p-0 sm:max-w-3xl">
-                    <DialogHeader className="border-b border-slate-100 px-6 py-4">
-                        <DialogTitle className="text-lg font-bold text-slate-900">
-                            {editingId ? "Edit Requisition" : "Post a New Requisition"}
-                        </DialogTitle>
-                        <DialogDescription className="text-[11px] font-medium text-slate-500">
-                            Step {createStep} of 3 — {createStep === 1 ? "Basics" : createStep === 2 ? "Requirements" : "Workflow"}
-                        </DialogDescription>
-
-                        {/* Step indicator */}
-                        <div className="mt-3 flex items-center gap-2">
-                            {[1, 2, 3].map((s) => (
-                                <div key={s} className="flex flex-1 items-center gap-2">
-                                    <div
-                                        className={`flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold ${s < createStep
-                                                ? "bg-violet-600 text-white"
-                                                : s === createStep
-                                                    ? "bg-violet-100 text-violet-700 ring-2 ring-violet-300"
-                                                    : "bg-slate-100 text-slate-400"
-                                            }`}
-                                    >
-                                        {s < createStep ? <CheckCircle2 className="h-3 w-3" /> : s}
-                                    </div>
-                                    <div
-                                        className={`text-[10px] font-semibold uppercase tracking-wider ${s === createStep ? "text-slate-800" : "text-slate-400"
-                                            }`}
-                                    >
-                                        {s === 1 ? "Basics" : s === 2 ? "Requirements" : "Workflow"}
-                                    </div>
-                                    {s < 3 && <div className="flex-1 border-t border-dashed border-slate-200" />}
-                                </div>
-                            ))}
+            <SideFormSheet
+                open={isCreateOpen}
+                onOpenChange={setIsCreateOpen}
+                title={editingId ? "Edit Requisition" : "Post a New Requisition"}
+                description={`Step ${createStep} of 3 — ${createStep === 1 ? "Basics" : createStep === 2 ? "Requirements" : "Workflow"}`}
+                icon={<Briefcase className="h-5 w-5" />}
+                accentColor={editingId ? "#7c3aed" : "#4f46e5"}
+                width="xl"
+                footer={
+                    <div className="flex w-full items-center justify-between gap-2">
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            onClick={() => setIsCreateOpen(false)}
+                            className="h-9 rounded-xl px-4 text-[11px] font-semibold text-slate-500"
+                        >
+                            Cancel
+                        </Button>
+                        <div className="flex gap-2">
+                            {createStep > 1 && (
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => setCreateStep((s) => (s - 1) as 1 | 2 | 3)}
+                                    className="h-9 rounded-xl border-slate-200 bg-white px-4 text-[11px] font-semibold text-slate-700"
+                                >
+                                    Back
+                                </Button>
+                            )}
+                            {createStep < 3 ? (
+                                <Button
+                                    type="button"
+                                    onClick={() => setCreateStep((s) => (s + 1) as 1 | 2 | 3)}
+                                    className="h-9 rounded-xl bg-[#8B5CF6] px-4 text-[11px] font-semibold text-white hover:bg-[#7c4df0]"
+                                >
+                                    Next <ChevronRight className="ml-1 h-3.5 w-3.5" />
+                                </Button>
+                            ) : (
+                                <Button
+                                    type="button"
+                                    onClick={handleSaveJob}
+                                    className="h-9 rounded-xl bg-[#8B5CF6] px-6 text-[11px] font-semibold text-white hover:bg-[#7c4df0]"
+                                >
+                                    {editingId ? "Save changes" : "Create requisition"}
+                                </Button>
+                            )}
                         </div>
-                    </DialogHeader>
+                    </div>
+                }
+            >
+                <div>
+                    {/* Step indicator */}
+                    <div className="flex items-center gap-2 pb-4 mb-4 border-b border-slate-100">
+                        {[1, 2, 3].map((s) => (
+                            <div key={s} className="flex flex-1 items-center gap-2">
+                                <div
+                                    className={`flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold ${s < createStep
+                                            ? "bg-violet-600 text-white"
+                                            : s === createStep
+                                                ? "bg-violet-100 text-violet-700 ring-2 ring-violet-300"
+                                                : "bg-slate-100 text-slate-400"
+                                        }`}
+                                >
+                                    {s < createStep ? <CheckCircle2 className="h-3 w-3" /> : s}
+                                </div>
+                                <div
+                                    className={`text-[10px] font-semibold uppercase tracking-wider ${s === createStep ? "text-slate-800" : "text-slate-400"
+                                        }`}
+                                >
+                                    {s === 1 ? "Basics" : s === 2 ? "Requirements" : "Workflow"}
+                                </div>
+                                {s < 3 && <div className="flex-1 border-t border-dashed border-slate-200" />}
+                            </div>
+                        ))}
+                    </div>
 
-                    <div className="px-6 py-5">
+                    <div>
                         {/* ── Step 1 — Basics ── */}
                         {createStep === 1 && (
                             <div className="grid grid-cols-2 gap-4">
@@ -1984,191 +2025,120 @@ const JobOpeningsPage = () => {
                             </div>
                         )}
                     </div>
-
-                    <DialogFooter className="border-t border-slate-100 bg-slate-50/50 px-6 py-3">
-                        <div className="flex w-full items-center justify-between gap-2">
-                            <Button
-                                variant="ghost"
-                                onClick={() => setIsCreateOpen(false)}
-                                className="h-9 rounded-xl px-4 text-[11px] font-semibold text-slate-500"
-                            >
-                                Cancel
-                            </Button>
-                            <div className="flex gap-2">
-                                {createStep > 1 && (
-                                    <Button
-                                        variant="outline"
-                                        onClick={() => setCreateStep((s) => (s - 1) as 1 | 2 | 3)}
-                                        className="h-9 rounded-xl border-slate-200 bg-white px-4 text-[11px] font-semibold text-slate-700"
-                                    >
-                                        Back
-                                    </Button>
-                                )}
-                                {createStep < 3 ? (
-                                    <Button
-                                        onClick={() => setCreateStep((s) => (s + 1) as 1 | 2 | 3)}
-                                        className="h-9 rounded-xl bg-[#8B5CF6] px-4 text-[11px] font-semibold text-white hover:bg-[#7c4df0]"
-                                    >
-                                        Next <ChevronRight className="ml-1 h-3.5 w-3.5" />
-                                    </Button>
-                                ) : (
-                                    <Button
-                                        onClick={handleSaveJob}
-                                        className="h-9 rounded-xl bg-[#8B5CF6] px-6 text-[11px] font-semibold text-white hover:bg-[#7c4df0]"
-                                    >
-                                        {editingId ? "Save changes" : "Create requisition"}
-                                    </Button>
-                                )}
-                            </div>
-                        </div>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                </div>
+            </SideFormSheet>
 
             {/* ─────────────────────────────────────────────────────────
                 Dialog 2 — Duplicate Job
             ───────────────────────────────────────────────────────── */}
-            <Dialog open={isDuplicateOpen} onOpenChange={setIsDuplicateOpen}>
-                <DialogContent className="rounded-2xl border-slate-200 sm:max-w-md">
-                    <DialogHeader>
-                        <DialogTitle className="text-base font-bold text-slate-900">
-                            Duplicate requisition
-                        </DialogTitle>
-                        <DialogDescription className="text-[11px] font-medium text-slate-500">
-                            A copy will be created as a draft. You can edit it before publishing.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-2">
-                        <Label className="text-[10px] font-bold uppercase tracking-wider text-slate-600">
-                            New title
-                        </Label>
+            <SideFormSheet
+                open={isDuplicateOpen}
+                onOpenChange={setIsDuplicateOpen}
+                title="Duplicate requisition"
+                description="A copy will be created as a draft. You can edit it before publishing."
+                icon={<Copy className="h-5 w-5" />}
+                accentColor="#4f46e5"
+                width="md"
+                submitLabel="Duplicate"
+                onSubmit={(e) => { e.preventDefault(); handleDuplicate(); }}
+            >
+                <div className="space-y-3">
+                    <Field label="New title" required>
                         <Input
                             value={duplicateTitle}
                             onChange={(e) => setDuplicateTitle(e.target.value)}
-                            className="h-10 rounded-xl border-slate-200 text-xs font-medium"
                         />
-                        {duplicatingJob && (
-                            <div className="mt-2 rounded-xl border border-slate-200 bg-slate-50 p-3 text-[11px] font-medium text-slate-600">
-                                <div>Source: <span className="font-semibold text-slate-800">{duplicatingJob.title}</span></div>
-                                <div>Dept: {duplicatingJob.department} • {duplicatingJob.location}</div>
-                            </div>
-                        )}
-                    </div>
-                    <DialogFooter>
-                        <Button
-                            variant="ghost"
-                            onClick={() => setIsDuplicateOpen(false)}
-                            className="h-9 rounded-xl text-[11px] font-semibold text-slate-500"
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            onClick={handleDuplicate}
-                            className="h-9 rounded-xl bg-[#8B5CF6] px-4 text-[11px] font-semibold text-white hover:bg-[#7c4df0]"
-                        >
-                            <Copy className="mr-1.5 h-3.5 w-3.5" /> Duplicate
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    </Field>
+                    {duplicatingJob && (
+                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-[11px] font-medium text-slate-600">
+                            <div>Source: <span className="font-semibold text-slate-800">{duplicatingJob.title}</span></div>
+                            <div>Dept: {duplicatingJob.department} • {duplicatingJob.location}</div>
+                        </div>
+                    )}
+                </div>
+            </SideFormSheet>
 
             {/* ─────────────────────────────────────────────────────────
                 Dialog 3 — Submit for Approval
             ───────────────────────────────────────────────────────── */}
-            <Dialog open={isSubmitApprovalOpen} onOpenChange={setIsSubmitApprovalOpen}>
-                <DialogContent className="rounded-2xl border-slate-200 sm:max-w-lg">
-                    <DialogHeader>
-                        <DialogTitle className="text-base font-bold text-slate-900">
-                            Submit for approval
-                        </DialogTitle>
-                        <DialogDescription className="text-[11px] font-medium text-slate-500">
-                            Approvers will be notified in the order shown below.
-                        </DialogDescription>
-                    </DialogHeader>
-                    {approvalTargetJob && (
-                        <div className="space-y-3">
-                            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                                <div className="text-[11px] font-semibold text-slate-800">
-                                    {approvalTargetJob.title}
-                                </div>
-                                <div className="text-[10px] font-medium text-slate-500">
-                                    {approvalTargetJob.department} • {approvalTargetJob.location}
-                                </div>
+            <SideFormSheet
+                open={isSubmitApprovalOpen}
+                onOpenChange={setIsSubmitApprovalOpen}
+                title="Submit for approval"
+                description="Approvers will be notified in the order shown below."
+                icon={<Send className="h-5 w-5" />}
+                accentColor="#4f46e5"
+                width="md"
+                submitLabel="Submit"
+                onSubmit={(e) => { e.preventDefault(); handleSubmitApproval(); }}
+            >
+                {approvalTargetJob && (
+                    <div className="space-y-3">
+                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                            <div className="text-[11px] font-semibold text-slate-800">
+                                {approvalTargetJob.title}
                             </div>
-                            <div className="space-y-1.5">
-                                <SectionLabel>Approval chain</SectionLabel>
-                                {approvalTargetJob.approvalChain.length > 0 ? (
-                                    approvalTargetJob.approvalChain.map((a) => {
-                                        const person = APPROVERS.find((x) => x.id === a.approver);
-                                        return (
-                                            <div
-                                                key={a.step}
-                                                className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-2"
-                                            >
-                                                <div className="flex items-center gap-2">
-                                                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-violet-100 text-[10px] font-bold text-violet-700">
-                                                        {a.step}
-                                                    </div>
-                                                    <span className="text-[11px] font-semibold text-slate-700">
-                                                        {person?.name ?? a.approver}
-                                                    </span>
-                                                </div>
-                                                <span className="text-[10px] font-semibold text-amber-600">
-                                                    Pending
-                                                </span>
-                                            </div>
-                                        );
-                                    })
-                                ) : (
-                                    <div className="rounded-xl border border-dashed border-slate-200 bg-white px-3 py-4 text-center text-[11px] font-medium text-slate-500">
-                                        No approvers configured. Default CHRO approval will be used.
-                                    </div>
-                                )}
+                            <div className="text-[10px] font-medium text-slate-500">
+                                {approvalTargetJob.department} • {approvalTargetJob.location}
                             </div>
                         </div>
-                    )}
-                    <DialogFooter>
-                        <Button
-                            variant="ghost"
-                            onClick={() => setIsSubmitApprovalOpen(false)}
-                            className="h-9 rounded-xl text-[11px] font-semibold text-slate-500"
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            onClick={handleSubmitApproval}
-                            className="h-9 rounded-xl bg-[#8B5CF6] px-4 text-[11px] font-semibold text-white hover:bg-[#7c4df0]"
-                        >
-                            <Send className="mr-1.5 h-3.5 w-3.5" /> Submit
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                        <div className="space-y-1.5">
+                            <SectionLabel>Approval chain</SectionLabel>
+                            {approvalTargetJob.approvalChain.length > 0 ? (
+                                approvalTargetJob.approvalChain.map((a) => {
+                                    const person = APPROVERS.find((x) => x.id === a.approver);
+                                    return (
+                                        <div
+                                            key={a.step}
+                                            className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-2"
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-violet-100 text-[10px] font-bold text-violet-700">
+                                                    {a.step}
+                                                </div>
+                                                <span className="text-[11px] font-semibold text-slate-700">
+                                                    {person?.name ?? a.approver}
+                                                </span>
+                                            </div>
+                                            <span className="text-[10px] font-semibold text-amber-600">
+                                                Pending
+                                            </span>
+                                        </div>
+                                    );
+                                })
+                            ) : (
+                                <div className="rounded-xl border border-dashed border-slate-200 bg-white px-3 py-4 text-center text-[11px] font-medium text-slate-500">
+                                    No approvers configured. Default CHRO approval will be used.
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+            </SideFormSheet>
 
             {/* ─────────────────────────────────────────────────────────
                 Dialog 4 — Approve / Reject
             ───────────────────────────────────────────────────────── */}
-            <Dialog open={isApproveRejectOpen} onOpenChange={setIsApproveRejectOpen}>
-                <DialogContent className="rounded-2xl border-slate-200 sm:max-w-md">
-                    <DialogHeader>
-                        <DialogTitle className="text-base font-bold text-slate-900">
-                            {approveRejectMode === "approve" ? "Approve requisition" : "Reject requisition"}
-                        </DialogTitle>
-                        <DialogDescription className="text-[11px] font-medium text-slate-500">
-                            {approveRejectMode === "approve"
-                                ? "Once approved, the job will become Active and visible to distribution channels."
-                                : "The job will be sent back to Draft with your notes."}
-                        </DialogDescription>
-                    </DialogHeader>
-                    {approveRejectJob && (
-                        <div className="space-y-2">
-                            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-[11px]">
-                                <div className="font-semibold text-slate-800">{approveRejectJob.title}</div>
-                                <div className="text-slate-500">{approveRejectJob.department}</div>
-                            </div>
-                            <Label className="text-[10px] font-bold uppercase tracking-wider text-slate-600">
-                                Notes {approveRejectMode === "reject" ? "(required)" : "(optional)"}
-                            </Label>
+            <SideFormSheet
+                open={isApproveRejectOpen}
+                onOpenChange={setIsApproveRejectOpen}
+                title={approveRejectMode === "approve" ? "Approve requisition" : "Reject requisition"}
+                description={approveRejectMode === "approve"
+                    ? "Once approved, the job will become Active and visible to distribution channels."
+                    : "The job will be sent back to Draft with your notes."}
+                icon={approveRejectMode === "approve" ? <CheckCircle2 className="h-5 w-5" /> : <XCircle className="h-5 w-5" />}
+                accentColor={approveRejectMode === "approve" ? "#059669" : "#e11d48"}
+                width="md"
+                submitLabel={approveRejectMode === "approve" ? "Approve" : "Reject"}
+                onSubmit={(e) => { e.preventDefault(); handleApproveReject(); }}
+            >
+                {approveRejectJob && (
+                    <div className="space-y-3">
+                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-[11px]">
+                            <div className="font-semibold text-slate-800">{approveRejectJob.title}</div>
+                            <div className="text-slate-500">{approveRejectJob.department}</div>
+                        </div>
+                        <Field label={`Notes ${approveRejectMode === "reject" ? "(required)" : "(optional)"}`} required={approveRejectMode === "reject"}>
                             <Textarea
                                 value={approveNotes}
                                 onChange={(e) => setApproveNotes(e.target.value)}
@@ -2177,120 +2147,82 @@ const JobOpeningsPage = () => {
                                         ? "Add any approval notes..."
                                         : "Why is this being rejected?"
                                 }
-                                className="min-h-[80px] rounded-xl border-slate-200 text-xs font-medium"
+                                className="min-h-[80px]"
                             />
-                        </div>
-                    )}
-                    <DialogFooter>
-                        <Button
-                            variant="ghost"
-                            onClick={() => setIsApproveRejectOpen(false)}
-                            className="h-9 rounded-xl text-[11px] font-semibold text-slate-500"
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            onClick={handleApproveReject}
-                            className={`h-9 rounded-xl px-4 text-[11px] font-semibold text-white ${approveRejectMode === "approve"
-                                    ? "bg-emerald-600 hover:bg-emerald-700"
-                                    : "bg-rose-600 hover:bg-rose-700"
-                                }`}
-                        >
-                            {approveRejectMode === "approve" ? (
-                                <>
-                                    <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" /> Approve
-                                </>
-                            ) : (
-                                <>
-                                    <XCircle className="mr-1.5 h-3.5 w-3.5" /> Reject
-                                </>
-                            )}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                        </Field>
+                    </div>
+                )}
+            </SideFormSheet>
 
             {/* ─────────────────────────────────────────────────────────
                 Dialog 5 — Close Job
             ───────────────────────────────────────────────────────── */}
-            <Dialog open={isCloseOpen} onOpenChange={setIsCloseOpen}>
-                <DialogContent className="rounded-2xl border-slate-200 sm:max-w-md">
-                    <DialogHeader>
-                        <DialogTitle className="text-base font-bold text-slate-900">
-                            Close requisition
-                        </DialogTitle>
-                        <DialogDescription className="text-[11px] font-medium text-slate-500">
-                            Closing a requisition will remove it from active listings.
-                        </DialogDescription>
-                    </DialogHeader>
-                    {closingJob && (
-                        <div className="space-y-3">
-                            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-[11px]">
-                                <div className="font-semibold text-slate-800">{closingJob.title}</div>
-                                <div className="text-slate-500">{closingJob.department}</div>
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-bold uppercase tracking-wider text-slate-600">
-                                    Reason
-                                </Label>
-                                <Select value={closeReason} onValueChange={setCloseReason}>
-                                    <SelectTrigger className="h-10 rounded-xl border-slate-200 text-xs font-medium">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {CLOSE_REASONS.map((r) => (
-                                            <SelectItem key={r} value={r}>
-                                                {r}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-bold uppercase tracking-wider text-slate-600">
-                                    Notes (optional)
-                                </Label>
-                                <Textarea
-                                    value={closeNotes}
-                                    onChange={(e) => setCloseNotes(e.target.value)}
-                                    placeholder="Additional context..."
-                                    className="min-h-[70px] rounded-xl border-slate-200 text-xs font-medium"
-                                />
-                            </div>
+            <SideFormSheet
+                open={isCloseOpen}
+                onOpenChange={setIsCloseOpen}
+                title="Close requisition"
+                description="Closing a requisition will remove it from active listings."
+                icon={<XCircle className="h-5 w-5" />}
+                accentColor="#e11d48"
+                width="md"
+                submitLabel="Close requisition"
+                onSubmit={(e) => { e.preventDefault(); handleClose(); }}
+            >
+                {closingJob && (
+                    <div className="space-y-3">
+                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-[11px]">
+                            <div className="font-semibold text-slate-800">{closingJob.title}</div>
+                            <div className="text-slate-500">{closingJob.department}</div>
                         </div>
-                    )}
-                    <DialogFooter>
-                        <Button
-                            variant="ghost"
-                            onClick={() => setIsCloseOpen(false)}
-                            className="h-9 rounded-xl text-[11px] font-semibold text-slate-500"
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            onClick={handleClose}
-                            className="h-9 rounded-xl bg-rose-600 px-4 text-[11px] font-semibold text-white hover:bg-rose-700"
-                        >
-                            <XCircle className="mr-1.5 h-3.5 w-3.5" /> Close requisition
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                        <Field label="Reason" required>
+                            <Select value={closeReason} onValueChange={setCloseReason}>
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {CLOSE_REASONS.map((r) => (
+                                        <SelectItem key={r} value={r}>
+                                            {r}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <Field label="Notes (optional)">
+                            <Textarea
+                                value={closeNotes}
+                                onChange={(e) => setCloseNotes(e.target.value)}
+                                placeholder="Additional context..."
+                                className="min-h-[70px]"
+                            />
+                        </Field>
+                    </div>
+                )}
+            </SideFormSheet>
 
             {/* ─────────────────────────────────────────────────────────
                 Dialog 6 — Distribute
             ───────────────────────────────────────────────────────── */}
-            <Dialog open={isDistributeOpen} onOpenChange={setIsDistributeOpen}>
-                <DialogContent className="rounded-2xl border-slate-200 sm:max-w-lg">
-                    <DialogHeader>
-                        <DialogTitle className="text-base font-bold text-slate-900">
-                            Distribute to channels
-                        </DialogTitle>
-                        <DialogDescription className="text-[11px] font-medium text-slate-500">
-                            Post this requisition to external job boards and your career page.
-                        </DialogDescription>
-                    </DialogHeader>
-                    {distributeJob && (
+            <SideFormSheet
+                open={isDistributeOpen}
+                onOpenChange={setIsDistributeOpen}
+                title="Distribute to channels"
+                description="Post this requisition to external job boards and your career page."
+                icon={<Share2 className="h-5 w-5" />}
+                accentColor="#4f46e5"
+                width="lg"
+                submitLabel="Distribute"
+                onSubmit={(e) => {
+                    e.preventDefault();
+                    const count = Object.values(distributeChannels).filter(Boolean).length;
+                    toast({
+                        title: "Distribution scheduled",
+                        description: `Posting to ${count} channel${count === 1 ? "" : "s"}.`,
+                    });
+                    setIsDistributeOpen(false);
+                }}
+            >
+                {distributeJob && (
                         <div className="space-y-3">
                             <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-[11px]">
                                 <div className="font-semibold text-slate-800">{distributeJob.title}</div>
@@ -2366,6 +2298,7 @@ const JobOpeningsPage = () => {
                                     </span>
                                 </div>
                                 <Button
+                                    type="button"
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => {
@@ -2384,30 +2317,7 @@ const JobOpeningsPage = () => {
                             </div>
                         </div>
                     )}
-                    <DialogFooter>
-                        <Button
-                            variant="ghost"
-                            onClick={() => setIsDistributeOpen(false)}
-                            className="h-9 rounded-xl text-[11px] font-semibold text-slate-500"
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            onClick={() => {
-                                const count = Object.values(distributeChannels).filter(Boolean).length;
-                                toast({
-                                    title: "Distribution scheduled",
-                                    description: `Posting to ${count} channel${count === 1 ? "" : "s"}.`,
-                                });
-                                setIsDistributeOpen(false);
-                            }}
-                            className="h-9 rounded-xl bg-[#8B5CF6] px-4 text-[11px] font-semibold text-white hover:bg-[#7c4df0]"
-                        >
-                            <Share2 className="mr-1.5 h-3.5 w-3.5" /> Distribute
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            </SideFormSheet>
 
             {/* ─────────────────────────────────────────────────────────
                 Dialog 7 — Detail Sheet
@@ -2740,39 +2650,26 @@ const JobOpeningsPage = () => {
             {/* ─────────────────────────────────────────────────────────
                 Extra — Import JSON (auxiliary)
             ───────────────────────────────────────────────────────── */}
-            <Dialog open={isImportOpen} onOpenChange={setIsImportOpen}>
-                <DialogContent className="rounded-2xl border-slate-200 sm:max-w-lg">
-                    <DialogHeader>
-                        <DialogTitle className="text-base font-bold text-slate-900">
-                            Import jobs from JSON
-                        </DialogTitle>
-                        <DialogDescription className="text-[11px] font-medium text-slate-500">
-                            Paste an array of job objects. Each must at minimum include a title.
-                        </DialogDescription>
-                    </DialogHeader>
+            <SideFormSheet
+                open={isImportOpen}
+                onOpenChange={setIsImportOpen}
+                title="Import jobs from JSON"
+                description="Paste an array of job objects. Each must at minimum include a title."
+                icon={<Upload className="h-5 w-5" />}
+                accentColor="#4f46e5"
+                width="md"
+                submitLabel="Import"
+                onSubmit={(e) => { e.preventDefault(); handleImport(); }}
+            >
+                <Field label="JSON payload">
                     <Textarea
                         value={importText}
                         onChange={(e) => setImportText(e.target.value)}
                         placeholder='[{"title": "Backend Engineer", "department": "Engineering", "location": "Bangalore"}]'
-                        className="min-h-[180px] rounded-xl border-slate-200 font-mono text-[11px]"
+                        className="min-h-[180px] font-mono text-[11px]"
                     />
-                    <DialogFooter>
-                        <Button
-                            variant="ghost"
-                            onClick={() => setIsImportOpen(false)}
-                            className="h-9 rounded-xl text-[11px] font-semibold text-slate-500"
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            onClick={handleImport}
-                            className="h-9 rounded-xl bg-[#8B5CF6] px-4 text-[11px] font-semibold text-white hover:bg-[#7c4df0]"
-                        >
-                            <Upload className="mr-1.5 h-3.5 w-3.5" /> Import
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                </Field>
+            </SideFormSheet>
         </div>
     );
 };

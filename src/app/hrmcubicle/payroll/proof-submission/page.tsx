@@ -67,6 +67,7 @@ import {
     DialogDescription,
     DialogFooter,
 } from "@/shared/components/ui/dialog"
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet"
 import {
     Popover,
     PopoverContent,
@@ -1192,22 +1193,19 @@ const ProofSubmissionPage = () => {
                     </div>
                 </div>
 
-                {/* ── Add / Edit Dialog ───────────────── */}
-                <Dialog open={formOpen} onOpenChange={setFormOpen}>
-                    <DialogContent className="max-w-2xl bg-white rounded-2xl p-0 font-sans max-h-[92vh] overflow-hidden flex flex-col">
-                        <DialogHeader className="p-6 border-b border-slate-100 space-y-1">
-                            <div className="h-10 w-10 bg-[#8B5CF6]/10 rounded-xl flex items-center justify-center text-[#8B5CF6] mb-2">
-                                {editingProof ? <Edit size={20} /> : <Plus size={20} />}
-                            </div>
-                            <DialogTitle className="text-lg font-bold text-slate-900">
-                                {editingProof ? "Edit proof" : "New investment proof"}
-                            </DialogTitle>
-                            <DialogDescription className="text-xs font-medium text-slate-500">
-                                Attach supporting documents for tax declarations. Caps are per-section per FY.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <ScrollArea className="flex-1 p-6">
-                            <div className="space-y-5">
+                {/* Add / Edit Investment Proof Sheet */}
+                <SideFormSheet
+                    open={formOpen}
+                    onOpenChange={setFormOpen}
+                    title={editingProof ? "Edit proof" : "New investment proof"}
+                    description="Attach supporting documents for tax declarations. Caps are per-section per FY."
+                    icon={editingProof ? <Edit size={20} /> : <FileSearch size={20} />}
+                    accentColor={editingProof ? "#7c3aed" : "#4f46e5"}
+                    width="xl"
+                    submitLabel={editingProof ? "Save changes" : "Submit proof"}
+                    onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}
+                >
+                    <div className="space-y-5">
                                 <section className="space-y-3">
                                     <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Employee</h4>
                                     <div className="grid grid-cols-2 gap-3">
@@ -1335,16 +1333,8 @@ const ProofSubmissionPage = () => {
                                         </div>
                                     )}
                                 </section>
-                            </div>
-                        </ScrollArea>
-                        <DialogFooter className="p-4 border-t border-slate-100 bg-slate-50/50 gap-2">
-                            <Button variant="ghost" onClick={() => setFormOpen(false)} className="h-10 px-5 font-semibold text-xs">Cancel</Button>
-                            <Button onClick={handleSubmit} className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-lg h-10 px-6 font-bold text-xs border-none">
-                                {editingProof ? "Save changes" : "Submit proof"}
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                    </div>
+                </SideFormSheet>
 
                 {/* ── Detail Sheet ─────────────────── */}
                 <Sheet open={detailOpen} onOpenChange={setDetailOpen}>
@@ -1544,82 +1534,62 @@ const ProofSubmissionPage = () => {
                     </SheetContent>
                 </Sheet>
 
-                {/* ── Approval with comment ─────────── */}
-                <Dialog open={approvalOpen} onOpenChange={setApprovalOpen}>
-                    <DialogContent className="max-w-md bg-white rounded-2xl p-6 font-sans">
-                        <DialogHeader className="space-y-1">
-                            <div className="h-10 w-10 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 mb-2">
-                                <CheckCircle2 size={20} />
-                            </div>
-                            <DialogTitle className="text-lg font-bold text-slate-900">Approve proof</DialogTitle>
-                            <DialogDescription className="text-xs font-medium text-slate-500">
-                                Optionally add an approval note. Persisted to the audit trail.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="mt-4">
-                            <FormField label="Approval note (optional)">
-                                <Textarea
-                                    value={approvalComment}
-                                    onChange={(e) => setApprovalComment(e.target.value)}
-                                    placeholder="e.g., Valid policy, amount matches declaration..."
-                                    className="min-h-[90px] text-xs font-medium"
-                                />
-                            </FormField>
-                        </div>
-                        <DialogFooter className="mt-4 gap-2">
-                            <Button variant="ghost" onClick={() => setApprovalOpen(false)} className="h-10 font-semibold text-xs">Cancel</Button>
-                            <Button onClick={handleConfirmApproval} className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg h-10 px-5 font-bold text-xs border-none">
-                                <CheckCircle2 size={13} className="mr-1.5" /> Confirm approve
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                {/* Approval with note Sheet */}
+                <SideFormSheet
+                    open={approvalOpen}
+                    onOpenChange={setApprovalOpen}
+                    title="Approve proof"
+                    description="Optionally add an approval note. Persisted to the audit trail."
+                    icon={<CheckCircle2 size={20} />}
+                    accentColor="#059669"
+                    width="md"
+                    submitLabel="Confirm approve"
+                    onSubmit={(e) => { e.preventDefault(); handleConfirmApproval(); }}
+                >
+                    <Field label="Approval note (optional)">
+                        <Textarea
+                            value={approvalComment}
+                            onChange={(e) => setApprovalComment(e.target.value)}
+                            placeholder="e.g., Valid policy, amount matches declaration..."
+                        />
+                    </Field>
+                </SideFormSheet>
 
-                {/* ── Reject Dialog ───────────────── */}
-                <Dialog open={rejectOpen} onOpenChange={setRejectOpen}>
-                    <DialogContent className="max-w-md bg-white rounded-2xl p-6 font-sans">
-                        <DialogHeader className="space-y-1">
-                            <div className="h-10 w-10 bg-rose-50 rounded-xl flex items-center justify-center text-rose-500 mb-2">
-                                <XCircle size={20} />
+                {/* Reject Sheet */}
+                <SideFormSheet
+                    open={rejectOpen}
+                    onOpenChange={setRejectOpen}
+                    title={`Reject ${rejectTargetIds.length > 1 ? `${rejectTargetIds.length} proofs` : "proof"}`}
+                    description="Reason will be visible to the employee in their portal."
+                    icon={<XCircle size={20} />}
+                    accentColor="#e11d48"
+                    width="md"
+                    submitLabel="Confirm reject"
+                    onSubmit={(e) => { e.preventDefault(); handleConfirmReject(); }}
+                >
+                    <div className="space-y-4">
+                        <Field label="Reason">
+                            <Textarea value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} placeholder="e.g., Landlord PAN missing, receipt illegible..." />
+                        </Field>
+                        <Field label="Tags (optional)">
+                            <div className="flex flex-wrap gap-1.5">
+                                {REJECTION_TAGS.map((tag) => {
+                                    const active = rejectTags.includes(tag)
+                                    return (
+                                        <Badge
+                                            key={tag}
+                                            onClick={() => setRejectTags((prev) => active ? prev.filter((t) => t !== tag) : [...prev, tag])}
+                                            className={cn("cursor-pointer text-[10px] font-semibold px-2 py-1 border",
+                                                active ? "bg-rose-100 text-rose-700 border-rose-200" : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-100")}
+                                        >
+                                            {tag}
+                                        </Badge>
+                                    )
+                                })}
                             </div>
-                            <DialogTitle className="text-lg font-bold text-slate-900">
-                                Reject {rejectTargetIds.length > 1 ? `${rejectTargetIds.length} proofs` : "proof"}
-                            </DialogTitle>
-                            <DialogDescription className="text-xs font-medium text-slate-500">
-                                Reason will be visible to the employee in their portal.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="mt-4 space-y-3">
-                            <FormField label="Reason">
-                                <Textarea value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} placeholder="e.g., Landlord PAN missing, receipt illegible..." className="min-h-[80px] text-xs font-medium" />
-                            </FormField>
-                            <div className="space-y-1.5">
-                                <Label className="text-[11px] font-semibold text-slate-600">Tags (optional)</Label>
-                                <div className="flex flex-wrap gap-1.5">
-                                    {REJECTION_TAGS.map((tag) => {
-                                        const active = rejectTags.includes(tag)
-                                        return (
-                                            <Badge
-                                                key={tag}
-                                                onClick={() => setRejectTags((prev) => active ? prev.filter((t) => t !== tag) : [...prev, tag])}
-                                                className={cn("cursor-pointer text-[10px] font-semibold px-2 py-1 border",
-                                                    active ? "bg-rose-100 text-rose-700 border-rose-200" : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-100")}
-                                            >
-                                                {tag}
-                                            </Badge>
-                                        )
-                                    })}
-                                </div>
-                            </div>
-                        </div>
-                        <DialogFooter className="mt-4 gap-2">
-                            <Button variant="ghost" onClick={() => setRejectOpen(false)} className="h-10 font-semibold text-xs">Cancel</Button>
-                            <Button onClick={handleConfirmReject} className="bg-rose-500 hover:bg-rose-600 text-white rounded-lg h-10 px-5 font-bold text-xs border-none">
-                                Confirm reject
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                        </Field>
+                    </div>
+                </SideFormSheet>
 
                 {/* ── Bulk delete confirm ─────────── */}
                 <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>

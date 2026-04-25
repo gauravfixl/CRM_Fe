@@ -9,6 +9,7 @@ import { Label } from "@/shared/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import { Textarea } from "@/shared/components/ui/textarea";
 import { useToast } from "@/shared/components/ui/use-toast";
 import {
@@ -589,77 +590,69 @@ const CelebrationsPage = () => {
                 </Tabs>
             </div>
 
-            {/* Add/Edit Celebration Dialog */}
-            <Dialog open={isCelebrationDialogOpen} onOpenChange={(val) => { if (!val) resetCelebrationForm(); setIsCelebrationDialogOpen(val); }}>
-                <DialogContent className="max-w-md">
-                    <DialogHeader>
-                        <DialogTitle>{editingCelebration ? "Edit Celebration" : "Add Celebration"}</DialogTitle>
-                        <DialogDescription>Track a birthday or work anniversary.</DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-2">
-                        <div className="space-y-2">
-                            <Label>Employee Name</Label>
-                            <Input
-                                value={celebrationForm.employeeName}
-                                maxLength={80}
-                                onChange={e => setCelebrationForm({ ...celebrationForm, employeeName: e.target.value })}
-                                placeholder="e.g. Priya Sharma"
-                            />
-                            <p className="text-[10px] text-slate-400">{celebrationForm.employeeName.length}/80 • min 2</p>
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-2">
-                                <Label>Department</Label>
-                                <Select value={celebrationForm.department} onValueChange={v => setCelebrationForm({ ...celebrationForm, department: v })}>
-                                    <SelectTrigger><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        {departments.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Type</Label>
-                                <Select value={celebrationForm.type} onValueChange={v => setCelebrationForm({ ...celebrationForm, type: v as "Birthday" | "Work Anniversary" })}>
-                                    <SelectTrigger><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="Birthday">Birthday</SelectItem>
-                                        <SelectItem value="Work Anniversary">Work Anniversary</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-2">
-                                <Label>Date</Label>
-                                <Input
-                                    type="date"
-                                    value={celebrationForm.date.length === 10 ? celebrationForm.date : `2026-${celebrationForm.date}`}
-                                    onChange={e => setCelebrationForm({ ...celebrationForm, date: e.target.value })}
-                                />
-                            </div>
-                            {celebrationForm.type === "Work Anniversary" && (
-                                <div className="space-y-2">
-                                    <Label>Years</Label>
-                                    <Input
-                                        type="number"
-                                        min={1}
-                                        max={50}
-                                        value={celebrationForm.years ?? ""}
-                                        onChange={e => setCelebrationForm({ ...celebrationForm, years: Number(e.target.value) || undefined })}
-                                        placeholder="e.g. 5"
-                                    />
-                                </div>
-                            )}
-                        </div>
+            {/* Add/Edit Celebration - SideFormSheet */}
+            <SideFormSheet
+                open={isCelebrationDialogOpen}
+                onOpenChange={(val) => { setIsCelebrationDialogOpen(val); if (!val) resetCelebrationForm(); }}
+                title={editingCelebration ? "Edit Celebration" : "Add Celebration"}
+                description="Track a birthday or work anniversary."
+                icon={<PartyPopper size={20} />}
+                accentColor={editingCelebration ? "#7c3aed" : "#ec4899"}
+                width="md"
+                submitLabel={editingCelebration ? "Save Changes" : "Add Celebration"}
+                onSubmit={(e) => { e.preventDefault(); handleSaveCelebration(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Employee Name" required hint={`${celebrationForm.employeeName.length}/80 • min 2`}>
+                        <Input
+                            value={celebrationForm.employeeName}
+                            maxLength={80}
+                            onChange={e => setCelebrationForm({ ...celebrationForm, employeeName: e.target.value })}
+                            placeholder="e.g. Priya Sharma"
+                        />
+                    </Field>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Department">
+                            <Select value={celebrationForm.department} onValueChange={v => setCelebrationForm({ ...celebrationForm, department: v })}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    {departments.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <Field label="Type">
+                            <Select value={celebrationForm.type} onValueChange={v => setCelebrationForm({ ...celebrationForm, type: v as "Birthday" | "Work Anniversary" })}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Birthday">Birthday</SelectItem>
+                                    <SelectItem value="Work Anniversary">Work Anniversary</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
                     </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsCelebrationDialogOpen(false)}>Cancel</Button>
-                        <Button className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white font-bold" onClick={handleSaveCelebration}>
-                            {editingCelebration ? "Save Changes" : "Add Celebration"}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Date">
+                            <Input
+                                type="date"
+                                value={celebrationForm.date.length === 10 ? celebrationForm.date : `2026-${celebrationForm.date}`}
+                                onChange={e => setCelebrationForm({ ...celebrationForm, date: e.target.value })}
+                            />
+                        </Field>
+                        {celebrationForm.type === "Work Anniversary" && (
+                            <Field label="Years">
+                                <Input
+                                    type="number"
+                                    min={1}
+                                    max={50}
+                                    value={celebrationForm.years ?? ""}
+                                    onChange={e => setCelebrationForm({ ...celebrationForm, years: Number(e.target.value) || undefined })}
+                                    placeholder="e.g. 5"
+                                />
+                            </Field>
+                        )}
+                    </div>
+                </div>
+            </SideFormSheet>
 
             {/* Templates Library Dialog */}
             <Dialog open={isTemplateOpen} onOpenChange={setIsTemplateOpen}>
@@ -699,87 +692,74 @@ const CelebrationsPage = () => {
                 </DialogContent>
             </Dialog>
 
-            {/* Template Add/Edit Dialog */}
-            <Dialog open={isTemplateEditOpen} onOpenChange={(val) => { if (!val) resetTemplateForm(); setIsTemplateEditOpen(val); }}>
-                <DialogContent className="max-w-md">
-                    <DialogHeader>
-                        <DialogTitle>{editingTemplate ? "Edit Template" : "New Template"}</DialogTitle>
-                        <DialogDescription>Use {`{{name}}`} as a placeholder for the recipient.</DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                        <div className="space-y-2">
-                            <Label>Name</Label>
-                            <Input
-                                value={templateForm.name}
-                                maxLength={80}
-                                onChange={e => setTemplateForm({ ...templateForm, name: e.target.value })}
-                                placeholder="e.g. Birthday - Warm"
-                            />
-                            <p className="text-[10px] text-slate-400">{templateForm.name.length}/80 • min 3</p>
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Type</Label>
-                            <Select value={templateForm.type} onValueChange={v => setTemplateForm({ ...templateForm, type: v as "Birthday" | "Anniversary" })}>
-                                <SelectTrigger><SelectValue /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="Birthday">Birthday</SelectItem>
-                                    <SelectItem value="Anniversary">Anniversary</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Message</Label>
-                            <Textarea
-                                value={templateForm.message}
-                                maxLength={500}
-                                onChange={e => setTemplateForm({ ...templateForm, message: e.target.value })}
-                                placeholder="Happy Birthday, {{name}}!"
-                                rows={4}
-                            />
-                            <p className="text-[10px] text-slate-400">{templateForm.message.length}/500 • must include {`{{name}}`}</p>
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsTemplateEditOpen(false)}>Cancel</Button>
-                        <Button className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white font-bold" onClick={handleSaveTemplate}>
-                            {editingTemplate ? "Save" : "Create"}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            {/* Template Add/Edit - SideFormSheet */}
+            <SideFormSheet
+                open={isTemplateEditOpen}
+                onOpenChange={(val) => { setIsTemplateEditOpen(val); if (!val) resetTemplateForm(); }}
+                title={editingTemplate ? "Edit Template" : "New Template"}
+                description={`Use {{name}} as a placeholder for the recipient.`}
+                icon={<Edit size={20} />}
+                accentColor={editingTemplate ? "#7c3aed" : "#4f46e5"}
+                width="md"
+                submitLabel={editingTemplate ? "Save" : "Create"}
+                onSubmit={(e) => { e.preventDefault(); handleSaveTemplate(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Name" required hint={`${templateForm.name.length}/80 • min 3`}>
+                        <Input
+                            value={templateForm.name}
+                            maxLength={80}
+                            onChange={e => setTemplateForm({ ...templateForm, name: e.target.value })}
+                            placeholder="e.g. Birthday - Warm"
+                        />
+                    </Field>
+                    <Field label="Type">
+                        <Select value={templateForm.type} onValueChange={v => setTemplateForm({ ...templateForm, type: v as "Birthday" | "Anniversary" })}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Birthday">Birthday</SelectItem>
+                                <SelectItem value="Anniversary">Anniversary</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                    <Field label="Message" required hint={`${templateForm.message.length}/500 • must include {{name}}`}>
+                        <Textarea
+                            value={templateForm.message}
+                            maxLength={500}
+                            onChange={e => setTemplateForm({ ...templateForm, message: e.target.value })}
+                            placeholder="Happy Birthday, {{name}}!"
+                            rows={4}
+                        />
+                    </Field>
+                </div>
+            </SideFormSheet>
 
-            {/* Send Wish Dialog */}
-            <Dialog open={isWishDialogOpen} onOpenChange={setIsWishDialogOpen}>
-                <DialogContent className="max-w-md">
-                    <DialogHeader>
-                        <DialogTitle>Send a Wish</DialogTitle>
-                        <DialogDescription>
-                            {wishingCelebration && `To ${wishingCelebration.employeeName} · ${wishingCelebration.type}`}
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                        <div className={`h-20 rounded-xl bg-gradient-to-br ${cardTemplates.find(c => c.id === selectedCardTemplateId)?.gradient} flex items-center justify-center`}>
-                            <Gift size={32} className="text-white/90" />
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Message</Label>
-                            <Textarea
-                                value={wishMessage}
-                                maxLength={500}
-                                onChange={e => setWishMessage(e.target.value)}
-                                rows={4}
-                            />
-                            <p className="text-[10px] text-slate-400">{wishMessage.length}/500 • min 5</p>
-                        </div>
+            {/* Send Wish - SideFormSheet */}
+            <SideFormSheet
+                open={isWishDialogOpen}
+                onOpenChange={setIsWishDialogOpen}
+                title="Send a Wish"
+                description={wishingCelebration ? `To ${wishingCelebration.employeeName} · ${wishingCelebration.type}` : undefined}
+                icon={<Send size={20} />}
+                accentColor="#ec4899"
+                width="md"
+                submitLabel="Send Wish"
+                onSubmit={(e) => { e.preventDefault(); handleSendWish(); }}
+            >
+                <div className="space-y-4">
+                    <div className={`h-20 rounded-xl bg-gradient-to-br ${cardTemplates.find(c => c.id === selectedCardTemplateId)?.gradient} flex items-center justify-center`}>
+                        <Gift size={32} className="text-white/90" />
                     </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsWishDialogOpen(false)}>Cancel</Button>
-                        <Button className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white font-bold" onClick={handleSendWish}>
-                            <Send size={14} className="mr-1" /> Send Wish
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    <Field label="Message" required hint={`${wishMessage.length}/500 • min 5`}>
+                        <Textarea
+                            value={wishMessage}
+                            maxLength={500}
+                            onChange={e => setWishMessage(e.target.value)}
+                            rows={4}
+                        />
+                    </Field>
+                </div>
+            </SideFormSheet>
 
             {/* Card Designer Dialog */}
             <Dialog open={isCardDesigner} onOpenChange={setIsCardDesigner}>
