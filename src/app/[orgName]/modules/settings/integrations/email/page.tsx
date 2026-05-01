@@ -19,14 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/shared/components/ui/switch";
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogFooter,
-} from "@/shared/components/ui/dialog";
-import { Label } from "@/shared/components/ui/label";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -397,179 +390,156 @@ export default function EmailIntegrationsPage() {
                 </div>
             </div>
 
-            {/* Create Modal */}
-            <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
-                <DialogContent className="max-w-md rounded-none p-0 overflow-hidden shadow-2xl border-none">
-                    <div className="bg-gradient-to-r from-primary/80 to-primary px-5 py-4 text-white relative">
-                        <h2 className="text-base font-bold flex items-center gap-2">
-                            <Plus size={16} /> Connect Account
-                        </h2>
-                        <p className="text-xs opacity-80 mt-1">Add a new email or calendar integration.</p>
-                    </div>
-                    <div className="p-5 space-y-4 bg-white">
-                        <div className="space-y-1.5">
-                            <Label className="text-xs font-bold text-gray-600">Provider</Label>
-                            <Select
-                                value={newAccount.provider}
-                                onValueChange={(val) => {
-                                    setNewAccount((prev) => ({ ...prev, provider: val }));
-                                    if (formErrors.provider) setFormErrors((prev) => ({ ...prev, provider: undefined }));
-                                }}
-                            >
-                                <SelectTrigger className={`rounded-none border-zinc-200 h-9 ${formErrors.provider ? "border-red-500" : ""}`}>
-                                    <SelectValue placeholder="Select provider" />
-                                </SelectTrigger>
-                                <SelectContent className="rounded-none">
-                                    <SelectItem value="Microsoft Outlook">Microsoft Outlook</SelectItem>
-                                    <SelectItem value="Google Workspace">Google Workspace</SelectItem>
-                                </SelectContent>
-                            </Select>
-                            {formErrors.provider && <p className="text-xs text-red-500">{formErrors.provider}</p>}
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label className="text-xs font-bold text-gray-600">Email Address</Label>
-                            <Input
-                                placeholder="e.g., user@company.com"
-                                value={newAccount.email}
-                                onChange={(e) => {
-                                    setNewAccount((prev) => ({ ...prev, email: e.target.value }));
-                                    if (formErrors.email) setFormErrors((prev) => ({ ...prev, email: undefined }));
-                                }}
-                                className={`rounded-none border-zinc-200 h-9 text-sm ${formErrors.email ? "border-red-500" : ""}`}
-                            />
-                            {formErrors.email && <p className="text-xs text-red-500">{formErrors.email}</p>}
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label className="text-xs font-bold text-gray-600">Type</Label>
-                            <Select
-                                value={newAccount.type}
-                                onValueChange={(val) => {
-                                    setNewAccount((prev) => ({ ...prev, type: val }));
-                                    if (formErrors.type) setFormErrors((prev) => ({ ...prev, type: undefined }));
-                                }}
-                            >
-                                <SelectTrigger className={`rounded-none border-zinc-200 h-9 ${formErrors.type ? "border-red-500" : ""}`}>
-                                    <SelectValue placeholder="Select type" />
-                                </SelectTrigger>
-                                <SelectContent className="rounded-none">
-                                    <SelectItem value="Email">Email</SelectItem>
-                                    <SelectItem value="Calendar">Calendar</SelectItem>
-                                    <SelectItem value="Both">Both</SelectItem>
-                                </SelectContent>
-                            </Select>
-                            {formErrors.type && <p className="text-xs text-red-500">{formErrors.type}</p>}
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label className="text-xs font-bold text-gray-600">Description</Label>
-                            <Textarea
-                                placeholder="Optional notes about this integration..."
-                                value={newAccount.description}
-                                onChange={(e) => setNewAccount((prev) => ({ ...prev, description: e.target.value }))}
-                                className="rounded-none border-zinc-200 text-sm resize-none"
-                                rows={3}
-                            />
-                        </div>
-                    </div>
-                    <DialogFooter className="px-5 py-3 bg-zinc-50 border-t border-zinc-100 gap-3 sm:justify-end">
-                        <Button variant="ghost" onClick={() => setShowCreateModal(false)} className="rounded-none text-sm text-gray-600 h-9">
-                            Cancel
-                        </Button>
-                        <Button
-                            onClick={handleCreate}
-                            className="bg-primary hover:bg-primary/90 rounded-none text-sm px-6 h-9 shadow-md shadow-primary/20"
+            {/* Create Sheet */}
+            <SideFormSheet
+                open={showCreateModal}
+                onOpenChange={(o) => {
+                    setShowCreateModal(o);
+                    if (!o) {
+                        setNewAccount({ ...defaultFormState });
+                        setFormErrors({});
+                    }
+                }}
+                title="Connect Account"
+                description="Add a new email or calendar integration."
+                icon={<Plus size={20} />}
+                accentColor="#059669"
+                width="md"
+                submitLabel="Connect Account"
+                onSubmit={(e) => { e.preventDefault(); handleCreate(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Provider" required error={formErrors.provider || undefined}>
+                        <Select
+                            value={newAccount.provider}
+                            onValueChange={(val) => {
+                                setNewAccount((prev) => ({ ...prev, provider: val }));
+                                if (formErrors.provider) setFormErrors((prev) => ({ ...prev, provider: undefined }));
+                            }}
                         >
-                            Connect Account
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select provider" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Microsoft Outlook">Microsoft Outlook</SelectItem>
+                                <SelectItem value="Google Workspace">Google Workspace</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                    <Field label="Email Address" required error={formErrors.email || undefined}>
+                        <Input
+                            placeholder="e.g., user@company.com"
+                            value={newAccount.email}
+                            onChange={(e) => {
+                                setNewAccount((prev) => ({ ...prev, email: e.target.value }));
+                                if (formErrors.email) setFormErrors((prev) => ({ ...prev, email: undefined }));
+                            }}
+                        />
+                    </Field>
+                    <Field label="Type" required error={formErrors.type || undefined}>
+                        <Select
+                            value={newAccount.type}
+                            onValueChange={(val) => {
+                                setNewAccount((prev) => ({ ...prev, type: val }));
+                                if (formErrors.type) setFormErrors((prev) => ({ ...prev, type: undefined }));
+                            }}
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Email">Email</SelectItem>
+                                <SelectItem value="Calendar">Calendar</SelectItem>
+                                <SelectItem value="Both">Both</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                    <Field label="Description">
+                        <Textarea
+                            placeholder="Optional notes about this integration..."
+                            value={newAccount.description}
+                            onChange={(e) => setNewAccount((prev) => ({ ...prev, description: e.target.value }))}
+                            rows={3}
+                        />
+                    </Field>
+                </div>
+            </SideFormSheet>
 
-            {/* Edit Modal */}
-            <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
-                <DialogContent className="max-w-md rounded-none p-0 overflow-hidden shadow-2xl border-none">
-                    <div className="bg-gradient-to-r from-primary/80 to-primary px-5 py-4 text-white relative">
-                        <h2 className="text-base font-bold flex items-center gap-2">
-                            <Edit size={16} /> Edit Account
-                        </h2>
-                        <p className="text-xs opacity-80 mt-1">Update the integration settings for this account.</p>
-                    </div>
-                    <div className="p-5 space-y-4 bg-white">
-                        <div className="space-y-1.5">
-                            <Label className="text-xs font-bold text-gray-600">Provider</Label>
-                            <Select
-                                value={editForm.provider}
-                                onValueChange={(val) => {
-                                    setEditForm((prev) => ({ ...prev, provider: val }));
-                                    if (editFormErrors.provider) setEditFormErrors((prev) => ({ ...prev, provider: undefined }));
-                                }}
-                            >
-                                <SelectTrigger className={`rounded-none border-zinc-200 h-9 ${editFormErrors.provider ? "border-red-500" : ""}`}>
-                                    <SelectValue placeholder="Select provider" />
-                                </SelectTrigger>
-                                <SelectContent className="rounded-none">
-                                    <SelectItem value="Microsoft Outlook">Microsoft Outlook</SelectItem>
-                                    <SelectItem value="Google Workspace">Google Workspace</SelectItem>
-                                </SelectContent>
-                            </Select>
-                            {editFormErrors.provider && <p className="text-xs text-red-500">{editFormErrors.provider}</p>}
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label className="text-xs font-bold text-gray-600">Email Address</Label>
-                            <Input
-                                placeholder="e.g., user@company.com"
-                                value={editForm.email}
-                                onChange={(e) => {
-                                    setEditForm((prev) => ({ ...prev, email: e.target.value }));
-                                    if (editFormErrors.email) setEditFormErrors((prev) => ({ ...prev, email: undefined }));
-                                }}
-                                className={`rounded-none border-zinc-200 h-9 text-sm ${editFormErrors.email ? "border-red-500" : ""}`}
-                            />
-                            {editFormErrors.email && <p className="text-xs text-red-500">{editFormErrors.email}</p>}
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label className="text-xs font-bold text-gray-600">Type</Label>
-                            <Select
-                                value={editForm.type}
-                                onValueChange={(val) => {
-                                    setEditForm((prev) => ({ ...prev, type: val }));
-                                    if (editFormErrors.type) setEditFormErrors((prev) => ({ ...prev, type: undefined }));
-                                }}
-                            >
-                                <SelectTrigger className={`rounded-none border-zinc-200 h-9 ${editFormErrors.type ? "border-red-500" : ""}`}>
-                                    <SelectValue placeholder="Select type" />
-                                </SelectTrigger>
-                                <SelectContent className="rounded-none">
-                                    <SelectItem value="Email">Email</SelectItem>
-                                    <SelectItem value="Calendar">Calendar</SelectItem>
-                                    <SelectItem value="Both">Both</SelectItem>
-                                </SelectContent>
-                            </Select>
-                            {editFormErrors.type && <p className="text-xs text-red-500">{editFormErrors.type}</p>}
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label className="text-xs font-bold text-gray-600">Description</Label>
-                            <Textarea
-                                placeholder="Optional notes about this integration..."
-                                value={editForm.description}
-                                onChange={(e) => setEditForm((prev) => ({ ...prev, description: e.target.value }))}
-                                className="rounded-none border-zinc-200 text-sm resize-none"
-                                rows={3}
-                            />
-                        </div>
-                    </div>
-                    <DialogFooter className="px-5 py-3 bg-zinc-50 border-t border-zinc-100 gap-3 sm:justify-end">
-                        <Button variant="ghost" onClick={() => setShowEditModal(false)} className="rounded-none text-sm text-gray-600 h-9">
-                            Cancel
-                        </Button>
-                        <Button
-                            onClick={handleEdit}
-                            className="bg-primary hover:bg-primary/90 rounded-none text-sm px-6 h-9 shadow-md shadow-primary/20"
+            {/* Edit Sheet */}
+            <SideFormSheet
+                open={showEditModal}
+                onOpenChange={(o) => {
+                    setShowEditModal(o);
+                    if (!o) {
+                        setEditAccount(null);
+                        setEditForm({ ...defaultFormState });
+                        setEditFormErrors({});
+                    }
+                }}
+                title="Edit Account"
+                description="Update the integration settings for this account."
+                icon={<Edit size={20} />}
+                accentColor="#7c3aed"
+                width="md"
+                submitLabel="Save Changes"
+                onSubmit={(e) => { e.preventDefault(); handleEdit(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Provider" required error={editFormErrors.provider || undefined}>
+                        <Select
+                            value={editForm.provider}
+                            onValueChange={(val) => {
+                                setEditForm((prev) => ({ ...prev, provider: val }));
+                                if (editFormErrors.provider) setEditFormErrors((prev) => ({ ...prev, provider: undefined }));
+                            }}
                         >
-                            Save Changes
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select provider" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Microsoft Outlook">Microsoft Outlook</SelectItem>
+                                <SelectItem value="Google Workspace">Google Workspace</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                    <Field label="Email Address" required error={editFormErrors.email || undefined}>
+                        <Input
+                            placeholder="e.g., user@company.com"
+                            value={editForm.email}
+                            onChange={(e) => {
+                                setEditForm((prev) => ({ ...prev, email: e.target.value }));
+                                if (editFormErrors.email) setEditFormErrors((prev) => ({ ...prev, email: undefined }));
+                            }}
+                        />
+                    </Field>
+                    <Field label="Type" required error={editFormErrors.type || undefined}>
+                        <Select
+                            value={editForm.type}
+                            onValueChange={(val) => {
+                                setEditForm((prev) => ({ ...prev, type: val }));
+                                if (editFormErrors.type) setEditFormErrors((prev) => ({ ...prev, type: undefined }));
+                            }}
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Email">Email</SelectItem>
+                                <SelectItem value="Calendar">Calendar</SelectItem>
+                                <SelectItem value="Both">Both</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                    <Field label="Description">
+                        <Textarea
+                            placeholder="Optional notes about this integration..."
+                            value={editForm.description}
+                            onChange={(e) => setEditForm((prev) => ({ ...prev, description: e.target.value }))}
+                            rows={3}
+                        />
+                    </Field>
+                </div>
+            </SideFormSheet>
         </div>
     );
 }

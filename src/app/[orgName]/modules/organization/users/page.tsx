@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import SubHeader from "@/components/custom/SubHeader";
 import { CustomButton } from "@/components/custom/CustomButton";
+import { useParams, useRouter } from "next/navigation";
 import {
     Dialog,
     DialogContent,
@@ -46,6 +47,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { axiosInstance } from "@/lib/axios";
+import { updateOrgUser } from "@/modules/crm/organizations/hooks/orgHooks";
+import { getAllRolesNPermissions } from "@/hooks/roleNPermissionHooks";
+import { decryptData } from "@/utils/crypto";
+import { ROLE_DISPLAY_NAMES } from "@/shared/utils/module-permission-map";
 
 type OrgUser = {
     memberId: string;
@@ -57,9 +62,54 @@ type OrgUser = {
 };
 
 export default function UsersListPage() {
+    const router = useRouter();
+    const params = useParams();
+    const orgName =
+        (params?.orgName as string) ||
+        (typeof window !== "undefined" ? localStorage.getItem("orgName") || "" : "");
     const [searchQuery, setSearchQuery] = useState("");
     const [loading, setLoading] = useState(false);
     const [users, setUsers] = useState<OrgUser[]>([]);
+    const [deactivatingId, setDeactivatingId] = useState<string | null>(null);
+
+    const handleExportCSV = () => {
+        const header = ["Name", "Email", "Role", "Status", "Joined"];
+        const rows = users.map((u) => [
+            u.name || "",
+            u.email || "",
+            u.role || "",
+            u.orgActive ? "Active" : "Inactive",
+            u.joinedAt ? new Date(u.joinedAt).toLocaleDateString() : "",
+        ]);
+        const escape = (v: string) => `"${String(v).replace(/"/g, '""')}"`;
+        const csv = [header, ...rows].map((r) => r.map(escape).join(",")).join("\n");
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `org-users-${new Date().toISOString().slice(0, 10)}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        toast.success("CSV exported");
+    };
+
+    const handleDeactivateUser = async (user: OrgUser) => {
+        setDeactivatingId(user.memberId);
+        try {
+            await updateOrgUser(user.memberId, { orgActive: false });
+            setUsers((prev) =>
+                prev.map((u) => (u.memberId === user.memberId ? { ...u, orgActive: false } : u))
+            );
+            toast.success(`Revoked access for ${user.name}`);
+        } catch (err: any) {
+            console.error("Failed to deactivate user:", err);
+            toast.error(err?.response?.data?.message || "Failed to deactivate user");
+        } finally {
+            setDeactivatingId(null);
+        }
+    };
     
     // Form and Dialog State
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -69,21 +119,39 @@ export default function UsersListPage() {
         email: "",
         role: ""
     });
-    const [roles, setRoles] = useState<{name: string, id: string}[]>([]);
+    const [roles, setRoles] = useState<{ name: string; id: string; roleId: string; isCustom?: boolean }[]>([]);
 
     useEffect(() => {
         const fetchRoles = async () => {
             try {
-                const res = await axiosInstance.get("/role-permission/all?scope=sc-org");
-                // The roles might be encrypted or nested based on other pages logic
-                // But for now we try to get a basic list
-                const data = res?.data?.permissions || res?.data?.roles || [];
-                // Simple extraction for the dropdown
-                if (Array.isArray(data)) {
-                    setRoles(data.map((r: any) => ({ name: r.name, id: r.role || r.name })));
+                const orgId =
+                    (typeof window !== "undefined" &&
+                        (localStorage.getItem("orgID") || localStorage.getItem("orgId"))) ||
+                    "";
+                const params: any = { scope: "sc-org" };
+                if (orgId) params.orgId = orgId;
+                const res = await getAllRolesNPermissions(params);
+
+                let list: any[] = [];
+                if (res?.data?.permissions && res?.data?.iv) {
+                    list = decryptData(res.data.permissions, res.data.iv) || [];
+                } else if (Array.isArray(res?.data?.roles)) {
+                    list = res.data.roles;
+                } else if (Array.isArray(res?.data)) {
+                    list = res.data;
                 }
+
+                setRoles(
+                    list.map((r: any) => ({
+                        name: ROLE_DISPLAY_NAMES[r.name] || r.name,
+                        id: r.role || r.name,
+                        roleId: r._id || r.id || r.role || r.name,
+                        isCustom: !!r.isCustom,
+                    }))
+                );
             } catch (e) {
                 console.error("Failed to load roles", e);
+                toast.error("Failed to load roles for invitation");
             }
         };
         fetchRoles();
@@ -132,10 +200,13 @@ export default function UsersListPage() {
 
         setIsInviting(true);
         try {
+            // Find the selected role to send both slug and roleId — backend can pick either.
+            const selectedRole = roles.find((r) => r.id === inviteData.role);
             await axiosInstance.post("/organization/createInvite", {
                 email: inviteData.email.trim(),
-                role: inviteData.role,
-                name: inviteData.name.trim() 
+                role: inviteData.role, // ROLES enum slug, e.g. "OrgAdmin", "OrgCustom"
+                roleId: selectedRole?.roleId, // RolePermission _id (preferred by new backend)
+                name: inviteData.name.trim(),
             });
             toast.success(`Invitation sent successfully to ${inviteData.email}`);
             setIsDialogOpen(false);
@@ -186,7 +257,7 @@ export default function UsersListPage() {
                 ]}
                 rightControls={
                     <div className="flex gap-2">
-                        <CustomButton variant="outline" className="rounded-xl h-10 px-4 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 font-semibold" onClick={() => toast.success("CSV export started")}>
+                        <CustomButton variant="outline" className="rounded-xl h-10 px-4 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 font-semibold" onClick={handleExportCSV}>
                             <Download className="w-4 h-4 mr-2" /> Export CSV
                         </CustomButton>
                         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -370,12 +441,20 @@ export default function UsersListPage() {
                                                     <DropdownMenuItem className="gap-3 text-xs font-medium py-2.5 cursor-pointer" onClick={() => toast.info(`Emailing ${user.name}`)}>
                                                         <Mail className="w-4 h-4 text-zinc-400" /> Send Message
                                                     </DropdownMenuItem>
-                                                    <DropdownMenuItem className="gap-3 text-xs font-medium py-2.5 cursor-pointer" onClick={() => toast.info(`Viewing ${user.name}'s permissions`)}>
+                                                    <DropdownMenuItem
+                                                        className="gap-3 text-xs font-medium py-2.5 cursor-pointer"
+                                                        onClick={() => {
+                                                            const target = orgName
+                                                                ? `/${orgName}/modules/administration/roles/assignments?memberId=${user.memberId}`
+                                                                : `/modules/administration/roles/assignments?memberId=${user.memberId}`;
+                                                            router.push(target);
+                                                        }}
+                                                    >
                                                         <ShieldCheck className="w-4 h-4 text-zinc-400" /> Manage Privileges
                                                     </DropdownMenuItem>
                                                     <DropdownMenuSeparator className="bg-zinc-100 dark:bg-zinc-800" />
-                                                    <DropdownMenuItem className="gap-3 text-xs font-medium py-2.5 cursor-pointer text-red-600 focus:bg-red-50 dark:focus:bg-red-950/20" onClick={() => toast.error(`Revoked access for ${user.name}`)}>
-                                                        Deactivate Access
+                                                    <DropdownMenuItem className="gap-3 text-xs font-medium py-2.5 cursor-pointer text-red-600 focus:bg-red-50 dark:focus:bg-red-950/20" disabled={deactivatingId === user.memberId || !user.orgActive} onClick={() => handleDeactivateUser(user)}>
+                                                        {deactivatingId === user.memberId ? "Deactivating..." : "Deactivate Access"}
                                                     </DropdownMenuItem>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>

@@ -20,6 +20,7 @@ import { useBrandingStore } from "../../../../../lib/useBrandingStore"
 import { toast } from "sonner"
 import Link from "next/link"
 import { useParams } from "next/navigation"
+import { getOrgAdminSettings, updateOrgAdminSettings } from "@/hooks/orgAdminHooks"
 
 const DEFAULT_LOGO = "/images/cubicleweb.png"
 
@@ -36,6 +37,7 @@ export default function OrgBrandingPage() {
     const [logoUrl, setLogoUrl] = useState(storeLogoUrl)
     const [loginLogoUrl, setLoginLogoUrl] = useState(storeLoginLogoUrl)
     const [mounted, setMounted] = useState(false)
+    const [saving, setSaving] = useState(false)
 
     const mainLogoInputRef = useRef<HTMLInputElement>(null)
     const loginLogoInputRef = useRef<HTMLInputElement>(null)
@@ -50,7 +52,23 @@ export default function OrgBrandingPage() {
         setLoginLogoUrl(storeLoginLogoUrl)
     }, [storeLogoUrl, storeLoginLogoUrl, storeOrgName])
 
-    const handleApplyChanges = () => {
+    useEffect(() => {
+        (async () => {
+            try {
+                const res = await getOrgAdminSettings()
+                const s = res?.data?.settings || res?.data?.data || res?.data || {}
+                const remoteName = s?.branding?.companyDisplayName
+                if (remoteName) {
+                    setOrgName(remoteName)
+                    setBranding({ orgName: remoteName })
+                }
+            } catch (err) {
+                // Silent — fall back to Zustand store value
+            }
+        })()
+    }, [setBranding])
+
+    const handleApplyChanges = async () => {
         const trimmedName = orgName.trim();
         if (!trimmedName) {
             toast.error("Organization name is required");
@@ -63,12 +81,21 @@ export default function OrgBrandingPage() {
             return;
         }
 
-        setBranding({
-            orgName: trimmedName,
-            logoUrl,
-            loginLogoUrl
-        })
-        toast.success("Brand identity updated successfully!")
+        try {
+            setSaving(true)
+            await updateOrgAdminSettings({ branding: { companyDisplayName: trimmedName } })
+            setBranding({
+                orgName: trimmedName,
+                logoUrl,
+                loginLogoUrl
+            })
+            toast.success("Brand identity updated successfully!")
+        } catch (err: any) {
+            console.error("Failed to update branding:", err)
+            toast.error(err?.response?.data?.message || "Failed to save brand identity")
+        } finally {
+            setSaving(false)
+        }
     }
 
     const handleReset = () => {
@@ -152,9 +179,10 @@ export default function OrgBrandingPage() {
                     <Button
                         className="h-9 bg-primary text-primary-foreground gap-2 font-bold shadow-lg shadow-primary/20 transition-all active:scale-95 hover:bg-primary/90"
                         onClick={handleApplyChanges}
+                        disabled={saving}
                     >
                         <Save className="w-4 h-4" />
-                        Save Identity
+                        {saving ? "Saving..." : "Save Identity"}
                     </Button>
                 </div>
             </div>

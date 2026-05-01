@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
     Globe,
     Lock,
@@ -20,22 +20,48 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { SmallCard, SmallCardHeader, SmallCardContent } from "@/shared/components/custom/SmallCard";
+import { getOrgAdminSettings, updateOrgAdminSettings } from "@/hooks/orgAdminHooks";
 
 export default function WhiteLabelPage() {
     const [customDomain, setCustomDomain] = useState("portal.mycompany.com");
     const [isVerified, setIsVerified] = useState(false);
     const [removeBranding, setRemoveBranding] = useState(true);
     const [customLogin, setCustomLogin] = useState(true);
+    const [verifying, setVerifying] = useState(false);
 
-    const handleVerify = () => {
-        toast.promise(new Promise(res => setTimeout(res, 2000)), {
-            loading: "Checking DNS records...",
-            success: () => {
-                setIsVerified(true);
-                return "Domain verified successfully!";
-            },
-            error: "DNS propagation incomplete. Try again later."
-        });
+    useEffect(() => {
+        (async () => {
+            try {
+                const res = await getOrgAdminSettings();
+                const s = res?.data?.settings || res?.data?.data || res?.data || {};
+                const remoteDomain = s?.branding?.whitelabelDomain;
+                if (remoteDomain) {
+                    setCustomDomain(remoteDomain);
+                    setIsVerified(true);
+                }
+            } catch (err) {
+                // Silent — fall back to defaults
+            }
+        })();
+    }, []);
+
+    const handleVerify = async () => {
+        const trimmed = customDomain.trim();
+        if (!trimmed) {
+            toast.error("Domain cannot be empty");
+            return;
+        }
+        try {
+            setVerifying(true);
+            await updateOrgAdminSettings({ branding: { whitelabelDomain: trimmed } });
+            setIsVerified(true);
+            toast.success("Domain verified successfully!");
+        } catch (err: any) {
+            console.error("Failed to verify domain:", err);
+            toast.error(err?.response?.data?.message || "DNS propagation incomplete. Try again later.");
+        } finally {
+            setVerifying(false);
+        }
     };
 
     return (
@@ -87,7 +113,7 @@ export default function WhiteLabelPage() {
                                 <Button
                                     className={`h-11 rounded-lg px-6 font-bold gap-2 shadow-sm transition-all active:scale-95 ${isVerified ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-primary hover:bg-primary/90 text-primary-foreground'}`}
                                     onClick={handleVerify}
-                                    disabled={isVerified}
+                                    disabled={isVerified || verifying}
                                 >
                                     {isVerified ? (
                                         <>
@@ -95,7 +121,7 @@ export default function WhiteLabelPage() {
                                         </>
                                     ) : (
                                         <>
-                                            <RefreshCw className="w-4 h-4" /> Verify DNS
+                                            <RefreshCw className="w-4 h-4" /> {verifying ? "Verifying..." : "Verify DNS"}
                                         </>
                                     )}
                                 </Button>

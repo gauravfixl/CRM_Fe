@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
     Coins,
     ArrowLeftRight,
@@ -26,17 +26,36 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { getOrgAdminSettings, updateOrgAdminSettings } from "@/hooks/orgAdminHooks";
 
 export default function CurrencySettingsPage() {
     const [baseCurrency, setBaseCurrency] = useState("USD");
     const [autoUpdateRates, setAutoUpdateRates] = useState(true);
+    const [saving, setSaving] = useState(false);
 
-    const handleSave = () => {
-        toast.promise(new Promise(res => setTimeout(res, 1000)), {
-            loading: "Updating ledger configuration...",
-            success: "Currency settings saved",
-            error: "Failed to update currency"
-        });
+    useEffect(() => {
+        (async () => {
+            try {
+                const res = await getOrgAdminSettings();
+                const s = res?.data?.settings || res?.data?.data || res?.data || {};
+                if (s?.currency) setBaseCurrency(s.currency);
+            } catch (err) {
+                // Silent — fall back to default
+            }
+        })();
+    }, []);
+
+    const handleSave = async () => {
+        try {
+            setSaving(true);
+            await updateOrgAdminSettings({ currency: baseCurrency });
+            toast.success("Currency settings saved");
+        } catch (err: any) {
+            console.error("Failed to save currency:", err);
+            toast.error(err?.response?.data?.message || "Failed to update currency");
+        } finally {
+            setSaving(false);
+        }
     };
 
     return (
@@ -50,9 +69,10 @@ export default function CurrencySettingsPage() {
                 <Button
                     className="h-9 bg-slate-900 hover:bg-slate-800 text-white gap-2 font-bold shadow-lg shadow-slate-200 rounded-none transition-all hover:translate-y-[-1px]"
                     onClick={handleSave}
+                    disabled={saving}
                 >
                     <Save className="w-4 h-4" />
-                    Save Configuration
+                    {saving ? "Saving..." : "Save Configuration"}
                 </Button>
             </div>
 

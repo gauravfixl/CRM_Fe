@@ -29,7 +29,7 @@ import {
 } from "@/shared/components/ui/select"
 import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet"
 import { showSuccess, showWarning, showError } from "@/utils/toast"
-import { createOrgInvite } from "@/modules/crm/organizations/hooks/orgHooks"
+import { createOrgInvite, updateOrgUser } from "@/modules/crm/organizations/hooks/orgHooks"
 
 interface GuestUser {
     id: string
@@ -93,12 +93,8 @@ export default function GuestUsersPage() {
         setInviteTouched({})
     }
 
-    // Static guest data
-    const [staticGuests, setStaticGuests] = useState<GuestUser[]>([
-        { id: "g1", name: "Emily Chen", email: "e.chen@partner.co", domain: "partner.co", accessLevel: "Viewer", status: "Active", expires: "2026-06-15" },
-        { id: "g2", name: "Marco Rossi", email: "m.rossi@vendor.io", domain: "vendor.io", accessLevel: "Editor", status: "Active", expires: "2026-05-01" },
-        { id: "g3", name: "Priya Sharma", email: "p.sharma@client.org", domain: "client.org", accessLevel: "Viewer", status: "Expired", expires: "2026-02-28" },
-    ])
+    // No static data — guests are now derived purely from the API
+    const [staticGuests, setStaticGuests] = useState<GuestUser[]>([])
 
     const fetchUsers = async () => {
         setLoading(true)
@@ -208,11 +204,22 @@ export default function GuestUsersPage() {
     const handleRevoke = async () => {
         if (!revokeTarget) return
         setRevoking(true)
-        await new Promise((r) => setTimeout(r, 200))
-        setStaticGuests((prev) => prev.filter((g) => g.id !== revokeTarget.id))
-        showWarning(`Access revoked for ${revokeTarget.name}`)
-        setRevokeTarget(null)
-        setRevoking(false)
+        try {
+            const isApiUser = !!revokeTarget._id
+            if (isApiUser) {
+                await updateOrgUser(revokeTarget._id as string, { orgActive: false })
+                await fetchUsers()
+            } else {
+                setStaticGuests((prev) => prev.filter((g) => g.id !== revokeTarget.id))
+            }
+            showWarning(`Access revoked for ${revokeTarget.name}`)
+            setRevokeTarget(null)
+        } catch (err: any) {
+            console.error("Failed to revoke access:", err)
+            showError(err?.response?.data?.message || "Failed to revoke access")
+        } finally {
+            setRevoking(false)
+        }
     }
 
     const accessBadge = (level: string) => {

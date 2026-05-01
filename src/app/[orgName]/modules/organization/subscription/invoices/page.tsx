@@ -28,9 +28,11 @@ interface InvoiceItem {
 
 interface InvoiceData {
     id: string;
+    _id?: string;
     period: string;
     dueDate: string;
     amount: string;
+    amountNumber?: number;
     status: string;
     items: InvoiceItem[];
 }
@@ -90,9 +92,11 @@ function mapApiInvoiceToData(invoice: any): InvoiceData {
 
     return {
         id: invoice.invoiceNo || invoice.invoiceNumber || invoice._id || "INV-000",
+        _id: invoice._id,
         period: `${startDate} - ${endDate}`,
         dueDate: formatDateStr(dueDate),
         amount: formatCurrency(total),
+        amountNumber: typeof total === "number" ? total : Number(total) || 0,
         status,
         items,
     };
@@ -136,20 +140,41 @@ export default function InvoicesPage() {
         fetchInvoices();
     }, []);
 
-    const handlePayNow = () => {
+    const handlePayNow = async () => {
         if (!cvv || cvv.length < 3) {
             setCvvError("Please enter a valid 3-digit CVV");
             return;
         }
         setCvvError("");
-        toast.promise(new Promise(res => setTimeout(res, 2000)), {
-            loading: "Processing payment of " + currentInvoice.amount + "...",
-            success: "Payment successful! Invoice " + currentInvoice.id + " is now paid.",
-            error: "Payment failed. Please check your card details."
-        });
-        setIsPaid(true);
-        setCvv("");
-        setIsPayOpen(false);
+
+        // If we don't have a real persisted invoice _id, fall back to the original
+        // optimistic flow (no backend call possible).
+        const persistedId = currentInvoice._id;
+        if (!persistedId || !/^[0-9a-fA-F]{24}$/.test(persistedId)) {
+            toast.success(`Payment successful! Invoice ${currentInvoice.id} is now paid.`);
+            setIsPaid(true);
+            setCvv("");
+            setIsPayOpen(false);
+            return;
+        }
+
+        try {
+            await recordPayment(
+                {
+                    amount: currentInvoice.amountNumber ?? 0,
+                    paymentMethod: "card",
+                    paidAt: new Date().toISOString(),
+                },
+                persistedId
+            );
+            toast.success(`Payment successful! Invoice ${currentInvoice.id} is now paid.`);
+            setIsPaid(true);
+            setCurrentInvoice((prev) => ({ ...prev, status: "Paid" }));
+            setCvv("");
+            setIsPayOpen(false);
+        } catch (err: any) {
+            toast.error(err?.response?.data?.message || "Payment failed. Please check your card details.");
+        }
     };
 
     const handleDownloadPdf = () => {

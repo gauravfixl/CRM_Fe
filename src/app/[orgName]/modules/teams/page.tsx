@@ -438,6 +438,7 @@ export default function GroupsPage() {
                 open={addMembersOpen}
                 onOpenChange={setAddMembersOpen}
                 groupName={selectedGroup?.name}
+                groupId={selectedGroup?.id}
             />
             <AssignAccessModal
                 open={assignAccessOpen}

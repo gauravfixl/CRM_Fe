@@ -17,6 +17,7 @@ import {
   RBACPermissionMatrix,
   PermissionEntry,
 } from "@/shared/components/rbac/RBACPermissionMatrix"
+import { ROLES, ROLE_SCOPE } from "@/shared/utils/module-permission-map"
 
 const roleSchema = z.object({
   name: z.string().min(2, "Role name must be at least 2 characters"),
@@ -64,8 +65,14 @@ export default function CreateRolePage() {
 
   const onSubmit = async (data: RoleFormValues) => {
     try {
+      const orgId =
+        (typeof window !== "undefined" &&
+          (localStorage.getItem("orgID") || localStorage.getItem("orgId"))) ||
+        undefined
       const payload = {
+        role: ROLES.ORG_CUSTOM,        // backend enum slug for custom org-scope roles
         name: data.name,
+        scope: ROLE_SCOPE.ORGANIZATION, // "sc-org" — required by Mongoose schema
         description: data.description,
         permissions: data.permissions,
         isCustom: true,

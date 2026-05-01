@@ -23,12 +23,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import {
-    Dialog,
-    DialogContent,
-    DialogFooter,
-} from "@/shared/components/ui/dialog";
-import { Label } from "@/shared/components/ui/label";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -480,86 +475,76 @@ export default function APIKeysPage() {
                 </div>
             </div>
 
-            {/* Create Modal */}
-            <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
-                <DialogContent className="max-w-md rounded-none p-0 overflow-hidden shadow-2xl border-none">
-                    <div className="bg-gradient-to-r from-primary/80 to-primary px-5 py-4 text-white relative">
-                        <h2 className="text-base font-bold flex items-center gap-2">
-                            <Plus size={16} /> Generate API Key
-                        </h2>
-                        <p className="text-xs opacity-80 mt-1">Create a new API key for programmatic access.</p>
-                    </div>
-                    <div className="p-5 space-y-4 bg-white">
-                        <div className="space-y-1.5">
-                            <Label className="text-xs font-bold text-gray-600">Key Name</Label>
-                            <Input
-                                placeholder="e.g., Production API"
-                                value={newKey.name}
-                                onChange={(e) => {
-                                    setNewKey((prev) => ({ ...prev, name: e.target.value }));
-                                    if (formErrors.name) setFormErrors((prev) => ({ ...prev, name: undefined }));
-                                }}
-                                className={`rounded-none border-zinc-200 h-9 text-sm ${formErrors.name ? "border-red-500" : ""}`}
-                            />
-                            {formErrors.name && <p className="text-xs text-red-500">{formErrors.name}</p>}
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label className="text-xs font-bold text-gray-600">Permissions</Label>
-                            <Select
-                                value={newKey.permissions}
-                                onValueChange={(val) => {
-                                    setNewKey((prev) => ({ ...prev, permissions: val }));
-                                    if (formErrors.permissions) setFormErrors((prev) => ({ ...prev, permissions: undefined }));
-                                }}
-                            >
-                                <SelectTrigger className={`rounded-none border-zinc-200 h-9 ${formErrors.permissions ? "border-red-500" : ""}`}>
-                                    <SelectValue placeholder="Select permissions" />
-                                </SelectTrigger>
-                                <SelectContent className="rounded-none">
-                                    <SelectItem value="Full Access">Full Access</SelectItem>
-                                    <SelectItem value="Read Only">Read Only</SelectItem>
-                                    <SelectItem value="Write Only">Write Only</SelectItem>
-                                    <SelectItem value="Webhooks Only">Webhooks Only</SelectItem>
-                                </SelectContent>
-                            </Select>
-                            {formErrors.permissions && <p className="text-xs text-red-500">{formErrors.permissions}</p>}
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label className="text-xs font-bold text-gray-600">Expiry</Label>
-                            <Select
-                                value={newKey.expiry}
-                                onValueChange={(val) => {
-                                    setNewKey((prev) => ({ ...prev, expiry: val }));
-                                    if (formErrors.expiry) setFormErrors((prev) => ({ ...prev, expiry: undefined }));
-                                }}
-                            >
-                                <SelectTrigger className={`rounded-none border-zinc-200 h-9 ${formErrors.expiry ? "border-red-500" : ""}`}>
-                                    <SelectValue placeholder="Select expiry period" />
-                                </SelectTrigger>
-                                <SelectContent className="rounded-none">
-                                    <SelectItem value="30 days">30 days</SelectItem>
-                                    <SelectItem value="90 days">90 days</SelectItem>
-                                    <SelectItem value="1 year">1 year</SelectItem>
-                                    <SelectItem value="Never">Never</SelectItem>
-                                </SelectContent>
-                            </Select>
-                            {formErrors.expiry && <p className="text-xs text-red-500">{formErrors.expiry}</p>}
-                        </div>
-                    </div>
-                    <DialogFooter className="px-5 py-3 bg-zinc-50 border-t border-zinc-100 gap-3 sm:justify-end">
-                        <Button variant="ghost" onClick={() => setShowCreateModal(false)} className="rounded-none text-sm text-gray-600 h-9">
-                            Cancel
-                        </Button>
-                        <Button
-                            onClick={handleCreate}
-                            disabled={submitting}
-                            className="bg-primary hover:bg-primary/90 rounded-none text-sm px-6 h-9 shadow-md shadow-primary/20 disabled:opacity-60"
+            {/* Create Sheet */}
+            <SideFormSheet
+                open={showCreateModal}
+                onOpenChange={(o) => {
+                    setShowCreateModal(o);
+                    if (!o) {
+                        setNewKey({ ...defaultFormState });
+                        setFormErrors({});
+                    }
+                }}
+                title="Generate API Key"
+                description="Create a new API key for programmatic access."
+                icon={<Key size={20} />}
+                accentColor="#4f46e5"
+                width="md"
+                loading={submitting}
+                submitLabel={submitting ? "Generating..." : "Generate Key"}
+                onSubmit={(e) => { e.preventDefault(); handleCreate(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Key Name" required error={formErrors.name || undefined}>
+                        <Input
+                            placeholder="e.g., Production API"
+                            value={newKey.name}
+                            onChange={(e) => {
+                                setNewKey((prev) => ({ ...prev, name: e.target.value }));
+                                if (formErrors.name) setFormErrors((prev) => ({ ...prev, name: undefined }));
+                            }}
+                        />
+                    </Field>
+                    <Field label="Permissions" required error={formErrors.permissions || undefined}>
+                        <Select
+                            value={newKey.permissions}
+                            onValueChange={(val) => {
+                                setNewKey((prev) => ({ ...prev, permissions: val }));
+                                if (formErrors.permissions) setFormErrors((prev) => ({ ...prev, permissions: undefined }));
+                            }}
                         >
-                            {submitting ? (<><Loader2 size={14} className="animate-spin mr-2" /> Generating...</>) : "Generate Key"}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select permissions" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Full Access">Full Access</SelectItem>
+                                <SelectItem value="Read Only">Read Only</SelectItem>
+                                <SelectItem value="Write Only">Write Only</SelectItem>
+                                <SelectItem value="Webhooks Only">Webhooks Only</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                    <Field label="Expiry" required error={formErrors.expiry || undefined}>
+                        <Select
+                            value={newKey.expiry}
+                            onValueChange={(val) => {
+                                setNewKey((prev) => ({ ...prev, expiry: val }));
+                                if (formErrors.expiry) setFormErrors((prev) => ({ ...prev, expiry: undefined }));
+                            }}
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select expiry period" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="30 days">30 days</SelectItem>
+                                <SelectItem value="90 days">90 days</SelectItem>
+                                <SelectItem value="1 year">1 year</SelectItem>
+                                <SelectItem value="Never">Never</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                </div>
+            </SideFormSheet>
         </div>
     );
 }

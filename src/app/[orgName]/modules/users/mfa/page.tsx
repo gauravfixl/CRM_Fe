@@ -17,6 +17,7 @@ import SubHeader from "@/components/custom/SubHeader"
 import { Badge } from "@/components/ui/badge"
 import { showSuccess, showWarning, showError } from "@/utils/toast"
 import { fetchUsersApi, updateOrgUser } from "@/modules/crm/organizations/hooks/orgHooks"
+import { updateOrgAdminSettings } from "@/hooks/orgAdminHooks"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -46,6 +47,20 @@ export default function MFAEnrollmentPage() {
     const [statusFilter, setStatusFilter] = useState<"All" | "Enabled" | "Disabled">("All")
     const [users, setUsers] = useState<MfaUser[]>([])
     const [loading, setLoading] = useState(true)
+    const [enforcing, setEnforcing] = useState(false)
+
+    const handleEnforceMfa = async () => {
+        setEnforcing(true)
+        try {
+            await updateOrgAdminSettings({ security: { enforceMFA: true } })
+            showSuccess("Mfa policy enforced for all users")
+        } catch (err: any) {
+            console.error("Failed to enforce MFA:", err)
+            showError(err?.response?.data?.message || "Failed to enforce MFA policy")
+        } finally {
+            setEnforcing(false)
+        }
+    }
 
     const loadUsers = async () => {
         try {
@@ -107,9 +122,10 @@ export default function MFAEnrollmentPage() {
                 rightControls={
                     <CustomButton
                         className="bg-primary text-white text-xs rounded-none font-semibold"
-                        onClick={() => showSuccess("Mfa policy enforced for all users")}
+                        onClick={handleEnforceMfa}
+                        disabled={enforcing}
                     >
-                        Enforce mfa policy
+                        {enforcing ? "Enforcing..." : "Enforce mfa policy"}
                     </CustomButton>
                 }
             />

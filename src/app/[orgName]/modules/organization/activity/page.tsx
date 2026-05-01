@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useCallback } from "react"
 import {
     History,
     Filter,
@@ -25,6 +25,7 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { SmallCard, SmallCardHeader, SmallCardContent } from "@/shared/components/custom/SmallCard"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { toast } from "sonner"
 import axiosInstance from "@/lib/axios"
 
@@ -147,45 +148,56 @@ export default function OrgActivityPage() {
     const [activityList, setActivityList] = useState(activities)
     const [loading, setLoading] = useState(false)
     const [totalEvents, setTotalEvents] = useState(0)
+    const [refreshing, setRefreshing] = useState(false)
+    const [detailActivity, setDetailActivity] = useState<any | null>(null)
 
-    useEffect(() => {
-        async function fetchActivities() {
-            setLoading(true)
-            try {
-                const responses = await Promise.allSettled(
-                    MODULES.map((mod) => axiosInstance.get(`/activities/module/${mod}`))
-                )
-                let allItems: any[] = []
-                let total = 0
-                let anySuccess = false
+    const fetchActivities = useCallback(async () => {
+        try {
+            const responses = await Promise.allSettled(
+                MODULES.map((mod) => axiosInstance.get(`/activities/module/${mod}`))
+            )
+            let allItems: any[] = []
+            let total = 0
+            let anySuccess = false
 
-                for (const res of responses) {
-                    if (res.status === "fulfilled" && res.value?.data?.data) {
-                        anySuccess = true
-                        allItems = allItems.concat(res.value.data.data)
-                        if (res.value.data.pagination?.total) {
-                            total += res.value.data.pagination.total
-                        }
+            for (const res of responses) {
+                if (res.status === "fulfilled" && res.value?.data?.data) {
+                    anySuccess = true
+                    allItems = allItems.concat(res.value.data.data)
+                    if (res.value.data.pagination?.total) {
+                        total += res.value.data.pagination.total
                     }
                 }
+            }
 
-                if (anySuccess && allItems.length > 0) {
-                    allItems.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-                    setActivityList(allItems.map(mapApiActivity))
-                    setTotalEvents(total || allItems.length)
-                } else {
-                    setActivityList(activities)
-                    setTotalEvents(activities.length)
-                }
-            } catch {
+            if (anySuccess && allItems.length > 0) {
+                allItems.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                setActivityList(allItems.map(mapApiActivity))
+                setTotalEvents(total || allItems.length)
+            } else {
                 setActivityList(activities)
                 setTotalEvents(activities.length)
-            } finally {
-                setLoading(false)
             }
+        } catch {
+            setActivityList(activities)
+            setTotalEvents(activities.length)
         }
-        fetchActivities()
     }, [])
+
+    useEffect(() => {
+        (async () => {
+            setLoading(true)
+            await fetchActivities()
+            setLoading(false)
+        })()
+    }, [fetchActivities])
+
+    const handleRefresh = async () => {
+        setRefreshing(true)
+        await fetchActivities()
+        setRefreshing(false)
+        toast.success("Activity feed updated")
+    }
 
     const filteredActivities = activityList.filter(act =>
         act.action.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -194,7 +206,28 @@ export default function OrgActivityPage() {
     )
 
     const handleExport = () => {
-        toast.info("Exporting audit logs to CSV...")
+        const header = ["ID", "Type", "Action", "Actor", "Target", "Severity", "Timestamp"]
+        const rows = filteredActivities.map((a: any) => [
+            a.id || "",
+            a.type || "",
+            a.action || "",
+            a.actor || "",
+            a.target || "",
+            a.severity || "",
+            a.timestamp || "",
+        ])
+        const escape = (v: string) => `"${String(v).replace(/"/g, '""')}"`
+        const csv = [header, ...rows].map((r) => r.map(escape).join(",")).join("\n")
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement("a")
+        a.href = url
+        a.download = `admin-activity-${new Date().toISOString().slice(0, 10)}.csv`
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+        toast.success("Audit log exported to CSV")
     }
 
     return (
@@ -206,9 +239,9 @@ export default function OrgActivityPage() {
                     <p className="text-sm text-slate-500 mt-1">Real-time audit trail of all administrative events across the organization.</p>
                 </div>
                 <div className="flex gap-3">
-                    <CustomButton variant="outline" className="h-10 px-4 gap-2 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 font-semibold shadow-sm hover:translate-y-[-1px] transition-all" onClick={() => toast.success("Activity feed updated")}>
+                    <CustomButton variant="outline" className="h-10 px-4 gap-2 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 font-semibold shadow-sm hover:translate-y-[-1px] transition-all" onClick={handleRefresh} disabled={refreshing}>
                         <Clock className="w-4 h-4" />
-                        Refresh
+                        {refreshing ? "Refreshing..." : "Refresh"}
                     </CustomButton>
                     <CustomButton className="h-10 px-6 bg-indigo-600 hover:bg-indigo-700 text-white gap-2 font-bold shadow-xl border-0" onClick={handleExport}>
                         <Download className="w-4 h-4" />
@@ -328,7 +361,7 @@ export default function OrgActivityPage() {
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <CustomButton variant="ghost" size="sm" className="h-8 px-3 text-[10px] font-bold opacity-0 group-hover:opacity-100 transition-opacity text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/20 rounded-lg" onClick={() => toast.info(`Viewing details for ${act.id}`)}>
+                                        <CustomButton variant="ghost" size="sm" className="h-8 px-3 text-[10px] font-bold opacity-0 group-hover:opacity-100 transition-opacity text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/20 rounded-lg" onClick={() => setDetailActivity(act)}>
                                             View Details
                                         </CustomButton>
                                         <ChevronRight className="w-4 h-4 text-slate-300" />
@@ -350,9 +383,53 @@ export default function OrgActivityPage() {
                     </div>
                 </CardContent>
                 <CardFooter className="bg-slate-50/50 border-t border-slate-100 py-3 flex justify-center">
-                    <CustomButton variant="ghost" className="text-xs font-bold text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/20 px-6 rounded-xl" onClick={() => toast.promise(new Promise(res => setTimeout(res, 1000)), { loading: "Loading more events...", success: "Activity loaded", error: "Failed to load" })}>Load More Activity</CustomButton>
+                    <CustomButton variant="ghost" className="text-xs font-bold text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/20 px-6 rounded-xl" onClick={handleRefresh} disabled={refreshing}>
+                        {refreshing ? "Refreshing..." : "Load More Activity"}
+                    </CustomButton>
                 </CardFooter>
             </Card>
+
+            {/* VIEW DETAILS DIALOG */}
+            <Dialog open={!!detailActivity} onOpenChange={(open) => { if (!open) setDetailActivity(null); }}>
+                <DialogContent className="sm:max-w-lg rounded-2xl">
+                    <DialogHeader>
+                        <DialogTitle className="text-lg font-bold tracking-tight">Activity Details</DialogTitle>
+                        <DialogDescription className="text-xs">Full record for the selected admin event.</DialogDescription>
+                    </DialogHeader>
+                    {detailActivity && (
+                        <div className="space-y-3 text-sm">
+                            <div className="grid grid-cols-3 gap-2 items-baseline">
+                                <span className="col-span-1 text-[10px] uppercase font-bold text-slate-400 tracking-wider">ID</span>
+                                <span className="col-span-2 font-mono text-xs text-slate-700 break-all">{detailActivity.id}</span>
+                            </div>
+                            <div className="grid grid-cols-3 gap-2 items-baseline">
+                                <span className="col-span-1 text-[10px] uppercase font-bold text-slate-400 tracking-wider">Action</span>
+                                <span className="col-span-2 font-semibold text-slate-900">{detailActivity.action}</span>
+                            </div>
+                            <div className="grid grid-cols-3 gap-2 items-baseline">
+                                <span className="col-span-1 text-[10px] uppercase font-bold text-slate-400 tracking-wider">Type</span>
+                                <span className="col-span-2 text-slate-700">{detailActivity.type}</span>
+                            </div>
+                            <div className="grid grid-cols-3 gap-2 items-baseline">
+                                <span className="col-span-1 text-[10px] uppercase font-bold text-slate-400 tracking-wider">Actor</span>
+                                <span className="col-span-2 text-slate-700">{detailActivity.actor}</span>
+                            </div>
+                            <div className="grid grid-cols-3 gap-2 items-baseline">
+                                <span className="col-span-1 text-[10px] uppercase font-bold text-slate-400 tracking-wider">Target</span>
+                                <span className="col-span-2 text-slate-700">{detailActivity.target}</span>
+                            </div>
+                            <div className="grid grid-cols-3 gap-2 items-baseline">
+                                <span className="col-span-1 text-[10px] uppercase font-bold text-slate-400 tracking-wider">Severity</span>
+                                <Badge variant="outline" className="col-span-2 w-fit text-[10px] uppercase font-bold">{detailActivity.severity}</Badge>
+                            </div>
+                            <div className="grid grid-cols-3 gap-2 items-baseline">
+                                <span className="col-span-1 text-[10px] uppercase font-bold text-slate-400 tracking-wider">Timestamp</span>
+                                <span className="col-span-2 text-slate-700">{detailActivity.timestamp}</span>
+                            </div>
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useCallback, useRef } from "react"
 import {
   Plus,
   Search,
@@ -52,9 +52,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui
 import { toast } from "sonner"
 import { useParams, useSearchParams, useRouter } from "next/navigation"
 import { decryptData } from "@/utils/crypto"
-import { getAllRolesNPermissions, deleteRole } from "@/hooks/roleNPermissionHooks"
+import {
+  getAllRolesNPermissions,
+  deleteRole,
+  listOrgMembers,
+} from "@/hooks/roleNPermissionHooks"
 import useRolesStore from "@/lib/roleStore"
 import { getRoles } from "@/hooks/userHooks"
+import { useCachedFetch, invalidateCachePrefix } from "@/lib/swrCache"
+
+type Member = { role?: string; roleName?: string; [k: string]: any }
 
 export default function RolesAndPermissionsPage() {
   const params = useParams()
@@ -63,43 +70,111 @@ export default function RolesAndPermissionsPage() {
   const initialTab = searchParams.get("tab") || "roles"
   const [activeTab, setActiveTab] = useState(initialTab)
   const [searchQuery, setSearchQuery] = useState("")
-  const [loading, setLoading] = useState(true)
   const [orgName, setOrgName] = useState("")
 
   const orgRoles = useRolesStore((state) => state.roles?.organization) || []
 
+  // Resolve orgId once, synchronously, so the three cache keys are stable
+  // and multi-org users don't end up sharing a cached payload across orgs.
+  const orgId =
+    typeof window !== "undefined"
+      ? localStorage.getItem("orgID") || localStorage.getItem("orgId") || ""
+      : ""
+  const cacheScope = orgId || "default"
+
   useEffect(() => {
     setOrgName((params.orgName as string) || localStorage.getItem("orgName") || "")
-    fetchData()
-  }, [])
+  }, [params.orgName])
 
   useEffect(() => {
     const tab = searchParams.get("tab")
     if (tab) setActiveTab(tab)
   }, [searchParams])
 
-  const fetchData = async () => {
-    setLoading(true)
-    try {
-      const scopeParams = { scope: "sc-org" as const }
-      const rolesResp = await getAllRolesNPermissions(scopeParams)
-
-      if (rolesResp?.data?.permissions && rolesResp?.data?.iv) {
-        const decrypted = decryptData(rolesResp.data.permissions, rolesResp.data.iv)
-        useRolesStore.getState().setRoles((prev) => ({ ...prev, organization: decrypted }))
-      }
-
-      const simpleRolesResp = await getRoles(scopeParams)
-      if (simpleRolesResp?.data?.roles && simpleRolesResp?.data?.iv) {
-        const decryptedRoles = decryptData(simpleRolesResp.data.roles, simpleRolesResp.data.iv)
-        useRolesStore.getState().setSimpleRoles(decryptedRoles)
-      }
-    } catch (error) {
-      console.error("Error fetching roles:", error)
-      toast.error("Failed to load security directory")
-    } finally {
-      setLoading(false)
+  const fetchRoles = useCallback(async () => {
+    const scopeParams: Record<string, string> = { scope: "sc-org" }
+    if (orgId) scopeParams.orgId = orgId
+    const res = await getAllRolesNPermissions(scopeParams)
+    if (res?.data?.permissions && res?.data?.iv) {
+      return (decryptData(res.data.permissions, res.data.iv) || []) as any[]
     }
+    return [] as any[]
+  }, [orgId])
+
+  const fetchSimpleRoles = useCallback(async () => {
+    const scopeParams: Record<string, string> = { scope: "sc-org" }
+    if (orgId) scopeParams.orgId = orgId
+    const res = await getRoles(scopeParams)
+    if (res?.data?.roles && res?.data?.iv) {
+      return (decryptData(res.data.roles, res.data.iv) || []) as any[]
+    }
+    return [] as any[]
+  }, [orgId])
+
+  const fetchMembers = useCallback(async (): Promise<Member[]> => {
+    const res = await listOrgMembers({ page: 1, limit: 200 })
+    const apiMembers = res?.data?.users ?? res?.data?.members ?? []
+    return Array.isArray(apiMembers) ? apiMembers : []
+  }, [])
+
+  const {
+    data: rolesData,
+    loading: rolesLoading,
+    error: rolesError,
+    refetch: refetchRoles,
+  } = useCachedFetch<any[]>(`roles:org:${cacheScope}:full`, fetchRoles)
+
+  const { data: simpleRolesData, refetch: refetchSimpleRoles } = useCachedFetch<any[]>(
+    `roles:org:${cacheScope}:simple`,
+    fetchSimpleRoles,
+  )
+
+  const { data: membersData, refetch: refetchMembers } = useCachedFetch<Member[]>(
+    `members:org:${cacheScope}:p1l200`,
+    fetchMembers,
+  )
+
+  // Hydrate the shared zustand store from the cache hooks. Other pages already
+  // read roles via useRolesStore — keep that contract intact.
+  useEffect(() => {
+    if (rolesData)
+      useRolesStore.getState().setRoles((prev) => ({ ...prev, organization: rolesData }))
+  }, [rolesData])
+
+  useEffect(() => {
+    if (simpleRolesData) useRolesStore.getState().setSimpleRoles(simpleRolesData)
+  }, [simpleRolesData])
+
+  const members: Member[] = membersData ?? []
+  const loading = rolesLoading
+
+  const lastErrorToast = useRef<string | null>(null)
+  useEffect(() => {
+    if (!rolesError || orgRoles.length > 0) return
+    if (lastErrorToast.current === rolesError) return
+    lastErrorToast.current = rolesError
+    toast.error("Failed to load security directory")
+  }, [rolesError, orgRoles.length])
+
+  const fetchData = useCallback(async () => {
+    await Promise.allSettled([refetchRoles(), refetchSimpleRoles(), refetchMembers()])
+  }, [refetchRoles, refetchSimpleRoles, refetchMembers])
+
+  // Compute live user count per role from member list (frontend-side join).
+  // When backend includes `userCount` on roles, that is preferred.
+  const userCountByRoleName = useMemo(() => {
+    const map: Record<string, number> = {}
+    members.forEach((m) => {
+      const key = m.role || m.roleName || ""
+      if (!key) return
+      map[key] = (map[key] || 0) + 1
+    })
+    return map
+  }, [members])
+
+  const usersForRole = (role: any): number => {
+    if (typeof role.userCount === "number") return role.userCount
+    return userCountByRoleName[role.name] || userCountByRoleName[role.role] || 0
   }
 
   const filteredRoles = useMemo(() => {
@@ -123,6 +198,9 @@ export default function RolesAndPermissionsPage() {
         ...prev,
         organization: prev.organization.filter((r: any) => r._id !== roleId),
       }))
+      // Drop every cached roles payload so other tabs/pages re-read fresh on
+      // next mount instead of showing the just-deleted role.
+      invalidateCachePrefix("roles:org:")
       toast.success("Identity role purged from directory")
     } catch (error) {
       toast.error("Failed to release role")
@@ -255,14 +333,38 @@ export default function RolesAndPermissionsPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-100">
-                    {filteredRoles.length === 0 ? (
+                    {loading && orgRoles.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="px-6 py-16 text-center">
+                          <div className="flex flex-col items-center gap-3">
+                            <RefreshCw className="w-6 h-6 text-primary animate-spin" />
+                            <p className="text-xs text-zinc-500 font-medium">Loading roles...</p>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : filteredRoles.length === 0 ? (
                       <tr>
                         <td colSpan={5} className="px-6 py-16 text-center">
                           <div className="flex flex-col items-center gap-3">
                             <Shield className="w-8 h-8 text-zinc-300" />
                             <p className="text-sm text-zinc-500 font-medium">
-                              {searchQuery ? "No roles match your search" : "No roles found in the directory"}
+                              {rolesError && orgRoles.length === 0
+                                ? rolesError
+                                : searchQuery
+                                  ? "No roles match your search"
+                                  : "No roles found in the directory"}
                             </p>
+                            {rolesError && orgRoles.length === 0 && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={fetchData}
+                                className="rounded-none border-zinc-200 text-xs font-medium h-8 px-3 mt-2"
+                              >
+                                <RefreshCw size={12} className="mr-1.5" />
+                                Retry
+                              </Button>
+                            )}
                           </div>
                         </td>
                       </tr>

@@ -14,6 +14,7 @@ import {
 import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet"
 import { showSuccess, showWarning } from "@/utils/toast"
 import { getAllEmployees, getSalaryConfigs } from "@/modules/hrm/hooks/hrmHooks"
+import { salaryComponentsApi, extractApiError } from "@/shared/api/settings-api"
 
 interface SalaryComponent {
     id: string

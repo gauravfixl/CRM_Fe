@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
     Shield,
     Globe,
@@ -19,6 +19,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
+import { getOrgAdminSettings, updateOrgAdminSettings } from "@/hooks/orgAdminHooks";
 
 const initialIPs = [
     { id: "ip-1", address: "203.0.113.1", label: "HQ Office (VPN)", active: true },
@@ -33,6 +34,31 @@ export default function AccessPoliciesPage() {
     const [mfaEnforced, setMfaEnforced] = useState(true);
     const [deviceTrust, setDeviceTrust] = useState(false);
     const [sessionTimeout, setSessionTimeout] = useState("30");
+    const [saving, setSaving] = useState(false);
+
+    useEffect(() => {
+        (async () => {
+            try {
+                const res = await getOrgAdminSettings();
+                const s = res?.data?.settings || res?.data?.data || res?.data || {};
+                const ipR = s?.security?.ipRestrictions;
+                if (ipR && Array.isArray(ipR.whitelist) && ipR.whitelist.length) {
+                    setAllowedIPs(
+                        ipR.whitelist.map((addr: string, i: number) => ({
+                            id: `ip-${i}-${addr}`,
+                            address: addr,
+                            label: "Allowlisted",
+                            active: !!ipR.enabled,
+                        }))
+                    );
+                }
+                if (typeof s?.security?.enforceMFA === "boolean") setMfaEnforced(s.security.enforceMFA);
+                if (typeof s?.security?.trustedDevicePolicy?.enabled === "boolean") setDeviceTrust(s.security.trustedDevicePolicy.enabled);
+            } catch (err) {
+                // Silent — fall back to defaults
+            }
+        })();
+    }, []);
 
     const handleAddIP = () => {
         if (!newIP) return;
@@ -47,12 +73,26 @@ export default function AccessPoliciesPage() {
         toast.info("IP Range removed.");
     };
 
-    const handleSave = () => {
-        toast.promise(new Promise(res => setTimeout(res, 1000)), {
-            loading: "Propagating firewall rules...",
-            success: "Access policies applied globally.",
-            error: "Failed to update policies."
-        });
+    const handleSave = async () => {
+        try {
+            setSaving(true);
+            await updateOrgAdminSettings({
+                security: {
+                    enforceMFA: mfaEnforced,
+                    ipRestrictions: {
+                        enabled: allowedIPs.some(ip => ip.active),
+                        whitelist: allowedIPs.filter(ip => ip.active).map(ip => ip.address),
+                    },
+                    trustedDevicePolicy: { enabled: deviceTrust },
+                },
+            });
+            toast.success("Access policies applied globally.");
+        } catch (err: any) {
+            console.error("Failed to update access policies:", err);
+            toast.error(err?.response?.data?.message || "Failed to update policies.");
+        } finally {
+            setSaving(false);
+        }
     };
 
     return (
@@ -69,9 +109,10 @@ export default function AccessPoliciesPage() {
                 <Button
                     className="h-9 bg-slate-900 hover:bg-slate-800 text-white gap-2 font-bold shadow-lg shadow-slate-200 rounded-none transition-all hover:translate-y-[-1px]"
                     onClick={handleSave}
+                    disabled={saving}
                 >
                     <Save className="w-4 h-4" />
-                    Apply Rules
+                    {saving ? "Saving..." : "Apply Rules"}
                 </Button>
             </div>
 
