@@ -3,10 +3,7 @@
 import React, { useState, useEffect, useMemo } from "react"
 import {
     Clock,
-    Save,
-    Calendar,
     Sun,
-    Globe,
     Timer,
     Plus,
     Pencil,
@@ -15,42 +12,17 @@ import {
     Loader2,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { SmallCard, SmallCardContent } from "@/components/custom/SmallCard"
-import { toast } from "sonner"
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from "@/components/ui/card"
+import { Input } from "@/shared/components/ui/input"
+import { Switch } from "@/shared/components/ui/switch"
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from "@/components/ui/select"
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog"
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
-import { Switch } from "@/components/ui/switch"
+} from "@/shared/components/ui/select"
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet"
+import { showSuccess, showWarning } from "@/utils/toast"
 import {
     getActiveShifts,
     createShift,
@@ -72,6 +44,18 @@ interface Shift {
     isActive: boolean
 }
 
+const DEFAULT_NEW_SHIFT = {
+    shiftType: "morning",
+    startTime: "09:00",
+    endTime: "18:00",
+    breakMinutes: 60,
+    graceInMinutes: 15,
+    graceOutMinutes: 15,
+    halfDayAfterMinutes: 240,
+    overtimeAfterMinutes: 60,
+    isNightShift: false,
+}
+
 export default function WorkingHoursPage() {
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
@@ -79,17 +63,7 @@ export default function WorkingHoursPage() {
     const [isCreateOpen, setIsCreateOpen] = useState(false)
     const [isEditOpen, setIsEditOpen] = useState(false)
     const [editingShift, setEditingShift] = useState<Shift | null>(null)
-    const [newShift, setNewShift] = useState({
-        shiftType: "morning",
-        startTime: "09:00",
-        endTime: "18:00",
-        breakMinutes: 60,
-        graceInMinutes: 15,
-        graceOutMinutes: 15,
-        halfDayAfterMinutes: 240,
-        overtimeAfterMinutes: 60,
-        isNightShift: false,
-    })
+    const [newShift, setNewShift] = useState(DEFAULT_NEW_SHIFT)
 
     const fetchShifts = async () => {
         try {
@@ -97,7 +71,7 @@ export default function WorkingHoursPage() {
             const response = await getActiveShifts()
             setShifts(response.data?.data || [])
         } catch (err) {
-            // error already handled in hook
+            // handled in hook
         } finally {
             setLoading(false)
         }
@@ -118,31 +92,20 @@ export default function WorkingHoursPage() {
         const [sh, sm] = shift.startTime.split(":").map(Number)
         const [eh, em] = shift.endTime.split(":").map(Number)
         let diff = (eh * 60 + em) - (sh * 60 + sm)
-        if (diff < 0) diff += 24 * 60 // night shift wraps around
+        if (diff < 0) diff += 24 * 60
         return Math.round((diff - shift.breakMinutes) / 60 * 10) / 10
     }
 
-    const handleCreate = async () => {
-        if (!newShift.shiftType) return toast.error("Please select a shift type")
+    const handleCreate = async (e: React.FormEvent) => {
+        e.preventDefault()
+        if (!newShift.shiftType) return showWarning("Please select a shift type")
         try {
             setSaving(true)
             await createShift(newShift)
-            toast.success("Shift created successfully")
+            showSuccess("Shift created successfully")
             setIsCreateOpen(false)
-            setNewShift({
-                shiftType: "morning",
-                startTime: "09:00",
-                endTime: "18:00",
-                breakMinutes: 60,
-                graceInMinutes: 15,
-                graceOutMinutes: 15,
-                halfDayAfterMinutes: 240,
-                overtimeAfterMinutes: 60,
-                isNightShift: false,
-            })
+            setNewShift(DEFAULT_NEW_SHIFT)
             await fetchShifts()
-        } catch (err) {
-            // error already handled in hook
         } finally {
             setSaving(false)
         }
@@ -153,7 +116,8 @@ export default function WorkingHoursPage() {
         setIsEditOpen(true)
     }
 
-    const handleSaveEdit = async () => {
+    const handleSaveEdit = async (e: React.FormEvent) => {
+        e.preventDefault()
         if (!editingShift) return
         try {
             setSaving(true)
@@ -161,24 +125,24 @@ export default function WorkingHoursPage() {
                 graceInMinutes: editingShift.graceInMinutes,
                 graceOutMinutes: editingShift.graceOutMinutes,
             })
-            toast.success("Shift updated successfully")
+            showSuccess("Shift updated successfully")
             setIsEditOpen(false)
             setEditingShift(null)
             await fetchShifts()
-        } catch (err) {
-            // error already handled in hook
         } finally {
             setSaving(false)
         }
     }
 
     const handleDisable = async (id: string) => {
+        const confirmed = window.confirm("Disable this shift? It will be hidden from active lists.")
+        if (!confirmed) return
         try {
             await disableShift(id)
-            toast.success("Shift disabled successfully")
+            showSuccess("Shift disabled successfully")
             await fetchShifts()
         } catch (err) {
-            // error already handled in hook
+            // handled
         }
     }
 
@@ -191,328 +155,270 @@ export default function WorkingHoursPage() {
 
     if (loading) {
         return (
-            <div className="font-outfit flex flex-col items-center justify-center gap-3 p-6 min-h-screen bg-[#fafafa]">
-                <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
-                <p className="text-xs text-gray-500 font-medium">Loading shifts...</p>
+            <div className="flex flex-col items-center justify-center gap-3 min-h-screen bg-transparent">
+                <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                <p className="text-xs text-zinc-500 font-medium">Loading shifts...</p>
             </div>
         )
     }
 
     return (
-        <div className="font-outfit flex flex-col gap-6 p-6 min-h-screen bg-[#fafafa]">
-            <div className="flex flex-col gap-1">
-                <div className="flex items-center gap-2 text-xs font-medium text-gray-400">
-                    <span>Hr Governance</span>
-                    <span>/</span>
-                    <span className="text-gray-900 font-semibold">Working Hours</span>
-                </div>
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mt-2">
+        <div className="flex flex-col min-h-screen bg-transparent">
+            <div className="p-6 pb-0">
+                <div className="flex items-center justify-between mb-1">
                     <div>
-                        <h1 className="text-xl font-semibold text-gray-900 tracking-tight">Shift Configuration</h1>
-                        <p className="text-xs text-gray-500 font-medium">Define standard operating hours and work weeks.</p>
+                        <h1 className="text-2xl font-bold tracking-tight text-zinc-900">Working Hours</h1>
+                        <p className="text-sm text-zinc-500 mt-1">Define standard operating hours, shifts, and grace periods.</p>
                     </div>
                     <Button
-                        className="rounded-xl bg-blue-600 hover:bg-blue-700 font-semibold text-xs h-10 gap-2 shadow-lg px-5"
-                        onClick={() => setIsCreateOpen(true)}
+                        onClick={() => { setNewShift(DEFAULT_NEW_SHIFT); setIsCreateOpen(true) }}
+                        className="rounded-none bg-primary hover:bg-primary/90 font-medium text-xs h-8 gap-2 shadow-md shadow-primary/20 px-5"
                     >
-                        <Plus className="w-4 h-4" />
-                        New Shift
+                        <Plus size={14} /> New Shift
                     </Button>
                 </div>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <SmallCard className="border bg-gradient-to-r from-primary/70 to-primary text-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 rounded-xl">
-                    <SmallCardContent className="p-4">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-xs text-white/80">Total Shifts</p>
-                                <p className="text-xl font-semibold text-white tracking-tight">{totalShifts}</p>
-                                <p className="text-[10px] text-white/70">Active configurations</p>
-                            </div>
-                            <Clock className="w-5 h-5 text-white/80" />
-                        </div>
-                    </SmallCardContent>
-                </SmallCard>
+            <div className="flex-1 p-6 space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="bg-gradient-to-br from-primary/80 to-primary p-6 rounded-none shadow-xl shadow-primary/20 text-white">
+                        <p className="text-white text-xs opacity-80">Total Shifts</p>
+                        <p className="text-white text-xl font-semibold mt-1">{totalShifts}</p>
+                        <p className="text-white text-[10px] mt-1 opacity-70">Active configurations</p>
+                    </div>
 
-                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 rounded-xl">
-                    <SmallCardContent className="p-4">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-xs text-gray-600">Night Shifts</p>
-                                <p className="text-xl font-semibold text-gray-900">{nightShiftCount}</p>
-                                <p className="text-[10px] text-gray-500">Overnight schedules</p>
-                            </div>
-                            <Moon className="w-5 h-5 text-gray-400" />
-                        </div>
-                    </SmallCardContent>
-                </SmallCard>
+                    <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
+                        <p className="text-zinc-500 text-xs">Night Shifts</p>
+                        <p className="text-xl font-semibold text-zinc-900 mt-1">{nightShiftCount}</p>
+                        <p className="text-indigo-600 text-[10px] mt-1">Overnight schedules</p>
+                    </div>
 
-                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 rounded-xl">
-                    <SmallCardContent className="p-4">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-xs text-gray-600">Avg Grace Period</p>
-                                <p className="text-xl font-semibold text-gray-900">{avgGrace} min</p>
-                                <p className="text-[10px] text-gray-500">Late tolerance</p>
-                            </div>
-                            <Timer className="w-5 h-5 text-gray-400" />
-                        </div>
-                    </SmallCardContent>
-                </SmallCard>
+                    <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
+                        <p className="text-zinc-500 text-xs">Avg Grace Period</p>
+                        <p className="text-xl font-semibold text-zinc-900 mt-1">{avgGrace} min</p>
+                        <p className="text-amber-600 text-[10px] mt-1">Late tolerance</p>
+                    </div>
 
-                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 rounded-xl">
-                    <SmallCardContent className="p-4">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-xs text-gray-600">Day Shifts</p>
-                                <p className="text-xl font-semibold text-gray-900">{totalShifts - nightShiftCount}</p>
-                                <p className="text-[10px] text-gray-500">Standard schedules</p>
-                            </div>
-                            <Sun className="w-5 h-5 text-gray-400" />
-                        </div>
-                    </SmallCardContent>
-                </SmallCard>
-            </div>
-
-            <div className="bg-white rounded-xl border shadow-sm overflow-hidden flex flex-col">
-                <div className="p-4 border-b border-gray-100">
-                    <h2 className="text-sm font-semibold text-gray-900">Active Shifts</h2>
-                    <p className="text-xs text-gray-500">Manage shift timings and grace periods.</p>
+                    <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
+                        <p className="text-zinc-500 text-xs">Day Shifts</p>
+                        <p className="text-xl font-semibold text-zinc-900 mt-1">{totalShifts - nightShiftCount}</p>
+                        <p className="text-emerald-600 text-[10px] mt-1">Standard schedules</p>
+                    </div>
                 </div>
 
-                <Table>
-                    <TableHeader className="bg-gray-50/50">
-                        <TableRow>
-                            <TableHead className="py-3 px-4 text-xs font-semibold text-gray-500">Shift</TableHead>
-                            <TableHead className="py-3 text-xs font-semibold text-gray-500 text-center">Timing</TableHead>
-                            <TableHead className="py-3 text-xs font-semibold text-gray-500 text-center">Break</TableHead>
-                            <TableHead className="py-3 text-xs font-semibold text-gray-500 text-center">Grace In</TableHead>
-                            <TableHead className="py-3 text-xs font-semibold text-gray-500 text-center">Grace Out</TableHead>
-                            <TableHead className="py-3 text-xs font-semibold text-gray-500 text-center">Daily Hours</TableHead>
-                            <TableHead className="py-3 text-xs font-semibold text-gray-500 text-center">Night</TableHead>
-                            <TableHead className="py-3 text-right pr-4 text-xs font-semibold text-gray-500">Actions</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {shifts.length === 0 && (
-                            <TableRow>
-                                <TableCell colSpan={8} className="py-8 text-center text-xs text-gray-400">
-                                    No shifts configured. Create your first shift above.
-                                </TableCell>
-                            </TableRow>
-                        )}
-                        {shifts.map((shift) => (
-                            <TableRow key={shift._id} className="hover:bg-gray-50/50 transition-colors">
-                                <TableCell className="py-3 px-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center border border-blue-100 shadow-sm">
-                                            {getShiftIcon(shift.shiftType, shift.isNightShift)}
-                                        </div>
-                                        <span className="text-xs font-semibold text-gray-900 capitalize">{shift.shiftType} Shift</span>
-                                    </div>
-                                </TableCell>
-                                <TableCell className="py-3 text-center">
-                                    <span className="text-xs font-semibold text-gray-900">{shift.startTime} - {shift.endTime}</span>
-                                </TableCell>
-                                <TableCell className="py-3 text-center">
-                                    <span className="text-xs text-gray-600">{shift.breakMinutes} min</span>
-                                </TableCell>
-                                <TableCell className="py-3 text-center">
-                                    <span className="text-xs text-gray-600">{shift.graceInMinutes} min</span>
-                                </TableCell>
-                                <TableCell className="py-3 text-center">
-                                    <span className="text-xs text-gray-600">{shift.graceOutMinutes} min</span>
-                                </TableCell>
-                                <TableCell className="py-3 text-center">
-                                    <span className="text-xs font-semibold text-gray-900">{getDailyHours(shift)}h</span>
-                                </TableCell>
-                                <TableCell className="py-3 text-center">
-                                    <Badge variant="outline" className={`text-[10px] ${shift.isNightShift ? "bg-indigo-50 text-indigo-600 border-indigo-100" : "bg-gray-50 text-gray-400"}`}>
-                                        {shift.isNightShift ? "Yes" : "No"}
-                                    </Badge>
-                                </TableCell>
-                                <TableCell className="py-3 text-right pr-4">
-                                    <div className="flex items-center justify-end gap-1">
-                                        <Button variant="ghost" className="h-7 w-7 p-0 hover:bg-gray-100 rounded-lg" onClick={() => openEdit(shift)}>
-                                            <Pencil className="h-3.5 w-3.5 text-gray-400" />
-                                        </Button>
-                                        <Button variant="ghost" className="h-7 w-7 p-0 hover:bg-rose-50 rounded-lg" onClick={() => handleDisable(shift._id)}>
-                                            <Trash2 className="h-3.5 w-3.5 text-rose-400" />
-                                        </Button>
-                                    </div>
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
+                <div className="bg-white border border-zinc-200 rounded-none shadow-lg overflow-hidden">
+                    <div className="p-4 border-b border-zinc-100 bg-zinc-50/50">
+                        <h3 className="text-sm font-semibold text-zinc-900">Active Shifts</h3>
+                        <p className="text-xs text-zinc-500 mt-0.5">Manage shift timings and grace periods.</p>
+                    </div>
+
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="bg-zinc-100/50 border-b border-zinc-100">
+                                    <th className="px-6 py-3 text-[11px] font-medium text-gray-500">Shift</th>
+                                    <th className="px-6 py-3 text-[11px] font-medium text-gray-500 text-center">Timing</th>
+                                    <th className="px-6 py-3 text-[11px] font-medium text-gray-500 text-center">Break</th>
+                                    <th className="px-6 py-3 text-[11px] font-medium text-gray-500 text-center">Grace In</th>
+                                    <th className="px-6 py-3 text-[11px] font-medium text-gray-500 text-center">Grace Out</th>
+                                    <th className="px-6 py-3 text-[11px] font-medium text-gray-500 text-center">Daily Hrs</th>
+                                    <th className="px-6 py-3 text-[11px] font-medium text-gray-500 text-center">Night</th>
+                                    <th className="px-6 py-3 text-[11px] font-medium text-gray-500 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-zinc-100">
+                                {shifts.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={8} className="px-6 py-12 text-center">
+                                            <Clock className="w-10 h-10 text-zinc-300 mx-auto mb-2" />
+                                            <p className="text-sm text-zinc-500">No shifts configured yet</p>
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    shifts.map((shift) => (
+                                        <tr key={shift._id} className="hover:bg-primary/5 transition-colors">
+                                            <td className="px-6 py-3">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="p-2.5 bg-primary/10 rounded-none border border-primary/10">
+                                                        {getShiftIcon(shift.shiftType, shift.isNightShift)}
+                                                    </div>
+                                                    <span className="text-sm font-semibold text-gray-900 capitalize">{shift.shiftType} Shift</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-3 text-center text-xs font-semibold text-gray-900">{shift.startTime} - {shift.endTime}</td>
+                                            <td className="px-6 py-3 text-center text-xs text-gray-600">{shift.breakMinutes} min</td>
+                                            <td className="px-6 py-3 text-center text-xs text-gray-600">{shift.graceInMinutes} min</td>
+                                            <td className="px-6 py-3 text-center text-xs text-gray-600">{shift.graceOutMinutes} min</td>
+                                            <td className="px-6 py-3 text-center text-xs font-semibold text-gray-900">{getDailyHours(shift)}h</td>
+                                            <td className="px-6 py-3 text-center">
+                                                <span className={`text-[10px] px-2 py-0.5 rounded-none font-medium ${shift.isNightShift ? "bg-indigo-50 text-indigo-600" : "bg-zinc-50 text-zinc-400"}`}>
+                                                    {shift.isNightShift ? "Yes" : "No"}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-3 text-right">
+                                                <div className="flex items-center justify-end gap-1">
+                                                    <Button variant="ghost" className="h-7 w-7 p-0 hover:bg-zinc-100 rounded-none" onClick={() => openEdit(shift)}>
+                                                        <Pencil className="h-3.5 w-3.5 text-zinc-400" />
+                                                    </Button>
+                                                    <Button variant="ghost" className="h-7 w-7 p-0 hover:bg-rose-50 rounded-none" onClick={() => handleDisable(shift._id)}>
+                                                        <Trash2 className="h-3.5 w-3.5 text-rose-400" />
+                                                    </Button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
 
-            {/* Create Shift Dialog */}
-            <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-                <DialogContent className="max-w-md rounded-xl p-0 overflow-hidden">
-                    <DialogHeader className="bg-gradient-to-r from-blue-600 to-blue-700 px-5 py-4">
-                        <DialogTitle className="text-white font-semibold">Create Shift</DialogTitle>
-                        <DialogDescription className="text-blue-100 text-xs">
-                            Define a new shift schedule.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-4 px-5 py-4">
-                        <div className="grid gap-2">
-                            <Label className="text-xs font-semibold text-gray-700">Shift Type</Label>
-                            <Select value={newShift.shiftType} onValueChange={(v) => setNewShift({ ...newShift, shiftType: v })}>
-                                <SelectTrigger className="h-9 rounded-lg">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="morning">Morning</SelectItem>
-                                    <SelectItem value="noon">Noon</SelectItem>
-                                    <SelectItem value="night">Night</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="grid gap-2">
-                                <Label className="text-xs font-semibold text-gray-700">Start Time</Label>
-                                <Input
-                                    type="time"
-                                    value={newShift.startTime}
-                                    onChange={(e) => setNewShift({ ...newShift, startTime: e.target.value })}
-                                    className="h-9 rounded-lg"
-                                />
-                            </div>
-                            <div className="grid gap-2">
-                                <Label className="text-xs font-semibold text-gray-700">End Time</Label>
-                                <Input
-                                    type="time"
-                                    value={newShift.endTime}
-                                    onChange={(e) => setNewShift({ ...newShift, endTime: e.target.value })}
-                                    className="h-9 rounded-lg"
-                                />
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="grid gap-2">
-                                <Label className="text-xs font-semibold text-gray-700">Break (mins)</Label>
-                                <Input
-                                    type="number"
-                                    value={newShift.breakMinutes}
-                                    onChange={(e) => setNewShift({ ...newShift, breakMinutes: parseInt(e.target.value) || 0 })}
-                                    className="h-9 rounded-lg"
-                                />
-                            </div>
-                            <div className="grid gap-2">
-                                <Label className="text-xs font-semibold text-gray-700">Half Day After (mins)</Label>
-                                <Input
-                                    type="number"
-                                    value={newShift.halfDayAfterMinutes}
-                                    onChange={(e) => setNewShift({ ...newShift, halfDayAfterMinutes: parseInt(e.target.value) || 0 })}
-                                    className="h-9 rounded-lg"
-                                />
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="grid gap-2">
-                                <Label className="text-xs font-semibold text-gray-700">Grace In (mins)</Label>
-                                <Input
-                                    type="number"
-                                    value={newShift.graceInMinutes}
-                                    onChange={(e) => setNewShift({ ...newShift, graceInMinutes: parseInt(e.target.value) || 0 })}
-                                    className="h-9 rounded-lg"
-                                />
-                            </div>
-                            <div className="grid gap-2">
-                                <Label className="text-xs font-semibold text-gray-700">Grace Out (mins)</Label>
-                                <Input
-                                    type="number"
-                                    value={newShift.graceOutMinutes}
-                                    onChange={(e) => setNewShift({ ...newShift, graceOutMinutes: parseInt(e.target.value) || 0 })}
-                                    className="h-9 rounded-lg"
-                                />
-                            </div>
-                        </div>
-                        <div className="grid gap-2">
-                            <Label className="text-xs font-semibold text-gray-700">Overtime After (mins)</Label>
+            {/* Create Shift sheet */}
+            <SideFormSheet
+                open={isCreateOpen}
+                onOpenChange={(o) => { setIsCreateOpen(o); if (!o) setNewShift(DEFAULT_NEW_SHIFT) }}
+                title="Create Shift"
+                description="Define a new shift schedule with grace and overtime rules."
+                icon={<Clock className="w-5 h-5" />}
+                width="lg"
+                onSubmit={handleCreate}
+                submitLabel={saving ? "Creating..." : "Create Shift"}
+                loading={saving}
+            >
+                <div className="space-y-4">
+                    <Field label="Shift Type" required>
+                        <Select value={newShift.shiftType} onValueChange={(v) => setNewShift({ ...newShift, shiftType: v })}>
+                            <SelectTrigger className="h-11 rounded-lg border-[#E5E7EB] bg-white">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="morning">Morning</SelectItem>
+                                <SelectItem value="noon">Noon</SelectItem>
+                                <SelectItem value="night">Night</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </Field>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <Field label="Start Time" required>
+                            <Input
+                                type="time"
+                                value={newShift.startTime}
+                                onChange={(e) => setNewShift({ ...newShift, startTime: e.target.value })}
+                                className="h-11 rounded-lg border-[#E5E7EB] bg-white focus:border-primary"
+                            />
+                        </Field>
+                        <Field label="End Time" required>
+                            <Input
+                                type="time"
+                                value={newShift.endTime}
+                                onChange={(e) => setNewShift({ ...newShift, endTime: e.target.value })}
+                                className="h-11 rounded-lg border-[#E5E7EB] bg-white focus:border-primary"
+                            />
+                        </Field>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <Field label="Break (mins)">
                             <Input
                                 type="number"
-                                value={newShift.overtimeAfterMinutes}
-                                onChange={(e) => setNewShift({ ...newShift, overtimeAfterMinutes: parseInt(e.target.value) || 0 })}
-                                className="h-9 rounded-lg"
+                                value={newShift.breakMinutes}
+                                onChange={(e) => setNewShift({ ...newShift, breakMinutes: parseInt(e.target.value) || 0 })}
+                                className="h-11 rounded-lg border-[#E5E7EB] bg-white focus:border-primary"
                             />
-                        </div>
-                        <div className="flex items-center justify-between space-x-2 border p-3 rounded-lg bg-gray-50">
-                            <Label htmlFor="night-create" className="flex flex-col space-y-1">
-                                <span className="text-xs font-semibold text-gray-700">Night Shift</span>
-                                <span className="text-[10px] text-gray-500 font-normal">Does this shift span midnight?</span>
-                            </Label>
-                            <Switch id="night-create" checked={newShift.isNightShift} onCheckedChange={(v) => setNewShift({ ...newShift, isNightShift: v })} />
-                        </div>
+                        </Field>
+                        <Field label="Half Day After (mins)">
+                            <Input
+                                type="number"
+                                value={newShift.halfDayAfterMinutes}
+                                onChange={(e) => setNewShift({ ...newShift, halfDayAfterMinutes: parseInt(e.target.value) || 0 })}
+                                className="h-11 rounded-lg border-[#E5E7EB] bg-white focus:border-primary"
+                            />
+                        </Field>
                     </div>
-                    <DialogFooter className="px-5 pb-4">
-                        <Button
-                            onClick={handleCreate}
-                            disabled={saving}
-                            className="rounded-xl bg-blue-600 hover:bg-blue-700 font-semibold text-xs h-10 gap-2 shadow-lg px-5"
-                        >
-                            {saving ? "Creating..." : "Create Shift"}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
 
-            {/* Edit Grace Minutes Dialog */}
-            <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-                <DialogContent className="max-w-md rounded-xl p-0 overflow-hidden">
-                    <DialogHeader className="bg-gradient-to-r from-blue-600 to-blue-700 px-5 py-4">
-                        <DialogTitle className="text-white font-semibold">Edit Grace Period</DialogTitle>
-                        <DialogDescription className="text-blue-100 text-xs">
-                            Update grace minutes for this shift.
-                        </DialogDescription>
-                    </DialogHeader>
-                    {editingShift && (
-                        <>
-                            <div className="grid gap-4 px-5 py-4">
-                                <div className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 border">
-                                    <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center border border-blue-100 shadow-sm">
-                                        {getShiftIcon(editingShift.shiftType, editingShift.isNightShift)}
-                                    </div>
-                                    <div>
-                                        <p className="text-xs font-semibold text-gray-900 capitalize">{editingShift.shiftType} Shift</p>
-                                        <p className="text-[10px] text-gray-500">{editingShift.startTime} - {editingShift.endTime}</p>
-                                    </div>
-                                </div>
-                                <div className="grid gap-2">
-                                    <Label className="text-xs font-semibold text-gray-700">Grace In (mins)</Label>
-                                    <Input
-                                        type="number"
-                                        value={editingShift.graceInMinutes}
-                                        onChange={(e) => setEditingShift({ ...editingShift, graceInMinutes: parseInt(e.target.value) || 0 })}
-                                        className="h-9 rounded-lg"
-                                    />
-                                </div>
-                                <div className="grid gap-2">
-                                    <Label className="text-xs font-semibold text-gray-700">Grace Out (mins)</Label>
-                                    <Input
-                                        type="number"
-                                        value={editingShift.graceOutMinutes}
-                                        onChange={(e) => setEditingShift({ ...editingShift, graceOutMinutes: parseInt(e.target.value) || 0 })}
-                                        className="h-9 rounded-lg"
-                                    />
-                                </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <Field label="Grace In (mins)">
+                            <Input
+                                type="number"
+                                value={newShift.graceInMinutes}
+                                onChange={(e) => setNewShift({ ...newShift, graceInMinutes: parseInt(e.target.value) || 0 })}
+                                className="h-11 rounded-lg border-[#E5E7EB] bg-white focus:border-primary"
+                            />
+                        </Field>
+                        <Field label="Grace Out (mins)">
+                            <Input
+                                type="number"
+                                value={newShift.graceOutMinutes}
+                                onChange={(e) => setNewShift({ ...newShift, graceOutMinutes: parseInt(e.target.value) || 0 })}
+                                className="h-11 rounded-lg border-[#E5E7EB] bg-white focus:border-primary"
+                            />
+                        </Field>
+                    </div>
+
+                    <Field label="Overtime After (mins)" hint="Time past end-of-shift before OT starts counting">
+                        <Input
+                            type="number"
+                            value={newShift.overtimeAfterMinutes}
+                            onChange={(e) => setNewShift({ ...newShift, overtimeAfterMinutes: parseInt(e.target.value) || 0 })}
+                            className="h-11 rounded-lg border-[#E5E7EB] bg-white focus:border-primary"
+                        />
+                    </Field>
+
+                    <div className="flex items-center justify-between p-4 rounded-lg bg-[#FAFBFC] border border-[#EEF1F6]">
+                        <div>
+                            <p className="text-[13px] font-semibold text-[#374151]">Night Shift</p>
+                            <p className="text-[11.5px] text-[#9CA3AF]">Does this shift span midnight?</p>
+                        </div>
+                        <Switch checked={newShift.isNightShift} onCheckedChange={(v) => setNewShift({ ...newShift, isNightShift: v })} />
+                    </div>
+                </div>
+            </SideFormSheet>
+
+            {/* Edit Grace sheet */}
+            <SideFormSheet
+                open={isEditOpen}
+                onOpenChange={(o) => { setIsEditOpen(o); if (!o) setEditingShift(null) }}
+                title="Edit Grace Period"
+                description="Update grace minutes for this shift."
+                icon={<Timer className="w-5 h-5" />}
+                width="md"
+                onSubmit={handleSaveEdit}
+                submitLabel={saving ? "Saving..." : "Save Changes"}
+                loading={saving}
+            >
+                {editingShift && (
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-3 p-4 rounded-lg bg-[#FAFBFC] border border-[#EEF1F6]">
+                            <div className="p-2.5 bg-primary/10 rounded-none border border-primary/10">
+                                {getShiftIcon(editingShift.shiftType, editingShift.isNightShift)}
                             </div>
-                            <DialogFooter className="px-5 pb-4">
-                                <Button
-                                    onClick={handleSaveEdit}
-                                    disabled={saving}
-                                    className="rounded-xl bg-blue-600 hover:bg-blue-700 font-semibold text-xs h-10 gap-2 shadow-lg px-5"
-                                >
-                                    {saving ? "Saving..." : "Save Changes"}
-                                </Button>
-                            </DialogFooter>
-                        </>
-                    )}
-                </DialogContent>
-            </Dialog>
+                            <div>
+                                <p className="text-sm font-semibold text-gray-900 capitalize">{editingShift.shiftType} Shift</p>
+                                <p className="text-xs text-gray-500">{editingShift.startTime} - {editingShift.endTime}</p>
+                            </div>
+                        </div>
+
+                        <Field label="Grace In (mins)">
+                            <Input
+                                type="number"
+                                value={editingShift.graceInMinutes}
+                                onChange={(e) => setEditingShift({ ...editingShift, graceInMinutes: parseInt(e.target.value) || 0 })}
+                                className="h-11 rounded-lg border-[#E5E7EB] bg-white focus:border-primary"
+                            />
+                        </Field>
+                        <Field label="Grace Out (mins)">
+                            <Input
+                                type="number"
+                                value={editingShift.graceOutMinutes}
+                                onChange={(e) => setEditingShift({ ...editingShift, graceOutMinutes: parseInt(e.target.value) || 0 })}
+                                className="h-11 rounded-lg border-[#E5E7EB] bg-white focus:border-primary"
+                            />
+                        </Field>
+                    </div>
+                )}
+            </SideFormSheet>
         </div>
     )
 }

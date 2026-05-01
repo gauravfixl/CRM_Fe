@@ -36,7 +36,7 @@ export default function ForgotPasswordPage() {
     try {
       const response = await forgotPassword({ email })
       showSuccess(response?.data?.message || "Password reset link sent to your email.")
-      router.push("/auth/login") // redirect after success
+      router.push("/auth/signin") // redirect to signin page
     } catch (error: any) {
       const errorMessage =
         error?.response?.data?.message ||

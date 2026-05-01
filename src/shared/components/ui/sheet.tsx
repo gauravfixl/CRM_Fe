@@ -7,7 +7,23 @@ import { X } from 'lucide-react'
 
 import { cn } from "@/lib/utils"
 
-const Sheet = SheetPrimitive.Root
+// Radix bug workaround: when a Sheet is opened via a DropdownMenu/menu item,
+// `pointer-events: none` can remain stuck on document.body after close,
+// freezing the whole page. For controlled sheets only, watch `open` prop
+// and force-clear the stuck style after the close animation settles.
+const Sheet: React.FC<React.ComponentProps<typeof SheetPrimitive.Root>> = (props) => {
+  React.useEffect(() => {
+    if (props.open !== false) return
+    const timer = window.setTimeout(() => {
+      if (document.body.style.pointerEvents === "none") {
+        document.body.style.pointerEvents = ""
+      }
+    }, 500)
+    return () => window.clearTimeout(timer)
+  }, [props.open])
+
+  return <SheetPrimitive.Root {...props} />
+}
 
 const SheetTrigger = SheetPrimitive.Trigger
 

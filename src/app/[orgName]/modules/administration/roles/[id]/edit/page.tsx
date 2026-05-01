@@ -7,18 +7,10 @@ import Link from "next/link"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
-import { Button } from "@/components/ui/button"
-import SubHeader from "@/components/custom/SubHeader"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card"
+import { Button } from "@/shared/components/ui/button"
+import { Input } from "@/shared/components/ui/input"
+import { Label } from "@/shared/components/ui/label"
+import { Textarea } from "@/shared/components/ui/textarea"
 import { toast } from "sonner"
 import {
   updateRole,
@@ -89,8 +81,7 @@ export default function EditRolePage() {
   const readOnly = isSystemRole
 
   useEffect(() => {
-    const org =
-      (params.orgName as string) || localStorage.getItem("orgName") || ""
+    const org = (params.orgName as string) || localStorage.getItem("orgName") || ""
     setOrgName(org)
     ;(async () => {
       setIsLoading(true)
@@ -187,11 +178,9 @@ export default function EditRolePage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#F8F9FC] flex flex-col items-center justify-center space-y-4 font-outfit">
-        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
-        <span className="text-sm font-medium text-gray-500">
-          Loading role details...
-        </span>
+      <div className="min-h-screen bg-transparent flex flex-col items-center justify-center space-y-3">
+        <Loader2 className="w-7 h-7 text-primary animate-spin" />
+        <span className="text-xs font-medium text-zinc-500">Loading role details...</span>
       </div>
     )
   }
@@ -337,7 +326,8 @@ function EditRoleForm({
                 <Button
                   type="button"
                   variant="outline"
-                  className="rounded-xl h-10 px-6 font-semibold text-xs bg-white border-zinc-200"
+                  size="sm"
+                  className="rounded-none border-zinc-200 font-medium text-xs h-8 px-4"
                 >
                   {readOnly ? "Back" : "Cancel"}
                 </Button>
@@ -380,8 +370,8 @@ function EditRoleForm({
                 </Button>
               )}
             </div>
-          }
-        />
+          </div>
+        </div>
 
         {readOnly && (
           <div className="mx-4 md:mx-8 mt-4 px-5 py-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
@@ -420,11 +410,8 @@ function EditRoleForm({
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-1.5">
-                  <Label
-                    htmlFor="name"
-                    className="text-xs font-semibold text-gray-700"
-                  >
-                    Role Name <span className="text-red-500">*</span>
+                  <Label htmlFor="name" className="text-xs font-medium text-zinc-600">
+                    Role Name <span className="text-rose-500">*</span>
                   </Label>
                   <Input
                     id="name"
@@ -435,9 +422,7 @@ function EditRoleForm({
                     {...register("name")}
                   />
                   {errors.name?.message && (
-                    <p className="text-[11px] text-red-600 font-medium">
-                      {errors.name.message}
-                    </p>
+                    <p className="text-[11px] text-rose-600 font-medium">{errors.name.message}</p>
                   )}
                 </div>
                 <div className="space-y-1.5">
@@ -465,51 +450,42 @@ function EditRoleForm({
                     {...register("description")}
                   />
                   {errors.description?.message && (
-                    <p className="text-[11px] text-red-600 font-medium">
-                      {errors.description.message}
-                    </p>
+                    <p className="text-[11px] text-rose-600 font-medium">{errors.description.message}</p>
                   )}
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
 
-            <div className="bg-blue-50/50 border border-blue-100 p-6 rounded-xl space-y-4">
-              <div className="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
-                <Info className="w-5 h-5 text-blue-600" />
+            <div className="bg-white border border-gray-200 rounded-none p-5 flex items-start gap-3">
+              <div className="p-2 bg-primary/10 rounded-none">
+                <Info size={18} className="text-primary" />
               </div>
               <div>
-                <h6 className="text-sm font-semibold text-blue-900">
-                  Modification Notice
-                </h6>
-                <p className="text-xs text-blue-700/80 leading-relaxed font-medium mt-1">
-                  Updates to this role immediately affect all assigned users.
-                  Users might need to refresh their session to see new
-                  permissions.
+                <h3 className="text-sm font-semibold text-gray-900">Modification Notice</h3>
+                <p className="text-xs text-gray-600 mt-0.5 leading-relaxed">
+                  Updates to this role immediately affect all assigned users. Users might need to
+                  refresh their session to see new permissions.
                 </p>
               </div>
             </div>
 
-            <Card className="bg-white border-zinc-200 rounded-xl p-6 shadow-sm">
-              <div className="space-y-2">
-                <h5 className="text-xs font-semibold text-gray-700">
-                  Active Scope
-                </h5>
-                <div className="text-2xl font-semibold text-gray-900">
-                  {permissions.length} Modules
-                </div>
-                <div className="text-xs font-medium text-gray-500">
-                  Total Actions: {totalActions}
-                </div>
-                {errors.permissions?.message && (
-                  <p className="text-[11px] text-red-600 font-medium pt-2">
-                    {errors.permissions.message as string}
-                  </p>
-                )}
+            <div className="bg-white border border-zinc-200 rounded-none p-5 space-y-2">
+              <h5 className="text-xs font-medium text-zinc-600">Active Scope</h5>
+              <div className="text-2xl font-bold tracking-tight text-zinc-900">
+                {permissions.length} Modules
               </div>
-            </Card>
+              <div className="text-xs font-medium text-zinc-500">
+                Total Actions: <span className="text-primary font-semibold">{totalActions}</span>
+              </div>
+              {errors.permissions?.message && (
+                <p className="text-[11px] text-rose-600 font-medium pt-2">
+                  {errors.permissions.message as string}
+                </p>
+              )}
+            </div>
           </div>
 
-          {/* Right Column: Permission Matrix */}
+          {/* Right: Permission Matrix */}
           <div className="lg:col-span-8 space-y-6">
             <Controller
               control={control}

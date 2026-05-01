@@ -1,195 +1,220 @@
 "use client"
 
 import React, { useState } from "react"
-import { useParams } from "next/navigation"
 import {
     Archive,
     Save,
     Clock,
     Trash2,
     RotateCcw,
-    CalendarDays
+    CalendarDays,
+    AlertTriangle,
 } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Switch } from "@/components/ui/switch"
-import { Label } from "@/components/ui/label"
-import { SmallCard, SmallCardContent } from "@/components/custom/SmallCard"
-import { toast } from "sonner"
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from "@/components/ui/card"
-import { Slider } from "@/components/ui/slider"
+import { Button } from "@/shared/components/ui/button"
+import { Switch } from "@/shared/components/ui/switch"
+import { Label } from "@/shared/components/ui/label"
+import { Slider } from "@/shared/components/ui/slider"
+import { showSuccess } from "@/shared/utils/toast"
 
 export default function ProjectArchivalPage() {
-    const params = useParams()
-    const [isLoading, setIsLoading] = useState(false)
+    const [isSaving, setIsSaving] = useState(false)
+    const [isRecovering, setIsRecovering] = useState(false)
     const [settings, setSettings] = useState({
         enableAutoArchive: true,
         archiveAfterDays: 90,
         enablePermanentDelete: false,
-        deleteAfterYears: 2
+        deleteAfterYears: 2,
     })
 
-    const handleAction = (msg: string) => {
-        setIsLoading(true)
-        setTimeout(() => {
-            setIsLoading(false)
-            toast.success(msg)
-        }, 800)
+    const handleSave = async () => {
+        setIsSaving(true)
+        try {
+            await new Promise((r) => setTimeout(r, 500))
+            showSuccess("Archival policies saved")
+        } finally {
+            setIsSaving(false)
+        }
+    }
+
+    const handleRecover = async () => {
+        setIsRecovering(true)
+        try {
+            await new Promise((r) => setTimeout(r, 500))
+            showSuccess("Recovered 3 projects from archive")
+        } finally {
+            setIsRecovering(false)
+        }
     }
 
     return (
-        <div className="font-outfit flex flex-col gap-6 p-6 min-h-screen bg-[#fafafa]">
-            {/* PAGE HEADER */}
-            <div className="flex flex-col gap-1">
-                <div className="flex items-center gap-2 text-xs font-medium text-gray-400">
-                    <span>Project governance</span>
-                    <span>/</span>
-                    <span className="text-gray-900 font-semibold">Archival</span>
-                </div>
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mt-2">
+        <div className="flex flex-col min-h-screen bg-transparent">
+            <div className="p-6 pb-0">
+                <div className="flex items-center justify-between mb-1">
                     <div>
-                        <h1 className="text-xl font-semibold text-gray-900 tracking-tight">Retention Policy</h1>
-                        <p className="text-xs text-gray-500 font-medium">Automate project cleanup and data hygiene.</p>
+                        <h1 className="text-2xl font-bold tracking-tight text-zinc-900">Retention Policy</h1>
+                        <p className="text-sm text-zinc-500 mt-1">
+                            Automate project cleanup and manage data hygiene over time.
+                        </p>
                     </div>
                     <div className="flex items-center gap-2">
                         <Button
+                            onClick={handleRecover}
+                            disabled={isRecovering}
                             variant="outline"
-                            className="h-10 rounded-xl bg-white text-gray-700 hover:text-gray-900 border-gray-200 text-xs font-semibold px-5 shadow-sm"
-                            onClick={() => handleAction("Recovered 3 projects")}
+                            size="sm"
+                            className="rounded-none border-zinc-200 font-medium text-xs h-8 gap-1.5 px-4"
                         >
-                            <RotateCcw className="w-3.5 h-3.5 mr-2" />
-                            Recover Mode
+                            <RotateCcw size={14} />
+                            {isRecovering ? "Recovering..." : "Recover Mode"}
                         </Button>
                         <Button
-                            className="rounded-xl bg-blue-600 hover:bg-blue-700 font-semibold text-xs h-10 gap-2 shadow-lg px-5"
-                            onClick={() => handleAction("Policies saved")}
-                            disabled={isLoading}
+                            onClick={handleSave}
+                            disabled={isSaving}
+                            size="sm"
+                            className="rounded-none bg-primary hover:bg-primary/90 h-8 text-xs font-medium gap-2 px-5"
                         >
-                            <Save className="w-3.5 h-3.5" />
-                            Save Rules
+                            <Save size={14} />
+                            {isSaving ? "Saving..." : "Save Rules"}
                         </Button>
                     </div>
                 </div>
             </div>
 
-            {/* STATS CARDS */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <SmallCard className="border bg-gradient-to-r from-primary/70 to-primary text-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
-                    <SmallCardContent className="px-4 py-4">
-                        <div className="flex items-center justify-between pb-1">
-                            <p className="text-xs text-white/80">Archived projects</p>
-                            <Archive className="w-4 h-4 text-white" />
-                        </div>
-                        <p className="text-xl font-semibold text-white">24</p>
-                        <p className="text-[10px] text-white/80">Stored in cold storage</p>
-                    </SmallCardContent>
-                </SmallCard>
+            <div className="flex-1 p-6 space-y-6">
+                {/* Stats Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="bg-gradient-to-br from-primary/80 to-primary p-6 rounded-none shadow-xl shadow-primary/20 text-white">
+                        <p className="text-white text-xs opacity-80">Archived Projects</p>
+                        <p className="text-white text-xl font-semibold mt-1">24</p>
+                        <p className="text-white text-[10px] mt-1 opacity-70">Stored in cold storage</p>
+                    </div>
 
-                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
-                    <SmallCardContent className="px-4 py-4">
-                        <div className="flex items-center justify-between pb-1">
-                            <p className="text-xs text-gray-600">Auto-archival</p>
-                            <Clock className="w-4 h-4 text-gray-400" />
-                        </div>
-                        <p className="text-xl font-semibold text-gray-900">{settings.enableAutoArchive ? "Enabled" : "Disabled"}</p>
-                        <p className="text-[10px] text-gray-500">Automation status</p>
-                    </SmallCardContent>
-                </SmallCard>
+                    <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
+                        <p className="text-zinc-500 text-xs">Auto-archival</p>
+                        <p className="text-xl font-semibold text-zinc-900 mt-1">{settings.enableAutoArchive ? "Enabled" : "Disabled"}</p>
+                        <p className="text-emerald-600 text-[10px] mt-1">Automation status</p>
+                    </div>
 
-                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
-                    <SmallCardContent className="px-4 py-4">
-                        <div className="flex items-center justify-between pb-1">
-                            <p className="text-xs text-gray-600">Archive after</p>
-                            <CalendarDays className="w-4 h-4 text-gray-400" />
-                        </div>
-                        <p className="text-xl font-semibold text-gray-900">{settings.archiveAfterDays}d</p>
-                        <p className="text-[10px] text-gray-500">Days of inactivity</p>
-                    </SmallCardContent>
-                </SmallCard>
+                    <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
+                        <p className="text-zinc-500 text-xs">Archive After</p>
+                        <p className="text-xl font-semibold text-zinc-900 mt-1">{settings.archiveAfterDays}d</p>
+                        <p className="text-primary text-[10px] mt-1">Days of inactivity</p>
+                    </div>
 
-                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
-                    <SmallCardContent className="px-4 py-4">
-                        <div className="flex items-center justify-between pb-1">
-                            <p className="text-xs text-gray-600">Hard delete</p>
-                            <Trash2 className="w-4 h-4 text-gray-400" />
-                        </div>
-                        <p className="text-xl font-semibold text-gray-900">{settings.enablePermanentDelete ? "Enabled" : "Disabled"}</p>
-                        <p className="text-[10px] text-gray-500">After {settings.deleteAfterYears} years</p>
-                    </SmallCardContent>
-                </SmallCard>
-            </div>
+                    <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
+                        <p className="text-zinc-500 text-xs">Hard Delete</p>
+                        <p className="text-xl font-semibold text-zinc-900 mt-1">{settings.enablePermanentDelete ? "Enabled" : "Disabled"}</p>
+                        <p className="text-rose-600 text-[10px] mt-1">After {settings.deleteAfterYears} years</p>
+                    </div>
+                </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Card className="rounded-xl border shadow-sm bg-white">
-                    <CardHeader>
-                        <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                            <Clock className="w-4 h-4 text-gray-500" />
-                            Auto-Archival
-                        </CardTitle>
-                        <CardDescription className="text-xs">Rules for moving completed projects to archive.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                        <div className="flex items-center justify-between space-x-2">
-                            <Label htmlFor="auto" className="flex flex-col space-y-1">
-                                <span className="text-xs font-semibold text-gray-700">Enable auto-archival</span>
-                                <span className="font-normal text-[10px] text-gray-500">Automatically archive projects after inactivity.</span>
-                            </Label>
-                            <Switch id="auto" checked={settings.enableAutoArchive} onCheckedChange={(v) => setSettings({ ...settings, enableAutoArchive: v })} />
+                {/* Content */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Auto-Archival */}
+                    <div className="bg-white border border-gray-200 rounded-none">
+                        <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
+                            <Clock size={16} className="text-primary" />
+                            <h3 className="text-sm font-semibold text-gray-900">Auto-Archival</h3>
                         </div>
-                        <div className="space-y-3 pt-2">
-                            <div className="flex justify-between">
-                                <Label className="text-xs font-semibold text-gray-700">Days since completion</Label>
-                                <span className="text-xs text-gray-500 font-semibold">{settings.archiveAfterDays} days</span>
+                        <div className="p-5 space-y-5">
+                            <div className="flex items-center justify-between py-1">
+                                <div className="flex-1 pr-4">
+                                    <p className="text-xs font-medium text-zinc-700">Enable auto-archival</p>
+                                    <p className="text-[11px] text-zinc-500 mt-0.5">Automatically archive projects after inactivity.</p>
+                                </div>
+                                <Switch
+                                    checked={settings.enableAutoArchive}
+                                    onCheckedChange={(v) => setSettings({ ...settings, enableAutoArchive: v })}
+                                />
                             </div>
-                            <Slider
-                                defaultValue={[90]}
-                                max={365}
-                                step={1}
-                                value={[settings.archiveAfterDays]}
-                                onValueChange={(vals) => setSettings({ ...settings, archiveAfterDays: vals[0] })}
-                                disabled={!settings.enableAutoArchive}
-                            />
-                        </div>
-                    </CardContent>
-                </Card>
 
-                <Card className="rounded-xl border-rose-100 shadow-sm bg-rose-50/10">
-                    <CardHeader>
-                        <CardTitle className="text-sm font-semibold flex items-center gap-2 text-rose-700">
-                            <Trash2 className="w-4 h-4 text-rose-500" />
-                            Permanent Deletion
-                        </CardTitle>
-                        <CardDescription className="text-xs text-rose-600/80">Draft projects and old archives cleanup.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                        <div className="flex items-center justify-between space-x-2">
-                            <Label htmlFor="delete" className="flex flex-col space-y-1">
-                                <span className="text-xs font-semibold text-gray-700">Enable hard delete</span>
-                                <span className="font-normal text-[10px] text-gray-500">Permanently remove archived data after set period.</span>
-                            </Label>
-                            <Switch id="delete" checked={settings.enablePermanentDelete} onCheckedChange={(v) => setSettings({ ...settings, enablePermanentDelete: v })} />
-                        </div>
-                        <div className="space-y-3 pt-2">
-                            <div className="flex justify-between">
-                                <Label className="text-xs font-semibold text-gray-700">Years in archive</Label>
-                                <span className="text-xs text-gray-500 font-semibold">{settings.deleteAfterYears} years</span>
+                            <div className="space-y-3 pt-4 border-t border-zinc-100">
+                                <div className="flex justify-between">
+                                    <Label className="text-xs font-medium text-zinc-600">Days since completion</Label>
+                                    <span className="text-xs text-primary font-semibold">{settings.archiveAfterDays} days</span>
+                                </div>
+                                <Slider
+                                    max={365}
+                                    step={1}
+                                    value={[settings.archiveAfterDays]}
+                                    onValueChange={(vals) => setSettings({ ...settings, archiveAfterDays: vals[0] })}
+                                    disabled={!settings.enableAutoArchive}
+                                />
                             </div>
-                            <Slider
-                                defaultValue={[2]}
-                                max={10}
-                                step={1}
-                                value={[settings.deleteAfterYears]}
-                                onValueChange={(vals) => setSettings({ ...settings, deleteAfterYears: vals[0] })}
-                                disabled={!settings.enablePermanentDelete}
-                            />
                         </div>
-                    </CardContent>
-                </Card>
+                    </div>
+
+                    {/* Permanent Deletion */}
+                    <div className="bg-white border border-rose-100 rounded-none">
+                        <div className="px-5 py-4 border-b border-rose-100 bg-rose-50/30 flex items-center gap-2">
+                            <Trash2 size={16} className="text-rose-500" />
+                            <h3 className="text-sm font-semibold text-rose-700">Permanent Deletion</h3>
+                        </div>
+                        <div className="p-5 space-y-5">
+                            <div className="flex items-center justify-between py-1">
+                                <div className="flex-1 pr-4">
+                                    <p className="text-xs font-medium text-zinc-700">Enable hard delete</p>
+                                    <p className="text-[11px] text-zinc-500 mt-0.5">Permanently remove archived data after the set period.</p>
+                                </div>
+                                <Switch
+                                    checked={settings.enablePermanentDelete}
+                                    onCheckedChange={(v) => setSettings({ ...settings, enablePermanentDelete: v })}
+                                />
+                            </div>
+
+                            <div className="space-y-3 pt-4 border-t border-zinc-100">
+                                <div className="flex justify-between">
+                                    <Label className="text-xs font-medium text-zinc-600">Years in archive</Label>
+                                    <span className="text-xs text-rose-600 font-semibold">{settings.deleteAfterYears} years</span>
+                                </div>
+                                <Slider
+                                    max={10}
+                                    step={1}
+                                    value={[settings.deleteAfterYears]}
+                                    onValueChange={(vals) => setSettings({ ...settings, deleteAfterYears: vals[0] })}
+                                    disabled={!settings.enablePermanentDelete}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Info cards */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bg-white border border-gray-200 rounded-none p-5 flex items-start gap-3">
+                        <div className="p-2 bg-primary/10 rounded-none">
+                            <Archive size={18} className="text-primary" />
+                        </div>
+                        <div>
+                            <h3 className="text-sm font-semibold text-gray-900">Cold storage</h3>
+                            <p className="text-xs text-gray-600 mt-0.5 leading-relaxed">
+                                Archived projects are moved to lower-cost storage and remain fully searchable.
+                            </p>
+                        </div>
+                    </div>
+                    <div className="bg-white border border-gray-200 rounded-none p-5 flex items-start gap-3">
+                        <div className="p-2 bg-primary/10 rounded-none">
+                            <CalendarDays size={18} className="text-primary" />
+                        </div>
+                        <div>
+                            <h3 className="text-sm font-semibold text-gray-900">Scheduled cleanup</h3>
+                            <p className="text-xs text-gray-600 mt-0.5 leading-relaxed">
+                                Automated rules run nightly to keep data volumes predictable.
+                            </p>
+                        </div>
+                    </div>
+                    <div className="bg-white border border-gray-200 rounded-none p-5 flex items-start gap-3">
+                        <div className="p-2 bg-amber-50 rounded-none">
+                            <AlertTriangle size={18} className="text-amber-600" />
+                        </div>
+                        <div>
+                            <h3 className="text-sm font-semibold text-gray-900">Permanent action</h3>
+                            <p className="text-xs text-gray-600 mt-0.5 leading-relaxed">
+                                Hard-deleted projects cannot be recovered. Confirm retention needs before enabling.
+                            </p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     )

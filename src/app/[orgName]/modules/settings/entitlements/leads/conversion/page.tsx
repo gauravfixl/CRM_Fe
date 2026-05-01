@@ -46,14 +46,6 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogDescription,
-    DialogFooter,
-} from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import {
     Select,
@@ -63,6 +55,7 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import { SmallCard, SmallCardContent, SmallCardHeader } from "@/shared/components/custom/SmallCard"
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet"
 import { Switch } from "@/components/ui/switch"
 import { toast } from "sonner"
 
@@ -112,7 +105,12 @@ export default function LeadConversionRulesPage() {
         setIsEditOpen(true)
     }
 
-    const saveEdit = () => {
+    const saveEdit = (e: React.FormEvent) => {
+        e.preventDefault()
+        if (!editingMap?.clientField) {
+            toast.error("Please select a target client field")
+            return
+        }
         setFieldMappings(prev => prev.map(m =>
             m.id === editingMap.id ? { ...editingMap, status: editingMap.clientField ? "MAPPED" : "REVIEW" } : m
         ))
@@ -342,36 +340,42 @@ export default function LeadConversionRulesPage() {
                 </div>
             </div>
 
-            {/* EDIT MAPPING DIALOG */}
-            <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-                <DialogContent className="sm:max-w-[425px] rounded-2xl border-none shadow-2xl">
-                    <DialogHeader>
-                        <DialogTitle className="text-xl font-semibold text-gray-900 flex items-center gap-2">
-                            <Settings2 className="w-5 h-5 text-blue-600" />
-                            Configure Mapping
-                        </DialogTitle>
-                        <DialogDescription className="text-xs font-medium text-zinc-400">
-                            Define which field in the Client module should receive data from Lead '{editingMap?.leadField}'.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-6 py-4">
-                        <div className="flex flex-col gap-2">
-                            <Label className="text-[10px] font-medium text-zinc-400">Lead Source Field</Label>
-                            <div className="p-3 bg-zinc-50 border border-zinc-100 rounded-xl flex items-center justify-between">
-                                <span className="text-sm font-semibold text-gray-900">{editingMap?.leadField}</span>
-                                <Badge className="bg-zinc-200 text-zinc-500 border-none text-[8px]">{editingMap?.type}</Badge>
+            {/* Configure Mapping — side sheet */}
+            <SideFormSheet
+                open={isEditOpen}
+                onOpenChange={(o) => {
+                    setIsEditOpen(o)
+                    if (!o) setEditingMap(null)
+                }}
+                title="Configure Mapping"
+                description={editingMap ? `Define which Client field should receive data from '${editingMap.leadField}'.` : ""}
+                icon={<Settings2 className="w-5 h-5" />}
+                width="md"
+                onSubmit={saveEdit}
+                submitLabel="Apply Mapping"
+            >
+                {editingMap && (
+                    <div className="space-y-4">
+                        <Field label="Lead Source Field" hint="Read-only — this is the source">
+                            <div className="h-11 px-3 bg-[#F8FAFC] border border-[#E5E7EB] rounded-lg flex items-center justify-between">
+                                <span className="text-[13.5px] font-semibold text-gray-900">{editingMap.leadField}</span>
+                                <Badge className="bg-zinc-200 text-zinc-600 border-none text-[9px]">{editingMap.type}</Badge>
                             </div>
-                        </div>
-                        <div className="flex flex-col gap-2">
-                            <Label className="text-[10px] font-medium text-zinc-400">Target Client Field</Label>
+                        </Field>
+
+                        <Field
+                            label="Target Client Field"
+                            required
+                            hint="Data from the lead field will be written here"
+                        >
                             <Select
-                                value={editingMap?.clientField}
+                                value={editingMap.clientField || undefined}
                                 onValueChange={(v) => setEditingMap({ ...editingMap, clientField: v })}
                             >
-                                <SelectTrigger className="h-11 rounded-xl border-zinc-200 shadow-sm font-medium">
+                                <SelectTrigger className="h-11 rounded-lg border-[#E5E7EB] bg-white">
                                     <SelectValue placeholder="Select target field" />
                                 </SelectTrigger>
-                                <SelectContent className="rounded-xl border-zinc-100 shadow-xl">
+                                <SelectContent>
                                     <SelectItem value="Contact Name">Contact Name</SelectItem>
                                     <SelectItem value="Legal Name">Legal Name</SelectItem>
                                     <SelectItem value="Primary Email">Primary Email</SelectItem>
@@ -381,17 +385,17 @@ export default function LeadConversionRulesPage() {
                                     <SelectItem value="Custom Field 1">Custom Field 1</SelectItem>
                                 </SelectContent>
                             </Select>
+                        </Field>
+
+                        <div className="flex items-start gap-2 p-3 bg-[#F0F7FF] border border-[#DBEAFE] rounded-lg">
+                            <Save className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                            <p className="text-[11.5px] text-[#475569] leading-relaxed">
+                                Applying this mapping will mark the row as <strong>MAPPED</strong>. Clearing the target field will return it to REVIEW.
+                            </p>
                         </div>
                     </div>
-                    <DialogFooter className="gap-2">
-                        <Button variant="ghost" onClick={() => setIsEditOpen(false)} className="rounded-xl font-medium text-xs">Cancel</Button>
-                        <Button onClick={saveEdit} className="bg-blue-600 hover:bg-blue-700 rounded-xl px-6 font-medium text-xs shadow-lg shadow-blue-200">
-                            <Save className="w-4 h-4 mr-2" />
-                            Apply Mapping
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                )}
+            </SideFormSheet>
         </div>
     )
 }

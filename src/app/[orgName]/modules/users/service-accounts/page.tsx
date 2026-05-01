@@ -36,14 +36,15 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { Input } from "@/shared/components/ui/input"
 import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogDescription,
-    DialogFooter,
-} from "@/components/ui/dialog"
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/shared/components/ui/select"
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet"
 import { showSuccess, showWarning } from "@/utils/toast"
 import { toast } from "sonner"
 import { useParams } from "next/navigation"
@@ -55,6 +56,46 @@ export default function ServiceAccountsPage() {
     const [searchQuery, setSearchQuery] = useState("")
     const [showCreateDialog, setShowCreateDialog] = useState(false)
     const [newAccountName, setNewAccountName] = useState("")
+    const [newAccountPerms, setNewAccountPerms] = useState("read-only")
+    const [createTouched, setCreateTouched] = useState(false)
+    const [creating, setCreating] = useState(false)
+
+    const nameError = useMemo(() => {
+        if (!createTouched) return ""
+        const v = newAccountName.trim()
+        if (!v) return "Display name is required"
+        if (v.length < 3) return "Name must be at least 3 characters"
+        if (v.length > 60) return "Name too long (max 60 chars)"
+        if (!/^[a-zA-Z][a-zA-Z\s-]*$/.test(v))
+            return "Letters, spaces, and hyphens only (must start with a letter)"
+        return ""
+    }, [newAccountName, createTouched])
+
+    const handleCreateAccount = async (e: React.FormEvent) => {
+        e.preventDefault()
+        setCreateTouched(true)
+        const v = newAccountName.trim()
+        if (!v) {
+            toast.error("Please enter a name")
+            return
+        }
+        if (v.length < 3) {
+            toast.error("Name too short (min 3 chars)")
+            return
+        }
+        if (!/^[a-zA-Z][a-zA-Z\s-]*$/.test(v)) {
+            toast.error("Account name should be letters, spaces, hyphens only")
+            return
+        }
+        setCreating(true)
+        await new Promise((r) => setTimeout(r, 300))
+        toast.success(`Service account '${v}' created successfully`)
+        setNewAccountName("")
+        setNewAccountPerms("read-only")
+        setCreateTouched(false)
+        setShowCreateDialog(false)
+        setCreating(false)
+    }
 
     const [filterMode, setFilterMode] = useState<"all" | "active" | "expired">("all")
     const filterOptions: Array<"all" | "active" | "expired"> = ["all", "active", "expired"]
@@ -376,69 +417,69 @@ export default function ServiceAccountsPage() {
             </div>
 
             {/* CREATE ACCOUNT DIALOG */}
-            <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-                <DialogContent className="sm:max-w-[440px] rounded-none">
-                    <DialogHeader>
-                        <DialogTitle className="text-lg font-bold">New service account</DialogTitle>
-                        <DialogDescription>Create a non-human identity for systems and automated workloads.</DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-2">
+            <SideFormSheet
+                open={showCreateDialog}
+                onOpenChange={(o) => {
+                    setShowCreateDialog(o)
+                    if (!o) {
+                        setCreateTouched(false)
+                        setNewAccountName("")
+                        setNewAccountPerms("read-only")
+                    }
+                }}
+                title="New service account"
+                description="Create a non-human identity for systems and automated workloads."
+                icon={<Key className="w-5 h-5" />}
+                width="md"
+                onSubmit={handleCreateAccount}
+                submitLabel="Generate account"
+                loading={creating}
+            >
+                <div className="space-y-4">
+                    <Field
+                        label="Display name"
+                        required
+                        error={nameError}
+                        hint="Letters, spaces, and hyphens. 3–60 chars."
+                    >
+                        <Input
+                            value={newAccountName}
+                            onChange={(e) => setNewAccountName(e.target.value.replace(/[^a-zA-Z\s-]/g, ""))}
+                            onBlur={() => setCreateTouched(true)}
+                            placeholder="e.g. Jenkins Integration"
+                            maxLength={60}
+                            className="h-11 rounded-lg bg-white border-[#E5E7EB] focus:border-primary"
+                        />
+                    </Field>
+
+                    <Field
+                        label="Default permissions"
+                        hint="Apply principle of least privilege"
+                    >
+                        <Select value={newAccountPerms} onValueChange={setNewAccountPerms}>
+                            <SelectTrigger className="h-11 rounded-lg border-[#E5E7EB] bg-white">
+                                <SelectValue placeholder="Select permission scope" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="read-only">Read-only access</SelectItem>
+                                <SelectItem value="contributor">Contributor</SelectItem>
+                                <SelectItem value="admin">Full administrator</SelectItem>
+                                <SelectItem value="custom">Custom scope</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </Field>
+
+                    <div className="flex items-start gap-2.5 p-3.5 rounded-xl bg-amber-50 border border-amber-200">
+                        <ShieldCheck className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                         <div>
-                            <label className="text-[10px] font-semibold text-zinc-500 mb-1 block">Display name</label>
-                            <input
-                                type="text"
-                                value={newAccountName}
-                                onChange={e => setNewAccountName(e.target.value)}
-                                placeholder="e.g. Jenkins Integration"
-                                className="w-full border border-zinc-200 rounded-none px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-                            />
-                        </div>
-                        <div>
-                            <label className="text-[10px] font-semibold text-zinc-500 mb-1 block">Default permissions</label>
-                            <select
-                                className="w-full border border-zinc-200 rounded-none px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 bg-white"
-                            >
-                                <option>Read-only access</option>
-                                <option>Contributor</option>
-                                <option>Full administrator</option>
-                                <option>Custom scope...</option>
-                            </select>
-                        </div>
-                        <div className="p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-none border border-zinc-100 dark:border-zinc-800">
-                            <div className="flex items-center gap-2 text-amber-600 mb-1">
-                                <ShieldCheck className="w-4 h-4" />
-                                <span className="text-[10px] font-semibold">Security tip</span>
-                            </div>
-                            <p className="text-[10px] text-zinc-500 leading-relaxed">Always use the principle of least privilege. Only assign scopes strictly necessary for the automated task.</p>
+                            <p className="text-[12px] font-semibold text-amber-900">Security tip</p>
+                            <p className="text-[11.5px] text-amber-800 mt-0.5 leading-relaxed">
+                                Always use the principle of least privilege. Only assign scopes strictly necessary for the automated task.
+                            </p>
                         </div>
                     </div>
-                    <DialogFooter>
-                        <CustomButton variant="outline" onClick={() => setShowCreateDialog(false)}>Cancel</CustomButton>
-                        <CustomButton
-                            className="bg-primary hover:bg-primary/90 text-white"
-                            onClick={() => {
-                                if (!newAccountName.trim()) { 
-                                    toast.error("Please enter a name")
-                                    return 
-                                }
-                                
-                                // Name validation (no numbers)
-                                const nameRegex = /^[a-zA-Z\s]+$/;
-                                if (!nameRegex.test(newAccountName.trim())) {
-                                    toast.error("Account name should not contain numbers or special characters")
-                                    return
-                                }
-
-                                toast.success(`Service account '${newAccountName.trim()}' created successfully`)
-                                setNewAccountName("")
-                                setShowCreateDialog(false)
-                            }}
-                        >
-                            Generate account
-                        </CustomButton>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                </div>
+            </SideFormSheet>
         </div>
     )
 }

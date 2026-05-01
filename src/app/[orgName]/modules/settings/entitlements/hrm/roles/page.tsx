@@ -1,50 +1,36 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import {
     Briefcase,
     Search,
     Plus,
-    MoreHorizontal,
+    MoreVertical,
     ShieldCheck,
     ArrowUpRight,
     Crown,
     Loader2,
+    Pencil,
+    Trash2,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table"
+import { Input } from "@/shared/components/ui/input"
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { SmallCard, SmallCardContent } from "@/components/custom/SmallCard"
-import { toast } from "sonner"
-import {
-    Dialog,
-    DialogContent,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label"
+} from "@/shared/components/ui/dropdown-menu"
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from "@/components/ui/select"
+} from "@/shared/components/ui/select"
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet"
+import { Textarea } from "@/shared/components/ui/textarea"
+import { showSuccess, showWarning } from "@/utils/toast"
 import {
     getAllPositions,
     getDepartmentList,
@@ -80,6 +66,7 @@ export default function JobRolesPage() {
     const [pageLoading, setPageLoading] = useState(true)
     const [newItem, setNewItem] = useState({ title: "", level: "", department: "", description: "" })
     const [editItem, setEditItem] = useState<Position | null>(null)
+    const [touched, setTouched] = useState<Record<string, boolean>>({})
 
     const [roles, setRoles] = useState<Position[]>([])
     const [departmentOptions, setDepartmentOptions] = useState<DeptOption[]>([])
@@ -89,7 +76,7 @@ export default function JobRolesPage() {
             const response = await getAllPositions()
             setRoles(response.data?.positions || [])
         } catch (err) {
-            toast.error("Failed to fetch positions")
+            showWarning("Failed to fetch positions")
         } finally {
             setPageLoading(false)
         }
@@ -100,7 +87,7 @@ export default function JobRolesPage() {
             const response = await getDepartmentList()
             setDepartmentOptions(response.data?.departments || [])
         } catch (err) {
-            // silent - dropdown will just be empty
+            // silent
         }
     }
 
@@ -120,8 +107,27 @@ export default function JobRolesPage() {
             (r.department?.name || "").toLowerCase().includes(searchQuery.toLowerCase())
     )
 
-    const handleCreate = async () => {
-        if (!newItem.title || !newItem.department) return toast.error("Please fill title and department")
+    const createErrors = useMemo(() => {
+        const e: Record<string, string> = {}
+        if (touched.title && !newItem.title.trim()) e.title = "Job title is required"
+        if (touched.department && !newItem.department) e.department = "Department is required"
+        return e
+    }, [newItem, touched])
+
+    const editErrors = useMemo(() => {
+        const e: Record<string, string> = {}
+        if (!editItem) return e
+        if (touched.editTitle && !editItem.title.trim()) e.title = "Job title is required"
+        return e
+    }, [editItem, touched])
+
+    const handleCreate = async (e: React.FormEvent) => {
+        e.preventDefault()
+        setTouched({ title: true, department: true })
+        if (!newItem.title.trim() || !newItem.department) {
+            showWarning("Please fill the title and select a department")
+            return
+        }
         setIsLoading(true)
         try {
             await createPosition({
@@ -132,17 +138,22 @@ export default function JobRolesPage() {
             })
             setIsCreateOpen(false)
             setNewItem({ title: "", level: "", department: "", description: "" })
-            toast.success("Role created")
+            setTouched({})
+            showSuccess("Role created")
             await fetchPositions()
-        } catch (err) {
-            // Error already handled by hook
         } finally {
             setIsLoading(false)
         }
     }
 
-    const handleUpdate = async () => {
-        if (!editItem || !editItem.title) return toast.error("Please fill the title")
+    const handleUpdate = async (e: React.FormEvent) => {
+        e.preventDefault()
+        if (!editItem) return
+        setTouched((t) => ({ ...t, editTitle: true }))
+        if (!editItem.title.trim()) {
+            showWarning("Please fill the title")
+            return
+        }
         setIsLoading(true)
         try {
             await updatePosition(editItem._id, {
@@ -153,275 +164,287 @@ export default function JobRolesPage() {
             })
             setIsEditOpen(false)
             setEditItem(null)
-            toast.success("Role updated")
+            setTouched({})
+            showSuccess("Role updated")
             await fetchPositions()
-        } catch (err) {
-            // Error already handled by hook
         } finally {
             setIsLoading(false)
         }
     }
 
     const handleDelete = async (id: string) => {
+        const confirmed = window.confirm("Are you sure you want to delete this role?")
+        if (!confirmed) return
         try {
             await deletePosition(id)
-            toast.success("Role deleted")
+            showSuccess("Role deleted")
             await fetchPositions()
         } catch (err) {
-            // Error already handled by hook
+            // handled in hook
         }
     }
 
     const openEdit = (r: Position) => {
         setEditItem({ ...r })
+        setTouched({})
         setIsEditOpen(true)
     }
 
     if (pageLoading) {
         return (
-            <div className="font-outfit flex items-center justify-center min-h-screen bg-[#fafafa]">
-                <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+            <div className="flex items-center justify-center min-h-screen bg-transparent">
+                <Loader2 className="w-6 h-6 animate-spin text-primary" />
             </div>
         )
     }
 
     return (
-        <div className="font-outfit flex flex-col gap-6 p-6 min-h-screen bg-[#fafafa]">
-            {/* Breadcrumb */}
-            <div className="flex flex-col gap-1">
-                <div className="flex items-center gap-2 text-xs font-medium text-gray-400">
-                    <span>Hr governance</span>
-                    <span>/</span>
-                    <span className="text-gray-900 font-semibold">Roles</span>
-                </div>
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mt-2">
+        <div className="flex flex-col min-h-screen bg-transparent">
+            <div className="p-6 pb-0">
+                <div className="flex items-center justify-between mb-1">
                     <div>
-                        <h1 className="text-xl font-semibold text-gray-900 tracking-tight">Job Role Templates</h1>
-                        <p className="text-xs text-gray-500 font-medium">Standardize designations and hierarchy levels.</p>
+                        <h1 className="text-2xl font-bold tracking-tight text-zinc-900">Job Role Templates</h1>
+                        <p className="text-sm text-zinc-500 mt-1">Standardize designations and hierarchy levels across the organization.</p>
                     </div>
-                    <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-                        <DialogTrigger asChild>
-                            <Button className="rounded-xl bg-blue-600 hover:bg-blue-700 font-semibold text-xs h-10 gap-2 shadow-lg px-5">
-                                <Plus className="w-4 h-4" />
-                                New role
-                            </Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-md rounded-xl p-0 overflow-hidden">
-                            <DialogHeader className="bg-gradient-to-r from-blue-600 to-blue-700 px-5 py-4">
-                                <DialogTitle className="text-white font-semibold">Create role</DialogTitle>
-                            </DialogHeader>
-                            <div className="grid gap-4 px-5 py-4">
-                                <div className="grid gap-2">
-                                    <Label className="text-xs font-semibold">Job title</Label>
-                                    <Input className="h-9 rounded-lg" value={newItem.title} onChange={(e) => setNewItem({ ...newItem, title: e.target.value })} placeholder="e.g. Sales Executive" />
-                                </div>
-                                <div className="grid gap-2">
-                                    <Label className="text-xs font-semibold">Department</Label>
-                                    <Select value={newItem.department} onValueChange={(v) => setNewItem({ ...newItem, department: v })}>
-                                        <SelectTrigger className="h-9 rounded-lg">
-                                            <SelectValue placeholder="Select department" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {departmentOptions.map((dept) => (
-                                                <SelectItem key={dept._id} value={dept._id}>{dept.name}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="grid gap-2">
-                                    <Label className="text-xs font-semibold">Level</Label>
-                                    <Select value={newItem.level} onValueChange={(v) => setNewItem({ ...newItem, level: v })}>
-                                        <SelectTrigger className="h-9 rounded-lg">
-                                            <SelectValue placeholder="Select level" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {LEVELS.map((l) => (
-                                                <SelectItem key={l} value={l}>{l}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="grid gap-2">
-                                    <Label className="text-xs font-semibold">Description (optional)</Label>
-                                    <Input className="h-9 rounded-lg" value={newItem.description} onChange={(e) => setNewItem({ ...newItem, description: e.target.value })} placeholder="e.g. Manages sales pipeline" />
-                                </div>
-                            </div>
-                            <DialogFooter className="px-5 pb-4">
-                                <Button onClick={handleCreate} disabled={isLoading} className="rounded-lg bg-blue-600 hover:bg-blue-700 font-semibold text-xs">
-                                    {isLoading ? "Creating..." : "Create role"}
-                                </Button>
-                            </DialogFooter>
-                        </DialogContent>
-                    </Dialog>
+                    <Button
+                        onClick={() => { setNewItem({ title: "", level: "", department: "", description: "" }); setTouched({}); setIsCreateOpen(true) }}
+                        className="rounded-none bg-primary hover:bg-primary/90 font-medium text-xs h-8 gap-2 shadow-md shadow-primary/20 px-5"
+                    >
+                        <Plus size={14} /> New Role
+                    </Button>
                 </div>
             </div>
 
-            {/* Stats cards */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <SmallCard className="rounded-xl border bg-gradient-to-r from-primary/70 to-primary text-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
-                    <SmallCardContent className="p-4">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-xs text-white/80">Total roles</p>
-                                <p className="text-xl font-semibold text-white tracking-tight">{roles.length}</p>
-                                <p className="text-[10px] text-white/80">Unique positions</p>
-                            </div>
-                            <Briefcase className="w-5 h-5 text-white/80" />
-                        </div>
-                    </SmallCardContent>
-                </SmallCard>
+            <div className="flex-1 p-6 space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="bg-gradient-to-br from-primary/80 to-primary p-6 rounded-none shadow-xl shadow-primary/20 text-white">
+                        <p className="text-white text-xs opacity-80">Total Roles</p>
+                        <p className="text-white text-xl font-semibold mt-1">{roles.length}</p>
+                        <p className="text-white text-[10px] mt-1 opacity-70">Unique positions</p>
+                    </div>
 
-                <SmallCard className="rounded-xl border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
-                    <SmallCardContent className="p-4">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-xs text-gray-600">Management roles</p>
-                                <p className="text-xl font-semibold text-gray-900">{managementRoles}</p>
-                                <p className="text-[10px] text-gray-500">Leadership positions</p>
-                            </div>
-                            <Crown className="w-5 h-5 text-gray-400" />
-                        </div>
-                    </SmallCardContent>
-                </SmallCard>
+                    <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
+                        <p className="text-zinc-500 text-xs">Management Roles</p>
+                        <p className="text-xl font-semibold text-zinc-900 mt-1">{managementRoles}</p>
+                        <p className="text-primary text-[10px] mt-1">Leadership positions</p>
+                    </div>
 
-                <SmallCard className="rounded-xl border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
-                    <SmallCardContent className="p-4">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-xs text-gray-600">Entry level</p>
-                                <p className="text-xl font-semibold text-gray-900">{entryLevel}</p>
-                                <p className="text-[10px] text-gray-500">Junior positions</p>
-                            </div>
-                            <ArrowUpRight className="w-5 h-5 text-gray-400" />
-                        </div>
-                    </SmallCardContent>
-                </SmallCard>
+                    <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
+                        <p className="text-zinc-500 text-xs">Entry Level</p>
+                        <p className="text-xl font-semibold text-zinc-900 mt-1">{entryLevel}</p>
+                        <p className="text-emerald-600 text-[10px] mt-1">Junior positions</p>
+                    </div>
 
-                <SmallCard className="rounded-xl border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
-                    <SmallCardContent className="p-4">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-xs text-gray-600">Senior roles</p>
-                                <p className="text-xl font-semibold text-gray-900">{seniorRoles}</p>
-                                <p className="text-[10px] text-gray-500">Experienced positions</p>
-                            </div>
-                            <ShieldCheck className="w-5 h-5 text-gray-400" />
+                    <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
+                        <p className="text-zinc-500 text-xs">Senior Roles</p>
+                        <p className="text-xl font-semibold text-zinc-900 mt-1">{seniorRoles}</p>
+                        <p className="text-amber-600 text-[10px] mt-1">Experienced positions</p>
+                    </div>
+                </div>
+
+                <div className="bg-white border border-zinc-200 rounded-none shadow-lg overflow-hidden">
+                    <div className="p-4 border-b border-zinc-100 flex flex-col md:flex-row gap-4 justify-between items-center bg-zinc-50/50">
+                        <div className="relative w-full md:w-96">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={16} />
+                            <Input
+                                placeholder="Search roles, departments or levels..."
+                                className="pl-10 rounded-none border-zinc-200 h-10 text-xs font-medium focus:ring-primary bg-white"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
                         </div>
-                    </SmallCardContent>
-                </SmallCard>
+                    </div>
+
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="bg-zinc-100/50 border-b border-zinc-100">
+                                    <th className="px-6 py-3 text-[11px] font-medium text-gray-500">Job Title</th>
+                                    <th className="px-6 py-3 text-[11px] font-medium text-gray-500">Department</th>
+                                    <th className="px-6 py-3 text-[11px] font-medium text-gray-500">Level</th>
+                                    <th className="px-6 py-3 text-[11px] font-medium text-gray-500 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-zinc-100">
+                                {filtered.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={4} className="px-6 py-12 text-center">
+                                            <Briefcase className="w-10 h-10 text-zinc-300 mx-auto mb-2" />
+                                            <p className="text-sm text-zinc-500">No roles found</p>
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    filtered.map((r) => (
+                                        <tr key={r._id} className="hover:bg-primary/5 transition-colors">
+                                            <td className="px-6 py-3">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="p-2.5 bg-primary/10 text-primary rounded-none border border-primary/10">
+                                                        <Briefcase size={16} />
+                                                    </div>
+                                                    <span className="text-sm font-semibold text-gray-900">{r.title}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-3 text-xs text-gray-600">{r.department?.name || "—"}</td>
+                                            <td className="px-6 py-3 text-xs">
+                                                {r.level ? (
+                                                    <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-none text-[10px] font-medium">{r.level}</span>
+                                                ) : (
+                                                    <span className="text-zinc-400">—</span>
+                                                )}
+                                            </td>
+                                            <td className="px-6 py-3 text-right">
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button variant="ghost" className="h-7 w-7 p-0 hover:bg-zinc-100 rounded-none">
+                                                            <MoreVertical className="h-4 w-4 text-zinc-400" />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end" className="w-40 rounded-none">
+                                                        <DropdownMenuItem onClick={() => openEdit(r)} className="text-xs gap-2">
+                                                            <Pencil size={12} /> Edit
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem className="text-rose-600 text-xs gap-2" onClick={() => handleDelete(r._id)}>
+                                                            <Trash2 size={12} /> Delete
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
 
-            {/* Table */}
-            <div className="bg-white rounded-xl border shadow-sm overflow-hidden flex flex-col">
-                <div className="p-4 border-b flex items-center justify-between">
-                    <div className="relative w-full md:w-80">
-                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+            {/* Create sheet */}
+            <SideFormSheet
+                open={isCreateOpen}
+                onOpenChange={(o) => { setIsCreateOpen(o); if (!o) { setNewItem({ title: "", level: "", department: "", description: "" }); setTouched({}) } }}
+                title="Create Role"
+                description="Define a new job role template and map it to a department."
+                icon={<Briefcase className="w-5 h-5" />}
+                width="md"
+                onSubmit={handleCreate}
+                submitLabel={isLoading ? "Creating..." : "Create Role"}
+                loading={isLoading}
+                submitDisabled={!newItem.title.trim() || !newItem.department}
+            >
+                <div className="space-y-4">
+                    <Field label="Job Title" required error={createErrors.title}>
                         <Input
-                            placeholder="Search roles..."
-                            className="pl-9 h-9 rounded-lg text-xs font-medium"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder="e.g. Sales Executive"
+                            value={newItem.title}
+                            onChange={(e) => setNewItem({ ...newItem, title: e.target.value })}
+                            onBlur={() => setTouched((t) => ({ ...t, title: true }))}
+                            className="h-11 rounded-lg border-[#E5E7EB] bg-white focus:border-primary"
                         />
-                    </div>
+                    </Field>
+
+                    <Field label="Department" required error={createErrors.department}>
+                        <Select
+                            value={newItem.department}
+                            onValueChange={(v) => { setNewItem({ ...newItem, department: v }); setTouched((t) => ({ ...t, department: true })) }}
+                        >
+                            <SelectTrigger className="h-11 rounded-lg border-[#E5E7EB] bg-white">
+                                <SelectValue placeholder="Select department" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {departmentOptions.map((dept) => (
+                                    <SelectItem key={dept._id} value={dept._id}>{dept.name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </Field>
+
+                    <Field label="Level" hint="Seniority tier for this role">
+                        <Select value={newItem.level} onValueChange={(v) => setNewItem({ ...newItem, level: v })}>
+                            <SelectTrigger className="h-11 rounded-lg border-[#E5E7EB] bg-white">
+                                <SelectValue placeholder="Select level" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {LEVELS.map((l) => (
+                                    <SelectItem key={l} value={l}>{l}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </Field>
+
+                    <Field label="Description" hint="Optional, short summary of responsibilities">
+                        <Textarea
+                            placeholder="e.g. Manages sales pipeline and client relationships"
+                            value={newItem.description}
+                            onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
+                            className="rounded-lg border-[#E5E7EB] bg-white focus:border-primary min-h-[90px] text-sm"
+                        />
+                    </Field>
                 </div>
+            </SideFormSheet>
 
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead className="py-3 px-4 text-xs font-semibold text-gray-500">Job title</TableHead>
-                            <TableHead className="py-3 text-xs font-semibold text-gray-500">Department</TableHead>
-                            <TableHead className="py-3 text-xs font-semibold text-gray-500">Level</TableHead>
-                            <TableHead className="py-3 text-right pr-4 text-xs font-semibold text-gray-500">Actions</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {filtered.map((r) => (
-                            <TableRow key={r._id} className="hover:bg-gray-50 transition-colors">
-                                <TableCell className="py-3 px-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 border border-blue-100">
-                                            <Briefcase className="w-4 h-4" />
-                                        </div>
-                                        <span className="text-sm font-semibold text-gray-900">{r.title}</span>
-                                    </div>
-                                </TableCell>
-                                <TableCell className="py-3 text-sm text-gray-600">{r.department?.name || "-"}</TableCell>
-                                <TableCell className="py-3 text-sm text-gray-600">{r.level || "-"}</TableCell>
-                                <TableCell className="py-3 text-right pr-4">
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" className="h-7 w-7 p-0 hover:bg-gray-100 rounded-lg">
-                                                <MoreHorizontal className="h-4 w-4 text-gray-400" />
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end" className="w-48 rounded-lg">
-                                            <DropdownMenuItem onClick={() => openEdit(r)}>Edit</DropdownMenuItem>
-                                            <DropdownMenuItem className="text-rose-600" onClick={() => handleDelete(r._id)}>Delete</DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </div>
-
-            {/* Edit dialog */}
-            <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-                <DialogContent className="max-w-md rounded-xl p-0 overflow-hidden">
-                    <DialogHeader className="bg-gradient-to-r from-blue-600 to-blue-700 px-5 py-4">
-                        <DialogTitle className="text-white font-semibold">Edit role</DialogTitle>
-                    </DialogHeader>
-                    {editItem && (
-                        <>
-                            <div className="grid gap-4 px-5 py-4">
-                                <div className="grid gap-2">
-                                    <Label className="text-xs font-semibold">Job title</Label>
-                                    <Input className="h-9 rounded-lg" value={editItem.title} onChange={(e) => setEditItem({ ...editItem, title: e.target.value })} />
-                                </div>
-                                <div className="grid gap-2">
-                                    <Label className="text-xs font-semibold">Department</Label>
-                                    <Select value={editItem.department?._id || ""} onValueChange={(v) => {
-                                        const dept = departmentOptions.find(d => d._id === v)
-                                        setEditItem({ ...editItem, department: { _id: v, name: dept?.name || "" } })
-                                    }}>
-                                        <SelectTrigger className="h-9 rounded-lg">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {departmentOptions.map((dept) => (
-                                                <SelectItem key={dept._id} value={dept._id}>{dept.name}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="grid gap-2">
-                                    <Label className="text-xs font-semibold">Level</Label>
-                                    <Select value={editItem.level || ""} onValueChange={(v) => setEditItem({ ...editItem, level: v })}>
-                                        <SelectTrigger className="h-9 rounded-lg">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {LEVELS.map((l) => (
-                                                <SelectItem key={l} value={l}>{l}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="grid gap-2">
-                                    <Label className="text-xs font-semibold">Description</Label>
-                                    <Input className="h-9 rounded-lg" value={editItem.description || ""} onChange={(e) => setEditItem({ ...editItem, description: e.target.value })} />
-                                </div>
-                            </div>
-                            <DialogFooter className="px-5 pb-4">
-                                <Button onClick={handleUpdate} disabled={isLoading} className="rounded-lg bg-blue-600 hover:bg-blue-700 font-semibold text-xs">
-                                    {isLoading ? "Saving..." : "Save changes"}
-                                </Button>
-                            </DialogFooter>
-                        </>
-                    )}
-                </DialogContent>
-            </Dialog>
+            {/* Edit sheet */}
+            <SideFormSheet
+                open={isEditOpen}
+                onOpenChange={(o) => { setIsEditOpen(o); if (!o) { setEditItem(null); setTouched({}) } }}
+                title="Edit Role"
+                description="Update job role details and hierarchy level."
+                icon={<Pencil className="w-5 h-5" />}
+                width="md"
+                onSubmit={handleUpdate}
+                submitLabel={isLoading ? "Saving..." : "Save Changes"}
+                loading={isLoading}
+                submitDisabled={!editItem || !editItem.title.trim()}
+            >
+                {editItem && (
+                    <div className="space-y-4">
+                        <Field label="Job Title" required error={editErrors.title}>
+                            <Input
+                                value={editItem.title}
+                                onChange={(e) => setEditItem({ ...editItem, title: e.target.value })}
+                                onBlur={() => setTouched((t) => ({ ...t, editTitle: true }))}
+                                className="h-11 rounded-lg border-[#E5E7EB] bg-white focus:border-primary"
+                            />
+                        </Field>
+                        <Field label="Department">
+                            <Select
+                                value={editItem.department?._id || ""}
+                                onValueChange={(v) => {
+                                    const dept = departmentOptions.find(d => d._id === v)
+                                    setEditItem({ ...editItem, department: { _id: v, name: dept?.name || "" } })
+                                }}
+                            >
+                                <SelectTrigger className="h-11 rounded-lg border-[#E5E7EB] bg-white">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {departmentOptions.map((dept) => (
+                                        <SelectItem key={dept._id} value={dept._id}>{dept.name}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <Field label="Level">
+                            <Select value={editItem.level || ""} onValueChange={(v) => setEditItem({ ...editItem, level: v })}>
+                                <SelectTrigger className="h-11 rounded-lg border-[#E5E7EB] bg-white">
+                                    <SelectValue placeholder="Select level" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {LEVELS.map((l) => (
+                                        <SelectItem key={l} value={l}>{l}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <Field label="Description">
+                            <Textarea
+                                value={editItem.description || ""}
+                                onChange={(e) => setEditItem({ ...editItem, description: e.target.value })}
+                                className="rounded-lg border-[#E5E7EB] bg-white focus:border-primary min-h-[90px] text-sm"
+                            />
+                        </Field>
+                    </div>
+                )}
+            </SideFormSheet>
         </div>
     )
 }

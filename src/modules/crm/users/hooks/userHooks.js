@@ -170,8 +170,7 @@ export const getUserProfile = async () => {
  * Fetches all users for the organization.
  */
 export const getAllUsers = async () => {
-  const orgId = localStorage.getItem("orgID");
-  const response = await axios.get(`/auth/getAllusers/${orgId}`, {
+  const response = await axios.get(`/organization/users/all`, {
     headers: { "Content-Type": "application/json" },
   });
   return response;

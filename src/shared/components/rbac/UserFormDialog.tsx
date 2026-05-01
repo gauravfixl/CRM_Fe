@@ -4,15 +4,7 @@ import { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
-import { Loader2 } from "lucide-react"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/shared/components/ui/dialog"
+import { Loader2, UserPlus, Pencil, Mail, KeySquare } from "lucide-react"
 import {
   Select,
   SelectContent,
@@ -20,11 +12,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/shared/components/ui/select"
-import { Label } from "@/shared/components/ui/label"
 import { Input } from "@/shared/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { MultiSelect } from "@/shared/components/custom/multi-select"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet"
 import { showError, showSuccess } from "@/utils/toast"
 import { getFirmList } from "@/modules/crm/firms/hooks/firmHooks"
 import { getAllRolesNPermissions } from "@/hooks/roleNPermissionHooks"
@@ -118,6 +110,10 @@ const splitName = (name: string): { firstName: string; lastName: string } => {
   const [first, ...rest] = t.split(/\s+/)
   return { firstName: first || "", lastName: rest.join(" ") || "" }
 }
+
+const INVITE_FORM_ID = "user-form-invite"
+const DIRECT_FORM_ID = "user-form-direct"
+const EDIT_FORM_ID = "user-form-edit"
 
 export function UserFormDialog({
   open,
@@ -325,62 +321,76 @@ export function UserFormDialog({
     label: string,
     name: string,
     form: any,
+    required?: boolean,
     type: string = "text",
-    placeholder?: string
+    placeholder?: string,
+    hint?: string
   ) => (
-    <div className="space-y-1.5">
-      <Label className="text-xs text-gray-700 font-medium">{label}</Label>
+    <Field
+      label={label}
+      required={required}
+      error={
+        form.formState.errors?.[name]?.message
+          ? String(form.formState.errors[name].message)
+          : undefined
+      }
+      hint={hint}
+    >
       <Input
         type={type}
         placeholder={placeholder}
-        className="h-9 rounded-none text-sm"
+        className="h-11 rounded-lg bg-white border-[#E5E7EB] focus:border-primary"
         {...form.register(name)}
       />
-      {form.formState.errors?.[name]?.message && (
-        <p className="text-[11px] text-red-600 font-medium">
-          {String(form.formState.errors[name].message)}
-        </p>
-      )}
-    </div>
+    </Field>
   )
 
   const renderRoleField = (form: any) => (
-    <div className="space-y-1.5">
-      <Label className="text-xs text-gray-700 font-medium">Role</Label>
+    <Field
+      label="Role"
+      required
+      error={
+        form.formState.errors?.roleId?.message
+          ? String(form.formState.errors.roleId.message)
+          : undefined
+      }
+    >
       <Select
         value={form.watch("roleId") || ""}
         onValueChange={(v) => form.setValue("roleId", v, { shouldValidate: true })}
       >
-        <SelectTrigger className="h-9 rounded-none text-sm">
+        <SelectTrigger className="h-11 rounded-lg border-[#E5E7EB] bg-white">
           <SelectValue placeholder={loadingMeta ? "Loading roles..." : "Select a role"} />
         </SelectTrigger>
-        <SelectContent className="rounded-none">
+        <SelectContent>
           {roles.length === 0 && !loadingMeta ? (
             <div className="px-2 py-1.5 text-xs text-gray-500">
               No roles found. Create one from Administration → Roles.
             </div>
           ) : (
             roles.map((role) => (
-              <SelectItem key={role._id} value={role._id} className="rounded-none text-sm">
+              <SelectItem key={role._id} value={role._id}>
                 {role.name} {role.isCustom ? " (Custom)" : ""}
               </SelectItem>
             ))
           )}
         </SelectContent>
       </Select>
-      {form.formState.errors?.roleId?.message && (
-        <p className="text-[11px] text-red-600 font-medium">
-          {String(form.formState.errors.roleId.message)}
-        </p>
-      )}
-    </div>
+    </Field>
   )
 
   const renderFirmsField = (form: any) => (
-    <div className="space-y-1.5">
-      <Label className="text-xs text-gray-700 font-medium">Assign to firms</Label>
+    <Field
+      label="Assign to firms"
+      required
+      error={
+        form.formState.errors?.firmIds?.message
+          ? String(form.formState.errors.firmIds.message)
+          : undefined
+      }
+    >
       {firms.length === 0 && !loadingMeta ? (
-        <div className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 p-2 rounded-none">
+        <div className="text-[12px] text-amber-700 bg-amber-50 border border-amber-200 p-2.5 rounded-lg">
           No firms available. Create a firm from Business Units first.
         </div>
       ) : (
@@ -391,12 +401,7 @@ export function UserFormDialog({
           placeholder={loadingMeta ? "Loading firms..." : "Select one or more firms"}
         />
       )}
-      {form.formState.errors?.firmIds?.message && (
-        <p className="text-[11px] text-red-600 font-medium">
-          {String(form.formState.errors.firmIds.message)}
-        </p>
-      )}
-    </div>
+    </Field>
   )
 
   const title =
@@ -408,148 +413,137 @@ export function UserFormDialog({
       ? "Create a user directly with immediate access"
       : "Send an invitation — or create directly"
 
+  const icon =
+    mode === "edit" ? <Pencil className="w-5 h-5" /> : <UserPlus className="w-5 h-5" />
+
   const submittingEdit = editForm.formState.isSubmitting
   const submittingInvite = inviteForm.formState.isSubmitting
   const submittingDirect = directForm.formState.isSubmitting
 
+  // Determine active form id + submit button state for the footer
+  const activeFormId =
+    mode === "edit"
+      ? EDIT_FORM_ID
+      : activeTab === "direct"
+      ? DIRECT_FORM_ID
+      : INVITE_FORM_ID
+
+  const activeSubmitting =
+    mode === "edit"
+      ? submittingEdit
+      : activeTab === "direct"
+      ? submittingDirect
+      : submittingInvite
+
+  const activeSubmitLabel =
+    mode === "edit"
+      ? "Save changes"
+      : activeTab === "direct"
+      ? "Create user"
+      : "Send invitation"
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg rounded-none p-0 gap-0">
-        <div className="bg-gradient-to-r from-primary to-primary/80 px-5 py-4">
-          <DialogHeader>
-            <DialogTitle className="text-white text-sm font-semibold">
-              {title}
-            </DialogTitle>
-            <DialogDescription className="text-white/70 text-xs">
-              {description}
-            </DialogDescription>
-          </DialogHeader>
-        </div>
+    <SideFormSheet
+      open={open}
+      onOpenChange={onOpenChange}
+      title={title}
+      description={description}
+      icon={icon}
+      width="lg"
+      footer={
+        <>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={activeSubmitting}
+            className="h-10 px-5 rounded-lg border-[#E5E7EB] text-[#374151] hover:bg-[#F3F4F6]"
+          >
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            form={activeFormId}
+            disabled={activeSubmitting || loadingMeta}
+            className="h-10 px-5 rounded-lg bg-primary hover:bg-primary/90 text-white gap-2"
+          >
+            {activeSubmitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+            {activeSubmitLabel}
+          </Button>
+        </>
+      }
+    >
+      {mode === "edit" && editTarget ? (
+        <form
+          id={EDIT_FORM_ID}
+          onSubmit={editForm.handleSubmit(handleEditSubmit)}
+          className="space-y-4"
+        >
+          <div className="grid grid-cols-2 gap-3">
+            {renderField("First name", "firstName", editForm, true, "text", "e.g. Priya")}
+            {renderField("Last name", "lastName", editForm, true, "text", "e.g. Sharma")}
+          </div>
+          {renderField("Email", "email", editForm, true, "email", "user@company.com")}
+          {renderRoleField(editForm)}
+          {renderFirmsField(editForm)}
+        </form>
+      ) : (
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
+          <TabsList className="w-full mb-4 grid grid-cols-2">
+            <TabsTrigger value="invite" className="text-[12.5px] gap-1.5">
+              <Mail className="w-3.5 h-3.5" /> Send invite
+            </TabsTrigger>
+            <TabsTrigger value="direct" className="text-[12.5px] gap-1.5">
+              <KeySquare className="w-3.5 h-3.5" /> Create directly
+            </TabsTrigger>
+          </TabsList>
 
-        {mode === "edit" && editTarget ? (
-          <form onSubmit={editForm.handleSubmit(handleEditSubmit)}>
-            <div className="p-5 space-y-3 max-h-[60vh] overflow-y-auto">
+          <TabsContent value="invite" className="m-0">
+            <form
+              id={INVITE_FORM_ID}
+              onSubmit={inviteForm.handleSubmit(handleInviteSubmit)}
+              className="space-y-4"
+            >
               <div className="grid grid-cols-2 gap-3">
-                {renderField("First name", "firstName", editForm, "text", "e.g. Priya")}
-                {renderField("Last name", "lastName", editForm, "text", "e.g. Sharma")}
+                {renderField("First name", "firstName", inviteForm, true, "text", "e.g. Priya")}
+                {renderField("Last name", "lastName", inviteForm, true, "text", "e.g. Sharma")}
               </div>
-              {renderField("Email", "email", editForm, "email", "user@company.com")}
-              {renderRoleField(editForm)}
-              {renderFirmsField(editForm)}
-            </div>
-            <DialogFooter className="px-5 py-3 border-t border-gray-100 bg-gray-50">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-                className="rounded-none"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                disabled={submittingEdit || loadingMeta}
-                className="rounded-none bg-primary hover:bg-primary/90 text-white"
-              >
-                {submittingEdit && <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />}
-                Save changes
-              </Button>
-            </DialogFooter>
-          </form>
-        ) : (
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
-            <div className="px-5 pt-3">
-              <TabsList className="rounded-none w-full">
-                <TabsTrigger value="invite" className="flex-1 rounded-none text-xs">
-                  Send invite
-                </TabsTrigger>
-                <TabsTrigger value="direct" className="flex-1 rounded-none text-xs">
-                  Create directly
-                </TabsTrigger>
-              </TabsList>
-            </div>
+              {renderField("Email", "email", inviteForm, true, "email", "user@company.com")}
+              {renderRoleField(inviteForm)}
+              {renderFirmsField(inviteForm)}
+            </form>
+          </TabsContent>
 
-            <TabsContent value="invite" className="m-0">
-              <form onSubmit={inviteForm.handleSubmit(handleInviteSubmit)}>
-                <div className="p-5 space-y-3 max-h-[60vh] overflow-y-auto">
-                  <div className="grid grid-cols-2 gap-3">
-                    {renderField("First name", "firstName", inviteForm, "text", "e.g. Priya")}
-                    {renderField("Last name", "lastName", inviteForm, "text", "e.g. Sharma")}
-                  </div>
-                  {renderField("Email", "email", inviteForm, "email", "user@company.com")}
-                  {renderRoleField(inviteForm)}
-                  {renderFirmsField(inviteForm)}
-                </div>
-                <DialogFooter className="px-5 py-3 border-t border-gray-100 bg-gray-50">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => onOpenChange(false)}
-                    className="rounded-none"
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={submittingInvite || loadingMeta}
-                    className="rounded-none bg-primary hover:bg-primary/90 text-white"
-                  >
-                    {submittingInvite && (
-                      <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />
-                    )}
-                    Send invitation
-                  </Button>
-                </DialogFooter>
-              </form>
-            </TabsContent>
-
-            <TabsContent value="direct" className="m-0">
-              <form onSubmit={directForm.handleSubmit(handleDirectSubmit)}>
-                <div className="p-5 space-y-3 max-h-[60vh] overflow-y-auto">
-                  <div className="grid grid-cols-2 gap-3">
-                    {renderField("First name", "firstName", directForm, "text", "e.g. Priya")}
-                    {renderField("Last name", "lastName", directForm, "text", "e.g. Sharma")}
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    {renderField("Email", "email", directForm, "email", "user@company.com")}
-                    {renderField("Phone", "phone", directForm, "tel", "+9198xxxxxxx")}
-                  </div>
-                  {renderField(
-                    "Temporary password",
-                    "password",
-                    directForm,
-                    "password",
-                    "Min 8 chars, 1 upper, 1 lower, 1 digit"
-                  )}
-                  {renderRoleField(directForm)}
-                  {renderFirmsField(directForm)}
-                </div>
-                <DialogFooter className="px-5 py-3 border-t border-gray-100 bg-gray-50">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => onOpenChange(false)}
-                    className="rounded-none"
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={submittingDirect || loadingMeta}
-                    className="rounded-none bg-primary hover:bg-primary/90 text-white"
-                  >
-                    {submittingDirect && (
-                      <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />
-                    )}
-                    Create user
-                  </Button>
-                </DialogFooter>
-              </form>
-            </TabsContent>
-          </Tabs>
-        )}
-      </DialogContent>
-    </Dialog>
+          <TabsContent value="direct" className="m-0">
+            <form
+              id={DIRECT_FORM_ID}
+              onSubmit={directForm.handleSubmit(handleDirectSubmit)}
+              className="space-y-4"
+            >
+              <div className="grid grid-cols-2 gap-3">
+                {renderField("First name", "firstName", directForm, true, "text", "e.g. Priya")}
+                {renderField("Last name", "lastName", directForm, true, "text", "e.g. Sharma")}
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                {renderField("Email", "email", directForm, true, "email", "user@company.com")}
+                {renderField("Phone", "phone", directForm, true, "tel", "+9198xxxxxxx")}
+              </div>
+              {renderField(
+                "Temporary password",
+                "password",
+                directForm,
+                true,
+                "password",
+                "Strong password",
+                "Min 8 chars, 1 upper, 1 lower, 1 digit"
+              )}
+              {renderRoleField(directForm)}
+              {renderFirmsField(directForm)}
+            </form>
+          </TabsContent>
+        </Tabs>
+      )}
+    </SideFormSheet>
   )
 }
 

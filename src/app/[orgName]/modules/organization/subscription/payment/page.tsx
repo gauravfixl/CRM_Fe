@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
     CreditCard,
     Plus,
@@ -8,16 +8,14 @@ import {
     ShieldCheck,
     Mail,
     MapPin,
-    Check,
     AlertTriangle,
-    Pencil
+    Pencil,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import {
     Dialog,
@@ -26,8 +24,8 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
 } from "@/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 
 interface PaymentCard {
     id: string;
@@ -253,83 +251,14 @@ export default function PaymentMethodsPage() {
                         </div>
                     ))}
 
-                    {/* Add New Card */}
-                    <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-                        <DialogTrigger asChild>
-                            <Button variant="outline" className="w-full h-10 border-dashed border-2 bg-transparent hover:bg-slate-50 text-slate-500 hover:text-slate-900 font-medium text-xs rounded-xl gap-1.5">
-                                <Plus className="w-3.5 h-3.5" /> Add Payment Method
-                            </Button>
-                        </DialogTrigger>
-                        <DialogContent className="sm:max-w-md rounded-xl border-t-4 border-t-blue-600 gap-5">
-                            <DialogHeader>
-                                <DialogTitle className="flex items-center gap-2 text-sm font-semibold">
-                                    <CreditCard className="w-4 h-4 text-blue-600" />
-                                    Add New Card
-                                </DialogTitle>
-                                <DialogDescription className="text-xs">
-                                    Securely link a new credit or debit card for future invoices.
-                                </DialogDescription>
-                            </DialogHeader>
-                            <form onSubmit={handleAddCard} className="space-y-3">
-                                <div className="space-y-1.5">
-                                    <Label className="text-[10px] font-medium text-slate-500">Name on Card</Label>
-                                    <Input
-                                        placeholder="e.g. John Doe"
-                                        value={newCard.name}
-                                        onChange={(e) => setNewCard(prev => ({ ...prev, name: e.target.value }))}
-                                        className={`rounded-lg text-xs h-9 ${cardErrors.name ? "border-red-400" : ""}`}
-                                        required
-                                    />
-                                    {cardErrors.name && <p className="text-[10px] text-red-500">{cardErrors.name}</p>}
-                                </div>
-                                <div className="space-y-1.5">
-                                    <Label className="text-[10px] font-medium text-slate-500">Card Number</Label>
-                                    <div className="relative">
-                                        <CreditCard className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
-                                        <Input
-                                            placeholder="0000 0000 0000 0000"
-                                            value={newCard.number}
-                                            onChange={(e) => setNewCard(prev => ({ ...prev, number: e.target.value.replace(/[^\d\s]/g, "").slice(0, 19) }))}
-                                            className={`pl-9 rounded-lg font-mono text-xs h-9 ${cardErrors.number ? "border-red-400" : ""}`}
-                                            required
-                                        />
-                                    </div>
-                                    {cardErrors.number && <p className="text-[10px] text-red-500">{cardErrors.number}</p>}
-                                </div>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div className="space-y-1.5">
-                                        <Label className="text-[10px] font-medium text-slate-500">Expiry</Label>
-                                        <Input
-                                            placeholder="MM/YY"
-                                            value={newCard.expiry}
-                                            onChange={(e) => {
-                                                let val = e.target.value.replace(/[^\d]/g, "").slice(0, 4);
-                                                if (val.length >= 3) val = val.slice(0, 2) + "/" + val.slice(2);
-                                                setNewCard(prev => ({ ...prev, expiry: val }));
-                                            }}
-                                            className={`rounded-lg font-mono text-xs text-center h-9 ${cardErrors.expiry ? "border-red-400" : ""}`}
-                                            required
-                                        />
-                                        {cardErrors.expiry && <p className="text-[10px] text-red-500">{cardErrors.expiry}</p>}
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <Label className="text-[10px] font-medium text-slate-500">Cvc</Label>
-                                        <Input
-                                            placeholder="123"
-                                            value={newCard.cvc}
-                                            onChange={(e) => setNewCard(prev => ({ ...prev, cvc: e.target.value.replace(/\D/g, "").slice(0, 3) }))}
-                                            className={`rounded-lg font-mono text-xs text-center h-9 ${cardErrors.cvc ? "border-red-400" : ""}`}
-                                            required
-                                        />
-                                        {cardErrors.cvc && <p className="text-[10px] text-red-500">{cardErrors.cvc}</p>}
-                                    </div>
-                                </div>
-                                <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs rounded-lg h-9 shadow-sm mt-1">
-                                    Link Card Securely
-                                </Button>
-                            </form>
-                        </DialogContent>
-                    </Dialog>
+                    {/* Add New Card — trigger only; side sheet rendered below */}
+                    <Button
+                        variant="outline"
+                        className="w-full h-10 border-dashed border-2 bg-transparent hover:bg-slate-50 text-slate-500 hover:text-slate-900 font-medium text-xs rounded-xl gap-1.5"
+                        onClick={() => setIsAddOpen(true)}
+                    >
+                        <Plus className="w-3.5 h-3.5" /> Add Payment Method
+                    </Button>
                 </div>
 
                 {/* Billing Settings */}
@@ -411,53 +340,182 @@ export default function PaymentMethodsPage() {
                 </DialogContent>
             </Dialog>
 
-            {/* Edit Address Dialog */}
-            <Dialog open={isEditAddressOpen} onOpenChange={setIsEditAddressOpen}>
-                <DialogContent className="sm:max-w-[420px] rounded-xl border-none shadow-xl">
-                    <DialogHeader>
-                        <DialogTitle className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-                            <MapPin className="w-4 h-4 text-slate-600" /> Edit Billing Address
-                        </DialogTitle>
-                        <DialogDescription className="text-xs text-slate-400">Update your organization's billing address.</DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-3 py-3">
-                        <div className="space-y-1.5">
-                            <Label className="text-[10px] font-medium text-slate-500">Company Name</Label>
-                            <Input value={address.company} onChange={(e) => setAddress(prev => ({ ...prev, company: e.target.value }))} className="rounded-lg text-xs h-9" />
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label className="text-[10px] font-medium text-slate-500">Street Address</Label>
-                            <Input value={address.street} onChange={(e) => setAddress(prev => ({ ...prev, street: e.target.value }))} className="rounded-lg text-xs h-9" />
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-medium text-slate-500">City</Label>
-                                <Input value={address.city} onChange={(e) => setAddress(prev => ({ ...prev, city: e.target.value }))} className="rounded-lg text-xs h-9" />
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-medium text-slate-500">State</Label>
-                                <Input value={address.state} onChange={(e) => setAddress(prev => ({ ...prev, state: e.target.value }))} className="rounded-lg text-xs h-9" />
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-medium text-slate-500">Zip Code</Label>
-                                <Input value={address.zip} onChange={(e) => setAddress(prev => ({ ...prev, zip: e.target.value }))} className="rounded-lg text-xs h-9" />
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-medium text-slate-500">Country</Label>
-                                <Input value={address.country} onChange={(e) => setAddress(prev => ({ ...prev, country: e.target.value }))} className="rounded-lg text-xs h-9" />
-                            </div>
-                        </div>
+            {/* Add New Card — side sheet */}
+            <SideFormSheet
+                open={isAddOpen}
+                onOpenChange={(o) => {
+                    setIsAddOpen(o);
+                    if (!o) {
+                        setNewCard({ name: "", number: "", expiry: "", cvc: "" });
+                        setCardErrors({});
+                    }
+                }}
+                title="Add New Card"
+                description="Securely link a new credit or debit card for future invoices."
+                icon={<CreditCard className="w-5 h-5" />}
+                width="md"
+                onSubmit={handleAddCard}
+                submitLabel="Link Card Securely"
+            >
+                <div className="space-y-4">
+                    <Field label="Name on Card" required error={cardErrors.name}>
+                        <Input
+                            placeholder="e.g. John Doe"
+                            value={newCard.name}
+                            onChange={(e) =>
+                                setNewCard((prev) => ({
+                                    ...prev,
+                                    name: e.target.value.replace(/[^A-Za-z\s.'-]/g, ""),
+                                }))
+                            }
+                            className="h-11 rounded-lg bg-white border-slate-200 focus:border-primary"
+                            maxLength={80}
+                        />
+                    </Field>
+
+                    <Field label="Card Number" required error={cardErrors.number} hint="16-digit card number">
+                        <Input
+                            placeholder="0000 0000 0000 0000"
+                            value={newCard.number}
+                            onChange={(e) => {
+                                const digits = e.target.value.replace(/\D/g, "").slice(0, 16);
+                                const formatted = digits.replace(/(\d{4})(?=\d)/g, "$1 ");
+                                setNewCard((prev) => ({ ...prev, number: formatted }));
+                            }}
+                            className="h-11 rounded-lg bg-white border-slate-200 focus:border-primary font-mono tracking-wider"
+                            inputMode="numeric"
+                            autoComplete="cc-number"
+                        />
+                    </Field>
+
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Expiry" required error={cardErrors.expiry} hint="MM/YY">
+                            <Input
+                                placeholder="12/26"
+                                value={newCard.expiry}
+                                onChange={(e) => {
+                                    let val = e.target.value.replace(/[^\d]/g, "").slice(0, 4);
+                                    if (val.length >= 3) val = val.slice(0, 2) + "/" + val.slice(2);
+                                    setNewCard((prev) => ({ ...prev, expiry: val }));
+                                }}
+                                className="h-11 rounded-lg bg-white border-slate-200 focus:border-primary font-mono"
+                                maxLength={5}
+                                inputMode="numeric"
+                                autoComplete="cc-exp"
+                            />
+                        </Field>
+                        <Field label="CVC" required error={cardErrors.cvc} hint="3 or 4 digits">
+                            <Input
+                                type="password"
+                                placeholder="•••"
+                                value={newCard.cvc}
+                                onChange={(e) =>
+                                    setNewCard((prev) => ({
+                                        ...prev,
+                                        cvc: e.target.value.replace(/\D/g, "").slice(0, 4),
+                                    }))
+                                }
+                                className="h-11 rounded-lg bg-white border-slate-200 focus:border-primary font-mono"
+                                maxLength={4}
+                                inputMode="numeric"
+                                autoComplete="cc-csc"
+                            />
+                        </Field>
                     </div>
-                    <DialogFooter className="gap-2">
-                        <Button variant="outline" className="h-8 text-xs font-medium rounded-lg" onClick={() => setIsEditAddressOpen(false)}>Cancel</Button>
-                        <Button className="h-8 bg-slate-900 hover:bg-black text-white text-xs font-medium rounded-lg" onClick={handleSaveAddress}>
-                            Save Address
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+
+                    <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-100 rounded-lg">
+                        <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+                        <p className="text-[11.5px] text-blue-800 leading-relaxed">
+                            Your card information is encrypted end-to-end. We are PCI-DSS compliant.
+                        </p>
+                    </div>
+                </div>
+            </SideFormSheet>
+
+            {/* Edit Billing Address — side sheet */}
+            <SideFormSheet
+                open={isEditAddressOpen}
+                onOpenChange={setIsEditAddressOpen}
+                title="Edit Billing Address"
+                description="Update your organization's billing address."
+                icon={<MapPin className="w-5 h-5" />}
+                width="md"
+                onSubmit={(e) => {
+                    e.preventDefault();
+                    handleSaveAddress();
+                }}
+                submitLabel="Save Address"
+            >
+                <div className="space-y-4">
+                    <Field label="Company Name" required>
+                        <Input
+                            value={address.company}
+                            onChange={(e) => setAddress((prev) => ({ ...prev, company: e.target.value }))}
+                            className="h-11 rounded-lg bg-white border-slate-200 focus:border-primary"
+                            maxLength={100}
+                        />
+                    </Field>
+                    <Field label="Street Address" required>
+                        <Input
+                            value={address.street}
+                            onChange={(e) => setAddress((prev) => ({ ...prev, street: e.target.value }))}
+                            className="h-11 rounded-lg bg-white border-slate-200 focus:border-primary"
+                            maxLength={150}
+                        />
+                    </Field>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="City" required>
+                            <Input
+                                value={address.city}
+                                onChange={(e) =>
+                                    setAddress((prev) => ({
+                                        ...prev,
+                                        city: e.target.value.replace(/[^A-Za-z\s.'-]/g, ""),
+                                    }))
+                                }
+                                className="h-11 rounded-lg bg-white border-slate-200 focus:border-primary"
+                                maxLength={60}
+                            />
+                        </Field>
+                        <Field label="State / Province">
+                            <Input
+                                value={address.state}
+                                onChange={(e) => setAddress((prev) => ({ ...prev, state: e.target.value }))}
+                                className="h-11 rounded-lg bg-white border-slate-200 focus:border-primary"
+                                maxLength={60}
+                            />
+                        </Field>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Zip / Postal Code" required hint="Alphanumeric">
+                            <Input
+                                value={address.zip}
+                                onChange={(e) =>
+                                    setAddress((prev) => ({
+                                        ...prev,
+                                        zip: e.target.value.replace(/[^A-Za-z0-9\s-]/g, ""),
+                                    }))
+                                }
+                                className="h-11 rounded-lg bg-white border-slate-200 focus:border-primary"
+                                maxLength={12}
+                            />
+                        </Field>
+                        <Field label="Country" required>
+                            <Input
+                                value={address.country}
+                                onChange={(e) =>
+                                    setAddress((prev) => ({
+                                        ...prev,
+                                        country: e.target.value.replace(/[^A-Za-z\s.'-]/g, ""),
+                                    }))
+                                }
+                                className="h-11 rounded-lg bg-white border-slate-200 focus:border-primary"
+                                maxLength={60}
+                            />
+                        </Field>
+                    </div>
+                </div>
+            </SideFormSheet>
         </div>
     );
 }

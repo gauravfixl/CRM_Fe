@@ -1,35 +1,29 @@
 "use client"
 
 import React, { useState } from "react"
-import { useParams } from "next/navigation"
 import {
     Shield,
     Save,
     Lock,
     Users,
-    Check,
-    ListChecks
+    ListChecks,
 } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Switch } from "@/components/ui/switch"
-import { Label } from "@/components/ui/label"
-import { SmallCard, SmallCardContent } from "@/components/custom/SmallCard"
-import { toast } from "sonner"
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table"
+import { Button } from "@/shared/components/ui/button"
+import { Switch } from "@/shared/components/ui/switch"
+import { showSuccess } from "@/shared/utils/toast"
+
+type Permission = {
+    id: string
+    action: string
+    admin: boolean
+    member: boolean
+    viewer: boolean
+}
 
 export default function IssuePermissionsPage() {
-    const params = useParams()
-    const [isLoading, setIsLoading] = useState(false)
+    const [isSaving, setIsSaving] = useState(false)
 
-    // Mock Permissions Matrix
-    const [permissions, setPermissions] = useState([
+    const [permissions, setPermissions] = useState<Permission[]>([
         { id: "1", action: "Create Tasks", admin: true, member: true, viewer: false },
         { id: "2", action: "Edit Any Task", admin: true, member: false, viewer: false },
         { id: "3", action: "Edit Own Task", admin: true, member: true, viewer: false },
@@ -38,142 +32,161 @@ export default function IssuePermissionsPage() {
         { id: "6", action: "Comment", admin: true, member: true, viewer: true },
     ])
 
-    const handleAction = (msg: string) => {
-        setIsLoading(true)
-        setTimeout(() => {
-            setIsLoading(false)
-            toast.success(msg)
-        }, 800)
+    const handleSave = async () => {
+        setIsSaving(true)
+        try {
+            await new Promise((r) => setTimeout(r, 500))
+            showSuccess("Permissions saved globally")
+        } finally {
+            setIsSaving(false)
+        }
     }
 
-    const togglePermission = (id: string, role: 'admin' | 'member' | 'viewer') => {
-        setPermissions(permissions.map(p => {
-            if (p.id === id) {
-                return { ...p, [role]: !p[role] }
-            }
-            return p
-        }))
-        toast.success("Permission updated")
+    const togglePermission = (id: string, role: "admin" | "member" | "viewer") => {
+        setPermissions((prev) =>
+            prev.map((p) => (p.id === id ? { ...p, [role]: !p[role] } : p))
+        )
     }
 
     const totalActions = permissions.length
-    const memberEnabled = permissions.filter(p => p.member).length
-    const viewerEnabled = permissions.filter(p => p.viewer).length
+    const memberEnabled = permissions.filter((p) => p.member).length
+    const viewerEnabled = permissions.filter((p) => p.viewer).length
 
     return (
-        <div className="font-outfit flex flex-col gap-6 p-6 min-h-screen bg-[#fafafa]">
-            {/* PAGE HEADER */}
-            <div className="flex flex-col gap-1">
-                <div className="flex items-center gap-2 text-xs font-medium text-gray-400">
-                    <span>Project governance</span>
-                    <span>/</span>
-                    <span className="text-gray-900 font-semibold">Permissions</span>
-                </div>
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mt-2">
+        <div className="flex flex-col min-h-screen bg-transparent">
+            <div className="p-6 pb-0">
+                <div className="flex items-center justify-between mb-1">
                     <div>
-                        <h1 className="text-xl font-semibold text-gray-900 tracking-tight">Issue Permissions</h1>
-                        <p className="text-xs text-gray-500 font-medium">Control strict access levels for project actions.</p>
+                        <h1 className="text-2xl font-bold tracking-tight text-zinc-900">Issue Permissions</h1>
+                        <p className="text-sm text-zinc-500 mt-1">
+                            Control strict access levels for project actions across roles.
+                        </p>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <Button
-                            className="rounded-xl bg-blue-600 hover:bg-blue-700 font-semibold text-xs h-10 gap-2 shadow-lg px-5"
-                            onClick={() => handleAction("Permissions saved globally")}
-                            disabled={isLoading}
-                        >
-                            <Save className="w-3.5 h-3.5" />
-                            Save Matrix
-                        </Button>
-                    </div>
+                    <Button
+                        onClick={handleSave}
+                        disabled={isSaving}
+                        size="sm"
+                        className="rounded-none bg-primary hover:bg-primary/90 h-8 text-xs font-medium gap-2 px-5"
+                    >
+                        <Save size={14} />
+                        {isSaving ? "Saving..." : "Save Matrix"}
+                    </Button>
                 </div>
             </div>
 
-            {/* STATS CARDS */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <SmallCard className="border bg-gradient-to-r from-primary/70 to-primary text-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
-                    <SmallCardContent className="px-4 py-4">
-                        <div className="flex items-center justify-between pb-1">
-                            <p className="text-xs text-white/80">Roles configured</p>
-                            <Shield className="w-4 h-4 text-white" />
-                        </div>
-                        <p className="text-xl font-semibold text-white">3</p>
-                        <p className="text-[10px] text-white/80">Admin, Member, Viewer</p>
-                    </SmallCardContent>
-                </SmallCard>
+            <div className="flex-1 p-6 space-y-6">
+                {/* Stats Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="bg-gradient-to-br from-primary/80 to-primary p-6 rounded-none shadow-xl shadow-primary/20 text-white">
+                        <p className="text-white text-xs opacity-80">Roles Configured</p>
+                        <p className="text-white text-xl font-semibold mt-1">3</p>
+                        <p className="text-white text-[10px] mt-1 opacity-70">Admin, Member, Viewer</p>
+                    </div>
 
-                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
-                    <SmallCardContent className="px-4 py-4">
-                        <div className="flex items-center justify-between pb-1">
-                            <p className="text-xs text-gray-600">Total actions</p>
-                            <ListChecks className="w-4 h-4 text-gray-400" />
-                        </div>
-                        <p className="text-xl font-semibold text-gray-900">{totalActions}</p>
-                        <p className="text-[10px] text-gray-500">Permission rules</p>
-                    </SmallCardContent>
-                </SmallCard>
+                    <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
+                        <p className="text-zinc-500 text-xs">Total Actions</p>
+                        <p className="text-xl font-semibold text-zinc-900 mt-1">{totalActions}</p>
+                        <p className="text-primary text-[10px] mt-1">Permission rules</p>
+                    </div>
 
-                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
-                    <SmallCardContent className="px-4 py-4">
-                        <div className="flex items-center justify-between pb-1">
-                            <p className="text-xs text-gray-600">Member access</p>
-                            <Users className="w-4 h-4 text-gray-400" />
-                        </div>
-                        <p className="text-xl font-semibold text-gray-900">{memberEnabled}/{totalActions}</p>
-                        <p className="text-[10px] text-gray-500">Actions enabled</p>
-                    </SmallCardContent>
-                </SmallCard>
+                    <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
+                        <p className="text-zinc-500 text-xs">Member Access</p>
+                        <p className="text-xl font-semibold text-zinc-900 mt-1">{memberEnabled}/{totalActions}</p>
+                        <p className="text-emerald-600 text-[10px] mt-1">Actions enabled</p>
+                    </div>
 
-                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
-                    <SmallCardContent className="px-4 py-4">
-                        <div className="flex items-center justify-between pb-1">
-                            <p className="text-xs text-gray-600">Viewer access</p>
-                            <Lock className="w-4 h-4 text-gray-400" />
-                        </div>
-                        <p className="text-xl font-semibold text-gray-900">{viewerEnabled}/{totalActions}</p>
-                        <p className="text-[10px] text-gray-500">Actions enabled</p>
-                    </SmallCardContent>
-                </SmallCard>
-            </div>
+                    <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
+                        <p className="text-zinc-500 text-xs">Viewer Access</p>
+                        <p className="text-xl font-semibold text-zinc-900 mt-1">{viewerEnabled}/{totalActions}</p>
+                        <p className="text-zinc-400 text-[10px] mt-1">Actions enabled</p>
+                    </div>
+                </div>
 
-            {/* MATRIX TABLE */}
-            <div className="bg-white rounded-xl border shadow-sm overflow-hidden flex flex-col">
-                <Table>
-                    <TableHeader className="bg-gray-50/50">
-                        <TableRow>
-                            <TableHead className="py-3 px-4 text-xs font-semibold text-gray-500">Action</TableHead>
-                            <TableHead className="py-3 text-xs font-semibold text-gray-500 text-center w-32">Admin</TableHead>
-                            <TableHead className="py-3 text-xs font-semibold text-gray-500 text-center w-32">Member</TableHead>
-                            <TableHead className="py-3 text-xs font-semibold text-gray-500 text-center w-32">Viewer</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {permissions.map((p) => (
-                            <TableRow key={p.id} className="hover:bg-gray-50/50 transition-colors">
-                                <TableCell className="py-3 px-4 text-xs font-semibold text-gray-900">
-                                    {p.action}
-                                </TableCell>
-                                <TableCell className="py-3 text-center">
-                                    <div className="flex justify-center">
-                                        <Switch
-                                            checked={p.admin}
-                                            onCheckedChange={() => togglePermission(p.id, 'admin')}
-                                            disabled // Admins usually have all
-                                        />
-                                    </div>
-                                </TableCell>
-                                <TableCell className="py-3 text-center">
-                                    <div className="flex justify-center">
-                                        <Switch checked={p.member} onCheckedChange={() => togglePermission(p.id, 'member')} />
-                                    </div>
-                                </TableCell>
-                                <TableCell className="py-3 text-center">
-                                    <div className="flex justify-center">
-                                        <Switch checked={p.viewer} onCheckedChange={() => togglePermission(p.id, 'viewer')} />
-                                    </div>
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
+                {/* Matrix Table */}
+                <div className="bg-white border border-zinc-200 rounded-none shadow-lg overflow-hidden">
+                    <div className="px-5 py-4 border-b border-zinc-100 bg-zinc-50/50 flex items-center gap-2">
+                        <Shield size={16} className="text-primary" />
+                        <h3 className="text-sm font-semibold text-gray-900">Permission Matrix</h3>
+                    </div>
+
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="bg-zinc-100/50 border-b border-zinc-100">
+                                    <th className="px-6 py-3 text-[11px] font-medium text-gray-500">Action</th>
+                                    <th className="px-6 py-3 text-[11px] font-medium text-gray-500 text-center w-32">Admin</th>
+                                    <th className="px-6 py-3 text-[11px] font-medium text-gray-500 text-center w-32">Member</th>
+                                    <th className="px-6 py-3 text-[11px] font-medium text-gray-500 text-center w-32">Viewer</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-zinc-100">
+                                {permissions.map((p) => (
+                                    <tr key={p.id} className="hover:bg-primary/5 transition-colors">
+                                        <td className="px-6 py-3 text-xs font-semibold text-gray-900">{p.action}</td>
+                                        <td className="px-6 py-3 text-center">
+                                            <div className="flex justify-center">
+                                                <Switch checked={p.admin} onCheckedChange={() => togglePermission(p.id, "admin")} disabled />
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-3 text-center">
+                                            <div className="flex justify-center">
+                                                <Switch checked={p.member} onCheckedChange={() => togglePermission(p.id, "member")} />
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-3 text-center">
+                                            <div className="flex justify-center">
+                                                <Switch checked={p.viewer} onCheckedChange={() => togglePermission(p.id, "viewer")} />
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div className="p-4 border-t border-zinc-100 bg-zinc-50/50">
+                        <p className="text-[11px] font-medium text-zinc-500">
+                            Admin role has full access by default and cannot be modified here.
+                        </p>
+                    </div>
+                </div>
+
+                {/* Info cards */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bg-white border border-gray-200 rounded-none p-5 flex items-start gap-3">
+                        <div className="p-2 bg-primary/10 rounded-none">
+                            <Shield size={18} className="text-primary" />
+                        </div>
+                        <div>
+                            <h3 className="text-sm font-semibold text-gray-900">Global policy</h3>
+                            <p className="text-xs text-gray-600 mt-0.5 leading-relaxed">
+                                This matrix applies to every project unless overridden.
+                            </p>
+                        </div>
+                    </div>
+                    <div className="bg-white border border-gray-200 rounded-none p-5 flex items-start gap-3">
+                        <div className="p-2 bg-primary/10 rounded-none">
+                            <Users size={18} className="text-primary" />
+                        </div>
+                        <div>
+                            <h3 className="text-sm font-semibold text-gray-900">Role-based access</h3>
+                            <p className="text-xs text-gray-600 mt-0.5 leading-relaxed">
+                                Each user inherits permissions from their assigned role.
+                            </p>
+                        </div>
+                    </div>
+                    <div className="bg-white border border-gray-200 rounded-none p-5 flex items-start gap-3">
+                        <div className="p-2 bg-primary/10 rounded-none">
+                            <ListChecks size={18} className="text-primary" />
+                        </div>
+                        <div>
+                            <h3 className="text-sm font-semibold text-gray-900">Audit logged</h3>
+                            <p className="text-xs text-gray-600 mt-0.5 leading-relaxed">
+                                Changes to the permission matrix are recorded in the audit log.
+                            </p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     )

@@ -7,18 +7,10 @@ import Link from "next/link"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
-import { Button } from "@/components/ui/button"
-import SubHeader from "@/components/custom/SubHeader"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card"
+import { Button } from "@/shared/components/ui/button"
+import { Input } from "@/shared/components/ui/input"
+import { Label } from "@/shared/components/ui/label"
+import { Textarea } from "@/shared/components/ui/textarea"
 import { toast } from "sonner"
 import { addRole } from "@/hooks/roleNPermissionHooks"
 import {
@@ -30,10 +22,14 @@ import { ROLES, ROLE_SCOPE } from "@/shared/utils/module-permission-map"
 const roleSchema = z.object({
   name: z.string().min(2, "Role name must be at least 2 characters"),
   description: z.string().min(10, "Description must be at least 10 characters"),
-  permissions: z.array(z.object({
-    module: z.string(),
-    actions: z.array(z.string())
-  })).min(1, "At least one permission is required")
+  permissions: z
+    .array(
+      z.object({
+        module: z.string(),
+        actions: z.array(z.string()),
+      })
+    )
+    .min(1, "At least one permission is required"),
 })
 
 type RoleFormValues = z.infer<typeof roleSchema>
@@ -44,9 +40,7 @@ export default function CreateRolePage() {
   const [orgName, setOrgName] = useState("")
 
   useEffect(() => {
-    setOrgName(
-      (params.orgName as string) || localStorage.getItem("orgName") || ""
-    )
+    setOrgName((params.orgName as string) || localStorage.getItem("orgName") || "")
   }, [params.orgName])
 
   const form = useForm<RoleFormValues>({
@@ -64,7 +58,10 @@ export default function CreateRolePage() {
   } = form
 
   const permissions = watch("permissions")
-  const totalActions = permissions.reduce((acc: number, p: PermissionEntry) => acc + p.actions.length, 0)
+  const totalActions = permissions.reduce(
+    (acc: number, p: PermissionEntry) => acc + p.actions.length,
+    0
+  )
 
   const onSubmit = async (data: RoleFormValues) => {
     try {
@@ -78,38 +75,34 @@ export default function CreateRolePage() {
         scope: ROLE_SCOPE.ORGANIZATION, // "sc-org" — required by Mongoose schema
         description: data.description,
         permissions: data.permissions,
-        isCustom: true
+        isCustom: true,
       }
       await addRole(payload)
       toast.success("Custom role created successfully")
       router.push(`/${orgName}/modules/administration/roles`)
     } catch (error: any) {
-      toast.error(
-        error?.response?.data?.message || "Failed to create custom role"
-      )
+      toast.error(error?.response?.data?.message || "Failed to create custom role")
     }
   }
 
   return (
-    <div className="relative min-h-screen bg-[#F8F9FC] font-outfit pb-20">
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <SubHeader
-          title="Create Custom Role"
-          breadcrumbItems={[
-            { label: "Identity & Access", href: "#" },
-            {
-              label: "Roles",
-              href: `/${orgName}/modules/administration/roles`,
-            },
-            { label: "Define New", href: "#" },
-          ]}
-          rightControls={
-            <div className="flex gap-2">
+    <div className="flex flex-col min-h-screen bg-transparent">
+      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col flex-1">
+        <div className="p-6 pb-0">
+          <div className="flex items-center justify-between mb-1">
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight text-zinc-900">Create Custom Role</h1>
+              <p className="text-sm text-zinc-500 mt-1">
+                Define a new role and select the precise permissions it should grant.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
               <Link href={`/${orgName}/modules/administration/roles`}>
                 <Button
                   type="button"
                   variant="outline"
-                  className="rounded-xl h-10 px-6 font-semibold text-xs bg-white border-zinc-200"
+                  size="sm"
+                  className="rounded-none border-zinc-200 font-medium text-xs h-8 px-4"
                 >
                   Cancel
                 </Button>
@@ -117,111 +110,97 @@ export default function CreateRolePage() {
               <Button
                 type="submit"
                 disabled={isSubmitting || !isValid}
-                className="rounded-xl bg-blue-600 hover:bg-blue-700 text-white h-10 px-6 font-semibold text-xs"
+                size="sm"
+                className="rounded-none bg-primary hover:bg-primary/90 h-8 text-xs font-medium gap-2 px-5"
               >
                 {isSubmitting ? (
                   <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    <Loader2 size={14} className="animate-spin" />
                     Saving...
                   </>
                 ) : (
                   <>
-                    Save Role <Save className="ml-2 w-4 h-4" />
+                    <Save size={14} />
+                    Save Role
                   </>
                 )}
               </Button>
             </div>
-          }
-        />
+          </div>
+        </div>
 
-        <div className="p-4 md:p-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* Left Column: Form Info */}
+        <div className="flex-1 p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Left: Metadata */}
           <div className="lg:col-span-4 space-y-6">
-            <Card className="bg-white border-zinc-200 rounded-xl shadow-sm overflow-hidden">
-              <CardHeader>
-                <CardTitle className="text-sm font-semibold">Role Metadata</CardTitle>
-                <CardDescription className="text-xs font-medium">
+            <div className="bg-white border border-zinc-200 rounded-none">
+              <div className="px-5 py-4 border-b border-zinc-100">
+                <h3 className="text-sm font-semibold text-gray-900">Role Metadata</h3>
+                <p className="text-xs text-zinc-500 mt-0.5">
                   Define the core identity of this custom role.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
+                </p>
+              </div>
+              <div className="p-5 space-y-5">
                 <div className="space-y-1.5">
-                  <Label
-                    htmlFor="name"
-                    className="text-xs font-semibold text-gray-700"
-                  >
-                    Role Name <span className="text-red-500">*</span>
+                  <Label htmlFor="name" className="text-xs font-medium text-zinc-600">
+                    Role Name <span className="text-rose-500">*</span>
                   </Label>
                   <Input
                     id="name"
                     placeholder="e.g. HR Admin"
-                    className="rounded-lg h-9 border-zinc-200 focus:ring-indigo-500/10"
+                    className="rounded-none h-9 text-sm"
                     {...register("name")}
                   />
                   {errors.name?.message && (
-                    <p className="text-[11px] text-red-600 font-medium">
-                      {errors.name.message}
-                    </p>
+                    <p className="text-[11px] text-rose-600 font-medium">{errors.name.message}</p>
                   )}
                 </div>
                 <div className="space-y-1.5">
-                  <Label
-                    htmlFor="desc"
-                    className="text-xs font-semibold text-gray-700"
-                  >
-                    Description <span className="text-red-500">*</span>
+                  <Label htmlFor="desc" className="text-xs font-medium text-zinc-600">
+                    Description <span className="text-rose-500">*</span>
                   </Label>
                   <Textarea
                     id="desc"
                     placeholder="Describe what users with this role can access..."
-                    className="rounded-lg min-h-[120px] border-zinc-200 focus:ring-indigo-500/10"
+                    className="rounded-none text-sm min-h-[120px]"
                     {...register("description")}
                   />
                   {errors.description?.message && (
-                    <p className="text-[11px] text-red-600 font-medium">
-                      {errors.description.message}
-                    </p>
+                    <p className="text-[11px] text-rose-600 font-medium">{errors.description.message}</p>
                   )}
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
 
-            <div className="bg-indigo-50/50 border border-indigo-100 p-6 rounded-xl space-y-4">
-              <div className="h-10 w-10 bg-indigo-100 rounded-full flex items-center justify-center">
-                <ShieldCheck className="w-5 h-5 text-indigo-600" />
+            <div className="bg-white border border-gray-200 rounded-none p-5 flex items-start gap-3">
+              <div className="p-2 bg-primary/10 rounded-none">
+                <ShieldCheck size={18} className="text-primary" />
               </div>
               <div>
-                <h6 className="text-sm font-semibold text-indigo-900">
-                  Security Recommendation
-                </h6>
-                <p className="text-xs text-indigo-700/80 leading-relaxed font-medium mt-1">
-                  Follow the principle of least privilege. Only assign the exact
-                  permissions required for the business function.
+                <h3 className="text-sm font-semibold text-gray-900">Security Recommendation</h3>
+                <p className="text-xs text-gray-600 mt-0.5 leading-relaxed">
+                  Follow the principle of least privilege. Only assign the exact permissions required
+                  for the business function.
                 </p>
               </div>
             </div>
 
-            <Card className="bg-white border-zinc-200 rounded-xl p-6 shadow-sm">
-              <div className="space-y-2">
-                <h5 className="text-xs font-semibold text-gray-700">
-                  Selected Scope
-                </h5>
-                <div className="text-2xl font-semibold text-gray-900">
-                  {permissions.length} Modules
-                </div>
-                <div className="text-xs font-medium text-gray-500">
-                  Total Actions: {totalActions}
-                </div>
-                {errors.permissions?.message && (
-                  <p className="text-[11px] text-red-600 font-medium pt-2">
-                    {errors.permissions.message as string}
-                  </p>
-                )}
+            <div className="bg-white border border-zinc-200 rounded-none p-5 space-y-2">
+              <h5 className="text-xs font-medium text-zinc-600">Selected Scope</h5>
+              <div className="text-2xl font-bold tracking-tight text-zinc-900">
+                {permissions.length} Modules
               </div>
-            </Card>
+              <div className="text-xs font-medium text-zinc-500">
+                Total Actions: <span className="text-primary font-semibold">{totalActions}</span>
+              </div>
+              {errors.permissions?.message && (
+                <p className="text-[11px] text-rose-600 font-medium pt-2">
+                  {errors.permissions.message as string}
+                </p>
+              )}
+            </div>
           </div>
 
-          {/* Right Column: Permission Matrix */}
+          {/* Right: Permission Matrix */}
           <div className="lg:col-span-8 space-y-6">
             <Controller
               control={control}
