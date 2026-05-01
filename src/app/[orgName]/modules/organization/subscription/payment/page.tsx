@@ -66,6 +66,24 @@ export default function PaymentMethodsPage() {
         country: "United States"
     });
 
+    useEffect(() => {
+        (async () => {
+            try {
+                const res = await getOrgDetails();
+                const o: any = res?.data?.organization || res?.data?.data || res?.data || {};
+                if (o?.contactEmail) setBillingEmail(o.contactEmail);
+                if (o?.name) setAddress((prev) => ({ ...prev, company: o.name }));
+                if (o?.address && typeof o.address === "string") {
+                    // Best-effort: store the entire saved address string in the street field
+                    setAddress((prev) => ({ ...prev, street: o.address }));
+                }
+                if (o?.orgCountry) setAddress((prev) => ({ ...prev, country: o.orgCountry }));
+            } catch {
+                // Silent fallback
+            }
+        })();
+    }, []);
+
     const defaultCard = cards.find(c => c.isDefault);
     const deleteTargetCard = cards.find(c => c.id === deleteTarget);
 
@@ -125,30 +143,41 @@ export default function PaymentMethodsPage() {
         setIsAddOpen(false);
     };
 
-    const handleUpdateEmail = () => {
+    const handleUpdateEmail = async () => {
         if (!billingEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(billingEmail)) {
             toast.error("Please enter a valid email address.");
             return;
         }
-        toast.promise(new Promise(res => setTimeout(res, 1000)), {
-            loading: "Updating billing email...",
-            success: "Billing email updated successfully.",
-            error: "Failed to update email."
-        });
-        setEmailSaved(true);
+        try {
+            await axiosInstance.patch("/organization/update/details", {
+                contactEmail: billingEmail.trim(),
+            });
+            toast.success("Billing email updated successfully.");
+            setEmailSaved(true);
+        } catch (err: any) {
+            toast.error(err?.response?.data?.message || "Failed to update email.");
+        }
     };
 
-    const handleSaveAddress = () => {
+    const handleSaveAddress = async () => {
         if (!address.company.trim() || !address.street.trim() || !address.city.trim() || !address.zip.trim()) {
             toast.error("Please fill in all required address fields.");
             return;
         }
-        toast.promise(new Promise(res => setTimeout(res, 1000)), {
-            loading: "Updating billing address...",
-            success: "Billing address updated successfully.",
-            error: "Failed to update address."
-        });
-        setIsEditAddressOpen(false);
+        const fullAddress = [address.street, address.city, address.state, address.zip]
+            .filter(Boolean)
+            .join(", ");
+        try {
+            await axiosInstance.patch("/organization/update/details", {
+                name: address.company.trim(),
+                address: fullAddress,
+                orgCountry: address.country.trim(),
+            });
+            toast.success("Billing address updated successfully.");
+            setIsEditAddressOpen(false);
+        } catch (err: any) {
+            toast.error(err?.response?.data?.message || "Failed to update address.");
+        }
     };
 
     return (

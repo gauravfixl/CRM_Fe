@@ -48,7 +48,14 @@ export default function CustomRolesPage() {
     const fetchData = async () => {
         setIsLoading(true)
         try {
-            const scopeParams = { scope: "sc-org" as const }
+            const orgId =
+                (typeof window !== "undefined" &&
+                    (localStorage.getItem("orgID") || localStorage.getItem("orgId"))) ||
+                ""
+            const scopeParams = {
+                scope: "sc-org" as const,
+                ...(orgId ? { orgId } : {}),
+            }
             const res = await getAllRolesNPermissions(scopeParams)
 
             if (res?.data?.permissions && res?.data?.iv) {

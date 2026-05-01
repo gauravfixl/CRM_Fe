@@ -28,7 +28,7 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog";
-import { getAllRolesNPermissions, addRole, deleteRole } from "@/hooks/roleNPermissionHooks";
+import { getAllRolesNPermissions, addRole, deleteRole, updateRole } from "@/hooks/roleNPermissionHooks";
 import { decryptData } from "@/utils/crypto";
 
 interface RoleItem {
@@ -70,11 +70,79 @@ export default function RolesPage() {
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const [dialogOpen, setDialogOpen] = useState(false);
 
+    // Edit role state
+    const [editingRole, setEditingRole] = useState<RoleItem | null>(null);
+    const [updating, setUpdating] = useState(false);
+    const [editName, setEditName] = useState("");
+    const [editManageUsers, setEditManageUsers] = useState(false);
+    const [editViewBilling, setEditViewBilling] = useState(false);
+    const [editEditSettings, setEditEditSettings] = useState(false);
+
     // Refs for the create-role form fields
     const roleNameRef = useRef<HTMLInputElement>(null);
     const manageUsersRef = useRef<HTMLButtonElement>(null);
     const viewBillingRef = useRef<HTMLButtonElement>(null);
     const editSettingsRef = useRef<HTMLButtonElement>(null);
+
+    const openEditDialog = (role: RoleItem) => {
+        setEditingRole(role);
+        setEditName(role.name);
+        // Heuristic — derive switch states from existing permissions map
+        setEditManageUsers(
+            !!(role.permissions["VIEW_ORG_USER"] || role.permissions["UPDATE_ORG_USER"] || role.permissions["DELETE_ORG_USER"] || role.permissions["SEND_INVITATION"])
+        );
+        setEditViewBilling(
+            !!(role.permissions["VIEW_INVOICE"] || role.permissions["GENERATE_REPORT"])
+        );
+        setEditEditSettings(!!role.permissions["EDIT_ORGANIZATION"]);
+    };
+
+    const handleUpdateRole = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editingRole) return;
+        const trimmed = editName.trim();
+
+        if (!trimmed) return toast.error("Please enter a role name");
+        if (/\d/.test(trimmed)) return toast.error("Role name should not contain numbers");
+        if (trimmed.length < 3) return toast.error("Role name should be at least 3 characters");
+        if (!editManageUsers && !editViewBilling && !editEditSettings) {
+            return toast.error("Please select at least one capability");
+        }
+
+        const permissions: any[] = [];
+        if (editManageUsers) {
+            permissions.push({ module: "organization", actions: ["VIEW_ORG_USER", "UPDATE_ORG_USER", "DELETE_ORG_USER", "SEND_INVITATION"] });
+        }
+        if (editViewBilling) {
+            permissions.push({ module: "invoice", actions: ["VIEW_INVOICE", "GENERATE_REPORT"] });
+        }
+        if (editEditSettings) {
+            permissions.push({ module: "organization", actions: ["EDIT_ORGANIZATION"] });
+        }
+
+        setUpdating(true);
+        try {
+            await updateRole(
+                {
+                    name: trimmed,
+                    role: trimmed.toLowerCase().replace(/\s+/g, "-"),
+                    permissions,
+                    scope: "sc-org",
+                    isCustom: true,
+                    description: `Custom role for ${trimmed}`,
+                },
+                editingRole.id
+            );
+            toast.success(`${trimmed} updated successfully`);
+            setEditingRole(null);
+            await fetchRoles();
+        } catch (err: any) {
+            console.error("Error updating role:", err);
+            toast.error(err?.response?.data?.message || "Failed to update role.");
+        } finally {
+            setUpdating(false);
+        }
+    };
 
     const fetchRoles = useCallback(async () => {
         setLoading(true);
@@ -308,7 +376,7 @@ export default function RolesPage() {
                                     </div>
 
                                     <div className="flex gap-2">
-                                        <CustomButton variant="outline" size="icon" className="h-10 w-10 rounded-xl border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800" disabled={role.type === 'System'} onClick={() => { if (role.type !== 'System') toast.info(`Editing ${role.name}`) }}>
+                                        <CustomButton variant="outline" size="icon" className="h-10 w-10 rounded-xl border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800" disabled={role.type === 'System'} onClick={() => { if (role.type !== 'System') openEditDialog(role) }}>
                                             <Edit3 className="w-4 h-4 text-zinc-500" />
                                         </CustomButton>
                                         {role.type !== 'System' && (
@@ -324,6 +392,50 @@ export default function RolesPage() {
                 </div>
                 )}
             </div>
+
+            {/* EDIT ROLE DIALOG */}
+            <Dialog open={!!editingRole} onOpenChange={(open) => { if (!open) setEditingRole(null); }}>
+                <DialogContent className="sm:max-w-lg rounded-3xl border-0 shadow-2xl p-0 overflow-hidden">
+                    <div className="h-2 bg-indigo-600 w-full" />
+                    <div className="p-6 sm:p-8 space-y-6">
+                        <DialogHeader>
+                            <DialogTitle className="text-xl font-bold tracking-tight text-zinc-900 dark:text-white">Edit Role</DialogTitle>
+                            <DialogDescription className="font-medium text-zinc-500">Update permission set for this role.</DialogDescription>
+                        </DialogHeader>
+                        <form onSubmit={handleUpdateRole} className="space-y-6">
+                            <div className="space-y-2">
+                                <label className="text-xs uppercase font-semibold text-zinc-500 tracking-wider">Role Name</label>
+                                <Input
+                                    value={editName}
+                                    onChange={(e) => setEditName(e.target.value)}
+                                    className="rounded-xl font-medium h-12 bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800"
+                                    placeholder="e.g. Finance Manager"
+                                    required
+                                />
+                            </div>
+                            <div className="space-y-4 border border-zinc-200 dark:border-zinc-800 p-6 rounded-2xl bg-white dark:bg-zinc-950">
+                                <label className="text-xs uppercase font-semibold text-zinc-500 tracking-wider block mb-4">Capabilities</label>
+                                <div className="flex items-center justify-between">
+                                    <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Manage Users</span>
+                                    <Switch checked={editManageUsers} onCheckedChange={setEditManageUsers} className="data-[state=checked]:bg-indigo-600" />
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">View Billing</span>
+                                    <Switch checked={editViewBilling} onCheckedChange={setEditViewBilling} className="data-[state=checked]:bg-indigo-600" />
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Edit Settings</span>
+                                    <Switch checked={editEditSettings} onCheckedChange={setEditEditSettings} className="data-[state=checked]:bg-indigo-600" />
+                                </div>
+                            </div>
+                            <CustomButton type="submit" disabled={updating} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl h-12 text-sm">
+                                {updating && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                                {updating ? "Updating..." : "Update Role"}
+                            </CustomButton>
+                        </form>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

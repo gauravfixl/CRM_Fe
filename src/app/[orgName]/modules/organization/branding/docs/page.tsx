@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
     FileText,
     Upload,
@@ -18,19 +18,44 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
+import { getOrgAdminSettings, updateOrgAdminSettings } from "@/hooks/orgAdminHooks";
 
 export default function DocBrandingPage() {
     const [companyName, setCompanyName] = useState("Fixl Solutions Inc.");
     const [address, setAddress] = useState("123 Innovation Dr, Suite 400\nSan Francisco, CA 94103\nUnited States");
     const [footerNote, setFooterNote] = useState("Thank you for your business! Please pay within 30 days.");
     const [primaryColor, setPrimaryColor] = useState("#0f172a");
+    const [saving, setSaving] = useState(false);
 
-    const handleSave = () => {
-        toast.promise(new Promise(res => setTimeout(res, 1200)), {
-            loading: "Generating PDF templates...",
-            success: "Document settings saved",
-            error: "Failed to update templates"
-        });
+    useEffect(() => {
+        (async () => {
+            try {
+                const res = await getOrgAdminSettings();
+                const s = res?.data?.settings || res?.data?.data || res?.data || {};
+                if (s?.branding?.companyDisplayName) setCompanyName(s.branding.companyDisplayName);
+                if (s?.branding?.primaryColor) setPrimaryColor(s.branding.primaryColor);
+            } catch (err) {
+                // Silent — fall back to defaults
+            }
+        })();
+    }, []);
+
+    const handleSave = async () => {
+        try {
+            setSaving(true);
+            await updateOrgAdminSettings({
+                branding: {
+                    companyDisplayName: companyName,
+                    primaryColor,
+                },
+            });
+            toast.success("Document settings saved");
+        } catch (err: any) {
+            console.error("Failed to save document branding:", err);
+            toast.error(err?.response?.data?.message || "Failed to update templates");
+        } finally {
+            setSaving(false);
+        }
     };
 
     return (
@@ -58,9 +83,10 @@ export default function DocBrandingPage() {
                     <Button
                         className="h-9 bg-primary hover:bg-primary/90 text-primary-foreground gap-2 font-bold shadow-lg shadow-primary/20 transition-all active:scale-95"
                         onClick={handleSave}
+                        disabled={saving}
                     >
                         <Save className="w-4 h-4" />
-                        Save Templates
+                        {saving ? "Saving..." : "Save Templates"}
                     </Button>
                 </div>
             </div>

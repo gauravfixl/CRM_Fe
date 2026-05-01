@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useCallback } from "react"
 import {
   Search,
   Shield,
@@ -12,6 +12,11 @@ import {
   X,
   AlertCircle,
   Loader2,
+  Save,
+  Pencil,
+  Undo2,
+  Copy,
+  Plus,
 } from "lucide-react"
 import SubHeader from "@/components/custom/SubHeader"
 import { CustomButton } from "@/components/custom/CustomButton"
@@ -26,9 +31,10 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { toast } from "sonner"
-import { useParams } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import { decryptData } from "@/utils/crypto"
-import { getAllRolesNPermissions } from "@/hooks/roleNPermissionHooks"
+import { getAllRolesNPermissions, updateRole, addRole } from "@/hooks/roleNPermissionHooks"
+import { ROLES, ROLE_SCOPE } from "@/shared/utils/module-permission-map"
 
 interface PermissionAction {
   _id?: string
@@ -49,10 +55,19 @@ interface Role {
 
 export default function PermissionSets() {
   const params = useParams()
+  const router = useRouter()
   const [roles, setRoles] = useState<Role[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [orgName, setOrgName] = useState("")
+
+  // Matrix editor (inline edit mode)
+  // - editMode === true → cells become clickable for custom roles
+  // - draftPerms holds in-flight edits keyed by roleId; only diffs are saved
+  const [editMode, setEditMode] = useState(false)
+  const [draftPerms, setDraftPerms] = useState<Record<string, PermissionAction[]>>({})
+  const [saving, setSaving] = useState(false)
+  const [cloningRoleId, setCloningRoleId] = useState<string | null>(null)
 
   useEffect(() => {
     setOrgName((params.orgName as string) || localStorage.getItem("orgName") || "")
@@ -62,7 +77,14 @@ export default function PermissionSets() {
   const fetchPermissions = async () => {
     setLoading(true)
     try {
-      const scopeParams = { scope: "sc-org" as const }
+      // Send orgId so the backend includes this org's custom roles in the response.
+      // Without orgId, only system (Global Baseline) roles are returned.
+      const orgId =
+        (typeof window !== "undefined" &&
+          (localStorage.getItem("orgID") || localStorage.getItem("orgId"))) ||
+        ""
+      const scopeParams: { scope: "sc-org"; orgId?: string } = { scope: "sc-org" }
+      if (orgId) scopeParams.orgId = orgId
       const response = await getAllRolesNPermissions(scopeParams)
 
       let rolesData: Role[] = []
@@ -128,9 +150,140 @@ export default function PermissionSets() {
 
   // Check if a role has a specific action for a module
   const hasAction = (role: Role, module: string, action: string): boolean => {
-    const perm = role.permissions?.find((p) => p.module === module)
+    const perm = getRolePerms(role).find((p) => p.module === module)
     return perm?.actions?.includes(action) ?? false
   }
+
+  const enterEditMode = () => {
+    // Deep-clone current permissions into draft; we never mutate `roles` directly.
+    const draft: Record<string, PermissionAction[]> = {}
+    roles.forEach((r) => {
+      draft[r._id] = (r.permissions || []).map((p) => ({
+        module: p.module,
+        actions: [...(p.actions || [])],
+      }))
+    })
+    setDraftPerms(draft)
+    setEditMode(true)
+  }
+
+  const exitEditMode = () => {
+    setEditMode(false)
+    setDraftPerms({})
+  }
+
+  const toggleAction = (role: Role, module: string, action: string) => {
+    if (!role.isCustom) {
+      toast.info("System roles can't be edited. Create a custom role to override.")
+      return
+    }
+    setDraftPerms((prev) => {
+      const current = prev[role._id] || []
+      const moduleEntry = current.find((p) => p.module === module)
+      let next: PermissionAction[]
+      if (!moduleEntry) {
+        next = [...current, { module, actions: [action] }]
+      } else {
+        const has = moduleEntry.actions.includes(action)
+        const newActions = has
+          ? moduleEntry.actions.filter((a) => a !== action)
+          : [...moduleEntry.actions, action]
+        next = current
+          .map((p) => (p.module === module ? { ...p, actions: newActions } : p))
+          .filter((p) => p.actions.length > 0) // drop empty modules
+      }
+      return { ...prev, [role._id]: next }
+    })
+  }
+
+  // Roles whose draft != original. System roles excluded (backend rejects updates anyway).
+  const changedRoles = useMemo(() => {
+    if (!editMode) return [] as Role[]
+    return roles.filter((r) => {
+      if (!r.isCustom) return false
+      const original = JSON.stringify(
+        (r.permissions || [])
+          .map((p) => ({ module: p.module, actions: [...(p.actions || [])].sort() }))
+          .sort((a, b) => a.module.localeCompare(b.module))
+      )
+      const draft = JSON.stringify(
+        (draftPerms[r._id] || [])
+          .map((p) => ({ module: p.module, actions: [...(p.actions || [])].sort() }))
+          .sort((a, b) => a.module.localeCompare(b.module))
+      )
+      return original !== draft
+    })
+  }, [editMode, roles, draftPerms])
+
+  // Clone a system role into a fresh editable custom role.
+  // The cloned role keeps the same permissions but gets isCustom: true and
+  // a name like "OrgAdmin (Copy)". Backend's createCustomRolePermission
+  // accepts our ORG_CUSTOM slug + sc-org scope.
+  const cloneRoleAsCustom = async (source: Role) => {
+    setCloningRoleId(source._id)
+    try {
+      const orgId =
+        (typeof window !== "undefined" &&
+          (localStorage.getItem("orgID") || localStorage.getItem("orgId"))) ||
+        undefined
+      const cloneName = `${source.name} (Copy)`
+      const payload: any = {
+        role: ROLES.ORG_CUSTOM,
+        name: cloneName,
+        scope: ROLE_SCOPE.ORGANIZATION,
+        description: `Editable copy of system role "${source.name}"`,
+        permissions: (source.permissions || []).map((p) => ({
+          module: p.module,
+          actions: [...(p.actions || [])],
+        })),
+        isCustom: true,
+      }
+      if (orgId) payload.orgId = orgId
+      await addRole(payload)
+      toast.success(`Cloned "${source.name}" → "${cloneName}". You can now edit the copy.`)
+      await fetchPermissions()
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message || "Failed to clone role")
+    } finally {
+      setCloningRoleId(null)
+    }
+  }
+
+  const saveChanges = async () => {
+    if (changedRoles.length === 0) {
+      toast.info("No changes to save")
+      return
+    }
+    setSaving(true)
+    try {
+      const results = await Promise.allSettled(
+        changedRoles.map((r) =>
+          updateRole({ permissions: draftPerms[r._id] || [] }, r._id)
+        )
+      )
+      const failed = results.filter((r) => r.status === "rejected").length
+      const ok = results.length - failed
+      if (failed === 0) {
+        toast.success(`Saved ${ok} ${ok === 1 ? "role" : "roles"}`)
+      } else if (ok === 0) {
+        toast.error(`All ${failed} updates failed — check permissions`)
+      } else {
+        toast.warning(`Saved ${ok}, ${failed} failed`)
+      }
+      await fetchPermissions() // re-pull fresh state from backend
+      setEditMode(false)
+      setDraftPerms({})
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message || "Failed to save changes")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const customRolesCount = useMemo(
+    () => roles.filter((r) => r.isCustom).length,
+    [roles]
+  )
 
   const stats = {
     totalRoles: roles.length,

@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { getAllEmployees, getSalaryConfigs } from "@/modules/hrm/hooks/hrmHooks"
+import { salaryComponentsApi, extractApiError } from "@/shared/api/settings-api"
 
 interface SalaryComponent {
     id: string

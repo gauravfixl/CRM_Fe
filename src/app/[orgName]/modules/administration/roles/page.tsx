@@ -62,7 +62,11 @@ import { useParams, useSearchParams } from "next/navigation"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
 import { decryptData } from "@/utils/crypto"
-import { getAllRolesNPermissions, deleteRole } from "@/hooks/roleNPermissionHooks"
+import {
+  getAllRolesNPermissions,
+  deleteRole,
+  listOrgMembers,
+} from "@/hooks/roleNPermissionHooks"
 import useRolesStore from "@/lib/roleStore"
 import { getRoles } from "@/hooks/userHooks"
 
@@ -90,25 +94,54 @@ export default function RolesAndPermissionsPage() {
   const fetchData = async () => {
     setLoading(true)
     try {
-      const scopeParams = { scope: "sc-org" as const }
-      const rolesResp = await getAllRolesNPermissions(scopeParams)
+      const orgId =
+        (typeof window !== "undefined" &&
+          (localStorage.getItem("orgID") || localStorage.getItem("orgId"))) ||
+        ""
+      const scopeParams: Record<string, string> = { scope: "sc-org" }
+      if (orgId) scopeParams.orgId = orgId
+
+      const [rolesResp, simpleRolesResp, membersResp] = await Promise.all([
+        getAllRolesNPermissions(scopeParams),
+        getRoles(scopeParams),
+        listOrgMembers({ page: 1, limit: 200 }).catch(() => null),
+      ])
 
       if (rolesResp?.data?.permissions && rolesResp?.data?.iv) {
         const decrypted = decryptData(rolesResp.data.permissions, rolesResp.data.iv)
         useRolesStore.getState().setRoles(prev => ({ ...prev, organization: decrypted }))
       }
 
-      const simpleRolesResp = await getRoles(scopeParams)
       if (simpleRolesResp?.data?.roles && simpleRolesResp?.data?.iv) {
         const decryptedRoles = decryptData(simpleRolesResp.data.roles, simpleRolesResp.data.iv)
         useRolesStore.getState().setSimpleRoles(decryptedRoles)
       }
+
+      const apiMembers = membersResp?.data?.users ?? membersResp?.data?.members ?? []
+      setMembers(Array.isArray(apiMembers) ? apiMembers : [])
     } catch (error) {
       console.error("Error fetching roles:", error)
       toast.error("Failed to load security directory")
     } finally {
       setLoading(false)
     }
+  }
+
+  // Compute live user count per role from member list (frontend-side join).
+  // When backend includes `userCount` on roles, that is preferred.
+  const userCountByRoleName = useMemo(() => {
+    const map: Record<string, number> = {}
+    members.forEach((m) => {
+      const key = m.role || m.roleName || ""
+      if (!key) return
+      map[key] = (map[key] || 0) + 1
+    })
+    return map
+  }, [members])
+
+  const usersForRole = (role: any): number => {
+    if (typeof role.userCount === "number") return role.userCount
+    return userCountByRoleName[role.name] || userCountByRoleName[role.role] || 0
   }
 
   const filteredRoles = useMemo(() => {

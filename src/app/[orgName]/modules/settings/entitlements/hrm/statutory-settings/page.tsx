@@ -18,7 +18,25 @@ export default function StatutorySettingsPage() {
     const [pt, setPt] = useState({ enabled: true, state: "Maharashtra", maxMonthly: 200, frequency: "Monthly" })
     const [tds, setTds] = useState({ enabled: true, regime: "New", cess: 4 })
 
-    const handleSave = () => {
+    useEffect(() => {
+        (async () => {
+            try {
+                const res = await statutorySettingsApi.get()
+                const s: any = res?.data || {}
+                if (typeof s.pfEnabled === "boolean") setPf((p) => ({ ...p, enabled: s.pfEnabled }))
+                if (typeof s.pfRate === "number") setPf((p) => ({ ...p, employeeRate: s.pfRate }))
+                if (typeof s.esiEnabled === "boolean") setEsi((e) => ({ ...e, enabled: s.esiEnabled }))
+                if (typeof s.esiRate === "number") setEsi((e) => ({ ...e, employeeRate: s.esiRate }))
+                if (typeof s.ptEnabled === "boolean") setPt((t) => ({ ...t, enabled: s.ptEnabled }))
+                if (typeof s.tdsEnabled === "boolean") setTds((t) => ({ ...t, enabled: s.tdsEnabled }))
+                if (s.payFrequency) setPt((t) => ({ ...t, frequency: s.payFrequency }))
+            } catch (err) {
+                // Silent — fall back to UI defaults
+            }
+        })()
+    }, [])
+
+    const handleSave = async () => {
         setIsSaving(true)
         setTimeout(() => { setIsSaving(false); toast.success("Statutory settings saved") }, 600)
     }

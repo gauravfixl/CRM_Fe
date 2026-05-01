@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import SubHeader from "@/components/custom/SubHeader"
 import { ShieldAlert, Zap, ShieldCheck, Lock, Plus, Search, Info, MoreHorizontal, ChevronRight, Ban, Globe, Clock, UserX, MonitorOff, Terminal, Cpu } from "lucide-react"
 import { CustomButton } from "@/components/custom/CustomButton"
@@ -16,14 +16,47 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFo
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { History, LayoutGrid, ShieldAlert as ShieldIcon } from "lucide-react"
+import { getOrgAdminSettings, updateOrgAdminSettings } from "@/hooks/orgAdminHooks"
 
 export default function LoginRestrictionsPage() {
     const [searchQuery, setSearchQuery] = useState("")
     const [active, setActive] = useState(true)
+    const [savingActive, setSavingActive] = useState(false)
     const [isLogsOpen, setIsLogsOpen] = useState(false)
     const [isAddOpen, setIsAddOpen] = useState(false)
     const [isEditOpen, setIsEditOpen] = useState(false)
     const [selectedRes, setSelectedRes] = useState<any>(null)
+
+    useEffect(() => {
+        (async () => {
+            try {
+                const res = await getOrgAdminSettings()
+                const s = res?.data?.settings || res?.data?.data || res?.data || {}
+                const ipR = s?.security?.ipRestrictions
+                if (typeof ipR?.enabled === "boolean") setActive(ipR.enabled)
+            } catch (err) {
+                // Silent fallback
+            }
+        })()
+    }, [])
+
+    const handleActiveChange = async (newVal: boolean) => {
+        const prev = active
+        setActive(newVal)
+        setSavingActive(true)
+        try {
+            await updateOrgAdminSettings({
+                security: { ipRestrictions: { enabled: newVal } },
+            })
+            toast.success(newVal ? "Smart lockout enabled" : "Smart lockout disabled")
+        } catch (err: any) {
+            console.error("Failed to update lockout:", err)
+            setActive(prev)
+            toast.error(err?.response?.data?.message || "Failed to update lockout")
+        } finally {
+            setSavingActive(false)
+        }
+    }
 
     const restrictions = [
         { id: "1", name: "IP range whitelist", type: "Network", status: "Active", icon: Globe, description: "Only allow logins from corporate HQ and trusted VPN ranges.", severity: "Critical" },
@@ -89,7 +122,7 @@ export default function LoginRestrictionsPage() {
                                 <span className="text-xs font-semibold text-zinc-400 tracking-wide block mb-1">Global Lockout</span>
                                 <div className="text-xl font-semibold text-zinc-900 dark:text-white leading-none">Smart lockout</div>
                             </div>
-                            <Switch checked={active} onCheckedChange={setActive} className="data-[state=checked]:bg-red-600" />
+                            <Switch checked={active} onCheckedChange={handleActiveChange} disabled={savingActive} className="data-[state=checked]:bg-red-600" />
                         </div>
                     </SmallCard>
 

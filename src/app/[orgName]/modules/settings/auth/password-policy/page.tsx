@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import SubHeader from "@/components/custom/SubHeader"
 import { Settings, Lock, ShieldCheck, Zap, Plus, Search, Info, MoreHorizontal, ChevronRight, RefreshCw, KeyRound, AlertCircle, History, Terminal, ShieldAlert } from "lucide-react"
 import { CustomButton } from "@/components/custom/CustomButton"
@@ -17,6 +17,13 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFo
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
+import { getOrgAdminSettings, updateOrgAdminSettings } from "@/hooks/orgAdminHooks"
+
+const initialRules = [
+    { id: "1", name: "Complexity requirements", type: "Character set", status: "Enforced", icon: KeyRound, description: "Passwords must contain uppercase, lowercase, numbers, and special characters.", severity: "High" },
+    { id: "2", name: "Password history", type: "Rotation", status: "Active", icon: History, description: "Prevent reuse of the last 24 passwords used by the identity.", severity: "Medium" },
+    { id: "3", name: "Banned password list", type: "Security", status: "Enforced", icon: ShieldAlert, description: "Block common passwords like 'Password123' or 'FixlSolutions'.", severity: "Critical" },
+]
 
 export default function PasswordPolicyPage() {
     const [searchQuery, setSearchQuery] = useState("")
@@ -29,21 +36,71 @@ export default function PasswordPolicyPage() {
     const [selectedRule, setSelectedRule] = useState<any>(null)
     const [testPassword, setTestPassword] = useState("")
     const [isPublishing, setIsPublishing] = useState(false)
+    const [rules, setRules] = useState(initialRules)
 
-    const handlePublish = () => {
+    useEffect(() => {
+        (async () => {
+            try {
+                const res = await getOrgAdminSettings()
+                const s = res?.data?.settings || res?.data?.data || res?.data || {}
+                const pp = s?.security?.passwordPolicy
+                if (!pp) return
+                if (typeof pp.minLength === "number") setMinLength([pp.minLength])
+                if (typeof pp.passwordExpiryDays === "number") setComplex(pp.passwordExpiryDays > 0)
+                setRules(prev => prev.map(r => {
+                    if (r.id === "1") {
+                        const enforced = !!(pp.requireUppercase || pp.requireLowercase || pp.requireNumber || pp.requireSpecialChar)
+                        return { ...r, status: enforced ? "Enforced" : "Disabled" }
+                    }
+                    if (r.id === "2") {
+                        return { ...r, status: (pp.preventReuseCount ?? 0) > 0 ? "Active" : "Disabled" }
+                    }
+                    return r
+                }))
+            } catch (err) {
+                // Silent fallback
+            }
+        })()
+    }, [])
+
+    const handlePublish = async () => {
         setIsPublishing(true)
-        setTimeout(() => {
-            setIsPublishing(false)
+        try {
+            const complexityRule = rules.find(r => r.id === "1")
+            const historyRule = rules.find(r => r.id === "2")
+            const complexityEnabled = complexityRule?.status === "Enforced" || complexityRule?.status === "Active"
+            const historyEnabled = historyRule?.status === "Enforced" || historyRule?.status === "Active"
+
+            await updateOrgAdminSettings({
+                security: {
+                    passwordPolicy: {
+                        minLength: minLength[0],
+                        requireUppercase: complexityEnabled,
+                        requireLowercase: complexityEnabled,
+                        requireNumber: complexityEnabled,
+                        requireSpecialChar: complexityEnabled,
+                        passwordExpiryDays: complex ? 90 : 365,
+                        preventReuseCount: historyEnabled ? 24 : 0,
+                    },
+                },
+            })
             toast.success("Password policies published to directory")
             setIsPublishOpen(false)
-        }, 1500)
+        } catch (err: any) {
+            console.error("Failed to publish password policy:", err)
+            toast.error(err?.response?.data?.message || "Failed to publish password policy")
+        } finally {
+            setIsPublishing(false)
+        }
     }
 
-    const rules = [
-        { id: "1", name: "Complexity requirements", type: "Character set", status: "Enforced", icon: KeyRound, description: "Passwords must contain uppercase, lowercase, numbers, and special characters.", severity: "High" },
-        { id: "2", name: "Password history", type: "Rotation", status: "Active", icon: History, description: "Prevent reuse of the last 24 passwords used by the identity.", severity: "Medium" },
-        { id: "3", name: "Banned password list", type: "Security", status: "Enforced", icon: ShieldAlert, description: "Block common passwords like 'Password123' or 'FixlSolutions'.", severity: "Critical" },
-    ]
+    const toggleRuleStatus = (id: string) => {
+        setRules(prev => prev.map(r => {
+            if (r.id !== id) return r
+            const isOn = r.status === "Enforced" || r.status === "Active"
+            return { ...r, status: isOn ? "Disabled" : (id === "2" ? "Active" : "Enforced") }
+        }))
+    }
 
     return (
         <div className="relative min-h-screen bg-[#F8F9FC] dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">
@@ -289,7 +346,14 @@ export default function PasswordPolicyPage() {
                             <div className="space-y-2">
                                 <Label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Status</Label>
                                 <div className="flex items-center gap-2 h-11">
-                                    <Switch defaultChecked={selectedRule?.status === 'Enforced'} />
+                                    <Switch
+                                        checked={selectedRule?.status === 'Enforced' || selectedRule?.status === 'Active'}
+                                        onCheckedChange={() => {
+                                            if (!selectedRule) return
+                                            toggleRuleStatus(selectedRule.id)
+                                            setSelectedRule((prev: any) => prev ? { ...prev, status: (prev.status === 'Enforced' || prev.status === 'Active') ? 'Disabled' : (prev.id === '2' ? 'Active' : 'Enforced') } : prev)
+                                        }}
+                                    />
                                     <span className="text-xs font-bold">Active</span>
                                 </div>
                             </div>

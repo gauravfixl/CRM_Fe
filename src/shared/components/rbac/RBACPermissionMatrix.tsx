@@ -1,195 +1,31 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Check, LayoutGrid, Search } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
-import { MODULES, PERMISSIONS } from "@/shared/utils/module-permission-map"
+import {
+  MODULE_ACTION_CATALOG,
+  MODULE_DISPLAY_NAMES,
+  MODULE_GROUPS,
+} from "@/shared/utils/module-permission-map"
+import { getPermissionCatalog } from "@/hooks/roleNPermissionHooks"
 
 export type PermissionEntry = { module: string; actions: string[] }
 
 type ModuleDef = { id: string; name: string; actions: string[]; group: string }
 
-const moduleDisplayNames: Record<string, string> = {
-  [MODULES.ORGANIZATION]: "Organization",
-  [MODULES.FIRM]: "Firms",
-  [MODULES.USER]: "Users",
-  [MODULES.ROLE_PERMISSION]: "Roles & Permissions",
-  [MODULES.LEAD]: "Leads",
-  [MODULES.CLIENT]: "Clients",
-  [MODULES.INVOICE]: "Billing & Invoices",
-  [MODULES.TAX]: "Tax",
-  [MODULES.DOCUMENT]: "Documents",
-  [MODULES.REPORTS]: "Reports",
-  [MODULES.PROJECT_MANAGEMENT]: "Project Management",
-  [MODULES.HRM_MANAGEMENT]: "HRM",
-  [MODULES.EMPLOYEE]: "Employees",
-  [MODULES.ONBOARDING]: "Onboarding",
-  [MODULES.ATTENDANCE]: "Attendance",
-  [MODULES.SHIFT]: "Shifts",
-  [MODULES.LEAVE]: "Leave",
-  [MODULES.HOLIDAY]: "Holidays",
-  [MODULES.PAYROLL]: "Payroll",
-  [MODULES.POLICY]: "Policies",
-  [MODULES.SETTINGS]: "Settings",
-  [MODULES.PLATFORM]: "Platform",
-}
-
-const moduleGroup: Record<string, string> = {
-  [MODULES.ORGANIZATION]: "Identity & Access",
-  [MODULES.FIRM]: "Identity & Access",
-  [MODULES.USER]: "Identity & Access",
-  [MODULES.ROLE_PERMISSION]: "Identity & Access",
-  [MODULES.PLATFORM]: "Identity & Access",
-
-  [MODULES.LEAD]: "CRM",
-  [MODULES.CLIENT]: "CRM",
-  [MODULES.INVOICE]: "Finance",
-  [MODULES.TAX]: "Finance",
-
-  [MODULES.DOCUMENT]: "Documents & Reports",
-  [MODULES.REPORTS]: "Documents & Reports",
-
-  [MODULES.PROJECT_MANAGEMENT]: "Project Management",
-
-  [MODULES.HRM_MANAGEMENT]: "Human Resources",
-  [MODULES.EMPLOYEE]: "Human Resources",
-  [MODULES.ONBOARDING]: "Human Resources",
-  [MODULES.ATTENDANCE]: "Human Resources",
-  [MODULES.SHIFT]: "Human Resources",
-  [MODULES.LEAVE]: "Human Resources",
-  [MODULES.HOLIDAY]: "Human Resources",
-  [MODULES.PAYROLL]: "Human Resources",
-  [MODULES.POLICY]: "Human Resources",
-  [MODULES.SETTINGS]: "Human Resources",
-}
-
-// Derived from backend enums (module-permission-map.ts)
-const MODULE_ACTION_MAP: Record<string, string[]> = {
-  [MODULES.PLATFORM]: [
-    PERMISSIONS.MANAGE_PLATFORM_SETTINGS,
-    PERMISSIONS.MANAGE_SUBSCRIPTIONS,
-    PERMISSIONS.VIEW_PLATFORM_ANALYTICS,
-  ],
-  [MODULES.ORGANIZATION]: [
-    PERMISSIONS.CREATE_ORGANIZATION,
-    PERMISSIONS.EDIT_ORGANIZATION,
-    PERMISSIONS.DELETE_ORGANIZATION,
-    PERMISSIONS.VIEW_ORG,
-    PERMISSIONS.VIEW_ORG_ANALYTICS,
-    PERMISSIONS.EXPORT_ORG_DATA,
-    PERMISSIONS.MANAGE_ORG_SESSIONS,
-    PERMISSIONS.VIEW_AUDIT_LOGS,
-    PERMISSIONS.MANAGE_AUDIT_LOGS,
-    PERMISSIONS.MANAGE_SUBSCRIPTIONS,
-  ],
-  [MODULES.USER]: [
-    PERMISSIONS.VIEW_USER,
-    PERMISSIONS.VIEW_ALL_USERS,
-    PERMISSIONS.VIEW_ORG_USER,
-    PERMISSIONS.CREATE_USER,
-    PERMISSIONS.UPDATE_ORG_USER,
-    PERMISSIONS.DELETE_USER,
-    PERMISSIONS.DELETE_ORG_USER,
-    PERMISSIONS.SUSPEND_USER,
-    PERMISSIONS.SEND_INVITATION,
-  ],
-  [MODULES.FIRM]: [
-    PERMISSIONS.CREATE_FIRM,
-    PERMISSIONS.EDIT_FIRM,
-    PERMISSIONS.DELETE_FIRM,
-    PERMISSIONS.VIEW_FIRM,
-  ],
-  [MODULES.ROLE_PERMISSION]: [
-    PERMISSIONS.CREATE_ROLE,
-    PERMISSIONS.EDIT_ROLE,
-    PERMISSIONS.DELETE_ROLE,
-    PERMISSIONS.VIEW_ROLE,
-    PERMISSIONS.MANAGE_PERMISSIONS,
-    PERMISSIONS.AUDIT_PERMISSIONS,
-    PERMISSIONS.CHANGE_MEMBER_ROLE,
-  ],
-  [MODULES.LEAD]: [
-    PERMISSIONS.CREATE_LEAD,
-    PERMISSIONS.EDIT_LEAD,
-    PERMISSIONS.DELETE_LEAD,
-    PERMISSIONS.VIEW_LEAD,
-    PERMISSIONS.ASSIGN_LEAD,
-  ],
-  [MODULES.CLIENT]: [
-    PERMISSIONS.CREATE_CLIENT,
-    PERMISSIONS.EDIT_CLIENT,
-    PERMISSIONS.DELETE_CLIENT,
-    PERMISSIONS.VIEW_CLIENT_LIST,
-  ],
-  [MODULES.INVOICE]: [
-    PERMISSIONS.GENERATE_REPORT,
-    PERMISSIONS.EXPORT_DATA,
-  ],
-  [MODULES.TAX]: [PERMISSIONS.GENERATE_REPORT, PERMISSIONS.EXPORT_DATA],
-  [MODULES.DOCUMENT]: [
-    PERMISSIONS.UPLOAD_DOCUMENT,
-    PERMISSIONS.DOWNLOAD_DOCUMENT,
-  ],
-  [MODULES.REPORTS]: [
-    PERMISSIONS.GENERATE_REPORT,
-    PERMISSIONS.EXPORT_DATA,
-  ],
-  [MODULES.PROJECT_MANAGEMENT]: [
-    PERMISSIONS.CREATE_PROJECT,
-    PERMISSIONS.EDIT_PROJECT,
-    PERMISSIONS.DELETE_PROJECT,
-    PERMISSIONS.VIEW_PROJECT,
-    PERMISSIONS.VIEW_ALL_PROJECT,
-    PERMISSIONS.CREATE_TASK,
-    PERMISSIONS.EDIT_TASK,
-    PERMISSIONS.VIEW_TASK,
-    PERMISSIONS.VIEW_ALL_TASKS,
-    PERMISSIONS.CREATE_BOARD,
-    PERMISSIONS.VIEW_BOARD,
-    PERMISSIONS.VIEW_ALL_BOARD,
-    PERMISSIONS.CREATE_WORKFLOW,
-    PERMISSIONS.VIEW_WORKFLOW,
-    PERMISSIONS.CREATE_TEAM,
-    PERMISSIONS.VIEW_TEAM,
-  ],
-  [MODULES.HRM_MANAGEMENT]: [
-    PERMISSIONS.CREATE_EMPLOYEE,
-    PERMISSIONS.EDIT_EMPLOYEE,
-    PERMISSIONS.DELETE_EMPLOYEE,
-    PERMISSIONS.VIEW_EMPLOYEE_PROFILE,
-    PERMISSIONS.VIEW_ALL_EMPLOYEES,
-    PERMISSIONS.CREATE_JOB_POSTING,
-    PERMISSIONS.REVIEW_APPLICATIONS,
-    PERMISSIONS.HIRE_CANDIDATE,
-    PERMISSIONS.APPROVE_TIMESHEETS,
-  ],
-  [MODULES.EMPLOYEE]: [
-    PERMISSIONS.VIEW_EMPLOYEE_PROFILE,
-    PERMISSIONS.VIEW_ALL_EMPLOYEES,
-  ],
-  [MODULES.ONBOARDING]: [
-    PERMISSIONS.CREATE_EMPLOYEE,
-    PERMISSIONS.EDIT_EMPLOYEE,
-  ],
-  [MODULES.ATTENDANCE]: [PERMISSIONS.MANAGE_ATTENDANCE, PERMISSIONS.APPROVE_TIMESHEETS],
-  [MODULES.LEAVE]: [PERMISSIONS.MANAGE_EMPLOYE_LEAVE],
-  [MODULES.PAYROLL]: [PERMISSIONS.MANAGE_PAYROLL, PERMISSIONS.VIEW_PAYSLIPS],
-  [MODULES.POLICY]: [PERMISSIONS.MANAGE_PAYROLL],
-  [MODULES.SHIFT]: [PERMISSIONS.MANAGE_ATTENDANCE],
-  [MODULES.HOLIDAY]: [PERMISSIONS.MANAGE_ATTENDANCE],
-  [MODULES.SETTINGS]: [PERMISSIONS.EDIT_ORGANIZATION],
-}
-
-const ALL_MODULES: ModuleDef[] = Object.entries(MODULE_ACTION_MAP).map(
+// Build the static fallback catalog once from the central map.
+// When backend exposes GET /role-permission/catalog this is replaced with live data.
+const STATIC_MODULES: ModuleDef[] = Object.entries(MODULE_ACTION_CATALOG).map(
   ([id, actions]) => ({
     id,
-    name: moduleDisplayNames[id] || id,
-    actions,
-    group: moduleGroup[id] || "Other",
+    name: MODULE_DISPLAY_NAMES[id] || id,
+    actions: actions as string[],
+    group: MODULE_GROUPS[id] || "Other",
   })
 )
 
@@ -200,17 +36,76 @@ interface RBACPermissionMatrixProps {
 
 export function RBACPermissionMatrix({ value, onChange }: RBACPermissionMatrixProps) {
   const [searchQuery, setSearchQuery] = useState("")
+  const [catalogModules, setCatalogModules] = useState<ModuleDef[] | null>(null)
+
+  // Try to load the catalog from backend on mount.
+  // If endpoint is missing (404 / null), STATIC_MODULES is used as fallback.
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        const catalog = await getPermissionCatalog()
+        if (cancelled || !catalog || !Array.isArray(catalog.modules)) return
+        const mapped: ModuleDef[] = catalog.modules.map((m: any) => ({
+          id: m.id,
+          name: m.name || MODULE_DISPLAY_NAMES[m.id] || m.id,
+          actions: Array.isArray(m.actions) ? m.actions : [],
+          group: m.group || MODULE_GROUPS[m.id] || "Other",
+        }))
+        setCatalogModules(mapped)
+      } catch {
+        // silent — fallback to static list
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  // Merge: prefer live catalog if loaded, otherwise use static; then fold in any
+  // unknown modules referenced by current `value` so editing legacy roles works.
+  const dynamicModules = useMemo(() => {
+    const baseList = catalogModules ?? STATIC_MODULES
+    const moduleMap = new Map<string, ModuleDef>()
+
+    baseList.forEach((mod) => moduleMap.set(mod.id, mod))
+
+    value.forEach((perm) => {
+      if (!moduleMap.has(perm.module)) {
+        const displayName = perm.module
+          .split("_")
+          .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+          .join(" ")
+        moduleMap.set(perm.module, {
+          id: perm.module,
+          name: displayName,
+          actions: perm.actions,
+          group: "Other",
+        })
+      } else {
+        // If the role has actions outside the catalog, surface them so user can untick
+        const existing = moduleMap.get(perm.module)!
+        const allActions = new Set([...existing.actions, ...perm.actions])
+        moduleMap.set(perm.module, {
+          ...existing,
+          actions: Array.from(allActions),
+        })
+      }
+    })
+
+    return Array.from(moduleMap.values())
+  }, [value, catalogModules])
 
   const filteredModules = useMemo(() => {
     const q = searchQuery.trim().toLowerCase()
-    if (!q) return ALL_MODULES
-    return ALL_MODULES.filter(
+    if (!q) return dynamicModules
+    return dynamicModules.filter(
       (m) =>
         m.name.toLowerCase().includes(q) ||
         m.id.toLowerCase().includes(q) ||
         m.group.toLowerCase().includes(q)
     )
-  }, [searchQuery])
+  }, [searchQuery, dynamicModules])
 
   const groupedModules = useMemo(() => {
     const groups: Record<string, ModuleDef[]> = {}
@@ -293,18 +188,16 @@ export function RBACPermissionMatrix({ value, onChange }: RBACPermissionMatrixPr
                 return (
                   <Card
                     key={module.id}
-                    className={`bg-white border-zinc-200 rounded-xl shadow-sm transition-all overflow-hidden ${
-                      isModuleActive ? "border-l-4 border-l-indigo-600" : ""
-                    }`}
+                    className={`bg-white border-zinc-200 rounded-xl shadow-sm transition-all overflow-hidden ${isModuleActive ? "border-l-4 border-l-indigo-600" : ""
+                      }`}
                   >
                     <CardHeader className="flex flex-row items-center justify-between pb-3">
                       <div className="flex items-center gap-3">
                         <div
-                          className={`h-9 w-9 rounded-lg flex items-center justify-center border transition-colors ${
-                            isModuleActive
-                              ? "bg-indigo-600 text-white border-indigo-600"
-                              : "bg-white text-zinc-400 border-zinc-200"
-                          }`}
+                          className={`h-9 w-9 rounded-lg flex items-center justify-center border transition-colors ${isModuleActive
+                            ? "bg-indigo-600 text-white border-indigo-600"
+                            : "bg-white text-zinc-400 border-zinc-200"
+                            }`}
                         >
                           <LayoutGrid className="w-4 h-4" />
                         </div>
@@ -342,29 +235,26 @@ export function RBACPermissionMatrix({ value, onChange }: RBACPermissionMatrixPr
                             type="button"
                             key={action}
                             onClick={() => toggleAction(module.id, action)}
-                            className={`p-3 border rounded-lg cursor-pointer flex items-center gap-3 transition-all text-left ${
-                              selected
-                                ? "bg-indigo-50 border-indigo-200"
-                                : "bg-white border-zinc-100 hover:border-zinc-300"
-                            }`}
+                            className={`p-3 border rounded-lg cursor-pointer flex items-center gap-3 transition-all text-left ${selected
+                              ? "bg-indigo-50 border-indigo-200"
+                              : "bg-white border-zinc-100 hover:border-zinc-300"
+                              }`}
                           >
                             <div
-                              className={`h-4 w-4 rounded-sm border flex items-center justify-center shrink-0 transition-all ${
-                                selected
-                                  ? "bg-indigo-600 border-indigo-600"
-                                  : "bg-white border-zinc-300"
-                              }`}
+                              className={`h-4 w-4 rounded-sm border flex items-center justify-center shrink-0 transition-all ${selected
+                                ? "bg-indigo-600 border-indigo-600"
+                                : "bg-white border-zinc-300"
+                                }`}
                             >
                               {selected && (
                                 <Check className="w-3 h-3 text-white stroke-[3px]" />
                               )}
                             </div>
                             <span
-                              className={`text-xs font-medium capitalize ${
-                                selected ? "text-indigo-900" : "text-zinc-600"
-                              }`}
+                              className={`text-xs font-medium capitalize ${selected ? "text-indigo-900" : "text-zinc-600"
+                                }`}
                             >
-                              {action.replaceAll("_", " ").toLowerCase()}
+                              {action ? action.replaceAll("_", " ").toLowerCase() : ""}
                             </span>
                           </button>
                         )
@@ -381,4 +271,4 @@ export function RBACPermissionMatrix({ value, onChange }: RBACPermissionMatrixPr
   )
 }
 
-export { ALL_MODULES as RBAC_MODULES }
+export { STATIC_MODULES as RBAC_MODULES }

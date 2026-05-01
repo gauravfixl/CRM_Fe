@@ -1,8 +1,8 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useRouter, useParams } from "next/navigation"
-import { Save, Info, Loader2 } from "lucide-react"
+import { Save, Info, Loader2, Lock, Copy, Plus } from "lucide-react"
 import Link from "next/link"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -23,12 +23,14 @@ import { toast } from "sonner"
 import {
   updateRole,
   getAllRolesNPermissions,
+  addRole,
 } from "@/hooks/roleNPermissionHooks"
 import { decryptData } from "@/utils/crypto"
 import {
   RBACPermissionMatrix,
   PermissionEntry,
 } from "@/shared/components/rbac/RBACPermissionMatrix"
+import { ROLES, ROLE_SCOPE } from "@/shared/utils/module-permission-map"
 
 const roleSchema = z.object({
   name: z
@@ -43,8 +45,9 @@ const roleSchema = z.object({
   description: z
     .string()
     .trim()
-    .min(10, "Description must be at least 10 characters")
-    .max(300, "Description is too long"),
+    .max(300, "Description is too long")
+    .optional()
+    .or(z.literal("")),
   permissions: z
     .array(
       z.object({
@@ -57,27 +60,43 @@ const roleSchema = z.object({
 
 type RoleFormValues = z.infer<typeof roleSchema>
 
+type FetchedRole = {
+  _id: string
+  name?: string
+  role?: string
+  description?: string
+  isCustom?: boolean
+  scope?: string
+  permissions?: { module: string; actions: string[] }[]
+}
+
 export default function EditRolePage() {
   const router = useRouter()
   const params = useParams()
   const roleId = params.id as string
   const [orgName, setOrgName] = useState("")
   const [isLoading, setIsLoading] = useState(true)
+  const [loadedRole, setLoadedRole] = useState<FetchedRole | null>(null)
+  const [cloning, setCloning] = useState(false)
 
-  const form = useForm<RoleFormValues>({
-    resolver: zodResolver(roleSchema),
-    defaultValues: { name: "", description: "", permissions: [] },
-    mode: "onChange",
-  })
+  const isSystemRole = !loadedRole?.isCustom
+  const readOnly = isSystemRole
 
-  const {
-    register,
-    control,
-    handleSubmit,
-    reset,
-    watch,
-    formState: { errors, isSubmitting, isValid },
-  } = form
+  // We initialize the form with defaultValues built from the loaded role.
+  // To make this reliable we MOUNT the form only after data is ready (key prop
+  // on the form container), so react-hook-form uses correct defaults from the
+  // first render — bypasses any reset() timing pitfalls.
+  const initialValues = useMemo<RoleFormValues>(
+    () => ({
+      name: loadedRole?.name || "",
+      description: loadedRole?.description || "",
+      permissions: (loadedRole?.permissions || []).map((p) => ({
+        module: p.module,
+        actions: Array.isArray(p.actions) ? p.actions : [],
+      })),
+    }),
+    [loadedRole]
+  )
 
   useEffect(() => {
     const org =
@@ -175,7 +194,7 @@ export default function EditRolePage() {
                   variant="outline"
                   className="rounded-xl h-10 px-6 font-semibold text-xs bg-white border-zinc-200"
                 >
-                  Cancel
+                  {readOnly ? "Back" : "Cancel"}
                 </Button>
               </Link>
               <Button
@@ -292,10 +311,12 @@ export default function EditRolePage() {
               control={control}
               name="permissions"
               render={({ field }) => (
-                <RBACPermissionMatrix
-                  value={field.value as PermissionEntry[]}
-                  onChange={(next) => field.onChange(next)}
-                />
+                <div className={readOnly ? "pointer-events-none" : ""}>
+                  <RBACPermissionMatrix
+                    value={field.value as PermissionEntry[]}
+                    onChange={(next) => field.onChange(next)}
+                  />
+                </div>
               )}
             />
 
@@ -325,7 +346,7 @@ export default function EditRolePage() {
               </Button>
             </div>
           </div>
-        </div>
+        </fieldset>
       </form>
     </div>
   )

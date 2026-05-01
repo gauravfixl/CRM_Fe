@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Save, ShieldCheck, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { Switch } from "@/shared/components/ui/switch";
-import { showSuccess, showWarning } from "@/utils/toast";
+import { showSuccess, showWarning, showError } from "@/utils/toast";
+import { getOrgAdminSettings, updateOrgAdminSettings } from "@/hooks/orgAdminHooks";
 
 export default function PasswordPoliciesPage() {
     const [isSaving, setIsSaving] = useState(false);
@@ -21,7 +22,30 @@ export default function PasswordPoliciesPage() {
         blockPwned: true,
     });
 
-    const handleSave = () => {
+    useEffect(() => {
+        (async () => {
+            try {
+                const res = await getOrgAdminSettings();
+                const data: any = res?.data?.data || res?.data || {};
+                const pp = data?.security?.passwordPolicy;
+                if (pp) {
+                    setPolicies((prev) => ({
+                        ...prev,
+                        minLength: pp.minLength != null ? String(pp.minLength) : prev.minLength,
+                        requireSpecial: pp.requireSpecialChar ?? prev.requireSpecial,
+                        requireNumbers: pp.requireNumber ?? prev.requireNumbers,
+                        requireUpper: pp.requireUppercase ?? prev.requireUpper,
+                        expirationDays: pp.passwordExpiryDays != null ? String(pp.passwordExpiryDays) : prev.expirationDays,
+                        historyCheck: pp.preventReuseCount != null ? String(pp.preventReuseCount) : prev.historyCheck,
+                    }));
+                }
+            } catch {
+                // Silent fallback to defaults
+            }
+        })();
+    }, []);
+
+    const handleSave = async () => {
         const minLen = parseInt(policies.minLength);
         const expDays = parseInt(policies.expirationDays);
         const histCheck = parseInt(policies.historyCheck);
@@ -31,8 +55,8 @@ export default function PasswordPoliciesPage() {
             return;
         }
 
-        if (isNaN(expDays) || expDays < 0 || expDays > 365) {
-            showWarning("Expiration days must be between 0 and 365");
+        if (isNaN(expDays) || expDays < 1 || expDays > 365) {
+            showWarning("Expiration days must be between 1 and 365");
             return;
         }
 
@@ -42,10 +66,25 @@ export default function PasswordPoliciesPage() {
         }
 
         setIsSaving(true);
-        setTimeout(() => {
-            setIsSaving(false);
+        try {
+            await updateOrgAdminSettings({
+                security: {
+                    passwordPolicy: {
+                        minLength: minLen,
+                        requireUppercase: policies.requireUpper,
+                        requireNumber: policies.requireNumbers,
+                        requireSpecialChar: policies.requireSpecial,
+                        passwordExpiryDays: expDays,
+                        preventReuseCount: histCheck,
+                    },
+                },
+            });
             showSuccess("Password policies saved successfully");
-        }, 1000);
+        } catch (err: any) {
+            showError(err?.response?.data?.message || "Failed to save password policies");
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     return (

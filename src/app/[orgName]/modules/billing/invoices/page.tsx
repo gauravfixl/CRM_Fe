@@ -26,6 +26,7 @@ import { showSuccess } from "@/shared/utils/toast";
 
 interface Invoice {
   id: string;
+  _id?: string;
   date: string;
   description: string;
   amount: string;
@@ -116,6 +117,10 @@ export default function InvoicesPage() {
     };
     fetchInvoices();
   }, []);
+
+  useEffect(() => {
+    fetchInvoices();
+  }, [fetchInvoices]);
 
   const cycleStatusFilter = () => {
     const currentIndex = statusFilters.indexOf(

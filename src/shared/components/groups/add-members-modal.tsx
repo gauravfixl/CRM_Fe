@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { CustomButton } from "@/components/custom/CustomButton"
 import { Input } from "@/components/ui/input"
@@ -9,11 +9,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { Search, UserPlus, X, Loader2, Users } from "lucide-react"
 import { toast } from "sonner"
+import { fetchUsersApi } from "@/modules/crm/organizations/hooks/orgHooks"
+import { addTeamMember } from "@/hooks/teamHooks"
 
 interface AddMembersModalProps {
     open: boolean
     onOpenChange: (open: boolean) => void
     groupName?: string
+    groupId?: string
     onMembersAdded?: (members: MemberEntry[]) => void
 }
 
@@ -24,22 +27,45 @@ export interface MemberEntry {
     role: string
 }
 
-const availableUsers = [
-    { id: "u1", name: "Alice Johnson", email: "alice@company.com" },
-    { id: "u2", name: "Bob Smith", email: "bob@company.com" },
-    { id: "u3", name: "Charlie Brown", email: "charlie@company.com" },
-    { id: "u4", name: "Diana Prince", email: "diana@company.com" },
-    { id: "u5", name: "Edward Norton", email: "edward@company.com" },
-    { id: "u6", name: "Fiona Apple", email: "fiona@company.com" },
-    { id: "u7", name: "George Lucas", email: "george@company.com" },
-    { id: "u8", name: "Hannah Montana", email: "hannah@company.com" },
-]
+interface AvailableUser {
+    id: string
+    name: string
+    email: string
+}
 
-export function AddMembersModal({ open, onOpenChange, groupName, onMembersAdded }: AddMembersModalProps) {
+export function AddMembersModal({ open, onOpenChange, groupName, groupId, onMembersAdded }: AddMembersModalProps) {
     const [loading, setLoading] = useState(false)
     const [searchQuery, setSearchQuery] = useState("")
     const [selectedMembers, setSelectedMembers] = useState<{ id: string; name: string; email: string; role: string }[]>([])
     const [role, setRole] = useState("Member")
+    const [availableUsers, setAvailableUsers] = useState<AvailableUser[]>([])
+    const [usersLoading, setUsersLoading] = useState(false)
+
+    useEffect(() => {
+        if (!open) return
+        let cancelled = false
+        ;(async () => {
+            try {
+                setUsersLoading(true)
+                const res = await fetchUsersApi()
+                const data: any = res?.data || res || []
+                const usersArray: any[] = Array.isArray(data) ? data : data.users ? data.users : []
+                const mapped: AvailableUser[] = usersArray
+                    .filter((u: any) => u.orgActive !== false)
+                    .map((u: any) => ({
+                        id: u._id || u.memberId,
+                        name: u.name || [u.firstName, u.lastName].filter(Boolean).join(" ") || u.email || "Unknown",
+                        email: u.email || "",
+                    }))
+                if (!cancelled) setAvailableUsers(mapped)
+            } catch (err) {
+                if (!cancelled) toast.error("Failed to load users")
+            } finally {
+                if (!cancelled) setUsersLoading(false)
+            }
+        })()
+        return () => { cancelled = true }
+    }, [open])
 
     const filteredUsers = availableUsers.filter(u =>
         (u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -47,7 +73,7 @@ export function AddMembersModal({ open, onOpenChange, groupName, onMembersAdded 
         !selectedMembers.find(m => m.id === u.id)
     )
 
-    const addMember = (user: typeof availableUsers[0]) => {
+    const addMember = (user: AvailableUser) => {
         setSelectedMembers(prev => [...prev, { ...user, role }])
         setSearchQuery("")
     }
@@ -61,17 +87,31 @@ export function AddMembersModal({ open, onOpenChange, groupName, onMembersAdded 
             toast.error("Please select at least one member")
             return
         }
+        if (!groupId) {
+            toast.error("No group selected")
+            return
+        }
 
         setLoading(true)
         try {
-            await new Promise(resolve => setTimeout(resolve, 800))
-            onMembersAdded?.(selectedMembers)
-            toast.success(`${selectedMembers.length} member(s) added to "${groupName}"`)
+            const results = await Promise.allSettled(
+                selectedMembers.map((m) => addTeamMember(groupId, { memberId: m.id, role: m.role }))
+            )
+            const failed = results.filter((r) => r.status === "rejected").length
+            const succeeded = selectedMembers.length - failed
+
+            if (succeeded > 0) {
+                toast.success(`${succeeded} member(s) added to "${groupName}"`)
+                onMembersAdded?.(selectedMembers.slice(0, succeeded))
+            }
+            if (failed > 0) {
+                toast.error(`${failed} member(s) failed to add`)
+            }
             setSelectedMembers([])
             setSearchQuery("")
             onOpenChange(false)
-        } catch {
-            toast.error("Failed to add members")
+        } catch (err: any) {
+            toast.error(err?.response?.data?.message || "Failed to add members")
         } finally {
             setLoading(false)
         }
