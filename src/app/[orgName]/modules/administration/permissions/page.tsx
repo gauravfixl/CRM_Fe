@@ -1,6 +1,6 @@
 "use client"
 
-import { Fragment, useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo } from "react"
 import {
   Search,
   Shield,
@@ -12,20 +12,14 @@ import {
   X,
   AlertCircle,
   Loader2,
-  Save,
-  Pencil,
-  Undo2,
-  Copy,
-  Plus,
 } from "lucide-react"
 import { Fragment } from "react"
 import { Button } from "@/shared/components/ui/button"
 import { Input } from "@/shared/components/ui/input"
 import { toast } from "sonner"
-import { useParams, useRouter } from "next/navigation"
+import { useParams } from "next/navigation"
 import { decryptData } from "@/utils/crypto"
-import { getAllRolesNPermissions, updateRole, addRole } from "@/hooks/roleNPermissionHooks"
-import { ROLES, ROLE_SCOPE } from "@/shared/utils/module-permission-map"
+import { getAllRolesNPermissions } from "@/hooks/roleNPermissionHooks"
 
 interface PermissionAction {
   _id?: string
@@ -46,19 +40,10 @@ interface Role {
 
 export default function PermissionSets() {
   const params = useParams()
-  const router = useRouter()
   const [roles, setRoles] = useState<Role[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [orgName, setOrgName] = useState("")
-
-  // Matrix editor (inline edit mode)
-  // - editMode === true → cells become clickable for custom roles
-  // - draftPerms holds in-flight edits keyed by roleId; only diffs are saved
-  const [editMode, setEditMode] = useState(false)
-  const [draftPerms, setDraftPerms] = useState<Record<string, PermissionAction[]>>({})
-  const [saving, setSaving] = useState(false)
-  const [cloningRoleId, setCloningRoleId] = useState<string | null>(null)
 
   useEffect(() => {
     setOrgName((params.orgName as string) || localStorage.getItem("orgName") || "")
@@ -68,14 +53,7 @@ export default function PermissionSets() {
   const fetchPermissions = async () => {
     setLoading(true)
     try {
-      // Send orgId so the backend includes this org's custom roles in the response.
-      // Without orgId, only system (Global Baseline) roles are returned.
-      const orgId =
-        (typeof window !== "undefined" &&
-          (localStorage.getItem("orgID") || localStorage.getItem("orgId"))) ||
-        ""
-      const scopeParams: { scope: "sc-org"; orgId?: string } = { scope: "sc-org" }
-      if (orgId) scopeParams.orgId = orgId
+      const scopeParams = { scope: "sc-org" as const }
       const response = await getAllRolesNPermissions(scopeParams)
 
       let rolesData: Role[] = []
@@ -136,148 +114,10 @@ export default function PermissionSets() {
     )
   }, [roles, searchQuery])
 
-  // Resolve the permissions to display for a role: draft (if editing) else saved.
-  const getRolePerms = (role: Role): PermissionAction[] => {
-    if (editMode && draftPerms[role._id]) return draftPerms[role._id]
-    return role.permissions || []
-  }
-
-  // Check if a role has a specific action for a module
   const hasAction = (role: Role, module: string, action: string): boolean => {
-    const perm = getRolePerms(role).find((p) => p.module === module)
+    const perm = role.permissions?.find((p) => p.module === module)
     return perm?.actions?.includes(action) ?? false
   }
-
-  const enterEditMode = () => {
-    // Deep-clone current permissions into draft; we never mutate `roles` directly.
-    const draft: Record<string, PermissionAction[]> = {}
-    roles.forEach((r) => {
-      draft[r._id] = (r.permissions || []).map((p) => ({
-        module: p.module,
-        actions: [...(p.actions || [])],
-      }))
-    })
-    setDraftPerms(draft)
-    setEditMode(true)
-  }
-
-  const exitEditMode = () => {
-    setEditMode(false)
-    setDraftPerms({})
-  }
-
-  const toggleAction = (role: Role, module: string, action: string) => {
-    if (!role.isCustom) {
-      toast.info("System roles can't be edited. Create a custom role to override.")
-      return
-    }
-    setDraftPerms((prev) => {
-      const current = prev[role._id] || []
-      const moduleEntry = current.find((p) => p.module === module)
-      let next: PermissionAction[]
-      if (!moduleEntry) {
-        next = [...current, { module, actions: [action] }]
-      } else {
-        const has = moduleEntry.actions.includes(action)
-        const newActions = has
-          ? moduleEntry.actions.filter((a) => a !== action)
-          : [...moduleEntry.actions, action]
-        next = current
-          .map((p) => (p.module === module ? { ...p, actions: newActions } : p))
-          .filter((p) => p.actions.length > 0) // drop empty modules
-      }
-      return { ...prev, [role._id]: next }
-    })
-  }
-
-  // Roles whose draft != original. System roles excluded (backend rejects updates anyway).
-  const changedRoles = useMemo(() => {
-    if (!editMode) return [] as Role[]
-    return roles.filter((r) => {
-      if (!r.isCustom) return false
-      const original = JSON.stringify(
-        (r.permissions || [])
-          .map((p) => ({ module: p.module, actions: [...(p.actions || [])].sort() }))
-          .sort((a, b) => a.module.localeCompare(b.module))
-      )
-      const draft = JSON.stringify(
-        (draftPerms[r._id] || [])
-          .map((p) => ({ module: p.module, actions: [...(p.actions || [])].sort() }))
-          .sort((a, b) => a.module.localeCompare(b.module))
-      )
-      return original !== draft
-    })
-  }, [editMode, roles, draftPerms])
-
-  // Clone a system role into a fresh editable custom role.
-  // The cloned role keeps the same permissions but gets isCustom: true and
-  // a name like "OrgAdmin (Copy)". Backend's createCustomRolePermission
-  // accepts our ORG_CUSTOM slug + sc-org scope.
-  const cloneRoleAsCustom = async (source: Role) => {
-    setCloningRoleId(source._id)
-    try {
-      const orgId =
-        (typeof window !== "undefined" &&
-          (localStorage.getItem("orgID") || localStorage.getItem("orgId"))) ||
-        undefined
-      const cloneName = `${source.name} (Copy)`
-      const payload: any = {
-        role: ROLES.ORG_CUSTOM,
-        name: cloneName,
-        scope: ROLE_SCOPE.ORGANIZATION,
-        description: `Editable copy of system role "${source.name}"`,
-        permissions: (source.permissions || []).map((p) => ({
-          module: p.module,
-          actions: [...(p.actions || [])],
-        })),
-        isCustom: true,
-      }
-      if (orgId) payload.orgId = orgId
-      await addRole(payload)
-      toast.success(`Cloned "${source.name}" → "${cloneName}". You can now edit the copy.`)
-      await fetchPermissions()
-    } catch (e: any) {
-      toast.error(e?.response?.data?.message || "Failed to clone role")
-    } finally {
-      setCloningRoleId(null)
-    }
-  }
-
-  const saveChanges = async () => {
-    if (changedRoles.length === 0) {
-      toast.info("No changes to save")
-      return
-    }
-    setSaving(true)
-    try {
-      const results = await Promise.allSettled(
-        changedRoles.map((r) =>
-          updateRole({ permissions: draftPerms[r._id] || [] }, r._id)
-        )
-      )
-      const failed = results.filter((r) => r.status === "rejected").length
-      const ok = results.length - failed
-      if (failed === 0) {
-        toast.success(`Saved ${ok} ${ok === 1 ? "role" : "roles"}`)
-      } else if (ok === 0) {
-        toast.error(`All ${failed} updates failed — check permissions`)
-      } else {
-        toast.warning(`Saved ${ok}, ${failed} failed`)
-      }
-      await fetchPermissions() // re-pull fresh state from backend
-      setEditMode(false)
-      setDraftPerms({})
-    } catch (e: any) {
-      toast.error(e?.response?.data?.message || "Failed to save changes")
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const customRolesCount = useMemo(
-    () => roles.filter((r) => r.isCustom).length,
-    [roles]
-  )
 
   const stats = {
     totalRoles: roles.length,
@@ -401,43 +241,11 @@ export default function PermissionSets() {
                             <div className="h-8 w-8 bg-primary/10 text-primary rounded-none flex items-center justify-center">
                               <Shield className="w-4 h-4" />
                             </div>
-                          </TableCell>
-                          <TableCell className="p-4">
-                            <Badge
-                              className={`border-0 text-xs font-medium px-3 py-1 rounded-full ${
-                                role.isCustom
-                                  ? "bg-emerald-50 text-emerald-600"
-                                  : "bg-zinc-100 text-zinc-500"
-                              }`}
-                            >
-                              {role.isCustom ? "Custom" : "System"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="p-4 text-center">
-                            <span className="text-sm font-semibold text-zinc-700">{moduleCount}</span>
-                          </TableCell>
-                          <TableCell className="p-4 text-center">
-                            <span className="text-sm font-semibold text-zinc-700">{totalActions}</span>
-                          </TableCell>
-                          <TableCell className="p-4">
-                            <div className="flex flex-wrap gap-1.5">
-                              {role.permissions?.slice(0, 4).map((perm) => (
-                                <Badge
-                                  key={perm._id || perm.module}
-                                  variant="outline"
-                                  className="border-zinc-200 text-[10px] font-medium px-2 py-0.5 rounded-full"
-                                >
-                                  {perm.module} ({perm.actions?.length || 0})
-                                </Badge>
-                              ))}
-                              {(role.permissions?.length || 0) > 4 && (
-                                <Badge
-                                  variant="outline"
-                                  className="border-zinc-200 text-[10px] font-medium px-2 py-0.5 rounded-full"
-                                >
-                                  +{(role.permissions?.length || 0) - 4} more
-                                </Badge>
-                              )}
+                            <div>
+                              <span className="text-sm font-semibold text-gray-900 block">{role.name}</span>
+                              <span className="text-[10px] text-zinc-500 font-medium truncate max-w-[200px] block">
+                                {role.description || "No description"}
+                              </span>
                             </div>
                           </div>
                         </td>
@@ -543,80 +351,31 @@ export default function PermissionSets() {
                                     : "border-zinc-200 bg-zinc-50 text-zinc-400"
                                 }`}
                               >
-                                {role.isCustom ? "Custom" : "System"}
-                              </Badge>
-                            </div>
-                          </TableHead>
-                        ))}
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {allModules.map((module) => (
-                        <Fragment key={`module-group-${module}`}>
-                          {/* Module header row */}
-                          <TableRow
-                            key={`module-${module}`}
-                            className="bg-indigo-50/30 border-t border-zinc-100 hover:bg-indigo-50/50"
-                          >
-                            <TableCell className="p-4 sticky left-0 bg-indigo-50/30 z-10">
-                              <div className="flex items-center gap-2">
-                                <ListTree className="w-3.5 h-3.5 text-indigo-500" />
-                                <span className="text-xs font-semibold text-indigo-700">{module}</span>
-                              </div>
-                            </TableCell>
-                            {filteredRoles.map((role) => {
-                              const perm = role.permissions?.find((p) => p.module === module)
-                              return (
-                                <TableCell
-                                  key={`${role._id}-${module}-header`}
-                                  className="p-4 text-center"
-                                >
-                                  <Badge
-                                    variant="outline"
-                                    className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
-                                      perm
-                                        ? "border-indigo-200 bg-indigo-50 text-indigo-600"
-                                        : "border-zinc-200 text-zinc-400"
-                                    }`}
-                                  >
-                                    {perm ? `${perm.actions?.length || 0} actions` : "No access"}
-                                  </Badge>
-                                </TableCell>
-                              )
-                            })}
-                          </TableRow>
-                          {/* Action rows for this module */}
-                          {moduleActions[module].map((action) => (
-                            <TableRow
-                              key={`${module}-${action}`}
-                              className="hover:bg-zinc-50/50 transition-all border-b border-zinc-50"
-                            >
-                              <TableCell className="p-3 pl-10 sticky left-0 bg-white z-10">
-                                <span className="text-xs text-zinc-600 font-medium">{action}</span>
-                              </TableCell>
-                              {filteredRoles.map((role) => (
-                                <TableCell
-                                  key={`${role._id}-${module}-${action}`}
-                                  className="p-3 text-center"
-                                >
-                                  {hasAction(role, module, action) ? (
-                                    <div className="flex items-center justify-center">
-                                      <div className="h-6 w-6 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                                        <Check className="w-3.5 h-3.5" />
-                                      </div>
-                                    </div>
-                                  ) : (
-                                    <div className="flex items-center justify-center">
-                                      <div className="h-6 w-6 rounded-full bg-zinc-50 text-zinc-300 flex items-center justify-center">
-                                        <X className="w-3.5 h-3.5" />
-                                      </div>
-                                    </div>
-                                  )}
-                                </TableCell>
-                              ))}
-                            </TableRow>
+                                {perm ? `${perm.actions?.length || 0} actions` : "No access"}
+                              </span>
+                            </td>
+                          )
+                        })}
+                      </tr>
+                      {moduleActions[module].map((action) => (
+                        <tr key={`${module}-${action}`} className="hover:bg-zinc-50/50 transition-colors border-b border-zinc-50">
+                          <td className="px-6 py-2 pl-10 sticky left-0 bg-white z-10">
+                            <span className="text-xs text-zinc-600 font-medium">{action}</span>
+                          </td>
+                          {filteredRoles.map((role) => (
+                            <td key={`${role._id}-${module}-${action}`} className="px-4 py-2 text-center">
+                              {hasAction(role, module, action) ? (
+                                <div className="inline-flex items-center justify-center w-6 h-6 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-none">
+                                  <Check className="w-3 h-3" />
+                                </div>
+                              ) : (
+                                <div className="inline-flex items-center justify-center w-6 h-6 bg-zinc-50 text-zinc-300 border border-zinc-200 rounded-none">
+                                  <X className="w-3 h-3" />
+                                </div>
+                              )}
+                            </td>
                           ))}
-                        </Fragment>
+                        </tr>
                       ))}
                     </Fragment>
                   ))}
