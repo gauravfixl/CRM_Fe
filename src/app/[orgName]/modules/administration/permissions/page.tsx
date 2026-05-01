@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo, useCallback } from "react"
+import { Fragment, useState, useEffect, useMemo } from "react"
 import {
   Search,
   Shield,
@@ -147,6 +147,12 @@ export default function PermissionSets() {
         (role.description && role.description.toLowerCase().includes(q))
     )
   }, [roles, searchQuery])
+
+  // Resolve the permissions to display for a role: draft (if editing) else saved.
+  const getRolePerms = (role: Role): PermissionAction[] => {
+    if (editMode && draftPerms[role._id]) return draftPerms[role._id]
+    return role.permissions || []
+  }
 
   // Check if a role has a specific action for a module
   const hasAction = (role: Role, module: string, action: string): boolean => {
@@ -463,7 +469,7 @@ export default function PermissionSets() {
                                   variant="outline"
                                   className="border-zinc-200 text-[10px] font-medium px-2 py-0.5 rounded-full"
                                 >
-                                  +{role.permissions.length - 4} more
+                                  +{(role.permissions?.length || 0) - 4} more
                                 </Badge>
                               )}
                             </div>
@@ -523,7 +529,7 @@ export default function PermissionSets() {
                     </TableHeader>
                     <TableBody>
                       {allModules.map((module) => (
-                        <>
+                        <Fragment key={`module-group-${module}`}>
                           {/* Module header row */}
                           <TableRow
                             key={`module-${module}`}
@@ -587,7 +593,7 @@ export default function PermissionSets() {
                               ))}
                             </TableRow>
                           ))}
-                        </>
+                        </Fragment>
                       ))}
                     </TableBody>
                   </Table>
