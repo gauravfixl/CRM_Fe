@@ -14,34 +14,42 @@
 // ────────────────────────────────────────────────────────────────────
 // 1. BACKEND MODULE KEYS (mirrors backend MODULES enum)
 // ────────────────────────────────────────────────────────────────────
+// Mirrors the backend's MODULES enum exactly. Backend has been normalized to
+// lowercase_snake_case across the board (REPORTS dedup'd, HRM sub-modules
+// lowercased, SUPPORT module added). Updating this requires a coordinated
+// backend deploy of the same enum keys/values.
 export const MODULES = {
+  // Platform
   PLATFORM: "platform",
+  // Organization & Identity
   ORGANIZATION: "organization",
+  USER: "user",
+  ROLE_PERMISSION: "role_permission",
   FIRM: "firm",
+  // CRM
   CLIENT: "client",
   LEAD: "lead",
+  // Finance
   INVOICE: "invoice",
   TAX: "tax",
-  USER: "user",
+  // Support
+  SUPPORT: "support",
+  // Documents & Reports
   DOCUMENT: "document",
-  // NOTE: Backend's MODULES enum has a duplicate REPORTS key (lines 60 & 72 of
-  // role.enums.js). Duplicate keys → last value wins in JS → effective backend
-  // value is "REPORTS" (uppercase). Mirror that here so role saves validate.
-  // After backend item #8 in BACKEND_RBAC_CHANGES.md ships (dedupe + lowercase),
-  // change this back to "reports".
-  REPORTS: "REPORTS",
-  ROLE_PERMISSION: "role_permission",
+  REPORTS: "reports",
+  // Project Management (umbrella)
   PROJECT_MANAGEMENT: "project_management",
+  // HRM umbrella + sub-modules (all lowercase post-backend-cleanup)
   HRM_MANAGEMENT: "hrm_management",
-  EMPLOYEE: "EMPLOYEE",
-  ONBOARDING: "ONBOARDING",
-  ATTENDANCE: "ATTENDANCE",
-  SHIFT: "SHIFT",
-  LEAVE: "LEAVE",
-  HOLIDAY: "HOLIDAY",
-  PAYROLL: "PAYROLL",
-  POLICY: "POLICY",
-  SETTINGS: "SETTINGS",
+  EMPLOYEE: "employee",
+  ONBOARDING: "onboarding",
+  ATTENDANCE: "attendance",
+  SHIFT: "shift",
+  LEAVE: "leave",
+  HOLIDAY: "holiday",
+  PAYROLL: "payroll",
+  POLICY: "policy",
+  SETTINGS: "settings",
 } as const;
 
 export type ModuleKey = (typeof MODULES)[keyof typeof MODULES];
@@ -107,6 +115,34 @@ export const PERMISSIONS = {
   VIEW_FIRM: "VIEW_FIRM",
   VIEW_DELETED_FIRM: "VIEW_DELETED_FIRM",
 
+  // ─── Invoice ───
+  CREATE_INVOICE: "CREATE_INVOICE",
+  EDIT_INVOICE: "EDIT_INVOICE",
+  DELETE_INVOICE: "DELETE_INVOICE",
+  RESTORE_INVOICE: "RESTORE_INVOICE",
+  EXPORT_INVOICE: "EXPORT_INVOICE",
+  VIEW_INVOICE: "VIEW_INVOICE",
+  VIEW_INVOICE_LIST: "VIEW_INVOICE_LIST",
+  VIEW_DELETED_INVOICE: "VIEW_DELETED_INVOICE",
+
+  // ─── Tax ───
+  CREATE_TAX: "CREATE_TAX",
+  EDIT_TAX: "EDIT_TAX",
+  DELETE_TAX: "DELETE_TAX",
+  VIEW_TAX: "VIEW_TAX",
+  VIEW_TAX_LIST: "VIEW_TAX_LIST",
+
+  // ─── Support ───
+  VIEW_SUPPORT_TICKETS: "VIEW_SUPPORT_TICKETS",
+  CREATE_SUPPORT_TICKET: "CREATE_SUPPORT_TICKET",
+  EDIT_SUPPORT_TICKET: "EDIT_SUPPORT_TICKET",
+  DELETE_SUPPORT_TICKET: "DELETE_SUPPORT_TICKET",
+  RESOLVE_SUPPORT_TICKET: "RESOLVE_SUPPORT_TICKET",
+  MANAGE_SUPPORT_TICKETS: "MANAGE_SUPPORT_TICKETS",
+
+  // ─── Generic Trash (used by checkPermission middleware on multiple modules) ───
+  VIEW_TRASH: "VIEW_TRASH",
+
   // ─── Project ───
   CREATE_PROJECT: "CREATE_PROJECT",
   EDIT_PROJECT: "EDIT_PROJECT",
@@ -117,7 +153,7 @@ export const PERMISSIONS = {
   VIEW_PROJECT_MEMBERS: "VIEW_PROJECT_MEMBERS",
   EDIT_PROJECT_MEMBERS: "EDIT_PROJECT_MEMBERS",
   VIEW_ASSIGN_PROJECT_MEMBERS: "VIEW_ASSIGN_PROJECT_MEMBERS",
-  MANAGE_PROJECT_PERMISSIONS: "MAMAGE_PROJECT_PERMISSIONS", // backend typo preserved; keep value matching backend
+  MANAGE_PROJECT_PERMISSIONS: "MANAGE_PROJECT_PERMISSIONS", // backend typo fixed to "MANAGE_PROJECT_PERMISSIONS"
   MANAGE_PROJECT_BUDGET: "MANAGE_PROJECT_BUDGET",
   VIEW_PROJECT: "VIEW_PROJECT",
   VIEW_ALL_PROJECT: "VIEW_ALL_PROJECT",
@@ -367,6 +403,7 @@ export const MODULE_ACTION_CATALOG: Record<string, string[]> = {
     PERMISSIONS.RESTORE_FIRM,
     PERMISSIONS.VIEW_FIRM,
     PERMISSIONS.VIEW_DELETED_FIRM,
+    PERMISSIONS.VIEW_TRASH,
   ],
   [MODULES.CLIENT]: [
     PERMISSIONS.CREATE_CLIENT,
@@ -386,15 +423,30 @@ export const MODULE_ACTION_CATALOG: Record<string, string[]> = {
     PERMISSIONS.VIEW_DELETED_LEAD,
   ],
   [MODULES.INVOICE]: [
-    // Backend currently has no INVOICE-specific permissions; reuse generic reporting perms.
-    PERMISSIONS.GENERATE_REPORT,
-    PERMISSIONS.EXPORT_DATA,
-    PERMISSIONS.VIEW_AUDIT_LOGS,
+    PERMISSIONS.CREATE_INVOICE,
+    PERMISSIONS.EDIT_INVOICE,
+    PERMISSIONS.DELETE_INVOICE,
+    PERMISSIONS.RESTORE_INVOICE,
+    PERMISSIONS.EXPORT_INVOICE,
+    PERMISSIONS.VIEW_INVOICE,
+    PERMISSIONS.VIEW_INVOICE_LIST,
+    PERMISSIONS.VIEW_DELETED_INVOICE,
+    PERMISSIONS.VIEW_TRASH,
   ],
   [MODULES.TAX]: [
-    // Backend currently has no TAX-specific permissions; reuse generic reporting perms.
-    PERMISSIONS.GENERATE_REPORT,
-    PERMISSIONS.EXPORT_DATA,
+    PERMISSIONS.CREATE_TAX,
+    PERMISSIONS.EDIT_TAX,
+    PERMISSIONS.DELETE_TAX,
+    PERMISSIONS.VIEW_TAX,
+    PERMISSIONS.VIEW_TAX_LIST,
+  ],
+  [MODULES.SUPPORT]: [
+    PERMISSIONS.VIEW_SUPPORT_TICKETS,
+    PERMISSIONS.CREATE_SUPPORT_TICKET,
+    PERMISSIONS.EDIT_SUPPORT_TICKET,
+    PERMISSIONS.DELETE_SUPPORT_TICKET,
+    PERMISSIONS.RESOLVE_SUPPORT_TICKET,
+    PERMISSIONS.MANAGE_SUPPORT_TICKETS,
   ],
   [MODULES.DOCUMENT]: [
     PERMISSIONS.UPLOAD_DOCUMENT,
@@ -543,6 +595,7 @@ export const MODULE_DISPLAY_NAMES: Record<string, string> = {
   [MODULES.LEAD]: "Leads",
   [MODULES.INVOICE]: "Billing & Invoices",
   [MODULES.TAX]: "Tax",
+  [MODULES.SUPPORT]: "Support",
   [MODULES.USER]: "Users",
   [MODULES.DOCUMENT]: "Documents",
   [MODULES.REPORTS]: "Reports",
@@ -572,6 +625,8 @@ export const MODULE_GROUPS: Record<string, string> = {
 
   [MODULES.INVOICE]: "Finance",
   [MODULES.TAX]: "Finance",
+
+  [MODULES.SUPPORT]: "Customer",
 
   [MODULES.DOCUMENT]: "Documents & Reports",
   [MODULES.REPORTS]: "Documents & Reports",

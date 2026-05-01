@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useCallback, useRef } from "react"
 import {
   Search,
   Shield,
@@ -20,6 +20,7 @@ import { toast } from "sonner"
 import { useParams } from "next/navigation"
 import { decryptData } from "@/utils/crypto"
 import { getAllRolesNPermissions } from "@/hooks/roleNPermissionHooks"
+import { useCachedFetch } from "@/lib/swrCache"
 
 interface PermissionAction {
   _id?: string
@@ -40,46 +41,52 @@ interface Role {
 
 export default function PermissionSets() {
   const params = useParams()
-  const [roles, setRoles] = useState<Role[]>([])
-  const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [orgName, setOrgName] = useState("")
 
   useEffect(() => {
     setOrgName((params.orgName as string) || localStorage.getItem("orgName") || "")
-    fetchPermissions()
+  }, [params.orgName])
+
+  const fetchPermissions = useCallback(async (): Promise<Role[]> => {
+    const scopeParams = { scope: "sc-org" as const }
+    const response = await getAllRolesNPermissions(scopeParams)
+
+    let rolesData: Role[] = []
+    if (response?.data?.permissions && response?.data?.iv) {
+      rolesData = decryptData(response.data.permissions, response.data.iv) || []
+    } else if (response?.data?.roles) {
+      rolesData = response.data.roles
+    } else if (Array.isArray(response?.data)) {
+      rolesData = response.data
+    }
+
+    return rolesData.map((role: any) => ({
+      ...role,
+      name: role.name || role.roleName || "Unnamed Role",
+      permissions: Array.isArray(role.permissions) ? role.permissions : [],
+    }))
   }, [])
 
-  const fetchPermissions = async () => {
-    setLoading(true)
-    try {
-      const scopeParams = { scope: "sc-org" as const }
-      const response = await getAllRolesNPermissions(scopeParams)
+  const {
+    data: rolesData,
+    loading,
+    error,
+    refetch: fetchPermissionsRefetch,
+  } = useCachedFetch<Role[]>("roles:org:permissions-matrix", fetchPermissions)
 
-      let rolesData: Role[] = []
+  const roles = rolesData ?? []
+  const hasData = roles.length > 0
 
-      if (response?.data?.permissions && response?.data?.iv) {
-        rolesData = decryptData(response.data.permissions, response.data.iv)
-      } else if (response?.data?.roles) {
-        rolesData = response.data.roles
-      } else if (Array.isArray(response?.data)) {
-        rolesData = response.data
-      }
-
-      rolesData = rolesData.map((role: any) => ({
-        ...role,
-        name: role.name || role.roleName || "Unnamed Role",
-        permissions: Array.isArray(role.permissions) ? role.permissions : [],
-      }))
-
-      setRoles(rolesData)
-    } catch (error) {
-      console.error("Error fetching permissions:", error)
-      toast.error("Failed to load permission matrix")
-    } finally {
-      setLoading(false)
-    }
-  }
+  // Toast only when the fetch fails AND we have nothing to show; otherwise the
+  // user sees stale-but-usable cached data and a silent background retry.
+  const lastErrorToast = useRef<string | null>(null)
+  useEffect(() => {
+    if (!error || hasData) return
+    if (lastErrorToast.current === error) return
+    lastErrorToast.current = error
+    toast.error("Failed to load permission matrix")
+  }, [error, hasData])
 
   const { allModules, moduleActions } = useMemo(() => {
     const moduleMap = new Map<string, Set<string>>()
@@ -148,7 +155,7 @@ export default function PermissionSets() {
             </p>
           </div>
           <Button
-            onClick={fetchPermissions}
+            onClick={fetchPermissionsRefetch}
             disabled={loading}
             variant="outline"
             size="sm"
@@ -206,7 +213,7 @@ export default function PermissionSets() {
             </div>
           </div>
 
-          {loading ? (
+          {loading && !hasData ? (
             <div className="p-16 flex flex-col items-center justify-center gap-3">
               <Loader2 className="w-6 h-6 text-primary animate-spin" />
               <p className="text-xs text-zinc-500 font-medium">Loading permission matrix...</p>
@@ -215,8 +222,23 @@ export default function PermissionSets() {
             <div className="p-16 flex flex-col items-center justify-center gap-3">
               <Shield className="w-8 h-8 text-zinc-300" />
               <p className="text-sm text-zinc-500 font-medium">
-                {searchQuery ? "No roles match your search" : "No roles found in the directory"}
+                {error
+                  ? error
+                  : searchQuery
+                    ? "No roles match your search"
+                    : "No roles found in the directory"}
               </p>
+              {error && !hasData && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={fetchPermissionsRefetch}
+                  className="rounded-none border-zinc-200 text-xs font-medium h-8 px-3 mt-2"
+                >
+                  <RefreshCw size={12} className="mr-1.5" />
+                  Retry
+                </Button>
+              )}
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -283,7 +305,7 @@ export default function PermissionSets() {
         </div>
 
         {/* Detailed Permission Matrix */}
-        {!loading && allModules.length > 0 && filteredRoles.length > 0 && (
+        {allModules.length > 0 && filteredRoles.length > 0 && (
           <div className="bg-white border border-zinc-200 rounded-none shadow-lg overflow-hidden">
             <div className="p-4 border-b border-zinc-100 bg-zinc-50/50 flex items-center justify-between">
               <div className="flex items-center gap-2">

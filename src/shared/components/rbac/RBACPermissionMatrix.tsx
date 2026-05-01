@@ -96,44 +96,6 @@ export function RBACPermissionMatrix({ value, onChange }: RBACPermissionMatrixPr
     return Array.from(moduleMap.values())
   }, [value, catalogModules])
 
-  // Build dynamic module list from both hardcoded modules AND backend data
-  const dynamicModules = useMemo(() => {
-    const moduleMap = new Map<string, ModuleDef>()
-
-    // First, add all hardcoded modules
-    ALL_MODULES.forEach(mod => {
-      moduleMap.set(mod.id, mod)
-    })
-
-    // Then, add any modules from backend that aren't in our hardcoded list
-    value.forEach(perm => {
-      if (!moduleMap.has(perm.module)) {
-        // Create a dynamic module definition for backend modules we don't know about
-        const displayName = perm.module
-          .split('_')
-          .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-          .join(' ')
-
-        moduleMap.set(perm.module, {
-          id: perm.module,
-          name: displayName,
-          actions: perm.actions, // Use the actions from backend
-          group: "Other",
-        })
-      } else {
-        // If module exists in hardcoded list, merge actions from backend
-        const existing = moduleMap.get(perm.module)!
-        const allActions = new Set([...existing.actions, ...perm.actions])
-        moduleMap.set(perm.module, {
-          ...existing,
-          actions: Array.from(allActions),
-        })
-      }
-    })
-
-    return Array.from(moduleMap.values())
-  }, [value])
-
   const filteredModules = useMemo(() => {
     const q = searchQuery.trim().toLowerCase()
     if (!q) return dynamicModules

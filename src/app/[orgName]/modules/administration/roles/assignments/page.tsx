@@ -52,6 +52,7 @@ import {
 } from "@/hooks/roleNPermissionHooks"
 import useRolesStore from "@/lib/roleStore"
 import { ROLE_DISPLAY_NAMES } from "@/shared/utils/module-permission-map"
+import { useCachedFetch, invalidateCachePrefix } from "@/lib/swrCache"
 
 type OrgUser = {
     memberId: string
@@ -83,8 +84,6 @@ export default function RoleAssignmentsPage() {
     const [search, setSearch] = useState("")
     const [activeTab, setActiveTab] = useState<"byUser" | "byRole">("byUser")
     const [roleFilter, setRoleFilter] = useState<string | null>(null) // role slug
-    const [users, setUsers] = useState<OrgUser[]>([])
-    const [loading, setLoading] = useState(true)
     const [savingFor, setSavingFor] = useState<string | null>(null)
 
     // Per-user assign / change role dialog
@@ -99,77 +98,74 @@ export default function RoleAssignmentsPage() {
 
     const orgRoles = useRolesStore((state) => state.roles?.organization) as Role[] | undefined
 
-    // Guard against React StrictMode double-mount in dev — without this guard,
-    // two parallel loadAll() calls fire and one can be cancelled mid-flight,
-    // leaving `loading=true` forever if the surviving promise hangs.
-    const initialized = useRef(false)
-    const loadError = useRef<string | null>(null)
+    const orgId =
+        typeof window !== "undefined"
+            ? localStorage.getItem("orgID") || localStorage.getItem("orgId") || ""
+            : ""
+    const cacheScope = orgId || "default"
 
-    const loadRoles = useCallback(async () => {
-        try {
-            const orgId =
-                (typeof window !== "undefined" &&
-                    (localStorage.getItem("orgID") || localStorage.getItem("orgId"))) ||
-                ""
-            const params: any = { scope: "sc-org" }
-            if (orgId) params.orgId = orgId
-            const res = await getAllRolesNPermissions(params)
-            if (res?.data?.permissions && res?.data?.iv) {
-                const decrypted = decryptData(res.data.permissions, res.data.iv) || []
-                useRolesStore.getState().setRoles((prev) => ({ ...prev, organization: decrypted }))
-            }
-        } catch (e: any) {
-            console.warn("[Assignments] loadRoles failed:", e?.response?.status, e?.message)
-            loadError.current = e?.response?.data?.message || e?.message || "Failed to fetch roles"
+    const fetchRolesData = useCallback(async (): Promise<Role[]> => {
+        const params: any = { scope: "sc-org" }
+        if (orgId) params.orgId = orgId
+        const res = await getAllRolesNPermissions(params)
+        if (res?.data?.permissions && res?.data?.iv) {
+            return (decryptData(res.data.permissions, res.data.iv) || []) as Role[]
         }
+        return []
+    }, [orgId])
+
+    const fetchMembersData = useCallback(async (): Promise<OrgUser[]> => {
+        const res = await listOrgMembers({ page: 1, limit: 100 })
+        const apiUsers = res?.data?.users ?? res?.data?.members ?? []
+        return apiUsers as OrgUser[]
     }, [])
 
-    const loadMembers = useCallback(async () => {
-        try {
-            const res = await listOrgMembers({ page: 1, limit: 100 })
-            const apiUsers = res?.data?.users ?? res?.data?.members ?? []
-            setUsers(apiUsers as OrgUser[])
-        } catch (e: any) {
-            const status = e?.response?.status
-            const msg = e?.response?.data?.message || e?.message || "Failed to load organization users"
-            console.warn("[Assignments] loadMembers failed:", status, msg)
-            loadError.current = msg
-            // Most common: 403 → user lacks VIEW_ORG_USER permission. Toast once.
-            toast.error(
-                status === 403
-                    ? "You don't have permission to view organization users (VIEW_ORG_USER)."
-                    : msg
-            )
-            setUsers([])
-        }
-    }, [])
+    const {
+        data: rolesData,
+        error: rolesError,
+        refetch: refetchRoles,
+    } = useCachedFetch<Role[]>(`roles:org:${cacheScope}:assignments`, fetchRolesData)
 
-    const loadAll = useCallback(async () => {
-        loadError.current = null
-        setLoading(true)
-        // Safety net: if anything hangs (axios has no default timeout), force the
-        // spinner off after 20s so the UI can recover and show a retry button.
-        const safetyTimer = setTimeout(() => {
-            console.warn("[Assignments] loadAll timeout — forcing loading=false")
-            loadError.current = "Request timed out — backend may be unreachable"
-            setLoading(false)
-        }, 20_000)
-        try {
-            // Use allSettled so a hanging/rejected loadRoles doesn't block loadMembers (and vice versa).
-            await Promise.allSettled([loadRoles(), loadMembers()])
-        } finally {
-            clearTimeout(safetyTimer)
-            setLoading(false)
-        }
-    }, [loadRoles, loadMembers])
+    const {
+        data: usersData,
+        loading: usersLoading,
+        error: usersError,
+        refetch: refetchUsers,
+        setData: setUsersData,
+    } = useCachedFetch<OrgUser[]>(`members:org:${cacheScope}:assignments`, fetchMembersData)
+
+    // Mirror role payload into the shared zustand store so other pages stay in sync.
+    useEffect(() => {
+        if (rolesData)
+            useRolesStore.getState().setRoles((prev) => ({ ...prev, organization: rolesData }))
+    }, [rolesData])
+
+    const users: OrgUser[] = usersData ?? []
+    const loading = usersLoading
+    const loadError = rolesError || usersError
 
     useEffect(() => {
-        if (initialized.current) return // skip StrictMode's second invocation in dev
-        initialized.current = true
         const org = (params.orgName as string) || localStorage.getItem("orgName") || ""
         setOrgName(org)
-        loadAll()
-    }, [loadAll, params.orgName])
+    }, [params.orgName])
+
+    // Permission-denied (403) on members is the most common failure — surface
+    // it as a toast only once per error, and only when there's nothing to show.
+    const lastUsersErrorToast = useRef<string | null>(null)
+    useEffect(() => {
+        if (!usersError || users.length > 0) return
+        if (lastUsersErrorToast.current === usersError) return
+        lastUsersErrorToast.current = usersError
+        toast.error(
+            usersError.toLowerCase().includes("permission") || usersError.includes("403")
+                ? "You don't have permission to view organization users (VIEW_ORG_USER)."
+                : usersError,
+        )
+    }, [usersError, users.length])
+
+    const loadAll = useCallback(async () => {
+        await Promise.allSettled([refetchRoles(), refetchUsers()])
+    }, [refetchRoles, refetchUsers])
 
     // Apply URL filters once on mount: ?role=<slug> → switch tab + filter
     useEffect(() => {
@@ -275,13 +271,14 @@ export default function RoleAssignmentsPage() {
                 roleSlug,
                 isCustom: Boolean(role.isCustom),
             })
-            setUsers((prev) =>
-                prev.map((u) =>
+            setUsersData((prev) =>
+                (prev ?? []).map((u) =>
                     u.memberId === assignTarget.memberId
                         ? { ...u, role: roleSlug, roleId: assignRoleId }
                         : u
                 )
             )
+            invalidateCachePrefix("members:org:")
             toast.success(`Role assigned to ${assignTarget.name}`)
             closeAssign()
         } catch (e: any) {
@@ -325,13 +322,14 @@ export default function RoleAssignmentsPage() {
                 roleSlug,
                 isCustom: Boolean(role.isCustom),
             })
-            setUsers((prev) =>
-                prev.map((u) =>
+            setUsersData((prev) =>
+                (prev ?? []).map((u) =>
                     u.memberId === user.memberId
                         ? { ...u, role: roleSlug, roleId: newAssignRoleId }
                         : u
                 )
             )
+            invalidateCachePrefix("members:org:")
             toast.success(`${role.name} assigned to ${user.name}`)
             closeNewAssign()
         } catch (e: any) {
@@ -355,7 +353,8 @@ export default function RoleAssignmentsPage() {
         setSavingFor(user.memberId)
         try {
             await revokeMemberRole(user.memberId)
-            setUsers((prev) => prev.filter((u) => u.memberId !== user.memberId))
+            setUsersData((prev) => (prev ?? []).filter((u) => u.memberId !== user.memberId))
+            invalidateCachePrefix("members:org:")
             toast.success(`${user.name} removed from organization`)
         } catch (e: any) {
             toast.error(e?.response?.data?.message || "Failed to remove member")
@@ -504,7 +503,7 @@ export default function RoleAssignmentsPage() {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-zinc-100">
-                                        {loading ? (
+                                        {loading && users.length === 0 ? (
                                             <tr>
                                                 <td colSpan={5} className="px-6 py-16 text-center">
                                                     <div className="flex flex-col items-center gap-3">
@@ -519,15 +518,15 @@ export default function RoleAssignmentsPage() {
                                                     <div className="flex flex-col items-center gap-3">
                                                         <AlertTriangle className="w-6 h-6 text-zinc-300" />
                                                         <span className="text-xs text-zinc-500">
-                                                            {loadError.current
-                                                                ? loadError.current
+                                                            {loadError && users.length === 0
+                                                                ? loadError
                                                                 : users.length === 0
                                                                     ? "No organization users found yet — invite someone from the Users page."
                                                                     : roleFilter
                                                                         ? `No users currently hold the ${ROLE_DISPLAY_NAMES[roleFilter] || roleFilter} role.`
                                                                         : "No users match your search."}
                                                         </span>
-                                                        {loadError.current && (
+                                                        {loadError && users.length === 0 && (
                                                             <Button
                                                                 variant="outline"
                                                                 size="sm"
@@ -634,7 +633,7 @@ export default function RoleAssignmentsPage() {
 
                     {/* By Role grouping */}
                     <TabsContent value="byRole" className="space-y-4">
-                        {loading ? (
+                        {loading && users.length === 0 ? (
                             <div className="bg-white border border-zinc-200 rounded-none shadow-lg p-12 text-center">
                                 <RefreshCw className="w-6 h-6 text-primary animate-spin mx-auto" />
                                 <span className="text-xs text-zinc-500 mt-3 block">Loading...</span>

@@ -11,6 +11,14 @@ import { Button } from "@/shared/components/ui/button"
 import { Input } from "@/shared/components/ui/input"
 import { Label } from "@/shared/components/ui/label"
 import { Textarea } from "@/shared/components/ui/textarea"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/shared/components/ui/card"
+import SubHeader from "@/shared/components/custom/SubHeader"
 import { toast } from "sonner"
 import {
   updateRole,
@@ -370,8 +378,8 @@ function EditRoleForm({
                 </Button>
               )}
             </div>
-          </div>
-        </div>
+          }
+        />
 
         {readOnly && (
           <div className="mx-4 md:mx-8 mt-4 px-5 py-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
@@ -453,8 +461,8 @@ function EditRoleForm({
                     <p className="text-[11px] text-rose-600 font-medium">{errors.description.message}</p>
                   )}
                 </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
 
             <div className="bg-white border border-gray-200 rounded-none p-5 flex items-start gap-3">
               <div className="p-2 bg-primary/10 rounded-none">
