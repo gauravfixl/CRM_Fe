@@ -51,7 +51,11 @@ const baseShape = {
     .min(1, "Email is required")
     .email("Enter a valid email"),
   roleId: z.string().min(1, "Select a role"),
-  firmIds: z.array(z.string()).min(1, "Assign at least one firm"),
+  // Firms are required by default. The dialog uses a refine-style form-level
+  // check (in handleInviteSubmit / handleDirectSubmit) to bypass this for
+  // admin-tier roles whose access is org-wide. Empty here is allowed at the
+  // schema level; submit-time logic enforces the rule based on selected role.
+  firmIds: z.array(z.string()).default([]),
 }
 
 const inviteSchema = z.object(baseShape)
@@ -171,10 +175,33 @@ export function UserFormDialog({
     const loadMeta = async () => {
       setLoadingMeta(true)
       try {
-        const [firmRes, roleRes] = await Promise.all([
-          getFirmList().catch(() => null),
-          getAllRolesNPermissions({ scope: "sc-org" }).catch(() => null),
+        // Pass orgId so backend includes this org's CUSTOM roles (HR Admin, etc.)
+        // alongside system roles. Without orgId only system roles come back —
+        // and any custom role the admin just created stays invisible here.
+        const orgId =
+          (typeof window !== "undefined" &&
+            (localStorage.getItem("orgID") || localStorage.getItem("orgId"))) ||
+          ""
+        const roleParams: any = { scope: "sc-org" }
+        if (orgId) roleParams.orgId = orgId
+
+        // Use allSettled so a transient firm error doesn't drop role data (and
+        // vice versa). We log every rejection explicitly — silent .catch(()=>null)
+        // swallowed real errors and made debugging impossible.
+        const results = await Promise.allSettled([
+          getFirmList(),
+          getAllRolesNPermissions(roleParams),
         ])
+
+        const firmRes = results[0].status === "fulfilled" ? results[0].value : null
+        const roleRes = results[1].status === "fulfilled" ? results[1].value : null
+
+        if (results[0].status === "rejected") {
+          console.error("[UserFormDialog] firms fetch failed:", results[0].reason)
+        }
+        if (results[1].status === "rejected") {
+          console.error("[UserFormDialog] roles fetch failed:", results[1].reason)
+        }
 
         const firmData =
           firmRes?.data?.firms ||
@@ -187,12 +214,14 @@ export function UserFormDialog({
               .map((f: any) => ({ _id: f._id, FirmName: f.FirmName }))
           : []
         setFirms(firmArr)
+        console.log("[UserFormDialog] firms loaded:", firmArr.length)
 
         let rolesList: any[] = []
         if (roleRes?.data?.permissions && roleRes?.data?.iv) {
           try {
             rolesList = decryptData(roleRes.data.permissions, roleRes.data.iv) || []
-          } catch {
+          } catch (decErr) {
+            console.error("[UserFormDialog] role decrypt failed:", decErr)
             rolesList = []
           }
         } else if (Array.isArray(roleRes?.data?.roles)) {
@@ -209,8 +238,9 @@ export function UserFormDialog({
             isCustom: Boolean(r.isCustom),
           }))
         setRoles(roleArr)
+        console.log("[UserFormDialog] roles loaded:", roleArr.length, roleArr.map(r => r.name))
       } catch (err) {
-        console.error("Failed to load firms/roles", err)
+        console.error("[UserFormDialog] loadMeta unexpected error:", err)
       } finally {
         setLoadingMeta(false)
       }
@@ -250,7 +280,33 @@ export function UserFormDialog({
 
   const firmOptions = firms.map((f) => ({ label: f.FirmName, value: f._id }))
 
+  // Admin-tier roles get implicit org-wide access — they don't need firm
+  // assignment. Every other role MUST be bound to at least one firm so
+  // firm-scoped data (clients, leads, invoices) is filterable for them.
+  const ADMIN_TIER_ROLE_NAMES = new Set(["SuperAdmin", "OrgOwner", "OrgAdmin"])
+  const isAdminRole = (roleId: string) => {
+    const role = roles.find((r) => r._id === roleId)
+    return role ? ADMIN_TIER_ROLE_NAMES.has(role.name) : false
+  }
+
+  // Reusable form-level firm check. Returns an error string if invalid, else "".
+  const validateFirmRequirement = (roleId: string, firmIds: string[]): string => {
+    if (isAdminRole(roleId)) return "" // exempt
+    if (!firmIds || firmIds.length === 0) {
+      if (firms.length === 0) {
+        return "Create a firm first — non-admin users must be bound to at least one firm."
+      }
+      return "Select at least one firm for this user."
+    }
+    return ""
+  }
+
   const handleInviteSubmit = async (values: InviteValues) => {
+    const firmErr = validateFirmRequirement(values.roleId, values.firmIds)
+    if (firmErr) {
+      showError(firmErr)
+      return
+    }
     try {
       const role = roles.find((r) => r._id === values.roleId)
       await createOrgInvite({
@@ -270,6 +326,11 @@ export function UserFormDialog({
   }
 
   const handleDirectSubmit = async (values: DirectValues) => {
+    const firmErr = validateFirmRequirement(values.roleId, values.firmIds)
+    if (firmErr) {
+      showError(firmErr)
+      return
+    }
     try {
       const role = roles.find((r) => r._id === values.roleId)
       const res = await adduser({
@@ -379,10 +440,20 @@ export function UserFormDialog({
     </Field>
   )
 
-  const renderFirmsField = (form: any) => (
+  const renderFirmsField = (form: any) => {
+    const selectedRoleId: string = form.watch("roleId") || ""
+    const adminExempt = selectedRoleId && isAdminRole(selectedRoleId)
+    return (
     <Field
-      label="Assign to firms"
-      required
+      label={adminExempt ? "Assign to firms (optional)" : "Assign to firms"}
+      required={!adminExempt}
+      hint={
+        adminExempt
+          ? "Admin-tier roles have org-wide access. Firm assignment is optional for them."
+          : firms.length === 0 && !loadingMeta
+            ? undefined
+            : "Pick one or more firms. The user will only see data from these firms."
+      }
       error={
         form.formState.errors?.firmIds?.message
           ? String(form.formState.errors.firmIds.message)
@@ -390,9 +461,30 @@ export function UserFormDialog({
       }
     >
       {firms.length === 0 && !loadingMeta ? (
-        <div className="text-[12px] text-amber-700 bg-amber-50 border border-amber-200 p-2.5 rounded-lg">
-          No firms available. Create a firm from Business Units first.
-        </div>
+        adminExempt ? (
+          <div className="text-[12px] text-zinc-600 bg-zinc-50 border border-zinc-200 p-2.5 rounded-lg">
+            No firms in this organization yet — and that&apos;s fine for admin
+            roles since they have org-wide access.
+          </div>
+        ) : (
+          <div className="text-[12px] text-amber-800 bg-amber-50 border border-amber-200 p-3 rounded-lg space-y-2">
+            <div className="font-semibold flex items-center gap-1.5">
+              <span>⚠</span>
+              <span>No firms exist in this organization</span>
+            </div>
+            <p className="text-[11px] leading-relaxed">
+              Non-admin users must be bound to at least one firm so they can
+              access data scoped to that firm. Create a firm first, then come back
+              here to invite this user.
+            </p>
+            <a
+              href="../organization/firms"
+              className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-900 underline hover:no-underline"
+            >
+              → Go to Business Units to create a firm
+            </a>
+          </div>
+        )
       ) : (
         <MultiSelect
           selected={form.watch("firmIds") || []}
@@ -402,7 +494,8 @@ export function UserFormDialog({
         />
       )}
     </Field>
-  )
+    )
+  }
 
   const title =
     mode === "edit" ? "Edit user" : mode === "direct" ? "Create user" : "Invite user"

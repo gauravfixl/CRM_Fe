@@ -41,6 +41,14 @@ import {
   DialogTrigger,
 } from "@/shared/components/ui/dialog"
 import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/shared/components/ui/sheet"
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -257,30 +265,30 @@ export default function RolesAndPermissionsPage() {
       </div>
 
       <div className="flex-1 p-6 space-y-6">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-gradient-to-br from-primary/80 to-primary p-6 rounded-none shadow-xl shadow-primary/20 text-white">
-            <p className="text-white text-xs opacity-80">Total Identity Roles</p>
-            <p className="text-white text-xl font-semibold mt-1">{stats.total}</p>
-            <p className="text-white text-[10px] mt-1 opacity-70">Active in directory</p>
+        {/* Stats Cards — compact density */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="bg-gradient-to-br from-primary/80 to-primary px-4 py-3 rounded-none shadow-md shadow-primary/20 text-white">
+            <p className="text-white text-[11px] opacity-80">Total Identity Roles</p>
+            <p className="text-white text-lg font-semibold mt-0.5 leading-tight">{stats.total}</p>
+            <p className="text-white text-[10px] mt-0.5 opacity-70">Active in directory</p>
           </div>
 
-          <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
-            <p className="text-zinc-500 text-xs">Custom Extensions</p>
-            <p className="text-xl font-semibold text-zinc-900 mt-1">{stats.custom}</p>
-            <p className="text-emerald-600 text-[10px] mt-1">Organization specific</p>
+          <div className="bg-white border border-zinc-200 px-4 py-3 rounded-none shadow-sm">
+            <p className="text-zinc-500 text-[11px]">Custom Extensions</p>
+            <p className="text-lg font-semibold text-zinc-900 mt-0.5 leading-tight">{stats.custom}</p>
+            <p className="text-emerald-600 text-[10px] mt-0.5">Organization specific</p>
           </div>
 
-          <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
-            <p className="text-zinc-500 text-xs">Scoped Users</p>
-            <p className="text-xl font-semibold text-zinc-900 mt-1">{stats.users}</p>
-            <p className="text-primary text-[10px] mt-1">Assigned identities</p>
+          <div className="bg-white border border-zinc-200 px-4 py-3 rounded-none shadow-sm">
+            <p className="text-zinc-500 text-[11px]">Scoped Users</p>
+            <p className="text-lg font-semibold text-zinc-900 mt-0.5 leading-tight">{stats.users}</p>
+            <p className="text-primary text-[10px] mt-0.5">Assigned identities</p>
           </div>
 
-          <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
-            <p className="text-zinc-500 text-xs">Global Audit</p>
-            <p className="text-xl font-semibold text-zinc-900 mt-1">Active</p>
-            <p className="text-emerald-600 text-[10px] mt-1">Clean directory logs</p>
+          <div className="bg-white border border-zinc-200 px-4 py-3 rounded-none shadow-sm">
+            <p className="text-zinc-500 text-[11px]">Global Audit</p>
+            <p className="text-lg font-semibold text-zinc-900 mt-0.5 leading-tight">Active</p>
+            <p className="text-emerald-600 text-[10px] mt-0.5">Clean directory logs</p>
           </div>
         </div>
 
@@ -392,21 +400,25 @@ export default function RolesAndPermissionsPage() {
                             </div>
                           </td>
                           <td className="px-6 py-3">
-                            <Dialog>
-                              <DialogTrigger asChild>
+                            <Sheet>
+                              <SheetTrigger asChild>
                                 <button className="flex items-center gap-2 group/btn">
                                   <span className="inline-flex items-center gap-2 px-2 py-1 bg-zinc-100 text-zinc-700 border border-zinc-200 rounded-none cursor-pointer hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-all text-[10px] font-medium">
                                     View {role.permissions.length} Permissions
                                   </span>
                                   <ChevronRight className="w-3 h-3 text-zinc-400 group-hover/btn:translate-x-1 transition-all" />
                                 </button>
-                              </DialogTrigger>
-                              <DialogContent className="max-w-4xl max-h-[85vh] overflow-hidden p-0 rounded-none border-0 shadow-2xl">
-                                <div className="p-6 bg-gradient-to-r from-primary/90 to-primary text-white relative">
-                                  <div className="absolute top-0 right-0 p-6 opacity-10">
-                                    <Shield className="h-32 w-32" />
+                              </SheetTrigger>
+                              <SheetContent
+                                side="right"
+                                className="w-full sm:max-w-xl p-0 rounded-none border-l border-zinc-200 shadow-2xl flex flex-col"
+                              >
+                                {/* Header — gradient banner */}
+                                <div className="p-6 bg-gradient-to-r from-primary/90 to-primary text-white relative shrink-0">
+                                  <div className="absolute top-0 right-0 p-6 opacity-10 pointer-events-none">
+                                    <Shield className="h-28 w-28" />
                                   </div>
-                                  <DialogHeader className="relative z-10">
+                                  <SheetHeader className="relative z-10 text-left">
                                     <div className="flex items-center gap-3 mb-2">
                                       <span className="bg-white/20 text-white border-0 rounded-none px-2 py-0.5 text-[10px] font-medium">
                                         Access Policy
@@ -415,17 +427,39 @@ export default function RolesAndPermissionsPage() {
                                         {role.isCustom ? "Custom" : "System"}
                                       </span>
                                     </div>
-                                    <DialogTitle className="text-2xl font-semibold">{role.name}</DialogTitle>
-                                    <DialogDescription className="text-white/80 font-medium text-sm leading-relaxed">
-                                      {role.description}
-                                    </DialogDescription>
-                                  </DialogHeader>
+                                    <SheetTitle className="text-xl font-semibold text-white">
+                                      {role.name}
+                                    </SheetTitle>
+                                    <SheetDescription className="text-white/80 font-medium text-xs leading-relaxed">
+                                      {role.description || "No description provided"}
+                                    </SheetDescription>
+                                  </SheetHeader>
                                 </div>
-                                <div className="p-6 overflow-y-auto max-h-[55vh] bg-white">
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+
+                                {/* Body — scrollable permission list */}
+                                <div className="flex-1 overflow-y-auto p-6 bg-white">
+                                  <div className="mb-4 flex items-center justify-between">
+                                    <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
+                                      Permission Modules
+                                    </span>
+                                    <span className="text-[10px] font-medium text-zinc-500 bg-zinc-100 px-2 py-1 rounded-none">
+                                      {role.permissions.length} {role.permissions.length === 1 ? "module" : "modules"}
+                                    </span>
+                                  </div>
+                                  <div className="space-y-3">
                                     {role.permissions.map((perm: any) => (
-                                      <div key={perm._id} className="p-4 rounded-none border border-zinc-200 bg-zinc-50/50">
-                                        <h6 className="text-xs font-semibold text-primary mb-3">{perm.module}</h6>
+                                      <div
+                                        key={perm._id || perm.module}
+                                        className="p-4 rounded-none border border-zinc-200 bg-zinc-50/50"
+                                      >
+                                        <div className="flex items-center justify-between mb-3">
+                                          <h6 className="text-xs font-semibold text-primary">
+                                            {perm.module}
+                                          </h6>
+                                          <span className="text-[10px] font-medium text-zinc-500 bg-white border border-zinc-200 px-1.5 py-0.5 rounded-none">
+                                            {perm.actions?.length || 0} actions
+                                          </span>
+                                        </div>
                                         <div className="flex flex-wrap gap-1.5">
                                           {perm.actions.map((action: string) => (
                                             <span
@@ -440,13 +474,18 @@ export default function RolesAndPermissionsPage() {
                                     ))}
                                   </div>
                                 </div>
-                                <div className="p-4 border-t border-zinc-100 bg-zinc-50/50 flex justify-end">
-                                  <Button variant="outline" className="rounded-none border-zinc-200 font-medium text-xs h-8 px-4">
+
+                                {/* Footer */}
+                                <div className="p-4 border-t border-zinc-100 bg-zinc-50/50 flex justify-end shrink-0">
+                                  <Button
+                                    variant="outline"
+                                    className="rounded-none border-zinc-200 font-medium text-xs h-8 px-4"
+                                  >
                                     Audit Policy History
                                   </Button>
                                 </div>
-                              </DialogContent>
-                            </Dialog>
+                              </SheetContent>
+                            </Sheet>
                           </td>
                           <td className="px-6 py-3 text-right">
                             <DropdownMenu>
