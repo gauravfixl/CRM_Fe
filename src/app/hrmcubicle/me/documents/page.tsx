@@ -57,6 +57,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import { Label } from "@/shared/components/ui/label";
 import { Textarea } from "@/shared/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
@@ -455,63 +456,54 @@ const MyDocumentsPage = () => {
             </AnimatePresence>
 
             {/* Dialogs */}
-            <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
-                <DialogContent className="bg-white rounded-[2rem] border border-slate-200 p-8 max-w-lg shadow-2xl font-sans" style={{ zoom: "90%" }}>
-                    <DialogHeader className="space-y-2">
-                        <div className="h-10 w-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
-                            <Upload size={20} />
-                        </div>
-                        <DialogTitle className="text-xl font-bold tracking-tight">Secure Vault Upload</DialogTitle>
-                        <DialogDescription className="font-medium text-slate-500 text-sm">AES-256 client-side encryption active.</DialogDescription>
-                    </DialogHeader>
-                    <div className="py-4 space-y-4">
-                        {!isUploading ? (
-                            <div className="border-2 border-dashed border-slate-200 rounded-2xl p-6 text-center space-y-3 hover:border-indigo-400 hover:bg-indigo-50/30 transition-all group">
-                                <div className="h-12 w-12 bg-white rounded-2xl flex items-center justify-center mx-auto shadow-sm">
-                                    <Plus size={24} className="text-slate-300 group-hover:text-indigo-500" />
-                                </div>
-                                <p className="text-sm font-bold text-slate-900 leading-none">Drop file to encrypt</p>
-                                <p className="text-[10px] text-slate-400">PDF, JPG, PNG · Max 10 MB</p>
+            <SideFormSheet
+                open={isUploadOpen}
+                onOpenChange={setIsUploadOpen}
+                title="Secure Vault Upload"
+                description="AES-256 client-side encryption active."
+                icon={<Upload size={20} />}
+                accentColor="#4f46e5"
+                width="md"
+                loading={isUploading}
+                submitLabel={isUploading ? "Uploading..." : "Upload & Encrypt"}
+                onSubmit={(e) => { e.preventDefault(); handleUpload(); }}
+            >
+                <div className="space-y-4">
+                    {!isUploading ? (
+                        <div className="border-2 border-dashed border-slate-200 rounded-2xl p-6 text-center space-y-3 hover:border-indigo-400 hover:bg-indigo-50/30 transition-all group">
+                            <div className="h-12 w-12 bg-white rounded-2xl flex items-center justify-center mx-auto shadow-sm">
+                                <Plus size={24} className="text-slate-300 group-hover:text-indigo-500" />
                             </div>
-                        ) : (
-                            <div className="space-y-4">
-                                <Progress value={uploadProgress} className="h-2 bg-slate-50" />
-                                <p className="text-center text-[10px] font-bold text-indigo-600">Encrypting Content... {uploadProgress}%</p>
-                            </div>
-                        )}
-                        <div className="space-y-2">
-                            <Label className="text-[10px] font-bold text-slate-400 capitalize text-start block">Document Name</Label>
-                            <Input
-                                value={uploadForm.name}
-                                onChange={e => setUploadForm({ ...uploadForm, name: e.target.value })}
-                                placeholder="e.g., PAN Card.pdf"
-                                disabled={isUploading}
-                                className="rounded-xl bg-slate-50 border border-slate-200 h-11 text-sm font-medium"
-                            />
+                            <p className="text-sm font-bold text-slate-900 leading-none">Drop file to encrypt</p>
+                            <p className="text-[10px] text-slate-400">PDF, JPG, PNG · Max 10 MB</p>
                         </div>
-                        <div className="space-y-2">
-                            <Label className="text-[10px] font-bold text-slate-400 capitalize text-start block">Category</Label>
-                            <Select defaultValue="Personal">
-                                <SelectTrigger className="rounded-xl bg-slate-50 border border-slate-200 h-11 text-sm font-medium">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="Personal">Personal Docs</SelectItem>
-                                    <SelectItem value="Company">Company Policies</SelectItem>
-                                    <SelectItem value="Financial">Financial / Tax</SelectItem>
-                                    <SelectItem value="Certifications">Certifications</SelectItem>
-                                </SelectContent>
-                            </Select>
+                    ) : (
+                        <div className="space-y-4">
+                            <Progress value={uploadProgress} className="h-2 bg-slate-50" />
+                            <p className="text-center text-[10px] font-bold text-indigo-600">Encrypting Content... {uploadProgress}%</p>
                         </div>
-                    </div>
-                    <DialogFooter className="gap-2">
-                        <Button variant="ghost" disabled={isUploading} className="text-slate-400 font-bold h-10 text-xs" onClick={() => setIsUploadOpen(false)}>Cancel</Button>
-                        <Button disabled={isUploading} onClick={handleUpload} className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl h-10 font-bold">
-                            <Upload size={14} className="mr-2" />{isUploading ? "Uploading..." : "Upload & Encrypt"}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    )}
+                    <Field label="Document Name" required>
+                        <Input
+                            value={uploadForm.name}
+                            onChange={e => setUploadForm({ ...uploadForm, name: e.target.value })}
+                            placeholder="e.g., PAN Card.pdf"
+                            disabled={isUploading}
+                        />
+                    </Field>
+                    <Field label="Category">
+                        <Select defaultValue="Personal">
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Personal">Personal Docs</SelectItem>
+                                <SelectItem value="Company">Company Policies</SelectItem>
+                                <SelectItem value="Financial">Financial / Tax</SelectItem>
+                                <SelectItem value="Certifications">Certifications</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                </div>
+            </SideFormSheet>
 
             <Dialog open={isPreviewOpen} onOpenChange={(val) => { setIsPreviewOpen(val); if (!val) setIsDocUnlocked(false); }}>
                 <DialogContent className="bg-white border-slate-100 p-0 max-w-4xl overflow-hidden rounded-[2rem] h-[80vh] flex flex-col shadow-2xl font-sans" style={{ zoom: "90%" }}>

@@ -1,26 +1,69 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { Calculator, Plus, Search, Filter, MoreVertical, Edit, Trash2, Globe, Building2, ChevronRight, Loader2 } from "lucide-react";
-import { toast } from "sonner";
-import { getAllOrgTaxes, getGlobalTaxes, addGlobalTax, updateTax, enableTax, disableTax } from "@/hooks/taxHooks";
+import React, { useState, useEffect, useMemo } from "react";
+import { Calculator, Plus, Search, Filter, MoreVertical, Edit, Trash2, Globe, Building2, ChevronRight, Loader2, Info } from "lucide-react";
+import { getAllOrgTaxes, getGlobalTaxes, addGlobalTax, enableTax, disableTax } from "@/hooks/taxHooks";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/shared/components/ui/switch";
-import { Dialog, DialogContent, DialogFooter } from "@/shared/components/ui/dialog";
-import { Label } from "@/shared/components/ui/label";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/shared/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
 import { Textarea } from "@/shared/components/ui/textarea";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
+import { showSuccess, showError, showWarning } from "@/shared/utils/toast";
 
 export default function TaxConfigPage() {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [taxConfigs, setTaxConfigs] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState<string | null>(null);
-    const [createLoading, setCreateLoading] = useState(false);
-    const [newTax, setNewTax] = useState({ name: "", type: "", rate: "", scope: "", regions: "", description: "" });
+    const [submitting, setSubmitting] = useState(false);
+    const [search, setSearch] = useState("");
+
+    const [formName, setFormName] = useState("");
+    const [formType, setFormType] = useState("");
+    const [formRate, setFormRate] = useState("");
+    const [formScope, setFormScope] = useState("");
+    const [formRegions, setFormRegions] = useState("");
+    const [formDescription, setFormDescription] = useState("");
+    const [touched, setTouched] = useState<Record<string, boolean>>({});
+
+    const resetForm = () => {
+        setFormName("");
+        setFormType("");
+        setFormRate("");
+        setFormScope("");
+        setFormRegions("");
+        setFormDescription("");
+        setTouched({});
+    };
+
+    const errors = useMemo(() => {
+        const e: Record<string, string> = {};
+        const name = formName.trim();
+        const rate = formRate.trim();
+        const regions = formRegions.trim();
+        const nameRegex = /^[a-zA-Z\s]+$/;
+
+        if (touched.name) {
+            if (!name) e.name = "Tax name is required";
+            else if (!nameRegex.test(name)) e.name = "Only letters and spaces allowed";
+            else if (name.length < 2) e.name = "Name is too short";
+        }
+        if (touched.type && !formType) e.type = "Tax type is required";
+        if (touched.rate) {
+            if (!rate) e.rate = "Tax rate is required";
+            else {
+                const n = parseFloat(rate);
+                if (isNaN(n) || n < 0) e.rate = "Rate must be a positive number";
+                else if (n > 100) e.rate = "Rate cannot exceed 100%";
+            }
+        }
+        if (touched.scope && !formScope) e.scope = "Scope is required";
+        if (touched.regions && formScope !== "global" && !regions) e.regions = "Regions are required for firm scope";
+        return e;
+    }, [formName, formType, formRate, formScope, formRegions, touched]);
 
     const fetchData = async () => {
         try {
@@ -52,7 +95,7 @@ export default function TaxConfigPage() {
             }
             setTaxConfigs(merged);
         } catch (err: any) {
-            toast.error(err?.response?.data?.message || "Failed to load tax configurations");
+            showError(err?.response?.data?.message || "Failed to load tax configurations");
         } finally {
             setLoading(false);
         }
@@ -62,91 +105,95 @@ export default function TaxConfigPage() {
         fetchData();
     }, []);
 
+    const filtered = useMemo(() => {
+        const q = search.trim().toLowerCase();
+        if (!q) return taxConfigs;
+        return taxConfigs.filter((t) =>
+            (t.name || "").toLowerCase().includes(q) ||
+            (t.type || "").toLowerCase().includes(q) ||
+            (t.regions || "").toLowerCase().includes(q)
+        );
+    }, [taxConfigs, search]);
+
     const toggleStatus = async (id: string, currentStatus: string) => {
         try {
             setActionLoading(id);
             if (currentStatus === "Active") {
                 await disableTax(id);
-                toast.success("Tax disabled successfully");
+                showSuccess("Tax disabled successfully");
             } else {
                 await enableTax(id);
-                toast.success("Tax enabled successfully");
+                showSuccess("Tax enabled successfully");
             }
             fetchData();
         } catch (err: any) {
-            toast.error(err?.response?.data?.message || "Failed to toggle tax status");
+            showError(err?.response?.data?.message || "Failed to toggle tax status");
         } finally {
             setActionLoading(null);
         }
     };
 
-    const handleCreateTax = async () => {
-        if (!newTax.name.trim()) {
-            toast.error("Tax name is required");
-            return;
-        }
+    const handleCreateTax = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setTouched({ name: true, type: true, rate: true, scope: true, regions: true });
 
-        const nameRegex = /^[a-zA-Z\s]+$/;
-        if (!nameRegex.test(newTax.name.trim())) {
-            toast.error("Tax name should not contain numbers or special characters");
-            return;
-        }
+        const name = formName.trim();
+        const rate = parseFloat(formRate);
+        const regions = formRegions.trim();
+        const fresh: Record<string, string> = {};
+        if (!name || !/^[a-zA-Z\s]+$/.test(name)) fresh.name = "Enter a valid name";
+        if (!formType) fresh.type = "Required";
+        if (isNaN(rate) || rate < 0 || rate > 100) fresh.rate = "Invalid rate";
+        if (!formScope) fresh.scope = "Required";
+        if (formScope !== "global" && !regions) fresh.regions = "Required";
 
-        if (!newTax.type) {
-            toast.error("Tax type is required");
-            return;
-        }
-
-        const rate = parseFloat(newTax.rate);
-        if (isNaN(rate) || rate < 0) {
-            toast.error("Please enter a valid positive tax rate");
-            return;
-        }
-
-        if (newTax.scope !== "global" && !newTax.regions.trim()) {
-            toast.error("Regions are required for firm-specific scope");
+        if (Object.keys(fresh).length > 0) {
+            showWarning("Please fix the errors before submitting");
             return;
         }
 
         try {
-            setCreateLoading(true);
+            setSubmitting(true);
             await addGlobalTax({
-                name: newTax.name,
-                taxName: newTax.name,
-                type: newTax.type,
-                rate: rate,
-                region: newTax.regions,
-                description: newTax.description,
+                name,
+                taxName: name,
+                type: formType,
+                rate,
+                region: regions,
+                description: formDescription,
             });
-            toast.success("Tax rule created successfully");
+            showSuccess("Tax rule created successfully");
             setShowCreateModal(false);
-            setNewTax({ name: "", type: "", rate: "", scope: "", regions: "", description: "" });
+            resetForm();
             fetchData();
         } catch (err: any) {
-            toast.error(err?.response?.data?.message || "Failed to create tax rule");
+            showError(err?.response?.data?.message || "Failed to create tax rule");
         } finally {
-            setCreateLoading(false);
+            setSubmitting(false);
         }
     };
 
     const deleteConfig = (id: string) => {
-        setTaxConfigs(prev => prev.filter(t => t.id !== id));
+        if (!window.confirm("Are you sure you want to delete this tax rule?")) return;
+        setTaxConfigs((prev) => prev.filter((t) => t.id !== id));
+        showSuccess("Tax rule deleted");
     };
 
     return (
         <div className="space-y-4 text-[12.5px]">
-            {/* Header */}
             <div className="flex items-center justify-between">
                 <div className="flex flex-col gap-1">
                     <h1 className="text-sm font-semibold tracking-tight">Tax Configuration (Global/Firm)</h1>
                     <p className="text-xs text-slate-500">Manage tax rules and rates for different jurisdictions.</p>
                 </div>
-                <Button onClick={() => setShowCreateModal(true)} className="rounded-lg bg-blue-600 hover:bg-blue-700 font-medium text-xs h-8 gap-2 shadow-sm px-4">
+                <Button
+                    onClick={() => setShowCreateModal(true)}
+                    className="rounded-lg bg-blue-600 hover:bg-blue-700 font-medium text-xs h-8 gap-2 shadow-sm px-4"
+                >
                     <Plus size={16} /> Add Tax Rule
                 </Button>
             </div>
 
-            {/* Stats */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="bg-gradient-to-r from-primary/70 to-primary p-4 rounded-xl shadow-sm text-white transition-all duration-300 hover:-translate-y-1">
                     <p className="text-xs text-white opacity-80">Total Tax Rules</p>
@@ -155,27 +202,31 @@ export default function TaxConfigPage() {
                 </div>
                 <div className="bg-white border border-zinc-200 p-4 rounded-xl shadow-sm transition-all duration-300 hover:-translate-y-1">
                     <p className="text-xs text-slate-500">Active Rules</p>
-                    <h3 className="text-xl font-semibold text-gray-900">{taxConfigs.filter(t => t.status === "Active").length}</h3>
+                    <h3 className="text-xl font-semibold text-gray-900">{taxConfigs.filter((t) => t.status === "Active").length}</h3>
                     <p className="text-[10px] text-green-600 mt-1">Currently applied</p>
                 </div>
                 <div className="bg-white border border-zinc-200 p-4 rounded-xl shadow-sm transition-all duration-300 hover:-translate-y-1">
                     <p className="text-xs text-slate-500">Global Scope</p>
-                    <h3 className="text-xl font-semibold text-gray-900">{taxConfigs.filter(t => t.scope === "Global").length}</h3>
+                    <h3 className="text-xl font-semibold text-gray-900">{taxConfigs.filter((t) => t.scope === "Global").length}</h3>
                     <p className="text-[10px] text-blue-600 mt-1">Organization-wide</p>
                 </div>
                 <div className="bg-white border border-zinc-200 p-4 rounded-xl shadow-sm transition-all duration-300 hover:-translate-y-1">
                     <p className="text-xs text-slate-500">Firm Scope</p>
-                    <h3 className="text-xl font-semibold text-gray-900">{taxConfigs.filter(t => t.scope === "Firm").length}</h3>
+                    <h3 className="text-xl font-semibold text-gray-900">{taxConfigs.filter((t) => t.scope === "Firm").length}</h3>
                     <p className="text-[10px] text-purple-600 mt-1">Firm-specific</p>
                 </div>
             </div>
 
-            {/* Tax Configs List */}
             <div className="bg-white border border-zinc-200 rounded-xl shadow-sm overflow-hidden">
                 <div className="p-4 border-b border-zinc-100 flex flex-col md:flex-row gap-4 justify-between items-center bg-zinc-50/50">
                     <div className="relative w-full md:w-96">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" size={16} />
-                        <Input placeholder="Search tax rules..." className="pl-11 rounded-lg border-zinc-200 h-9 text-xs bg-white" />
+                        <Input
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            placeholder="Search tax rules..."
+                            className="pl-11 rounded-lg border-zinc-200 h-9 text-xs bg-white"
+                        />
                     </div>
                     <div className="flex gap-2 w-full md:w-auto">
                         <Button variant="outline" className="rounded-lg border-zinc-200 h-8 text-xs font-medium gap-2 bg-white flex-1 md:flex-none">
@@ -207,13 +258,13 @@ export default function TaxConfigPage() {
                                         </div>
                                     </td>
                                 </tr>
-                            ) : taxConfigs.length === 0 ? (
+                            ) : filtered.length === 0 ? (
                                 <tr>
                                     <td colSpan={7} className="px-5 py-12 text-center">
                                         <span className="text-xs text-slate-500">No tax rules found.</span>
                                     </td>
                                 </tr>
-                            ) : taxConfigs.map((config) => (
+                            ) : filtered.map((config) => (
                                 <tr key={config.id} className="hover:bg-blue-50/30 transition-colors group">
                                     <td className="px-5 py-3">
                                         <div className="flex items-center gap-3">
@@ -237,14 +288,21 @@ export default function TaxConfigPage() {
                                     <td className="px-5 py-3"><span className="text-xs text-gray-700">{config.regions}</span></td>
                                     <td className="px-5 py-3">
                                         <div className="flex items-center gap-2">
-                                            <Switch checked={config.status === "Active"} onCheckedChange={() => toggleStatus(config.id, config.status)} disabled={actionLoading === config.id} className="data-[state=checked]:bg-green-600" />
+                                            <Switch
+                                                checked={config.status === "Active"}
+                                                onCheckedChange={() => toggleStatus(config.id, config.status)}
+                                                disabled={actionLoading === config.id}
+                                                className="data-[state=checked]:bg-green-600"
+                                            />
                                             <Badge className={`${config.status === "Active" ? "bg-green-600" : "bg-zinc-400"} text-white border-none rounded-md text-[10px] font-medium px-2 py-0.5`}>{config.status}</Badge>
                                         </div>
                                     </td>
                                     <td className="px-5 py-3 text-right">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" className="h-8 w-8 p-0 rounded-lg hover:bg-zinc-100"><MoreVertical size={16} /></Button>
+                                                <Button variant="ghost" className="h-8 w-8 p-0 rounded-lg hover:bg-zinc-100">
+                                                    <MoreVertical size={16} />
+                                                </Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end" className="rounded-xl border-zinc-200 shadow-lg p-2 min-w-[180px]">
                                                 <DropdownMenuLabel className="text-[10px] font-medium text-slate-500">Actions</DropdownMenuLabel>
@@ -252,7 +310,10 @@ export default function TaxConfigPage() {
                                                     <Edit size={14} /> Edit Rule
                                                 </DropdownMenuItem>
                                                 <DropdownMenuSeparator className="my-2" />
-                                                <DropdownMenuItem onClick={() => deleteConfig(config.id)} className="text-xs p-2 text-red-600 focus:bg-red-600 focus:text-white flex items-center gap-2 cursor-pointer">
+                                                <DropdownMenuItem
+                                                    onClick={() => deleteConfig(config.id)}
+                                                    className="text-xs p-2 text-red-600 focus:bg-red-600 focus:text-white flex items-center gap-2 cursor-pointer"
+                                                >
                                                     <Trash2 size={14} /> Delete
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>
@@ -265,60 +326,145 @@ export default function TaxConfigPage() {
                 </div>
 
                 <div className="p-4 bg-zinc-50 border-t border-zinc-100 flex items-center justify-between">
-                    <p className="text-xs text-slate-500">Showing {taxConfigs.length} tax rules</p>
+                    <p className="text-xs text-slate-500">Showing {filtered.length} tax rules</p>
                     <Button variant="link" className="text-blue-600 text-xs flex items-center gap-1 group">
                         View Tax Reports <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
                     </Button>
                 </div>
             </div>
 
-            {/* Create Modal */}
-            <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
-                <DialogContent className="max-w-lg rounded-xl p-0 overflow-hidden shadow-lg border-none">
-                    <div className="bg-gradient-to-r from-green-700 to-emerald-800 p-5 text-white relative">
-                        <div className="absolute top-0 right-0 p-4 opacity-10"><Calculator size={80} /></div>
-                        <h2 className="text-sm font-semibold flex items-center gap-3"><Plus size={18} /> Add Tax Rule</h2>
-                        <p className="text-xs opacity-80 mt-1">Configure tax rates for different jurisdictions.</p>
+            <SideFormSheet
+                open={showCreateModal}
+                onOpenChange={(o) => {
+                    setShowCreateModal(o);
+                    if (!o) resetForm();
+                }}
+                title="Add Tax Rule"
+                description="Configure tax rates for different jurisdictions."
+                icon={<Calculator className="w-5 h-5" />}
+                onSubmit={handleCreateTax}
+                submitLabel="Create Tax Rule"
+                loading={submitting}
+                width="md"
+            >
+                <div className="space-y-4">
+                    <Field
+                        label="Tax Name"
+                        required
+                        error={errors.name}
+                        hint="Descriptive name for the tax rule"
+                    >
+                        <Input
+                            placeholder="e.g., US Sales Tax"
+                            value={formName}
+                            onChange={(e) => setFormName(e.target.value)}
+                            onBlur={() => setTouched((t) => ({ ...t, name: true }))}
+                            className="h-11 rounded-lg border-[#E5E7EB] bg-white focus:border-primary"
+                        />
+                    </Field>
+
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field
+                            label="Tax Type"
+                            required
+                            error={errors.type}
+                        >
+                            <Select
+                                value={formType}
+                                onValueChange={(v) => {
+                                    setFormType(v);
+                                    setTouched((t) => ({ ...t, type: true }));
+                                }}
+                            >
+                                <SelectTrigger className="h-11 rounded-lg border-[#E5E7EB] bg-white focus:border-primary text-[13px]">
+                                    <SelectValue placeholder="Select type" />
+                                </SelectTrigger>
+                                <SelectContent className="rounded-lg">
+                                    <SelectItem value="sales">Sales Tax</SelectItem>
+                                    <SelectItem value="vat">VAT</SelectItem>
+                                    <SelectItem value="gst">GST</SelectItem>
+                                    <SelectItem value="hst">HST</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <Field
+                            label="Tax Rate (%)"
+                            required
+                            error={errors.rate}
+                            hint="0 to 100"
+                        >
+                            <Input
+                                type="number"
+                                placeholder="8.5"
+                                value={formRate}
+                                onChange={(e) => setFormRate(e.target.value)}
+                                onBlur={() => setTouched((t) => ({ ...t, rate: true }))}
+                                min={0}
+                                max={100}
+                                step="0.01"
+                                className="h-11 rounded-lg border-[#E5E7EB] bg-white focus:border-primary"
+                            />
+                        </Field>
                     </div>
-                    <div className="p-5 space-y-4 bg-white">
-                        <div className="space-y-2">
-                            <Label className="text-xs font-medium text-slate-500">Tax Name</Label>
-                            <Input value={newTax.name} onChange={(e) => setNewTax(p => ({ ...p, name: e.target.value }))} placeholder="e.g., US Sales Tax" className="rounded-lg border-zinc-200 h-9 text-xs" />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label className="text-xs font-medium text-slate-500">Tax Type</Label>
-                                <Select value={newTax.type} onValueChange={(v) => setNewTax(p => ({ ...p, type: v }))}><SelectTrigger className="rounded-lg border-zinc-200 h-9 text-xs"><SelectValue placeholder="Select type" /></SelectTrigger><SelectContent className="rounded-lg"><SelectItem value="sales">Sales Tax</SelectItem><SelectItem value="vat">VAT</SelectItem><SelectItem value="gst">GST</SelectItem><SelectItem value="hst">HST</SelectItem></SelectContent></Select>
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="text-xs font-medium text-slate-500">Tax Rate (%)</Label>
-                                <Input type="number" value={newTax.rate} onChange={(e) => setNewTax(p => ({ ...p, rate: e.target.value }))} placeholder="e.g., 8.5" className="rounded-lg border-zinc-200 h-9 text-xs" />
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label className="text-xs font-medium text-slate-500">Scope</Label>
-                                <Select value={newTax.scope} onValueChange={(v) => setNewTax(p => ({ ...p, scope: v }))}><SelectTrigger className="rounded-lg border-zinc-200 h-9 text-xs"><SelectValue placeholder="Select scope" /></SelectTrigger><SelectContent className="rounded-lg"><SelectItem value="global">Global (Organization-wide)</SelectItem><SelectItem value="firm">Firm (Specific firm)</SelectItem></SelectContent></Select>
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="text-xs font-medium text-slate-500">Regions</Label>
-                                <Input value={newTax.regions} onChange={(e) => setNewTax(p => ({ ...p, regions: e.target.value }))} placeholder="e.g., US, EU" className="rounded-lg border-zinc-200 h-9 text-xs" />
-                            </div>
-                        </div>
-                        <div className="space-y-2">
-                            <Label className="text-xs font-medium text-slate-500">Description (Optional)</Label>
-                            <Textarea value={newTax.description} onChange={(e) => setNewTax(p => ({ ...p, description: e.target.value }))} placeholder="Additional details about this tax rule..." className="rounded-lg border-zinc-200 min-h-[80px] text-xs" />
-                        </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field
+                            label="Scope"
+                            required
+                            error={errors.scope}
+                        >
+                            <Select
+                                value={formScope}
+                                onValueChange={(v) => {
+                                    setFormScope(v);
+                                    setTouched((t) => ({ ...t, scope: true }));
+                                }}
+                            >
+                                <SelectTrigger className="h-11 rounded-lg border-[#E5E7EB] bg-white focus:border-primary text-[13px]">
+                                    <SelectValue placeholder="Select scope" />
+                                </SelectTrigger>
+                                <SelectContent className="rounded-lg">
+                                    <SelectItem value="global">Global (Organization-wide)</SelectItem>
+                                    <SelectItem value="firm">Firm (Specific firm)</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <Field
+                            label="Regions"
+                            required={formScope !== "global"}
+                            error={errors.regions}
+                            hint="Comma-separated (e.g., US, EU)"
+                        >
+                            <Input
+                                placeholder="US, EU"
+                                value={formRegions}
+                                onChange={(e) => setFormRegions(e.target.value)}
+                                onBlur={() => setTouched((t) => ({ ...t, regions: true }))}
+                                className="h-11 rounded-lg border-[#E5E7EB] bg-white focus:border-primary"
+                            />
+                        </Field>
                     </div>
-                    <DialogFooter className="p-5 bg-zinc-50 border-t border-zinc-100 gap-4 sm:justify-end">
-                        <Button variant="ghost" onClick={() => setShowCreateModal(false)} className="rounded-lg text-xs text-slate-500">Cancel</Button>
-                        <Button onClick={handleCreateTax} disabled={createLoading} className="bg-green-600 hover:bg-green-700 rounded-lg text-xs font-medium px-4 h-8 shadow-sm">
-                            {createLoading && <Loader2 size={14} className="animate-spin mr-1" />}
-                            Create Tax Rule
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+
+                    <Field
+                        label="Description"
+                        hint="Optional additional details"
+                    >
+                        <Textarea
+                            placeholder="Additional details about this tax rule..."
+                            value={formDescription}
+                            onChange={(e) => setFormDescription(e.target.value)}
+                            className="min-h-[80px] rounded-lg border-[#E5E7EB] bg-white focus:border-primary text-[13px]"
+                        />
+                    </Field>
+
+                    <div className="flex items-start gap-2 p-3 bg-[#F0F7FF] border border-[#DBEAFE] rounded-lg">
+                        <Info className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                        <p className="text-[11.5px] text-[#475569] leading-relaxed">
+                            Global rules apply to every firm in the organization. Firm rules override global rules for matching regions.
+                        </p>
+                    </div>
+                </div>
+            </SideFormSheet>
         </div>
     );
 }

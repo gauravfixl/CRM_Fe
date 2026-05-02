@@ -162,7 +162,7 @@ export default function SignInPage() {
               className="h-8 w-auto object-contain brightness-0 invert"
             />
             <span className="text-white font-bold text-lg tracking-tight">
-              {orgName || "CubicleERP"}
+              {orgName || "Cubicle ERP"}
             </span>
           </div>
 
@@ -221,7 +221,7 @@ export default function SignInPage() {
       </div>
 
       {/* Right Panel - Form */}
-      <div className="flex-1 flex items-center justify-center bg-[#FAFBFC] relative p-6">
+      <div className="flex-1 flex items-center justify-center bg-[#EDF1F7] relative p-6">
         {/* Back button */}
         <button
           onClick={() => router.push("/")}
@@ -237,7 +237,7 @@ export default function SignInPage() {
             alt="Logo"
             className="h-7 w-auto object-contain"
           />
-          <span className="font-bold text-[15px] text-[#1A1A1A]">{orgName || "CubicleERP"}</span>
+          <span className="font-bold text-[15px] text-[#1A1A1A]">{orgName || "Cubicle ERP"}</span>
         </div>
 
         <div className="signin-container w-full max-w-[420px]">
@@ -254,7 +254,15 @@ export default function SignInPage() {
           </div>
 
           {/* Form Card */}
-          <div className="signin-card bg-white rounded-2xl shadow-sm border border-[#F0F0F0] p-7">
+          <div
+            className="signin-card rounded-3xl border border-white p-7 sm:p-8"
+            style={{
+              background:
+                "linear-gradient(145deg, #FFFFFF 0%, #F4F8FF 55%, #EAF2FE 100%)",
+              boxShadow:
+                "0 20px 60px -20px rgba(15, 23, 42, 0.12), 0 8px 24px -12px rgba(37, 99, 235, 0.12)",
+            }}
+          >
             <form onSubmit={handleSignIn} className="signin-form space-y-5">
               {/* Email */}
               <div className="signin-email space-y-2">
@@ -269,7 +277,7 @@ export default function SignInPage() {
                     placeholder="name@company.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="signin-input h-12 pl-10 bg-[#FAFBFC] border-[#E5E7EB] focus:border-[#0067B8] focus:ring-2 focus:ring-[#0067B8]/10 focus:bg-white rounded-xl text-[14px] transition-all"
+                    className="signin-input h-12 pl-10 bg-white border-[#E5E7EB] focus:border-[#0067B8] focus:ring-2 focus:ring-[#0067B8]/10 rounded-xl text-[14px] transition-all"
                   />
                 </div>
                 <ErrorMessage message={errors.email} />
@@ -289,7 +297,7 @@ export default function SignInPage() {
                       placeholder="Enter your password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="signin-input h-12 pl-10 pr-11 bg-[#FAFBFC] border-[#E5E7EB] focus:border-[#0067B8] focus:ring-2 focus:ring-[#0067B8]/10 focus:bg-white rounded-xl text-[14px] transition-all"
+                      className="signin-input h-12 pl-10 pr-11 bg-white border-[#E5E7EB] focus:border-[#0067B8] focus:ring-2 focus:ring-[#0067B8]/10 rounded-xl text-[14px] transition-all"
                     />
                     <Button
                       type="button"
@@ -325,7 +333,7 @@ export default function SignInPage() {
                       maxLength={6}
                       value={otp}
                       onChange={(e) => setOtp(e.target.value)}
-                      className="signin-input h-12 pl-10 bg-[#FAFBFC] border-[#E5E7EB] focus:border-[#0067B8] focus:ring-2 focus:ring-[#0067B8]/10 focus:bg-white rounded-xl text-[14px] tracking-[0.4em] font-semibold text-center transition-all"
+                      className="signin-input h-12 pl-10 bg-white border-[#E5E7EB] focus:border-[#0067B8] focus:ring-2 focus:ring-[#0067B8]/10 rounded-xl text-[14px] tracking-[0.4em] font-semibold text-center transition-all"
                     />
                   </div>
                   <p className="text-[11px] text-[#9CA3AF]">We sent a 6-digit code to your email</p>

@@ -5,7 +5,8 @@ import { useParams } from "next/navigation"
 import { Badge } from "@/components/ui/badge"
 import { StatsCards } from "@/components/dashboard/stats-cards"
 import { userById, getRoles } from "@/hooks/userHooks"
-import { getAllOrg, getOrgById } from "@/hooks/orgHooks"
+import { getAllOrg, getOrgById, fetchUsersApi } from "@/hooks/orgHooks"
+import { getAllSessions } from "@/hooks/sessionHooks"
 import { useAuthStore } from "@/lib/useAuthStore"
 import { getAllRolesNPermissions } from "@/hooks/roleNPermissionHooks"
 import { decryptData } from "@/utils/crypto"
@@ -28,6 +29,8 @@ export default function DashboardPage() {
   // Falls back to store data if route param is ever missing.
   const orgCount = params?.orgName ? 1 : (singleOrg ? 1 : (organizations?.length ?? 0))
   const [selectedModule, setSelectedModule] = useState("")
+  const [totalUsers, setTotalUsers] = useState<number | null>(null)
+  const [activeSessions, setActiveSessions] = useState<number | null>(null)
   const { setSingleOrganization } = useAuthStore.getState()
 
   useEffect(() => {
@@ -111,6 +114,30 @@ export default function DashboardPage() {
     fetchOrgs()
   }, [setOrganizations])
 
+  useEffect(() => {
+    const fetchMetrics = async () => {
+      try {
+        const [usersRes, sessionsRes] = await Promise.allSettled([
+          fetchUsersApi(),
+          getAllSessions(),
+        ])
+        if (usersRes.status === "fulfilled") {
+          const d: any = usersRes.value?.data || usersRes.value || {}
+          const arr: any[] = Array.isArray(d) ? d : d.users ? d.users : d.data ? d.data : []
+          setTotalUsers(arr.length)
+        }
+        if (sessionsRes.status === "fulfilled") {
+          const d: any = sessionsRes.value?.data || sessionsRes.value || {}
+          const arr: any[] = Array.isArray(d) ? d : d.sessions ? d.sessions : d.data ? d.data : []
+          setActiveSessions(arr.length)
+        }
+      } catch {
+        // Silent fallback to placeholders
+      }
+    }
+    fetchMetrics()
+  }, [])
+
   return (
     <div className="relative h-[90vh] overflow-hidden organization-dashboard font-outfit">
       {/* Fixed Background */}
@@ -139,7 +166,7 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-white text-xs opacity-80">Total Users</p>
-                    <p className="text-white text-xl font-semibold mt-1">2,847</p>
+                    <p className="text-white text-xl font-semibold mt-1">{(totalUsers ?? 2847).toLocaleString()}</p>
                     <p className="text-white text-[10px] mt-1">+12% From Last Month</p>
                   </div>
                   <Users className="w-5 h-5 text-white" />
@@ -165,7 +192,7 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-zinc-600 dark:text-zinc-400 text-xs">Active Sessions</p>
-                    <p className="text-xl font-semibold text-zinc-900 dark:text-white mt-1">1,234</p>
+                    <p className="text-xl font-semibold text-zinc-900 dark:text-white mt-1">{(activeSessions ?? 1234).toLocaleString()}</p>
                     <p className="text-blue-600 dark:text-blue-400 text-[10px] mt-1">+8% Increase</p>
                   </div>
                   <Activity className="w-5 h-5 text-primary" />

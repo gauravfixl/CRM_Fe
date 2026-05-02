@@ -20,12 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/shared/components/ui/switch";
-import {
-    Dialog,
-    DialogContent,
-    DialogFooter,
-} from "@/shared/components/ui/dialog";
-import { Label } from "@/shared/components/ui/label";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -373,151 +368,124 @@ export default function ExternalAppsPage() {
                 </div>
             </div>
 
-            {/* Create Modal */}
-            <Dialog open={showCreateModal} onOpenChange={handleCreateModalChange}>
-                <DialogContent className="max-w-md rounded-none p-0 overflow-hidden shadow-2xl border-none">
-                    <div className="bg-gradient-to-r from-primary/80 to-primary px-5 py-4 text-white relative">
-                        <h2 className="text-base font-bold flex items-center gap-2">
-                            <Link2 size={16} /> Connect External App
-                        </h2>
-                        <p className="text-xs opacity-80 mt-1">Add a new third-party application integration.</p>
-                    </div>
-                    <div className="p-5 space-y-4 bg-white">
-                        <div className="space-y-1.5">
-                            <Label className="text-xs font-bold text-gray-600">App Name <span className="text-red-500">*</span></Label>
-                            <Input
-                                placeholder="e.g., Slack"
-                                value={newApp.name}
-                                onChange={(e) => {
-                                    setNewApp({ ...newApp, name: e.target.value });
-                                    if (formErrors.name) setFormErrors({ ...formErrors, name: undefined });
-                                }}
-                                className={`rounded-none border-zinc-200 h-9 text-sm ${formErrors.name ? "border-red-400" : ""}`}
-                            />
-                            {formErrors.name && <p className="text-xs text-red-500">{formErrors.name}</p>}
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label className="text-xs font-bold text-gray-600">Category <span className="text-red-500">*</span></Label>
-                            <Select
-                                value={newApp.category}
-                                onValueChange={(val) => {
-                                    setNewApp({ ...newApp, category: val });
-                                    if (formErrors.category) setFormErrors({ ...formErrors, category: undefined });
-                                }}
-                            >
-                                <SelectTrigger className={`rounded-none border-zinc-200 h-9 ${formErrors.category ? "border-red-400" : ""}`}>
-                                    <SelectValue placeholder="Select category" />
-                                </SelectTrigger>
-                                <SelectContent className="rounded-none">
-                                    {categories.map((cat) => (
-                                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            {formErrors.category && <p className="text-xs text-red-500">{formErrors.category}</p>}
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label className="text-xs font-bold text-gray-600">Permissions</Label>
-                            <Input
-                                placeholder="e.g., Read Data, Send Messages"
-                                value={newApp.permissions}
-                                onChange={(e) => setNewApp({ ...newApp, permissions: e.target.value })}
-                                className="rounded-none border-zinc-200 h-9 text-sm"
-                            />
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label className="text-xs font-bold text-gray-600">Description</Label>
-                            <Input
-                                placeholder="Brief description of the integration"
-                                value={newApp.description}
-                                onChange={(e) => setNewApp({ ...newApp, description: e.target.value })}
-                                className="rounded-none border-zinc-200 h-9 text-sm"
-                            />
-                        </div>
-                    </div>
-                    <DialogFooter className="px-5 py-3 bg-zinc-50 border-t border-zinc-100 gap-3 sm:justify-end">
-                        <Button variant="ghost" onClick={() => handleCreateModalChange(false)} className="rounded-none text-sm text-gray-600 h-9">
-                            Cancel
-                        </Button>
-                        <Button onClick={handleCreate} className="bg-primary hover:bg-primary/90 rounded-none text-sm px-6 h-9 shadow-md shadow-primary/20">
-                            Connect App
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            {/* Create Sheet */}
+            <SideFormSheet
+                open={showCreateModal}
+                onOpenChange={handleCreateModalChange}
+                title="Connect External App"
+                description="Add a new third-party application integration."
+                icon={<Link2 size={20} />}
+                accentColor="#059669"
+                width="md"
+                submitLabel="Connect App"
+                onSubmit={(e) => { e.preventDefault(); handleCreate(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="App Name" required error={formErrors.name || undefined}>
+                        <Input
+                            placeholder="e.g., Slack"
+                            value={newApp.name}
+                            onChange={(e) => {
+                                setNewApp({ ...newApp, name: e.target.value });
+                                if (formErrors.name) setFormErrors({ ...formErrors, name: undefined });
+                            }}
+                        />
+                    </Field>
+                    <Field label="Category" required error={formErrors.category || undefined}>
+                        <Select
+                            value={newApp.category}
+                            onValueChange={(val) => {
+                                setNewApp({ ...newApp, category: val });
+                                if (formErrors.category) setFormErrors({ ...formErrors, category: undefined });
+                            }}
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select category" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {categories.map((cat) => (
+                                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                    <Field label="Permissions">
+                        <Input
+                            placeholder="e.g., Read Data, Send Messages"
+                            value={newApp.permissions}
+                            onChange={(e) => setNewApp({ ...newApp, permissions: e.target.value })}
+                        />
+                    </Field>
+                    <Field label="Description">
+                        <Input
+                            placeholder="Brief description of the integration"
+                            value={newApp.description}
+                            onChange={(e) => setNewApp({ ...newApp, description: e.target.value })}
+                        />
+                    </Field>
+                </div>
+            </SideFormSheet>
 
-            {/* Edit Modal */}
-            <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
-                <DialogContent className="max-w-md rounded-none p-0 overflow-hidden shadow-2xl border-none">
-                    <div className="bg-gradient-to-r from-primary/80 to-primary px-5 py-4 text-white relative">
-                        <h2 className="text-base font-bold flex items-center gap-2">
-                            <Edit size={16} /> Configure App
-                        </h2>
-                        <p className="text-xs opacity-80 mt-1">Update the app configuration and permissions.</p>
-                    </div>
-                    <div className="p-5 space-y-4 bg-white">
-                        <div className="space-y-1.5">
-                            <Label className="text-xs font-bold text-gray-600">App Name <span className="text-red-500">*</span></Label>
-                            <Input
-                                placeholder="e.g., Slack"
-                                value={editApp.name}
-                                onChange={(e) => {
-                                    setEditApp({ ...editApp, name: e.target.value });
-                                    if (editFormErrors.name) setEditFormErrors({ ...editFormErrors, name: undefined });
-                                }}
-                                className={`rounded-none border-zinc-200 h-9 text-sm ${editFormErrors.name ? "border-red-400" : ""}`}
-                            />
-                            {editFormErrors.name && <p className="text-xs text-red-500">{editFormErrors.name}</p>}
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label className="text-xs font-bold text-gray-600">Category <span className="text-red-500">*</span></Label>
-                            <Select
-                                value={editApp.category}
-                                onValueChange={(val) => {
-                                    setEditApp({ ...editApp, category: val });
-                                    if (editFormErrors.category) setEditFormErrors({ ...editFormErrors, category: undefined });
-                                }}
-                            >
-                                <SelectTrigger className={`rounded-none border-zinc-200 h-9 ${editFormErrors.category ? "border-red-400" : ""}`}>
-                                    <SelectValue placeholder="Select category" />
-                                </SelectTrigger>
-                                <SelectContent className="rounded-none">
-                                    {categories.map((cat) => (
-                                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            {editFormErrors.category && <p className="text-xs text-red-500">{editFormErrors.category}</p>}
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label className="text-xs font-bold text-gray-600">Permissions</Label>
-                            <Input
-                                placeholder="e.g., Read Data, Send Messages"
-                                value={editApp.permissions}
-                                onChange={(e) => setEditApp({ ...editApp, permissions: e.target.value })}
-                                className="rounded-none border-zinc-200 h-9 text-sm"
-                            />
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label className="text-xs font-bold text-gray-600">Description</Label>
-                            <Input
-                                placeholder="Brief description of the integration"
-                                value={editApp.description}
-                                onChange={(e) => setEditApp({ ...editApp, description: e.target.value })}
-                                className="rounded-none border-zinc-200 h-9 text-sm"
-                            />
-                        </div>
-                    </div>
-                    <DialogFooter className="px-5 py-3 bg-zinc-50 border-t border-zinc-100 gap-3 sm:justify-end">
-                        <Button variant="ghost" onClick={() => setShowEditModal(false)} className="rounded-none text-sm text-gray-600 h-9">
-                            Cancel
-                        </Button>
-                        <Button onClick={handleEdit} className="bg-primary hover:bg-primary/90 rounded-none text-sm px-6 h-9 shadow-md shadow-primary/20">
-                            Save Changes
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            {/* Edit Sheet */}
+            <SideFormSheet
+                open={showEditModal}
+                onOpenChange={(o) => {
+                    setShowEditModal(o);
+                    if (!o) setEditFormErrors({});
+                }}
+                title="Configure App"
+                description="Update the app configuration and permissions."
+                icon={<Edit size={20} />}
+                accentColor="#7c3aed"
+                width="md"
+                submitLabel="Save Changes"
+                onSubmit={(e) => { e.preventDefault(); handleEdit(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="App Name" required error={editFormErrors.name || undefined}>
+                        <Input
+                            placeholder="e.g., Slack"
+                            value={editApp.name}
+                            onChange={(e) => {
+                                setEditApp({ ...editApp, name: e.target.value });
+                                if (editFormErrors.name) setEditFormErrors({ ...editFormErrors, name: undefined });
+                            }}
+                        />
+                    </Field>
+                    <Field label="Category" required error={editFormErrors.category || undefined}>
+                        <Select
+                            value={editApp.category}
+                            onValueChange={(val) => {
+                                setEditApp({ ...editApp, category: val });
+                                if (editFormErrors.category) setEditFormErrors({ ...editFormErrors, category: undefined });
+                            }}
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select category" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {categories.map((cat) => (
+                                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                    <Field label="Permissions">
+                        <Input
+                            placeholder="e.g., Read Data, Send Messages"
+                            value={editApp.permissions}
+                            onChange={(e) => setEditApp({ ...editApp, permissions: e.target.value })}
+                        />
+                    </Field>
+                    <Field label="Description">
+                        <Input
+                            placeholder="Brief description of the integration"
+                            value={editApp.description}
+                            onChange={(e) => setEditApp({ ...editApp, description: e.target.value })}
+                        />
+                    </Field>
+                </div>
+            </SideFormSheet>
         </div>
     );
 }

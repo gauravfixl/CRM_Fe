@@ -44,15 +44,8 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogDescription,
-    DialogFooter,
-} from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet"
 import {
     Select,
     SelectContent,
@@ -151,15 +144,32 @@ export default function LeadFieldsLayoutsPage() {
         setIsFieldOpen(true)
     }
 
-    const saveField = () => {
-        if (!editingField.label) {
-            toast.error("Label is required")
+    const saveField = (e: React.FormEvent) => {
+        e.preventDefault()
+        const trimmedLabel = (editingField?.label || "").trim()
+        if (!trimmedLabel) {
+            toast.error("Display label is required")
+            return
+        }
+        if (trimmedLabel.length < 2) {
+            toast.error("Label must be at least 2 characters")
+            return
+        }
+        if (!/^[A-Za-z0-9\s()%/-]+$/.test(trimmedLabel)) {
+            toast.error("Label contains invalid characters")
+            return
+        }
+        const duplicate = fields.find(
+            (f) => f.id !== editingField.id && f.label.toLowerCase() === trimmedLabel.toLowerCase()
+        )
+        if (duplicate) {
+            toast.error("A field with this label already exists")
             return
         }
         setFields(prev => {
             const exists = prev.find(f => f.id === editingField.id)
-            if (exists) return prev.map(f => f.id === editingField.id ? editingField : f)
-            return [...prev, editingField]
+            if (exists) return prev.map(f => f.id === editingField.id ? { ...editingField, label: trimmedLabel } : f)
+            return [...prev, { ...editingField, label: trimmedLabel }]
         })
         setIsFieldOpen(false)
         toast.success(`Field configuration saved`)
@@ -464,38 +474,76 @@ export default function LeadFieldsLayoutsPage() {
                 </TabsContent>
             </Tabs>
 
-            {/* FIELD CONFIGURATION DIALOG */}
-            <Dialog open={isFieldOpen} onOpenChange={setIsFieldOpen}>
-                <DialogContent className="sm:max-w-[450px] rounded-2xl border-none shadow-2xl">
-                    <DialogHeader>
-                        <DialogTitle className="text-xl font-semibold text-gray-900 flex items-center gap-2">
-                            <Columns className="w-5 h-5 text-blue-600" />
-                            {editingField?.system ? 'View Field' : 'Field Schema Definition'}
-                        </DialogTitle>
-                        <DialogDescription className="text-xs font-medium text-zinc-400">
-                            Configure how data is stored and validated for this lead attribute.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-5 py-4">
-                        <div className="grid gap-2">
-                            <Label className="text-[10px] font-medium text-zinc-400">Display Label</Label>
+            {/* Field Configuration — side sheet */}
+            <SideFormSheet
+                open={isFieldOpen}
+                onOpenChange={(o) => {
+                    setIsFieldOpen(o)
+                    if (!o) setEditingField(null)
+                }}
+                title={editingField?.system ? "View Field" : "Field Schema Definition"}
+                description={
+                    editingField?.system
+                        ? "System fields are locked and cannot be modified."
+                        : "Configure how data is stored and validated for this lead attribute."
+                }
+                icon={<Columns className="w-5 h-5" />}
+                width="md"
+                onSubmit={saveField}
+                submitLabel={editingField?.system ? "Close" : "Commit Schema"}
+                submitDisabled={editingField?.system}
+                hideFooter={editingField?.system}
+                footer={
+                    editingField?.system ? (
+                        <Button
+                            variant="outline"
+                            onClick={() => setIsFieldOpen(false)}
+                            className="h-10 px-5 rounded-lg border-[#E5E7EB] text-[#374151] hover:bg-[#F3F4F6]"
+                        >
+                            Close
+                        </Button>
+                    ) : undefined
+                }
+            >
+                {editingField && (
+                    <div className="space-y-4">
+                        {editingField.system && (
+                            <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                                <Columns className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                                <p className="text-[11.5px] text-amber-800 leading-relaxed">
+                                    This is a system field used for core business logic. It cannot be edited or renamed.
+                                </p>
+                            </div>
+                        )}
+
+                        <Field
+                            label="Display Label"
+                            required
+                            hint="2-60 chars; letters, numbers, spaces, ( ) % / -"
+                        >
                             <Input
                                 placeholder="e.g. Annual Revenue"
-                                value={editingField?.label}
-                                onChange={(e) => setEditingField({ ...editingField, label: e.target.value })}
-                                disabled={editingField?.system}
-                                className="rounded-xl bg-zinc-50 border-zinc-100 focus:ring-blue-100 h-11 text-sm font-medium disabled:opacity-50"
+                                value={editingField.label || ""}
+                                onChange={(e) =>
+                                    setEditingField({
+                                        ...editingField,
+                                        label: e.target.value.replace(/[^A-Za-z0-9\s()%/-]/g, ""),
+                                    })
+                                }
+                                disabled={editingField.system}
+                                className="h-11 rounded-lg bg-white border-[#E5E7EB] focus:border-primary disabled:bg-[#F8FAFC] disabled:text-[#64748B]"
+                                maxLength={60}
                             />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="grid gap-2">
-                                <Label className="text-[10px] font-medium text-zinc-400">Data Type</Label>
+                        </Field>
+
+                        <div className="grid grid-cols-2 gap-3">
+                            <Field label="Data Type" required>
                                 <Select
-                                    value={editingField?.type}
+                                    value={editingField.type}
                                     onValueChange={(v) => setEditingField({ ...editingField, type: v })}
-                                    disabled={editingField?.system}
+                                    disabled={editingField.system}
                                 >
-                                    <SelectTrigger className="h-11 rounded-xl bg-zinc-50 border-zinc-100 disabled:opacity-50">
+                                    <SelectTrigger className="h-11 rounded-lg border-[#E5E7EB] bg-white disabled:bg-[#F8FAFC]">
                                         <SelectValue placeholder="Select type" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -507,48 +555,58 @@ export default function LeadFieldsLayoutsPage() {
                                         <SelectItem value="Date">Date Picker</SelectItem>
                                     </SelectContent>
                                 </Select>
-                            </div>
-                            <div className="grid gap-2">
-                                <Label className="text-[10px] font-medium text-zinc-400">Default Value</Label>
+                            </Field>
+                            <Field label="Default Value" hint="Optional fallback value">
                                 <Input
                                     placeholder="Optional"
-                                    className="rounded-xl bg-zinc-50 border-zinc-100 h-11 text-sm"
+                                    value={editingField.defaultValue || ""}
+                                    onChange={(e) => setEditingField({ ...editingField, defaultValue: e.target.value })}
+                                    disabled={editingField.system}
+                                    className="h-11 rounded-lg bg-white border-[#E5E7EB] focus:border-primary disabled:bg-[#F8FAFC]"
+                                    maxLength={100}
                                 />
-                            </div>
+                            </Field>
                         </div>
-                        <div className="flex flex-col gap-4 mt-2">
-                            <div className="flex items-center space-x-3">
+
+                        <div className="space-y-2.5 pt-2 border-t border-[#EEF1F6]">
+                            <div className="flex items-start gap-2.5 p-3 rounded-lg bg-[#FAFBFC] border border-[#EEF1F6]">
                                 <Checkbox
                                     id="req"
-                                    checked={editingField?.required}
-                                    onCheckedChange={(v) => setEditingField({ ...editingField, required: v })}
-                                    disabled={editingField?.system}
+                                    checked={!!editingField.required}
+                                    onCheckedChange={(v) => setEditingField({ ...editingField, required: Boolean(v) })}
+                                    disabled={editingField.system}
+                                    className="mt-0.5"
                                 />
-                                <Label htmlFor="req" className="text-xs font-medium text-zinc-700 cursor-pointer">Mark as Mandatory (Required)</Label>
+                                <div>
+                                    <Label htmlFor="req" className="text-[13px] font-semibold text-[#0F172A] cursor-pointer">
+                                        Mark as Mandatory (Required)
+                                    </Label>
+                                    <p className="text-[11.5px] text-[#64748B] mt-0.5">
+                                        Users must fill this field when creating/editing a lead.
+                                    </p>
+                                </div>
                             </div>
-                            <div className="flex items-center space-x-3">
+                            <div className="flex items-start gap-2.5 p-3 rounded-lg bg-[#FAFBFC] border border-[#EEF1F6]">
                                 <Checkbox
                                     id="conv"
-                                    checked={editingField?.inConversion}
-                                    onCheckedChange={(v) => setEditingField({ ...editingField, inConversion: v })}
-                                    disabled={editingField?.system}
+                                    checked={!!editingField.inConversion}
+                                    onCheckedChange={(v) => setEditingField({ ...editingField, inConversion: Boolean(v) })}
+                                    disabled={editingField.system}
+                                    className="mt-0.5"
                                 />
-                                <Label htmlFor="conv" className="text-xs font-medium text-zinc-700 cursor-pointer">Include in Client Conversion Map</Label>
+                                <div>
+                                    <Label htmlFor="conv" className="text-[13px] font-semibold text-[#0F172A] cursor-pointer">
+                                        Include in Client Conversion Map
+                                    </Label>
+                                    <p className="text-[11.5px] text-[#64748B] mt-0.5">
+                                        Value will be copied to the client record on conversion.
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     </div>
-                    <DialogFooter>
-                        <Button variant="ghost" onClick={() => setIsFieldOpen(false)} className="rounded-xl font-medium text-xs">Cancel</Button>
-                        <Button
-                            onClick={saveField}
-                            disabled={editingField?.system}
-                            className="bg-blue-600 hover:bg-blue-700 rounded-xl px-10 font-medium text-xs shadow-lg shadow-blue-200"
-                        >
-                            Commit Schema
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                )}
+            </SideFormSheet>
         </div>
     )
 }

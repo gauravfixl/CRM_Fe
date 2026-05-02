@@ -24,7 +24,7 @@ export const useBrandingStore = create<BrandingState>()(
             themeMode: 'light',
             logoUrl: '/images/cubicleweb.png',
             loginLogoUrl: '/images/cubicleweb.png',
-            orgName: 'Cubicle CRM',
+            orgName: 'Cubicle ERP',
             setBranding: (updates) => set((state) => ({ ...state, ...updates })),
             resetBranding: () => set({
                 primaryColor: '#2563eb',
@@ -32,11 +32,18 @@ export const useBrandingStore = create<BrandingState>()(
                 themeMode: 'light',
                 logoUrl: '/images/cubicleweb.png',
                 loginLogoUrl: '/images/cubicleweb.png',
-                orgName: 'Cubicle CRM',
+                orgName: 'Cubicle ERP',
             }),
         }),
         {
             name: 'org-branding-storage',
+            version: 2,
+            migrate: (persistedState: any, version) => {
+                if (version < 2 && persistedState?.orgName === 'Cubicle CRM') {
+                    persistedState.orgName = 'Cubicle ERP'
+                }
+                return persistedState
+            },
         }
     )
 )

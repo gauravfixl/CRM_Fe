@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useMemo } from "react"
 import { useParams, useRouter } from "next/navigation"
 import {
     Search,
@@ -8,12 +8,7 @@ import {
     Download,
     MoreHorizontal,
     UserCheck,
-    ShieldCheck,
-    Calendar,
-    AlertCircle,
     Users,
-    Target,
-    PieChart,
     LayoutDashboard,
     RefreshCcw,
     Building2,
@@ -21,12 +16,14 @@ import {
     Mail,
     Phone,
     MapPin,
-    Loader2
+    Loader2,
+    Eye,
+    Pencil,
+    Globe,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Label } from "@/components/ui/label"
 import {
     Table,
     TableBody,
@@ -43,22 +40,8 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog"
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select"
-import { SmallCard, SmallCardContent, SmallCardHeader } from "@/shared/components/custom/SmallCard"
+import { SmallCard, SmallCardContent } from "@/shared/components/custom/SmallCard"
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet"
 import { toast } from "sonner"
 import { getAllClients, deleteClient, updateClient } from "@/hooks/clientHooks"
 
@@ -81,8 +64,41 @@ export default function MasterClientViewPage() {
         phone: "",
         website: "",
     })
+    const [editTouched, setEditTouched] = useState<Record<string, boolean>>({})
     const [selectedClient, setSelectedClient] = useState<any>(null)
     const [statusFilter, setStatusFilter] = useState<"All" | "Active" | "Inactive">("All")
+
+    const editErrors = useMemo(() => {
+        const e: Record<string, string> = {}
+        if (editTouched.clientFirmName && editForm.clientFirmName) {
+            if (editForm.clientFirmName.length > 120) e.clientFirmName = "Firm name too long (max 120)"
+            else if (!/^[A-Za-z0-9\s.'&,-]+$/.test(editForm.clientFirmName))
+                e.clientFirmName = "Use letters, numbers and . , ' & -"
+        }
+        if (editTouched.firstName && editForm.firstName) {
+            if (!/^[A-Za-z\s.'-]+$/.test(editForm.firstName)) e.firstName = "Only letters, spaces, . ' -"
+            else if (editForm.firstName.length > 60) e.firstName = "Too long (max 60)"
+        }
+        if (editTouched.lastName && editForm.lastName) {
+            if (!/^[A-Za-z\s.'-]+$/.test(editForm.lastName)) e.lastName = "Only letters, spaces, . ' -"
+            else if (editForm.lastName.length > 60) e.lastName = "Too long (max 60)"
+        }
+        if (editTouched.email) {
+            if (!editForm.email.trim()) e.email = "Email is required"
+            else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editForm.email.trim()))
+                e.email = "Enter a valid email (e.g. user@company.com)"
+        }
+        if (editTouched.phone) {
+            if (!editForm.phone.trim()) e.phone = "Phone is required"
+            else if (!/^[+\d][\d\s()-]{5,18}$/.test(editForm.phone.trim()))
+                e.phone = "Enter a valid phone number"
+        }
+        if (editTouched.website && editForm.website) {
+            if (!/^https?:\/\/[^\s]+\.[^\s]+$/.test(editForm.website.trim()))
+                e.website = "Must start with http:// or https://"
+        }
+        return e
+    }, [editForm, editTouched])
 
     const fetchClients = async () => {
         try {
@@ -139,27 +155,50 @@ export default function MasterClientViewPage() {
             phone: client.phone || "",
             website: client.website || "",
         })
+        setEditTouched({})
         setShowEditDialog(true)
     }
 
-    const handleSubmitEdit = async () => {
+    const handleSubmitEdit = async (e: React.FormEvent) => {
+        e.preventDefault()
+        setEditTouched({
+            clientFirmName: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            phone: true,
+            website: true,
+        })
         if (!selectedClient) return
         if (!editForm.email.trim()) {
             toast.error("Email is required")
+            return
+        }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editForm.email.trim())) {
+            toast.error("Enter a valid email address")
             return
         }
         if (!editForm.phone.trim()) {
             toast.error("Phone is required")
             return
         }
+        if (!/^[+\d][\d\s()-]{5,18}$/.test(editForm.phone.trim())) {
+            toast.error("Enter a valid phone number")
+            return
+        }
+        if (editForm.website && !/^https?:\/\/[^\s]+\.[^\s]+$/.test(editForm.website.trim())) {
+            toast.error("Website must start with http:// or https://")
+            return
+        }
+
         const payload: Record<string, unknown> = {
             email: editForm.email.trim(),
             phone: editForm.phone.trim(),
         }
-        if (editForm.clientFirmName) payload.clientFirmName = editForm.clientFirmName
-        if (editForm.firstName) payload.firstName = editForm.firstName
-        if (editForm.lastName) payload.lastName = editForm.lastName
-        if (editForm.website) payload.website = editForm.website
+        if (editForm.clientFirmName) payload.clientFirmName = editForm.clientFirmName.trim()
+        if (editForm.firstName) payload.firstName = editForm.firstName.trim()
+        if (editForm.lastName) payload.lastName = editForm.lastName.trim()
+        if (editForm.website) payload.website = editForm.website.trim()
 
         try {
             setEditBusy(true)
@@ -420,158 +459,194 @@ export default function MasterClientViewPage() {
             )}
 
 
-            {/* CLIENT DETAILS DIALOG */}
-            <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
-                <DialogContent className="sm:max-w-[500px] rounded-xl p-5">
-                    <DialogHeader>
-                        <DialogTitle className="text-sm font-semibold">Client Details</DialogTitle>
-                        <DialogDescription className="text-[10px] text-zinc-500">
-                            View complete information for this client account.
-                        </DialogDescription>
-                    </DialogHeader>
-                    {selectedClient && (
-                        <div className="grid gap-3 py-2 max-h-[60vh] overflow-y-auto pr-1">
-                            <div className="flex items-start justify-between gap-3">
-                                <div>
-                                    <p className="text-sm font-semibold text-zinc-900">{selectedClient.name}</p>
-                                    <p className="text-[11px] text-zinc-500 mt-0.5">{selectedClient.firm}</p>
-                                </div>
-                                <Badge className={`rounded-md text-[10px] font-medium ${selectedClient.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-100' : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-100'}`}>
-                                    {selectedClient.status}
-                                </Badge>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-3 pt-2 border-t">
-                                <div>
-                                    <Label className="text-[10px] font-medium text-zinc-400">First Name</Label>
-                                    <p className="text-xs text-zinc-700 mt-0.5">{selectedClient.firstName || "-"}</p>
-                                </div>
-                                <div>
-                                    <Label className="text-[10px] font-medium text-zinc-400">Last Name</Label>
-                                    <p className="text-xs text-zinc-700 mt-0.5">{selectedClient.lastName || "-"}</p>
-                                </div>
-                            </div>
-
-                            <div className="pt-2 border-t flex flex-col gap-1.5">
-                                <div className="flex items-center gap-2 text-xs text-zinc-700">
-                                    <Mail className="w-3 h-3 text-zinc-400" /> {selectedClient.email || "-"}
-                                </div>
-                                <div className="flex items-center gap-2 text-xs text-zinc-700">
-                                    <Phone className="w-3 h-3 text-zinc-400" /> {selectedClient.phone || "-"}
-                                </div>
-                                {selectedClient.website && (
-                                    <div className="flex items-center gap-2 text-xs text-zinc-700">
-                                        <Building2 className="w-3 h-3 text-zinc-400" /> {selectedClient.website}
-                                    </div>
-                                )}
-                            </div>
-
-                            {selectedClient.address && typeof selectedClient.address === 'object' && (
-                                <div className="pt-2 border-t">
-                                    <Label className="text-[10px] font-medium text-zinc-400">Address</Label>
-                                    <div className="flex items-start gap-2 mt-1 text-xs text-zinc-700">
-                                        <MapPin className="w-3 h-3 text-zinc-400 mt-0.5" />
-                                        <div>
-                                            {[selectedClient.address.address1, selectedClient.address.address2, selectedClient.address.city, selectedClient.address.state, selectedClient.address.country, selectedClient.address.pinCode].filter(Boolean).join(", ") || "-"}
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {selectedClient.createdAt && (
-                                <div className="pt-2 border-t">
-                                    <Label className="text-[10px] font-medium text-zinc-400">Created</Label>
-                                    <p className="text-xs text-zinc-700 mt-0.5">{new Date(selectedClient.createdAt).toLocaleString()}</p>
-                                </div>
-                            )}
-                        </div>
-                    )}
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setShowDetailsDialog(false)} className="h-8 text-xs font-medium rounded-lg">
+            {/* View Client Details — side sheet */}
+            <SideFormSheet
+                open={showDetailsDialog}
+                onOpenChange={setShowDetailsDialog}
+                title="Client Details"
+                description={selectedClient?.name || "Full information for this client account."}
+                icon={<Eye className="w-5 h-5" />}
+                width="md"
+                footer={
+                    <>
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowDetailsDialog(false)}
+                            className="h-10 px-5 rounded-lg border-[#E5E7EB] text-[#374151] hover:bg-[#F3F4F6]"
+                        >
                             Close
                         </Button>
                         {selectedClient && (
-                            <Button onClick={() => { setShowDetailsDialog(false); handleOpenEdit(selectedClient) }} className="h-8 text-xs font-medium rounded-lg">
-                                Edit
+                            <Button
+                                onClick={() => { setShowDetailsDialog(false); handleOpenEdit(selectedClient) }}
+                                className="h-10 px-5 rounded-lg bg-primary text-white hover:bg-primary/90 gap-2"
+                            >
+                                <Pencil className="w-3.5 h-3.5" /> Edit
                             </Button>
                         )}
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    </>
+                }
+            >
+                {selectedClient && (
+                    <div className="space-y-5">
+                        <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1">
+                                <p className="text-[15px] font-semibold text-zinc-900 leading-tight">{selectedClient.name}</p>
+                                <p className="text-[12.5px] text-zinc-500 mt-1">{selectedClient.firm}</p>
+                            </div>
+                            <Badge
+                                className={`rounded-md text-[10px] font-medium shrink-0 ${
+                                    selectedClient.status === 'ACTIVE'
+                                        ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-100'
+                                        : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-100'
+                                }`}
+                            >
+                                {selectedClient.status}
+                            </Badge>
+                        </div>
 
-            {/* EDIT CLIENT DIALOG */}
-            <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-                <DialogContent className="sm:max-w-[520px] rounded-xl p-5">
-                    <DialogHeader>
-                        <DialogTitle className="text-sm font-semibold">Edit Client</DialogTitle>
-                        <DialogDescription className="text-[10px] text-zinc-500">
-                            Update the client's basic information.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-3 py-2">
-                        <div className="grid gap-1.5">
-                            <Label className="text-[10px] font-medium">Firm Name</Label>
-                            <Input
-                                value={editForm.clientFirmName}
-                                onChange={(e) => setEditForm({ ...editForm, clientFirmName: e.target.value })}
-                                className="h-8 text-xs"
-                            />
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="grid gap-1.5">
-                                <Label className="text-[10px] font-medium">First Name</Label>
-                                <Input
-                                    value={editForm.firstName}
-                                    onChange={(e) => setEditForm({ ...editForm, firstName: e.target.value })}
-                                    className="h-8 text-xs"
-                                />
+                        <div className="grid grid-cols-2 gap-4 pt-4 border-t border-[#EEF1F6]">
+                            <div>
+                                <p className="text-[11px] text-zinc-500 font-semibold uppercase tracking-wide">First Name</p>
+                                <p className="text-[13px] font-medium text-zinc-900 mt-1">{selectedClient.firstName || "-"}</p>
                             </div>
-                            <div className="grid gap-1.5">
-                                <Label className="text-[10px] font-medium">Last Name</Label>
-                                <Input
-                                    value={editForm.lastName}
-                                    onChange={(e) => setEditForm({ ...editForm, lastName: e.target.value })}
-                                    className="h-8 text-xs"
-                                />
+                            <div>
+                                <p className="text-[11px] text-zinc-500 font-semibold uppercase tracking-wide">Last Name</p>
+                                <p className="text-[13px] font-medium text-zinc-900 mt-1">{selectedClient.lastName || "-"}</p>
                             </div>
                         </div>
-                        <div className="grid gap-1.5">
-                            <Label className="text-[10px] font-medium">Email *</Label>
-                            <Input
-                                type="email"
-                                value={editForm.email}
-                                onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
-                                className="h-8 text-xs"
-                            />
+
+                        <div className="pt-4 border-t border-[#EEF1F6] space-y-2.5">
+                            <p className="text-[11px] text-zinc-500 font-semibold uppercase tracking-wide mb-2">Contact</p>
+                            <div className="flex items-center gap-2.5 text-[13px] text-zinc-700">
+                                <Mail className="w-3.5 h-3.5 text-zinc-400" />
+                                <span>{selectedClient.email || "-"}</span>
+                            </div>
+                            <div className="flex items-center gap-2.5 text-[13px] text-zinc-700">
+                                <Phone className="w-3.5 h-3.5 text-zinc-400" />
+                                <span>{selectedClient.phone || "-"}</span>
+                            </div>
+                            {selectedClient.website && (
+                                <div className="flex items-center gap-2.5 text-[13px] text-zinc-700">
+                                    <Globe className="w-3.5 h-3.5 text-zinc-400" />
+                                    <span className="truncate">{selectedClient.website}</span>
+                                </div>
+                            )}
                         </div>
-                        <div className="grid gap-1.5">
-                            <Label className="text-[10px] font-medium">Phone *</Label>
-                            <Input
-                                value={editForm.phone}
-                                onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
-                                className="h-8 text-xs"
-                            />
-                        </div>
-                        <div className="grid gap-1.5">
-                            <Label className="text-[10px] font-medium">Website</Label>
-                            <Input
-                                value={editForm.website}
-                                onChange={(e) => setEditForm({ ...editForm, website: e.target.value })}
-                                placeholder="https://"
-                                className="h-8 text-xs"
-                            />
-                        </div>
+
+                        {selectedClient.address && typeof selectedClient.address === 'object' && (
+                            <div className="pt-4 border-t border-[#EEF1F6]">
+                                <p className="text-[11px] text-zinc-500 font-semibold uppercase tracking-wide mb-2">Address</p>
+                                <div className="flex items-start gap-2.5 text-[13px] text-zinc-700">
+                                    <MapPin className="w-3.5 h-3.5 text-zinc-400 mt-0.5 shrink-0" />
+                                    <div className="leading-relaxed">
+                                        {[
+                                            selectedClient.address.address1,
+                                            selectedClient.address.address2,
+                                            selectedClient.address.city,
+                                            selectedClient.address.state,
+                                            selectedClient.address.country,
+                                            selectedClient.address.pinCode,
+                                        ].filter(Boolean).join(", ") || "-"}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {selectedClient.createdAt && (
+                            <div className="pt-4 border-t border-[#EEF1F6]">
+                                <p className="text-[11px] text-zinc-500 font-semibold uppercase tracking-wide">Created</p>
+                                <p className="text-[13px] text-zinc-700 mt-1">{new Date(selectedClient.createdAt).toLocaleString()}</p>
+                            </div>
+                        )}
                     </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setShowEditDialog(false)} disabled={editBusy} className="h-8 text-xs font-medium rounded-lg">
-                            Cancel
-                        </Button>
-                        <Button onClick={handleSubmitEdit} disabled={editBusy} className="h-8 text-xs font-medium rounded-lg">
-                            {editBusy && <Loader2 className="w-3 h-3 mr-1 animate-spin" />}Save Changes
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                )}
+            </SideFormSheet>
+
+            {/* Edit Client — side sheet */}
+            <SideFormSheet
+                open={showEditDialog}
+                onOpenChange={(o) => {
+                    setShowEditDialog(o)
+                    if (!o) setEditTouched({})
+                }}
+                title="Edit Client"
+                description="Update the client's basic information."
+                icon={<Pencil className="w-5 h-5" />}
+                width="md"
+                onSubmit={handleSubmitEdit}
+                submitLabel="Save Changes"
+                loading={editBusy}
+            >
+                <div className="space-y-4">
+                    <Field label="Firm Name" error={editErrors.clientFirmName} hint="Optional, company/firm associated with this client">
+                        <Input
+                            value={editForm.clientFirmName}
+                            onChange={(e) => setEditForm({ ...editForm, clientFirmName: e.target.value })}
+                            onBlur={() => setEditTouched((t) => ({ ...t, clientFirmName: true }))}
+                            className="h-11 rounded-lg bg-white border-[#E5E7EB] focus:border-primary"
+                            maxLength={120}
+                            placeholder="e.g. Acme Corporation"
+                        />
+                    </Field>
+
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="First Name" error={editErrors.firstName}>
+                            <Input
+                                value={editForm.firstName}
+                                onChange={(e) => setEditForm({ ...editForm, firstName: e.target.value.replace(/[^A-Za-z\s.'-]/g, "") })}
+                                onBlur={() => setEditTouched((t) => ({ ...t, firstName: true }))}
+                                className="h-11 rounded-lg bg-white border-[#E5E7EB] focus:border-primary"
+                                maxLength={60}
+                                placeholder="John"
+                            />
+                        </Field>
+                        <Field label="Last Name" error={editErrors.lastName}>
+                            <Input
+                                value={editForm.lastName}
+                                onChange={(e) => setEditForm({ ...editForm, lastName: e.target.value.replace(/[^A-Za-z\s.'-]/g, "") })}
+                                onBlur={() => setEditTouched((t) => ({ ...t, lastName: true }))}
+                                className="h-11 rounded-lg bg-white border-[#E5E7EB] focus:border-primary"
+                                maxLength={60}
+                                placeholder="Doe"
+                            />
+                        </Field>
+                    </div>
+
+                    <Field label="Email" required error={editErrors.email}>
+                        <Input
+                            type="email"
+                            value={editForm.email}
+                            onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                            onBlur={() => setEditTouched((t) => ({ ...t, email: true }))}
+                            className="h-11 rounded-lg bg-white border-[#E5E7EB] focus:border-primary"
+                            placeholder="john@company.com"
+                            autoComplete="email"
+                        />
+                    </Field>
+
+                    <Field label="Phone" required error={editErrors.phone} hint="Include country code if international">
+                        <Input
+                            value={editForm.phone}
+                            onChange={(e) => setEditForm({ ...editForm, phone: e.target.value.replace(/[^\d+\s()-]/g, "") })}
+                            onBlur={() => setEditTouched((t) => ({ ...t, phone: true }))}
+                            className="h-11 rounded-lg bg-white border-[#E5E7EB] focus:border-primary"
+                            placeholder="+1 555 123 4567"
+                            maxLength={20}
+                        />
+                    </Field>
+
+                    <Field label="Website" error={editErrors.website} hint="Optional, must start with http:// or https://">
+                        <Input
+                            value={editForm.website}
+                            onChange={(e) => setEditForm({ ...editForm, website: e.target.value })}
+                            onBlur={() => setEditTouched((t) => ({ ...t, website: true }))}
+                            placeholder="https://example.com"
+                            className="h-11 rounded-lg bg-white border-[#E5E7EB] focus:border-primary"
+                        />
+                    </Field>
+                </div>
+            </SideFormSheet>
         </div>
     )
 }

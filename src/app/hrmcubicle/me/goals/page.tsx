@@ -22,6 +22,7 @@ import { Button } from "@/shared/components/ui/button";
 import { Badge } from "@/shared/components/ui/badge";
 import { Progress } from "@/shared/components/ui/progress";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { Textarea } from "@/shared/components/ui/textarea";
@@ -363,104 +364,88 @@ export default function MyGoalsPage() {
                 )}
             </div>
 
-            <Dialog open={formOpen} onOpenChange={setFormOpen}>
-                <DialogContent className="bg-white rounded-2xl border-none p-8 max-w-lg">
-                    <DialogHeader className="space-y-3">
-                        <div className="h-12 w-12 bg-indigo-50 rounded-xl flex items-center justify-center">
-                            {editing ? <Edit3 className="text-indigo-600" size={24} /> : <Target className="text-indigo-600" size={24} />}
-                        </div>
-                        <DialogTitle className="text-2xl font-bold">{editing ? "Edit Goal" : "Create New Goal"}</DialogTitle>
-                        <DialogDescription>{editing ? "Update goal details." : "Define an objective to track your progress."}</DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 mt-2">
-                        {formError && (
-                            <div className="bg-rose-50 border border-rose-200 rounded-lg px-3 py-2 text-xs text-rose-700">{formError}</div>
-                        )}
-                        <div>
-                            <Label className="text-xs font-semibold">Goal Title <span className="text-rose-500">*</span></Label>
-                            <Input maxLength={255} value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="e.g., Ship v2 of dashboard" className="mt-1" />
-                            <p className="text-[10px] text-slate-400 mt-1">{form.title.length}/255 chars</p>
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                            <div>
-                                <Label className="text-xs font-semibold">Category</Label>
-                                <Select value={form.category} onValueChange={v => setForm({ ...form, category: v })}>
-                                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        {Object.keys(categoryColors).map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div>
-                                <Label className="text-xs font-semibold">Priority</Label>
-                                <Select value={form.priority} onValueChange={v => setForm({ ...form, priority: v })}>
-                                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="High">High</SelectItem>
-                                        <SelectItem value="Medium">Medium</SelectItem>
-                                        <SelectItem value="Low">Low</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                            <div>
-                                <Label className="text-xs font-semibold">Due Date <span className="text-rose-500">*</span></Label>
-                                <Input type="date" min={editing ? undefined : new Date().toISOString().split("T")[0]} value={form.dueDate} onChange={e => setForm({ ...form, dueDate: e.target.value })} className="mt-1" />
-                            </div>
-                            <div>
-                                <Label className="text-xs font-semibold">Key Results (1-10)</Label>
-                                <Input type="number" min="1" max="10" value={form.keyResults} onChange={e => setForm({ ...form, keyResults: e.target.value })} className="mt-1" />
-                            </div>
-                        </div>
-                        <div>
-                            <Label className="text-xs font-semibold">Description</Label>
-                            <Textarea maxLength={1000} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="What does success look like?" className="mt-1" />
-                            <p className="text-[10px] text-slate-400 mt-1">{form.description.length}/1000 chars</p>
-                        </div>
+            <SideFormSheet
+                open={formOpen}
+                onOpenChange={setFormOpen}
+                title={editing ? "Edit Goal" : "Create New Goal"}
+                description={editing ? "Update goal details." : "Define an objective to track your progress."}
+                icon={editing ? <Edit3 size={20} /> : <Target size={20} />}
+                accentColor="#4f46e5"
+                width="md"
+                loading={submitting}
+                submitLabel={editing ? "Save Changes" : "Create Goal"}
+                onSubmit={(e) => { e.preventDefault(); saveGoal(); }}
+            >
+                <div className="space-y-4">
+                    {formError && (
+                        <div className="bg-rose-50 border border-rose-200 rounded-lg px-3 py-2 text-xs text-rose-700">{formError}</div>
+                    )}
+                    <Field label="Goal Title" required hint={`${form.title.length}/255 chars`}>
+                        <Input maxLength={255} value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="e.g., Ship v2 of dashboard" />
+                    </Field>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Category">
+                            <Select value={form.category} onValueChange={v => setForm({ ...form, category: v })}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    {Object.keys(categoryColors).map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <Field label="Priority">
+                            <Select value={form.priority} onValueChange={v => setForm({ ...form, priority: v })}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="High">High</SelectItem>
+                                    <SelectItem value="Medium">Medium</SelectItem>
+                                    <SelectItem value="Low">Low</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
                     </div>
-                    <DialogFooter className="gap-3 mt-4">
-                        <Button variant="ghost" onClick={() => setFormOpen(false)} disabled={submitting}>Cancel</Button>
-                        <Button onClick={saveGoal} disabled={submitting} className="flex-1 bg-indigo-600 hover:bg-indigo-700 rounded-xl">
-                            {submitting ? <><Loader2 size={14} className="mr-2 animate-spin" />Saving...</> : editing ? "Save Changes" : "Create Goal"}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Due Date" required>
+                            <Input type="date" min={editing ? undefined : new Date().toISOString().split("T")[0]} value={form.dueDate} onChange={e => setForm({ ...form, dueDate: e.target.value })} />
+                        </Field>
+                        <Field label="Key Results" hint="1-10">
+                            <Input type="number" min="1" max="10" value={form.keyResults} onChange={e => setForm({ ...form, keyResults: e.target.value })} />
+                        </Field>
+                    </div>
+                    <Field label="Description" hint={`${form.description.length}/1000 chars`}>
+                        <Textarea maxLength={1000} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="What does success look like?" />
+                    </Field>
+                </div>
+            </SideFormSheet>
 
-            <Dialog open={!!progressOpen} onOpenChange={v => !v && setProgressOpen(null)}>
-                <DialogContent className="bg-white rounded-2xl border-none p-8 max-w-md">
-                    <DialogHeader className="space-y-3">
-                        <div className="h-12 w-12 bg-indigo-50 rounded-xl flex items-center justify-center">
-                            <TrendingUp className="text-indigo-600" size={24} />
+            <SideFormSheet
+                open={!!progressOpen}
+                onOpenChange={v => !v && setProgressOpen(null)}
+                title="Update Progress"
+                description={progressOpen?.title}
+                icon={<TrendingUp size={20} />}
+                accentColor="#4f46e5"
+                width="sm"
+                loading={submitting}
+                submitLabel="Save Progress"
+                onSubmit={(e) => { e.preventDefault(); saveProgress(); }}
+            >
+                <div className="space-y-4">
+                    <div>
+                        <div className="flex items-center justify-between text-sm mb-2">
+                            <span className="text-slate-600">Current progress</span>
+                            <span className="text-2xl font-bold text-indigo-700">{progressVal}%</span>
                         </div>
-                        <DialogTitle className="text-xl font-bold">Update Progress</DialogTitle>
-                        <DialogDescription className="line-clamp-2">{progressOpen?.title}</DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 mt-2">
-                        <div>
-                            <div className="flex items-center justify-between text-sm mb-2">
-                                <span className="text-slate-600">Current progress</span>
-                                <span className="text-2xl font-bold text-indigo-700">{progressVal}%</span>
-                            </div>
-                            <input type="range" min="0" max="100" step="5" value={progressVal} onChange={e => setProgressVal(Number(e.target.value))} className="w-full accent-indigo-600" />
-                            <Progress value={progressVal} className="h-2 mt-2" />
-                        </div>
-                        <div className="grid grid-cols-4 gap-2">
-                            {[0, 25, 50, 75, 100].map(v => (
-                                <Button key={v} size="sm" variant={progressVal === v ? "default" : "outline"} onClick={() => setProgressVal(v)} className={progressVal === v ? "bg-indigo-600 text-white" : ""}>{v}%</Button>
-                            ))}
-                        </div>
-                        <p className="text-xs text-slate-500">Status will auto-update to <strong>{deriveStatus(progressVal)}</strong></p>
+                        <input type="range" min="0" max="100" step="5" value={progressVal} onChange={e => setProgressVal(Number(e.target.value))} className="w-full accent-indigo-600" />
+                        <Progress value={progressVal} className="h-2 mt-2" />
                     </div>
-                    <DialogFooter className="gap-3 mt-4">
-                        <Button variant="ghost" onClick={() => setProgressOpen(null)} disabled={submitting}>Cancel</Button>
-                        <Button onClick={saveProgress} disabled={submitting} className="flex-1 bg-indigo-600 hover:bg-indigo-700 rounded-xl">
-                            {submitting ? <><Loader2 size={14} className="mr-2 animate-spin" />Saving...</> : "Save Progress"}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    <div className="grid grid-cols-5 gap-2">
+                        {[0, 25, 50, 75, 100].map(v => (
+                            <Button key={v} type="button" size="sm" variant={progressVal === v ? "default" : "outline"} onClick={() => setProgressVal(v)} className={progressVal === v ? "bg-indigo-600 text-white" : ""}>{v}%</Button>
+                        ))}
+                    </div>
+                    <p className="text-xs text-slate-500">Status will auto-update to <strong>{deriveStatus(progressVal)}</strong></p>
+                </div>
+            </SideFormSheet>
 
             <Dialog open={!!deleteConfirm} onOpenChange={v => !v && setDeleteConfirm(null)}>
                 <DialogContent className="bg-white rounded-2xl border-none p-8 max-w-md">

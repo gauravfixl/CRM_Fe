@@ -7,6 +7,10 @@ import { setAuthCookie, clearAuthCookie } from "@/lib/auth-cookies";
 export const axiosInstance = axios.create({
   baseURL: API,
   withCredentials: true,
+  // Without a timeout a hung request leaves callers' loading state stuck
+  // forever. 20s is the same safety budget the swrCache hook uses, so the
+  // axios reject and the UI safety timer fire close together.
+  timeout: 20000,
   headers: {
     "Content-Type": "application/json",
   },

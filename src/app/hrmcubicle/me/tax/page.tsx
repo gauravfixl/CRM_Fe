@@ -24,6 +24,7 @@ import { Button } from "@/shared/components/ui/button";
 import { Badge } from "@/shared/components/ui/badge";
 import { Progress } from "@/shared/components/ui/progress";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { Textarea } from "@/shared/components/ui/textarea";
@@ -310,72 +311,59 @@ export default function MyTaxPage() {
                 </div>
             </div>
 
-            <Dialog open={addOpen} onOpenChange={setAddOpen}>
-                <DialogContent className="bg-white rounded-2xl border-none p-8 max-w-lg">
-                    <DialogHeader className="space-y-3">
-                        <div className="h-12 w-12 bg-indigo-50 rounded-xl flex items-center justify-center">
-                            {editing ? <Edit3 className="text-indigo-600" size={24} /> : <Plus className="text-indigo-600" size={24} />}
-                        </div>
-                        <DialogTitle className="text-2xl font-bold">{editing ? "Edit Investment" : `Add Investment — ${activeSectionMeta?.name || ""}`}</DialogTitle>
-                        <DialogDescription>{activeSectionMeta?.desc}</DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 mt-2">
-                        <div>
-                            <Label className="text-xs font-semibold">Investment Type</Label>
-                            <Select value={form.type} onValueChange={v => setForm({ ...form, type: v })}>
-                                <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                                <SelectContent>
-                                    {activeSectionMeta?.types.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div>
-                            <Label className="text-xs font-semibold">Amount (₹)</Label>
-                            <Input type="number" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} placeholder="0" className="mt-1" />
-                            {activeSectionMeta && (
-                                <p className="text-[11px] text-slate-500 mt-1">Section limit: {inr(activeSectionMeta.limit)}</p>
-                            )}
-                        </div>
-                        <div>
-                            <Label className="text-xs font-semibold">Proof Document (file name)</Label>
-                            <Input value={form.proof} onChange={e => setForm({ ...form, proof: e.target.value })} placeholder="e.g., ppf_receipt.pdf" className="mt-1" />
-                            <p className="text-[11px] text-slate-500 mt-1">Leave blank to upload later.</p>
-                        </div>
-                    </div>
-                    <DialogFooter className="gap-3 mt-4">
-                        <Button variant="ghost" onClick={() => setAddOpen(false)}>Cancel</Button>
-                        <Button onClick={saveInvestment} className="flex-1 bg-indigo-600 hover:bg-indigo-700 rounded-xl">{editing ? "Save Changes" : "Add Investment"}</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            <SideFormSheet
+                open={addOpen}
+                onOpenChange={setAddOpen}
+                title={editing ? "Edit Investment" : `Add Investment — ${activeSectionMeta?.name || ""}`}
+                description={activeSectionMeta?.desc}
+                icon={editing ? <Edit3 size={20} /> : <Plus size={20} />}
+                accentColor="#4f46e5"
+                width="md"
+                submitLabel={editing ? "Save Changes" : "Add Investment"}
+                onSubmit={(e) => { e.preventDefault(); saveInvestment(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Investment Type">
+                        <Select value={form.type} onValueChange={v => setForm({ ...form, type: v })}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                {activeSectionMeta?.types.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                    <Field label="Amount (₹)" required hint={activeSectionMeta ? `Section limit: ${inr(activeSectionMeta.limit)}` : undefined}>
+                        <Input type="number" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} placeholder="0" />
+                    </Field>
+                    <Field label="Proof Document (file name)" hint="Leave blank to upload later.">
+                        <Input value={form.proof} onChange={e => setForm({ ...form, proof: e.target.value })} placeholder="e.g., ppf_receipt.pdf" />
+                    </Field>
+                </div>
+            </SideFormSheet>
 
-            <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
-                <DialogContent className="bg-white rounded-2xl border-none p-8 max-w-lg">
-                    <DialogHeader className="space-y-3">
-                        <div className="h-12 w-12 bg-amber-50 rounded-xl flex items-center justify-center">
-                            <Upload className="text-amber-600" size={24} />
-                        </div>
-                        <DialogTitle className="text-2xl font-bold">Upload Proof Documents</DialogTitle>
-                        <DialogDescription>Upload proofs for your declared investments before the deadline.</DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 mt-2">
-                        <div className="border-2 border-dashed border-slate-200 rounded-xl p-8 text-center hover:border-amber-300 transition-all">
-                            <Upload className="mx-auto text-slate-400" size={28} />
-                            <p className="text-sm font-semibold text-slate-700 mt-2">Drop files here or click to browse</p>
-                            <p className="text-xs text-slate-500 mt-1">Accepted: PDF, JPG, PNG · Max 10 MB per file</p>
-                        </div>
-                        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
-                            <p className="text-xs text-amber-800">
-                                <strong>Missing proofs:</strong> {investments.filter(i => !i.proof).length} investment(s) without documents
-                            </p>
-                        </div>
+            <SideFormSheet
+                open={uploadOpen}
+                onOpenChange={setUploadOpen}
+                title="Upload Proof Documents"
+                description="Upload proofs for your declared investments before the deadline."
+                icon={<Upload size={20} />}
+                accentColor="#d97706"
+                width="md"
+                submitLabel="Upload & Submit"
+                onSubmit={(e) => { e.preventDefault(); handleProofsUpload(); }}
+            >
+                <div className="space-y-4">
+                    <div className="border-2 border-dashed border-slate-200 rounded-xl p-8 text-center hover:border-amber-300 transition-all">
+                        <Upload className="mx-auto text-slate-400" size={28} />
+                        <p className="text-sm font-semibold text-slate-700 mt-2">Drop files here or click to browse</p>
+                        <p className="text-xs text-slate-500 mt-1">Accepted: PDF, JPG, PNG · Max 10 MB per file</p>
                     </div>
-                    <DialogFooter className="gap-3 mt-4">
-                        <Button variant="ghost" onClick={() => setUploadOpen(false)}>Cancel</Button>
-                        <Button onClick={handleProofsUpload} className="flex-1 bg-amber-600 hover:bg-amber-700 text-white rounded-xl">Upload & Submit</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
+                        <p className="text-xs text-amber-800">
+                            <strong>Missing proofs:</strong> {investments.filter(i => !i.proof).length} investment(s) without documents
+                        </p>
+                    </div>
+                </div>
+            </SideFormSheet>
         </div>
     );
 }

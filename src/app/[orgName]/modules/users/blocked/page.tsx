@@ -48,12 +48,35 @@ const mapApiUserToBlocked = (apiUser: any): BlockedUser => {
         : apiUser.joinedAt
         ? new Date(apiUser.joinedAt).toISOString().split("T")[0]
         : "N/A"
+
+    // Derive risk level + reason heuristically from API fields:
+    //   • No MFA enabled → Critical
+    //   • Failed login attempts >= 5 → Critical
+    //   • No recent activity (no lastLoginAt) → Medium
+    //   • Otherwise → Low
+    const noMfa = apiUser.twoFAEnabled === false
+    const failedAttempts = typeof apiUser.failedLoginAttempts === "number" ? apiUser.failedLoginAttempts : 0
+    const hasNeverLoggedIn = !apiUser.lastLoginAt && !apiUser.lastLogin
+
+    let riskLevel: "Critical" | "Medium" | "Low" = "Low"
+    let reason = "Account suspended"
+    if (failedAttempts >= 5) {
+        riskLevel = "Critical"
+        reason = `${failedAttempts} failed login attempts`
+    } else if (noMfa) {
+        riskLevel = "Critical"
+        reason = "MFA not enrolled"
+    } else if (hasNeverLoggedIn) {
+        riskLevel = "Medium"
+        reason = "No recent sign-in activity"
+    }
+
     return {
         id: apiUser._id,
         name,
         email: apiUser.email || "",
-        riskLevel: "Medium",
-        reason: "Account suspended",
+        riskLevel,
+        reason,
         blockedDate,
         status: "Blocked",
     }

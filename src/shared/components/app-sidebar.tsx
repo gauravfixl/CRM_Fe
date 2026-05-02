@@ -308,8 +308,8 @@ const rolesAdminMenuData = [
     items: [
       { title: "Roles & Permissions", url: "/modules/administration/roles", icon: Shield },
       { title: "Custom Roles", url: "/modules/administration/roles/custom", icon: Settings },
-      { title: "Permission Matrix", url: "/modules/administration/roles?tab=permissions", icon: ListTree },
-      { title: "Role Assignments", url: "/modules/administration/roles?tab=assignments", icon: UserCheck },
+      { title: "Permission Matrix", url: "/modules/administration/permissions", icon: ListTree },
+      { title: "Role Assignments", url: "/modules/administration/roles/assignments", icon: UserCheck },
     ]
   },
   {

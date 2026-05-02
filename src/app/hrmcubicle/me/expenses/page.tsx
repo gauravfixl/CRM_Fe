@@ -28,6 +28,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui
 import { Button } from "@/shared/components/ui/button";
 import { Badge } from "@/shared/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { Textarea } from "@/shared/components/ui/textarea";
@@ -305,70 +306,58 @@ export default function MyExpensesPage() {
                 </Card>
             </div>
 
-            <Dialog open={formOpen} onOpenChange={setFormOpen}>
-                <DialogContent className="bg-white rounded-2xl border-none p-8 max-w-lg">
-                    <DialogHeader className="space-y-3">
-                        <div className="h-12 w-12 bg-indigo-50 rounded-xl flex items-center justify-center">
-                            {editing ? <Edit3 className="text-indigo-600" size={24} /> : <Plus className="text-indigo-600" size={24} />}
+            <SideFormSheet
+                open={formOpen}
+                onOpenChange={setFormOpen}
+                title={editing?.status === "Rejected" ? "Resubmit Claim" : editing ? "Edit Claim" : "New Expense Claim"}
+                description={editing?.status === "Rejected" ? "Fix the issues and resubmit for approval." : "Submit a reimbursement request with receipts."}
+                icon={editing ? <Edit3 size={20} /> : <Plus size={20} />}
+                onSubmit={(e) => { e.preventDefault(); handleSave(); }}
+                submitLabel={editing?.status === "Rejected" ? "Resubmit" : editing ? "Save Changes" : "Submit Claim"}
+                accentColor="#4f46e5"
+                width="md"
+            >
+                <div className="space-y-4">
+                    {editing?.status === "Rejected" && editing.rejectionReason && (
+                        <div className="bg-rose-50 border border-rose-200 rounded-xl p-3">
+                            <p className="text-xs font-bold text-rose-700 mb-1">Previous rejection reason</p>
+                            <p className="text-xs text-rose-600">{editing.rejectionReason}</p>
                         </div>
-                        <DialogTitle className="text-2xl font-bold">{editing?.status === "Rejected" ? "Resubmit Claim" : editing ? "Edit Claim" : "New Expense Claim"}</DialogTitle>
-                        <DialogDescription>{editing?.status === "Rejected" ? "Fix the issues and resubmit for approval." : "Submit a reimbursement request with receipts."}</DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 mt-2">
-                        {editing?.status === "Rejected" && editing.rejectionReason && (
-                            <div className="bg-rose-50 border border-rose-200 rounded-xl p-3">
-                                <p className="text-xs font-bold text-rose-700 mb-1">Previous rejection reason</p>
-                                <p className="text-xs text-rose-600">{editing.rejectionReason}</p>
-                            </div>
-                        )}
-                        <div>
-                            <Label className="text-xs font-semibold">Title</Label>
-                            <Input value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="e.g., Client dinner" className="mt-1" />
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                            <div>
-                                <Label className="text-xs font-semibold">Category</Label>
-                                <Select value={form.category} onValueChange={v => setForm({ ...form, category: v })}>
-                                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        {Object.keys(categoryIcons).map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div>
-                                <Label className="text-xs font-semibold">Amount (₹)</Label>
-                                <Input type="number" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} placeholder="0" className="mt-1" />
-                            </div>
-                        </div>
-                        <div>
-                            <Label className="text-xs font-semibold">Date (last 90 days)</Label>
-                            <Input
-                                type="date"
-                                max={new Date().toISOString().split("T")[0]}
-                                min={new Date(Date.now() - 90 * 86400000).toISOString().split("T")[0]}
-                                value={form.date}
-                                onChange={e => setForm({ ...form, date: e.target.value })}
-                                className="mt-1"
-                            />
-                        </div>
-                        <div>
-                            <Label className="text-xs font-semibold">Description (max 500)</Label>
-                            <Textarea maxLength={500} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="Brief notes (optional)" className="mt-1" />
-                            <p className="text-[10px] text-slate-400 mt-1">{form.description.length}/500 chars</p>
-                        </div>
-                        <div className="border-2 border-dashed border-slate-200 rounded-xl p-6 text-center hover:border-indigo-300 transition-all cursor-pointer">
-                            <Upload className="mx-auto text-slate-400" size={22} />
-                            <p className="text-xs text-slate-500 mt-2">Drop receipts here or click to upload</p>
-                        </div>
+                    )}
+                    <Field label="Title" required>
+                        <Input value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="e.g., Client dinner" />
+                    </Field>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Category">
+                            <Select value={form.category} onValueChange={v => setForm({ ...form, category: v })}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    {Object.keys(categoryIcons).map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <Field label="Amount (₹)" required>
+                            <Input type="number" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} placeholder="0" />
+                        </Field>
                     </div>
-                    <DialogFooter className="gap-3 mt-4">
-                        <Button variant="ghost" onClick={() => setFormOpen(false)}>Cancel</Button>
-                        <Button onClick={handleSave} className="flex-1 bg-indigo-600 hover:bg-indigo-700 rounded-xl">
-                            {editing?.status === "Rejected" ? "Resubmit" : editing ? "Save Changes" : "Submit Claim"}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    <Field label="Date" required hint="Within last 90 days">
+                        <Input
+                            type="date"
+                            max={new Date().toISOString().split("T")[0]}
+                            min={new Date(Date.now() - 90 * 86400000).toISOString().split("T")[0]}
+                            value={form.date}
+                            onChange={e => setForm({ ...form, date: e.target.value })}
+                        />
+                    </Field>
+                    <Field label="Description" hint={`${form.description.length}/500 chars`}>
+                        <Textarea maxLength={500} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="Brief notes (optional)" />
+                    </Field>
+                    <div className="border-2 border-dashed border-slate-200 rounded-xl p-6 text-center hover:border-indigo-300 transition-all cursor-pointer">
+                        <Upload className="mx-auto text-slate-400" size={22} />
+                        <p className="text-xs text-slate-500 mt-2">Drop receipts here or click to upload</p>
+                    </div>
+                </div>
+            </SideFormSheet>
 
             <Dialog open={!!detailOpen} onOpenChange={v => !v && setDetailOpen(null)}>
                 <DialogContent className="bg-white rounded-2xl border-none p-0 max-w-lg overflow-hidden">

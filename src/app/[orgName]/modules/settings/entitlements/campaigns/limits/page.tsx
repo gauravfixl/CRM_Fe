@@ -1,223 +1,463 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useMemo } from "react"
 import {
     Send,
     Clock,
     AlertTriangle,
-    Activity,
-    Zap,
-    ShieldCheck,
-    Settings,
+    Plus,
+    Search,
     Edit,
-    Save
+    Trash2,
+    MoreVertical,
+    Pencil,
 } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Button } from "@/shared/components/ui/button"
+import { Input } from "@/shared/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { Progress } from "@/components/ui/progress"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import {
-    Dialog,
-    DialogContent,
-    DialogFooter,
-    DialogTitle
-} from "@/components/ui/dialog"
-import { SmallCard, SmallCardHeader, SmallCardContent } from "@/shared/components/custom/SmallCard"
-import { toast } from "sonner"
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger
+} from "@/shared/components/ui/dropdown-menu"
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue
+} from "@/shared/components/ui/select"
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet"
+import { showSuccess, showWarning } from "@/shared/utils/toast"
+
+type SendLimit = {
+    id: string
+    channel: string
+    dailyLimit: number
+    currentUsage: number
+    percentage: number
+    status: "Active" | "Paused"
+    throttle: boolean
+}
+
+const channelOptions = ["Email", "Sms", "Push Notifications", "Whatsapp", "Voice"]
 
 export default function DailySendLimitsPage() {
-    const [editModal, setEditModal] = useState<string | null>(null)
-    const [limits, setLimits] = useState([
+    const [showFormModal, setShowFormModal] = useState(false)
+    const [editingId, setEditingId] = useState<string | null>(null)
+    const [submitting, setSubmitting] = useState(false)
+    const [searchQuery, setSearchQuery] = useState("")
+    const [limits, setLimits] = useState<SendLimit[]>([
         { id: "1", channel: "Email", dailyLimit: 10000, currentUsage: 7420, percentage: 74, status: "Active", throttle: true },
-        { id: "2", channel: "SMS", dailyLimit: 5000, currentUsage: 3200, percentage: 64, status: "Active", throttle: true },
+        { id: "2", channel: "Sms", dailyLimit: 5000, currentUsage: 3200, percentage: 64, status: "Active", throttle: true },
         { id: "3", channel: "Push Notifications", dailyLimit: 50000, currentUsage: 42000, percentage: 84, status: "Active", throttle: false },
     ])
 
+    const [form, setForm] = useState({
+        channel: "Email",
+        dailyLimit: "",
+        throttle: true,
+    })
+    const [touched, setTouched] = useState<Record<string, boolean>>({})
+
+    const errors = useMemo(() => {
+        const e: Record<string, string> = {}
+        if (touched.dailyLimit) {
+            const n = parseInt(form.dailyLimit, 10)
+            if (!form.dailyLimit.trim()) e.dailyLimit = "Daily limit is required"
+            else if (isNaN(n) || n <= 0) e.dailyLimit = "Enter a positive number"
+            else if (n > 10_000_000) e.dailyLimit = "Limit seems too high"
+        }
+        return e
+    }, [form, touched])
+
+    const resetForm = () => {
+        setForm({ channel: "Email", dailyLimit: "", throttle: true })
+        setTouched({})
+        setEditingId(null)
+    }
+
+    const openCreateModal = () => {
+        resetForm()
+        setShowFormModal(true)
+    }
+
+    const openEditModal = (l: SendLimit) => {
+        setEditingId(l.id)
+        setForm({
+            channel: l.channel,
+            dailyLimit: String(l.dailyLimit),
+            throttle: l.throttle,
+        })
+        setTouched({})
+        setShowFormModal(true)
+    }
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault()
+        setTouched({ dailyLimit: true })
+        const n = parseInt(form.dailyLimit, 10)
+        if (isNaN(n) || n <= 0) return showWarning("Enter a valid daily limit")
+
+        setSubmitting(true)
+        try {
+            await new Promise((r) => setTimeout(r, 300))
+            if (editingId) {
+                setLimits((prev) =>
+                    prev.map((l) =>
+                        l.id === editingId
+                            ? {
+                                  ...l,
+                                  channel: form.channel,
+                                  dailyLimit: n,
+                                  percentage: Math.round((l.currentUsage / n) * 100),
+                                  throttle: form.throttle,
+                              }
+                            : l
+                    )
+                )
+                showSuccess(`${form.channel} limit updated`)
+            } else {
+                setLimits((prev) => [
+                    ...prev,
+                    {
+                        id: String(Date.now()),
+                        channel: form.channel,
+                        dailyLimit: n,
+                        currentUsage: 0,
+                        percentage: 0,
+                        status: "Active",
+                        throttle: form.throttle,
+                    },
+                ])
+                showSuccess(`${form.channel} channel added`)
+            }
+            setShowFormModal(false)
+            resetForm()
+        } finally {
+            setSubmitting(false)
+        }
+    }
+
     const toggleStatus = (id: string) => {
-        setLimits(prev => prev.map(l => l.id === id ? { ...l, status: l.status === "Active" ? "Paused" : "Active" } : l))
-        toast.success("Channel status updated.")
+        setLimits((prev) =>
+            prev.map((l) =>
+                l.id === id ? { ...l, status: l.status === "Active" ? "Paused" : "Active" } : l
+            )
+        )
+        showSuccess("Channel status updated")
     }
 
     const toggleThrottle = (id: string) => {
-        setLimits(prev => prev.map(l => l.id === id ? { ...l, throttle: !l.throttle } : l))
-        toast.success("Throttling updated.")
+        setLimits((prev) =>
+            prev.map((l) => (l.id === id ? { ...l, throttle: !l.throttle } : l))
+        )
+        showSuccess("Throttling updated")
     }
 
-    const handleSave = (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault()
-        setEditModal(null)
-        toast.success("Daily limit updated successfully.")
+    const deleteLimit = (id: string) => {
+        const l = limits.find((x) => x.id === id)
+        if (!l) return
+        const ok = window.confirm(`Delete ${l.channel} channel limit?`)
+        if (!ok) return
+        setLimits((prev) => prev.filter((x) => x.id !== id))
+        showSuccess("Channel limit deleted")
     }
+
+    const filtered = limits.filter((l) =>
+        l.channel.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+
+    const totalSent = limits.reduce((sum, l) => sum + l.currentUsage, 0)
+    const avgUsage = limits.length
+        ? Math.round(limits.reduce((s, l) => s + l.percentage, 0) / limits.length)
+        : 0
+    const throttledCount = limits.filter((l) => l.throttle).length
 
     return (
-        <div className="flex flex-col h-full w-full bg-slate-50/50 p-6 space-y-8 overflow-y-auto font-sans">
-            {/* HERO */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-amber-500/20">
-                        <Clock className="w-6 h-6" />
-                    </div>
+        <div className="flex flex-col min-h-screen bg-transparent">
+            {/* Header */}
+            <div className="p-6 pb-0">
+                <div className="flex items-center justify-between mb-1">
                     <div>
-                        <h1 className="text-3xl font-black tracking-tight text-slate-900 leading-none">Daily Send Limits</h1>
-                        <p className="text-sm text-slate-500 mt-2 font-medium max-w-lg">Manage sending limits to prevent spam and ensure deliverability.</p>
+                        <h1 className="text-2xl font-bold tracking-tight text-zinc-900">Daily Send Limits</h1>
+                        <p className="text-sm text-zinc-500 mt-1">
+                            Manage sending limits to prevent spam and ensure deliverability.
+                        </p>
                     </div>
-                </div>
-                <Button variant="outline" className="h-11 rounded-2xl border-slate-200 font-bold text-[11px] px-6 hover:bg-white hover:border-blue-500 transition-all active:scale-95">
-                    <Settings className="w-4 h-4 mr-2" /> Global Settings
-                </Button>
-            </div>
-
-            {/* TOP STATS */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <SmallCard className="bg-gradient-to-br from-blue-600 to-indigo-800 border-none shadow-[0_20px_40px_rgba(37,99,235,0.25)] hover:-translate-y-1 transition-transform">
-                    <SmallCardHeader className="pb-2">
-                        <p className="text-[10px] font-bold text-blue-100 tracking-wider">Active Channels</p>
-                    </SmallCardHeader>
-                    <SmallCardContent>
-                        <p className="text-3xl font-black text-white">{limits.length}</p>
-                        <p className="text-[10px] text-blue-100 font-bold flex items-center gap-1 mt-1">
-                            <Send className="w-3 h-3" /> With limits
-                        </p>
-                    </SmallCardContent>
-                </SmallCard>
-
-                <SmallCard className="bg-white border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all">
-                    <SmallCardHeader className="pb-2 text-left">
-                        <p className="text-[10px] font-bold text-slate-400 tracking-wider">Total Sent Today</p>
-                    </SmallCardHeader>
-                    <SmallCardContent className="text-left">
-                        <p className="text-3xl font-black text-slate-900">{limits.reduce((sum, l) => sum + l.currentUsage, 0).toLocaleString()}</p>
-                        <p className="text-[10px] text-blue-500 font-bold flex items-center gap-1 mt-1">
-                            <Activity className="w-3 h-3" /> Messages
-                        </p>
-                    </SmallCardContent>
-                </SmallCard>
-
-                <SmallCard className="bg-white border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all">
-                    <SmallCardHeader className="pb-2 text-left">
-                        <p className="text-[10px] font-bold text-slate-400 tracking-wider">Avg. Usage</p>
-                    </SmallCardHeader>
-                    <SmallCardContent className="text-left">
-                        <p className="text-3xl font-black text-amber-600">74%</p>
-                        <p className="text-[10px] text-slate-400 font-bold flex items-center gap-1 mt-1">
-                            <Zap className="w-3 h-3" /> Of daily limits
-                        </p>
-                    </SmallCardContent>
-                </SmallCard>
-
-                <SmallCard className="bg-white border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all">
-                    <SmallCardHeader className="pb-2 text-left">
-                        <p className="text-[10px] font-bold text-slate-400 tracking-wider">Throttling</p>
-                    </SmallCardHeader>
-                    <SmallCardContent className="text-left">
-                        <p className="text-3xl font-black text-emerald-600">{limits.filter(l => l.throttle).length}</p>
-                        <p className="text-[10px] text-slate-400 font-bold flex items-center gap-1 mt-1">
-                            <ShieldCheck className="w-3 h-3 text-emerald-500" /> Channels protected
-                        </p>
-                    </SmallCardContent>
-                </SmallCard>
-            </div>
-
-            {/* TABLE */}
-            <div className="bg-white border border-slate-200 rounded-3xl shadow-sm overflow-hidden">
-                <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
-                    <div>
-                        <h3 className="text-base font-black text-slate-900 tracking-tight">Channel Send Limits</h3>
-                        <p className="text-xs text-slate-500 font-medium">Configure daily sending limits per channel.</p>
-                    </div>
-                </div>
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                        <thead>
-                            <tr className="bg-slate-50/50 border-b border-slate-100">
-                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 tracking-wider">Channel</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 tracking-wider">Daily Limit</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 tracking-wider">Current Usage</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 tracking-wider">Usage %</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 tracking-wider">Throttling</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 tracking-wider">Status</th>
-                                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 tracking-wider">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                            {limits.map((limit) => (
-                                <tr key={limit.id} className="hover:bg-slate-50 transition-colors group">
-                                    <td className="px-6 py-5">
-                                        <div className="flex items-center gap-3">
-                                            <div className="p-2 bg-amber-50 text-amber-600 rounded-xl border border-amber-100 group-hover:bg-amber-600 group-hover:text-white transition-all">
-                                                <Send className="w-4 h-4" />
-                                            </div>
-                                            <span className="text-sm font-black text-slate-900">{limit.channel}</span>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-5"><span className="text-sm font-black text-slate-900">{limit.dailyLimit.toLocaleString()}</span></td>
-                                    <td className="px-6 py-5">
-                                        <div className="flex items-center gap-1.5">
-                                            <Clock className="w-3 h-3 text-slate-400" />
-                                            <span className="text-sm font-black text-slate-900">{limit.currentUsage.toLocaleString()}</span>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-5">
-                                        <div className="space-y-2 min-w-[180px]">
-                                            <div className="flex justify-between text-xs">
-                                                <span className={`font-black ${limit.percentage >= 90 ? 'text-red-600' : limit.percentage >= 75 ? 'text-amber-600' : 'text-emerald-600'}`}>
-                                                    {limit.percentage}%
-                                                </span>
-                                                {limit.percentage >= 90 && (
-                                                    <Badge className="bg-red-600 text-white border-none rounded-full text-[10px] font-bold px-2 py-0.5 flex items-center gap-1">
-                                                        <AlertTriangle className="w-2.5 h-2.5" /> Near Limit
-                                                    </Badge>
-                                                )}
-                                            </div>
-                                            <Progress value={limit.percentage} className="h-1.5 bg-slate-100" />
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-5">
-                                        <div className="flex items-center gap-2">
-                                            <Switch checked={limit.throttle} onCheckedChange={() => toggleThrottle(limit.id)} />
-                                            <Badge className={`${limit.throttle ? "bg-emerald-600" : "bg-slate-400"} text-white border-none rounded-full text-[10px] font-bold px-2 py-0.5`}>
-                                                {limit.throttle ? "Enabled" : "Disabled"}
-                                            </Badge>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-5">
-                                        <Switch checked={limit.status === "Active"} onCheckedChange={() => toggleStatus(limit.id)} />
-                                    </td>
-                                    <td className="px-6 py-5">
-                                        <Button variant="ghost" onClick={() => setEditModal(limit.id)} className="h-8 px-3 rounded-xl text-[10px] font-bold text-blue-600 hover:bg-blue-50 gap-1">
-                                            <Edit className="w-3 h-3" /> Edit
-                                        </Button>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                    <Button
+                        onClick={openCreateModal}
+                        className="rounded-none bg-primary hover:bg-primary/90 text-xs font-medium h-8 gap-1.5 px-4 shadow-md shadow-primary/20"
+                    >
+                        <Plus size={14} />
+                        Add Channel
+                    </Button>
                 </div>
             </div>
 
-            {/* EDIT MODAL */}
-            <Dialog open={!!editModal} onOpenChange={() => setEditModal(null)}>
-                <DialogContent className="sm:max-w-[450px] p-0 border-none rounded-3xl overflow-hidden shadow-2xl">
-                    <div className="bg-gradient-to-br from-amber-500 to-orange-600 p-8 text-white">
-                        <DialogTitle className="text-2xl font-black tracking-tight">Edit Send Limit</DialogTitle>
-                        <p className="text-amber-100 text-xs font-medium mt-2">Update the daily sending limit for this channel.</p>
+            <div className="flex-1 p-6 space-y-6">
+                {/* Stats Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="bg-gradient-to-br from-primary/80 to-primary p-6 rounded-none shadow-xl shadow-primary/20 text-white">
+                        <p className="text-white text-xs opacity-80">Active Channels</p>
+                        <p className="text-white text-xl font-semibold mt-1">{limits.length}</p>
+                        <p className="text-white text-[10px] mt-1 opacity-70">With limits</p>
                     </div>
-                    <form onSubmit={handleSave} className="p-8 space-y-6 bg-white">
-                        <div className="space-y-2">
-                            <Label className="text-[10px] font-bold text-slate-400">New Daily Limit</Label>
-                            <Input type="number" placeholder="e.g., 10000" className="h-12 bg-slate-50 border-slate-100 rounded-2xl font-bold" />
+
+                    <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
+                        <p className="text-zinc-500 text-xs">Total Sent Today</p>
+                        <p className="text-xl font-semibold text-zinc-900 mt-1">
+                            {totalSent.toLocaleString()}
+                        </p>
+                        <p className="text-primary text-[10px] mt-1">Messages delivered</p>
+                    </div>
+
+                    <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
+                        <p className="text-zinc-500 text-xs">Avg. Usage</p>
+                        <p className="text-xl font-semibold text-zinc-900 mt-1">{avgUsage}%</p>
+                        <p className="text-amber-600 text-[10px] mt-1">Of daily limits</p>
+                    </div>
+
+                    <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
+                        <p className="text-zinc-500 text-xs">Throttling</p>
+                        <p className="text-xl font-semibold text-zinc-900 mt-1">{throttledCount}</p>
+                        <p className="text-emerald-600 text-[10px] mt-1">Channels protected</p>
+                    </div>
+                </div>
+
+                {/* Table */}
+                <div className="bg-white border border-gray-200 rounded-none overflow-hidden">
+                    <div className="p-4 border-b border-gray-100 flex flex-col sm:flex-row gap-3 items-center justify-between">
+                        <div className="relative w-full sm:w-80">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+                            <Input
+                                placeholder="Search channels..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="pl-9 rounded-none border-gray-200 h-9 text-xs focus:ring-primary bg-white"
+                            />
                         </div>
-                        <DialogFooter className="gap-3">
-                            <Button type="button" variant="ghost" onClick={() => setEditModal(null)} className="rounded-2xl text-sm text-slate-500 font-bold">Cancel</Button>
-                            <Button type="submit" className="bg-amber-600 hover:bg-amber-700 rounded-2xl text-sm px-8 h-12 shadow-xl shadow-amber-500/20 font-bold transition-all active:scale-95 gap-2">
-                                <Save className="w-4 h-4" /> Save Limit
-                            </Button>
-                        </DialogFooter>
-                    </form>
-                </DialogContent>
-            </Dialog>
+                    </div>
+
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left">
+                            <thead>
+                                <tr className="border-b border-gray-100 bg-gray-50/50">
+                                    <th className="px-4 py-3 text-xs font-medium text-gray-500">Channel</th>
+                                    <th className="px-4 py-3 text-xs font-medium text-gray-500">Daily Limit</th>
+                                    <th className="px-4 py-3 text-xs font-medium text-gray-500">Current Usage</th>
+                                    <th className="px-4 py-3 text-xs font-medium text-gray-500">Usage %</th>
+                                    <th className="px-4 py-3 text-xs font-medium text-gray-500">Throttling</th>
+                                    <th className="px-4 py-3 text-xs font-medium text-gray-500">Status</th>
+                                    <th className="px-4 py-3 text-xs font-medium text-gray-500 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-50">
+                                {filtered.map((l) => (
+                                    <tr key={l.id} className="hover:bg-gray-50/50 transition-colors">
+                                        <td className="px-4 py-3">
+                                            <div className="flex items-center gap-2">
+                                                <Send size={14} className="text-gray-400" />
+                                                <span className="text-sm font-medium text-gray-900">{l.channel}</span>
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-3 text-sm font-semibold text-gray-900">
+                                            {l.dailyLimit.toLocaleString()}
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <div className="flex items-center gap-1.5">
+                                                <Clock size={12} className="text-gray-400" />
+                                                <span className="text-sm text-gray-700">
+                                                    {l.currentUsage.toLocaleString()}
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <div className="space-y-1.5 min-w-[180px]">
+                                                <div className="flex justify-between items-center">
+                                                    <span
+                                                        className={`text-xs font-semibold ${
+                                                            l.percentage >= 90
+                                                                ? "text-red-600"
+                                                                : l.percentage >= 75
+                                                                ? "text-amber-600"
+                                                                : "text-emerald-600"
+                                                        }`}
+                                                    >
+                                                        {l.percentage}%
+                                                    </span>
+                                                    {l.percentage >= 90 && (
+                                                        <Badge className="rounded-none bg-red-50 text-red-700 border border-red-200 text-[10px] font-medium px-1.5 py-0 flex items-center gap-1 hover:bg-red-50">
+                                                            <AlertTriangle size={10} /> Near limit
+                                                        </Badge>
+                                                    )}
+                                                </div>
+                                                <Progress value={l.percentage} className="h-1.5 bg-gray-100" />
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <div className="flex items-center gap-2">
+                                                <Switch
+                                                    checked={l.throttle}
+                                                    onCheckedChange={() => toggleThrottle(l.id)}
+                                                />
+                                                <Badge
+                                                    className={`rounded-none text-[10px] font-medium px-2 py-0.5 ${
+                                                        l.throttle
+                                                            ? "bg-green-50 text-green-700 border border-green-200 hover:bg-green-50"
+                                                            : "bg-zinc-100 text-zinc-600 border border-zinc-200 hover:bg-zinc-100"
+                                                    }`}
+                                                >
+                                                    {l.throttle ? "Enabled" : "Disabled"}
+                                                </Badge>
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <div className="flex items-center gap-2">
+                                                <Switch
+                                                    checked={l.status === "Active"}
+                                                    onCheckedChange={() => toggleStatus(l.id)}
+                                                />
+                                                <Badge
+                                                    className={`rounded-none text-[10px] font-medium px-2 py-0.5 ${
+                                                        l.status === "Active"
+                                                            ? "bg-green-50 text-green-700 border border-green-200 hover:bg-green-50"
+                                                            : "bg-zinc-100 text-zinc-600 border border-zinc-200 hover:bg-zinc-100"
+                                                    }`}
+                                                >
+                                                    {l.status}
+                                                </Badge>
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-3 text-right">
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <button className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-50 rounded-none transition-colors">
+                                                        <MoreVertical size={14} />
+                                                    </button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end" className="rounded-none min-w-[150px]">
+                                                    <DropdownMenuLabel className="text-[10px] font-medium text-zinc-400">
+                                                        Actions
+                                                    </DropdownMenuLabel>
+                                                    <DropdownMenuItem
+                                                        onClick={() => openEditModal(l)}
+                                                        className="text-xs font-medium cursor-pointer gap-2"
+                                                    >
+                                                        <Edit size={13} />
+                                                        Edit limit
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuSeparator />
+                                                    <DropdownMenuItem
+                                                        onClick={() => deleteLimit(l.id)}
+                                                        className="text-xs font-medium text-red-600 focus:text-red-600 cursor-pointer gap-2"
+                                                    >
+                                                        <Trash2 size={13} />
+                                                        Delete
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </td>
+                                    </tr>
+                                ))}
+                                {filtered.length === 0 && (
+                                    <tr>
+                                        <td colSpan={7} className="px-4 py-10 text-center text-xs text-gray-400">
+                                            No channel limits found.
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div className="px-4 py-3 border-t border-gray-100 bg-gray-50/30">
+                        <p className="text-xs text-gray-500">
+                            Showing {filtered.length} of {limits.length} channels
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Create / Edit side sheet */}
+            <SideFormSheet
+                open={showFormModal}
+                onOpenChange={(o) => {
+                    setShowFormModal(o)
+                    if (!o) resetForm()
+                }}
+                title={editingId ? "Edit Send Limit" : "Add Send Limit"}
+                description={
+                    editingId
+                        ? "Update the daily send limit for this channel."
+                        : "Configure a daily send limit for a new channel."
+                }
+                icon={editingId ? <Pencil className="w-5 h-5" /> : <Send className="w-5 h-5" />}
+                width="md"
+                onSubmit={handleSubmit}
+                submitLabel={editingId ? "Save Changes" : "Add Channel"}
+                loading={submitting}
+            >
+                <div className="space-y-4">
+                    <Field label="Channel">
+                        <Select
+                            value={form.channel}
+                            onValueChange={(v) => setForm((f) => ({ ...f, channel: v }))}
+                        >
+                            <SelectTrigger className="h-11 rounded-lg border-[#E5E7EB] bg-white">
+                                <SelectValue placeholder="Select channel" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {channelOptions.map((c) => (
+                                    <SelectItem key={c} value={c}>
+                                        {c}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </Field>
+
+                    <Field
+                        label="Daily Limit"
+                        required
+                        error={errors.dailyLimit}
+                        hint="Maximum messages per day"
+                    >
+                        <Input
+                            type="number"
+                            placeholder="10000"
+                            value={form.dailyLimit}
+                            onChange={(e) =>
+                                setForm((f) => ({
+                                    ...f,
+                                    dailyLimit: e.target.value.replace(/[^0-9]/g, ""),
+                                }))
+                            }
+                            onBlur={() => setTouched((t) => ({ ...t, dailyLimit: true }))}
+                            className="h-11 rounded-lg bg-white border-[#E5E7EB] focus:border-primary font-mono"
+                            min={0}
+                        />
+                    </Field>
+
+                    <div className="flex items-center justify-between p-3 border border-[#E5E7EB] rounded-lg bg-[#FAFBFC]">
+                        <div>
+                            <p className="text-[13px] font-semibold text-[#374151]">Enable Throttling</p>
+                            <p className="text-[11.5px] text-[#64748B] mt-0.5">
+                                Distribute sends evenly throughout the day.
+                            </p>
+                        </div>
+                        <Switch
+                            checked={form.throttle}
+                            onCheckedChange={(v) => setForm((f) => ({ ...f, throttle: v }))}
+                        />
+                    </div>
+                </div>
+            </SideFormSheet>
         </div>
     )
 }

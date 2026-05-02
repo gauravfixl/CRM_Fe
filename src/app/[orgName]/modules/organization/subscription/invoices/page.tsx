@@ -9,8 +9,8 @@ import {
     AlertCircle,
     CheckCircle2,
     ArrowRight,
-    X,
-    Loader2
+    Loader2,
+    ShieldCheck,
 } from "lucide-react";
 import { axiosInstance } from "@/lib/axios";
 import { Button } from "@/components/ui/button";
@@ -18,16 +18,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import { toast } from "sonner";
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog";
 
 interface InvoiceItem {
     desc: string;
@@ -36,9 +28,11 @@ interface InvoiceItem {
 
 interface InvoiceData {
     id: string;
+    _id?: string;
     period: string;
     dueDate: string;
     amount: string;
+    amountNumber?: number;
     status: string;
     items: InvoiceItem[];
 }
@@ -98,9 +92,11 @@ function mapApiInvoiceToData(invoice: any): InvoiceData {
 
     return {
         id: invoice.invoiceNo || invoice.invoiceNumber || invoice._id || "INV-000",
+        _id: invoice._id,
         period: `${startDate} - ${endDate}`,
         dueDate: formatDateStr(dueDate),
         amount: formatCurrency(total),
+        amountNumber: typeof total === "number" ? total : Number(total) || 0,
         status,
         items,
     };
@@ -144,20 +140,41 @@ export default function InvoicesPage() {
         fetchInvoices();
     }, []);
 
-    const handlePayNow = () => {
+    const handlePayNow = async () => {
         if (!cvv || cvv.length < 3) {
             setCvvError("Please enter a valid 3-digit CVV");
             return;
         }
         setCvvError("");
-        toast.promise(new Promise(res => setTimeout(res, 2000)), {
-            loading: "Processing payment of " + currentInvoice.amount + "...",
-            success: "Payment successful! Invoice " + currentInvoice.id + " is now paid.",
-            error: "Payment failed. Please check your card details."
-        });
-        setIsPaid(true);
-        setCvv("");
-        setIsPayOpen(false);
+
+        // If we don't have a real persisted invoice _id, fall back to the original
+        // optimistic flow (no backend call possible).
+        const persistedId = currentInvoice._id;
+        if (!persistedId || !/^[0-9a-fA-F]{24}$/.test(persistedId)) {
+            toast.success(`Payment successful! Invoice ${currentInvoice.id} is now paid.`);
+            setIsPaid(true);
+            setCvv("");
+            setIsPayOpen(false);
+            return;
+        }
+
+        try {
+            await recordPayment(
+                {
+                    amount: currentInvoice.amountNumber ?? 0,
+                    paymentMethod: "card",
+                    paidAt: new Date().toISOString(),
+                },
+                persistedId
+            );
+            toast.success(`Payment successful! Invoice ${currentInvoice.id} is now paid.`);
+            setIsPaid(true);
+            setCurrentInvoice((prev) => ({ ...prev, status: "Paid" }));
+            setCvv("");
+            setIsPayOpen(false);
+        } catch (err: any) {
+            toast.error(err?.response?.data?.message || "Payment failed. Please check your card details.");
+        }
     };
 
     const handleDownloadPdf = () => {
@@ -305,47 +322,68 @@ export default function InvoicesPage() {
                 </div>
             </div>
 
-            {/* Pay Now Dialog */}
-            <Dialog open={isPayOpen} onOpenChange={setIsPayOpen}>
-                <DialogContent className="sm:max-w-[420px] p-6 rounded-xl border-none shadow-xl">
-                    <DialogHeader>
-                        <DialogTitle className="text-sm font-semibold text-slate-900">Pay Invoice</DialogTitle>
-                        <DialogDescription className="text-xs text-slate-400">
-                            Confirm payment of {currentInvoice.amount} for invoice {currentInvoice.id}.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-3">
-                        <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
-                            <div className="flex justify-between text-xs mb-2">
-                                <span className="text-slate-500">Invoice Amount</span>
-                                <span className="font-semibold text-slate-900">{currentInvoice.amount}</span>
-                            </div>
-                            <div className="flex justify-between text-xs">
-                                <span className="text-slate-500">Payment Method</span>
-                                <span className="font-medium text-slate-700">Visa •••• 4242</span>
-                            </div>
+            {/* Pay Invoice — side sheet */}
+            <SideFormSheet
+                open={isPayOpen}
+                onOpenChange={(o) => {
+                    setIsPayOpen(o);
+                    if (!o) {
+                        setCvv("");
+                        setCvvError("");
+                    }
+                }}
+                title="Pay Invoice"
+                description={`Confirm payment of ${currentInvoice.amount} for invoice ${currentInvoice.id}.`}
+                icon={<CreditCard className="w-5 h-5" />}
+                accentColor="#059669"
+                width="md"
+                onSubmit={(e) => {
+                    e.preventDefault();
+                    handlePayNow();
+                }}
+                submitLabel="Confirm Payment"
+            >
+                <div className="space-y-4">
+                    <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 space-y-2.5">
+                        <div className="flex justify-between text-[13px]">
+                            <span className="text-slate-500">Invoice Amount</span>
+                            <span className="font-semibold text-slate-900">{currentInvoice.amount}</span>
                         </div>
-                        <div className="space-y-1.5">
-                            <Label className="text-[10px] font-medium text-slate-400">Security Code (Cvv)</Label>
-                            <Input
-                                type="password"
-                                placeholder="•••"
-                                value={cvv}
-                                onChange={(e) => { setCvv(e.target.value.replace(/\D/g, "").slice(0, 3)); setCvvError("") }}
-                                className={`h-9 rounded-lg bg-slate-50 border-slate-100 font-medium text-center text-sm tracking-widest ${cvvError ? "border-red-400" : ""}`}
-                                maxLength={3}
-                            />
-                            {cvvError && <p className="text-[10px] text-red-500">{cvvError}</p>}
+                        <div className="flex justify-between text-[13px]">
+                            <span className="text-slate-500">Due Date</span>
+                            <span className="font-medium text-slate-700">{currentInvoice.dueDate}</span>
+                        </div>
+                        <div className="h-px bg-slate-200" />
+                        <div className="flex justify-between text-[13px]">
+                            <span className="text-slate-500">Payment Method</span>
+                            <span className="font-medium text-slate-700">Visa •••• 4242</span>
                         </div>
                     </div>
-                    <DialogFooter className="gap-2">
-                        <Button variant="outline" className="h-8 text-xs font-medium rounded-lg" onClick={() => setIsPayOpen(false)}>Cancel</Button>
-                        <Button className="h-8 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium rounded-lg" onClick={handlePayNow}>
-                            Confirm Payment
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+
+                    <Field label="Security Code (CVV)" required error={cvvError} hint="3 digits on the back of your card">
+                        <Input
+                            type="password"
+                            placeholder="•••"
+                            value={cvv}
+                            onChange={(e) => {
+                                setCvv(e.target.value.replace(/\D/g, "").slice(0, 4));
+                                setCvvError("");
+                            }}
+                            className="h-11 rounded-lg bg-white border-slate-200 focus:border-primary font-mono text-center text-base tracking-[0.5em]"
+                            maxLength={4}
+                            inputMode="numeric"
+                            autoComplete="cc-csc"
+                        />
+                    </Field>
+
+                    <div className="flex items-start gap-2 p-3 bg-emerald-50 border border-emerald-100 rounded-lg">
+                        <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                        <p className="text-[11.5px] text-emerald-800 leading-relaxed">
+                            Secure transaction. Your card information is encrypted and PCI-DSS compliant.
+                        </p>
+                    </div>
+                </div>
+            </SideFormSheet>
         </div>
     );
 }

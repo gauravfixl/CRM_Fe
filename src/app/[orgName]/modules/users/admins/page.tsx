@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
     ShieldCheck,
     Search,
@@ -8,17 +8,15 @@ import {
     Shield,
     Trash2,
     Pencil,
-    UserPlus,
+    AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/shared/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
     Dialog,
     DialogContent,
     DialogFooter,
 } from "@/shared/components/ui/dialog";
-import { Label } from "@/shared/components/ui/label";
 import {
     Select,
     SelectContent,
@@ -32,8 +30,9 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import { showSuccess, showWarning, showError } from "@/utils/toast";
-import { fetchUsersApi, updateOrgUser, deleteOrgUser } from "@/modules/crm/organizations/hooks/orgHooks";
+import { fetchUsersApi, updateOrgUser } from "@/modules/crm/organizations/hooks/orgHooks";
 
 type Admin = {
     id: string;
@@ -68,6 +67,26 @@ export default function AdministratorsPage() {
     const [selectedUser, setSelectedUser] = useState("");
     const [selectedRole, setSelectedRole] = useState("");
     const [editRole, setEditRole] = useState("");
+    const [assignTouched, setAssignTouched] = useState<Record<string, boolean>>({});
+    const [editTouched, setEditTouched] = useState<Record<string, boolean>>({});
+    const [assigning, setAssigning] = useState(false);
+    const [editing, setEditing] = useState(false);
+    const [removing, setRemoving] = useState(false);
+
+    const assignErrors = useMemo(() => {
+        const e: Record<string, string> = {};
+        if (assignTouched.user && !selectedUser) e.user = "Please select a user";
+        if (assignTouched.role && !selectedRole) e.role = "Please select an admin role";
+        return e;
+    }, [selectedUser, selectedRole, assignTouched]);
+
+    const editErrors = useMemo(() => {
+        const e: Record<string, string> = {};
+        if (editTouched.role && !editRole) e.role = "Please select a role";
+        if (editTouched.role && editRole && editTarget && editRole === editTarget.role)
+            e.role = "Pick a different role";
+        return e;
+    }, [editRole, editTarget, editTouched]);
 
     const loadAdmins = async () => {
         try {
@@ -118,7 +137,9 @@ export default function AdministratorsPage() {
         return name[0].toUpperCase();
     };
 
-    const handleAssign = async () => {
+    const handleAssign = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setAssignTouched({ user: true, role: true });
         if (!selectedUser || !selectedRole) {
             showWarning("Please select a user and role");
             return;
@@ -126,6 +147,7 @@ export default function AdministratorsPage() {
         const user = allNonAdminUsers.find((u) => u.id === selectedUser);
         if (!user) return;
         try {
+            setAssigning(true);
             await updateOrgUser(user.id, { role: selectedRole });
             const newAdmin: Admin = {
                 id: user.id,
@@ -139,16 +161,20 @@ export default function AdministratorsPage() {
             setAllNonAdminUsers((prev) => prev.filter((u) => u.id !== selectedUser));
             setSelectedUser("");
             setSelectedRole("");
+            setAssignTouched({});
             setAssignOpen(false);
             showSuccess(`${user.name} assigned as ${selectedRole}`);
         } catch (err: any) {
             showError(err?.response?.data?.message || "Failed to assign admin role");
+        } finally {
+            setAssigning(false);
         }
     };
 
     const handleRemove = async () => {
         if (!removeTarget) return;
         try {
+            setRemoving(true);
             await updateOrgUser(removeTarget.id, { role: "Member" });
             setAdmins((prev) => prev.filter((a) => a.id !== removeTarget.id));
             showSuccess(`${removeTarget.name} removed from administrators`);
@@ -156,12 +182,24 @@ export default function AdministratorsPage() {
             setRemoveOpen(false);
         } catch (err: any) {
             showError(err?.response?.data?.message || "Failed to remove admin");
+        } finally {
+            setRemoving(false);
         }
     };
 
-    const handleEditRole = async () => {
-        if (!editTarget || !editRole) return;
+    const handleEditRole = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setEditTouched({ role: true });
+        if (!editTarget || !editRole) {
+            showWarning("Please select a role");
+            return;
+        }
+        if (editRole === editTarget.role) {
+            showWarning("Pick a different role");
+            return;
+        }
         try {
+            setEditing(true);
             await updateOrgUser(editTarget.id, { role: editRole });
             setAdmins((prev) =>
                 prev.map((a) => (a.id === editTarget.id ? { ...a, role: editRole as Admin["role"] } : a))
@@ -169,9 +207,12 @@ export default function AdministratorsPage() {
             showSuccess(`${editTarget.name} role updated to ${editRole}`);
             setEditTarget(null);
             setEditRole("");
+            setEditTouched({});
             setEditOpen(false);
         } catch (err: any) {
             showError(err?.response?.data?.message || "Failed to update role");
+        } finally {
+            setEditing(false);
         }
     };
 
@@ -326,110 +367,205 @@ export default function AdministratorsPage() {
                 </div>
             </div>
 
-            {/* Assign Admin Dialog */}
-            <Dialog open={assignOpen} onOpenChange={setAssignOpen}>
-                <DialogContent className="max-w-md rounded-none p-0 overflow-hidden">
-                    <div className="bg-primary px-6 py-4">
-                        <h2 className="text-sm font-semibold text-white">Assign admin role</h2>
-                        <p className="text-xs text-white/70 mt-0.5">Grant administrative access to an existing user</p>
-                    </div>
-                    <div className="px-6 py-4 space-y-4">
-                        <div className="space-y-2">
-                            <Label className="text-xs text-gray-700">Select user</Label>
-                            <Select value={selectedUser} onValueChange={setSelectedUser}>
-                                <SelectTrigger className="rounded-none">
-                                    <SelectValue placeholder="Choose a user" />
-                                </SelectTrigger>
-                                <SelectContent className="rounded-none">
-                                    {allNonAdminUsers.map((user) => (
+            {/* Assign Admin Role — side sheet */}
+            <SideFormSheet
+                open={assignOpen}
+                onOpenChange={(o) => {
+                    setAssignOpen(o);
+                    if (!o) {
+                        setAssignTouched({});
+                        setSelectedUser("");
+                        setSelectedRole("");
+                    }
+                }}
+                title="Assign admin role"
+                description="Grant administrative access to an existing user"
+                icon={<ShieldCheck className="w-5 h-5" />}
+                width="md"
+                onSubmit={handleAssign}
+                submitLabel="Assign role"
+                loading={assigning}
+            >
+                <div className="space-y-4">
+                    <Field
+                        label="Select user"
+                        required
+                        error={assignErrors.user}
+                        hint={
+                            allNonAdminUsers.length === 0
+                                ? "No non-admin users available"
+                                : `${allNonAdminUsers.length} user${allNonAdminUsers.length === 1 ? "" : "s"} available`
+                        }
+                    >
+                        <Select
+                            value={selectedUser}
+                            onValueChange={(v) => {
+                                setSelectedUser(v);
+                                setAssignTouched((t) => ({ ...t, user: true }));
+                            }}
+                        >
+                            <SelectTrigger className="h-11 rounded-lg border-[#E5E7EB] bg-white">
+                                <SelectValue placeholder="Choose a user" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {allNonAdminUsers.length === 0 ? (
+                                    <div className="px-2 py-2 text-[12px] text-gray-500">
+                                        No eligible users
+                                    </div>
+                                ) : (
+                                    allNonAdminUsers.map((user) => (
                                         <SelectItem key={user.id} value={user.id}>
                                             {user.name} ({user.email})
                                         </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="space-y-2">
-                            <Label className="text-xs text-gray-700">Admin role</Label>
-                            <Select value={selectedRole} onValueChange={setSelectedRole}>
-                                <SelectTrigger className="rounded-none">
-                                    <SelectValue placeholder="Select a role" />
-                                </SelectTrigger>
-                                <SelectContent className="rounded-none">
-                                    {ADMIN_ROLES.map((role) => (
-                                        <SelectItem key={role} value={role}>
-                                            {role}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </div>
-                    <DialogFooter className="px-6 py-4 border-t border-gray-100">
-                        <Button variant="outline" onClick={() => setAssignOpen(false)} className="rounded-none">
-                            Cancel
-                        </Button>
-                        <Button onClick={handleAssign} className="bg-primary hover:bg-primary/90 text-white rounded-none">
-                            Assign role
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                                    ))
+                                )}
+                            </SelectContent>
+                        </Select>
+                    </Field>
 
-            {/* Remove Admin Dialog */}
+                    <Field
+                        label="Admin role"
+                        required
+                        error={assignErrors.role}
+                        hint="Super Admin = full access; Admin = limited"
+                    >
+                        <Select
+                            value={selectedRole}
+                            onValueChange={(v) => {
+                                setSelectedRole(v);
+                                setAssignTouched((t) => ({ ...t, role: true }));
+                            }}
+                        >
+                            <SelectTrigger className="h-11 rounded-lg border-[#E5E7EB] bg-white">
+                                <SelectValue placeholder="Select a role" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {ADMIN_ROLES.map((role) => (
+                                    <SelectItem key={role} value={role}>
+                                        {role}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                </div>
+            </SideFormSheet>
+
+            {/* Edit Admin Role — side sheet */}
+            <SideFormSheet
+                open={editOpen}
+                onOpenChange={(o) => {
+                    setEditOpen(o);
+                    if (!o) {
+                        setEditTouched({});
+                        setEditTarget(null);
+                        setEditRole("");
+                    }
+                }}
+                title="Edit admin role"
+                description={editTarget ? `Change role for ${editTarget.name}` : "Change admin role"}
+                icon={<Pencil className="w-5 h-5" />}
+                width="md"
+                onSubmit={handleEditRole}
+                submitLabel="Update role"
+                loading={editing}
+            >
+                <div className="space-y-4">
+                    {editTarget && (
+                        <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-50 border border-slate-100">
+                            <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary text-xs font-semibold shrink-0">
+                                {getInitials(editTarget.name)}
+                            </div>
+                            <div className="min-w-0">
+                                <p className="text-[13px] font-semibold text-gray-900 truncate">{editTarget.name}</p>
+                                <p className="text-[11.5px] text-gray-500 truncate">{editTarget.email}</p>
+                            </div>
+                            <Badge variant="outline" className={`ml-auto rounded-md text-[10px] font-medium ${roleBadgeStyle(editTarget.role)}`}>
+                                Current: {editTarget.role}
+                            </Badge>
+                        </div>
+                    )}
+
+                    <Field
+                        label="New admin role"
+                        required
+                        error={editErrors.role}
+                        hint="Must differ from current role"
+                    >
+                        <Select
+                            value={editRole}
+                            onValueChange={(v) => {
+                                setEditRole(v);
+                                setEditTouched((t) => ({ ...t, role: true }));
+                            }}
+                        >
+                            <SelectTrigger className="h-11 rounded-lg border-[#E5E7EB] bg-white">
+                                <SelectValue placeholder="Select a role" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {ADMIN_ROLES.map((role) => (
+                                    <SelectItem
+                                        key={role}
+                                        value={role}
+                                        disabled={editTarget?.role === role}
+                                    >
+                                        {role}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                </div>
+            </SideFormSheet>
+
+            {/* Remove Admin — confirmation dialog (center, not form) */}
             <Dialog open={removeOpen} onOpenChange={setRemoveOpen}>
-                <DialogContent className="max-w-md rounded-none p-0 overflow-hidden">
-                    <div className="bg-primary px-6 py-4">
-                        <h2 className="text-sm font-semibold text-white">Remove admin</h2>
-                        <p className="text-xs text-white/70 mt-0.5">This will revoke administrative access</p>
-                    </div>
-                    <div className="px-6 py-4">
-                        <p className="text-sm text-gray-700">
-                            Are you sure you want to remove{" "}
-                            <span className="font-semibold">{removeTarget?.name}</span> from administrators?
-                        </p>
-                    </div>
-                    <DialogFooter className="px-6 py-4 border-t border-gray-100">
-                        <Button variant="outline" onClick={() => setRemoveOpen(false)} className="rounded-none">
-                            Cancel
-                        </Button>
-                        <Button onClick={handleRemove} variant="destructive" className="rounded-none">
-                            Remove
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            {/* Edit Role Dialog */}
-            <Dialog open={editOpen} onOpenChange={setEditOpen}>
-                <DialogContent className="max-w-md rounded-none p-0 overflow-hidden">
-                    <div className="bg-primary px-6 py-4">
-                        <h2 className="text-sm font-semibold text-white">Edit role</h2>
-                        <p className="text-xs text-white/70 mt-0.5">Change admin role for {editTarget?.name}</p>
-                    </div>
-                    <div className="px-6 py-4 space-y-4">
-                        <div className="space-y-2">
-                            <Label className="text-xs text-gray-700">Admin role</Label>
-                            <Select value={editRole} onValueChange={setEditRole}>
-                                <SelectTrigger className="rounded-none">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent className="rounded-none">
-                                    {ADMIN_ROLES.map((role) => (
-                                        <SelectItem key={role} value={role}>
-                                            {role}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                <DialogContent className="sm:max-w-[440px] rounded-xl p-0 overflow-hidden border-none shadow-2xl">
+                    <div className="p-5 pb-4 border-b border-slate-100">
+                        <div className="flex items-start gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center shrink-0">
+                                <AlertTriangle className="w-5 h-5 text-red-600" />
+                            </div>
+                            <div>
+                                <h2 className="text-base font-semibold text-slate-900">Remove admin?</h2>
+                                <p className="text-[12.5px] text-slate-500 mt-1 leading-relaxed">
+                                    This will revoke administrative access. The user will become a regular member.
+                                </p>
+                            </div>
                         </div>
                     </div>
-                    <DialogFooter className="px-6 py-4 border-t border-gray-100">
-                        <Button variant="outline" onClick={() => setEditOpen(false)} className="rounded-none">
+                    {removeTarget && (
+                        <div className="px-5 py-4">
+                            <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-50 border border-slate-100">
+                                <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary text-xs font-semibold shrink-0">
+                                    {getInitials(removeTarget.name)}
+                                </div>
+                                <div className="min-w-0">
+                                    <p className="text-[13px] font-semibold text-gray-900 truncate">{removeTarget.name}</p>
+                                    <p className="text-[11.5px] text-gray-500 truncate">{removeTarget.email}</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    <DialogFooter className="px-5 py-3.5 bg-slate-50 border-t border-slate-100 gap-2 sm:justify-end">
+                        <Button
+                            variant="outline"
+                            onClick={() => setRemoveOpen(false)}
+                            disabled={removing}
+                            className="h-9 text-[13px] font-medium rounded-lg"
+                        >
                             Cancel
                         </Button>
-                        <Button onClick={handleEditRole} className="bg-primary hover:bg-primary/90 text-white rounded-none">
-                            Update role
+                        <Button
+                            onClick={handleRemove}
+                            disabled={removing}
+                            variant="destructive"
+                            className="h-9 text-[13px] font-medium rounded-lg gap-2"
+                        >
+                            {removing && (
+                                <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            )}
+                            Remove admin
                         </Button>
                     </DialogFooter>
                 </DialogContent>

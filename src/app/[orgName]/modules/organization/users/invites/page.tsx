@@ -187,7 +187,26 @@ export default function InvitesPage() {
                             />
                             <CustomButton
                                 className="h-12 px-6 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-xl font-semibold border-0"
-                                onClick={() => toast.success("Invite link copied to clipboard")}
+                                onClick={async () => {
+                                    const link = "https://portal.fixl.io/join/org_882910";
+                                    try {
+                                        if (navigator.clipboard?.writeText) {
+                                            await navigator.clipboard.writeText(link);
+                                        } else {
+                                            const ta = document.createElement("textarea");
+                                            ta.value = link;
+                                            ta.style.position = "fixed";
+                                            ta.style.opacity = "0";
+                                            document.body.appendChild(ta);
+                                            ta.select();
+                                            document.execCommand("copy");
+                                            document.body.removeChild(ta);
+                                        }
+                                        toast.success("Invite link copied to clipboard");
+                                    } catch {
+                                        toast.error("Failed to copy invite link");
+                                    }
+                                }}
                             >
                                 <Copy className="w-4 h-4 mr-2" /> Copy
                             </CustomButton>

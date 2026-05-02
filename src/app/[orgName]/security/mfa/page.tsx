@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Smartphone,
   ShieldCheck,
@@ -18,14 +18,48 @@ import {
 import { Button } from "@/shared/components/ui/button";
 import { Switch } from "@/shared/components/ui/switch";
 import { Badge } from "@/shared/components/ui/badge";
-import { showSuccess } from "@/utils/toast";
+import { showSuccess, showError } from "@/utils/toast";
 import SubHeader from "@/shared/components/custom/SubHeader";
 import { SmallCard, SmallCardContent } from "@/shared/components/custom/SmallCard";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/shared/components/ui/card";
 import { Separator } from "@/shared/components/ui/separator";
+import { getOrgAdminSettings, updateOrgAdminSettings } from "@/hooks/orgAdminHooks";
 
 export default function MFAPage() {
   const [globalMFA, setGlobalMFA] = useState(true);
+  const [savingMFA, setSavingMFA] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await getOrgAdminSettings();
+        const data: any = res?.data?.data || res?.data || {};
+        if (typeof data?.security?.enforceMFA === "boolean") {
+          setGlobalMFA(data.security.enforceMFA);
+        }
+      } catch {
+        // Silent fallback
+      }
+    })();
+  }, []);
+
+  const handleGlobalMFAChange = async (newValue: boolean) => {
+    if (savingMFA) return;
+    const previous = globalMFA;
+    setGlobalMFA(newValue);
+    setSavingMFA(true);
+    try {
+      await updateOrgAdminSettings({
+        security: { enforceMFA: newValue },
+      });
+      showSuccess(newValue ? "MFA enforcement enabled" : "MFA enforcement disabled");
+    } catch (err: any) {
+      setGlobalMFA(previous);
+      showError(err?.response?.data?.message || "Failed to update MFA enforcement");
+    } finally {
+      setSavingMFA(false);
+    }
+  };
   const [methods, setMethods] = useState([
     {
       name: "Authenticator app (TOTP)",
@@ -92,7 +126,8 @@ export default function MFAPage() {
             <span className="text-sm font-semibold tracking-wide">Global enforcement</span>
             <Switch
               checked={globalMFA}
-              onCheckedChange={setGlobalMFA}
+              onCheckedChange={handleGlobalMFAChange}
+              disabled={savingMFA}
               className="data-[state=checked]:bg-emerald-500 data-[state=unchecked]:bg-white/20 border border-white/10 shadow-inner"
             />
           </div>

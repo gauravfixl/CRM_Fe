@@ -1,18 +1,18 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
-import { Check, Plus, Trash2, X, Send } from "lucide-react"
+import React, { useState, useEffect, useMemo } from "react"
+import { Check, Plus, Trash2, X, Send, Sparkles, Edit3 } from "lucide-react"
 import { Button } from "@/shared/components/ui/button"
 import { Badge } from "@/shared/components/ui/badge"
 import { Switch } from "@/shared/components/ui/switch"
 import { Input } from "@/shared/components/ui/input"
-import { Label } from "@/shared/components/ui/label"
 import { Textarea } from "@/shared/components/ui/textarea"
 import {
     Dialog,
     DialogContent,
     DialogFooter,
 } from "@/shared/components/ui/dialog"
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet"
 import { showSuccess, showWarning } from "@/shared/utils/toast"
 import { axiosInstance } from "@/lib/axios"
 
@@ -119,22 +119,29 @@ export default function UpgradeDowngradePage() {
     useEffect(() => {
         fetchPlans()
     }, [])
+
     const [showCreateModal, setShowCreateModal] = useState(false)
     const [showEditModal, setShowEditModal] = useState(false)
     const [editingPlan, setEditingPlan] = useState<Plan | null>(null)
     const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
     const [showContactModal, setShowContactModal] = useState(false)
+
+    // Contact sales form
     const [contactName, setContactName] = useState("")
     const [contactEmail, setContactEmail] = useState("")
     const [contactMessage, setContactMessage] = useState("")
+    const [contactTouched, setContactTouched] = useState<Record<string, boolean>>({})
+    const [submittingContact, setSubmittingContact] = useState(false)
 
-    // Form state
+    // Plan form (create/edit)
     const [formName, setFormName] = useState("")
     const [formDescription, setFormDescription] = useState("")
     const [formMonthlyPrice, setFormMonthlyPrice] = useState("")
     const [formYearlyPrice, setFormYearlyPrice] = useState("")
     const [formFeatures, setFormFeatures] = useState<string[]>([""])
     const [formIsPopular, setFormIsPopular] = useState(false)
+    const [formTouched, setFormTouched] = useState<Record<string, boolean>>({})
+    const [submittingPlan, setSubmittingPlan] = useState(false)
 
     const resetForm = () => {
         setFormName("")
@@ -143,34 +150,109 @@ export default function UpgradeDowngradePage() {
         setFormYearlyPrice("")
         setFormFeatures([""])
         setFormIsPopular(false)
+        setFormTouched({})
     }
 
-    const addFeatureField = () => {
-        setFormFeatures((prev) => [...prev, ""])
-    }
+    const planErrors = useMemo(() => {
+        const e: Record<string, string> = {}
+        const name = formName.trim()
+        const desc = formDescription.trim()
+        const mp = formMonthlyPrice.trim()
+        const yp = formYearlyPrice.trim()
 
-    const updateFeature = (index: number, value: string) => {
-        setFormFeatures((prev) => prev.map((f, i) => (i === index ? value : f)))
-    }
-
-    const removeFeature = (index: number) => {
-        if (formFeatures.length <= 1) return
-        setFormFeatures((prev) => prev.filter((_, i) => i !== index))
-    }
-
-    const handleCreate = async () => {
-        if (!formName.trim() || !formMonthlyPrice.trim()) {
-            showWarning("Plan name and monthly price are required")
-            return
+        if (formTouched.name) {
+            if (!name) e.name = "Plan name is required"
+            else if (name.length < 2) e.name = "Name must be at least 2 characters"
+            else if (name.length > 50) e.name = "Name is too long (max 50)"
+            else if (!/^[A-Za-z0-9\s&+-]+$/.test(name))
+                e.name = "Use letters, numbers, spaces, & + -"
         }
+        if (formTouched.description && desc.length > 200) {
+            e.description = "Description is too long (max 200 chars)"
+        }
+        if (formTouched.monthlyPrice) {
+            if (!mp) e.monthlyPrice = "Monthly price is required"
+            else {
+                const n = Number(mp)
+                if (isNaN(n)) e.monthlyPrice = "Must be a valid number"
+                else if (n < 0) e.monthlyPrice = "Price cannot be negative"
+                else if (n > 100000) e.monthlyPrice = "Price seems too high"
+            }
+        }
+        if (formTouched.yearlyPrice && yp) {
+            const n = Number(yp)
+            const mpNum = Number(mp)
+            if (isNaN(n)) e.yearlyPrice = "Must be a valid number"
+            else if (n < 0) e.yearlyPrice = "Price cannot be negative"
+            else if (!isNaN(mpNum) && n > mpNum * 12)
+                e.yearlyPrice = "Yearly should be less than 12× monthly"
+        }
+        return e
+    }, [formName, formDescription, formMonthlyPrice, formYearlyPrice, formTouched])
+
+    const contactErrors = useMemo(() => {
+        const e: Record<string, string> = {}
+        const name = contactName.trim()
+        const email = contactEmail.trim()
+        const msg = contactMessage.trim()
+
+        if (contactTouched.name) {
+            if (!name) e.name = "Name is required"
+            else if (!/^[A-Za-z\s.'-]+$/.test(name)) e.name = "Only letters allowed"
+            else if (name.length < 2) e.name = "Name too short"
+        }
+        if (contactTouched.email) {
+            if (!email) e.email = "Email is required"
+            else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) e.email = "Enter a valid email"
+        }
+        if (contactTouched.message && msg.length > 1000) {
+            e.message = "Message too long (max 1000 chars)"
+        }
+        return e
+    }, [contactName, contactEmail, contactMessage, contactTouched])
+
+    const addFeatureField = () => setFormFeatures((prev) => [...prev, ""])
+    const updateFeature = (i: number, v: string) =>
+        setFormFeatures((prev) => prev.map((f, idx) => (idx === i ? v : f)))
+    const removeFeature = (i: number) => {
+        if (formFeatures.length <= 1) return
+        setFormFeatures((prev) => prev.filter((_, idx) => idx !== i))
+    }
+
+    const validatePlanSubmit = () => {
+        setFormTouched({
+            name: true,
+            description: true,
+            monthlyPrice: true,
+            yearlyPrice: true,
+        })
+        const name = formName.trim()
+        const mp = formMonthlyPrice.trim()
+        if (!name) return "Plan name is required"
+        if (name.length < 2) return "Plan name too short"
+        if (!/^[A-Za-z0-9\s&+-]+$/.test(name)) return "Plan name contains invalid characters"
+        if (!mp) return "Monthly price is required"
+        const mpNum = Number(mp)
+        if (isNaN(mpNum) || mpNum < 0) return "Enter a valid monthly price"
         const features = formFeatures.filter((f) => f.trim() !== "")
-        if (features.length === 0) {
-            showWarning("Add at least one feature")
+        if (features.length === 0) return "Add at least one feature"
+        if (features.some((f) => f.length > 100)) return "Features must be under 100 chars each"
+        return null
+    }
+
+    const handleCreate = async (e: React.FormEvent) => {
+        e.preventDefault()
+        const err = validatePlanSubmit()
+        if (err) {
+            showWarning(err)
             return
         }
 
         const monthlyPrice = parseFloat(formMonthlyPrice)
-        const yearlyPrice = formYearlyPrice ? parseFloat(formYearlyPrice) : Math.round(monthlyPrice * 0.8)
+        const yearlyPrice = formYearlyPrice
+            ? parseFloat(formYearlyPrice)
+            : Math.round(monthlyPrice * 0.8 * 12) / 12
+        const features = formFeatures.filter((f) => f.trim() !== "").map((f) => f.trim())
 
         const payload = {
             name: formName.trim(),
@@ -185,14 +267,17 @@ export default function UpgradeDowngradePage() {
             limits: { maxUsers: 10, maxProjects: 10, maxStorageGB: 50 },
         }
 
+        setSubmittingPlan(true)
         try {
             await axiosInstance.post("/billingplan/create", payload)
             setShowCreateModal(false)
-            resetForm()
             showSuccess(`${formName.trim()} plan created successfully`)
+            resetForm()
             await fetchPlans()
         } catch {
-            showWarning("Failed to create plan")
+            showWarning("Failed to create plan. Please try again.")
+        } finally {
+            setSubmittingPlan(false)
         }
     }
 
@@ -204,23 +289,24 @@ export default function UpgradeDowngradePage() {
         setFormYearlyPrice(String(plan.yearlyPrice))
         setFormFeatures(plan.features.length > 0 ? [...plan.features] : [""])
         setFormIsPopular(plan.isPopular)
+        setFormTouched({})
         setShowEditModal(true)
     }
 
-    const handleEdit = async () => {
+    const handleEdit = async (e: React.FormEvent) => {
+        e.preventDefault()
         if (!editingPlan) return
-        if (!formName.trim() || !formMonthlyPrice.trim()) {
-            showWarning("Plan name and monthly price are required")
-            return
-        }
-        const features = formFeatures.filter((f) => f.trim() !== "")
-        if (features.length === 0) {
-            showWarning("Add at least one feature")
+        const err = validatePlanSubmit()
+        if (err) {
+            showWarning(err)
             return
         }
 
         const monthlyPrice = parseFloat(formMonthlyPrice)
-        const yearlyPrice = formYearlyPrice ? parseFloat(formYearlyPrice) : Math.round(monthlyPrice * 0.8)
+        const yearlyPrice = formYearlyPrice
+            ? parseFloat(formYearlyPrice)
+            : Math.round(monthlyPrice * 0.8 * 12) / 12
+        const features = formFeatures.filter((f) => f.trim() !== "").map((f) => f.trim())
 
         const payload = {
             name: formName.trim(),
@@ -233,15 +319,18 @@ export default function UpgradeDowngradePage() {
             features: features.map((f) => ({ title: f })),
         }
 
+        setSubmittingPlan(true)
         try {
             await axiosInstance.patch(`/billingplan/update/${editingPlan.id}`, payload)
             setShowEditModal(false)
             setEditingPlan(null)
-            resetForm()
             showSuccess("Plan updated successfully")
+            resetForm()
             await fetchPlans()
         } catch {
-            showWarning("Failed to update plan")
+            showWarning("Failed to update plan. Please try again.")
+        } finally {
+            setSubmittingPlan(false)
         }
     }
 
@@ -268,105 +357,129 @@ export default function UpgradeDowngradePage() {
         showSuccess(`Plan change to ${planName} requested successfully`)
     }
 
+    const handleContactSubmit = async (e: React.FormEvent) => {
+        e.preventDefault()
+        setContactTouched({ name: true, email: true, message: true })
+        if (!contactName.trim()) return showWarning("Name is required")
+        if (!/^[A-Za-z\s.'-]+$/.test(contactName.trim())) return showWarning("Name contains invalid characters")
+        if (!contactEmail.trim()) return showWarning("Email is required")
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail.trim())) return showWarning("Enter a valid email")
+        if (contactMessage.length > 1000) return showWarning("Message too long")
+
+        setSubmittingContact(true)
+        try {
+            await new Promise((r) => setTimeout(r, 400))
+            setShowContactModal(false)
+            showSuccess("Your request has been submitted. Our sales team will contact you within 24 hours.")
+            setContactName("")
+            setContactEmail("")
+            setContactMessage("")
+            setContactTouched({})
+        } finally {
+            setSubmittingContact(false)
+        }
+    }
+
     const renderFormFields = () => (
-        <div className="p-5 space-y-4 bg-white max-h-[60vh] overflow-y-auto">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                    <Label className="text-xs font-medium text-zinc-600">
-                        Plan Name <span className="text-red-500">*</span>
-                    </Label>
-                    <Input
-                        placeholder="e.g. Professional"
-                        value={formName}
-                        onChange={(e) => setFormName(e.target.value)}
-                        className="rounded-none h-9 text-sm"
-                    />
-                </div>
-                <div className="space-y-1.5">
-                    <Label className="text-xs font-medium text-zinc-600">Description</Label>
-                    <Input
-                        placeholder="e.g. For growing businesses"
-                        value={formDescription}
-                        onChange={(e) => setFormDescription(e.target.value)}
-                        className="rounded-none h-9 text-sm"
-                    />
-                </div>
-            </div>
+        <div className="space-y-4">
+            <Field label="Plan Name" required error={planErrors.name} hint="Letters, numbers, spaces, & + -">
+                <Input
+                    placeholder="e.g. Professional"
+                    value={formName}
+                    onChange={(e) => setFormName(e.target.value.replace(/[^A-Za-z0-9\s&+-]/g, ""))}
+                    onBlur={() => setFormTouched((t) => ({ ...t, name: true }))}
+                    className="h-11 rounded-lg border-[#E5E7EB] bg-white focus:border-primary"
+                    maxLength={50}
+                />
+            </Field>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                    <Label className="text-xs font-medium text-zinc-600">
-                        Monthly Price ($) <span className="text-red-500">*</span>
-                    </Label>
+            <Field label="Description" error={planErrors.description} hint="A short tagline (max 200 chars)">
+                <Input
+                    placeholder="e.g. For growing businesses"
+                    value={formDescription}
+                    onChange={(e) => setFormDescription(e.target.value)}
+                    onBlur={() => setFormTouched((t) => ({ ...t, description: true }))}
+                    className="h-11 rounded-lg border-[#E5E7EB] bg-white focus:border-primary"
+                    maxLength={200}
+                />
+            </Field>
+
+            <div className="grid grid-cols-2 gap-3">
+                <Field label="Monthly Price ($)" required error={planErrors.monthlyPrice} hint="USD">
                     <Input
                         type="number"
-                        placeholder="e.g. 199"
+                        placeholder="199"
                         value={formMonthlyPrice}
-                        onChange={(e) => setFormMonthlyPrice(e.target.value)}
-                        className="rounded-none h-9 text-sm"
-                        min="0"
+                        onChange={(e) => setFormMonthlyPrice(e.target.value.replace(/[^0-9.]/g, ""))}
+                        onBlur={() => setFormTouched((t) => ({ ...t, monthlyPrice: true }))}
+                        className="h-11 rounded-lg border-[#E5E7EB] bg-white focus:border-primary"
+                        min={0}
+                        step={0.01}
                     />
-                </div>
-                <div className="space-y-1.5">
-                    <Label className="text-xs font-medium text-zinc-600">
-                        Yearly Price ($) <span className="text-zinc-400 text-[10px]">auto 20% off if empty</span>
-                    </Label>
+                </Field>
+
+                <Field label="Yearly Price ($)" error={planErrors.yearlyPrice} hint="Auto 20% off if empty">
                     <Input
                         type="number"
-                        placeholder="e.g. 159"
+                        placeholder="159"
                         value={formYearlyPrice}
-                        onChange={(e) => setFormYearlyPrice(e.target.value)}
-                        className="rounded-none h-9 text-sm"
-                        min="0"
+                        onChange={(e) => setFormYearlyPrice(e.target.value.replace(/[^0-9.]/g, ""))}
+                        onBlur={() => setFormTouched((t) => ({ ...t, yearlyPrice: true }))}
+                        className="h-11 rounded-lg border-[#E5E7EB] bg-white focus:border-primary"
+                        min={0}
+                        step={0.01}
                     />
-                </div>
+                </Field>
             </div>
 
-            <div className="flex items-center gap-3 p-3 bg-zinc-50 border border-zinc-200 rounded-none">
+            <div className="flex items-center gap-3 p-3 bg-[#FAFBFC] border border-[#EEF1F6] rounded-xl">
                 <Switch
                     checked={formIsPopular}
                     onCheckedChange={setFormIsPopular}
                     className="data-[state=checked]:bg-primary"
                 />
-                <div>
-                    <p className="text-xs font-medium text-zinc-900">Mark as Popular</p>
-                    <p className="text-[10px] text-zinc-500">Shows a &quot;Popular&quot; badge on this plan</p>
+                <div className="flex-1">
+                    <p className="text-[13px] font-semibold text-[#0F172A]">Mark as Popular</p>
+                    <p className="text-[11.5px] text-[#64748B]">Shows a &quot;Popular&quot; badge on this plan</p>
                 </div>
+                <Sparkles size={16} className="text-primary/50" />
             </div>
 
             <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                    <Label className="text-xs font-medium text-zinc-600">
-                        Features <span className="text-red-500">*</span>
-                    </Label>
+                    <label className="text-[13px] font-semibold text-[#374151] flex items-center gap-0.5">
+                        Features
+                        <span className="text-red-500">*</span>
+                    </label>
                     <Button
                         type="button"
                         variant="ghost"
                         size="sm"
-                        className="h-6 text-[10px] text-primary gap-1 px-2"
+                        className="h-7 text-[11px] text-primary gap-1 px-2 hover:bg-primary/5"
                         onClick={addFeatureField}
                     >
-                        <Plus size={10} /> Add Feature
+                        <Plus size={12} /> Add Feature
                     </Button>
                 </div>
                 <div className="space-y-2">
                     {formFeatures.map((feature, index) => (
                         <div key={index} className="flex items-center gap-2">
-                            <div className="w-5 h-5 rounded-none bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                                <Check size={10} />
+                            <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                                <Check size={13} />
                             </div>
                             <Input
                                 placeholder={`Feature ${index + 1}`}
                                 value={feature}
                                 onChange={(e) => updateFeature(index, e.target.value)}
-                                className="rounded-none h-8 text-xs flex-1"
+                                className="h-10 rounded-lg border-[#E5E7EB] bg-white focus:border-primary text-[13px] flex-1"
+                                maxLength={100}
                             />
                             {formFeatures.length > 1 && (
                                 <Button
                                     type="button"
                                     variant="ghost"
                                     size="sm"
-                                    className="h-8 w-8 p-0 text-zinc-400 hover:text-red-500"
+                                    className="h-10 w-10 p-0 text-[#9CA3AF] hover:text-red-500 hover:bg-red-50"
                                     onClick={() => removeFeature(index)}
                                 >
                                     <X size={14} />
@@ -375,6 +488,7 @@ export default function UpgradeDowngradePage() {
                         </div>
                     ))}
                 </div>
+                <p className="text-[11px] text-[#9CA3AF]">At least one feature, up to 100 characters each</p>
             </div>
         </div>
     )
@@ -405,25 +519,13 @@ export default function UpgradeDowngradePage() {
                             <Plus size={14} />
                             Create Plan
                         </Button>
-                        <span
-                            className={`text-sm font-medium ${
-                                !isYearly ? "text-zinc-900" : "text-zinc-400"
-                            }`}
-                        >
-                            Monthly
-                        </span>
+                        <span className={`text-sm font-medium ${!isYearly ? "text-zinc-900" : "text-zinc-400"}`}>Monthly</span>
                         <Switch
                             checked={isYearly}
                             onCheckedChange={setIsYearly}
                             className="data-[state=checked]:bg-primary"
                         />
-                        <span
-                            className={`text-sm font-medium ${
-                                isYearly ? "text-zinc-900" : "text-zinc-400"
-                            }`}
-                        >
-                            Yearly
-                        </span>
+                        <span className={`text-sm font-medium ${isYearly ? "text-zinc-900" : "text-zinc-400"}`}>Yearly</span>
                         {isYearly && (
                             <Badge className="bg-green-100 text-green-700 border-green-200 rounded-none text-xs font-medium">
                                 Save 20%
@@ -439,69 +541,41 @@ export default function UpgradeDowngradePage() {
                     {plans.map((plan) => (
                         <div
                             key={plan.id}
-                            className={`relative bg-white border rounded-none p-6 flex flex-col ${
-                                plan.isCurrent
-                                    ? "border-primary bg-primary/5"
-                                    : "border-zinc-200"
-                            }`}
+                            className={`relative bg-white border rounded-none p-6 flex flex-col ${plan.isCurrent ? "border-primary bg-primary/5" : "border-zinc-200"}`}
                         >
-                            {/* Badges */}
                             <div className="absolute top-4 right-4 flex items-center gap-2">
                                 {plan.isPopular && (
-                                    <Badge className="bg-primary text-white rounded-none text-[10px] font-medium">
-                                        Popular
-                                    </Badge>
+                                    <Badge className="bg-primary text-white rounded-none text-[10px] font-medium">Popular</Badge>
                                 )}
                                 {plan.isCurrent && (
-                                    <Badge className="bg-primary/10 text-primary border-primary/20 rounded-none text-[10px] font-medium">
-                                        Current
-                                    </Badge>
+                                    <Badge className="bg-primary/10 text-primary border-primary/20 rounded-none text-[10px] font-medium">Current</Badge>
                                 )}
                             </div>
 
                             <div className="mb-4">
-                                <h3 className="text-lg font-semibold text-zinc-900">
-                                    {plan.name}
-                                </h3>
-                                <p className="text-sm text-zinc-500 mt-1">
-                                    {plan.description}
-                                </p>
+                                <h3 className="text-lg font-semibold text-zinc-900">{plan.name}</h3>
+                                <p className="text-sm text-zinc-500 mt-1">{plan.description}</p>
                             </div>
 
                             <div className="mb-6 flex items-baseline gap-1">
-                                <span className="text-2xl font-semibold text-zinc-900">
-                                    ${isYearly ? plan.yearlyPrice : plan.monthlyPrice}
-                                </span>
+                                <span className="text-2xl font-semibold text-zinc-900">${isYearly ? plan.yearlyPrice : plan.monthlyPrice}</span>
                                 <span className="text-sm text-zinc-500">/mo</span>
                             </div>
 
                             <ul className="space-y-3 mb-6 flex-grow">
                                 {plan.features.map((feature, i) => (
-                                    <li
-                                        key={i}
-                                        className="flex items-center gap-2 text-sm text-zinc-600"
-                                    >
-                                        <Check
-                                            size={16}
-                                            className="text-primary shrink-0"
-                                        />
+                                    <li key={i} className="flex items-center gap-2 text-sm text-zinc-600">
+                                        <Check size={16} className="text-primary shrink-0" />
                                         {feature}
                                     </li>
                                 ))}
                             </ul>
 
-                            {/* Action Buttons */}
                             <div className="space-y-2">
                                 <Button
                                     disabled={plan.isCurrent}
-                                    onClick={() =>
-                                        !plan.isCurrent && handleSelectPlan(plan.name)
-                                    }
-                                    className={`w-full rounded-none font-medium text-sm ${
-                                        plan.isCurrent
-                                            ? "bg-zinc-100 text-zinc-400 cursor-not-allowed border border-zinc-200"
-                                            : "bg-primary hover:bg-primary/90 text-white"
-                                    }`}
+                                    onClick={() => !plan.isCurrent && handleSelectPlan(plan.name)}
+                                    className={`w-full rounded-none font-medium text-sm ${plan.isCurrent ? "bg-zinc-100 text-zinc-400 cursor-not-allowed border border-zinc-200" : "bg-primary hover:bg-primary/90 text-white"}`}
                                 >
                                     {plan.isCurrent ? "Current Plan" : "Select Plan"}
                                 </Button>
@@ -533,13 +607,8 @@ export default function UpgradeDowngradePage() {
                 {/* Contact Sales */}
                 <div className="bg-white border border-zinc-200 rounded-none p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div>
-                        <h3 className="text-base font-semibold text-zinc-900">
-                            Need a custom solution?
-                        </h3>
-                        <p className="text-sm text-zinc-500 mt-1">
-                            Get in touch with our sales team for a tailored plan that
-                            meets your specific requirements.
-                        </p>
+                        <h3 className="text-base font-semibold text-zinc-900">Need a custom solution?</h3>
+                        <p className="text-sm text-zinc-500 mt-1">Get in touch with our sales team for a tailored plan that meets your specific requirements.</p>
                     </div>
                     <Button
                         variant="outline"
@@ -548,6 +617,7 @@ export default function UpgradeDowngradePage() {
                             setContactName("")
                             setContactEmail("")
                             setContactMessage("")
+                            setContactTouched({})
                             setShowContactModal(true)
                         }}
                     >
@@ -556,174 +626,136 @@ export default function UpgradeDowngradePage() {
                 </div>
             </div>
 
-            {/* Contact Sales Modal */}
-            <Dialog open={showContactModal} onOpenChange={setShowContactModal}>
-                <DialogContent className="max-w-md rounded-none p-0 overflow-hidden shadow-2xl border-none">
-                    <div className="bg-gradient-to-r from-primary/80 to-primary px-5 py-4 text-white">
-                        <h2 className="text-base font-semibold flex items-center gap-2">
-                            <Send size={16} /> Contact Sales
-                        </h2>
-                        <p className="text-xs opacity-80 mt-1">
-                            Tell us about your requirements and we&apos;ll get back to you within 24 hours.
-                        </p>
-                    </div>
-                    <div className="p-5 space-y-4 bg-white">
-                        <div className="space-y-1.5">
-                            <Label className="text-xs font-medium text-zinc-600">
-                                Full Name <span className="text-red-500">*</span>
-                            </Label>
-                            <Input
-                                placeholder="Your full name"
-                                value={contactName}
-                                onChange={(e) => setContactName(e.target.value)}
-                                className="rounded-none h-9 text-sm"
-                            />
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label className="text-xs font-medium text-zinc-600">
-                                Email <span className="text-red-500">*</span>
-                            </Label>
-                            <Input
-                                type="email"
-                                placeholder="you@company.com"
-                                value={contactEmail}
-                                onChange={(e) => setContactEmail(e.target.value)}
-                                className="rounded-none h-9 text-sm"
-                            />
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label className="text-xs font-medium text-zinc-600">Message</Label>
-                            <Textarea
-                                placeholder="Tell us about your team size, requirements, and any specific needs..."
-                                value={contactMessage}
-                                onChange={(e) => setContactMessage(e.target.value)}
-                                className="rounded-none text-sm min-h-[100px]"
-                            />
-                        </div>
-                    </div>
-                    <DialogFooter className="px-5 py-3 bg-zinc-50 border-t border-zinc-100 gap-3 sm:justify-end">
-                        <Button
-                            variant="ghost"
-                            onClick={() => setShowContactModal(false)}
-                            className="rounded-none text-sm text-zinc-600 h-9"
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            onClick={() => {
-                                if (!contactName.trim() || !contactEmail.trim()) {
-                                    showWarning("Please fill in name and email")
-                                    return
-                                }
-                                setShowContactModal(false)
-                                showSuccess("Your request has been submitted. Our sales team will contact you within 24 hours.")
-                            }}
-                            className="bg-primary hover:bg-primary/90 rounded-none text-sm px-6 h-9 shadow-md shadow-primary/20 gap-2"
-                        >
-                            <Send size={14} /> Send Request
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            {/* Contact Sales — side sheet */}
+            <SideFormSheet
+                open={showContactModal}
+                onOpenChange={(o) => {
+                    setShowContactModal(o)
+                    if (!o) {
+                        setContactName("")
+                        setContactEmail("")
+                        setContactMessage("")
+                        setContactTouched({})
+                    }
+                }}
+                title="Contact Sales"
+                description="Tell us about your requirements and we'll get back to you within 24 hours."
+                icon={<Send className="w-5 h-5" />}
+                onSubmit={handleContactSubmit}
+                submitLabel="Send Request"
+                loading={submittingContact}
+                width="md"
+            >
+                <div className="space-y-4">
+                    <Field label="Full Name" required error={contactErrors.name}>
+                        <Input
+                            placeholder="Your full name"
+                            value={contactName}
+                            onChange={(e) => setContactName(e.target.value.replace(/[^A-Za-z\s.'-]/g, ""))}
+                            onBlur={() => setContactTouched((t) => ({ ...t, name: true }))}
+                            className="h-11 rounded-lg border-[#E5E7EB] bg-white focus:border-primary"
+                            maxLength={80}
+                        />
+                    </Field>
 
-            {/* Create Plan Modal */}
-            <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
-                <DialogContent className="max-w-lg rounded-none p-0 overflow-hidden shadow-2xl border-none">
-                    <div className="bg-gradient-to-r from-primary/80 to-primary px-5 py-4 text-white">
-                        <h2 className="text-base font-semibold flex items-center gap-2">
-                            <Plus size={16} /> Create New Plan
-                        </h2>
-                        <p className="text-xs opacity-80 mt-1">
-                            Define a new pricing plan with features for your customers.
-                        </p>
-                    </div>
-                    {renderFormFields()}
-                    <DialogFooter className="px-5 py-3 bg-zinc-50 border-t border-zinc-100 gap-3 sm:justify-end">
-                        <Button
-                            variant="ghost"
-                            onClick={() => {
-                                setShowCreateModal(false)
-                                resetForm()
-                            }}
-                            className="rounded-none text-sm text-zinc-600 h-9"
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            onClick={handleCreate}
-                            className="bg-primary hover:bg-primary/90 rounded-none text-sm px-6 h-9 shadow-md shadow-primary/20"
-                        >
-                            Create Plan
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    <Field label="Business Email" required error={contactErrors.email}>
+                        <Input
+                            type="email"
+                            placeholder="you@company.com"
+                            value={contactEmail}
+                            onChange={(e) => setContactEmail(e.target.value)}
+                            onBlur={() => setContactTouched((t) => ({ ...t, email: true }))}
+                            className="h-11 rounded-lg border-[#E5E7EB] bg-white focus:border-primary"
+                            autoComplete="email"
+                        />
+                    </Field>
 
-            {/* Edit Plan Modal */}
-            <Dialog
+                    <Field
+                        label="Message"
+                        error={contactErrors.message}
+                        hint={`${contactMessage.length}/1000 characters`}
+                    >
+                        <Textarea
+                            placeholder="Tell us about your team size, requirements, and any specific needs..."
+                            value={contactMessage}
+                            onChange={(e) => setContactMessage(e.target.value.slice(0, 1000))}
+                            onBlur={() => setContactTouched((t) => ({ ...t, message: true }))}
+                            className="rounded-lg border-[#E5E7EB] bg-white focus:border-primary text-[13px] min-h-[120px]"
+                        />
+                    </Field>
+                </div>
+            </SideFormSheet>
+
+            {/* Create Plan — side sheet */}
+            <SideFormSheet
+                open={showCreateModal}
+                onOpenChange={(o) => {
+                    setShowCreateModal(o)
+                    if (!o) resetForm()
+                }}
+                title="Create New Plan"
+                description="Define a new pricing plan with features for your customers."
+                icon={<Plus className="w-5 h-5" />}
+                onSubmit={handleCreate}
+                submitLabel="Create Plan"
+                loading={submittingPlan}
+                width="lg"
+            >
+                {renderFormFields()}
+            </SideFormSheet>
+
+            {/* Edit Plan — side sheet */}
+            <SideFormSheet
                 open={showEditModal}
-                onOpenChange={(open) => {
-                    if (!open) {
-                        setShowEditModal(false)
+                onOpenChange={(o) => {
+                    setShowEditModal(o)
+                    if (!o) {
                         setEditingPlan(null)
                         resetForm()
                     }
                 }}
+                title={`Edit Plan${editingPlan ? ` — ${editingPlan.name}` : ""}`}
+                description="Update the plan details, pricing and features."
+                icon={<Edit3 className="w-5 h-5" />}
+                onSubmit={handleEdit}
+                submitLabel="Save Changes"
+                loading={submittingPlan}
+                width="lg"
             >
-                <DialogContent className="max-w-lg rounded-none p-0 overflow-hidden shadow-2xl border-none">
-                    <div className="bg-gradient-to-r from-primary/80 to-primary px-5 py-4 text-white">
-                        <h2 className="text-base font-semibold">Edit Plan</h2>
-                        <p className="text-xs opacity-80 mt-1">
-                            Update the plan details and features.
-                        </p>
-                    </div>
-                    {renderFormFields()}
-                    <DialogFooter className="px-5 py-3 bg-zinc-50 border-t border-zinc-100 gap-3 sm:justify-end">
-                        <Button
-                            variant="ghost"
-                            onClick={() => {
-                                setShowEditModal(false)
-                                setEditingPlan(null)
-                                resetForm()
-                            }}
-                            className="rounded-none text-sm text-zinc-600 h-9"
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            onClick={handleEdit}
-                            className="bg-primary hover:bg-primary/90 rounded-none text-sm px-6 h-9 shadow-md shadow-primary/20"
-                        >
-                            Save Changes
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                {renderFormFields()}
+            </SideFormSheet>
 
-            {/* Delete Confirmation Dialog */}
+            {/* Delete Confirmation — kept as small centered dialog (not a form) */}
             <Dialog
                 open={!!deleteConfirmId}
                 onOpenChange={() => setDeleteConfirmId(null)}
             >
-                <DialogContent className="max-w-sm rounded-none p-0 overflow-hidden shadow-2xl border-none">
-                    <div className="px-5 py-4 border-b border-zinc-100">
-                        <h2 className="text-sm font-semibold text-zinc-900">Delete Plan</h2>
-                        <p className="text-xs text-zinc-500 mt-1">
-                            Are you sure you want to delete this plan? This action cannot be undone.
-                        </p>
+                <DialogContent className="max-w-sm rounded-xl p-0 overflow-hidden shadow-2xl border-none">
+                    <div className="px-5 py-5 border-b border-zinc-100">
+                        <div className="flex items-start gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center shrink-0">
+                                <Trash2 className="w-5 h-5 text-red-500" />
+                            </div>
+                            <div>
+                                <h2 className="text-base font-semibold text-zinc-900">Delete Plan</h2>
+                                <p className="text-[13px] text-zinc-500 mt-1 leading-relaxed">
+                                    Are you sure? This action cannot be undone and the plan will no longer be available for new subscribers.
+                                </p>
+                            </div>
+                        </div>
                     </div>
-                    <DialogFooter className="px-5 py-3 bg-zinc-50 border-t border-zinc-100 gap-3 sm:justify-end">
+                    <DialogFooter className="px-5 py-3 bg-zinc-50 border-t border-zinc-100 gap-2 sm:justify-end">
                         <Button
                             variant="ghost"
                             onClick={() => setDeleteConfirmId(null)}
-                            className="rounded-none text-sm text-zinc-600 h-9"
+                            className="rounded-lg text-sm text-zinc-600 h-9"
                         >
                             Cancel
                         </Button>
                         <Button
                             variant="destructive"
                             onClick={() => deleteConfirmId && handleDelete(deleteConfirmId)}
-                            className="rounded-none text-sm h-9 px-5"
+                            className="rounded-lg text-sm h-9 px-5"
                         >
                             Delete Plan
                         </Button>

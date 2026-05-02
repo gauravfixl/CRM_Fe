@@ -21,14 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/shared/components/ui/switch";
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogFooter,
-} from "@/shared/components/ui/dialog";
-import { Label } from "@/shared/components/ui/label";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -299,8 +292,7 @@ export default function WebhooksPage() {
         setErrors: React.Dispatch<React.SetStateAction<FormErrors>>,
         errorsKey: "formErrors" | "editFormErrors"
     ) => (
-        <div className="space-y-1.5">
-            <Label className="text-xs font-bold text-gray-600">Events</Label>
+        <Field label="Events" required error={errors.events || undefined}>
             <div className="grid grid-cols-2 gap-2">
                 {EVENT_OPTIONS.map((event) => (
                     <label
@@ -317,8 +309,7 @@ export default function WebhooksPage() {
                     </label>
                 ))}
             </div>
-            {errors.events && <p className="text-xs text-red-500">{errors.events}</p>}
-        </div>
+        </Field>
     );
 
     return (
@@ -520,135 +511,112 @@ export default function WebhooksPage() {
                 </div>
             </div>
 
-            {/* Create Modal */}
-            <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
-                <DialogContent className="max-w-md rounded-none p-0 overflow-hidden shadow-2xl border-none">
-                    <div className="bg-gradient-to-r from-primary/80 to-primary px-5 py-4 text-white relative">
-                        <h2 className="text-base font-bold flex items-center gap-2">
-                            <Plus size={16} /> Create Webhook
-                        </h2>
-                        <p className="text-xs opacity-80 mt-1">Configure a new endpoint to receive event notifications.</p>
-                    </div>
-                    <div className="p-5 space-y-4 bg-white">
-                        <div className="space-y-1.5">
-                            <Label className="text-xs font-bold text-gray-600">Endpoint Name</Label>
+            {/* Create Sheet */}
+            <SideFormSheet
+                open={showCreateModal}
+                onOpenChange={(o) => {
+                    setShowCreateModal(o);
+                    if (!o) {
+                        setNewWebhook({ ...emptyForm });
+                        setFormErrors({});
+                    }
+                }}
+                title="Create Webhook"
+                description="Configure a new endpoint to receive event notifications."
+                icon={<Plus size={20} />}
+                accentColor="#4f46e5"
+                width="md"
+                loading={submitting}
+                submitLabel={submitting ? "Creating..." : "Create Webhook"}
+                onSubmit={(e) => { e.preventDefault(); handleCreate(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Endpoint Name" required error={formErrors.name || undefined}>
+                        <Input
+                            placeholder="e.g., Order Notification"
+                            value={newWebhook.name}
+                            onChange={(e) => {
+                                setNewWebhook((prev) => ({ ...prev, name: e.target.value }));
+                                if (formErrors.name) setFormErrors((prev) => ({ ...prev, name: undefined }));
+                            }}
+                        />
+                    </Field>
+                    <Field label="URL" required error={formErrors.url || undefined}>
+                        <Input
+                            placeholder="https://api.example.com/webhooks"
+                            value={newWebhook.url}
+                            onChange={(e) => {
+                                setNewWebhook((prev) => ({ ...prev, url: e.target.value }));
+                                if (formErrors.url) setFormErrors((prev) => ({ ...prev, url: undefined }));
+                            }}
+                        />
+                    </Field>
+                    {renderEventCheckboxes(newWebhook, setNewWebhook, formErrors, setFormErrors, "formErrors")}
+                    <Field label="Secret Key" hint="Optional">
+                        <div className="relative">
+                            <Key className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={14} />
                             <Input
-                                placeholder="e.g., Order Notification"
-                                value={newWebhook.name}
-                                onChange={(e) => {
-                                    setNewWebhook((prev) => ({ ...prev, name: e.target.value }));
-                                    if (formErrors.name) setFormErrors((prev) => ({ ...prev, name: undefined }));
-                                }}
-                                className={`rounded-none border-zinc-200 h-9 text-sm ${formErrors.name ? "border-red-500" : ""}`}
+                                placeholder="whsec_..."
+                                value={newWebhook.secret}
+                                onChange={(e) => setNewWebhook((prev) => ({ ...prev, secret: e.target.value }))}
+                                className="pl-9"
                             />
-                            {formErrors.name && <p className="text-xs text-red-500">{formErrors.name}</p>}
                         </div>
-                        <div className="space-y-1.5">
-                            <Label className="text-xs font-bold text-gray-600">URL</Label>
-                            <Input
-                                placeholder="https://api.example.com/webhooks"
-                                value={newWebhook.url}
-                                onChange={(e) => {
-                                    setNewWebhook((prev) => ({ ...prev, url: e.target.value }));
-                                    if (formErrors.url) setFormErrors((prev) => ({ ...prev, url: undefined }));
-                                }}
-                                className={`rounded-none border-zinc-200 h-9 text-sm ${formErrors.url ? "border-red-500" : ""}`}
-                            />
-                            {formErrors.url && <p className="text-xs text-red-500">{formErrors.url}</p>}
-                        </div>
-                        {renderEventCheckboxes(newWebhook, setNewWebhook, formErrors, setFormErrors, "formErrors")}
-                        <div className="space-y-1.5">
-                            <Label className="text-xs font-bold text-gray-600">Secret Key <span className="font-normal text-gray-400">(optional)</span></Label>
-                            <div className="relative">
-                                <Key className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={14} />
-                                <Input
-                                    placeholder="whsec_..."
-                                    value={newWebhook.secret}
-                                    onChange={(e) => setNewWebhook((prev) => ({ ...prev, secret: e.target.value }))}
-                                    className="rounded-none border-zinc-200 h-9 text-sm pl-9"
-                                />
-                            </div>
-                        </div>
-                    </div>
-                    <DialogFooter className="px-5 py-3 bg-zinc-50 border-t border-zinc-100 gap-3 sm:justify-end">
-                        <Button variant="ghost" onClick={() => setShowCreateModal(false)} className="rounded-none text-sm text-gray-600 h-9">
-                            Cancel
-                        </Button>
-                        <Button
-                            onClick={handleCreate}
-                            disabled={submitting}
-                            className="bg-primary hover:bg-primary/90 rounded-none text-sm px-6 h-9 shadow-md shadow-primary/20 disabled:opacity-60"
-                        >
-                            {submitting ? (<><Loader2 size={14} className="animate-spin mr-2" /> Creating...</>) : "Create Webhook"}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    </Field>
+                </div>
+            </SideFormSheet>
 
-            {/* Edit Modal */}
-            <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
-                <DialogContent className="max-w-md rounded-none p-0 overflow-hidden shadow-2xl border-none">
-                    <div className="bg-gradient-to-r from-primary/80 to-primary px-5 py-4 text-white relative">
-                        <h2 className="text-base font-bold flex items-center gap-2">
-                            <Edit size={16} /> Edit Webhook
-                        </h2>
-                        <p className="text-xs opacity-80 mt-1">Update endpoint configuration and subscribed events.</p>
-                    </div>
-                    <div className="p-5 space-y-4 bg-white">
-                        <div className="space-y-1.5">
-                            <Label className="text-xs font-bold text-gray-600">Endpoint Name</Label>
+            {/* Edit Sheet */}
+            <SideFormSheet
+                open={showEditModal}
+                onOpenChange={(o) => {
+                    setShowEditModal(o);
+                    if (!o) setEditFormErrors({});
+                }}
+                title="Edit Webhook"
+                description="Update endpoint configuration and subscribed events."
+                icon={<Edit size={20} />}
+                accentColor="#7c3aed"
+                width="md"
+                loading={submitting}
+                submitLabel={submitting ? "Saving..." : "Save Changes"}
+                onSubmit={(e) => { e.preventDefault(); handleEdit(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Endpoint Name" required error={editFormErrors.name || undefined}>
+                        <Input
+                            placeholder="e.g., Order Notification"
+                            value={editWebhook.name}
+                            onChange={(e) => {
+                                setEditWebhook((prev) => ({ ...prev, name: e.target.value }));
+                                if (editFormErrors.name) setEditFormErrors((prev) => ({ ...prev, name: undefined }));
+                            }}
+                        />
+                    </Field>
+                    <Field label="URL" required error={editFormErrors.url || undefined}>
+                        <Input
+                            placeholder="https://api.example.com/webhooks"
+                            value={editWebhook.url}
+                            onChange={(e) => {
+                                setEditWebhook((prev) => ({ ...prev, url: e.target.value }));
+                                if (editFormErrors.url) setEditFormErrors((prev) => ({ ...prev, url: undefined }));
+                            }}
+                        />
+                    </Field>
+                    {renderEventCheckboxes(editWebhook, setEditWebhook, editFormErrors, setEditFormErrors, "editFormErrors")}
+                    <Field label="Secret Key" hint="Optional">
+                        <div className="relative">
+                            <Key className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={14} />
                             <Input
-                                placeholder="e.g., Order Notification"
-                                value={editWebhook.name}
-                                onChange={(e) => {
-                                    setEditWebhook((prev) => ({ ...prev, name: e.target.value }));
-                                    if (editFormErrors.name) setEditFormErrors((prev) => ({ ...prev, name: undefined }));
-                                }}
-                                className={`rounded-none border-zinc-200 h-9 text-sm ${editFormErrors.name ? "border-red-500" : ""}`}
+                                placeholder="whsec_..."
+                                value={editWebhook.secret}
+                                onChange={(e) => setEditWebhook((prev) => ({ ...prev, secret: e.target.value }))}
+                                className="pl-9"
                             />
-                            {editFormErrors.name && <p className="text-xs text-red-500">{editFormErrors.name}</p>}
                         </div>
-                        <div className="space-y-1.5">
-                            <Label className="text-xs font-bold text-gray-600">URL</Label>
-                            <Input
-                                placeholder="https://api.example.com/webhooks"
-                                value={editWebhook.url}
-                                onChange={(e) => {
-                                    setEditWebhook((prev) => ({ ...prev, url: e.target.value }));
-                                    if (editFormErrors.url) setEditFormErrors((prev) => ({ ...prev, url: undefined }));
-                                }}
-                                className={`rounded-none border-zinc-200 h-9 text-sm ${editFormErrors.url ? "border-red-500" : ""}`}
-                            />
-                            {editFormErrors.url && <p className="text-xs text-red-500">{editFormErrors.url}</p>}
-                        </div>
-                        {renderEventCheckboxes(editWebhook, setEditWebhook, editFormErrors, setEditFormErrors, "editFormErrors")}
-                        <div className="space-y-1.5">
-                            <Label className="text-xs font-bold text-gray-600">Secret Key <span className="font-normal text-gray-400">(optional)</span></Label>
-                            <div className="relative">
-                                <Key className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={14} />
-                                <Input
-                                    placeholder="whsec_..."
-                                    value={editWebhook.secret}
-                                    onChange={(e) => setEditWebhook((prev) => ({ ...prev, secret: e.target.value }))}
-                                    className="rounded-none border-zinc-200 h-9 text-sm pl-9"
-                                />
-                            </div>
-                        </div>
-                    </div>
-                    <DialogFooter className="px-5 py-3 bg-zinc-50 border-t border-zinc-100 gap-3 sm:justify-end">
-                        <Button variant="ghost" onClick={() => setShowEditModal(false)} className="rounded-none text-sm text-gray-600 h-9">
-                            Cancel
-                        </Button>
-                        <Button
-                            onClick={handleEdit}
-                            disabled={submitting}
-                            className="bg-primary hover:bg-primary/90 rounded-none text-sm px-6 h-9 shadow-md shadow-primary/20 disabled:opacity-60"
-                        >
-                            {submitting ? (<><Loader2 size={14} className="animate-spin mr-2" /> Saving...</>) : "Save Changes"}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    </Field>
+                </div>
+            </SideFormSheet>
         </div>
     );
 }

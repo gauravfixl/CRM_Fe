@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import SubHeader from "@/components/custom/SubHeader"
 import { Smartphone, ShieldCheck, ShieldAlert, Plus, Search, Info, LogOut, Key, CheckCircle2, ChevronRight, MoreVertical, SmartphoneIcon, Mail, Laptop } from "lucide-react"
 import { CustomButton } from "@/components/custom/CustomButton"
@@ -16,6 +16,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFo
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Copy, Download, RefreshCw } from "lucide-react"
+import { getOrgAdminSettings, updateOrgAdminSettings } from "@/hooks/orgAdminHooks"
 
 export default function MFASetupPage() {
     const [searchQuery, setSearchQuery] = useState("")
@@ -26,12 +27,29 @@ export default function MFASetupPage() {
     const [selectedMethod, setSelectedMethod] = useState<any>(null)
     const [isSaving, setIsSaving] = useState(false)
 
-    const handleSave = () => {
+    useEffect(() => {
+        (async () => {
+            try {
+                const res = await getOrgAdminSettings()
+                const s = res?.data?.settings || res?.data?.data || res?.data || {}
+                if (typeof s?.security?.enforceMFA === "boolean") setEnforced(s.security.enforceMFA)
+            } catch (err) {
+                // Silent fallback
+            }
+        })()
+    }, [])
+
+    const handleSave = async () => {
         setIsSaving(true)
-        setTimeout(() => {
-            setIsSaving(false)
+        try {
+            await updateOrgAdminSettings({ security: { enforceMFA: enforced } })
             toast.success("MFA configuration preserved")
-        }, 1000)
+        } catch (err: any) {
+            console.error("Failed to save MFA settings:", err)
+            toast.error(err?.response?.data?.message || "Failed to save MFA settings")
+        } finally {
+            setIsSaving(false)
+        }
     }
 
     const recoveryCodes = [

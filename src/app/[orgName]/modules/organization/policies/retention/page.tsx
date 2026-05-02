@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
     Archive,
     Clock,
@@ -19,19 +19,54 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
+import { getOrgAdminSettings, updateOrgAdminSettings } from "@/hooks/orgAdminHooks";
+
+const retentionToDays = (val: string): number => {
+    const map: Record<string, number> = { "6m": 180, "1y": 365, "3y": 1095, "5y": 1825, "7y": 2555, "forever": 3650 };
+    return map[val] ?? 2555;
+};
+const daysToRetention = (days: number): string => {
+    if (days >= 3650) return "forever";
+    if (days >= 2555) return "7y";
+    if (days >= 1825) return "5y";
+    if (days >= 1095) return "3y";
+    if (days >= 365) return "1y";
+    return "6m";
+};
 
 export default function RetentionPolicyPage() {
     const [auditLogRetention, setAuditLogRetention] = useState("7y");
     const [fileRetention, setFileRetention] = useState("3y");
     const [emailRetention, setEmailRetention] = useState("5y");
     const [legalHold, setLegalHold] = useState(false);
+    const [saving, setSaving] = useState(false);
 
-    const handleSave = () => {
-        toast.promise(new Promise(res => setTimeout(res, 2000)), {
-            loading: "Updating global retention rules...",
-            success: "Policy updated successfully.",
-            error: "Failed to update policy."
-        });
+    useEffect(() => {
+        (async () => {
+            try {
+                const res = await getOrgAdminSettings();
+                const s = res?.data?.settings || res?.data?.data || res?.data || {};
+                const days = s?.organizationPolicies?.retentionDays;
+                if (typeof days === "number") setAuditLogRetention(daysToRetention(days));
+            } catch (err) {
+                // Silent — fall back to defaults
+            }
+        })();
+    }, []);
+
+    const handleSave = async () => {
+        try {
+            setSaving(true);
+            await updateOrgAdminSettings({
+                organizationPolicies: { retentionDays: retentionToDays(auditLogRetention) },
+            });
+            toast.success("Policy updated successfully.");
+        } catch (err: any) {
+            console.error("Failed to update retention policy:", err);
+            toast.error(err?.response?.data?.message || "Failed to update policy.");
+        } finally {
+            setSaving(false);
+        }
     };
 
     return (
@@ -49,9 +84,10 @@ export default function RetentionPolicyPage() {
                     <Button
                         className="h-9 bg-slate-900 hover:bg-slate-800 text-white gap-2 font-bold shadow-lg shadow-slate-200 rounded-none transition-all hover:translate-y-[-1px]"
                         onClick={handleSave}
+                        disabled={saving}
                     >
                         <Save className="w-4 h-4" />
-                        Save Policy
+                        {saving ? "Saving..." : "Save Policy"}
                     </Button>
                 </div>
             </div>

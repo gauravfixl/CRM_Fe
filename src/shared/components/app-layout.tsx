@@ -12,6 +12,7 @@ import { useModule } from '@/app/context/ModuleContext'
 import { useLoaderStore } from '@/lib/loaderStore'
 import { ProtectedRoute } from './custom/ProtectedRoute'
 import { usePermissionLoader } from '@/shared/hooks/use-permission-loader'
+import { usePermissionBootstrap } from '@/shared/hooks/use-permission-bootstrap'
 import { useAuthStore } from '@/lib/useAuthStore'
 import { BrandingProvider } from './BrandingProvider'
 
@@ -106,7 +107,13 @@ export function AppLayout({ children, leftPanel: propLeftPanel, rightPanel: prop
     }
   }, [hydrated, isAuthenticated, isAuthRoute, isPublicRoute, pathname, router])
 
-  // Auto-fetch user permissions from backend on app load
+  // Auto-fetch user permissions from backend on app load.
+  // 1) usePermissionBootstrap → preferred path: hits /me/permissions (effective
+  //    permissions = role.permissions ∪ permissionsOverride). Becomes the source
+  //    of truth once the backend exposes that endpoint.
+  // 2) usePermissionLoader → legacy fallback: derives permissions by matching
+  //    the user's role against /role-permission/all. Kept until /me/permissions ships.
+  usePermissionBootstrap()
   usePermissionLoader()
 
   const leftPanel = propLeftPanel || contextLeftPanel
