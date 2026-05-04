@@ -16,7 +16,6 @@ import {
     History,
     ShieldAlert,
     Fingerprint,
-    Cpu,
     ExternalLink,
     Search,
     Loader2
@@ -133,62 +132,21 @@ export default function AuthenticationSettingsPage() {
                 }
             />
 
-            <div className="p-4 md:p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-
-                {/* Security Score HUD */}
-                <div className="bg-gradient-to-br from-indigo-600 to-indigo-800 text-white rounded-2xl p-1 shadow-2xl overflow-hidden flex flex-col md:flex-row border-b-4 border-b-emerald-400">
-                    <div className="p-6 flex flex-col items-center justify-center md:border-r md:border-white/20 shrink-0">
-                        <div className="relative h-24 w-24 mb-4">
-                            <svg className="h-full w-full -rotate-90" viewBox="0 0 36 36">
-                                <circle cx="18" cy="18" r="16" fill="none" className="stroke-white/20 stroke-[3px]" />
-                                <circle cx="18" cy="18" r="16" fill="none" className="stroke-emerald-500 stroke-[3px]" strokeDasharray="85, 100" strokeLinecap="square" />
-                            </svg>
-                            <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                <span className="text-3xl font-bold text-white">85</span>
-                                <span className="text-[10px] font-semibold tracking-wide text-white/70">Score</span>
-                            </div>
-                        </div>
-                        <Badge className="bg-emerald-500 text-white border-0 rounded-xl px-3 font-semibold text-[10px]">Healthy</Badge>
-                    </div>
-
-                    <div className="p-6 flex-1 space-y-6 relative overflow-hidden">
-                        <Cpu className="absolute -bottom-6 -right-6 h-64 w-64 opacity-5 pointer-events-none" />
-                        <div className="relative z-10 space-y-2">
-                            <h2 className="text-2xl font-bold tracking-tighter text-white">Identity Security Posture</h2>
-                            <p className="text-zinc-300 font-medium leading-relaxed max-w-xl opacity-90">
-                                Your organization's authentication infrastructure is currently resilient. Enabling <span className="text-white underline decoration-emerald-500/50">Passwordless FIDO2</span> login will improve your score to 92%.
-                            </p>
-                        </div>
-                        <div className="flex flex-wrap gap-4 relative z-10 pt-2">
-                            <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-xl border border-white/20">
-                                <div className="h-2 w-2 rounded-full bg-emerald-400"></div>
-                                <span className="text-xs font-semibold tracking-wide">Strict MFA</span>
-                            </div>
-                            <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-xl border border-white/20">
-                                <div className="h-2 w-2 rounded-full bg-emerald-400"></div>
-                                <span className="text-xs font-semibold tracking-wide">Conditional Logic</span>
-                            </div>
-                            <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-xl border border-white/20">
-                                <div className="h-2 w-2 rounded-full bg-orange-400"></div>
-                                <span className="text-xs font-semibold tracking-wide opacity-50">SSO Pending</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <div className="p-4 md:p-8 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
 
                 {/* Dashboard Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {authMethods.map((method) => (
-                        <Card key={method.id} className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm hover:shadow-2xl transition-all group overflow-hidden border-l-4 border-l-zinc-100 dark:border-l-zinc-800 data-[active=true]:border-l-indigo-600" data-active={method.active}>
-                            <CardHeader className="flex flex-row items-start justify-between pb-4">
-                                <div className="flex gap-4">
-                                    <div className={`h-12 w-12 flex items-center justify-center rounded-xl border transition-colors ${method.active ? 'bg-zinc-900 text-white border-zinc-900' : 'bg-zinc-50 dark:bg-zinc-800 text-zinc-400 border-zinc-100 dark:border-zinc-700'
+                        <Card key={method.id} className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm hover:shadow-md hover:border-indigo-200 dark:hover:border-indigo-900 transition-all group overflow-hidden data-[active=true]:border-l-4 data-[active=true]:border-l-indigo-600" data-active={method.active}>
+                            <CardHeader className="flex flex-row items-start justify-between gap-3 pb-3">
+                                <div className="flex gap-3 min-w-0">
+                                    <div className={`h-11 w-11 flex items-center justify-center rounded-lg shrink-0 transition-colors ${method.active ? 'bg-indigo-600 text-white' : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400'
                                         }`}>
-                                        <method.icon className="w-6 h-6" />
+                                        <method.icon className="w-5 h-5" />
                                     </div>
-                                    <div>
-                                        <CardTitle className="text-lg font-bold tracking-tight">{method.name}</CardTitle>
-                                        <p className={`text-xs font-medium tracking-wide mt-1 ${method.active ? 'text-indigo-600' : 'text-zinc-400'
+                                    <div className="min-w-0">
+                                        <CardTitle className="text-base font-semibold tracking-tight text-zinc-900 dark:text-white truncate">{method.name}</CardTitle>
+                                        <p className={`text-xs font-medium mt-0.5 ${method.active ? 'text-indigo-600 dark:text-indigo-400' : 'text-zinc-400'
                                             }`}>{method.status}</p>
                                     </div>
                                 </div>
@@ -198,19 +156,17 @@ export default function AuthenticationSettingsPage() {
                                         setMethods(prev => ({ ...prev, [method.id]: v }))
                                         toast.success(`${method.name} toggled ${v ? "on" : "off"}`)
                                     }}
-                                    className="data-[state=checked]:bg-indigo-600 h-6 w-11"
+                                    className="data-[state=checked]:bg-indigo-600 shrink-0"
                                 />
                             </CardHeader>
-                            <CardContent className="space-y-6">
-                                <p className="text-xs font-medium text-zinc-500 leading-relaxed min-h-[40px]">
+                            <CardContent className="space-y-4">
+                                <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed min-h-[40px]">
                                     {method.desc}
                                 </p>
-                                <div className="pt-4 border-t border-zinc-50 dark:border-zinc-800/50 flex items-center justify-between">
-                                    <div className="flex items-center gap-4">
-                                        <Badge className="bg-zinc-50 dark:bg-zinc-800 text-zinc-500 border-0 rounded-xl text-xs font-semibold px-2 py-1">Identity Policy</Badge>
-                                    </div>
-                                    <CustomButton variant="ghost" className="h-10 text-xs text-zinc-500 font-semibold hover:text-indigo-600 group-hover:translate-x-1 transition-transform" onClick={() => { setSelectedMethod(method); setIsQuickConfigOpen(true); }}>
-                                        Configuration <ChevronRight className="w-4 h-4 ml-1" />
+                                <div className="pt-3 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
+                                    <Badge className="bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 border-0 rounded-md text-[10px] font-semibold px-2 py-0.5 uppercase tracking-wide">Identity Policy</Badge>
+                                    <CustomButton variant="ghost" className="h-8 px-2 text-xs text-zinc-500 font-semibold hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 group-hover:translate-x-0.5 transition-all" onClick={() => { setSelectedMethod(method); setIsQuickConfigOpen(true); }}>
+                                        Configure <ChevronRight className="w-3.5 h-3.5 ml-1" />
                                     </CustomButton>
                                 </div>
                             </CardContent>
@@ -219,53 +175,69 @@ export default function AuthenticationSettingsPage() {
                 </div>
 
                 {/* Audit & Logs */}
-                <Card className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-xl overflow-hidden">
-                    <CardHeader className="bg-zinc-50/50 dark:bg-zinc-900/50 flex flex-row items-center justify-between border-b border-zinc-100 dark:border-zinc-800">
-                        <div className="flex items-center gap-3">
-                            <History className="w-5 h-5 text-zinc-400 font-bold" />
-                            <div>
-                                <CardTitle className="text-sm font-bold">Critical Auth Events</CardTitle>
-                                <CardDescription className="text-xs font-medium text-zinc-400">Real-time Directory Heartbeat</CardDescription>
+                <Card className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm overflow-hidden">
+                    <CardHeader className="bg-zinc-50/60 dark:bg-zinc-900/50 flex flex-row items-center justify-between gap-4 py-4 border-b border-zinc-100 dark:border-zinc-800">
+                        <div className="flex items-center gap-3 min-w-0">
+                            <div className="h-9 w-9 flex items-center justify-center rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shrink-0">
+                                <History className="w-4 h-4 text-zinc-500" />
+                            </div>
+                            <div className="min-w-0">
+                                <CardTitle className="text-sm font-bold text-zinc-900 dark:text-white">Critical Auth Events</CardTitle>
+                                <CardDescription className="text-xs font-medium text-zinc-400 mt-0.5">Real-time directory heartbeat</CardDescription>
                             </div>
                         </div>
-                        <div className="flex gap-2">
-                            <div className="relative">
+                        <div className="flex gap-2 shrink-0">
+                            <div className="relative hidden sm:block">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-400" />
-                                <Input placeholder="Filter entries..." className="pl-9 h-9 w-48 text-xs rounded-xl border-zinc-200" />
+                                <Input placeholder="Filter entries..." className="pl-9 h-9 w-48 text-xs rounded-lg border-zinc-200 dark:border-zinc-700" />
                             </div>
-                            <CustomButton variant="outline" className="h-9 rounded-xl text-xs font-semibold border-zinc-200 bg-white dark:bg-zinc-950" onClick={() => toast.info("Opening full audit logs...")}>
+                            <CustomButton variant="outline" className="h-9 rounded-lg text-xs font-semibold border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-950" onClick={() => toast.info("Opening full audit logs...")}>
                                 Full Logs
                             </CustomButton>
                         </div>
                     </CardHeader>
                     <CardContent className="p-0">
-                        <div className="divide-y divide-zinc-50 dark:divide-zinc-800/50">
+                        <div className="divide-y divide-zinc-100 dark:divide-zinc-800/60">
                             {[
                                 { action: "Impossible Travel Detection", user: "Michael Chen", details: "Credential reuse detected from Stockholm, SE (Session Released)", time: "12 mins ago", severity: "high" },
                                 { action: "Policy Enforcement Update", user: "Directory Admin", details: "MFA challenge bypassed for verified HR subnet", time: "1 hour ago", severity: "low" },
                                 { action: "Brute Force Suppression", user: "sarah.j@fixl.com", details: "IP 182.4.1.20 blocked after 5 failed attempts", time: "3 hours ago", severity: "medium" },
                                 { action: "Session Hijack Prevention", user: "Unknown Identity", details: "Token invalidation triggered for suspicious cookie reuse", time: "5 hours ago", severity: "critical" },
-                            ].map((log, i) => (
-                                <div key={i} className="p-6 flex items-center justify-between hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-all group">
-                                    <div className="flex gap-6 items-center">
-                                        <div className={`h-12 w-12 flex items-center justify-center rounded-xl border font-semibold text-[10px] ${log.severity === 'critical' || log.severity === 'high' ? 'bg-orange-50 text-orange-600 border-orange-100' :
-                                            log.severity === 'medium' ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-zinc-50 text-zinc-400 border-zinc-100'
-                                            }`}>
-                                            {log.severity.substring(0, 4).toUpperCase()}
+                            ].map((log, i) => {
+                                const sev = log.severity
+                                const sevStyles =
+                                    sev === 'critical' ? { dot: 'bg-red-500', bg: 'bg-red-50 dark:bg-red-950/30', text: 'text-red-700 dark:text-red-400', border: 'border-red-200 dark:border-red-900/50' } :
+                                    sev === 'high' ? { dot: 'bg-orange-500', bg: 'bg-orange-50 dark:bg-orange-950/30', text: 'text-orange-700 dark:text-orange-400', border: 'border-orange-200 dark:border-orange-900/50' } :
+                                    sev === 'medium' ? { dot: 'bg-amber-500', bg: 'bg-amber-50 dark:bg-amber-950/30', text: 'text-amber-700 dark:text-amber-400', border: 'border-amber-200 dark:border-amber-900/50' } :
+                                    { dot: 'bg-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-950/30', text: 'text-emerald-700 dark:text-emerald-400', border: 'border-emerald-200 dark:border-emerald-900/50' }
+                                return (
+                                    <div key={i} className="px-5 py-4 flex items-center justify-between gap-4 hover:bg-zinc-50/60 dark:hover:bg-zinc-800/20 transition-all group">
+                                        <div className="flex gap-4 items-center min-w-0">
+                                            <div className={`h-10 w-10 flex items-center justify-center rounded-lg border shrink-0 ${sevStyles.bg} ${sevStyles.border}`}>
+                                                <ShieldAlert className={`w-4 h-4 ${sevStyles.text}`} />
+                                            </div>
+                                            <div className="min-w-0">
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <p className="text-sm font-semibold text-zinc-900 dark:text-white">{log.action}</p>
+                                                    <span className={`inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-md border ${sevStyles.bg} ${sevStyles.text} ${sevStyles.border}`}>
+                                                        <span className={`h-1.5 w-1.5 rounded-full ${sevStyles.dot}`}></span>
+                                                        {sev}
+                                                    </span>
+                                                </div>
+                                                <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium mt-0.5 truncate">
+                                                    {log.user} <span className="mx-1.5 text-zinc-300">•</span> {log.details}
+                                                </p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <p className="text-sm font-bold text-zinc-900 dark:text-white">{log.action}</p>
-                                            <p className="text-xs text-zinc-400 font-medium">{log.user} <span className="mx-2">•</span> {log.details}</p>
+                                        <div className="flex items-center gap-3 shrink-0">
+                                            <span className="text-xs font-medium text-zinc-400 hidden sm:block">{log.time}</span>
+                                            <CustomButton variant="ghost" size="sm" className="h-8 px-3 text-xs font-semibold text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => { setSelectedLog(log); setIsInvestigateOpen(true); }}>
+                                                Investigate
+                                            </CustomButton>
                                         </div>
                                     </div>
-                                    <div className="text-right">
-                                        <span className="text-xs font-medium text-zinc-400 block">{log.time}</span>
-                                        <CustomButton variant="ghost" size="sm" className="h-8 px-2 text-xs font-medium text-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => { setSelectedLog(log); setIsInvestigateOpen(true); }}>
-                                            Investigate
-                                        </CustomButton>
-                                    </div>
-                                </div>
-                            ))}
+                                )
+                            })}
                         </div>
                     </CardContent>
                 </Card>

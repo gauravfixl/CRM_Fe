@@ -619,7 +619,6 @@ const organizationMenuData = [
     group: "IDENTITY & STYLE",
     items: [
       { title: "Branding & Theme", url: "/modules/organization/branding", icon: Palette },
-      { title: "Org Admins", url: "/modules/organization/users", icon: ShieldCheck }, // Renamed from "Organization Users"
     ]
   },
   {
@@ -655,7 +654,6 @@ const adminSidebarGroupsData = [
       },
       { title: "Branding & Theme", icon: Palette, url: "/modules/organization/branding" },
       { title: "Org Settings", icon: Settings, url: "/modules/organization/settings" },
-      { title: "Org Admins", icon: ShieldCheck, url: "/modules/organization/users" },
     ]
   },
   {
@@ -1411,30 +1409,6 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
     }));
   }, [currentOrg]);
 
-  // 7. Organization Users Menu
-  const finalOrgUsersMenu = useMemo(() => {
-    return [
-      {
-        group: "ORG STAFF",
-        items: [
-          { title: "Org Users List", url: `/modules/organization/users`, icon: Users },
-          { title: "Org Roles", url: `/modules/organization/users/roles`, icon: ShieldCheck },
-          { title: "Invitations", url: `/modules/organization/users/invites`, icon: UserPlus },
-        ]
-      },
-      {
-        group: "ACCESS",
-        items: [
-          { title: "Cross-Firm Access", url: `/modules/organization/users/access`, icon: Network },
-          { title: "Deactivated Users", url: `/modules/organization/users/deactivated`, icon: UserMinus },
-        ]
-      }
-    ].map(group => ({
-      ...group,
-      items: group.items.map(item => ({ ...item, url: currentOrg ? `/${currentOrg}${item.url}` : item.url }))
-    }));
-  }, [currentOrg]);
-
   // 8. Organization Policies Menu
   const finalOrgPoliciesMenu = useMemo(() => {
     return [
@@ -1494,7 +1468,6 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
     if (activePath?.includes("/modules/firm-management/firms") || activePath?.includes("/modules/organization/firms") || activePath?.includes("/modules/organization/create") || activePath?.includes("/modules/organization/admins") || activePath?.includes("/modules/organization/access")) return "OrgFirms";
     if (activePath?.includes("/modules/organization/branding")) return "OrgBranding";
     if (activePath?.includes("/modules/organization/settings")) return "OrgSettings";
-    if (activePath?.includes("/modules/organization/users")) return "OrgUsers";
     if (activePath?.includes("/modules/organization/policies")) return "OrgPolicies";
     // Fallback if just clicked organization but not a specific page yet (unlikely if strictly routed)
     if (activeCategory === "ORGANIZATION") return "OrgOverview";
@@ -1573,7 +1546,6 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
       case "OrgRecycleBin": return finalOrgRecycleBinMenu;
       case "OrgBranding": return finalOrgBrandingMenu;
       case "OrgSettings": return finalOrgSettingsMenu;
-      case "OrgUsers": return finalOrgUsersMenu;
       case "OrgPolicies": return finalOrgPoliciesMenu;
       default: return []; // Dashboard or others with no sub-sidebar
     }
@@ -1771,8 +1743,7 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
                                                     activeModule === "OrgRecycleBin" ? "Firm Recycle Bin" :
                                                       activeModule === "OrgBranding" ? "Branding & Theme" :
                                                         activeModule === "OrgSettings" ? "Organization Settings" :
-                                                          activeModule === "OrgUsers" ? "Org Admins" :
-                                                            activeModule === "OrgPolicies" ? "Org Policies" :
+                                                          activeModule === "OrgPolicies" ? "Org Policies" :
                                                               activeModule ? activeModule.toUpperCase() : activeCategory}
               </h4>
               <div className="space-y-4">
@@ -1836,8 +1807,7 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
                                                     activeModule === "OrgRecycleBin" ? "Firm Recycle Bin" :
                                                       activeModule === "OrgBranding" ? "Branding & Theme" :
                                                         activeModule === "OrgSettings" ? "Organization Settings" :
-                                                          activeModule === "OrgUsers" ? "Org Admins" :
-                                                            activeModule === "OrgPolicies" ? "Org Policies" :
+                                                          activeModule === "OrgPolicies" ? "Org Policies" :
                                                               activeModule ? activeModule.toUpperCase() : activeCategory}
               </h3>
             )}

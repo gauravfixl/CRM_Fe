@@ -301,7 +301,13 @@ export function UserFormDialog({
     if (!editTarget) return
     try {
       const role = roles.find((r) => r._id === values.roleId)
+      // Backend UpdateOrganizationUser controller reads `Role` (capital R) +
+      // optional `custom`/`overridePermissions`. Sending only lowercase `role`
+      // was silently ignored — role changes never persisted. Send both casings
+      // for robustness; backend ignores unknown fields.
       await updateOrgUser(editTarget.id, {
+        Role: role?.name || undefined,
+        custom: Boolean(role?.isCustom),
         firstName: values.firstName.trim(),
         lastName: values.lastName.trim(),
         email: values.email.trim(),
