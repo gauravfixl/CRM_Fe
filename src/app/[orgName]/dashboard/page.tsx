@@ -1,12 +1,14 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useParams } from "next/navigation"
 import { Badge } from "@/components/ui/badge"
 import { StatsCards } from "@/components/dashboard/stats-cards"
+import Loader from "@/components/custom/Loader"
 import { userById, getRoles } from "@/hooks/userHooks"
 import { getAllOrg, getOrgById, fetchUsersApi } from "@/hooks/orgHooks"
 import { getAllSessions } from "@/hooks/sessionHooks"
+import { getAllInvoices } from "@/modules/crm/invoices/hooks/invoiceHooks"
 import { useAuthStore } from "@/lib/useAuthStore"
 import { getAllRolesNPermissions } from "@/hooks/roleNPermissionHooks"
 import { decryptData } from "@/utils/crypto"
@@ -29,8 +31,12 @@ export default function DashboardPage() {
   // Falls back to store data if route param is ever missing.
   const orgCount = params?.orgName ? 1 : (singleOrg ? 1 : (organizations?.length ?? 0))
   const [selectedModule, setSelectedModule] = useState("")
-  const [totalUsers, setTotalUsers] = useState<number | null>(null)
-  const [activeSessions, setActiveSessions] = useState<number | null>(null)
+  const [totalUsers, setTotalUsers] = useState<number>(0)
+  const [activeSessions, setActiveSessions] = useState<number>(0)
+  const [revenue, setRevenue] = useState<number>(0)
+  const [sales, setSales] = useState<number>(0)
+  const [activeNow, setActiveNow] = useState<number>(0)
+  const [metricsLoading, setMetricsLoading] = useState<boolean>(true)
   const { setSingleOrganization } = useAuthStore.getState()
 
   useEffect(() => {
@@ -114,34 +120,67 @@ export default function DashboardPage() {
     fetchOrgs()
   }, [setOrganizations])
 
+  const metricsLoadedRef = useRef(false)
   useEffect(() => {
-    const fetchMetrics = async () => {
+    if (metricsLoadedRef.current) return
+    metricsLoadedRef.current = true
+
+    const safety = window.setTimeout(() => {
+      setMetricsLoading(false)
+    }, 20000)
+
+    ;(async () => {
       try {
-        const [usersRes, sessionsRes] = await Promise.allSettled([
+        const [usersRes, sessionsRes, invoicesRes] = await Promise.allSettled([
           fetchUsersApi(),
           getAllSessions(),
+          getAllInvoices(),
         ])
+
         if (usersRes.status === "fulfilled") {
           const d: any = usersRes.value?.data || usersRes.value || {}
           const arr: any[] = Array.isArray(d) ? d : d.users ? d.users : d.data ? d.data : []
           setTotalUsers(arr.length)
         }
+
         if (sessionsRes.status === "fulfilled") {
           const d: any = sessionsRes.value?.data || sessionsRes.value || {}
           const arr: any[] = Array.isArray(d) ? d : d.sessions ? d.sessions : d.data ? d.data : []
-          setActiveSessions(arr.length)
+          const count = Array.isArray(arr) ? arr.length : 0
+          setActiveSessions(count)
+          setActiveNow(count)
         }
-      } catch {
-        // Silent fallback to placeholders
+
+        if (invoicesRes.status === "fulfilled") {
+          const d: any = invoicesRes.value?.data || invoicesRes.value || {}
+          const arr: any[] = Array.isArray(d) ? d : d.data ? d.data : d.invoices ? d.invoices : []
+          if (Array.isArray(arr)) {
+            setSales(arr.length)
+            const paidTotal = arr.reduce((sum, inv: any) => {
+              const status = (inv.status || "").toString().toLowerCase()
+              if (status === "paid") {
+                const amt = Number(inv.amount ?? inv.totalAmount ?? inv.total ?? inv.grandTotal ?? 0)
+                return sum + (Number.isFinite(amt) ? amt : 0)
+              }
+              return sum
+            }, 0)
+            setRevenue(paidTotal)
+          }
+        }
+      } finally {
+        window.clearTimeout(safety)
+        setMetricsLoading(false)
       }
-    }
-    fetchMetrics()
+    })()
   }, [])
 
   return (
     <div className="relative h-[90vh] overflow-hidden organization-dashboard font-outfit">
       {/* Fixed Background */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary/50 via-white dark:via-zinc-950 to-primary/20 pointer-events-none z-0 bg-fixed" />
+
+      {/* Metrics Loader */}
+      {metricsLoading && <Loader />}
 
       {/* Scrollable Content */}
       <div className="absolute inset-0 overflow-y-auto hide-scrollbar z-10">
@@ -166,7 +205,7 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-white text-xs opacity-80">Total Users</p>
-                    <p className="text-white text-xl font-semibold mt-1">{(totalUsers ?? 2847).toLocaleString()}</p>
+                    <p className="text-white text-xl font-semibold mt-1">{totalUsers.toLocaleString()}</p>
                     <p className="text-white text-[10px] mt-1">+12% From Last Month</p>
                   </div>
                   <Users className="w-5 h-5 text-white" />
@@ -192,7 +231,7 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-zinc-600 dark:text-zinc-400 text-xs">Active Sessions</p>
-                    <p className="text-xl font-semibold text-zinc-900 dark:text-white mt-1">{(activeSessions ?? 1234).toLocaleString()}</p>
+                    <p className="text-xl font-semibold text-zinc-900 dark:text-white mt-1">{activeSessions.toLocaleString()}</p>
                     <p className="text-blue-600 dark:text-blue-400 text-[10px] mt-1">+8% Increase</p>
                   </div>
                   <Activity className="w-5 h-5 text-primary" />
@@ -219,7 +258,7 @@ export default function DashboardPage() {
               <p className="text-base font-medium text-zinc-900 dark:text-white">Performance Metrics</p>
               <Badge variant="secondary" className="bg-primary/10 text-primary text-xs px-2 py-0.5">Live Data</Badge>
             </div>
-            <StatsCards />
+            <StatsCards revenue={revenue} sales={sales} activeNow={activeNow} />
           </div>
 
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mt-4">
