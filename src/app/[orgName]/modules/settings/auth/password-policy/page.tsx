@@ -2,41 +2,71 @@
 
 import React, { useState, useEffect } from "react"
 import SubHeader from "@/components/custom/SubHeader"
-import { Settings, Lock, ShieldCheck, Zap, Plus, Search, Info, MoreHorizontal, ChevronRight, RefreshCw, KeyRound, AlertCircle, History, Terminal, ShieldAlert } from "lucide-react"
+import {
+    Lock,
+    Plus,
+    Search,
+    MoreHorizontal,
+    ChevronRight,
+    RefreshCw,
+    KeyRound,
+    History,
+    ShieldAlert,
+    ShieldCheck,
+    Loader2,
+    Trash2,
+    CheckCircle2,
+    XCircle
+} from "lucide-react"
 import { CustomButton } from "@/components/custom/CustomButton"
 import { toast } from "sonner"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { SmallCard } from "@/components/custom/SmallCard"
+import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
 import { Slider } from "@/components/ui/slider"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogClose } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from "@/components/ui/sheet"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { getOrgAdminSettings, updateOrgAdminSettings } from "@/hooks/orgAdminHooks"
 
-const initialRules = [
-    { id: "1", name: "Complexity requirements", type: "Character set", status: "Enforced", icon: KeyRound, description: "Passwords must contain uppercase, lowercase, numbers, and special characters.", severity: "High" },
-    { id: "2", name: "Password history", type: "Rotation", status: "Active", icon: History, description: "Prevent reuse of the last 24 passwords used by the identity.", severity: "Medium" },
-    { id: "3", name: "Banned password list", type: "Security", status: "Enforced", icon: ShieldAlert, description: "Block common passwords like 'Password123' or 'FixlSolutions'.", severity: "Critical" },
+type Rule = {
+    id: string
+    name: string
+    type: string
+    enabled: boolean
+    icon: any
+    description: string
+    importance: "Low" | "Medium" | "High" | "Critical"
+}
+
+const initialRules: Rule[] = [
+    { id: "1", name: "Complexity requirements", type: "Character set", enabled: true, icon: KeyRound, description: "Passwords must contain uppercase, lowercase, numbers, and special characters.", importance: "High" },
+    { id: "2", name: "Password history", type: "Rotation", enabled: true, icon: History, description: "Prevent reuse of the last 24 passwords used by the identity.", importance: "Medium" },
+    { id: "3", name: "Banned password list", type: "Security", enabled: true, icon: ShieldAlert, description: "Block common passwords like 'Password123' or organization name variants.", importance: "Critical" },
 ]
 
 export default function PasswordPolicyPage() {
     const [searchQuery, setSearchQuery] = useState("")
-    const [complex, setComplex] = useState(true)
+    const [rotation, setRotation] = useState(true)
     const [minLength, setMinLength] = useState([12])
     const [isTesterOpen, setIsTesterOpen] = useState(false)
-    const [isPublishOpen, setIsPublishOpen] = useState(false)
     const [isEditRuleOpen, setIsEditRuleOpen] = useState(false)
     const [isAddRuleOpen, setIsAddRuleOpen] = useState(false)
-    const [selectedRule, setSelectedRule] = useState<any>(null)
+    const [selectedRule, setSelectedRule] = useState<Rule | null>(null)
     const [testPassword, setTestPassword] = useState("")
     const [isPublishing, setIsPublishing] = useState(false)
-    const [rules, setRules] = useState(initialRules)
+    const [rules, setRules] = useState<Rule[]>(initialRules)
+
+    const [newRule, setNewRule] = useState({
+        name: "",
+        type: "Character Set",
+        description: "",
+        importance: "Medium" as Rule["importance"],
+        enabled: true
+    })
 
     useEffect(() => {
         (async () => {
@@ -46,19 +76,19 @@ export default function PasswordPolicyPage() {
                 const pp = s?.security?.passwordPolicy
                 if (!pp) return
                 if (typeof pp.minLength === "number") setMinLength([pp.minLength])
-                if (typeof pp.passwordExpiryDays === "number") setComplex(pp.passwordExpiryDays > 0)
+                if (typeof pp.passwordExpiryDays === "number") setRotation(pp.passwordExpiryDays > 0)
                 setRules(prev => prev.map(r => {
                     if (r.id === "1") {
                         const enforced = !!(pp.requireUppercase || pp.requireLowercase || pp.requireNumber || pp.requireSpecialChar)
-                        return { ...r, status: enforced ? "Enforced" : "Disabled" }
+                        return { ...r, enabled: enforced }
                     }
                     if (r.id === "2") {
-                        return { ...r, status: (pp.preventReuseCount ?? 0) > 0 ? "Active" : "Disabled" }
+                        return { ...r, enabled: (pp.preventReuseCount ?? 0) > 0 }
                     }
                     return r
                 }))
-            } catch (err) {
-                // Silent fallback
+            } catch {
+                // silent fallback
             }
         })()
     }, [])
@@ -66,10 +96,8 @@ export default function PasswordPolicyPage() {
     const handlePublish = async () => {
         setIsPublishing(true)
         try {
-            const complexityRule = rules.find(r => r.id === "1")
-            const historyRule = rules.find(r => r.id === "2")
-            const complexityEnabled = complexityRule?.status === "Enforced" || complexityRule?.status === "Active"
-            const historyEnabled = historyRule?.status === "Enforced" || historyRule?.status === "Active"
+            const complexityEnabled = rules.find(r => r.id === "1")?.enabled ?? false
+            const historyEnabled = rules.find(r => r.id === "2")?.enabled ?? false
 
             await updateOrgAdminSettings({
                 security: {
@@ -79,236 +107,266 @@ export default function PasswordPolicyPage() {
                         requireLowercase: complexityEnabled,
                         requireNumber: complexityEnabled,
                         requireSpecialChar: complexityEnabled,
-                        passwordExpiryDays: complex ? 90 : 365,
+                        passwordExpiryDays: rotation ? 90 : 365,
                         preventReuseCount: historyEnabled ? 24 : 0,
                     },
                 },
             })
-            toast.success("Password policies published to directory")
-            setIsPublishOpen(false)
+            toast.success("Password policy saved")
         } catch (err: any) {
-            console.error("Failed to publish password policy:", err)
-            toast.error(err?.response?.data?.message || "Failed to publish password policy")
+            toast.error(err?.response?.data?.message || "Failed to save password policy")
         } finally {
             setIsPublishing(false)
         }
     }
 
-    const toggleRuleStatus = (id: string) => {
-        setRules(prev => prev.map(r => {
-            if (r.id !== id) return r
-            const isOn = r.status === "Enforced" || r.status === "Active"
-            return { ...r, status: isOn ? "Disabled" : (id === "2" ? "Active" : "Enforced") }
-        }))
+    const toggleRule = (id: string, value: boolean) => {
+        setRules(prev => prev.map(r => r.id === id ? { ...r, enabled: value } : r))
+        const r = rules.find(x => x.id === id)
+        toast.success(`${r?.name} ${value ? "enabled" : "disabled"}`)
     }
+
+    const removeRule = (id: string) => {
+        const r = rules.find(x => x.id === id)
+        setRules(prev => prev.filter(x => x.id !== id))
+        toast.success(`${r?.name} removed`)
+        setIsEditRuleOpen(false)
+    }
+
+    const handleAddRule = () => {
+        if (!newRule.name.trim()) {
+            toast.error("Rule name is required")
+            return
+        }
+        const created: Rule = {
+            id: String(Date.now()),
+            name: newRule.name,
+            type: newRule.type,
+            enabled: newRule.enabled,
+            icon: KeyRound,
+            description: newRule.description || "Custom password requirement.",
+            importance: newRule.importance
+        }
+        setRules(prev => [...prev, created])
+        toast.success(`Rule "${created.name}" added`)
+        setIsAddRuleOpen(false)
+        setNewRule({ name: "", type: "Character Set", description: "", importance: "Medium", enabled: true })
+    }
+
+    const filtered = rules.filter(r =>
+        r.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        r.type.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+
+    const importanceClass = (s: Rule["importance"]) =>
+        s === "Critical" ? "bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400" :
+        s === "High" ? "bg-orange-50 text-orange-700 dark:bg-orange-950/40 dark:text-orange-400" :
+        s === "Medium" ? "bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400" :
+        "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400"
+
+    const checks = {
+        length: testPassword.length >= minLength[0],
+        upper: /[A-Z]/.test(testPassword),
+        lower: /[a-z]/.test(testPassword),
+        digit: /[0-9]/.test(testPassword),
+        special: /[^A-Za-z0-9]/.test(testPassword),
+    }
+    const score = Object.values(checks).filter(Boolean).length
+    const strength = score <= 2 ? "Weak" : score === 3 ? "Fair" : score === 4 ? "Good" : "Strong"
 
     return (
         <div className="relative min-h-screen bg-[#F8F9FC] dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">
             <SubHeader
-                title="Password policy"
+                title="Password Policy"
                 breadcrumbItems={[
-                    { label: "Identity & access", href: "#" },
+                    { label: "Identity & Access", href: "#" },
                     { label: "Authentication", href: "/modules/settings/auth" },
-                    { label: "Password policy", href: "/modules/settings/auth/password-policy" }
+                    { label: "Password Policy", href: "#" }
                 ]}
                 rightControls={
                     <div className="flex gap-2">
-                        <CustomButton variant="outline" className="rounded-xl h-10 px-4 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 font-semibold" onClick={() => setIsTesterOpen(true)}>
-                            Policy tester
+                        <CustomButton variant="outline" className="rounded-xl h-10 px-4 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 font-semibold text-sm" onClick={() => setIsTesterOpen(true)}>
+                            Policy Tester
                         </CustomButton>
-                        <CustomButton className="bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 hover:opacity-90 rounded-xl h-10 px-6 font-semibold text-xs tracking-wide shadow-xl border-0" onClick={() => setIsPublishOpen(true)}>
-                            Publish changes
+                        <CustomButton
+                            className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl h-10 px-6 font-semibold text-sm shadow-md border-0"
+                            onClick={handlePublish}
+                            disabled={isPublishing}
+                        >
+                            {isPublishing ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                    Saving...
+                                </>
+                            ) : "Save Policy"}
                         </CustomButton>
                     </div>
                 }
             />
 
-            <div className="p-4 md:p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-                {/* Top HUD Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <SmallCard className="bg-gradient-to-br from-zinc-800 to-zinc-950 p-8 rounded-3xl col-span-1 md:col-span-2 relative overflow-hidden group shadow-2xl border-0">
-                        <Lock className="absolute -bottom-10 -right-10 h-64 w-64 text-white opacity-10 group-hover:scale-110 transition-transform pointer-events-none" />
-                        <div className="relative z-10 space-y-4">
-                            <div className="flex items-center gap-2">
-                                <Badge className="bg-white/10 text-zinc-400 border-zinc-800 rounded-full px-3 py-0.5 font-semibold tracking-wide text-xs">Compliance Standard</Badge>
-                                <Badge className="bg-emerald-500 text-white border-0 rounded-full px-3 py-0.5 font-semibold tracking-wide text-xs">NIST Compliant</Badge>
-                            </div>
-                            <h2 className="text-3xl font-semibold tracking-tight text-white italic">Credential hygiene</h2>
-                            <p className="text-zinc-400 font-medium leading-relaxed text-sm max-w-md">
-                                Define the strength and lifecycle of organization passwords. While MFA is critical, strong base credentials remain the first line of defense.
-                            </p>
-                            <div className="flex items-center gap-10 pt-2">
-                                <div className="flex flex-col">
-                                    <span className="text-2xl font-semibold text-white">24</span>
-                                    <span className="text-xs font-semibold text-zinc-500 tracking-wide mt-1">History Depth</span>
+            <div className="p-4 md:p-8 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+
+                {/* Settings Row */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Card className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm">
+                        <CardContent className="p-5 flex items-center justify-between gap-4">
+                            <div className="flex gap-3 items-center min-w-0">
+                                <div className="h-10 w-10 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center rounded-lg shrink-0">
+                                    <RefreshCw className="w-5 h-5" />
                                 </div>
-                                <div className="h-10 w-px bg-zinc-800"></div>
-                                <div className="flex flex-col">
-                                    <span className="text-2xl font-semibold text-emerald-400 leading-none">Healthy</span>
-                                    <span className="text-xs font-semibold text-zinc-500 tracking-wide mt-1">Entropy Status</span>
+                                <div className="min-w-0">
+                                    <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Rotation Policy</p>
+                                    <p className="text-sm font-semibold text-zinc-900 dark:text-white truncate">90-day expiry</p>
                                 </div>
                             </div>
-                        </div>
-                    </SmallCard>
+                            <Switch checked={rotation} onCheckedChange={(v) => { setRotation(v); toast.success(`Rotation ${v ? "enabled" : "disabled"}`) }} className="data-[state=checked]:bg-indigo-600 shrink-0" />
+                        </CardContent>
+                    </Card>
 
-                    <SmallCard className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 shadow-sm flex flex-col justify-center p-6 space-y-4 rounded-3xl">
-                        <div className="h-10 w-10 bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 flex items-center justify-center rounded-xl font-semibold">
-                            <RefreshCw className="w-5 h-5" />
-                        </div>
-                        <div className="flex items-center justify-between w-full">
-                            <div>
-                                <span className="text-xs font-semibold text-zinc-400 tracking-wide block mb-1">Rotation Policy</span>
-                                <div className="text-xl font-semibold text-zinc-900 dark:text-white leading-none">90-day expiry</div>
+                    <Card className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm">
+                        <CardContent className="p-5 space-y-3">
+                            <div className="flex items-center justify-between gap-3">
+                                <div className="flex gap-3 items-center min-w-0">
+                                    <div className="h-10 w-10 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center rounded-lg shrink-0">
+                                        <Lock className="w-5 h-5" />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Minimum Length</p>
+                                        <p className="text-sm font-semibold text-zinc-900 dark:text-white truncate">{minLength[0]} characters required</p>
+                                    </div>
+                                </div>
                             </div>
-                            <Switch checked={complex} onCheckedChange={setComplex} className="data-[state=checked]:bg-zinc-900 dark:data-[state=checked]:bg-zinc-100" />
-                        </div>
-                    </SmallCard>
-
-                    <SmallCard className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 shadow-sm p-6 space-y-6 rounded-3xl">
-                        <div className="flex items-center justify-between">
-                            <span className="text-xs font-semibold text-zinc-400 tracking-wide">Min. Length</span>
-                            <span className="text-lg font-semibold text-indigo-600">{minLength[0]} characters</span>
-                        </div>
-                        <Slider
-                            value={minLength}
-                            onValueChange={setMinLength}
-                            max={64}
-                            min={8}
-                            step={1}
-                            className="py-4"
-                        />
-                    </SmallCard>
+                            <Slider
+                                value={minLength}
+                                onValueChange={setMinLength}
+                                max={64}
+                                min={8}
+                                step={1}
+                                className="pt-2"
+                            />
+                        </CardContent>
+                    </Card>
                 </div>
 
-                {/* Filters */}
-                <div className="flex items-center gap-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-2 rounded-2xl shadow-sm sticky top-[64px] z-20">
-                    <div className="relative flex-1">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
-                        <Input
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="pl-11 border-none focus-visible:ring-0 rounded-none h-12 bg-transparent font-medium"
-                            placeholder="Find password complexity rules or age policies..."
-                        />
-                    </div>
+                {/* Search */}
+                <div className="relative">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                    <Input
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-11 h-11 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-xl text-sm font-medium"
+                        placeholder="Search password rules..."
+                    />
                 </div>
 
                 {/* Rules Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {rules.filter(r => r.name.toLowerCase().includes(searchQuery.toLowerCase()) || r.type.toLowerCase().includes(searchQuery.toLowerCase())).map((rule) => (
-                        <Card key={rule.id} className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-3xl shadow-sm hover:shadow-2xl transition-all group overflow-hidden border-t-2 border-t-zinc-50 dark:border-t-zinc-800 hover:border-t-zinc-900 dark:hover:border-t-white">
-                            <CardHeader className="flex flex-row items-center justify-between pb-4">
-                                <div className={`h-14 w-14 flex items-center justify-center rounded-2xl border transition-all ${rule.status === 'Enforced' ? 'bg-zinc-950 text-white border-zinc-950 dark:bg-white dark:text-zinc-950' : 'bg-zinc-50 dark:bg-zinc-800 text-zinc-400 border-zinc-100 dark:border-zinc-700'
-                                    }`}>
-                                    <rule.icon className="w-6 h-6" />
-                                </div>
-                                <CustomButton variant="ghost" size="icon" className="text-zinc-400 rounded-xl" onClick={() => { setSelectedRule(rule); setIsEditRuleOpen(true); }}>
-                                    <MoreHorizontal className="w-4 h-4" />
-                                </CustomButton>
-                            </CardHeader>
-
-                            <CardContent className="space-y-6">
-                                <div>
-                                    <h3 className="text-xl font-semibold text-zinc-900 dark:text-white tracking-tight leading-tight">{rule.name}</h3>
-                                    <p className="text-xs text-zinc-400 font-medium mt-1">{rule.type}</p>
-                                    <p className="text-xs text-zinc-500 mt-4 leading-relaxed line-clamp-2">{rule.description}</p>
-                                </div>
-
-                                <div className="flex items-center gap-4">
-                                    <Badge className={`rounded-full border-0 text-xs font-semibold tracking-wide py-1 px-3 ${rule.status === 'Enforced' ? 'bg-emerald-50 text-emerald-600' : 'bg-zinc-100 text-zinc-500'
-                                        }`}>
-                                        {rule.status}
-                                    </Badge>
-                                    <Badge className={`rounded-full border-0 text-xs font-semibold tracking-wide px-3 py-1 ${rule.severity === 'Critical' ? 'bg-red-50 text-red-600' :
-                                        rule.severity === 'High' ? 'bg-orange-50 text-orange-600' : 'bg-blue-50 text-blue-600'
-                                        }`}>
-                                        {rule.severity} importance
-                                    </Badge>
-                                </div>
-
-                                <Separator className="bg-zinc-50 dark:bg-zinc-800/50" />
-
-                                <div className="flex items-center justify-between">
-                                    <div className="flex gap-4">
-                                        <History className="h-5 w-5 text-zinc-300" />
-                                        <Terminal className="h-5 w-5 text-zinc-300" />
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {filtered.map((rule) => (
+                        <Card key={rule.id} className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm hover:shadow-md hover:border-indigo-200 dark:hover:border-indigo-900 transition-all group">
+                            <CardContent className="p-5 space-y-4">
+                                <div className="flex items-start justify-between gap-3">
+                                    <div className="flex gap-3 items-start min-w-0">
+                                        <div className={`h-11 w-11 flex items-center justify-center rounded-lg shrink-0 transition-colors ${rule.enabled ? 'bg-indigo-600 text-white' : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400'}`}>
+                                            <rule.icon className="w-5 h-5" />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <h3 className="text-base font-semibold tracking-tight text-zinc-900 dark:text-white">{rule.name}</h3>
+                                            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{rule.type}</p>
+                                        </div>
                                     </div>
-                                    <CustomButton variant="ghost" className="h-10 text-xs text-zinc-500 font-semibold tracking-wide hover:text-zinc-900 dark:hover:text-white group-hover:translate-x-1 transition-transform" onClick={() => { setSelectedRule(rule); setIsEditRuleOpen(true); }}>
-                                        Edit rule <ChevronRight className="w-4 h-4 ml-1" />
+                                    <CustomButton variant="ghost" size="icon" className="text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 rounded-lg h-8 w-8 shrink-0" onClick={() => { setSelectedRule(rule); setIsEditRuleOpen(true) }}>
+                                        <MoreHorizontal className="w-4 h-4" />
+                                    </CustomButton>
+                                </div>
+
+                                <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed line-clamp-2 min-h-[32px]">{rule.description}</p>
+
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <Badge className={`rounded-md border-0 text-[10px] font-semibold tracking-wide py-0.5 px-2 uppercase ${rule.enabled ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400' : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300'}`}>
+                                        {rule.enabled ? "Enforced" : "Disabled"}
+                                    </Badge>
+                                    <Badge className={`rounded-md border-0 text-[10px] font-semibold tracking-wide py-0.5 px-2 uppercase ${importanceClass(rule.importance)}`}>
+                                        {rule.importance}
+                                    </Badge>
+                                </div>
+
+                                <div className="pt-3 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
+                                    <Switch
+                                        checked={rule.enabled}
+                                        onCheckedChange={(v) => toggleRule(rule.id, v)}
+                                        className="data-[state=checked]:bg-indigo-600"
+                                    />
+                                    <CustomButton variant="ghost" className="h-8 px-2 text-xs text-zinc-500 dark:text-zinc-400 font-semibold hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 group-hover:translate-x-0.5 transition-all" onClick={() => { setSelectedRule(rule); setIsEditRuleOpen(true) }}>
+                                        Edit Rule <ChevronRight className="w-3.5 h-3.5 ml-1" />
                                     </CustomButton>
                                 </div>
                             </CardContent>
                         </Card>
                     ))}
 
-                    <div className="border-4 border-dashed border-zinc-100 dark:border-zinc-800 p-8 flex flex-col items-center justify-center text-center space-y-6 hover:border-zinc-500/20 transition-all cursor-pointer group bg-zinc-50/10 dark:bg-zinc-900/10 rounded-3xl" onClick={() => setIsAddRuleOpen(true)}>
-                        <div className="h-20 w-20 rounded-full bg-zinc-50 dark:bg-zinc-900 flex items-center justify-center group-hover:rotate-90 transition-transform duration-500 shadow-sm border border-zinc-100 dark:border-zinc-800">
-                            <Plus className="w-10 h-10 text-zinc-200 group-hover:text-zinc-950 dark:group-hover:text-white" />
+                    <button
+                        onClick={() => setIsAddRuleOpen(true)}
+                        className="border-2 border-dashed border-zinc-200 dark:border-zinc-800 p-6 flex flex-col items-center justify-center text-center gap-3 hover:border-indigo-400 dark:hover:border-indigo-700 hover:bg-indigo-50/30 dark:hover:bg-indigo-950/10 transition-all cursor-pointer group bg-white/50 dark:bg-zinc-900/30 rounded-xl min-h-[220px]"
+                    >
+                        <div className="h-12 w-12 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center group-hover:bg-indigo-600 transition-colors">
+                            <Plus className="w-5 h-5 text-zinc-500 group-hover:text-white" />
                         </div>
-                        <div className="space-y-1">
-                            <h4 className="text-lg font-semibold text-zinc-400 tracking-wide">Add Directive</h4>
-                            <p className="text-xs text-zinc-400 font-medium">Create a new complexity rule</p>
+                        <div>
+                            <h4 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">Add new rule</h4>
+                            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">Create a custom requirement</p>
                         </div>
-                    </div>
+                    </button>
                 </div>
             </div>
 
-            {/* Modals & Sheets */}
-
             {/* Policy Tester Dialog */}
-            <Dialog open={isTesterOpen} onOpenChange={setIsTesterOpen}>
-                <DialogContent className="sm:max-w-md rounded-3xl border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
+            <Dialog open={isTesterOpen} onOpenChange={(o) => { setIsTesterOpen(o); if (!o) setTestPassword("") }}>
+                <DialogContent className="sm:max-w-md rounded-2xl border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
                     <DialogHeader>
-                        <DialogTitle className="text-2xl font-bold tracking-tight italic">Policy Strength Tester</DialogTitle>
-                        <DialogDescription className="text-zinc-500 font-medium italic">Verify your current policy against a sample password.</DialogDescription>
+                        <DialogTitle className="text-xl font-bold tracking-tight">Password Strength Tester</DialogTitle>
+                        <DialogDescription className="text-sm text-zinc-500 dark:text-zinc-400">Verify your current policy against a sample password.</DialogDescription>
                     </DialogHeader>
-                    <div className="py-6 space-y-4">
+                    <div className="py-4 space-y-4">
                         <div className="space-y-2">
-                            <Label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Password to Test</Label>
-                            <Input 
-                                type="password" 
-                                placeholder="Enter a password..." 
-                                className="rounded-xl h-11 border-zinc-200"
+                            <Label className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Password to test</Label>
+                            <Input
+                                type="text"
+                                placeholder="Enter a password..."
+                                className="rounded-lg h-10 border-zinc-200 dark:border-zinc-700 text-sm"
                                 value={testPassword}
                                 onChange={(e) => setTestPassword(e.target.value)}
                             />
                         </div>
-                        <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 space-y-3">
-                            <h4 className="text-xs font-bold uppercase tracking-widest">Enforcement Result</h4>
-                            <div className="space-y-2">
-                                <div className="flex items-center justify-between text-[11px] font-bold">
-                                    <span className="text-zinc-500 italic">Complexity Check</span>
-                                    <span className={testPassword.length > 8 ? "text-emerald-500" : "text-red-500"}>
-                                        {testPassword.length > 8 ? "PASSED" : "FAILED"}
-                                    </span>
-                                </div>
-                                <div className="flex items-center justify-between text-[11px] font-bold">
-                                    <span className="text-zinc-500 italic">熵 (Entropy) Score</span>
-                                    <span className="text-zinc-900 dark:text-white">Medium</span>
-                                </div>
+                        <div className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 space-y-3">
+                            <div className="flex items-center justify-between">
+                                <h4 className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Strength</h4>
+                                <Badge className={`rounded-md border-0 text-[10px] font-semibold uppercase tracking-wide ${
+                                    strength === "Strong" ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400" :
+                                    strength === "Good" ? "bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-400" :
+                                    strength === "Fair" ? "bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400" :
+                                    "bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400"
+                                }`}>
+                                    {strength}
+                                </Badge>
+                            </div>
+                            <div className="space-y-1.5 text-xs">
+                                {[
+                                    { ok: checks.length, label: `At least ${minLength[0]} characters` },
+                                    { ok: checks.upper, label: "Contains uppercase letter" },
+                                    { ok: checks.lower, label: "Contains lowercase letter" },
+                                    { ok: checks.digit, label: "Contains a number" },
+                                    { ok: checks.special, label: "Contains a special character" },
+                                ].map((c) => (
+                                    <div key={c.label} className="flex items-center gap-2">
+                                        {c.ok ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : <XCircle className="w-4 h-4 text-zinc-300 dark:text-zinc-600" />}
+                                        <span className={c.ok ? "text-zinc-700 dark:text-zinc-300 font-medium" : "text-zinc-500 dark:text-zinc-400"}>{c.label}</span>
+                                    </div>
+                                ))}
                             </div>
                         </div>
                     </div>
-                </DialogContent>
-            </Dialog>
-
-            {/* Publish Confirmation Dialog */}
-            <Dialog open={isPublishOpen} onOpenChange={setIsPublishOpen}>
-                <DialogContent className="sm:max-w-md rounded-3xl border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
-                    <DialogHeader className="text-center items-center">
-                        <div className="h-16 w-16 bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 rounded-2xl flex items-center justify-center font-bold mb-4 shadow-sm">
-                            <ShieldCheck className="w-8 h-8" />
-                        </div>
-                        <DialogTitle className="text-xl font-bold tracking-tight">Sync Policy to Directory?</DialogTitle>
-                        <DialogDescription className="text-zinc-500 font-medium italic">
-                            All identities will be immediately subject to the new requirements. Multi-tenant synchronization will take approximately 120 seconds.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <DialogFooter className="sm:justify-center gap-2 mt-4">
-                        <CustomButton variant="outline" className="rounded-xl px-8" onClick={() => setIsPublishOpen(false)}>Review again</CustomButton>
-                        <CustomButton className="bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 rounded-xl px-8" onClick={handlePublish} disabled={isPublishing}>
-                            {isPublishing ? "Syncing..." : "Publish to Prod"}
-                        </CustomButton>
+                    <DialogFooter>
+                        <CustomButton className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg w-full h-10" onClick={() => setIsTesterOpen(false)}>Done</CustomButton>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
@@ -317,25 +375,25 @@ export default function PasswordPolicyPage() {
             <Sheet open={isEditRuleOpen} onOpenChange={setIsEditRuleOpen}>
                 <SheetContent className="sm:max-w-md border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
                     <SheetHeader>
-                        <SheetTitle className="text-2xl font-bold tracking-tight italic">Rule: {selectedRule?.name}</SheetTitle>
-                        <SheetDescription className="text-zinc-500 font-medium italic">Modify the enforcement logic for this directive.</SheetDescription>
+                        <SheetTitle className="text-xl font-bold tracking-tight">{selectedRule?.name}</SheetTitle>
+                        <SheetDescription className="text-sm text-zinc-500 dark:text-zinc-400">Modify the enforcement logic for this rule.</SheetDescription>
                     </SheetHeader>
-                    <div className="py-8 space-y-6">
-                        <div className="space-y-4">
-                            <h4 className="text-xs font-bold uppercase tracking-widest text-zinc-400">Directive Logic</h4>
-                            <Textarea 
+                    <div className="py-6 space-y-5">
+                        <div className="space-y-2">
+                            <Label className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Description</Label>
+                            <Textarea
                                 defaultValue={selectedRule?.description}
-                                className="rounded-xl min-h-[100px] border-zinc-200 focus:ring-zinc-900 italic font-medium"
+                                className="rounded-lg min-h-[88px] border-zinc-200 dark:border-zinc-700 text-sm"
                             />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Importance</Label>
-                                <Select defaultValue={selectedRule?.severity}>
-                                    <SelectTrigger className="rounded-xl h-11 border-zinc-200">
+                                <Label className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Importance</Label>
+                                <Select defaultValue={selectedRule?.importance}>
+                                    <SelectTrigger className="rounded-lg h-10 border-zinc-200 dark:border-zinc-700 text-sm">
                                         <SelectValue />
                                     </SelectTrigger>
-                                    <SelectContent className="rounded-xl">
+                                    <SelectContent>
                                         <SelectItem value="Low">Low</SelectItem>
                                         <SelectItem value="Medium">Medium</SelectItem>
                                         <SelectItem value="High">High</SelectItem>
@@ -344,21 +402,30 @@ export default function PasswordPolicyPage() {
                                 </Select>
                             </div>
                             <div className="space-y-2">
-                                <Label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Status</Label>
-                                <div className="flex items-center gap-2 h-11">
+                                <Label className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Status</Label>
+                                <div className="flex items-center gap-2 h-10">
                                     <Switch
-                                        checked={selectedRule?.status === 'Enforced' || selectedRule?.status === 'Active'}
-                                        onCheckedChange={() => {
+                                        checked={selectedRule?.enabled || false}
+                                        onCheckedChange={(v) => {
                                             if (!selectedRule) return
-                                            toggleRuleStatus(selectedRule.id)
-                                            setSelectedRule((prev: any) => prev ? { ...prev, status: (prev.status === 'Enforced' || prev.status === 'Active') ? 'Disabled' : (prev.id === '2' ? 'Active' : 'Enforced') } : prev)
+                                            toggleRule(selectedRule.id, v)
+                                            setSelectedRule(prev => prev ? { ...prev, enabled: v } : prev)
                                         }}
+                                        className="data-[state=checked]:bg-indigo-600"
                                     />
-                                    <span className="text-xs font-bold">Active</span>
+                                    <span className="text-sm font-semibold">{selectedRule?.enabled ? "Enabled" : "Disabled"}</span>
                                 </div>
                             </div>
                         </div>
                     </div>
+                    <SheetFooter className="flex flex-col gap-2 sm:flex-col">
+                        <CustomButton className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg w-full h-10 font-semibold text-sm" onClick={() => { toast.success("Rule updated"); setIsEditRuleOpen(false) }}>Save Changes</CustomButton>
+                        {selectedRule && (
+                            <CustomButton variant="outline" className="rounded-lg w-full h-10 text-red-600 border-red-200 hover:bg-red-50 dark:border-red-900 dark:hover:bg-red-950/30" onClick={() => removeRule(selectedRule.id)}>
+                                <Trash2 className="w-4 h-4 mr-2" /> Remove rule
+                            </CustomButton>
+                        )}
+                    </SheetFooter>
                 </SheetContent>
             </Sheet>
 
@@ -366,30 +433,60 @@ export default function PasswordPolicyPage() {
             <Sheet open={isAddRuleOpen} onOpenChange={setIsAddRuleOpen}>
                 <SheetContent className="sm:max-w-md border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
                     <SheetHeader>
-                        <SheetTitle className="text-2xl font-bold tracking-tight italic">New Security Directive</SheetTitle>
-                        <SheetDescription className="text-zinc-500 font-medium italic">Create a custom credential requirement.</SheetDescription>
+                        <SheetTitle className="text-xl font-bold tracking-tight">New password rule</SheetTitle>
+                        <SheetDescription className="text-sm text-zinc-500 dark:text-zinc-400">Create a custom credential requirement.</SheetDescription>
                     </SheetHeader>
-                    <div className="py-8 space-y-6">
+                    <div className="py-6 space-y-5">
                         <div className="space-y-2">
-                            <Label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Rule Name</Label>
-                            <Input placeholder="e.g. Reject common phrases" className="rounded-xl h-11 border-zinc-200 font-bold" />
+                            <Label className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Rule name</Label>
+                            <Input value={newRule.name} onChange={(e) => setNewRule({ ...newRule, name: e.target.value })} placeholder="e.g. Reject common phrases" className="rounded-lg h-10 border-zinc-200 dark:border-zinc-700 text-sm" />
                         </div>
                         <div className="space-y-2">
-                            <Label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Directive Type</Label>
-                            <Select>
-                                <SelectTrigger className="rounded-xl h-11 border-zinc-200 font-bold">
-                                    <SelectValue placeholder="Select type" />
+                            <Label className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Rule type</Label>
+                            <Select value={newRule.type} onValueChange={(v) => setNewRule({ ...newRule, type: v })}>
+                                <SelectTrigger className="rounded-lg h-10 border-zinc-200 dark:border-zinc-700 text-sm">
+                                    <SelectValue />
                                 </SelectTrigger>
-                                <SelectContent className="rounded-xl">
-                                    <SelectItem value="set">Character Set</SelectItem>
-                                    <SelectItem value="age">Max Age</SelectItem>
-                                    <SelectItem value="hist">History Reuse</SelectItem>
-                                    <SelectItem value="block">Blacklist Matching</SelectItem>
+                                <SelectContent>
+                                    <SelectItem value="Character Set">Character Set</SelectItem>
+                                    <SelectItem value="Max Age">Max Age</SelectItem>
+                                    <SelectItem value="History Reuse">History Reuse</SelectItem>
+                                    <SelectItem value="Blacklist Matching">Blacklist Matching</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
-                        <CustomButton className="w-full h-12 bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 rounded-xl font-bold tracking-[0.2em] text-[10px]" onClick={() => { toast.success("Directive added to draft"); setIsAddRuleOpen(false); }}>COMMIT RULE</CustomButton>
+                        <div className="space-y-2">
+                            <Label className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Description</Label>
+                            <Textarea value={newRule.description} onChange={(e) => setNewRule({ ...newRule, description: e.target.value })} placeholder="Explain what this rule enforces..." className="rounded-lg min-h-[80px] border-zinc-200 dark:border-zinc-700 text-sm" />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Importance</Label>
+                                <Select value={newRule.importance} onValueChange={(v) => setNewRule({ ...newRule, importance: v as Rule["importance"] })}>
+                                    <SelectTrigger className="rounded-lg h-10 border-zinc-200 dark:border-zinc-700 text-sm">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="Low">Low</SelectItem>
+                                        <SelectItem value="Medium">Medium</SelectItem>
+                                        <SelectItem value="High">High</SelectItem>
+                                        <SelectItem value="Critical">Critical</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Status</Label>
+                                <div className="flex items-center gap-2 h-10">
+                                    <Switch checked={newRule.enabled} onCheckedChange={(v) => setNewRule({ ...newRule, enabled: v })} className="data-[state=checked]:bg-indigo-600" />
+                                    <span className="text-sm font-semibold">{newRule.enabled ? "Enabled" : "Disabled"}</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
+                    <SheetFooter className="gap-2">
+                        <CustomButton variant="outline" className="rounded-lg flex-1 h-10" onClick={() => setIsAddRuleOpen(false)}>Cancel</CustomButton>
+                        <CustomButton className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg flex-1 h-10" onClick={handleAddRule}>Add Rule</CustomButton>
+                    </SheetFooter>
                 </SheetContent>
             </Sheet>
         </div>

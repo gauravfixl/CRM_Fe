@@ -31,7 +31,7 @@ import {
 import { showSuccess, showWarning, showError } from "@/utils/toast"
 import { UserFormDialog, splitName } from "@/shared/components/rbac/UserFormDialog"
 import { getAllUsers } from "@/modules/crm/users/hooks/userHooks"
-import { createOrgInvite, updateOrgUser, deleteOrgUser } from "@/modules/crm/organizations/hooks/orgHooks"
+import { createOrgInvite, updateOrgUser, deleteOrgUser, getAllOrgInvites, declineOrgInvite } from "@/modules/crm/organizations/hooks/orgHooks"
 
 type Role = string
 type Status = "Active" | "Pending" | "Suspended"
@@ -51,19 +51,102 @@ interface User {
   status: Status
   mfa: MFA
   joined: string
+  // Distinguish accepted org members from pending invitations so action handlers
+  // can route to the right backend endpoint (member vs invite collections).
+  isPending?: boolean
+  inviteToken?: string
 }
 
 const STATUSES: Status[] = ["Active", "Pending", "Suspended"]
 
-const mapApiUserToUser = (apiUser: any): User => {
-  const name = [apiUser.firstName, apiUser.lastName].filter(Boolean).join(" ") || "Unknown"
-  const role: Role = ROLES.includes(apiUser.role) ? apiUser.role : "Member"
-  const status: Status = apiUser.orgActive === true ? "Active" : apiUser.orgActive === false ? "Suspended" : "Pending"
+const cleanCombined = (s: any): string => {
+  if (!s || typeof s !== "string") return ""
+  // Backend builds `name` as `firstName + " " + lastName`. When either is
+  // undefined this produces "undefined Foo" / "Foo undefined" / "undefined undefined".
+  const cleaned = s
+    .split(" ")
+    .filter((p) => p && p !== "undefined" && p !== "null")
+    .join(" ")
+    .trim()
+  return cleaned
+}
+
+// Maps an OrgMember record (accepted user) returned from /organization/users/all
+const mapApiUserToUser = (apiUser: any, inviteFallback?: any): User => {
+  // Backend returns combined `name` field (line 406 of orgController.js), not
+  // separate firstName/lastName. The combined string can include literal
+  // "undefined" tokens when the User record has no name — strip those.
+  const cleanedName = cleanCombined(apiUser.name)
+  const inviteFirst = inviteFallback?.firstName?.trim() || ""
+  const inviteLast = inviteFallback?.lastName?.trim() || ""
+
+  const split = cleanedName ? splitName(cleanedName) : { firstName: "", lastName: "" }
+  const firstName = split.firstName || inviteFirst
+  const lastName = split.lastName || inviteLast
+  const finalName = [firstName, lastName].filter(Boolean).join(" ") || (apiUser.email?.split("@")[0] ?? "Unknown")
+
+  const role: Role = apiUser.role || inviteFallback?.role || "Member"
+  // Backend default-filters status="active", so any returned record is Active
+  // unless the explicit per-member status says otherwise. orgActive in the
+  // payload is the ORGANIZATION's isActive (not the member's), so we don't
+  // use it for member status — that was the source of every user showing
+  // as "Pending" before.
+  const memberStatus = apiUser.status || apiUser.memberStatus
+  const status: Status = memberStatus === "inactive" || memberStatus === "suspended" ? "Suspended" : "Active"
   const mfa: MFA = apiUser.twoFAEnabled ? "Enabled" : "Disabled"
   const joined = apiUser.joinedAt
     ? new Date(apiUser.joinedAt).toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })
     : "N/A"
-  return { id: apiUser._id, name, email: apiUser.email || "", role, status, mfa, joined }
+
+  // firmIds: backend returns either a `firms` array of {_id, FirmName} or a flat `firmIds`
+  let firmIds: string[] = []
+  if (Array.isArray(apiUser.firmIds)) firmIds = apiUser.firmIds.map(String)
+  else if (Array.isArray(apiUser.firms)) firmIds = apiUser.firms.map((f: any) => String(f?._id || f))
+  else if (Array.isArray(inviteFallback?.firmIds)) firmIds = inviteFallback.firmIds.map((f: any) => String(f?._id || f))
+
+  return {
+    id: apiUser.memberId || apiUser._id,
+    firstName,
+    lastName,
+    name: finalName,
+    email: apiUser.email || "",
+    role,
+    roleId: apiUser.roleId || inviteFallback?.roleId,
+    firmIds,
+    status,
+    mfa,
+    joined,
+    isPending: false,
+  }
+}
+
+// Maps a pending OrganizationInvite record to a User-shaped row so the All
+// Users table can show invitees alongside accepted members.
+const mapInviteToUser = (invite: any): User => {
+  const firstName = (invite.firstName || "").trim()
+  const lastName = (invite.lastName || "").trim()
+  const finalName = [firstName, lastName].filter(Boolean).join(" ") || (invite.email?.split("@")[0] ?? "Pending invite")
+  const role: Role = invite.role || "Member"
+  const joined = invite.createdAt
+    ? new Date(invite.createdAt).toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })
+    : "N/A"
+  const firmIds: string[] = Array.isArray(invite.firmIds)
+    ? invite.firmIds.map((f: any) => String(f?._id || f))
+    : []
+  return {
+    id: invite._id || "",
+    firstName,
+    lastName,
+    name: finalName,
+    email: invite.email || "",
+    role,
+    firmIds,
+    status: "Pending",
+    mfa: "Disabled",
+    joined,
+    isPending: true,
+    inviteToken: invite.token || "",
+  }
 }
 
 export default function AllUsersPage() {
@@ -81,10 +164,48 @@ export default function AllUsersPage() {
   const loadUsers = async () => {
     try {
       setLoading(true)
-      const res = await getAllUsers()
-      const data = res?.data || res || []
-      const usersArray = Array.isArray(data) ? data : data.users ? data.users : []
-      setUsers(usersArray.map(mapApiUserToUser))
+      const [usersRes, invitesRes] = await Promise.allSettled([
+        getAllUsers(),
+        getAllOrgInvites(),
+      ])
+
+      // Org members (accepted users)
+      let usersArray: any[] = []
+      if (usersRes.status === "fulfilled") {
+        const d: any = usersRes.value?.data || usersRes.value || {}
+        usersArray = Array.isArray(d) ? d : d.users || d.data || []
+      }
+
+      // All invites (pending, accepted, expired, rejected)
+      let invitesArray: any[] = []
+      if (invitesRes.status === "fulfilled") {
+        const d: any = invitesRes.value?.data || invitesRes.value || {}
+        invitesArray = Array.isArray(d) ? d : d.invitations || d.invites || d.data || []
+      }
+
+      // Build email -> invite lookup so accepted-user rows can fall back to
+      // the invite's firstName/lastName when the linked User record has none.
+      const inviteByEmail = new Map<string, any>()
+      for (const inv of invitesArray) {
+        if (inv?.email) inviteByEmail.set(String(inv.email).toLowerCase(), inv)
+      }
+
+      const memberRows: User[] = usersArray.map((u: any) =>
+        mapApiUserToUser(u, inviteByEmail.get(String(u.email || "").toLowerCase()))
+      )
+
+      // Pending invites that don't have a corresponding accepted member yet
+      const memberEmails = new Set(memberRows.map((m) => m.email.toLowerCase()))
+      const pendingRows: User[] = invitesArray
+        .filter((inv: any) => {
+          const status = String(inv.status || "").toLowerCase()
+          if (status !== "pending") return false
+          const email = String(inv.email || "").toLowerCase()
+          return email && !memberEmails.has(email)
+        })
+        .map(mapInviteToUser)
+
+      setUsers([...pendingRows, ...memberRows])
     } catch (err: any) {
       showError(err?.response?.data?.message || "Failed to load users")
     } finally {
@@ -225,10 +346,18 @@ export default function AllUsersPage() {
   }
 
   const handleChangeRole = async (user: User) => {
+    if (user.isPending) {
+      showWarning("Cannot change role on a pending invite. Cancel it and re-invite with a new role.")
+      return
+    }
     const idx = ROLES.indexOf(user.role)
     const nextRole = ROLES[(idx + 1) % ROLES.length]
     try {
-      await updateOrgUser(user.id, { role: nextRole })
+      // Backend's UpdateOrganizationUser controller reads `Role` (capital R).
+      // Sending lowercase `role` was being silently ignored — so role changes
+      // never actually persisted. Send capital-R primary; keep lowercase for
+      // forward-compat in case the backend is normalised later.
+      await updateOrgUser(user.id, { Role: nextRole, role: nextRole })
       setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, role: nextRole } : u)))
       showSuccess(`${user.name} role changed to ${nextRole}`)
     } catch (err: any) {
@@ -237,6 +366,10 @@ export default function AllUsersPage() {
   }
 
   const handleToggleStatus = async (user: User) => {
+    if (user.isPending) {
+      showWarning("Suspend/Activate isn't available for pending invites.")
+      return
+    }
     const newStatus: Status = user.status === "Active" ? "Suspended" : "Active"
     try {
       await updateOrgUser(user.id, { orgActive: newStatus === "Active" })
@@ -250,10 +383,21 @@ export default function AllUsersPage() {
   const handleDelete = async () => {
     if (!selectedUser) return
     try {
-      await deleteOrgUser(selectedUser.id)
+      if (selectedUser.isPending) {
+        // Pending invitations are removed via declineInvite (token-based).
+        // OrgMember-based deleteOrgUser would 404 since no member exists yet.
+        const token = selectedUser.inviteToken
+        if (!token) {
+          showError("This invite has no token — refresh and try again.")
+          return
+        }
+        await declineOrgInvite(token)
+      } else {
+        await deleteOrgUser(selectedUser.id)
+      }
       setUsers((prev) => prev.filter((u) => u.id !== selectedUser.id))
       setDeleteOpen(false)
-      showSuccess(`${selectedUser.name} has been deleted`)
+      showSuccess(`${selectedUser.name} has been ${selectedUser.isPending ? "removed" : "deleted"}`)
       setSelectedUser(null)
     } catch (err: any) {
       showError(err?.response?.data?.message || "Failed to delete user")
@@ -454,36 +598,40 @@ export default function AllUsersPage() {
                             </button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-48 rounded-none">
-                            <DropdownMenuItem
-                              onClick={() => openEditModal(user)}
-                              className="rounded-none cursor-pointer text-sm"
-                            >
-                              <Edit3 className="w-4 h-4 mr-2" />
-                              Edit user
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => handleToggleStatus(user)}
-                              className="rounded-none cursor-pointer text-sm"
-                            >
-                              {user.status === "Active" ? (
-                                <>
-                                  <UserX className="w-4 h-4 mr-2" />
-                                  Suspend
-                                </>
-                              ) : (
-                                <>
-                                  <UserCheck className="w-4 h-4 mr-2" />
-                                  Activate
-                                </>
-                              )}
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
+                            {!user.isPending && (
+                              <>
+                                <DropdownMenuItem
+                                  onClick={() => openEditModal(user)}
+                                  className="rounded-none cursor-pointer text-sm"
+                                >
+                                  <Edit3 className="w-4 h-4 mr-2" />
+                                  Edit user
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => handleToggleStatus(user)}
+                                  className="rounded-none cursor-pointer text-sm"
+                                >
+                                  {user.status === "Active" ? (
+                                    <>
+                                      <UserX className="w-4 h-4 mr-2" />
+                                      Suspend
+                                    </>
+                                  ) : (
+                                    <>
+                                      <UserCheck className="w-4 h-4 mr-2" />
+                                      Activate
+                                    </>
+                                  )}
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                              </>
+                            )}
                             <DropdownMenuItem
                               onClick={() => openDeleteConfirm(user)}
                               className="rounded-none cursor-pointer text-sm text-red-600 focus:text-red-600"
                             >
                               <Trash2 className="w-4 h-4 mr-2" />
-                              Delete
+                              {user.isPending ? "Cancel invite" : "Delete"}
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
