@@ -24,7 +24,7 @@ const AUTH_ROUTES = [
   '/auth/signup',
   '/auth/create-org',
   '/auth/forgot-pwd',
-  '/acceptInvite'
+  '/accept-invite'
 ] as const
 
 /**

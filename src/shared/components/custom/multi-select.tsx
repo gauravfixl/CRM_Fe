@@ -89,9 +89,16 @@ export function MultiSelect({
         </Button>
       </PopoverTrigger>
       <PopoverContent
-        className="p-0 max-h-[280px] overflow-hidden flex flex-col"
+        // z-[60] + pointer-events-auto: when MultiSelect is rendered inside a
+        // Radix Dialog/Sheet (modal), the portaled popover content sits at
+        // body-level and inherits the dialog's pointer-events:none guard,
+        // which makes items unclickable. Same z-50 also stacks behind the
+        // sheet. Lift z-index and re-enable pointer events so options can
+        // be selected from inside a side sheet (e.g. the Invite User form).
+        className="p-0 max-h-[280px] overflow-hidden flex flex-col z-[60] pointer-events-auto"
         style={{ width: triggerWidth || undefined }}
         align="start"
+        onOpenAutoFocus={(e) => e.preventDefault()}
       >
         {options.length > 5 && (
           <div className="p-2 border-b border-zinc-100 relative shrink-0">

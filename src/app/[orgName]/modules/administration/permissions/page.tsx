@@ -19,8 +19,16 @@ import { Input } from "@/shared/components/ui/input"
 import { toast } from "sonner"
 import { useParams } from "next/navigation"
 import { decryptData } from "@/utils/crypto"
-import { getAllRolesNPermissions } from "@/hooks/roleNPermissionHooks"
+import {
+  getAllRolesNPermissions,
+  getPermissionCatalog,
+} from "@/hooks/roleNPermissionHooks"
 import { useCachedFetch } from "@/lib/swrCache"
+import {
+  MODULE_ACTION_CATALOG,
+  MODULE_DISPLAY_NAMES,
+  MODULE_GROUPS,
+} from "@/shared/utils/module-permission-map"
 
 interface PermissionAction {
   _id?: string
@@ -39,14 +47,58 @@ interface Role {
   userCount?: number
 }
 
+interface CatalogModule {
+  id: string
+  name: string
+  group: string
+  actions: string[]
+}
+
+// Static fallback derived from the central catalog. Used until/unless the
+// backend `/role-permission/catalog` endpoint returns its own list. Keeps the
+// matrix in lock-step with the role-builder which uses the same source.
+const STATIC_CATALOG: CatalogModule[] = Object.entries(MODULE_ACTION_CATALOG).map(
+  ([id, actions]) => ({
+    id,
+    name: MODULE_DISPLAY_NAMES[id] || id,
+    group: MODULE_GROUPS[id] || "Other",
+    actions: actions as string[],
+  })
+)
+
 export default function PermissionSets() {
   const params = useParams()
   const [searchQuery, setSearchQuery] = useState("")
   const [orgName, setOrgName] = useState("")
+  const [catalog, setCatalog] = useState<CatalogModule[] | null>(null)
 
   useEffect(() => {
     setOrgName((params.orgName as string) || localStorage.getItem("orgName") || "")
   }, [params.orgName])
+
+  // Backend catalog overrides the static fallback when available.
+  // 404 → returns null and we keep the static list (see roleNPermissionHooks).
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        const data = await getPermissionCatalog()
+        if (cancelled || !data || !Array.isArray(data.modules)) return
+        const mapped: CatalogModule[] = data.modules.map((m: any) => ({
+          id: m.id,
+          name: m.name || MODULE_DISPLAY_NAMES[m.id] || m.id,
+          group: m.group || MODULE_GROUPS[m.id] || "Other",
+          actions: Array.isArray(m.actions) ? m.actions : [],
+        }))
+        setCatalog(mapped)
+      } catch {
+        // silent — fall back to STATIC_CATALOG
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const fetchPermissions = useCallback(async (): Promise<Role[]> => {
     const scopeParams = { scope: "sc-org" as const }
@@ -88,13 +140,35 @@ export default function PermissionSets() {
     toast.error("Failed to load permission matrix")
   }, [error, hasData])
 
-  const { allModules, moduleActions } = useMemo(() => {
+  // Build the matrix's module/action list catalog-first, then fold in any
+  // module/action referenced by an actual role that the catalog doesn't know
+  // about (legacy data, custom modules from a future backend version, etc.).
+  // This way every catalog module shows up — even if zero roles use it yet —
+  // and nothing referenced by a role gets silently dropped.
+  const { allModules, moduleActions, moduleNames, moduleGroups } = useMemo(() => {
+    const baseList = catalog ?? STATIC_CATALOG
     const moduleMap = new Map<string, Set<string>>()
+    const nameMap: Record<string, string> = {}
+    const groupMap: Record<string, string> = {}
+
+    baseList.forEach((m) => {
+      moduleMap.set(m.id, new Set(m.actions))
+      nameMap[m.id] = m.name
+      groupMap[m.id] = m.group
+    })
 
     roles.forEach((role) => {
       role.permissions?.forEach((perm) => {
+        if (!perm?.module) return
         if (!moduleMap.has(perm.module)) {
           moduleMap.set(perm.module, new Set())
+          nameMap[perm.module] =
+            MODULE_DISPLAY_NAMES[perm.module] ||
+            perm.module
+              .split("_")
+              .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+              .join(" ")
+          groupMap[perm.module] = MODULE_GROUPS[perm.module] || "Other"
         }
         perm.actions?.forEach((action) => {
           moduleMap.get(perm.module)!.add(action)
@@ -102,14 +176,19 @@ export default function PermissionSets() {
       })
     })
 
-    const allModules = Array.from(moduleMap.keys()).sort()
+    const allModules = Array.from(moduleMap.keys()).sort((a, b) => {
+      const ga = groupMap[a] || "Other"
+      const gb = groupMap[b] || "Other"
+      if (ga !== gb) return ga.localeCompare(gb)
+      return (nameMap[a] || a).localeCompare(nameMap[b] || b)
+    })
     const moduleActions: Record<string, string[]> = {}
     allModules.forEach((mod) => {
       moduleActions[mod] = Array.from(moduleMap.get(mod)!).sort()
     })
 
-    return { allModules, moduleActions }
-  }, [roles])
+    return { allModules, moduleActions, moduleNames: nameMap, moduleGroups: groupMap }
+  }, [roles, catalog])
 
   const filteredRoles = useMemo(() => {
     if (!searchQuery) return roles
@@ -285,7 +364,7 @@ export default function PermissionSets() {
                                 key={perm._id || perm.module}
                                 className="border border-zinc-200 bg-zinc-50 text-[10px] font-medium px-2 py-0.5 rounded-none text-zinc-700"
                               >
-                                {perm.module} ({perm.actions?.length || 0})
+                                {moduleNames[perm.module] || perm.module} ({perm.actions?.length || 0})
                               </span>
                             ))}
                             {(role.permissions?.length || 0) > 4 && (
@@ -359,7 +438,14 @@ export default function PermissionSets() {
                         <td className="px-6 py-3 sticky left-0 bg-primary/5 z-10">
                           <div className="flex items-center gap-2">
                             <ListTree className="w-3.5 h-3.5 text-primary" />
-                            <span className="text-xs font-semibold text-primary">{module}</span>
+                            <div className="flex flex-col">
+                              <span className="text-xs font-semibold text-primary">
+                                {moduleNames[module] || module}
+                              </span>
+                              <span className="text-[9px] font-medium text-zinc-500">
+                                {moduleGroups[module] || "Other"} · {module}
+                              </span>
+                            </div>
                           </div>
                         </td>
                         {filteredRoles.map((role) => {
@@ -382,7 +468,9 @@ export default function PermissionSets() {
                       {moduleActions[module].map((action) => (
                         <tr key={`${module}-${action}`} className="hover:bg-zinc-50/50 transition-colors border-b border-zinc-50">
                           <td className="px-6 py-2 pl-10 sticky left-0 bg-white z-10">
-                            <span className="text-xs text-zinc-600 font-medium">{action}</span>
+                            <span className="text-xs text-zinc-600 font-medium capitalize">
+                              {action ? action.replaceAll("_", " ").toLowerCase() : ""}
+                            </span>
                           </td>
                           {filteredRoles.map((role) => (
                             <td key={`${role._id}-${module}-${action}`} className="px-4 py-2 text-center">

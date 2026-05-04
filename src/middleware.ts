@@ -9,7 +9,7 @@ const PUBLIC_ROUTES = [
   "/auth/forgot-pwd",
   "/auth/reset-password",
   "/reset-password",
-  "/acceptInvite",
+  "/accept-invite",
   "/pricing",
   "/modules",
   "/testimonials",
