@@ -407,58 +407,58 @@ const ShiftAllowancePage = () => {
 
                 {/* Analytics */}
                 <div className="grid gap-8 md:grid-cols-3">
-                    <Card className="shadow-2xl shadow-slate-200/50 border-none rounded-none bg-emerald-100 p-12 overflow-hidden relative group">
+                    <Card className="shadow-2xl shadow-slate-200/50 border-none rounded-none bg-emerald-100 p-6 overflow-hidden relative group">
                         <div className="relative z-10">
-                            <div className="flex items-center justify-between mb-8">
-                                <p className="text-sm font-extrabold text-slate-400">Gross payout</p>
-                                <div className="h-12 w-12 rounded-2xl bg-white text-emerald-500 flex items-center justify-center shadow-sm">
-                                    <Coins size={24} />
+                            <div className="flex items-center justify-between mb-3">
+                                <p className="text-sm font-extrabold text-slate-500">Gross payout</p>
+                                <div className="h-10 w-10 rounded-xl bg-white text-emerald-500 flex items-center justify-center shadow-sm">
+                                    <Coins size={20} />
                                 </div>
                             </div>
-                            <div className="space-y-2">
-                                <h4 className="text-4xl font-bold text-slate-900 tracking-tighter">₹ 2.45L</h4>
-                                <div className="flex items-center gap-3">
-                                    <Badge className="bg-emerald-100 text-emerald-700 border-none font-bold px-3 py-1 rounded-lg">
+                            <div className="space-y-1.5">
+                                <h4 className="text-3xl font-bold text-slate-900 tracking-tighter">₹ 2.45L</h4>
+                                <div className="flex items-center gap-2">
+                                    <Badge className="bg-emerald-100 text-emerald-700 border-none font-bold px-2.5 py-0.5 rounded-md">
                                         <TrendingUp size={12} className="mr-1" /> +12.4%
                                     </Badge>
-                                    <p className="text-xs font-bold text-slate-400">vs last cycle</p>
+                                    <p className="text-xs font-bold text-slate-500">vs last cycle</p>
                                 </div>
                             </div>
                         </div>
-                        <div className="absolute -bottom-10 -right-10 h-48 w-48 bg-emerald-100 rounded-full blur-3xl opacity-40 group-hover:scale-125 transition-transform" />
+                        <div className="absolute -bottom-10 -right-10 h-40 w-40 bg-emerald-100 rounded-full blur-3xl opacity-40 group-hover:scale-125 transition-transform" />
                     </Card>
 
-                    <Card className="shadow-2xl shadow-slate-200/50 border-none rounded-none bg-purple-100 p-12 overflow-hidden relative group">
+                    <Card className="shadow-2xl shadow-slate-200/50 border-none rounded-none bg-purple-100 p-6 overflow-hidden relative group">
                         <div className="relative z-10">
-                            <div className="flex items-center justify-between mb-8">
-                                <p className="text-sm font-extrabold text-slate-400">Staff coverage</p>
-                                <div className="h-12 w-12 rounded-2xl bg-purple-100 text-purple-600 flex items-center justify-center">
-                                    <UserCheck size={24} />
+                            <div className="flex items-center justify-between mb-3">
+                                <p className="text-sm font-extrabold text-slate-500">Staff coverage</p>
+                                <div className="h-10 w-10 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center">
+                                    <UserCheck size={20} />
                                 </div>
                             </div>
-                            <div className="space-y-2">
-                                <h4 className="text-4xl font-bold text-slate-900 tracking-tighter">84 Personnel</h4>
+                            <div className="space-y-1.5">
+                                <h4 className="text-3xl font-bold text-slate-900 tracking-tighter">84 Personnel</h4>
                                 <p className="text-sm font-bold text-slate-500 opacity-80">Active across {rules.length} logical allowance hierarchies.</p>
                             </div>
                         </div>
-                        <div className="absolute top-0 right-0 p-12 opacity-5 text-purple-900">
-                            <PieChart size={180} />
+                        <div className="absolute top-0 right-0 p-8 opacity-5 text-purple-900">
+                            <PieChart size={140} />
                         </div>
                     </Card>
 
-                    <Card className="shadow-2xl shadow-slate-200/50 border-none rounded-none bg-amber-100 p-12 overflow-hidden relative">
+                    <Card className="shadow-2xl shadow-slate-200/50 border-none rounded-none bg-amber-100 p-6 overflow-hidden relative">
                         <div className="relative z-10">
-                            <div className="flex items-center justify-between mb-8">
-                                <p className="text-sm font-extrabold text-slate-400">System status</p>
-                                <div className="h-12 w-12 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center">
-                                    <ShieldCheck size={24} />
+                            <div className="flex items-center justify-between mb-3">
+                                <p className="text-sm font-extrabold text-slate-500">System status</p>
+                                <div className="h-10 w-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center">
+                                    <ShieldCheck size={20} />
                                 </div>
                             </div>
-                            <div className="space-y-2">
-                                <h4 className="text-4xl font-bold text-slate-900 tracking-tighter">Synced</h4>
-                                <div className="flex items-center gap-3 mt-4">
-                                    <div className="h-3 w-3 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
-                                    <p className="text-xs font-bold text-slate-400">Last ledger update: 10:42 AM IST</p>
+                            <div className="space-y-1.5">
+                                <h4 className="text-3xl font-bold text-slate-900 tracking-tighter">Synced</h4>
+                                <div className="flex items-center gap-2 mt-2">
+                                    <div className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
+                                    <p className="text-xs font-bold text-slate-500">Last ledger update: 10:42 AM IST</p>
                                 </div>
                             </div>
                         </div>
@@ -913,46 +913,46 @@ const ShiftAllowancePage = () => {
 
                 {/* Timesheet Insight Modal */}
                 <Dialog open={isTimesheetOpen} onOpenChange={setIsTimesheetOpen}>
-                    <DialogContent className="max-w-3xl rounded-[3rem] border-2 border-slate-200 p-12 bg-white">
+                    <DialogContent className="left-auto right-0 top-0 translate-x-0 translate-y-0 max-w-md w-[420px] h-screen max-h-screen rounded-none rounded-l-2xl border-y-0 border-r-0 border-l border-slate-200 p-6 bg-white overflow-y-auto flex flex-col">
                         <DialogHeader>
-                            <DialogTitle className="text-3xl font-bold flex items-center gap-4">
-                                <div className="h-12 w-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-500">
-                                    <History />
+                            <DialogTitle className="text-base font-semibold flex items-center gap-3">
+                                <div className="h-8 w-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-500">
+                                    <History size={16} />
                                 </div>
-                                Compensation Evidence: {selectedEmployee?.name}
+                                <span>Compensation Evidence: {selectedEmployee?.name}</span>
                             </DialogTitle>
                         </DialogHeader>
-                        <div className="space-y-10 py-10">
-                            <div className="bg-slate-50 p-10 rounded-[2.5rem] border border-slate-100 flex items-center justify-between">
+                        <div className="space-y-4 py-3">
+                            <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 flex items-center justify-between">
                                 <div>
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Policy variant</p>
-                                    <Badge className="bg-indigo-900 text-white border-none px-4 py-2 rounded-xl text-xs font-bold">{selectedEmployee?.shift}</Badge>
+                                    <p className="text-[10px] font-medium text-slate-500 uppercase tracking-wide mb-1.5">Policy variant</p>
+                                    <Badge className="bg-indigo-900 text-white border-none px-2.5 py-0.5 rounded-md text-[11px] font-medium">{selectedEmployee?.shift}</Badge>
                                 </div>
                                 <div className="text-right">
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Total accrued</p>
-                                    <p className="text-3xl font-bold text-slate-900">₹ {((selectedEmployee?.rate || 0) * (selectedEmployee?.volume || 0)).toLocaleString()}</p>
+                                    <p className="text-[10px] font-medium text-slate-500 uppercase tracking-wide mb-1.5">Total accrued</p>
+                                    <p className="text-lg font-semibold text-slate-900">₹ {((selectedEmployee?.rate || 0) * (selectedEmployee?.volume || 0)).toLocaleString()}</p>
                                 </div>
                             </div>
 
-                            <div className="space-y-6">
-                                <p className="text-lg font-bold text-slate-900">Shift Log Breakdown (Current Cycle)</p>
-                                <div className="border border-slate-50 rounded-[2rem] overflow-hidden">
+                            <div className="space-y-2.5">
+                                <p className="text-sm font-semibold text-slate-900">Shift Log Breakdown (Current Cycle)</p>
+                                <div className="border border-slate-100 rounded-xl overflow-hidden">
                                     <Table>
                                         <TableHeader className="bg-slate-50/50">
-                                            <TableRow className="border-slate-50">
-                                                <th className="p-6 font-bold text-[10px] text-slate-400 uppercase tracking-widest">Date</th>
-                                                <th className="p-6 font-bold text-[10px] text-slate-400 uppercase tracking-widest">In Range</th>
-                                                <th className="p-6 font-bold text-[10px] text-slate-400 uppercase tracking-widest">Duration</th>
-                                                <th className="p-6 font-bold text-[10px] text-slate-400 uppercase tracking-widest text-right">Credit</th>
+                                            <TableRow className="border-slate-100">
+                                                <th className="p-2.5 font-medium text-[10px] text-slate-500 uppercase tracking-wide">Date</th>
+                                                <th className="p-2.5 font-medium text-[10px] text-slate-500 uppercase tracking-wide">In Range</th>
+                                                <th className="p-2.5 font-medium text-[10px] text-slate-500 uppercase tracking-wide">Duration</th>
+                                                <th className="p-2.5 font-medium text-[10px] text-slate-500 uppercase tracking-wide text-right">Credit</th>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
                                             {[...Array(3)].map((_, i) => (
-                                                <TableRow key={i} className="border-slate-50">
-                                                    <TableCell className="p-6 font-bold text-slate-600">Jan {20 + i}, 2026</TableCell>
-                                                    <TableCell className="p-6 font-bold text-slate-600">10:00 PM &ndash; 06:00 AM</TableCell>
-                                                    <TableCell className="p-6 font-bold text-slate-600">8h 00m</TableCell>
-                                                    <TableCell className="p-6 font-bold text-emerald-500 text-right">₹ {selectedEmployee?.rate}</TableCell>
+                                                <TableRow key={i} className="border-slate-100">
+                                                    <TableCell className="p-2.5 text-xs font-medium text-slate-600">Jan {20 + i}, 2026</TableCell>
+                                                    <TableCell className="p-2.5 text-xs font-medium text-slate-600">10:00 PM &ndash; 06:00 AM</TableCell>
+                                                    <TableCell className="p-2.5 text-xs font-medium text-slate-600">8h 00m</TableCell>
+                                                    <TableCell className="p-2.5 text-xs font-semibold text-emerald-600 text-right">₹ {selectedEmployee?.rate}</TableCell>
                                                 </TableRow>
                                             ))}
                                         </TableBody>
@@ -961,7 +961,7 @@ const ShiftAllowancePage = () => {
                             </div>
                         </div>
                         <DialogFooter>
-                            <Button className="w-full h-16 bg-slate-900 text-white rounded-2xl font-bold text-xl" onClick={() => setIsTimesheetOpen(false)}>
+                            <Button className="w-full h-10 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-medium text-sm" onClick={() => setIsTimesheetOpen(false)}>
                                 Securely close ledger
                             </Button>
                         </DialogFooter>
