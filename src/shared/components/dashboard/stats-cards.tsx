@@ -29,7 +29,7 @@ export function StatsCards({ revenue, sales, activeNow }: StatsCardsProps) {
         </SmallCardHeader>
         <SmallCardContent className="pt-0">
           <p className="text-lg font-semibold">{formatCurrency(revenue)}</p>
-          <p className="text-[11px] text-gray-500">+180.1% from last month</p>
+          <p className="text-[11px] text-gray-500">Paid invoices total</p>
         </SmallCardContent>
       </SmallCard>
 
@@ -40,7 +40,7 @@ export function StatsCards({ revenue, sales, activeNow }: StatsCardsProps) {
         </SmallCardHeader>
         <SmallCardContent className="pt-0">
           <p className="text-lg font-semibold">{formatCount(sales)}</p>
-          <p className="text-[11px] text-gray-500">+19% from last month</p>
+          <p className="text-[11px] text-gray-500">Total invoices issued</p>
         </SmallCardContent>
       </SmallCard>
 
@@ -51,7 +51,7 @@ export function StatsCards({ revenue, sales, activeNow }: StatsCardsProps) {
         </SmallCardHeader>
         <SmallCardContent className="pt-0">
           <p className="text-lg font-semibold">{formatCount(activeNow)}</p>
-          <p className="text-[11px] text-gray-500">+201 since last hour</p>
+          <p className="text-[11px] text-gray-500">Live sessions</p>
         </SmallCardContent>
       </SmallCard>
     </div>

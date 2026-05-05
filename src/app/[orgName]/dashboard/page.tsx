@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import { useParams } from "next/navigation"
+import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { StatsCards } from "@/components/dashboard/stats-cards"
 import Loader from "@/components/custom/Loader"
@@ -14,7 +15,7 @@ import { getAllRolesNPermissions } from "@/hooks/roleNPermissionHooks"
 import { decryptData } from "@/utils/crypto"
 import useRolesStore from "@/lib/roleStore"
 import { SmallCard, SmallCardContent } from "@/components/custom/SmallCard"
-import { Users, Building2, Activity, TrendingUp, Settings, ChevronRight, Sparkles } from "lucide-react"
+import { Users, Building2, Activity, Settings, ChevronRight, Sparkles, Shield } from "lucide-react"
 
 type ScopeParams = {
   scope: "sc-wrk" | "sc-org" | "sc-plat" | "sc-prj" | "sc-tm"
@@ -37,6 +38,8 @@ export default function DashboardPage() {
   const [sales, setSales] = useState<number>(0)
   const [activeNow, setActiveNow] = useState<number>(0)
   const [metricsLoading, setMetricsLoading] = useState<boolean>(true)
+  const simpleRoles = useRolesStore((state) => state.simpleRoles)
+  const totalRoles = Array.isArray(simpleRoles) ? simpleRoles.length : 0
   const { setSingleOrganization } = useAuthStore.getState()
 
   useEffect(() => {
@@ -206,7 +209,7 @@ export default function DashboardPage() {
                   <div>
                     <p className="text-white text-xs opacity-80">Total Users</p>
                     <p className="text-white text-xl font-semibold mt-1">{totalUsers.toLocaleString()}</p>
-                    <p className="text-white text-[10px] mt-1">+12% From Last Month</p>
+                    <p className="text-white text-[10px] opacity-80 mt-1">Across organisation</p>
                   </div>
                   <Users className="w-5 h-5 text-white" />
                 </div>
@@ -232,7 +235,7 @@ export default function DashboardPage() {
                   <div>
                     <p className="text-zinc-600 dark:text-zinc-400 text-xs">Active Sessions</p>
                     <p className="text-xl font-semibold text-zinc-900 dark:text-white mt-1">{activeSessions.toLocaleString()}</p>
-                    <p className="text-blue-600 dark:text-blue-400 text-[10px] mt-1">+8% Increase</p>
+                    <p className="text-zinc-500 dark:text-zinc-400 text-[10px] mt-1">Currently signed in</p>
                   </div>
                   <Activity className="w-5 h-5 text-primary" />
                 </div>
@@ -243,11 +246,11 @@ export default function DashboardPage() {
               <SmallCardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-zinc-600 dark:text-zinc-400 text-xs">Growth Rate</p>
-                    <p className="text-xl font-semibold text-zinc-900 dark:text-white mt-1">24.5%</p>
-                    <p className="text-green-600 dark:text-green-400 text-[10px] mt-1">Above Target</p>
+                    <p className="text-zinc-600 dark:text-zinc-400 text-xs">Total Roles</p>
+                    <p className="text-xl font-semibold text-zinc-900 dark:text-white mt-1">{totalRoles.toLocaleString()}</p>
+                    <p className="text-zinc-500 dark:text-zinc-400 text-[10px] mt-1">Defined in this scope</p>
                   </div>
-                  <TrendingUp className="w-5 h-5 text-primary" />
+                  <Shield className="w-5 h-5 text-primary" />
                 </div>
               </SmallCardContent>
             </SmallCard>
@@ -263,24 +266,26 @@ export default function DashboardPage() {
 
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mt-4">
             {[
-              { title: "Manage Users", desc: "Add, Edit, Or Remove User Accounts", icon: Users, color: "bg-blue-500", from: "from-blue-50 dark:from-blue-950/20", to: "to-indigo-50 dark:to-indigo-950/20" },
-              { title: "Organizations", desc: "Configure Organization Settings", icon: Building2, color: "bg-green-500", from: "from-green-50 dark:from-green-950/20", to: "to-emerald-50 dark:to-emerald-950/20" },
-              { title: "System Settings", desc: "Configure System Preferences", icon: Settings, color: "bg-purple-500", from: "from-purple-50 dark:from-purple-950/20", to: "to-violet-50 dark:to-violet-950/20" },
+              { title: "Manage Users", desc: "Add, Edit, Or Remove User Accounts", icon: Users, color: "bg-blue-500", from: "from-blue-50 dark:from-blue-950/20", to: "to-indigo-50 dark:to-indigo-950/20", href: `/${params?.orgName ?? ""}/modules/users` },
+              { title: "Organization", desc: "View Your Organization Overview", icon: Building2, color: "bg-green-500", from: "from-green-50 dark:from-green-950/20", to: "to-emerald-50 dark:to-emerald-950/20", href: `/${params?.orgName ?? ""}/modules/organization/overview` },
+              { title: "System Settings", desc: "Configure System Preferences", icon: Settings, color: "bg-purple-500", from: "from-purple-50 dark:from-purple-950/20", to: "to-violet-50 dark:to-violet-950/20", href: `/${params?.orgName ?? ""}/modules/organization/settings` },
             ].map((item, i) => (
-              <SmallCard key={i} className={`border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 bg-gradient-to-br ${item.from} ${item.to} hover:shadow-md transition-all duration-200 cursor-pointer`}>
-                <SmallCardContent className="p-4">
-                  <div className="flex items-center space-x-3">
-                    <div className={`w-10 h-10 rounded-lg ${item.color} flex items-center justify-center`}>
-                      <item.icon className="w-5 h-5 text-white" />
+              <Link key={i} href={item.href} className="block">
+                <SmallCard className={`border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 bg-gradient-to-br ${item.from} ${item.to} hover:shadow-md transition-all duration-200 cursor-pointer`}>
+                  <SmallCardContent className="p-4">
+                    <div className="flex items-center space-x-3">
+                      <div className={`w-10 h-10 rounded-lg ${item.color} flex items-center justify-center`}>
+                        <item.icon className="w-5 h-5 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">{item.title}</h3>
+                        <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-0.5">{item.desc}</p>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-zinc-400" />
                     </div>
-                    <div className="flex-1">
-                      <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">{item.title}</h3>
-                      <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-0.5">{item.desc}</p>
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-zinc-400" />
-                  </div>
-                </SmallCardContent>
-              </SmallCard>
+                  </SmallCardContent>
+                </SmallCard>
+              </Link>
             ))}
           </div>
         </div>
