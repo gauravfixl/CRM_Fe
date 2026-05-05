@@ -24,11 +24,16 @@ export const getAllModuleActivities = async (page = 1, limit = 10) => {
 
   const activities = [];
   results.forEach((result, index) => {
-    if (result.status === "fulfilled" && result.value?.data?.activities) {
-      result.value.data.activities.forEach((activity) => {
-        activities.push({ ...activity, module: modules[index] });
-      });
-    }
+    if (result.status !== "fulfilled") return;
+    const payload = result.value?.data;
+    const arr = Array.isArray(payload?.data)
+      ? payload.data
+      : Array.isArray(payload?.activities)
+        ? payload.activities
+        : [];
+    arr.forEach((activity) => {
+      activities.push({ ...activity, module: activity.module || modules[index] });
+    });
   });
 
   return activities.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
