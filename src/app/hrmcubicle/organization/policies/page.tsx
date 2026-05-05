@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     FileText,
@@ -58,6 +58,8 @@ const PolicyCenterPage = () => {
     const [categoryFilter, setCategoryFilter] = useState<string>("All");
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+    const [isComplianceDialogOpen, setIsComplianceDialogOpen] = useState(false);
     const [selectedPolicy, setSelectedPolicy] = useState<Policy | null>(null);
 
     const [formData, setFormData] = useState<Partial<Policy>>({
@@ -67,6 +69,41 @@ const PolicyCenterPage = () => {
         effectiveDate: new Date().toISOString().split('T')[0],
         description: ""
     });
+    const [uploadedFileName, setUploadedFileName] = useState<string>("");
+    const addFileInputRef = useRef<HTMLInputElement>(null);
+    const editFileInputRef = useRef<HTMLInputElement>(null);
+
+    const formatBytes = (bytes: number) => {
+        if (bytes < 1024) return `${bytes} B`;
+        if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+        return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+    };
+
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        if (file.size > 10 * 1024 * 1024) {
+            toast({ title: "File too large", description: "Policy document must be under 10 MB.", variant: "destructive" });
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = () => {
+            setFormData((prev) => ({
+                ...prev,
+                fileUrl: reader.result as string,
+                fileSize: formatBytes(file.size),
+            }));
+            setUploadedFileName(file.name);
+            toast({ title: "File ready", description: `${file.name} attached.` });
+        };
+        reader.readAsDataURL(file);
+        e.target.value = "";
+    };
+
+    const resetAddForm = () => {
+        setFormData({ title: "", category: "HR", version: "1.0", effectiveDate: new Date().toISOString().split('T')[0], description: "" });
+        setUploadedFileName("");
+    };
 
     const handleAddPolicy = () => {
         if (!formData.title || !formData.category) {
@@ -76,11 +113,11 @@ const PolicyCenterPage = () => {
         addPolicy({
             ...formData,
             lastUpdated: new Date().toISOString().split('T')[0],
-            fileSize: "0.0 MB"
+            fileSize: formData.fileSize || "0.0 MB"
         } as Omit<Policy, 'id'>);
         toast({ title: "Policy Added", description: `${formData.title} has been published.` });
         setIsAddDialogOpen(false);
-        setFormData({ title: "", category: "HR", version: "1.0", effectiveDate: new Date().toISOString().split('T')[0], description: "" });
+        resetAddForm();
     };
 
     const handleUpdatePolicy = () => {
@@ -158,7 +195,7 @@ const PolicyCenterPage = () => {
                             {(["HR", "IT", "Finance", "General"] as const).map((cat) => (
                                 <Card
                                     key={cat}
-                                    className={`cursor-pointer group overflow-hidden border transition-all hover:shadow-xl rounded-[2.5rem] ${categoryFilter === cat ? 'ring-2 ring-indigo-500 bg-white' : 'hover:scale-[1.02]'} ${getCategoryStyles(cat).split(' ')[0]} ${getCategoryStyles(cat).split(' ')[2]}`}
+                                    className={`cursor-pointer group overflow-hidden border-none transition-all hover:shadow-xl rounded-xl ${categoryFilter === cat ? 'ring-2 ring-indigo-500 bg-white' : 'hover:scale-[1.02]'} ${getCategoryStyles(cat).split(' ')[0]} ${getCategoryStyles(cat).split(' ')[2]}`}
                                     onClick={() => setCategoryFilter(categoryFilter === cat ? 'All' : cat)}
                                 >
                                     <div className="p-6 space-y-4">
@@ -177,7 +214,7 @@ const PolicyCenterPage = () => {
                         </div>
                     </div>
 
-                    <Card className="rounded-[2.5rem] bg-indigo-50/50 border border-indigo-100 p-8 shadow-sm relative overflow-hidden group">
+                    <Card className="rounded-xl bg-indigo-50/50 border-none p-8 shadow-sm relative overflow-hidden group">
                         <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-110 transition-transform">
                             <Shield size={120} className="text-indigo-600" />
                         </div>
@@ -189,7 +226,10 @@ const PolicyCenterPage = () => {
                             <p className="text-slate-500 text-[11px] font-bold leading-relaxed italic">
                                 All policies are encrypted and follow standard compliance protocols.
                             </p>
-                            <Button className="w-full bg-indigo-600 hover:bg-slate-900 text-white h-11 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all shadow-lg shadow-indigo-100 border-none">
+                            <Button
+                                className="w-full bg-indigo-600 hover:bg-slate-900 text-white h-11 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all shadow-lg shadow-indigo-100 border-none"
+                                onClick={() => setIsComplianceDialogOpen(true)}
+                            >
                                 View Compliance Logs
                             </Button>
                         </div>
@@ -203,7 +243,7 @@ const PolicyCenterPage = () => {
                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                             <Input
                                 placeholder="Search policies by title..."
-                                className="pl-11 h-9 rounded-xl bg-slate-50 border-none shadow-none font-bold text-[10px] focus-visible:ring-2 focus-visible:ring-indigo-50"
+                                className="pl-11 h-9 rounded-xl bg-slate-50 border border-slate-200 shadow-none font-bold text-[10px] focus-visible:ring-2 focus-visible:ring-indigo-50"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
@@ -243,7 +283,7 @@ const PolicyCenterPage = () => {
                                                             </Button>
                                                         </DropdownMenuTrigger>
                                                         <DropdownMenuContent align="end" className="rounded-2xl border-none shadow-2xl p-2 w-48 font-bold">
-                                                            <DropdownMenuItem className="rounded-xl h-11 gap-2">
+                                                            <DropdownMenuItem className="rounded-xl h-11 gap-2" onClick={() => { setSelectedPolicy(policy); setIsViewDialogOpen(true); }}>
                                                                 <Eye size={16} /> View Document
                                                             </DropdownMenuItem>
                                                             <DropdownMenuItem
@@ -256,7 +296,10 @@ const PolicyCenterPage = () => {
                                                             >
                                                                 <Edit size={16} /> Edit Details
                                                             </DropdownMenuItem>
-                                                            <DropdownMenuItem className="rounded-xl h-11 gap-2">
+                                                            <DropdownMenuItem className="rounded-xl h-11 gap-2" onClick={() => {
+                                                                navigator.clipboard.writeText(`${window.location.origin}/hrmcubicle/organization/policies?id=${policy.id}`);
+                                                                toast({ title: "Link Copied", description: `Shareable link for "${policy.title}" copied to clipboard.` });
+                                                            }}>
                                                                 <Share2 size={16} /> Share Internal
                                                             </DropdownMenuItem>
                                                             <DropdownMenuItem
@@ -304,7 +347,20 @@ const PolicyCenterPage = () => {
                                                     <FileText size={14} className="text-slate-400" />
                                                     <span className="text-[10px] font-bold text-slate-500">{policy.fileSize || "1.2 MB"} • PDF</span>
                                                 </div>
-                                                <Button size="sm" className="h-8 rounded-lg bg-indigo-600 hover:bg-slate-900 text-white font-bold text-[10px] gap-2">
+                                                <Button size="sm" className="h-8 rounded-lg bg-indigo-600 hover:bg-slate-900 text-white font-bold text-[10px] gap-2" onClick={() => {
+                                                    const link = document.createElement("a");
+                                                    if (policy.fileUrl) {
+                                                        link.href = policy.fileUrl;
+                                                        link.download = `${policy.title.replace(/\s+/g, '_')}_v${policy.version}`;
+                                                    } else {
+                                                        const content = `POLICY DOCUMENT\n\nTitle: ${policy.title}\nCategory: ${policy.category}\nVersion: ${policy.version}\nEffective Date: ${policy.effectiveDate}\nLast Updated: ${policy.lastUpdated}\n\n${policy.description || `This document contains the official policy guidelines for ${policy.title.toLowerCase()}.`}`;
+                                                        const blob = new Blob([content], { type: "text/plain" });
+                                                        link.href = URL.createObjectURL(blob);
+                                                        link.download = `${policy.title.replace(/\s+/g, '_')}_v${policy.version}.txt`;
+                                                    }
+                                                    link.click();
+                                                    toast({ title: "Downloaded", description: `${policy.title} document downloaded.` });
+                                                }}>
                                                     <Download size={14} /> Download
                                                 </Button>
                                             </div>
@@ -377,14 +433,43 @@ const PolicyCenterPage = () => {
                             />
                         </div>
 
+                        <div className="space-y-1.5">
+                            <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Description</Label>
+                            <Input
+                                className="rounded-lg h-10 bg-slate-50 border border-slate-300 font-medium px-4 text-xs focus:border-indigo-500 transition-colors"
+                                placeholder="Short summary (optional)"
+                                value={formData.description || ""}
+                                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                            />
+                        </div>
+
                         <div className="space-y-3 pt-2">
                             <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Document Upload</Label>
-                            <div className="border-2 border-dashed border-slate-200 rounded-[1.5rem] p-8 flex flex-col items-center justify-center bg-slate-50 hover:bg-indigo-50/30 hover:border-indigo-200 transition-all cursor-pointer group">
+                            <input
+                                ref={addFileInputRef}
+                                type="file"
+                                accept=".pdf,.doc,.docx,.txt,.md,application/pdf"
+                                onChange={handleFileSelect}
+                                className="hidden"
+                            />
+                            <div
+                                onClick={() => addFileInputRef.current?.click()}
+                                className="border-2 border-dashed border-slate-200 rounded-[1.5rem] p-8 flex flex-col items-center justify-center bg-slate-50 hover:bg-indigo-50/30 hover:border-indigo-200 transition-all cursor-pointer group"
+                            >
                                 <div className="h-12 w-12 bg-white rounded-full flex items-center justify-center shadow-sm border border-slate-100 mb-3 group-hover:scale-110 transition-transform">
                                     <Download size={20} className="text-indigo-600 rotate-180" />
                                 </div>
-                                <p className="text-xs font-bold text-slate-900">Click to upload policy PDF</p>
-                                <p className="text-[10px] text-slate-400 font-medium">Max size 10MB</p>
+                                {uploadedFileName ? (
+                                    <>
+                                        <p className="text-xs font-bold text-emerald-600">{uploadedFileName}</p>
+                                        <p className="text-[10px] text-slate-400 font-medium">{formData.fileSize} · Click to replace</p>
+                                    </>
+                                ) : (
+                                    <>
+                                        <p className="text-xs font-bold text-slate-900">Click to upload policy document</p>
+                                        <p className="text-[10px] text-slate-400 font-medium">PDF, DOC, DOCX, TXT · Max 10 MB</p>
+                                    </>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -396,7 +481,7 @@ const PolicyCenterPage = () => {
                         >
                             Publish Policy
                         </Button>
-                        <Button variant="outline" className="h-10 px-6 rounded-lg font-bold border-slate-300 text-slate-600 text-xs" onClick={() => setIsAddDialogOpen(false)}>
+                        <Button variant="outline" className="h-10 px-6 rounded-lg font-bold border-slate-300 text-slate-600 text-xs" onClick={() => { setIsAddDialogOpen(false); resetAddForm(); }}>
                             Cancel
                         </Button>
                     </DialogFooter>
@@ -460,6 +545,38 @@ const PolicyCenterPage = () => {
                                 onChange={(e) => setFormData({ ...formData, effectiveDate: e.target.value })}
                             />
                         </div>
+
+                        <div className="space-y-1.5">
+                            <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Description</Label>
+                            <Input
+                                className="rounded-lg h-10 bg-slate-50 border border-slate-300 font-medium px-4 text-xs focus:border-indigo-500 transition-colors"
+                                value={formData.description || ""}
+                                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                            />
+                        </div>
+
+                        <div className="space-y-3 pt-2">
+                            <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Replace Document (optional)</Label>
+                            <input
+                                ref={editFileInputRef}
+                                type="file"
+                                accept=".pdf,.doc,.docx,.txt,.md,application/pdf"
+                                onChange={handleFileSelect}
+                                className="hidden"
+                            />
+                            <div
+                                onClick={() => editFileInputRef.current?.click()}
+                                className="border-2 border-dashed border-slate-200 rounded-[1.5rem] p-5 flex items-center gap-3 bg-slate-50 hover:bg-indigo-50/30 hover:border-indigo-200 transition-all cursor-pointer"
+                            >
+                                <div className="h-10 w-10 bg-white rounded-full flex items-center justify-center shadow-sm border border-slate-100">
+                                    <FileText size={16} className="text-indigo-600" />
+                                </div>
+                                <div className="flex-1">
+                                    <p className="text-xs font-bold text-slate-900">{uploadedFileName || (formData.fileUrl ? "Current document" : "No file attached")}</p>
+                                    <p className="text-[10px] text-slate-400 font-medium">{formData.fileSize || ""} · Click to replace</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <DialogFooter className="gap-2 pt-6 border-t border-slate-200 sm:justify-end">
@@ -469,8 +586,101 @@ const PolicyCenterPage = () => {
                         >
                             Save Changes
                         </Button>
-                        <Button variant="outline" className="h-10 px-6 rounded-lg font-bold border-slate-300 text-slate-600 text-xs" onClick={() => setIsEditDialogOpen(false)}>
+                        <Button variant="outline" className="h-10 px-6 rounded-lg font-bold border-slate-300 text-slate-600 text-xs" onClick={() => { setIsEditDialogOpen(false); setUploadedFileName(""); }}>
                             Cancel
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+            {/* View Document Dialog */}
+            <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+                <DialogContent className="bg-white rounded-[2.5rem] border border-slate-300 p-8 max-w-lg shadow-3xl">
+                    <DialogHeader className="space-y-2">
+                        <div className="h-11 w-11 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600 mb-1 shadow-inner">
+                            <Eye size={24} />
+                        </div>
+                        <DialogTitle className="text-2xl font-bold tracking-tight text-slate-900">{selectedPolicy?.title}</DialogTitle>
+                        <DialogDescription className="text-slate-500 font-medium text-xs">
+                            Policy document preview
+                        </DialogDescription>
+                    </DialogHeader>
+                    {selectedPolicy && (
+                        <div className="py-6 space-y-5">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1">
+                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Category</p>
+                                    <p className="text-sm font-bold text-slate-700">{selectedPolicy.category}</p>
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Version</p>
+                                    <p className="text-sm font-bold text-slate-700">v{selectedPolicy.version}</p>
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Effective Date</p>
+                                    <p className="text-sm font-bold text-slate-700">{new Date(selectedPolicy.effectiveDate).toLocaleDateString()}</p>
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Last Updated</p>
+                                    <p className="text-sm font-bold text-slate-700">{new Date(selectedPolicy.lastUpdated).toLocaleDateString()}</p>
+                                </div>
+                            </div>
+                            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-3">
+                                <p className="text-xs font-bold text-slate-700">Document Content</p>
+                                <p className="text-[11px] text-slate-500 leading-relaxed italic">
+                                    This document outlines the official guidelines regarding {selectedPolicy.title.toLowerCase()} applicable to all business units and employees.
+                                    All employees are required to comply with the provisions stated herein effective from {new Date(selectedPolicy.effectiveDate).toLocaleDateString()}.
+                                </p>
+                            </div>
+                            <div className="flex items-center gap-2 text-[10px] text-slate-400 font-bold">
+                                <FileText size={14} /> {selectedPolicy.fileSize || "1.2 MB"} • PDF Format
+                            </div>
+                        </div>
+                    )}
+                    <DialogFooter className="gap-2 pt-6 border-t border-slate-200 sm:justify-end">
+                        <Button variant="outline" className="h-10 px-6 rounded-lg font-bold border-slate-300 text-slate-600 text-xs" onClick={() => setIsViewDialogOpen(false)}>
+                            Close
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Compliance Logs Dialog */}
+            <Dialog open={isComplianceDialogOpen} onOpenChange={setIsComplianceDialogOpen}>
+                <DialogContent className="bg-white rounded-[2.5rem] border border-slate-300 p-8 max-w-lg shadow-3xl">
+                    <DialogHeader className="space-y-2">
+                        <div className="h-11 w-11 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 mb-1 shadow-inner">
+                            <Shield size={24} />
+                        </div>
+                        <DialogTitle className="text-2xl font-bold tracking-tight text-slate-900">Compliance Logs</DialogTitle>
+                        <DialogDescription className="text-slate-500 font-medium text-xs">
+                            Audit trail of policy compliance and encryption events.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-6 space-y-4">
+                        {[
+                            { action: "Policy vault encrypted", timestamp: "2026-03-31 09:00", status: "Secure" },
+                            { action: "Annual compliance audit passed", timestamp: "2026-03-15 14:30", status: "Verified" },
+                            { action: "Data protection review completed", timestamp: "2026-03-01 10:15", status: "Compliant" },
+                            { action: "Access permissions updated", timestamp: "2026-02-20 16:45", status: "Updated" },
+                            { action: "Policy backup created", timestamp: "2026-02-10 08:00", status: "Archived" },
+                        ].map((log, i) => (
+                            <div key={i} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                <div className="flex items-center gap-3">
+                                    <div className="h-8 w-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                                        <Shield size={14} />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-bold text-slate-700">{log.action}</p>
+                                        <p className="text-[10px] text-slate-400 font-medium">{log.timestamp}</p>
+                                    </div>
+                                </div>
+                                <Badge className="bg-emerald-50 text-emerald-700 border-none font-bold text-[8px] h-5 px-2 rounded-lg">{log.status}</Badge>
+                            </div>
+                        ))}
+                    </div>
+                    <DialogFooter className="gap-2 pt-6 border-t border-slate-200 sm:justify-end">
+                        <Button variant="outline" className="h-10 px-6 rounded-lg font-bold border-slate-300 text-slate-600 text-xs" onClick={() => setIsComplianceDialogOpen(false)}>
+                            Close
                         </Button>
                     </DialogFooter>
                 </DialogContent>

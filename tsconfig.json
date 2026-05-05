@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "ignoreDeprecations": "5.0",
     "lib": [
       "dom",
       "dom.iterable",
@@ -28,7 +29,8 @@
         "./src/*"
       ],
       "@/components/*": [
-        "./src/shared/components/*"
+        "./src/shared/components/*",
+        "./src/components/*"
       ],
       "@/utils/*": [
         "./src/shared/utils/*"
@@ -105,6 +107,7 @@
     "src/**/*.tsx"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "dashboard_entra_v1_backup"
   ]
 }

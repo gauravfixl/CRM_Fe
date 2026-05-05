@@ -71,14 +71,16 @@ import { usePermissions } from "@/shared/hooks/use-permissions"
 import { useWorkflowStore } from "@/shared/data/workflow-store"
 import { useSprintEpicStore } from "@/shared/data/sprint-epic-store"
 import { useProjectMemberStore } from "@/shared/data/project-member-store"
+import { axiosInstance as axios } from "@/lib/axios"
 
 export default function ProjectBoard() {
     const { id } = useParams()
     const projectId = id as string
 
-    const { getIssuesByProject, addIssue, updateIssueStatus, deleteIssue } = useIssueStore()
+    const { getIssuesByProject, addIssue, updateIssueStatus, deleteIssue, loadIssuesByProject } = useIssueStore()
     const { getProjectById } = useProjectStore()
     const { getSprintsByProject, getEpicsByProject, getActiveSprint } = useSprintEpicStore()
+    const [selectedSprintId, setSelectedSprintId] = useState<string | null>(null)
 
     const project = getProjectById(projectId)
     const issues = getIssuesByProject(projectId)
@@ -103,8 +105,45 @@ export default function ProjectBoard() {
     const [columnError, setColumnError] = useState<string | null>(null)
 
     const permissions = usePermissions({ projectId })
-    const { getConfig, canTransition, addColumn, moveColumn, deleteColumn, updateColumn } = useWorkflowStore()
+    const { getConfig, setConfig, canTransition, addColumn, moveColumn, deleteColumn, updateColumn } = useWorkflowStore()
     const boardConfig = getConfig(projectId)
+
+    useEffect(() => {
+        // Load backend tasks -> issues so the board renders real data.
+        // This is intentionally non-blocking; UI shows existing store content until ready.
+        void loadIssuesByProject(projectId).catch((e) => console.error("Failed to load issues:", e))
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [projectId])
+
+    useEffect(() => {
+        // Sync workflow column structure from backend board columns (keys are what matters).
+        void (async () => {
+            try {
+                const boardRes = await axios.get(`/board/${projectId}/all`)
+                const firstBoard = boardRes?.data?.boards?.[0]
+                if (!firstBoard) return
+
+                const columns = (firstBoard.columns ?? []).map((c: any, idx: number) => ({
+                    id: String(c._id ?? `col-${idx}`),
+                    name: String(c.name ?? String(c.key ?? `Column ${idx + 1}`)),
+                    key: String(c.key ?? "").toUpperCase(),
+                    color: "#64748b",
+                    order: typeof c.order === "number" ? c.order : idx,
+                    limit: undefined
+                }))
+
+                setConfig(projectId, {
+                    boardId: String(firstBoard._id),
+                    projectId,
+                    columns,
+                    transitions: []
+                })
+            } catch (e) {
+                console.error("Failed to sync workflow columns:", e)
+            }
+        })()
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [projectId])
 
     const handleAddColumn = () => {
         const trimmedName = newColumnName.trim()
@@ -149,7 +188,13 @@ export default function ProjectBoard() {
     }
 
     const isScrum = project?.methodology === 'scrum'
-    const boardIssues = isScrum && activeSprint ? issues.filter(i => i.sprintId === activeSprint.id) : issues
+    const projectSprints = getSprintsByProject(projectId)
+    const nonCompletedSprints = projectSprints.filter(s => s.status !== "COMPLETED")
+    // Use selected sprint if set, otherwise fall back to active sprint
+    const currentSprint = selectedSprintId
+        ? projectSprints.find(s => s.id === selectedSprintId) || activeSprint
+        : activeSprint
+    const boardIssues = isScrum && currentSprint ? issues.filter(i => i.sprintId === currentSprint.id) : issues
 
     const filteredIssues = boardIssues.filter(i =>
         i.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -187,7 +232,7 @@ export default function ProjectBoard() {
             type: quickAddTypes[status] || "TASK",
             assigneeId: quickAddAssignees[status] || "u1",
             reporterId: "u1",
-            sprintId: activeSprint?.id || null,
+            sprintId: currentSprint?.id || null,
             dueDate: quickAddDates[status]?.toISOString() || undefined,
             createdAt: new Date().toISOString(),
             columnOrder: 0,
@@ -228,6 +273,31 @@ export default function ProjectBoard() {
                             <Filter size={16} />
                             Filter
                         </Button>
+                        {isScrum && nonCompletedSprints.length > 0 && (
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="sm" className="bg-[#f4f5f7] border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-100 gap-2 h-10 px-4 rounded-sm">
+                                        <Zap size={16} />
+                                        {currentSprint?.name || "No Sprint"}
+                                        <ChevronDown size={14} className="ml-1" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="start" className="w-48">
+                                    {nonCompletedSprints.map(sprint => (
+                                        <DropdownMenuItem
+                                            key={sprint.id}
+                                            onClick={() => setSelectedSprintId(sprint.id)}
+                                            className={sprint.id === currentSprint?.id ? "bg-blue-50 font-semibold" : ""}
+                                        >
+                                            {sprint.name}
+                                            {sprint.status === "ACTIVE" && (
+                                                <Badge className="ml-auto text-[9px] bg-green-100 text-green-700 border-none">Active</Badge>
+                                            )}
+                                        </DropdownMenuItem>
+                                    ))}
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        )}
                     </div>
 
                     <div className="flex items-center gap-2">

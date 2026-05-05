@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     CheckCircle2,
@@ -10,17 +10,16 @@ import {
     DollarSign,
     UserCheck,
     FileText,
-    Filter,
     Search,
-    ChevronRight,
     ArrowRight,
-    User,
-    Check,
     Forward,
     TrendingUp,
     ShieldCheck,
-    MoreHorizontal,
-    Trash2
+    Trash2,
+    AlertTriangle,
+    RefreshCw,
+    Wifi,
+    WifiOff
 } from "lucide-react";
 import { Card, CardContent } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
@@ -39,16 +38,28 @@ import {
 } from "@/shared/components/ui/dialog";
 import { Label } from "@/shared/components/ui/label";
 import { Textarea } from "@/shared/components/ui/textarea";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 import { Checkbox } from "@/shared/components/ui/checkbox";
+import {
+    fetchPendingLeaveApprovals,
+    approveLeaveApproval,
+    rejectLeaveApproval
+} from "@/shared/api/inbox-api";
 
 const ApprovalsPage = () => {
     const { toast } = useToast();
-    const { approvals, approveRequest, rejectRequest, bulkApprove, delegateRequest, escalateRequest } = useInboxStore();
+    const { approvals, approveRequest, rejectRequest, bulkApprove, delegateRequest, escalateRequest, deleteApproval } = useInboxStore();
 
     const [selectedApproval, setSelectedApproval] = useState<ApprovalItem | null>(null);
     const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
+    const [isDelegateDialogOpen, setIsDelegateDialogOpen] = useState(false);
+    const [isEscalateDialogOpen, setIsEscalateDialogOpen] = useState(false);
+    const [isAuditDialogOpen, setIsAuditDialogOpen] = useState(false);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
+    const [auditApproval, setAuditApproval] = useState<ApprovalItem | null>(null);
     const [rejectionReason, setRejectionReason] = useState("");
+    const [delegateTo, setDelegateTo] = useState("");
+    const [escalateTo, setEscalateTo] = useState("");
 
     const [filterCategory, setFilterCategory] = useState<ApprovalCategory | 'All'>('All');
     const [filterStatus, setFilterStatus] = useState<ApprovalStatus | 'All'>('Pending');
@@ -56,7 +67,98 @@ const ApprovalsPage = () => {
 
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
-    const handleApprove = (approval: ApprovalItem) => {
+    /* ----- Backend-backed Leave approvals (live) ----- */
+    const [liveLeaveApprovals, setLiveLeaveApprovals] = useState<ApprovalItem[]>([]);
+    const [isLoadingLive, setIsLoadingLive] = useState(false);
+    const [liveError, setLiveError] = useState<string | null>(null);
+    const [isActing, setIsActing] = useState(false);
+
+    const loadLiveLeaveApprovals = async () => {
+        setIsLoadingLive(true);
+        setLiveError(null);
+        try {
+            const items = await fetchPendingLeaveApprovals();
+            setLiveLeaveApprovals(items);
+        } catch (e: any) {
+            setLiveError(e?.response?.data?.message || e?.message || "Unable to reach leave approval service.");
+        } finally {
+            setIsLoadingLive(false);
+        }
+    };
+
+    useEffect(() => {
+        loadLiveLeaveApprovals();
+    }, []);
+
+    const liveLeaveIds = useMemo(() => new Set(liveLeaveApprovals.map(a => a.id)), [liveLeaveApprovals]);
+    const isLiveItem = (id: string) => liveLeaveIds.has(id);
+
+    // Merge: live Leave items (authoritative) + all non-Leave items from the mock store.
+    // Any mock "Leave" records are hidden so we don't show stale seed data alongside live server data.
+    const combinedApprovals = useMemo<ApprovalItem[]>(() => {
+        const mockNonLeave = approvals.filter(a => a.category !== 'Leave');
+        return [...liveLeaveApprovals, ...mockNonLeave];
+    }, [approvals, liveLeaveApprovals]);
+
+    /* ----- Validation ----- */
+    const rejectionReasonTrimmed = rejectionReason.trim();
+    const rejectionReasonError = rejectionReason.length > 0
+        ? rejectionReasonTrimmed.length < 5
+            ? "Please provide at least 5 characters."
+            : rejectionReasonTrimmed.length > 500
+                ? "Rejection reason cannot exceed 500 characters."
+                : ""
+        : "";
+    const isRejectValid = rejectionReasonTrimmed.length >= 5 && rejectionReasonTrimmed.length <= 500;
+
+    const delegateToTrimmed = delegateTo.trim();
+    const delegateToError = delegateTo.length > 0
+        ? delegateToTrimmed.length < 2
+            ? "Name must be at least 2 characters."
+            : delegateToTrimmed.length > 60
+                ? "Name cannot exceed 60 characters."
+                : !/^[A-Za-z][A-Za-z\s.'\-]*$/.test(delegateToTrimmed)
+                    ? "Use letters, spaces, apostrophes, dots or hyphens only."
+                    : ""
+        : "";
+    const isDelegateValid = delegateToTrimmed.length >= 2 && delegateToTrimmed.length <= 60 && /^[A-Za-z][A-Za-z\s.'\-]*$/.test(delegateToTrimmed);
+
+    const escalateToTrimmed = escalateTo.trim();
+    const escalateToError = escalateTo.length > 0
+        ? escalateToTrimmed.length < 2
+            ? "Name must be at least 2 characters."
+            : escalateToTrimmed.length > 60
+                ? "Name cannot exceed 60 characters."
+                : !/^[A-Za-z][A-Za-z\s.'\-]*$/.test(escalateToTrimmed)
+                    ? "Use letters, spaces, apostrophes, dots or hyphens only."
+                    : ""
+        : "";
+    const isEscalateValid = escalateToTrimmed.length >= 2 && escalateToTrimmed.length <= 60 && /^[A-Za-z][A-Za-z\s.'\-]*$/.test(escalateToTrimmed);
+
+    /* ----- Action handlers ----- */
+
+    const handleApprove = async (approval: ApprovalItem) => {
+        if (isLiveItem(approval.id)) {
+            setIsActing(true);
+            try {
+                await approveLeaveApproval(approval.id);
+                setLiveLeaveApprovals(prev => prev.filter(a => a.id !== approval.id));
+                setSelectedIds(prev => prev.filter(id => id !== approval.id));
+                toast({
+                    title: "Leave Approved",
+                    description: `${approval.requestedBy.name}'s leave has been approved.`
+                });
+            } catch (e: any) {
+                toast({
+                    title: "Approval Failed",
+                    description: e?.response?.data?.message || "Server rejected the request. Please try again.",
+                    variant: "destructive"
+                });
+            } finally {
+                setIsActing(false);
+            }
+            return;
+        }
         approveRequest(approval.id, 'HR Admin');
         toast({
             title: "Request Approved",
@@ -64,31 +166,102 @@ const ApprovalsPage = () => {
         });
     };
 
-    const handleBulkApprove = () => {
-        bulkApprove(selectedIds, 'HR Admin');
-        toast({
-            title: "Bulk Approval Successful",
-            description: `${selectedIds.length} requests have been approved.`
-        });
+    const handleBulkApprove = async () => {
+        const liveIds = selectedIds.filter(isLiveItem);
+        const mockIds = selectedIds.filter(id => !isLiveItem(id));
+
+        let liveOk = 0;
+        let liveFail = 0;
+
+        if (liveIds.length > 0) {
+            setIsActing(true);
+            const results = await Promise.allSettled(liveIds.map(id => approveLeaveApproval(id)));
+            results.forEach(r => {
+                if (r.status === 'fulfilled') liveOk += 1;
+                else liveFail += 1;
+            });
+            const approvedSet = new Set(liveIds.filter((_, i) => results[i].status === 'fulfilled'));
+            setLiveLeaveApprovals(prev => prev.filter(a => !approvedSet.has(a.id)));
+            setIsActing(false);
+        }
+
+        if (mockIds.length > 0) {
+            bulkApprove(mockIds, 'HR Admin');
+        }
+
+        if (liveFail > 0) {
+            toast({
+                title: "Bulk Approval Partial",
+                description: `${liveOk + mockIds.length} approved, ${liveFail} failed on server.`,
+                variant: "destructive"
+            });
+        } else {
+            toast({
+                title: "Bulk Approval Successful",
+                description: `${liveOk + mockIds.length} request(s) have been approved.`
+            });
+        }
         setSelectedIds([]);
     };
 
-    const handleReject = () => {
-        if (!selectedApproval || !rejectionReason) {
-            toast({ title: "Error", description: "Please provide a reason", variant: "destructive" });
+    const handleReject = async () => {
+        if (!selectedApproval || !isRejectValid) {
+            toast({ title: "Please fix the errors", description: "Rejection reason must be between 5 and 500 characters.", variant: "destructive" });
             return;
         }
-        rejectRequest(selectedApproval.id, rejectionReason);
+        if (isLiveItem(selectedApproval.id)) {
+            setIsActing(true);
+            try {
+                await rejectLeaveApproval(selectedApproval.id, rejectionReasonTrimmed);
+                setLiveLeaveApprovals(prev => prev.filter(a => a.id !== selectedApproval.id));
+                setSelectedIds(prev => prev.filter(id => id !== selectedApproval.id));
+                setIsRejectDialogOpen(false);
+                setRejectionReason("");
+                toast({ title: "Leave Rejected", description: `${selectedApproval.requestedBy.name}'s leave was rejected.` });
+            } catch (e: any) {
+                toast({
+                    title: "Rejection Failed",
+                    description: e?.response?.data?.message || "Server rejected the request. Please try again.",
+                    variant: "destructive"
+                });
+            } finally {
+                setIsActing(false);
+            }
+            return;
+        }
+        rejectRequest(selectedApproval.id, rejectionReasonTrimmed);
         setIsRejectDialogOpen(false);
         setRejectionReason("");
         toast({ title: "Request Rejected" });
+    };
+
+    const handleDelegate = () => {
+        if (!selectedApproval || !delegateTo) {
+            toast({ title: "Error", description: "Please specify who to delegate to", variant: "destructive" });
+            return;
+        }
+        delegateRequest(selectedApproval.id, delegateTo);
+        setIsDelegateDialogOpen(false);
+        setDelegateTo("");
+        toast({ title: "Request Delegated", description: `Delegated to ${delegateTo}` });
+    };
+
+    const handleEscalate = () => {
+        if (!selectedApproval || !escalateTo) {
+            toast({ title: "Error", description: "Please specify who to escalate to", variant: "destructive" });
+            return;
+        }
+        escalateRequest(selectedApproval.id, escalateTo);
+        setIsEscalateDialogOpen(false);
+        setEscalateTo("");
+        toast({ title: "Request Escalated", description: `Escalated to ${escalateTo}` });
     };
 
     const toggleSelect = (id: string) => {
         setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
     };
 
-    const filteredApprovals = approvals.filter(a => {
+    const filteredApprovals = combinedApprovals.filter(a => {
         const matchesCategory = filterCategory === 'All' || a.category === filterCategory;
         const matchesStatus = filterStatus === 'All' || a.status === filterStatus;
         const matchesSearch = a.requestedBy.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -119,16 +292,16 @@ const ApprovalsPage = () => {
     };
 
     const stats = [
-        { label: "Pending", count: approvals.filter(a => a.status === 'Pending').length, icon: <Clock className="w-5 h-5 text-white" />, bg: "bg-amber-500" },
-        { label: "Delegated", count: approvals.filter(a => a.status === 'Delegated').length, icon: <Forward className="w-5 h-5 text-white" />, bg: "bg-indigo-600" },
-        { label: "Escalated", count: approvals.filter(a => a.status === 'Escalated').length, icon: <TrendingUp className="w-5 h-5 text-white" />, bg: "bg-purple-600" },
-        { label: "History", count: approvals.filter(a => ['Approved', 'Rejected'].includes(a.status)).length, icon: <ShieldCheck className="w-5 h-5 text-white" />, bg: "bg-emerald-600" },
+        { label: "Pending", count: approvals.filter(a => a.status === 'Pending').length, icon: <Clock className="w-5 h-5 text-orange-600" />, bg: "bg-orange-100", text: "text-orange-700", iconBg: "bg-orange-200" },
+        { label: "Delegated", count: approvals.filter(a => a.status === 'Delegated').length, icon: <Forward className="w-5 h-5 text-blue-600" />, bg: "bg-blue-100", text: "text-blue-700", iconBg: "bg-blue-200" },
+        { label: "Escalated", count: approvals.filter(a => a.status === 'Escalated').length, icon: <TrendingUp className="w-5 h-5 text-purple-600" />, bg: "bg-purple-100", text: "text-purple-700", iconBg: "bg-purple-200" },
+        { label: "History", count: approvals.filter(a => ['Approved', 'Rejected'].includes(a.status)).length, icon: <ShieldCheck className="w-5 h-5 text-emerald-600" />, bg: "bg-emerald-100", text: "text-emerald-700", iconBg: "bg-emerald-200" },
     ];
 
     return (
-        <div className="flex flex-col min-h-screen bg-slate-50/30">
+        <div className="flex flex-col min-h-screen bg-slate-50/30" style={{ zoom: 0.9 }}>
             <header className="p-6 bg-white border-b border-slate-100 sticky top-0 z-30 shadow-sm">
-                <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                <div className="w-full flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                     <div className="space-y-1">
                         <div className="flex items-center gap-3">
                             <h1 className="text-2xl font-bold text-slate-900 tracking-tight">HR Approval Center</h1>
@@ -138,6 +311,24 @@ const ApprovalsPage = () => {
                     </div>
 
                     <div className="flex items-center gap-3">
+                        <div
+                            className={`flex items-center gap-1.5 px-3 h-9 rounded-xl border text-[10px] font-bold uppercase tracking-wider ${liveError ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100'}`}
+                            title={liveError ? `Live API: ${liveError}` : 'Live API connected'}
+                        >
+                            {liveError ? <WifiOff size={12} /> : <Wifi size={12} />}
+                            {liveError ? 'Offline' : 'Live'}
+                        </div>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="rounded-xl h-9 px-3 text-slate-500 hover:text-indigo-600 gap-2 font-bold text-xs"
+                            onClick={loadLiveLeaveApprovals}
+                            disabled={isLoadingLive}
+                            title="Refresh live leave approvals"
+                        >
+                            <RefreshCw size={14} className={isLoadingLive ? 'animate-spin' : ''} />
+                            Refresh
+                        </Button>
                         <div className="flex p-1 bg-slate-100 rounded-xl border border-slate-200 shadow-inner">
                             {['Pending', 'Delegated', 'Escalated', 'All'].map((status) => (
                                 <Button
@@ -155,17 +346,17 @@ const ApprovalsPage = () => {
                 </div>
             </header>
 
-            <main className="p-6 max-w-7xl mx-auto w-full space-y-6">
+            <main className="p-6 w-full space-y-6">
                 {/* Stats Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 max-w-5xl text-start">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 w-full text-start">
                     {stats.map((stat, i) => (
-                        <Card key={i} className={`border-none shadow-md ${stat.bg} overflow-hidden group hover:scale-[1.02] transition-all duration-300`}>
+                        <Card key={i} className={`border border-slate-100 shadow-sm ${stat.bg} overflow-hidden group hover:scale-[1.02] transition-all duration-300`}>
                             <CardContent className="p-5 flex items-center justify-between">
                                 <div className="space-y-1">
-                                    <p className="text-[10px] font-bold text-white uppercase tracking-widest opacity-80">{stat.label}</p>
-                                    <h3 className="text-3xl font-black text-white">{stat.count}</h3>
+                                    <p className={`text-[10px] font-bold uppercase tracking-widest opacity-70 ${stat.text}`}>{stat.label}</p>
+                                    <h3 className={`text-2xl font-black ${stat.text}`}>{stat.count}</h3>
                                 </div>
-                                <div className={`h-12 w-12 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center transition-transform group-hover:rotate-12`}>
+                                <div className={`h-12 w-12 rounded-xl ${stat.iconBg} flex items-center justify-center transition-transform group-hover:rotate-12`}>
                                     {stat.icon}
                                 </div>
                             </CardContent>
@@ -200,7 +391,19 @@ const ApprovalsPage = () => {
                                 <Card className="bg-slate-900 text-white rounded-3xl p-6 shadow-xl border-none">
                                     <h4 className="text-sm font-bold mb-4">Bulk Actions ({selectedIds.length})</h4>
                                     <div className="space-y-3">
-                                        <Button onClick={handleBulkApprove} className="w-full bg-indigo-600 hover:bg-indigo-500 rounded-xl font-bold h-11">Approve Selected</Button>
+                                        <Button
+                                            onClick={handleBulkApprove}
+                                            disabled={isActing}
+                                            className="w-full bg-indigo-600 hover:bg-indigo-500 rounded-xl font-bold h-11 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            {isActing ? 'Processing…' : 'Approve Selected'}
+                                        </Button>
+                                        <Button
+                                            onClick={() => setIsBulkDeleteDialogOpen(true)}
+                                            className="w-full bg-rose-600 hover:bg-rose-500 rounded-xl font-bold h-11 gap-2"
+                                        >
+                                            <Trash2 size={14} /> Delete Selected
+                                        </Button>
                                         <Button variant="ghost" onClick={() => setSelectedIds([])} className="w-full text-slate-400 hover:text-white rounded-xl font-bold h-11">Clear Selection</Button>
                                     </div>
                                 </Card>
@@ -235,6 +438,7 @@ const ApprovalsPage = () => {
                                         const Icon = getCategoryIcon(approval.category);
                                         const statusStyle = getStatusStyles(approval.status);
                                         const isSelected = selectedIds.includes(approval.id);
+                                        const isLive = isLiveItem(approval.id);
 
                                         return (
                                             <motion.div
@@ -274,6 +478,11 @@ const ApprovalsPage = () => {
                                                                         <Icon className="w-2.5 h-2.5" /> {approval.category}
                                                                     </Badge>
                                                                     {approval.priority === 'High' && <Badge className="bg-rose-50 text-rose-600 border-none text-[9px] font-bold h-5 px-2 uppercase shadow-none">Urgent</Badge>}
+                                                                    {isLive && (
+                                                                        <Badge className="bg-emerald-50 text-emerald-600 border border-emerald-100 text-[9px] font-bold h-5 px-2 uppercase tracking-wider gap-1 shadow-none">
+                                                                            <Wifi className="w-2.5 h-2.5" /> Live
+                                                                        </Badge>
+                                                                    )}
                                                                 </div>
 
                                                                 <div className="space-y-0.5">
@@ -309,23 +518,53 @@ const ApprovalsPage = () => {
                                                                 {approval.status === 'Pending' ? (
                                                                     <>
                                                                         <Button
-                                                                            className="bg-indigo-600 hover:bg-slate-900 text-white rounded-xl h-10 px-6 font-bold text-xs gap-2 transition-all shadow-lg shadow-indigo-100"
+                                                                            className="bg-indigo-600 hover:bg-slate-900 text-white rounded-xl h-10 px-6 font-bold text-xs gap-2 transition-all shadow-lg shadow-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed"
                                                                             onClick={() => handleApprove(approval)}
+                                                                            disabled={isActing}
                                                                         >
                                                                             <CheckCircle2 size={16} /> Approve
                                                                         </Button>
-                                                                        <Button
-                                                                            variant="ghost"
-                                                                            className="text-slate-400 hover:text-rose-600 font-bold text-xs h-10 px-4 rounded-xl hover:bg-rose-50 transition-all"
-                                                                            onClick={() => { setSelectedApproval(approval); setIsRejectDialogOpen(true); }}
-                                                                        >
-                                                                            Reject Request
-                                                                        </Button>
+                                                                        <div className="flex items-center gap-2">
+                                                                            <Button
+                                                                                variant="ghost"
+                                                                                className="text-slate-400 hover:text-indigo-600 font-bold text-xs h-10 px-3 rounded-xl hover:bg-indigo-50 transition-all gap-1.5"
+                                                                                onClick={() => { setSelectedApproval(approval); setIsDelegateDialogOpen(true); }}
+                                                                            >
+                                                                                <Forward size={14} /> Delegate
+                                                                            </Button>
+                                                                            <Button
+                                                                                variant="ghost"
+                                                                                className="text-slate-400 hover:text-purple-600 font-bold text-xs h-10 px-3 rounded-xl hover:bg-purple-50 transition-all gap-1.5"
+                                                                                onClick={() => { setSelectedApproval(approval); setIsEscalateDialogOpen(true); }}
+                                                                            >
+                                                                                <TrendingUp size={14} /> Escalate
+                                                                            </Button>
+                                                                            <Button
+                                                                                variant="ghost"
+                                                                                className="text-slate-400 hover:text-rose-600 font-bold text-xs h-10 px-3 rounded-xl hover:bg-rose-50 transition-all"
+                                                                                onClick={() => { setSelectedApproval(approval); setIsRejectDialogOpen(true); }}
+                                                                            >
+                                                                                Reject
+                                                                            </Button>
+                                                                        </div>
                                                                     </>
                                                                 ) : (
-                                                                    <Button variant="ghost" className="h-10 text-slate-400 font-bold text-xs gap-2">
-                                                                        View Audit Trail <ArrowRight size={14} />
-                                                                    </Button>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <Button variant="ghost" className="h-10 text-slate-400 font-bold text-xs gap-2" onClick={() => { setAuditApproval(approval); setIsAuditDialogOpen(true); }}>
+                                                                            View Audit Trail <ArrowRight size={14} />
+                                                                        </Button>
+                                                                        {!isLive && (
+                                                                            <Button
+                                                                                variant="ghost"
+                                                                                size="icon"
+                                                                                className="h-10 w-10 rounded-xl text-slate-300 hover:text-rose-600 hover:bg-rose-50"
+                                                                                onClick={() => { setSelectedApproval(approval); setIsDeleteDialogOpen(true); }}
+                                                                                title="Delete record"
+                                                                            >
+                                                                                <Trash2 size={14} />
+                                                                            </Button>
+                                                                        )}
+                                                                    </div>
                                                                 )}
                                                             </div>
                                                         </div>
@@ -342,7 +581,7 @@ const ApprovalsPage = () => {
             </main>
 
             {/* Rejection Dialog */}
-            <Dialog open={isRejectDialogOpen} onOpenChange={setIsRejectDialogOpen}>
+            <Dialog open={isRejectDialogOpen} onOpenChange={(open) => { setIsRejectDialogOpen(open); if (!open) setRejectionReason(""); }}>
                 <DialogContent className="bg-white rounded-3xl border-none p-10 max-w-md shadow-2xl">
                     <DialogHeader className="space-y-4">
                         <div className="h-12 w-12 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-600 mb-2">
@@ -352,17 +591,204 @@ const ApprovalsPage = () => {
                         <DialogDescription className="text-slate-500 font-medium">Please provide a valid administrative reason for rejection.</DialogDescription>
                     </DialogHeader>
                     <div className="py-6 space-y-2">
-                        <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Administrative Feedback *</Label>
+                        <div className="flex items-center justify-between">
+                            <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Administrative Feedback *</Label>
+                            <span className={`text-[10px] font-bold tabular-nums ${rejectionReasonTrimmed.length > 500 ? 'text-rose-500' : 'text-slate-300'}`}>{rejectionReasonTrimmed.length}/500</span>
+                        </div>
                         <Textarea
-                            className="rounded-2xl bg-slate-50 border-slate-200 focus:bg-white min-h-[120px] font-medium p-4"
+                            className={`rounded-2xl bg-slate-50 focus:bg-white min-h-[120px] font-medium p-4 ${rejectionReasonError ? 'border-rose-300 focus:border-rose-400' : 'border-slate-200'}`}
                             placeholder="e.g. Please resubmit with supporting documents..."
                             value={rejectionReason}
+                            maxLength={550}
                             onChange={(e) => setRejectionReason(e.target.value)}
+                            aria-invalid={!!rejectionReasonError}
+                        />
+                        {rejectionReasonError && <p className="text-[11px] font-semibold text-rose-500 ml-1">{rejectionReasonError}</p>}
+                    </div>
+                    <DialogFooter className="gap-3">
+                        <Button variant="outline" className="rounded-xl h-12 font-bold px-8" onClick={() => { setIsRejectDialogOpen(false); setRejectionReason(""); }}>Cancel</Button>
+                        <Button
+                            className="flex-1 bg-rose-600 hover:bg-rose-700 text-white rounded-xl h-12 font-bold shadow-lg shadow-rose-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+                            onClick={handleReject}
+                            disabled={!isRejectValid || isActing}
+                        >
+                            {isActing ? 'Rejecting…' : 'Reject Forever'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+            {/* Delegate Dialog */}
+            <Dialog open={isDelegateDialogOpen} onOpenChange={setIsDelegateDialogOpen}>
+                <DialogContent className="bg-white rounded-3xl border-none p-10 max-w-md shadow-2xl">
+                    <DialogHeader className="space-y-4">
+                        <div className="h-12 w-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 mb-2">
+                            <Forward size={28} />
+                        </div>
+                        <DialogTitle className="text-2xl font-bold tracking-tight text-slate-900">Delegate Request</DialogTitle>
+                        <DialogDescription className="text-slate-500 font-medium">Assign this request to another team lead or manager for review.</DialogDescription>
+                    </DialogHeader>
+                    <div className="py-6 space-y-2">
+                        <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Delegate To *</Label>
+                        <Input
+                            className="rounded-2xl bg-slate-50 border-slate-200 focus:bg-white h-12 font-medium px-4"
+                            placeholder="e.g. Team Lead - Sarah, HR Manager..."
+                            value={delegateTo}
+                            onChange={(e) => setDelegateTo(e.target.value)}
                         />
                     </div>
                     <DialogFooter className="gap-3">
-                        <Button variant="outline" className="rounded-xl h-12 font-bold px-8" onClick={() => setIsRejectDialogOpen(false)}>Cancel</Button>
-                        <Button className="flex-1 bg-rose-600 hover:bg-rose-700 text-white rounded-xl h-12 font-bold shadow-lg shadow-rose-100" onClick={handleReject}>Reject Forever</Button>
+                        <Button variant="outline" className="rounded-xl h-12 font-bold px-8" onClick={() => setIsDelegateDialogOpen(false)}>Cancel</Button>
+                        <Button className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl h-12 font-bold shadow-lg shadow-indigo-100" onClick={handleDelegate}>Delegate Now</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Escalate Dialog */}
+            <Dialog open={isEscalateDialogOpen} onOpenChange={setIsEscalateDialogOpen}>
+                <DialogContent className="bg-white rounded-3xl border-none p-10 max-w-md shadow-2xl">
+                    <DialogHeader className="space-y-4">
+                        <div className="h-12 w-12 bg-purple-50 rounded-2xl flex items-center justify-center text-purple-600 mb-2">
+                            <TrendingUp size={28} />
+                        </div>
+                        <DialogTitle className="text-2xl font-bold tracking-tight text-slate-900">Escalate Request</DialogTitle>
+                        <DialogDescription className="text-slate-500 font-medium">Escalate this to a higher authority for urgent attention.</DialogDescription>
+                    </DialogHeader>
+                    <div className="py-6 space-y-2">
+                        <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Escalate To *</Label>
+                        <Input
+                            className="rounded-2xl bg-slate-50 border-slate-200 focus:bg-white h-12 font-medium px-4"
+                            placeholder="e.g. Head of Operations, VP HR..."
+                            value={escalateTo}
+                            onChange={(e) => setEscalateTo(e.target.value)}
+                        />
+                    </div>
+                    <DialogFooter className="gap-3">
+                        <Button variant="outline" className="rounded-xl h-12 font-bold px-8" onClick={() => setIsEscalateDialogOpen(false)}>Cancel</Button>
+                        <Button className="flex-1 bg-purple-600 hover:bg-purple-700 text-white rounded-xl h-12 font-bold shadow-lg shadow-purple-100" onClick={handleEscalate}>Escalate Now</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Audit Trail Dialog */}
+            <Dialog open={isAuditDialogOpen} onOpenChange={setIsAuditDialogOpen}>
+                <DialogContent className="bg-white rounded-3xl border-none p-10 max-w-md shadow-2xl">
+                    <DialogHeader className="space-y-4">
+                        <div className="h-12 w-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 mb-2">
+                            <ShieldCheck size={28} />
+                        </div>
+                        <DialogTitle className="text-2xl font-bold tracking-tight text-slate-900">Audit Trail</DialogTitle>
+                        <DialogDescription className="text-slate-500 font-medium">Complete approval history for this request.</DialogDescription>
+                    </DialogHeader>
+                    {auditApproval && (
+                        <div className="py-6 space-y-4">
+                            <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                <p className="text-xs font-bold text-slate-700">{auditApproval.details.title}</p>
+                                <p className="text-[10px] text-slate-400 font-medium mt-1">Requested by {auditApproval.requestedBy.name} ({auditApproval.requestedBy.id})</p>
+                            </div>
+                            <div className="space-y-3">
+                                <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                    <div className="h-8 w-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center"><FileText size={14} /></div>
+                                    <div className="flex-1">
+                                        <p className="text-xs font-bold text-slate-700">Request Submitted</p>
+                                        <p className="text-[10px] text-slate-400">{new Date(auditApproval.requestedAt).toLocaleString()}</p>
+                                    </div>
+                                </div>
+                                {auditApproval.status === 'Approved' && (
+                                    <div className="flex items-center gap-3 p-3 bg-emerald-50 rounded-xl border border-emerald-100">
+                                        <div className="h-8 w-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center"><CheckCircle2 size={14} /></div>
+                                        <div className="flex-1">
+                                            <p className="text-xs font-bold text-emerald-700">Approved by {auditApproval.approvedBy || 'HR Admin'}</p>
+                                            <p className="text-[10px] text-emerald-500">{auditApproval.approvedAt ? new Date(auditApproval.approvedAt).toLocaleString() : 'Recently'}</p>
+                                        </div>
+                                    </div>
+                                )}
+                                {auditApproval.status === 'Rejected' && (
+                                    <div className="flex items-center gap-3 p-3 bg-rose-50 rounded-xl border border-rose-100">
+                                        <div className="h-8 w-8 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center"><XCircle size={14} /></div>
+                                        <div className="flex-1">
+                                            <p className="text-xs font-bold text-rose-700">Rejected</p>
+                                            <p className="text-[10px] text-rose-500">{auditApproval.rejectionReason || 'No reason provided'}</p>
+                                        </div>
+                                    </div>
+                                )}
+                                {auditApproval.status === 'Delegated' && (
+                                    <div className="flex items-center gap-3 p-3 bg-indigo-50 rounded-xl border border-indigo-100">
+                                        <div className="h-8 w-8 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center"><Forward size={14} /></div>
+                                        <div className="flex-1">
+                                            <p className="text-xs font-bold text-indigo-700">Delegated to {auditApproval.delegatedTo}</p>
+                                            <p className="text-[10px] text-indigo-500">Awaiting review</p>
+                                        </div>
+                                    </div>
+                                )}
+                                {auditApproval.status === 'Escalated' && (
+                                    <div className="flex items-center gap-3 p-3 bg-purple-50 rounded-xl border border-purple-100">
+                                        <div className="h-8 w-8 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center"><TrendingUp size={14} /></div>
+                                        <div className="flex-1">
+                                            <p className="text-xs font-bold text-purple-700">Escalated to {auditApproval.escalatedTo}</p>
+                                            <p className="text-[10px] text-purple-500">Under higher review</p>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                    <DialogFooter>
+                        <Button variant="outline" className="rounded-xl h-12 font-bold px-8" onClick={() => setIsAuditDialogOpen(false)}>Close</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Delete Confirmation Dialog */}
+            <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                <DialogContent className="bg-white rounded-3xl border-none p-10 max-w-md shadow-2xl">
+                    <DialogHeader className="space-y-4">
+                        <div className="h-12 w-12 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-600 mb-2">
+                            <AlertTriangle size={28} />
+                        </div>
+                        <DialogTitle className="text-2xl font-bold tracking-tight text-slate-900">Delete Approval Record?</DialogTitle>
+                        <DialogDescription className="text-slate-500 font-medium">
+                            This will permanently remove {selectedApproval?.requestedBy.name}'s "{selectedApproval?.details.title}" from the approval log. This action cannot be undone.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="gap-3 pt-4">
+                        <Button variant="outline" className="rounded-xl h-12 font-bold px-8" onClick={() => setIsDeleteDialogOpen(false)}>Cancel</Button>
+                        <Button className="flex-1 bg-rose-600 hover:bg-rose-700 text-white rounded-xl h-12 font-bold shadow-lg shadow-rose-100 gap-2" onClick={() => {
+                            if (selectedApproval) {
+                                deleteApproval(selectedApproval.id);
+                                setSelectedIds(prev => prev.filter(id => id !== selectedApproval.id));
+                                toast({ title: "Record Deleted", description: `${selectedApproval.requestedBy.name}'s approval has been removed.` });
+                            }
+                            setIsDeleteDialogOpen(false);
+                        }}>
+                            <Trash2 size={16} /> Delete Permanently
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Bulk Delete Confirmation Dialog */}
+            <Dialog open={isBulkDeleteDialogOpen} onOpenChange={setIsBulkDeleteDialogOpen}>
+                <DialogContent className="bg-white rounded-3xl border-none p-10 max-w-md shadow-2xl">
+                    <DialogHeader className="space-y-4">
+                        <div className="h-12 w-12 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-600 mb-2">
+                            <AlertTriangle size={28} />
+                        </div>
+                        <DialogTitle className="text-2xl font-bold tracking-tight text-slate-900">Delete {selectedIds.length} Record(s)?</DialogTitle>
+                        <DialogDescription className="text-slate-500 font-medium">
+                            This will permanently remove the selected approval records. Live server-backed leave records will be skipped as they cannot be deleted. This action cannot be undone.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="gap-3 pt-4">
+                        <Button variant="outline" className="rounded-xl h-12 font-bold px-8" onClick={() => setIsBulkDeleteDialogOpen(false)}>Cancel</Button>
+                        <Button className="flex-1 bg-rose-600 hover:bg-rose-700 text-white rounded-xl h-12 font-bold shadow-lg shadow-rose-100 gap-2" onClick={() => {
+                            const mockIds = selectedIds.filter(id => !isLiveItem(id));
+                            mockIds.forEach(id => deleteApproval(id));
+                            setSelectedIds([]);
+                            setIsBulkDeleteDialogOpen(false);
+                            toast({ title: "Records Deleted", description: `${mockIds.length} approval record(s) have been removed.` });
+                        }}>
+                            <Trash2 size={16} /> Delete Selected
+                        </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

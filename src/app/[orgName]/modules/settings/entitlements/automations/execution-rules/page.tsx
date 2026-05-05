@@ -1,15 +1,35 @@
 "use client";
 
 import React, { useState } from "react";
-import { Settings, Plus, Search, Filter, MoreVertical, Edit, Trash2, ChevronRight } from "lucide-react";
+import {
+    Settings,
+    Plus,
+    Search,
+    MoreVertical,
+    Edit,
+    Trash2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/shared/components/ui/switch";
-import { Dialog, DialogContent, DialogFooter } from "@/shared/components/ui/dialog";
-import { Label } from "@/shared/components/ui/label";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/shared/components/ui/dropdown-menu";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/shared/components/ui/dropdown-menu";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/shared/components/ui/select";
+import { toast } from "sonner";
 
 export default function ExecutionRulesPage() {
     const [showCreateModal, setShowCreateModal] = useState(false);
@@ -19,8 +39,64 @@ export default function ExecutionRulesPage() {
         { id: "3", name: "Rate Limiting", priority: "High", scope: "API Calls", retryAttempts: 5, timeout: "15s", status: "Active" },
     ]);
 
+    const [form, setForm] = useState({
+        name: "",
+        priority: "",
+        scope: "",
+        retryAttempts: "3",
+        timeout: "30",
+    });
+    const [errors, setErrors] = useState<Record<string, string>>({});
+    const [saving, setSaving] = useState(false);
+
+    const resetForm = () => {
+        setForm({ name: "", priority: "", scope: "", retryAttempts: "3", timeout: "30" });
+        setErrors({});
+    };
+
+    const validate = () => {
+        const next: Record<string, string> = {};
+        if (!form.name.trim()) next.name = "Rule name is required";
+        if (!form.priority) next.priority = "Choose a priority";
+        if (!form.scope.trim()) next.scope = "Specify the scope";
+        const retries = Number(form.retryAttempts);
+        if (Number.isNaN(retries) || retries < 0 || retries > 10) next.retryAttempts = "Retries must be 0–10";
+        const timeout = Number(form.timeout);
+        if (Number.isNaN(timeout) || timeout <= 0) next.timeout = "Enter a positive number of seconds";
+        setErrors(next);
+        return Object.keys(next).length === 0;
+    };
+
+    const handleCreate = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!validate()) return;
+        setSaving(true);
+        setTimeout(() => {
+            setRules(prev => [
+                ...prev,
+                {
+                    id: String(Date.now()),
+                    name: form.name.trim(),
+                    priority: form.priority,
+                    scope: form.scope.trim(),
+                    retryAttempts: Number(form.retryAttempts),
+                    timeout: `${form.timeout}s`,
+                    status: "Active",
+                },
+            ]);
+            toast.success("Execution rule created");
+            setSaving(false);
+            setShowCreateModal(false);
+            resetForm();
+        }, 600);
+    };
+
     const toggleStatus = (id: string) => {
         setRules(prev => prev.map(r => r.id === id ? { ...r, status: r.status === "Active" ? "Paused" : "Active" } : r));
+    };
+
+    const deleteRule = (id: string) => {
+        setRules(prev => prev.filter(r => r.id !== id));
     };
 
     return (
@@ -90,7 +166,7 @@ export default function ExecutionRulesPage() {
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <Badge className={`${rule.priority === "High" ? "bg-red-600" : "bg-blue-600"} text-white border-none rounded-none text-[10px] font-bold px-2 py-0.5`}>
+                                        <Badge className={`${rule.priority === "High" ? "bg-red-600" : rule.priority === "Medium" ? "bg-amber-600" : "bg-blue-600"} text-white border-none rounded-none text-[10px] font-bold px-2 py-0.5`}>
                                             {rule.priority}
                                         </Badge>
                                     </td>
@@ -104,7 +180,24 @@ export default function ExecutionRulesPage() {
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 text-right">
-                                        <Button variant="ghost" className="h-8 w-8 p-0 rounded-none hover:bg-zinc-100"><MoreVertical size={16} /></Button>
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="ghost" className="h-8 w-8 p-0 rounded-none hover:bg-zinc-100"><MoreVertical size={16} /></Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end" className="rounded-none border-zinc-200 shadow-xl p-2 min-w-[180px]">
+                                                <DropdownMenuLabel className="text-xs font-bold text-gray-600">Actions</DropdownMenuLabel>
+                                                <DropdownMenuItem className="text-sm p-2 flex items-center gap-2 focus:bg-blue-600 focus:text-white cursor-pointer">
+                                                    <Edit size={14} /> Edit Rule
+                                                </DropdownMenuItem>
+                                                <DropdownMenuSeparator className="my-2" />
+                                                <DropdownMenuItem
+                                                    onClick={() => deleteRule(rule.id)}
+                                                    className="text-sm p-2 text-red-600 focus:bg-red-600 focus:text-white flex items-center gap-2 cursor-pointer"
+                                                >
+                                                    <Trash2 size={14} /> Delete
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
                                     </td>
                                 </tr>
                             ))}
@@ -113,34 +206,87 @@ export default function ExecutionRulesPage() {
                 </div>
             </div>
 
-            <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
-                <DialogContent className="max-w-2xl rounded-none p-0 overflow-hidden shadow-2xl border-none">
-                    <div className="bg-gradient-to-r from-blue-700 to-indigo-800 p-8 text-white relative">
-                        <h2 className="text-2xl font-bold flex items-center gap-3"><Plus size={24} /> Create Execution Rule</h2>
-                        <p className="text-sm opacity-80 mt-2">Define how automations should execute.</p>
+            {/* Create Execution Rule — side sheet */}
+            <SideFormSheet
+                open={showCreateModal}
+                onOpenChange={(o) => {
+                    setShowCreateModal(o);
+                    if (!o) resetForm();
+                }}
+                title="Create Execution Rule"
+                description="Define how automations should execute, retry, and time out."
+                icon={<Settings className="w-5 h-5" />}
+                accentColor="#2563EB"
+                width="lg"
+                loading={saving}
+                onSubmit={handleCreate}
+                submitLabel="Create Rule"
+            >
+                <div className="space-y-5">
+                    <Field label="Rule Name" required error={errors.name}>
+                        <Input
+                            placeholder="e.g., Sequential Execution"
+                            value={form.name}
+                            onChange={(e) => setForm(p => ({ ...p, name: e.target.value }))}
+                            className="h-11 rounded-lg bg-white border-slate-200 focus:border-primary"
+                            maxLength={80}
+                        />
+                    </Field>
+
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Priority" required error={errors.priority}>
+                            <Select
+                                value={form.priority}
+                                onValueChange={(v) => setForm(p => ({ ...p, priority: v }))}
+                            >
+                                <SelectTrigger className="h-11 rounded-lg border-slate-200">
+                                    <SelectValue placeholder="Select priority" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="High">High</SelectItem>
+                                    <SelectItem value="Medium">Medium</SelectItem>
+                                    <SelectItem value="Low">Low</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <Field label="Scope" required error={errors.scope} hint="e.g., All Workflows, API Calls">
+                            <Input
+                                placeholder="All Workflows"
+                                value={form.scope}
+                                onChange={(e) => setForm(p => ({ ...p, scope: e.target.value }))}
+                                className="h-11 rounded-lg bg-white border-slate-200 focus:border-primary"
+                                maxLength={64}
+                            />
+                        </Field>
                     </div>
-                    <div className="p-8 space-y-6 bg-white">
-                        <div className="space-y-3">
-                            <Label className="text-xs font-bold text-gray-600">Rule Name</Label>
-                            <Input placeholder="e.g., Sequential Execution" className="rounded-none border-zinc-200 h-12 text-sm" />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-3">
-                                <Label className="text-xs font-bold text-gray-600">Priority</Label>
-                                <Select><SelectTrigger className="rounded-none border-zinc-200 h-12"><SelectValue placeholder="Select priority" /></SelectTrigger><SelectContent className="rounded-none"><SelectItem value="high">High</SelectItem><SelectItem value="medium">Medium</SelectItem><SelectItem value="low">Low</SelectItem></SelectContent></Select>
-                            </div>
-                            <div className="space-y-3">
-                                <Label className="text-xs font-bold text-gray-600">Retry Attempts</Label>
-                                <Input type="number" placeholder="e.g., 3" className="rounded-none border-zinc-200 h-12 text-sm" />
-                            </div>
-                        </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Retry Attempts" required error={errors.retryAttempts} hint="Number of automatic retries on failure (0–10).">
+                            <Input
+                                type="number"
+                                inputMode="numeric"
+                                placeholder="3"
+                                value={form.retryAttempts}
+                                onChange={(e) => setForm(p => ({ ...p, retryAttempts: e.target.value }))}
+                                className="h-11 rounded-lg bg-white border-slate-200 focus:border-primary"
+                                min={0}
+                                max={10}
+                            />
+                        </Field>
+                        <Field label="Timeout (seconds)" required error={errors.timeout}>
+                            <Input
+                                type="number"
+                                inputMode="numeric"
+                                placeholder="30"
+                                value={form.timeout}
+                                onChange={(e) => setForm(p => ({ ...p, timeout: e.target.value }))}
+                                className="h-11 rounded-lg bg-white border-slate-200 focus:border-primary"
+                                min={1}
+                            />
+                        </Field>
                     </div>
-                    <DialogFooter className="p-8 bg-zinc-50 border-t border-zinc-100 gap-4 sm:justify-end">
-                        <Button variant="ghost" onClick={() => setShowCreateModal(false)} className="rounded-none text-sm text-gray-600">Cancel</Button>
-                        <Button className="bg-blue-600 hover:bg-blue-700 rounded-none text-sm px-10 h-12 shadow-xl shadow-blue-100">Create Rule</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                </div>
+            </SideFormSheet>
         </div>
     );
 }

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
     Users,
     Search,
@@ -17,7 +17,9 @@ import {
     Info,
     Network,
     Terminal,
-    Lock
+    Lock,
+    CloudUpload,
+    Loader2
 } from "lucide-react"
 import { CustomButton } from "@/components/custom/CustomButton"
 import SubHeader from "@/components/custom/SubHeader"
@@ -33,17 +35,137 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
+import { CreateGroupModal, GroupFormData } from "@/components/groups/create-group-modal"
+import { AddMembersModal } from "@/components/groups/add-members-modal"
+import { AssignAccessModal } from "@/components/groups/assign-access-modal"
+import { ReleaseGroupModal } from "@/components/groups/release-group-modal"
+import { BulkImportModal } from "@/components/groups/bulk-import-modal"
+import { GroupProfileModal } from "@/components/groups/group-profile-modal"
+import { ManageMembersModal } from "@/components/groups/manage-members-modal"
+import { toast } from "sonner"
+import { getAllTeams, createTeam, deleteTeam } from "@/hooks/teamHooks"
+
+interface Group {
+    id: string
+    name: string
+    members: number
+    type: string
+    description: string
+    status: string
+}
 
 export default function GroupsPage() {
     const [searchQuery, setSearchQuery] = useState("")
+    const [typeFilter, setTypeFilter] = useState<string | null>(null)
+    const [membershipFilter, setMembershipFilter] = useState<string | null>(null)
+    const [loading, setLoading] = useState(true)
 
-    const groups = [
-        { id: "1", name: "Executive Leadership", members: 12, type: "Security", description: "All C-suite and executive members", status: "Active" },
-        { id: "2", name: "Engineering Team", members: 45, type: "M365", description: "Core product engineering and devops", status: "Active" },
-        { id: "3", name: "Finance & Accounts", members: 8, type: "Security", description: "Access to payroll and treasury", status: "Active" },
-        { id: "4", name: "Contractors (External)", members: 156, type: "Dynamic", description: "Automatically Includes all guest users", status: "Active" },
-        { id: "5", name: "HR Operations", members: 5, type: "Security", description: "Personnel records and recruitment", status: "Active" },
-    ]
+    const [groups, setGroups] = useState<Group[]>([])
+
+    const fetchTeams = async () => {
+        try {
+            setLoading(true)
+            const response = await getAllTeams()
+            const teams = response.data?.teams || response.data || []
+            const mapped = teams.map((t: any) => ({
+                id: t._id || t.id,
+                name: t.name || "",
+                members: Array.isArray(t.members) ? t.members.length : (t.members || 0),
+                type: t.type || "Security",
+                description: t.description || "",
+                status: t.status || "Active",
+            }))
+            setGroups(mapped)
+        } catch (error: any) {
+            toast.error(error?.response?.data?.message || "Failed to fetch teams")
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    useEffect(() => {
+        fetchTeams()
+    }, [])
+
+    // Modal states
+    const [createGroupOpen, setCreateGroupOpen] = useState(false)
+    const [bulkImportOpen, setBulkImportOpen] = useState(false)
+    const [addMembersOpen, setAddMembersOpen] = useState(false)
+    const [assignAccessOpen, setAssignAccessOpen] = useState(false)
+    const [releaseGroupOpen, setReleaseGroupOpen] = useState(false)
+    const [groupProfileOpen, setGroupProfileOpen] = useState(false)
+    const [manageMembersOpen, setManageMembersOpen] = useState(false)
+    const [selectedGroup, setSelectedGroup] = useState<Group | null>(null)
+
+    const typeBorderColor = (type: string) => {
+        if (type === "Security") return "border-t-indigo-500"
+        if (type === "Dynamic") return "border-t-emerald-500"
+        return "border-t-blue-500"
+    }
+
+    const typeBadgeStyle = (type: string) => {
+        if (type === "Security") return "bg-indigo-50 text-indigo-600 border border-indigo-200"
+        if (type === "Dynamic") return "bg-emerald-50 text-emerald-600 border border-emerald-200"
+        return "bg-blue-50 text-blue-600 border border-blue-200"
+    }
+
+    const handleGroupCreated = async (group: GroupFormData) => {
+        try {
+            await createTeam(group)
+            toast.success("Team created successfully")
+            fetchTeams()
+        } catch (error: any) {
+            toast.error(error?.response?.data?.message || "Failed to create team")
+        }
+    }
+
+    const handleGroupReleased = async (groupId: string) => {
+        try {
+            await deleteTeam(groupId)
+            toast.success("Team deleted successfully")
+            setGroups(prev => prev.filter(g => g.id !== groupId))
+        } catch (error: any) {
+            toast.error(error?.response?.data?.message || "Failed to delete team")
+        }
+    }
+
+    const handleGroupUpdated = (updated: { id: string; name: string; description: string; type: string; status: string }) => {
+        setGroups(prev => prev.map(g => g.id === updated.id ? { ...g, ...updated } : g))
+    }
+
+    const openGroupProfile = (group: Group) => {
+        setSelectedGroup(group)
+        setGroupProfileOpen(true)
+    }
+
+    const openAddMembers = (group: Group) => {
+        setSelectedGroup(group)
+        setAddMembersOpen(true)
+    }
+
+    const openAssignAccess = (group: Group) => {
+        setSelectedGroup(group)
+        setAssignAccessOpen(true)
+    }
+
+    const openReleaseGroup = (group: Group) => {
+        setSelectedGroup(group)
+        setReleaseGroupOpen(true)
+    }
+
+    const openManageMembers = (group: Group) => {
+        setSelectedGroup(group)
+        setManageMembersOpen(true)
+    }
+
+    // Filter groups
+    const filteredGroups = groups.filter(group => {
+        const matchSearch = !searchQuery ||
+            group.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            group.description.toLowerCase().includes(searchQuery.toLowerCase())
+        const matchType = !typeFilter || group.type === typeFilter
+        return matchSearch && matchType
+    })
 
     return (
         <div className="relative min-h-screen bg-[#F8F9FC] dark:bg-zinc-950">
@@ -56,65 +178,72 @@ export default function GroupsPage() {
                 ]}
                 rightControls={
                     <div className="flex gap-2">
-                        <CustomButton variant="outline" className="rounded-none h-10 px-4 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 font-bold">
-                            Bulk Import
+                        <CustomButton
+                            variant="outline"
+                            className="rounded-none h-10 px-4 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 font-semibold text-sm"
+                            onClick={() => setBulkImportOpen(true)}
+                        >
+                            <CloudUpload className="w-4 h-4 mr-2" /> Bulk Import
                         </CustomButton>
-                        <CustomButton className="bg-zinc-900 text-white hover:bg-zinc-800 rounded-none h-10 px-6 font-black uppercase text-xs tracking-widest shadow-xl border-0">
+                        <CustomButton
+                            className="bg-primary text-white hover:bg-primary/90 rounded-none h-10 px-6 font-semibold text-sm shadow-lg shadow-primary/20 border-0"
+                            onClick={() => setCreateGroupOpen(true)}
+                        >
                             <Plus className="w-4 h-4 mr-2" /> New Group
                         </CustomButton>
                     </div>
                 }
             />
 
-            <div className="p-4 md:p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <div className="p-4 md:p-8 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
 
-                {/* Directory Header HUD */}
-                <div className="bg-zinc-950 text-white p-10 rounded-none flex flex-col md:flex-row items-center justify-between gap-10 relative overflow-hidden shadow-2xl border-b-8 border-b-blue-600">
-                    <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none">
-                        <Users className="h-64 w-64" />
+                {/* Directory Header */}
+                <div className="bg-gradient-to-br from-primary via-primary/90 to-primary/80 text-white p-8 rounded-none flex flex-col md:flex-row items-start justify-between gap-8 relative overflow-hidden shadow-lg">
+                    <div className="absolute top-0 right-0 p-12 opacity-10 pointer-events-none">
+                        <Users className="h-48 w-48" />
                     </div>
-                    <div className="relative z-10 space-y-6 max-w-2xl">
+                    <div className="relative z-10 space-y-4 max-w-2xl">
                         <div className="flex items-center gap-2">
-                            <Badge className="bg-blue-600 text-white border-0 rounded-none px-3 py-1 font-black tracking-widest text-[10px]">ORGANIZATIONAL DIRECTORY</Badge>
-                            <Badge className="bg-zinc-800 text-zinc-400 border-0 rounded-none px-3 py-1 font-black tracking-widest text-[10px]">SC-200 COMPLIANT</Badge>
+                            <Badge className="bg-white/20 text-white border-0 rounded-none px-3 py-1 font-semibold tracking-wide text-[10px]">Organizational Directory</Badge>
+                            <Badge className="bg-white/10 text-white/80 border-0 rounded-none px-3 py-1 font-semibold tracking-wide text-[10px]">SC-200 Compliant</Badge>
                         </div>
-                        <h2 className="text-5xl font-black tracking-tighter leading-none text-white uppercase italic">Security & Collaboration Groups</h2>
-                        <p className="text-zinc-300 font-medium leading-relaxed text-lg italic opacity-90">
-                            Groups are the backbone of identity governance. Use "Security Groups" for permission assignment and "M365 Groups" for collaboration across modules.
+                        <h2 className="text-3xl font-bold tracking-tight leading-tight text-white">Security & Collaboration Groups</h2>
+                        <p className="text-white/80 font-normal leading-relaxed text-sm">
+                            Groups are the backbone of identity governance. Use &quot;Security Groups&quot; for permission assignment and &quot;M365 Groups&quot; for collaboration across modules.
                         </p>
-                        <div className="flex items-center gap-10 pt-4">
+                        <div className="flex items-center gap-8 pt-2">
                             <div className="flex flex-col">
-                                <span className="text-4xl font-black text-white italic tracking-tighter">24</span>
-                                <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em] mt-1">Total Containers</span>
+                                <span className="text-3xl font-bold text-white">{groups.length}</span>
+                                <span className="text-[10px] font-medium text-white/60 mt-1">Total Containers</span>
                             </div>
-                            <Separator orientation="vertical" className="h-12 bg-zinc-800" />
+                            <Separator orientation="vertical" className="h-10 bg-white/20" />
                             <div className="flex flex-col">
-                                <span className="text-4xl font-black text-blue-500 italic tracking-tighter">12%</span>
-                                <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em] mt-1">Dynamic Growth</span>
+                                <span className="text-3xl font-bold text-white">{Math.round((groups.filter(g => g.type === "Dynamic").length / Math.max(groups.length, 1)) * 100)}%</span>
+                                <span className="text-[10px] font-medium text-white/60 mt-1">Dynamic Growth</span>
                             </div>
                         </div>
                     </div>
 
-                    <div className="shrink-0 relative z-10 w-full md:w-80 space-y-4">
-                        <div className="bg-zinc-900/80 border border-zinc-800 p-6 rounded-none backdrop-blur-xl">
-                            <div className="flex items-center gap-4">
-                                <div className="h-10 w-10 bg-indigo-500/20 text-indigo-400 flex items-center justify-center rounded-none border border-indigo-500/30">
-                                    <Zap className="w-5 h-5" />
+                    <div className="shrink-0 relative z-10 w-full md:w-72 space-y-3">
+                        <div className="bg-white/10 border border-white/15 p-4 rounded-none backdrop-blur-xl">
+                            <div className="flex items-center gap-3">
+                                <div className="h-9 w-9 bg-white/15 text-white flex items-center justify-center rounded-none">
+                                    <Zap className="w-4 h-4" />
                                 </div>
                                 <div>
-                                    <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Active Policies</p>
-                                    <p className="text-sm font-black text-white uppercase tracking-tight italic">48 Automation Rules</p>
+                                    <p className="text-[10px] font-medium text-white/60">Active Policies</p>
+                                    <p className="text-sm font-semibold text-white">48 Automation Rules</p>
                                 </div>
                             </div>
                         </div>
-                        <div className="bg-emerald-600/10 border border-emerald-500/20 p-6 rounded-none backdrop-blur-xl">
-                            <div className="flex items-center gap-4">
-                                <div className="h-10 w-10 bg-emerald-500/20 text-emerald-400 flex items-center justify-center rounded-none border border-emerald-500/30">
-                                    <ShieldCheck className="w-5 h-5" />
+                        <div className="bg-emerald-500/15 border border-emerald-400/20 p-4 rounded-none backdrop-blur-xl">
+                            <div className="flex items-center gap-3">
+                                <div className="h-9 w-9 bg-emerald-400/20 text-emerald-300 flex items-center justify-center rounded-none">
+                                    <ShieldCheck className="w-4 h-4" />
                                 </div>
                                 <div>
-                                    <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest opacity-80">Posture Check</p>
-                                    <p className="text-sm font-black text-emerald-400 uppercase tracking-tight italic">No Orphaned Groups</p>
+                                    <p className="text-[10px] font-medium text-emerald-300/70">Posture Check</p>
+                                    <p className="text-sm font-semibold text-emerald-300">No Orphaned Groups</p>
                                 </div>
                             </div>
                         </div>
@@ -128,76 +257,112 @@ export default function GroupsPage() {
                         <Input
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="pl-11 border-none focus-visible:ring-0 rounded-none h-12 bg-transparent font-bold"
+                            className="pl-11 border-none focus-visible:ring-0 rounded-none h-12 bg-transparent font-medium"
                             placeholder="Find security groups by name, tag, or attribute..."
                         />
                     </div>
                     <div className="flex items-center gap-2 pr-2">
-                        <CustomButton variant="ghost" className="rounded-none h-10 px-4 font-black text-[10px] uppercase tracking-widest text-zinc-500">
-                            <Filter className="w-3.5 h-3.5 mr-2" /> All Types
-                        </CustomButton>
-                        <CustomButton variant="ghost" className="rounded-none h-10 px-4 font-black text-[10px] uppercase tracking-widest text-zinc-500">
-                            <Network className="w-3.5 h-3.5 mr-2" /> Membership
-                        </CustomButton>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <CustomButton variant="ghost" className={`rounded-none h-10 px-4 font-medium text-xs ${typeFilter ? "text-primary bg-primary/5" : "text-zinc-500"}`}>
+                                    <Filter className="w-3.5 h-3.5 mr-2" /> {typeFilter || "All Types"}
+                                </CustomButton>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="rounded-none">
+                                <DropdownMenuItem className="text-xs" onClick={() => setTypeFilter(null)}>All Types</DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem className="text-xs" onClick={() => setTypeFilter("Security")}>Security</DropdownMenuItem>
+                                <DropdownMenuItem className="text-xs" onClick={() => setTypeFilter("M365")}>M365</DropdownMenuItem>
+                                <DropdownMenuItem className="text-xs" onClick={() => setTypeFilter("Dynamic")}>Dynamic</DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <CustomButton variant="ghost" className="rounded-none h-10 px-4 font-medium text-xs text-zinc-500">
+                                    <Network className="w-3.5 h-3.5 mr-2" /> Membership
+                                </CustomButton>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="rounded-none">
+                                <DropdownMenuItem className="text-xs" onClick={() => toast.info("Showing all membership types")}>All</DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem className="text-xs" onClick={() => toast.info("Filtering: Assigned membership")}>Assigned</DropdownMenuItem>
+                                <DropdownMenuItem className="text-xs" onClick={() => toast.info("Filtering: Dynamic membership")}>Dynamic</DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     </div>
                 </div>
 
                 {/* Groups Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {groups.map((group) => (
-                        <Card key={group.id} className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-none shadow-sm hover:shadow-2xl transition-all group overflow-hidden border-t-4 border-t-zinc-900 data-[type=Security]:border-t-indigo-600 data-[type=Dynamic]:border-t-emerald-600" data-type={group.type}>
-                            <CardHeader className="flex flex-row items-center justify-between pb-6">
-                                <div className="h-14 w-14 bg-zinc-50 dark:bg-zinc-800 flex items-center justify-center text-zinc-400 border border-zinc-100 dark:border-zinc-700 rounded-none font-black text-xl group-hover:bg-zinc-900 group-hover:text-white group-hover:dark:bg-white group-hover:dark:text-zinc-900 transition-all uppercase">
+                {loading ? (
+                    <div className="flex items-center justify-center py-20">
+                        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                    </div>
+                ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    {filteredGroups.map((group) => (
+                        <Card key={group.id} className={`bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-none shadow-sm hover:shadow-md transition-all group overflow-hidden border-t-3 ${typeBorderColor(group.type)}`}>
+                            <CardHeader className="flex flex-row items-center justify-between pb-4 pt-5 px-5">
+                                <div className="h-10 w-10 bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-500 border border-zinc-200 dark:border-zinc-700 rounded-none font-semibold text-sm">
                                     {group.name.substring(0, 2)}
                                 </div>
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
-                                        <CustomButton variant="ghost" size="icon" className="h-10 w-10 text-zinc-400 rounded-none">
-                                            <MoreHorizontal className="w-5 h-5" />
+                                        <CustomButton variant="ghost" size="icon" className="h-8 w-8 text-zinc-400 rounded-none">
+                                            <MoreHorizontal className="w-4 h-4" />
                                         </CustomButton>
                                     </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end" className="rounded-none border-zinc-200 dark:border-zinc-800 shadow-2xl">
-                                        <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Actions</DropdownMenuLabel>
-                                        <DropdownMenuItem className="text-xs font-bold uppercase tracking-tight py-3"><Edit3 className="w-4 h-4 mr-2" /> Group Profile</DropdownMenuItem>
-                                        <DropdownMenuItem className="text-xs font-bold uppercase tracking-tight py-3"><UserPlus className="w-4 h-4 mr-2" /> Add Identities</DropdownMenuItem>
-                                        <DropdownMenuItem className="text-xs font-bold uppercase tracking-tight py-3"><Lock className="w-4 h-4 mr-2" /> Assign Access</DropdownMenuItem>
+                                    <DropdownMenuContent align="end" className="rounded-none border-zinc-200 dark:border-zinc-800 shadow-lg">
+                                        <DropdownMenuLabel className="text-[10px] font-semibold text-zinc-400">Actions</DropdownMenuLabel>
+                                        <DropdownMenuItem className="text-xs font-medium py-2.5 cursor-pointer" onClick={() => openGroupProfile(group)}>
+                                            <Edit3 className="w-3.5 h-3.5 mr-2" /> Group Profile
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem className="text-xs font-medium py-2.5 cursor-pointer" onClick={() => openAddMembers(group)}>
+                                            <UserPlus className="w-3.5 h-3.5 mr-2" /> Add Identities
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem className="text-xs font-medium py-2.5 cursor-pointer" onClick={() => openAssignAccess(group)}>
+                                            <Lock className="w-3.5 h-3.5 mr-2" /> Assign Access
+                                        </DropdownMenuItem>
                                         <DropdownMenuSeparator />
-                                        <DropdownMenuItem className="text-xs font-bold uppercase tracking-tight py-3 text-red-600"><Trash2 className="w-4 h-4 mr-2" /> Release Group</DropdownMenuItem>
+                                        <DropdownMenuItem className="text-xs font-medium py-2.5 text-red-600 cursor-pointer" onClick={() => openReleaseGroup(group)}>
+                                            <Trash2 className="w-3.5 h-3.5 mr-2" /> Release Group
+                                        </DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                             </CardHeader>
 
-                            <CardContent className="space-y-6">
+                            <CardContent className="space-y-4 px-5 pb-5">
                                 <div>
-                                    <h3 className="text-xl font-black text-zinc-900 dark:text-white tracking-tight uppercase">{group.name}</h3>
-                                    <p className="text-xs text-zinc-400 mt-1 font-medium leading-relaxed">{group.description}</p>
+                                    <h3 className="text-base font-semibold text-zinc-900 dark:text-white">{group.name}</h3>
+                                    <p className="text-xs text-zinc-400 mt-1 font-normal">{group.description}</p>
                                 </div>
 
-                                <div className="flex items-center gap-4">
-                                    <Badge className={`rounded-none border-0 text-[10px] font-black uppercase tracking-widest py-1 px-3 ${group.type === 'Security' ? 'bg-indigo-50 text-indigo-600' :
-                                        group.type === 'Dynamic' ? 'bg-emerald-50 text-emerald-600' : 'bg-zinc-100 text-zinc-600'
-                                        }`}>
+                                <div className="flex items-center gap-3">
+                                    <Badge className={`rounded-none border text-[10px] font-semibold py-0.5 px-2.5 ${typeBadgeStyle(group.type)}`}>
                                         {group.type}
                                     </Badge>
-                                    <div className="flex items-center gap-2 text-[10px] font-black text-zinc-500 uppercase tracking-widest">
-                                        <Users className="w-4 h-4 text-zinc-300" />
+                                    <div className="flex items-center gap-1.5 text-[10px] font-medium text-zinc-500">
+                                        <Users className="w-3.5 h-3.5 text-zinc-300" />
                                         {group.members} Identities
                                     </div>
                                 </div>
 
-                                <Separator className="bg-zinc-50 dark:bg-zinc-800/50" />
+                                <Separator className="bg-zinc-100 dark:bg-zinc-800/50" />
 
                                 <div className="flex items-center justify-between">
-                                    <div className="flex -space-x-3">
+                                    <div className="flex -space-x-2">
                                         {[1, 2, 3].map(i => (
-                                            <div key={i} className="h-8 w-8 rounded-none border-2 border-white dark:border-zinc-900 bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center overflow-hidden">
+                                            <div key={i} className="h-7 w-7 rounded-full border-2 border-white dark:border-zinc-900 bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center overflow-hidden">
                                                 <div className="bg-zinc-200 w-full h-full opacity-50"></div>
                                             </div>
                                         ))}
-                                        <div className="h-8 w-8 rounded-none border-2 border-white dark:border-zinc-900 bg-zinc-900 text-white text-[10px] flex items-center justify-center font-black">+{group.members - 3}</div>
+                                        <div className="h-7 w-7 rounded-full border-2 border-white dark:border-zinc-900 bg-primary text-white text-[9px] flex items-center justify-center font-semibold">+{Math.max(group.members - 3, 0)}</div>
                                     </div>
-                                    <CustomButton variant="ghost" className="h-10 text-[10px] text-zinc-500 font-black uppercase tracking-widest hover:text-indigo-600 group-hover:translate-x-1 transition-transform">
-                                        Manage Members <ChevronRight className="w-4 h-4 ml-1" />
+                                    <CustomButton
+                                        variant="ghost"
+                                        className="h-8 text-[11px] text-zinc-500 font-medium hover:text-primary transition-colors px-2"
+                                        onClick={() => openManageMembers(group)}
+                                    >
+                                        Manage Members <ChevronRight className="w-3.5 h-3.5 ml-1" />
                                     </CustomButton>
                                 </div>
                             </CardContent>
@@ -205,40 +370,51 @@ export default function GroupsPage() {
                     ))}
 
                     {/* Create Action Card */}
-                    <div className="border-4 border-dashed border-zinc-100 dark:border-zinc-800 p-8 flex flex-col items-center justify-center text-center space-y-6 hover:border-indigo-500/20 transition-all cursor-pointer group bg-zinc-50/10">
-                        <div className="h-20 w-20 rounded-full bg-zinc-50 dark:bg-zinc-900 flex items-center justify-center group-hover:rotate-90 transition-transform duration-500">
-                            <Plus className="w-10 h-10 text-zinc-200 group-hover:text-indigo-500" />
+                    <div
+                        className="border-2 border-dashed border-zinc-200 dark:border-zinc-800 p-6 flex flex-col items-center justify-center text-center space-y-4 hover:border-primary/30 transition-all cursor-pointer group rounded-none"
+                        onClick={() => setCreateGroupOpen(true)}
+                    >
+                        <div className="h-14 w-14 rounded-full bg-zinc-50 dark:bg-zinc-900 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
+                            <Plus className="w-6 h-6 text-zinc-300 group-hover:text-primary transition-colors" />
                         </div>
                         <div className="space-y-1">
-                            <h4 className="text-lg font-black text-zinc-400 uppercase tracking-widest">New Container</h4>
-                            <p className="text-xs text-zinc-400 font-medium">Define a new security or collaboration context</p>
+                            <h4 className="text-sm font-semibold text-zinc-400">New Container</h4>
+                            <p className="text-xs text-zinc-400 font-normal">Define a new security or collaboration context</p>
                         </div>
                     </div>
                 </div>
+                )}
 
                 {/* System Insights Footer */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-12">
-                    <div className="p-8 bg-indigo-600 text-white rounded-none flex items-start gap-6 shadow-2xl relative overflow-hidden group">
-                        <Terminal className="absolute -bottom-10 -right-10 h-48 w-48 opacity-10 group-hover:scale-110 transition-transform" />
-                        <div className="relative z-10 space-y-4">
-                            <h5 className="text-2xl font-black tracking-tighter uppercase italic text-white">Automate Membership</h5>
-                            <p className="text-zinc-100 text-sm font-medium leading-relaxed opacity-90 italic">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-8">
+                    <div className="p-6 bg-gradient-to-br from-indigo-600 to-indigo-500 text-white rounded-none flex items-start gap-5 shadow-lg relative overflow-hidden group">
+                        <Terminal className="absolute -bottom-8 -right-8 h-36 w-36 opacity-10 group-hover:scale-110 transition-transform" />
+                        <div className="relative z-10 space-y-3">
+                            <h5 className="text-lg font-semibold text-white">Automate Membership</h5>
+                            <p className="text-indigo-100 text-sm font-normal leading-relaxed opacity-90">
                                 Connect your directory to your HR module to automatically populate teams based on department metadata.
                             </p>
-                            <CustomButton className="bg-white text-indigo-600 hover:bg-zinc-100 rounded-none h-12 px-8 font-black uppercase text-[10px] tracking-widest border-0">
+                            <CustomButton
+                                className="bg-white text-indigo-600 hover:bg-zinc-100 rounded-none h-9 px-5 font-semibold text-xs border-0"
+                                onClick={() => toast.info("Sync Engine configuration coming soon")}
+                            >
                                 Configure Sync Engine
                             </CustomButton>
                         </div>
                     </div>
 
-                    <div className="p-8 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-none flex items-start gap-6 relative overflow-hidden group">
-                        <Globe className="absolute -bottom-10 -right-10 h-48 w-48 opacity-5 group-hover:scale-110 transition-transform" />
-                        <div className="relative z-10 space-y-4">
-                            <h5 className="text-2xl font-black tracking-tighter uppercase italic">External Collaboration</h5>
-                            <p className="text-zinc-500 text-sm font-medium leading-relaxed opacity-80">
+                    <div className="p-6 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-none flex items-start gap-5 relative overflow-hidden group">
+                        <Globe className="absolute -bottom-8 -right-8 h-36 w-36 opacity-5 group-hover:scale-110 transition-transform" />
+                        <div className="relative z-10 space-y-3">
+                            <h5 className="text-lg font-semibold text-zinc-900 dark:text-white">External Collaboration</h5>
+                            <p className="text-zinc-500 text-sm font-normal leading-relaxed">
                                 Securely share resources with guest users by adding them to designated External Collaboration Groups.
                             </p>
-                            <CustomButton variant="outline" className="rounded-none h-12 px-8 font-black uppercase text-[10px] tracking-widest border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950">
+                            <CustomButton
+                                variant="outline"
+                                className="rounded-none h-9 px-5 font-semibold text-xs border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-950"
+                                onClick={() => toast.info("Guest access review coming soon")}
+                            >
                                 Review Guest Access
                             </CustomButton>
                         </div>
@@ -246,6 +422,48 @@ export default function GroupsPage() {
                 </div>
 
             </div>
+
+            {/* All Modals */}
+            <CreateGroupModal
+                open={createGroupOpen}
+                onOpenChange={setCreateGroupOpen}
+                onGroupCreated={handleGroupCreated}
+            />
+            <BulkImportModal
+                open={bulkImportOpen}
+                onOpenChange={setBulkImportOpen}
+                onImportComplete={() => toast.success("Import completed")}
+            />
+            <AddMembersModal
+                open={addMembersOpen}
+                onOpenChange={setAddMembersOpen}
+                groupName={selectedGroup?.name}
+                groupId={selectedGroup?.id}
+            />
+            <AssignAccessModal
+                open={assignAccessOpen}
+                onOpenChange={setAssignAccessOpen}
+                groupName={selectedGroup?.name}
+            />
+            <ReleaseGroupModal
+                open={releaseGroupOpen}
+                onOpenChange={setReleaseGroupOpen}
+                groupName={selectedGroup?.name}
+                groupId={selectedGroup?.id}
+                onGroupReleased={handleGroupReleased}
+            />
+            <GroupProfileModal
+                open={groupProfileOpen}
+                onOpenChange={setGroupProfileOpen}
+                group={selectedGroup || undefined}
+                onGroupUpdated={handleGroupUpdated}
+            />
+            <ManageMembersModal
+                open={manageMembersOpen}
+                onOpenChange={setManageMembersOpen}
+                groupName={selectedGroup?.name}
+                groupId={selectedGroup?.id}
+            />
         </div>
     )
 }

@@ -47,6 +47,13 @@ export default function AutomationsGovernancePage() {
         { node: "Guest Portals", dailyLimit: "5k", usage: "0.2k", status: "Active" },
     ]
 
+    const guardrailRoutes: Record<string, string> = {
+        "Retry Logic": "errors",
+        "Error Map": "errors",
+        "Sync Window": "execution",
+        "Tier Limits": "quotas",
+    }
+
     return (
         <div className="flex flex-col h-full w-full bg-slate-50/50 p-6 space-y-6 overflow-y-auto font-sans">
             {/* HERO SECTION */}
@@ -61,10 +68,10 @@ export default function AutomationsGovernancePage() {
                     </div>
                 </div>
                 <div className="flex gap-2">
-                    <Button variant="outline" className="h-9 rounded-none text-[10px] font-bold uppercase tracking-widest border-slate-200">
+                    <Button variant="outline" className="h-9 rounded-none text-[10px] font-bold uppercase tracking-widest border-slate-200" onClick={() => router.push(`/${params.orgName}/modules/settings/entitlements/automations/audit`)}>
                         Engine Logs
                     </Button>
-                    <Button className="h-9 rounded-none text-[10px] font-bold uppercase tracking-widest bg-blue-600 hover:bg-blue-700">
+                    <Button className="h-9 rounded-none text-[10px] font-bold uppercase tracking-widest bg-blue-600 hover:bg-blue-700" onClick={() => router.push(`/${params.orgName}/modules/settings/entitlements/automations/quotas`)}>
                         Update Quotas
                     </Button>
                 </div>
@@ -190,7 +197,7 @@ export default function AutomationsGovernancePage() {
                                 </div>
                             ))}
                         </div>
-                        <Button variant="link" className="p-0 h-auto text-[10px] font-bold uppercase tracking-widest text-blue-600 mt-6 hover:no-underline">Edit Master Whitelist <ArrowRight className="w-3 h-3 ml-1" /></Button>
+                        <Button variant="link" className="p-0 h-auto text-[10px] font-bold uppercase tracking-widest text-blue-600 mt-6 hover:no-underline" onClick={() => router.push(`/${params.orgName}/modules/settings/entitlements/automations/actions`)}>Edit Master Whitelist <ArrowRight className="w-3 h-3 ml-1" /></Button>
                     </div>
 
                     {/* QUICK ACCESS */}
@@ -200,7 +207,7 @@ export default function AutomationsGovernancePage() {
                         </h3>
                         <div className="grid grid-cols-2 gap-3">
                             {["Retry Logic", "Error Map", "Sync Window", "Tier Limits"].map((item) => (
-                                <div key={item} className="p-2.5 border border-slate-100 hover:border-blue-100 hover:bg-blue-50/20 transition-all cursor-pointer group text-center">
+                                <div key={item} className="p-2.5 border border-slate-100 hover:border-blue-100 hover:bg-blue-50/20 transition-all cursor-pointer group text-center" onClick={() => router.push(`/${params.orgName}/modules/settings/entitlements/automations/${guardrailRoutes[item]}`)}>
                                     <p className="text-[10px] font-bold text-slate-400 group-hover:text-blue-600 uppercase tracking-tighter leading-tight">{item}</p>
                                 </div>
                             ))}

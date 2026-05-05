@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect, useMemo } from "react"
 import { useParams } from "next/navigation"
 import {
     Settings,
@@ -22,7 +22,8 @@ import {
     Unlock,
     ChevronDown,
     ChevronUp,
-    Columns
+    Columns,
+    Loader2
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -43,15 +44,8 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogDescription,
-    DialogFooter,
-} from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet"
 import {
     Select,
     SelectContent,
@@ -64,22 +58,67 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
 import { Checkbox } from "@/components/ui/checkbox"
 import { toast } from "sonner"
+import { getLeadListByOrg } from "@/hooks/leadHooks"
+
+// Lead model schema definition - mirrors backend Lead model fields
+const LEAD_SCHEMA_FIELDS = [
+    { id: "f-name", label: "Full Name", apiKey: "name", type: "Text", required: true, inConversion: true, system: true },
+    { id: "f-email", label: "Work Email", apiKey: "email", type: "Email", required: true, inConversion: true, system: true },
+    { id: "f-company", label: "Company Name", apiKey: "company", type: "Text", required: true, inConversion: true, system: true },
+    { id: "f-phone", label: "Phone Number", apiKey: "phone", type: "Phone", required: false, inConversion: true, system: true },
+    { id: "f-source", label: "Lead Source", apiKey: "source", type: "Select", required: false, inConversion: true, system: true },
+    { id: "f-stage", label: "Stage", apiKey: "stage", type: "Select", required: true, inConversion: false, system: true },
+    { id: "f-estimatedValue", label: "Estimated Value", apiKey: "estimatedValue", type: "Number", required: false, inConversion: false, system: false },
+    { id: "f-probability", label: "Probability (%)", apiKey: "probability", type: "Number", required: false, inConversion: false, system: false },
+    { id: "f-assignedTo", label: "Assigned To", apiKey: "assignedTo", type: "Text", required: false, inConversion: true, system: true },
+    { id: "f-owner", label: "Owner", apiKey: "owner", type: "Text", required: false, inConversion: true, system: true },
+    { id: "f-tags", label: "Tags", apiKey: "tags", type: "Text", required: false, inConversion: false, system: false },
+]
 
 export default function LeadFieldsLayoutsPage() {
     const params = useParams()
     const [searchQuery, setSearchQuery] = useState("")
     const [isLoading, setIsLoading] = useState(false)
+    const [isFetching, setIsFetching] = useState(true)
     const [isFieldOpen, setIsFieldOpen] = useState(false)
     const [editingField, setEditingField] = useState<any>(null)
+    const [leads, setLeads] = useState<any[]>([])
 
-    const [fields, setFields] = useState([
-        { id: "1", label: "Full Name", type: "Text", required: true, inConversion: true, status: "ACTIVE", system: true },
-        { id: "2", label: "Work Email", type: "Email", required: true, inConversion: true, status: "ACTIVE", system: true },
-        { id: "3", label: "Company Name", type: "Text", required: true, inConversion: true, status: "ACTIVE", system: false },
-        { id: "4", label: "Lead Source", type: "Select", required: false, inConversion: true, status: "ACTIVE", system: true },
-        { id: "5", label: "Estimated Value", type: "Number", required: false, inConversion: false, status: "ACTIVE", system: false },
-        { id: "6", label: "Meeting Date", type: "Date", required: false, inConversion: false, status: "INACTIVE", system: false },
-    ])
+    useEffect(() => {
+        const fetchLeads = async () => {
+            try {
+                const res = await getLeadListByOrg()
+                setLeads(res?.data?.data || [])
+            } catch (error) {
+                console.error("Failed to fetch leads for fields:", error)
+                toast.error("Failed to load lead field data")
+            } finally {
+                setIsFetching(false)
+            }
+        }
+        fetchLeads()
+    }, [])
+
+    // Derive field fill rates from actual lead data
+    const fieldFillRates = useMemo(() => {
+        if (leads.length === 0) return {}
+        const rates: Record<string, number> = {}
+        LEAD_SCHEMA_FIELDS.forEach(f => {
+            const filled = leads.filter(l => {
+                const val = l[f.apiKey]
+                return val !== undefined && val !== null && val !== ""
+            }).length
+            rates[f.apiKey] = Math.round((filled / leads.length) * 100)
+        })
+        return rates
+    }, [leads])
+
+    const systemFieldCount = LEAD_SCHEMA_FIELDS.filter(f => f.system).length
+    const customFieldCount = LEAD_SCHEMA_FIELDS.filter(f => !f.system).length
+
+    const [fields, setFields] = useState(
+        LEAD_SCHEMA_FIELDS.map(f => ({ ...f, status: "ACTIVE" as string }))
+    )
 
     const [behaviors, setBehaviors] = useState({
         stickyConversion: true,
@@ -105,15 +144,32 @@ export default function LeadFieldsLayoutsPage() {
         setIsFieldOpen(true)
     }
 
-    const saveField = () => {
-        if (!editingField.label) {
-            toast.error("Label is required")
+    const saveField = (e: React.FormEvent) => {
+        e.preventDefault()
+        const trimmedLabel = (editingField?.label || "").trim()
+        if (!trimmedLabel) {
+            toast.error("Display label is required")
+            return
+        }
+        if (trimmedLabel.length < 2) {
+            toast.error("Label must be at least 2 characters")
+            return
+        }
+        if (!/^[A-Za-z0-9\s()%/-]+$/.test(trimmedLabel)) {
+            toast.error("Label contains invalid characters")
+            return
+        }
+        const duplicate = fields.find(
+            (f) => f.id !== editingField.id && f.label.toLowerCase() === trimmedLabel.toLowerCase()
+        )
+        if (duplicate) {
+            toast.error("A field with this label already exists")
             return
         }
         setFields(prev => {
             const exists = prev.find(f => f.id === editingField.id)
-            if (exists) return prev.map(f => f.id === editingField.id ? editingField : f)
-            return [...prev, editingField]
+            if (exists) return prev.map(f => f.id === editingField.id ? { ...editingField, label: trimmedLabel } : f)
+            return [...prev, { ...editingField, label: trimmedLabel }]
         })
         setIsFieldOpen(false)
         toast.success(`Field configuration saved`)
@@ -139,24 +195,24 @@ export default function LeadFieldsLayoutsPage() {
                     </div>
                     <div>
                         <div className="flex items-center gap-2 mb-1">
-                            <h1 className="text-xl font-black text-zinc-900 tracking-tight uppercase italic">Fields & Layout Editor</h1>
-                            <Badge className="bg-zinc-100 text-zinc-500 hover:bg-zinc-100 border-none text-[9px] font-bold uppercase tracking-widest">Master Schema</Badge>
+                            <h1 className="text-xl font-semibold text-gray-900">Fields and Layout Editor</h1>
+                            <Badge className="bg-zinc-100 text-zinc-500 hover:bg-zinc-100 border-none text-[9px] font-medium">Master Schema</Badge>
                         </div>
-                        <p className="text-xs text-zinc-500 font-medium tracking-tight">Standardize captured information and control visual lead layouts.</p>
+                        <p className="text-xs text-gray-600 font-medium">Standardize captured information and control visual lead layouts.</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
                     <Button
                         variant="outline"
                         onClick={() => handleAction("Preview mode active")}
-                        className="h-10 border-zinc-200 text-xs font-black uppercase tracking-widest px-6 rounded-xl shadow-sm bg-white hover:bg-zinc-50 transition-all"
+                        className="h-10 border-zinc-200 text-xs font-medium px-6 rounded-xl shadow-sm bg-white hover:bg-zinc-50 transition-all"
                     >
                         <Eye className="w-4 h-4 mr-2" />
                         Preview Form
                     </Button>
                     <Button
                         onClick={startAddField}
-                        className="h-10 bg-blue-600 hover:bg-blue-700 text-white text-xs font-black uppercase tracking-widest px-6 rounded-xl shadow-lg shadow-blue-200 active:scale-95 transition-all"
+                        className="h-10 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium px-6 rounded-xl shadow-lg shadow-blue-200 active:scale-95 transition-all"
                     >
                         <Plus className="w-4 h-4 mr-2" />
                         Add Custom Field
@@ -164,59 +220,59 @@ export default function LeadFieldsLayoutsPage() {
                 </div>
             </div>
 
-            {/* SCHEMA INSIGHTS - 3D STYLE */}
+            {/* SCHEMA INSIGHTS */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <SmallCard className="bg-gradient-to-br from-blue-500 to-blue-700 border-none text-white shadow-[0_8px_30px_rgb(59,130,246,0.3)] hover:shadow-[0_20px_40px_rgba(37,99,235,0.4)] hover:-translate-y-1 transform transition-all duration-300 border-t border-white/20">
-                    <SmallCardHeader className="flex flex-row items-center justify-between pb-1 px-4 pt-4">
-                        <p className="text-[11px] text-white font-medium uppercase tracking-wider">Total Fields</p>
-                        <FileText className="w-4 h-4 text-white" />
-                    </SmallCardHeader>
-                    <SmallCardContent className="px-4 pb-4">
-                        <p className="text-2xl font-black text-white drop-shadow-md">24 Fields</p>
-                        <p className="text-[10px] text-white">12 System / 12 Custom</p>
+                <SmallCard className="border bg-gradient-to-r from-primary/70 to-primary text-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                    <SmallCardContent className="p-4 flex flex-row items-center justify-between">
+                        <div>
+                            <p className="text-white text-xs opacity-80">Total Fields</p>
+                            <p className="text-white text-xl font-semibold">{fields.length} Fields</p>
+                            <p className="text-[10px] text-white opacity-80">{systemFieldCount} System / {customFieldCount} Custom</p>
+                        </div>
+                        <FileText className="w-5 h-5 text-white opacity-80" />
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="bg-white border-t border-white shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.1)] hover:-translate-y-1 transform transition-all duration-300">
-                    <SmallCardHeader className="flex flex-row items-center justify-between pb-1 px-4 pt-4">
-                        <p className="text-[11px] text-zinc-500 font-medium uppercase tracking-tight">Active Layouts</p>
-                        <Layout className="w-4 h-4 text-blue-400" />
-                    </SmallCardHeader>
-                    <SmallCardContent className="px-4 pb-4">
-                        <p className="text-2xl font-bold text-zinc-900">03 Models</p>
-                        <p className="text-[10px] text-zinc-400 font-medium italic">Standardized by Org</p>
+                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                    <SmallCardContent className="p-4 flex flex-row items-center justify-between">
+                        <div>
+                            <p className="text-xs text-gray-600">Active Layouts</p>
+                            <p className="text-xl font-semibold text-gray-900">03 Models</p>
+                            <p className="text-[10px] text-zinc-400 font-medium">Standardized by Org</p>
+                        </div>
+                        <Layout className="w-5 h-5 text-blue-400" />
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="bg-white border-t border-white shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.1)] hover:-translate-y-1 transform transition-all duration-300">
-                    <SmallCardHeader className="flex flex-row items-center justify-between pb-1 px-4 pt-4">
-                        <p className="text-[11px] text-zinc-500 font-medium uppercase tracking-tight">Conversion Mapping</p>
-                        <Lock className="w-4 h-4 text-emerald-400" />
-                    </SmallCardHeader>
-                    <SmallCardContent className="px-4 pb-4">
-                        <p className="text-2xl font-bold text-zinc-900">100%</p>
-                        <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-tighter">Fields mapped to Client</p>
+                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                    <SmallCardContent className="p-4 flex flex-row items-center justify-between">
+                        <div>
+                            <p className="text-xs text-gray-600">Conversion Mapping</p>
+                            <p className="text-xl font-semibold text-gray-900">{isFetching ? "..." : `${Math.round((fields.filter(f => f.inConversion).length / fields.length) * 100)}%`}</p>
+                            <p className="text-[10px] text-emerald-600 font-medium">{fields.filter(f => f.inConversion).length} fields mapped to Client</p>
+                        </div>
+                        <Lock className="w-5 h-5 text-emerald-400" />
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="bg-white border-t border-white shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.1)] hover:-translate-y-1 transform transition-all duration-300">
-                    <SmallCardHeader className="flex flex-row items-center justify-between pb-1 px-4 pt-4">
-                        <p className="text-[11px] text-zinc-500 font-medium uppercase tracking-tight">Compliance</p>
-                        <CheckCircle2 className="w-4 h-4 text-zinc-300" />
-                    </SmallCardHeader>
-                    <SmallCardContent className="px-4 pb-4">
-                        <p className="text-2xl font-bold text-zinc-900">Secured</p>
-                        <p className="text-[10px] text-zinc-400 font-medium italic">Data masking active</p>
+                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                    <SmallCardContent className="p-4 flex flex-row items-center justify-between">
+                        <div>
+                            <p className="text-xs text-gray-600">Compliance</p>
+                            <p className="text-xl font-semibold text-gray-900">Secured</p>
+                            <p className="text-[10px] text-zinc-400 font-medium">Data masking active</p>
+                        </div>
+                        <CheckCircle2 className="w-5 h-5 text-zinc-300" />
                     </SmallCardContent>
                 </SmallCard>
             </div>
 
             <Tabs defaultValue="library" className="w-full">
                 <TabsList className="bg-zinc-100 p-1 rounded-xl h-11 mb-6 border border-zinc-200 shadow-sm flex-shrink-0 w-fit">
-                    <TabsTrigger value="library" className="rounded-lg text-[10px] font-black uppercase tracking-widest px-6 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-blue-600">
+                    <TabsTrigger value="library" className="rounded-lg text-xs font-medium px-6 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-blue-600">
                         Field Library
                     </TabsTrigger>
-                    <TabsTrigger value="editor" className="rounded-lg text-[10px] font-black uppercase tracking-widest px-6 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-blue-600">
+                    <TabsTrigger value="editor" className="rounded-lg text-xs font-medium px-6 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-blue-600">
                         Layout Editor
                     </TabsTrigger>
                 </TabsList>
@@ -234,7 +290,7 @@ export default function LeadFieldsLayoutsPage() {
                                 />
                             </div>
                             <div className="flex gap-2">
-                                <Button variant="ghost" className="h-9 px-4 rounded-xl text-[10px] font-bold uppercase tracking-widest text-zinc-500 hover:bg-zinc-100">
+                                <Button variant="ghost" className="h-9 px-4 rounded-xl text-xs font-medium text-zinc-500 hover:bg-zinc-100" onClick={() => toast.info("Field type manager opening...")}>
                                     <Columns className="w-3.5 h-3.5 mr-2" />
                                     Manage Types
                                 </Button>
@@ -244,12 +300,12 @@ export default function LeadFieldsLayoutsPage() {
                         <Table>
                             <TableHeader className="bg-zinc-50/50">
                                 <TableRow className="hover:bg-transparent border-b-zinc-100">
-                                    <TableHead className="py-4 px-6 font-black text-[10px] text-zinc-400 uppercase tracking-widest">Field Label</TableHead>
-                                    <TableHead className="py-4 font-black text-[10px] text-zinc-400 uppercase tracking-widest">Type</TableHead>
-                                    <TableHead className="py-4 font-black text-[10px] text-zinc-400 uppercase tracking-widest text-center">Required</TableHead>
-                                    <TableHead className="py-4 font-black text-[10px] text-zinc-400 uppercase tracking-widest text-center">Conversion</TableHead>
-                                    <TableHead className="py-4 font-black text-[10px] text-zinc-400 uppercase tracking-widest">Status</TableHead>
-                                    <TableHead className="py-4 text-right pr-6 font-black text-[10px] text-zinc-400 uppercase tracking-widest">Actions</TableHead>
+                                    <TableHead className="py-4 px-6 text-[11px] font-medium text-gray-500">Field Label</TableHead>
+                                    <TableHead className="py-4 text-[11px] font-medium text-gray-500">Type</TableHead>
+                                    <TableHead className="py-4 text-[11px] font-medium text-gray-500 text-center">Required</TableHead>
+                                    <TableHead className="py-4 text-[11px] font-medium text-gray-500 text-center">Conversion</TableHead>
+                                    <TableHead className="py-4 text-[11px] font-medium text-gray-500">Status</TableHead>
+                                    <TableHead className="py-4 text-right pr-6 text-[11px] font-medium text-gray-500">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -259,13 +315,13 @@ export default function LeadFieldsLayoutsPage() {
                                             <div className="flex items-center gap-3">
                                                 <div className={`w-2 h-2 rounded-full ${field.system ? 'bg-blue-600 shadow-[0_0_8px_rgba(37,99,235,0.4)]' : 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]'}`} />
                                                 <div className="flex flex-col">
-                                                    <span className="text-sm font-black text-zinc-900 italic tracking-tight group-hover:text-blue-600 transition-colors">{field.label}</span>
-                                                    {field.system && <span className="text-[9px] font-black uppercase text-zinc-300 tracking-tighter">System Locked</span>}
+                                                    <span className="text-sm font-medium text-gray-900 group-hover:text-blue-600 transition-colors">{field.label}</span>
+                                                    {field.system && <span className="text-[9px] font-medium text-zinc-400 mt-0.5">System Locked</span>}
                                                 </div>
                                             </div>
                                         </TableCell>
                                         <TableCell className="py-4">
-                                            <Badge variant="outline" className="text-[10px] font-bold border-zinc-200 text-zinc-500 bg-white shadow-sm uppercase px-2 h-5 rounded-md">
+                                            <Badge variant="outline" className="text-[10px] font-medium border-zinc-200 text-zinc-500 bg-white shadow-sm px-2 h-5 rounded-md">
                                                 {field.type}
                                             </Badge>
                                         </TableCell>
@@ -276,8 +332,8 @@ export default function LeadFieldsLayoutsPage() {
                                             {field.inConversion ? <CheckCircle2 className="w-4 h-4 text-emerald-500 mx-auto" /> : <XCircle className="w-4 h-4 text-zinc-200 mx-auto" />}
                                         </TableCell>
                                         <TableCell className="py-4">
-                                            <Badge className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${field.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-50' : 'bg-zinc-100 text-zinc-400 hover:bg-zinc-100'}`}>
-                                                {field.status}
+                                            <Badge className={`text-[9px] font-medium px-2 py-0.5 rounded-full ${field.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-50' : 'bg-zinc-100 text-zinc-400 hover:bg-zinc-100'}`}>
+                                                {field.status === 'ACTIVE' ? 'Active' : 'Inactive'}
                                             </Badge>
                                         </TableCell>
                                         <TableCell className="py-4 text-right pr-6">
@@ -298,9 +354,9 @@ export default function LeadFieldsLayoutsPage() {
                                                         </Button>
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent align="end" className="w-56 shadow-xl border-zinc-100 p-2">
-                                                        <DropdownMenuLabel className="text-[10px] font-black uppercase text-zinc-400 px-2 py-1.5">Configure Field</DropdownMenuLabel>
+                                                        <DropdownMenuLabel className="text-[10px] font-medium text-zinc-400 px-2 py-1.5">Configure Field</DropdownMenuLabel>
                                                         <DropdownMenuItem
-                                                            className="text-xs font-bold gap-2 focus:bg-blue-50 focus:text-blue-600 rounded-md cursor-pointer"
+                                                            className="text-xs font-medium gap-2 focus:bg-blue-50 focus:text-blue-600 rounded-md cursor-pointer"
                                                             onClick={() => toggleFieldStatus(field.id)}
                                                         >
                                                             {field.status === 'ACTIVE' ? <Unlock className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
@@ -309,7 +365,7 @@ export default function LeadFieldsLayoutsPage() {
                                                         <DropdownMenuSeparator className="bg-zinc-50" />
                                                         <DropdownMenuItem
                                                             disabled={field.system}
-                                                            className="text-xs font-bold gap-2 text-rose-600 focus:bg-rose-50 focus:text-rose-600 rounded-md cursor-pointer"
+                                                            className="text-xs font-medium gap-2 text-rose-600 focus:bg-rose-50 focus:text-rose-600 rounded-md cursor-pointer"
                                                             onClick={() => deleteField(field.id)}
                                                         >
                                                             <Trash2 className="w-3.5 h-3.5" />
@@ -324,13 +380,13 @@ export default function LeadFieldsLayoutsPage() {
                             </TableBody>
                         </Table>
                         <div className="px-6 py-4 border-t border-zinc-100 flex items-center justify-between bg-zinc-50/10">
-                            <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest italic flex items-center gap-2">
+                            <p className="text-[10px] text-zinc-400 font-medium flex items-center gap-2">
                                 <Info className="w-3.5 h-3.5" />
                                 Required fields marked with blue dot are system-locked and used for core logic.
                             </p>
                             <div className="flex gap-2">
-                                <Button variant="ghost" size="sm" className="h-8 text-[10px] font-black uppercase tracking-widest transition-colors" disabled>Prev</Button>
-                                <Button variant="ghost" size="sm" className="h-8 text-[10px] font-black uppercase tracking-widest text-blue-600 hover:text-blue-700 transition-colors">Next</Button>
+                                <Button variant="ghost" size="sm" className="h-8 text-xs font-medium transition-colors" disabled>Prev</Button>
+                                <Button variant="ghost" size="sm" className="h-8 text-xs font-medium text-blue-600 hover:text-blue-700 transition-colors" onClick={() => toast.info("Loading next page...")}>Next</Button>
                             </div>
                         </div>
                     </div>
@@ -341,20 +397,20 @@ export default function LeadFieldsLayoutsPage() {
                         <div className="md:col-span-8 bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden flex flex-col">
                             <div className="p-6 border-b border-zinc-100 flex items-center justify-between bg-zinc-50/20">
                                 <div>
-                                    <h3 className="text-sm font-black text-zinc-900 uppercase tracking-widest italic">Default Layout Draft</h3>
+                                    <h3 className="text-sm font-medium text-gray-900">Default Layout Draft</h3>
                                     <p className="text-[11px] text-zinc-400 font-medium">Reorder sections and fields by dragging.</p>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <Button variant="outline" className="h-9 px-4 rounded-xl text-[10px] font-bold uppercase tracking-widest border-zinc-200">Reset</Button>
-                                    <Button className="h-9 px-6 rounded-xl text-[10px] font-bold uppercase tracking-widest bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-100">Publish Layout</Button>
+                                    <Button variant="outline" className="h-9 px-4 rounded-xl text-xs font-medium border-zinc-200" onClick={() => toast.info("Layout reset to default")}>Reset</Button>
+                                    <Button className="h-9 px-6 rounded-xl text-xs font-medium bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-100" onClick={() => handleAction("Layout published to all firms")}>Publish Layout</Button>
                                 </div>
                             </div>
 
                             <div className="p-8 space-y-6 bg-zinc-50/30">
-                                <LayoutSection title="BASIC INFORMATION" icon={FileText} fields={["Full Name", "Work Email", "Phone Number"]} />
-                                <LayoutSection title="QUALIFICATION & LEADERSHIP" icon={Edit3} fields={["Lead Source", "Estimated Value", "Urgency"]} />
-                                <LayoutSection title="COMPANY DATA" icon={Layout} fields={["Company Name", "Industry", "Location"]} />
-                                <Button variant="ghost" className="w-full h-12 border-2 border-dashed border-zinc-100 text-zinc-300 font-bold uppercase tracking-tighter hover:border-blue-100 hover:bg-blue-50/50 hover:text-blue-400 rounded-xl transition-all">
+                                <LayoutSection title="Basic Information" icon={FileText} fields={["Full Name", "Work Email", "Phone Number"]} />
+                                <LayoutSection title="Qualification and Leadership" icon={Edit3} fields={["Lead Source", "Estimated Value", "Urgency"]} />
+                                <LayoutSection title="Company Data" icon={Layout} fields={["Company Name", "Industry", "Location"]} />
+                                <Button variant="ghost" className="w-full h-12 border-2 border-dashed border-zinc-100 text-zinc-300 font-medium hover:border-blue-100 hover:bg-blue-50/50 hover:text-blue-400 rounded-xl transition-all" onClick={() => toast.info("New section appended")}>
                                     <Plus className="w-4 h-4 mr-2" />
                                     Append New Section
                                 </Button>
@@ -363,14 +419,14 @@ export default function LeadFieldsLayoutsPage() {
 
                         <div className="md:col-span-4 flex flex-col gap-6">
                             <div className="bg-white rounded-xl border border-zinc-200 p-6 shadow-sm">
-                                <h3 className="text-xs font-black text-zinc-900 uppercase tracking-widest mb-6 flex items-center gap-2">
+                                <h3 className="text-sm font-medium text-gray-900 mb-6 flex items-center gap-2">
                                     <Lock className="w-3.5 h-3.5 text-blue-600" />
                                     Layout Behavior
                                 </h3>
                                 <div className="space-y-6">
                                     <div className="flex items-center justify-between group">
                                         <div className="flex flex-col">
-                                            <span className="text-xs font-bold text-zinc-800 transition-colors group-hover:text-blue-600">Sticky Conversion</span>
+                                            <span className="text-xs font-medium text-zinc-800 transition-colors group-hover:text-blue-600">Sticky Conversion</span>
                                             <span className="text-[10px] text-zinc-400 font-medium mt-0.5 leading-relaxed">Mandatory fields during conversion.</span>
                                         </div>
                                         <Switch
@@ -381,7 +437,7 @@ export default function LeadFieldsLayoutsPage() {
                                     </div>
                                     <div className="flex items-center justify-between group">
                                         <div className="flex flex-col">
-                                            <span className="text-xs font-bold text-zinc-800 transition-colors group-hover:text-blue-600">Dynamic Tooltips</span>
+                                            <span className="text-xs font-medium text-zinc-800 transition-colors group-hover:text-blue-600">Dynamic Tooltips</span>
                                             <span className="text-[10px] text-zinc-400 font-medium mt-0.5 leading-relaxed">Show field instructions on hover.</span>
                                         </div>
                                         <Switch
@@ -392,7 +448,7 @@ export default function LeadFieldsLayoutsPage() {
                                     </div>
                                     <div className="flex items-center justify-between group">
                                         <div className="flex flex-col">
-                                            <span className="text-xs font-bold text-zinc-800 transition-colors group-hover:text-blue-600">Compact Mode</span>
+                                            <span className="text-xs font-medium text-zinc-800 transition-colors group-hover:text-blue-600">Compact Mode</span>
                                             <span className="text-[10px] text-zinc-400 font-medium mt-0.5 leading-relaxed">Reduce spacing in layout preview.</span>
                                         </div>
                                         <Switch
@@ -407,9 +463,9 @@ export default function LeadFieldsLayoutsPage() {
                             <div className="bg-blue-600 rounded-xl p-6 text-white shadow-xl shadow-blue-200 border-t border-white/20">
                                 <div className="flex items-center gap-3 mb-4">
                                     <Info className="w-5 h-5 text-white/60" />
-                                    <h4 className="text-xs font-black uppercase tracking-widest italic">Admin Tip</h4>
+                                    <h4 className="text-sm font-medium text-white">Admin Tip</h4>
                                 </div>
-                                <p className="text-[11px] font-bold leading-relaxed opacity-90">
+                                <p className="text-[11px] font-medium leading-relaxed opacity-90">
                                     Reordering fields here updates the unified lead form for all sales reps in the organization. Changes are applied instantly.
                                 </p>
                             </div>
@@ -418,38 +474,76 @@ export default function LeadFieldsLayoutsPage() {
                 </TabsContent>
             </Tabs>
 
-            {/* FIELD CONFIGURATION DIALOG */}
-            <Dialog open={isFieldOpen} onOpenChange={setIsFieldOpen}>
-                <DialogContent className="sm:max-w-[450px] rounded-2xl border-none shadow-2xl">
-                    <DialogHeader>
-                        <DialogTitle className="text-xl font-black uppercase italic tracking-tight flex items-center gap-2">
-                            <Columns className="w-5 h-5 text-blue-600" />
-                            {editingField?.system ? 'View Field' : 'Field Schema Definition'}
-                        </DialogTitle>
-                        <DialogDescription className="text-xs font-medium text-zinc-400">
-                            Configure how data is stored and validated for this lead attribute.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-5 py-4">
-                        <div className="grid gap-2">
-                            <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Display Label</Label>
+            {/* Field Configuration — side sheet */}
+            <SideFormSheet
+                open={isFieldOpen}
+                onOpenChange={(o) => {
+                    setIsFieldOpen(o)
+                    if (!o) setEditingField(null)
+                }}
+                title={editingField?.system ? "View Field" : "Field Schema Definition"}
+                description={
+                    editingField?.system
+                        ? "System fields are locked and cannot be modified."
+                        : "Configure how data is stored and validated for this lead attribute."
+                }
+                icon={<Columns className="w-5 h-5" />}
+                width="md"
+                onSubmit={saveField}
+                submitLabel={editingField?.system ? "Close" : "Commit Schema"}
+                submitDisabled={editingField?.system}
+                hideFooter={editingField?.system}
+                footer={
+                    editingField?.system ? (
+                        <Button
+                            variant="outline"
+                            onClick={() => setIsFieldOpen(false)}
+                            className="h-10 px-5 rounded-lg border-[#E5E7EB] text-[#374151] hover:bg-[#F3F4F6]"
+                        >
+                            Close
+                        </Button>
+                    ) : undefined
+                }
+            >
+                {editingField && (
+                    <div className="space-y-4">
+                        {editingField.system && (
+                            <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                                <Columns className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                                <p className="text-[11.5px] text-amber-800 leading-relaxed">
+                                    This is a system field used for core business logic. It cannot be edited or renamed.
+                                </p>
+                            </div>
+                        )}
+
+                        <Field
+                            label="Display Label"
+                            required
+                            hint="2-60 chars; letters, numbers, spaces, ( ) % / -"
+                        >
                             <Input
                                 placeholder="e.g. Annual Revenue"
-                                value={editingField?.label}
-                                onChange={(e) => setEditingField({ ...editingField, label: e.target.value })}
-                                disabled={editingField?.system}
-                                className="rounded-xl bg-zinc-50 border-zinc-100 focus:ring-blue-100 h-11 text-sm font-bold disabled:opacity-50"
+                                value={editingField.label || ""}
+                                onChange={(e) =>
+                                    setEditingField({
+                                        ...editingField,
+                                        label: e.target.value.replace(/[^A-Za-z0-9\s()%/-]/g, ""),
+                                    })
+                                }
+                                disabled={editingField.system}
+                                className="h-11 rounded-lg bg-white border-[#E5E7EB] focus:border-primary disabled:bg-[#F8FAFC] disabled:text-[#64748B]"
+                                maxLength={60}
                             />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="grid gap-2">
-                                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Data Type</Label>
+                        </Field>
+
+                        <div className="grid grid-cols-2 gap-3">
+                            <Field label="Data Type" required>
                                 <Select
-                                    value={editingField?.type}
+                                    value={editingField.type}
                                     onValueChange={(v) => setEditingField({ ...editingField, type: v })}
-                                    disabled={editingField?.system}
+                                    disabled={editingField.system}
                                 >
-                                    <SelectTrigger className="h-11 rounded-xl bg-zinc-50 border-zinc-100 disabled:opacity-50">
+                                    <SelectTrigger className="h-11 rounded-lg border-[#E5E7EB] bg-white disabled:bg-[#F8FAFC]">
                                         <SelectValue placeholder="Select type" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -461,48 +555,58 @@ export default function LeadFieldsLayoutsPage() {
                                         <SelectItem value="Date">Date Picker</SelectItem>
                                     </SelectContent>
                                 </Select>
-                            </div>
-                            <div className="grid gap-2">
-                                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Default Value</Label>
+                            </Field>
+                            <Field label="Default Value" hint="Optional fallback value">
                                 <Input
                                     placeholder="Optional"
-                                    className="rounded-xl bg-zinc-50 border-zinc-100 h-11 text-sm"
+                                    value={editingField.defaultValue || ""}
+                                    onChange={(e) => setEditingField({ ...editingField, defaultValue: e.target.value })}
+                                    disabled={editingField.system}
+                                    className="h-11 rounded-lg bg-white border-[#E5E7EB] focus:border-primary disabled:bg-[#F8FAFC]"
+                                    maxLength={100}
                                 />
-                            </div>
+                            </Field>
                         </div>
-                        <div className="flex flex-col gap-4 mt-2">
-                            <div className="flex items-center space-x-3">
+
+                        <div className="space-y-2.5 pt-2 border-t border-[#EEF1F6]">
+                            <div className="flex items-start gap-2.5 p-3 rounded-lg bg-[#FAFBFC] border border-[#EEF1F6]">
                                 <Checkbox
                                     id="req"
-                                    checked={editingField?.required}
-                                    onCheckedChange={(v) => setEditingField({ ...editingField, required: v })}
-                                    disabled={editingField?.system}
+                                    checked={!!editingField.required}
+                                    onCheckedChange={(v) => setEditingField({ ...editingField, required: Boolean(v) })}
+                                    disabled={editingField.system}
+                                    className="mt-0.5"
                                 />
-                                <Label htmlFor="req" className="text-xs font-bold text-zinc-700 cursor-pointer">Mark as Mandatory (Required)</Label>
+                                <div>
+                                    <Label htmlFor="req" className="text-[13px] font-semibold text-[#0F172A] cursor-pointer">
+                                        Mark as Mandatory (Required)
+                                    </Label>
+                                    <p className="text-[11.5px] text-[#64748B] mt-0.5">
+                                        Users must fill this field when creating/editing a lead.
+                                    </p>
+                                </div>
                             </div>
-                            <div className="flex items-center space-x-3">
+                            <div className="flex items-start gap-2.5 p-3 rounded-lg bg-[#FAFBFC] border border-[#EEF1F6]">
                                 <Checkbox
                                     id="conv"
-                                    checked={editingField?.inConversion}
-                                    onCheckedChange={(v) => setEditingField({ ...editingField, inConversion: v })}
-                                    disabled={editingField?.system}
+                                    checked={!!editingField.inConversion}
+                                    onCheckedChange={(v) => setEditingField({ ...editingField, inConversion: Boolean(v) })}
+                                    disabled={editingField.system}
+                                    className="mt-0.5"
                                 />
-                                <Label htmlFor="conv" className="text-xs font-bold text-zinc-700 cursor-pointer">Include in Client Conversion Map</Label>
+                                <div>
+                                    <Label htmlFor="conv" className="text-[13px] font-semibold text-[#0F172A] cursor-pointer">
+                                        Include in Client Conversion Map
+                                    </Label>
+                                    <p className="text-[11.5px] text-[#64748B] mt-0.5">
+                                        Value will be copied to the client record on conversion.
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     </div>
-                    <DialogFooter>
-                        <Button variant="ghost" onClick={() => setIsFieldOpen(false)} className="rounded-xl font-bold uppercase text-[10px]">Cancel</Button>
-                        <Button
-                            onClick={saveField}
-                            disabled={editingField?.system}
-                            className="bg-blue-600 hover:bg-blue-700 rounded-xl px-10 font-bold uppercase text-[10px] tracking-widest shadow-lg shadow-blue-200"
-                        >
-                            Commit Schema
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                )}
+            </SideFormSheet>
         </div>
     )
 }
@@ -515,7 +619,7 @@ function LayoutSection({ title, icon: Icon, fields }: { title: string, icon: any
                     <div className="w-8 h-8 rounded-lg bg-white border border-zinc-200 flex items-center justify-center text-zinc-400 group-hover:text-blue-600 transition-colors shadow-sm">
                         <Icon className="w-4 h-4" />
                     </div>
-                    <span className="text-xs font-black text-zinc-700 tracking-wider uppercase italic">{title}</span>
+                    <span className="text-xs font-medium text-gray-900">{title}</span>
                 </div>
                 <div className="flex items-center gap-2">
                     <Button variant="ghost" size="sm" className="h-7 w-7 p-0 rounded-md hover:bg-zinc-100 text-zinc-400">
@@ -532,14 +636,14 @@ function LayoutSection({ title, icon: Icon, fields }: { title: string, icon: any
                         <div key={i} className="flex items-center justify-between p-3 bg-zinc-50/50 border border-zinc-100 rounded-lg hover:border-blue-100 hover:bg-white transition-all group/field">
                             <div className="flex items-center gap-3">
                                 <GripVertical className="w-3 h-3 text-zinc-200 group-hover/field:text-blue-300 transition-colors" />
-                                <span className="text-xs font-bold text-zinc-600 tracking-tight">{f}</span>
+                                <span className="text-xs font-medium text-zinc-600">{f}</span>
                             </div>
                             <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-zinc-200 hover:text-rose-500 hover:bg-rose-50">
                                 <XCircle className="w-3 h-3" />
                             </Button>
                         </div>
                     ))}
-                    <Button variant="ghost" className="h-full border-2 border-dashed border-zinc-50 rounded-lg text-zinc-200 font-bold uppercase text-[9px] hover:border-blue-50 hover:bg-blue-50/20 hover:text-blue-300 transition-all p-3">
+                    <Button variant="ghost" className="h-full border-2 border-dashed border-zinc-50 rounded-lg text-zinc-200 font-medium text-[9px] hover:border-blue-50 hover:bg-blue-50/20 hover:text-blue-300 transition-all p-3" onClick={() => toast.info("Field selector opening...")}>
                         + Insert Field
                     </Button>
                 </div>

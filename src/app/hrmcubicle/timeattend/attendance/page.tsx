@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   CalendarDays,
@@ -27,7 +28,9 @@ import { Badge } from "@/shared/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/shared/components/ui/avatar";
 import { useToast } from "@/shared/components/ui/use-toast";
 import { Input } from "@/shared/components/ui/input";
+import { Label } from "@/shared/components/ui/label";
 import { useAttendanceStore, AttendanceLog } from "@/shared/data/attendance-store";
+import { overrideAttendance } from "@/modules/hrm/hooks/hrmHooks";
 import {
   Select,
   SelectContent,
@@ -39,6 +42,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -46,10 +50,13 @@ import {
 
 const MasterAttendancePage = () => {
   const { toast } = useToast();
+  const router = useRouter();
   const {
     logs,
     approveRegularization,
-    rejectRegularization
+    rejectRegularization,
+    updateLog,
+    deleteLog,
   } = useAttendanceStore();
 
   // Filtering State
@@ -57,6 +64,15 @@ const MasterAttendancePage = () => {
   const [filterDept, setFilterDept] = useState("All Departments");
   const [filterStatus, setFilterStatus] = useState("All Status");
   const [filterType, setFilterType] = useState<"All" | "Discrepancy" | "Regularization">("All");
+
+  // Edit dialog state
+  const [editingLog, setEditingLog] = useState<AttendanceLog | null>(null);
+  const [editForm, setEditForm] = useState<{ checkIn: string; checkOut: string; status: AttendanceLog["status"]; remark: string }>({
+    checkIn: "",
+    checkOut: "",
+    status: "Present",
+    remark: "",
+  });
 
   // Memoized filtered logs
   const filteredLogs = useMemo(() => {
@@ -93,7 +109,120 @@ const MasterAttendancePage = () => {
   };
 
   const handleExport = () => {
-    toast({ title: "Generating Report", description: "Master attendance log is being exported to Excel." });
+    const headers = ["Log ID", "Employee ID", "Employee", "Department", "Date", "Check In", "Check Out", "Total Hours", "Status", "Discrepancy", "Regularization", "Remark"];
+    const rows = filteredLogs.map(l => [
+      l.id,
+      l.empId,
+      l.empName,
+      l.department,
+      l.date,
+      l.checkIn ?? "--",
+      l.checkOut ?? "--",
+      l.totalHours,
+      l.status,
+      l.isDiscrepancy ? "Yes" : "No",
+      l.regularizationStatus,
+      `"${(l.remark ?? "").replace(/"/g, "'")}"`,
+    ].join(","));
+    const csv = [headers.join(","), ...rows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `attendance_master_log_${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+    toast({ title: "Export Complete", description: `Master attendance log (${filteredLogs.length} records) downloaded as CSV.` });
+  };
+
+  const handleComplianceAudit = () => {
+    const anomalies = logs.filter(l => l.isDiscrepancy || l.status === "Absent" || l.status === "Late" || l.regularizationStatus === "Pending");
+    if (anomalies.length === 0) {
+      toast({ title: "Compliance Audit", description: "No anomalies detected. All records are compliant." });
+      return;
+    }
+    const headers = ["Log ID", "Employee", "Date", "Status", "Issue", "Regularization"];
+    const rows = anomalies.map(l => {
+      const issues: string[] = [];
+      if (l.isDiscrepancy) issues.push("Discrepancy");
+      if (l.status === "Absent") issues.push("Absent");
+      if (l.status === "Late") issues.push("Late arrival");
+      if (l.regularizationStatus === "Pending") issues.push("Pending regularization");
+      return [l.id, l.empName, l.date, l.status, issues.join("; "), l.regularizationStatus].join(",");
+    });
+    const csv = [headers.join(","), ...rows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `compliance_audit_${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+    toast({ title: "Compliance Audit Ready", description: `${anomalies.length} anomaly records exported for review.` });
+  };
+
+  const openEditDialog = (log: AttendanceLog) => {
+    setEditingLog(log);
+    setEditForm({
+      checkIn: log.checkIn ?? "",
+      checkOut: log.checkOut ?? "",
+      status: log.status,
+      remark: log.remark ?? "",
+    });
+  };
+
+  const handleSaveEdit = () => {
+    if (!editingLog) return;
+
+    const timePattern = /^([01]\d|2[0-3]):[0-5]\d$/;
+    if (editForm.checkIn && !timePattern.test(editForm.checkIn)) {
+      toast({ title: "Invalid Time", description: "Check-in must be in HH:MM format (24h).", variant: "destructive" });
+      return;
+    }
+    if (editForm.checkOut && !timePattern.test(editForm.checkOut)) {
+      toast({ title: "Invalid Time", description: "Check-out must be in HH:MM format (24h).", variant: "destructive" });
+      return;
+    }
+    if (editForm.checkIn && editForm.checkOut && editForm.checkOut <= editForm.checkIn) {
+      toast({ title: "Invalid Range", description: "Check-out time must be after check-in time.", variant: "destructive" });
+      return;
+    }
+    if (editForm.status === "Present" && (!editForm.checkIn || !editForm.checkOut)) {
+      toast({ title: "Incomplete Times", description: "Present status requires both check-in and check-out.", variant: "destructive" });
+      return;
+    }
+    if (editForm.remark && editForm.remark.length > 200) {
+      toast({ title: "Remark Too Long", description: "Keep remark within 200 characters.", variant: "destructive" });
+      return;
+    }
+
+    updateLog(editingLog.id, {
+      checkIn: editForm.checkIn || null,
+      checkOut: editForm.checkOut || null,
+      status: editForm.status,
+      remark: editForm.remark || undefined,
+    });
+
+    const backendStatus =
+      editForm.status === "Present" ? "Present" :
+      editForm.status === "Absent" ? "Absent" :
+      editForm.status === "Half Day" ? "HalfDay" :
+      editForm.status === "On Leave" ? "Leave" :
+      editForm.status === "Weekend" ? "Weekend" : "Present";
+    overrideAttendance(editingLog.id, {
+      status: backendStatus as "Present" | "Absent" | "HalfDay" | "Leave" | "Holiday" | "Weekend",
+      remarks: editForm.remark || "Manual override by HR admin",
+    }).catch(err => console.warn("override sync skipped:", err?.response?.status ?? err?.message));
+
+    toast({ title: "Attendance Updated", description: `Record for ${editingLog.empName} has been modified.` });
+    setEditingLog(null);
+  };
+
+  const handleDeleteLog = (log: AttendanceLog) => {
+    const confirmed = window.confirm(`Delete attendance record for ${log.empName} on ${log.date}? This cannot be undone.`);
+    if (!confirmed) return;
+    deleteLog(log.id);
+    toast({ title: "Record Deleted", description: `Attendance entry for ${log.empName} removed.`, variant: "destructive" });
   };
 
   return (
@@ -127,6 +256,7 @@ const MasterAttendancePage = () => {
             </Button>
             <Button
               className="bg-[#CB9DF0] hover:bg-[#b580e0] text-white rounded-xl font-black h-14 px-10 shadow-2xl shadow-purple-200"
+              onClick={handleComplianceAudit}
             >
               <ShieldCheck size={18} className="mr-2" /> Compliance audit
             </Button>
@@ -146,10 +276,10 @@ const MasterAttendancePage = () => {
           </div>
 
           <Select value={filterDept} onValueChange={setFilterDept}>
-            <SelectTrigger className="w-64 h-14 rounded-2xl bg-slate-50 border-none font-bold text-slate-600">
+            <SelectTrigger className="w-64 h-14 rounded-2xl bg-slate-50 border border-slate-200 font-bold text-slate-600">
               <SelectValue placeholder="Department" />
             </SelectTrigger>
-            <SelectContent className="rounded-2xl font-bold border-none shadow-2xl">
+            <SelectContent className="rounded-2xl font-bold border border-slate-200 shadow-2xl">
               {departments.map(d => (
                 <SelectItem key={d} value={d}>{d}</SelectItem>
               ))}
@@ -157,10 +287,10 @@ const MasterAttendancePage = () => {
           </Select>
 
           <Select value={filterStatus} onValueChange={setFilterStatus}>
-            <SelectTrigger className="w-64 h-14 rounded-2xl bg-slate-50 border-none font-bold text-slate-600">
+            <SelectTrigger className="w-64 h-14 rounded-2xl bg-slate-50 border border-slate-200 font-bold text-slate-600">
               <SelectValue placeholder="Work Status" />
             </SelectTrigger>
-            <SelectContent className="rounded-2xl font-bold border-none shadow-2xl">
+            <SelectContent className="rounded-2xl font-bold border border-slate-200 shadow-2xl">
               {statuses.map(s => (
                 <SelectItem key={s} value={s}>{s}</SelectItem>
               ))}
@@ -190,12 +320,12 @@ const MasterAttendancePage = () => {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-slate-50 bg-slate-50/30">
-                <th className="p-8 font-bold text-xs tracking-widest text-slate-400">Personnel info</th>
-                <th className="p-8 font-bold text-xs tracking-widest text-slate-400">Date & shift</th>
-                <th className="p-8 font-bold text-xs tracking-widest text-slate-400">Access log</th>
-                <th className="p-8 font-bold text-xs tracking-widest text-slate-400">Status</th>
-                <th className="p-8 font-bold text-xs tracking-widest text-slate-400">Anomalies</th>
-                <th className="p-8 font-bold text-xs tracking-widest text-slate-400 text-right">Actions</th>
+                <th className="p-8 font-bold text-base tracking-wide text-slate-600">Personnel info</th>
+                <th className="p-8 font-bold text-base tracking-wide text-slate-600">Date & shift</th>
+                <th className="p-8 font-bold text-base tracking-wide text-slate-600">Access log</th>
+                <th className="p-8 font-bold text-base tracking-wide text-slate-600">Status</th>
+                <th className="p-8 font-bold text-base tracking-wide text-slate-600">Anomalies</th>
+                <th className="p-8 font-bold text-base tracking-wide text-slate-600 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
@@ -221,56 +351,56 @@ const MasterAttendancePage = () => {
                       <Avatar className="h-12 w-12 rounded-xl bg-[#F0C1E1] text-white font-black shadow-sm group-hover:scale-110 transition-transform">
                         <AvatarFallback>{log.empName[0]}{log.empName.split(' ')[1]?.[0]}</AvatarFallback>
                       </Avatar>
-                      <div className="space-y-0.5">
-                        <h4 className="font-bold text-slate-900 text-lg leading-tight">{log.empName}</h4>
+                      <div className="space-y-1">
+                        <h4 className="font-bold text-slate-900 text-xl leading-tight">{log.empName}</h4>
                         <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-bold text-slate-400">{log.empId}</span>
-                          <span className="h-1 w-1 rounded-full bg-slate-200" />
-                          <span className="text-[10px] font-bold text-[#CB9DF0]">{log.department}</span>
+                          <span className="text-sm font-bold text-slate-500">{log.empId}</span>
+                          <span className="h-1.5 w-1.5 rounded-full bg-slate-300" />
+                          <span className="text-sm font-bold text-[#9b6cd0]">{log.department}</span>
                         </div>
                       </div>
                     </div>
                   </td>
                   <td className="p-8">
                     <div className="space-y-1">
-                      <p className="font-bold text-slate-700">{new Date(log.date).toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short' })}</p>
-                      <p className="text-xs font-bold text-slate-400">General (09:30 - 18:30)</p>
+                      <p className="font-bold text-slate-800 text-base">{new Date(log.date).toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short' })}</p>
+                      <p className="text-sm font-bold text-slate-500">General (09:30 - 18:30)</p>
                     </div>
                   </td>
                   <td className="p-8">
                     <div className="flex items-center gap-6">
                       <div className="text-center">
-                        <p className="text-[9px] font-black text-slate-300 tracking-widest mb-1">In</p>
-                        <p className="font-black text-slate-900 text-sm">{log.checkIn || '--:--'}</p>
+                        <p className="text-xs font-black text-slate-500 tracking-widest mb-1">In</p>
+                        <p className="font-black text-slate-900 text-base">{log.checkIn || '--:--'}</p>
                       </div>
                       <div className="text-center">
-                        <p className="text-[9px] font-black text-slate-300 tracking-widest mb-1">Out</p>
-                        <p className="font-black text-slate-900 text-sm">{log.checkOut || '--:--'}</p>
+                        <p className="text-xs font-black text-slate-500 tracking-widest mb-1">Out</p>
+                        <p className="font-black text-slate-900 text-base">{log.checkOut || '--:--'}</p>
                       </div>
-                      <div className="text-center bg-slate-50 px-3 py-1 rounded-lg">
-                        <p className="text-[9px] font-bold text-slate-300 tracking-widest mb-1">Total</p>
-                        <p className="font-bold text-indigo-600 text-sm">{log.totalHours}</p>
+                      <div className="text-center bg-slate-50 px-4 py-2 rounded-lg">
+                        <p className="text-xs font-bold text-slate-500 tracking-widest mb-1">Total</p>
+                        <p className="font-bold text-indigo-600 text-base">{log.totalHours}</p>
                       </div>
                     </div>
                   </td>
                   <td className="p-8">
-                    <Badge className={`px-4 py-1.5 rounded-lg border-none font-bold text-[10px] shadow-sm
+                    <Badge className={`px-4 py-2 rounded-lg border-none font-bold text-sm shadow-sm
                                             ${log.status === 'Present' ? 'bg-emerald-100 text-emerald-700' :
                         log.status === 'Late' ? 'bg-amber-100 text-amber-700' :
-                          log.status === 'Absent' ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-400'}`}>
+                          log.status === 'Absent' ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-500'}`}>
                       {log.status}
                     </Badge>
                   </td>
                   <td className="p-8">
                     {log.isDiscrepancy ? (
-                      <div className="flex items-center gap-2 text-rose-500 bg-rose-50 px-4 py-2 rounded-xl group-hover:scale-105 transition-transform animate-pulse border border-rose-100">
-                        <AlertCircle size={14} />
-                        <span className="text-[10px] font-black tracking-tight">Anomalies detected</span>
+                      <div className="inline-flex items-center gap-2 text-rose-600 bg-rose-50 px-4 py-2 rounded-xl group-hover:scale-105 transition-transform animate-pulse border border-rose-100">
+                        <AlertCircle size={16} />
+                        <span className="text-sm font-black tracking-tight">Anomalies detected</span>
                       </div>
                     ) : (
-                      <div className="flex items-center gap-2 text-emerald-500 opacity-30 group-hover:opacity-100 transition-opacity">
-                        <CheckCircle2 size={14} />
-                        <span className="text-[10px] font-black">Normalized</span>
+                      <div className="inline-flex items-center gap-2 text-emerald-600 opacity-70 group-hover:opacity-100 transition-opacity">
+                        <CheckCircle2 size={16} />
+                        <span className="text-sm font-black">Normalized</span>
                       </div>
                     )}
                   </td>
@@ -278,7 +408,7 @@ const MasterAttendancePage = () => {
                     <div className="flex items-center justify-end gap-2">
                       {log.regularizationStatus === 'Pending' ? (
                         <div className="flex items-center gap-2 bg-indigo-50 p-2 rounded-2xl border border-indigo-100 shadow-sm animate-in fade-in slide-in-from-right-4">
-                          <p className="text-[10px] font-bold text-indigo-700 px-3">Review Request</p>
+                          <p className="text-sm font-bold text-indigo-700 px-3">Review Request</p>
                           <Button
                             size="icon"
                             className="h-10 w-10 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg"
@@ -295,11 +425,23 @@ const MasterAttendancePage = () => {
                           </Button>
                         </div>
                       ) : (
-                        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
-                          <Button variant="ghost" size="icon" className="h-12 w-12 rounded-xl text-slate-300 hover:text-[#CB9DF0]">
+                        <div className="flex gap-2">
+                          <Button variant="ghost" size="icon" className="h-12 w-12 rounded-xl bg-slate-100 text-slate-600 hover:bg-[#CB9DF0]/15 hover:text-[#9b6cd0] transition-colors"
+                            onClick={() => openEditDialog(log)}
+                            title="Edit attendance record"
+                          >
                             <FileEdit size={20} />
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-12 w-12 rounded-xl text-slate-300 hover:text-[#CB9DF0]">
+                          <Button variant="ghost" size="icon" className="h-12 w-12 rounded-xl bg-slate-100 text-slate-600 hover:bg-rose-50 hover:text-rose-600 transition-colors"
+                            onClick={() => handleDeleteLog(log)}
+                            title="Delete attendance record"
+                          >
+                            <X size={20} />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-12 w-12 rounded-xl bg-slate-100 text-slate-600 hover:bg-[#CB9DF0]/15 hover:text-[#9b6cd0] transition-colors"
+                            onClick={() => router.push("/hrmcubicle/timeattend/settings")}
+                            title="Open settings"
+                          >
                             <Settings size={20} />
                           </Button>
                         </div>
@@ -312,6 +454,69 @@ const MasterAttendancePage = () => {
           </table>
         </Card>
       </div>
+
+      {/* Edit Attendance Dialog */}
+      <Dialog open={editingLog !== null} onOpenChange={(open) => { if (!open) setEditingLog(null); }}>
+        <DialogContent className="bg-white rounded-2xl border-2 border-slate-200 p-8 sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-slate-900">Edit Attendance Record</DialogTitle>
+            <DialogDescription className="text-slate-500">
+              Update punch times, status, or add a remark for {editingLog?.empName} on {editingLog?.date}.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Check In</Label>
+                <Input
+                  type="time"
+                  value={editForm.checkIn}
+                  onChange={(e) => setEditForm({ ...editForm, checkIn: e.target.value })}
+                  className="rounded-lg border border-slate-200"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Check Out</Label>
+                <Input
+                  type="time"
+                  value={editForm.checkOut}
+                  onChange={(e) => setEditForm({ ...editForm, checkOut: e.target.value })}
+                  className="rounded-lg border border-slate-200"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Status</Label>
+              <Select value={editForm.status} onValueChange={(v) => setEditForm({ ...editForm, status: v as AttendanceLog["status"] })}>
+                <SelectTrigger className="rounded-lg border border-slate-200">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Present">Present</SelectItem>
+                  <SelectItem value="Absent">Absent</SelectItem>
+                  <SelectItem value="Late">Late</SelectItem>
+                  <SelectItem value="Half Day">Half Day</SelectItem>
+                  <SelectItem value="On Leave">On Leave</SelectItem>
+                  <SelectItem value="Weekend">Weekend</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Remark</Label>
+              <Input
+                placeholder="Optional reason or note"
+                value={editForm.remark}
+                onChange={(e) => setEditForm({ ...editForm, remark: e.target.value })}
+                className="rounded-lg border border-slate-200"
+              />
+            </div>
+          </div>
+          <DialogFooter className="flex gap-2">
+            <Button variant="ghost" onClick={() => setEditingLog(null)}>Cancel</Button>
+            <Button className="bg-[#6366f1] hover:bg-[#5558e6]" onClick={handleSaveEdit}>Save Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

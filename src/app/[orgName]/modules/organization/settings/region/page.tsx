@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
     Globe,
     Map as MapIcon,
@@ -23,17 +23,37 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
+import { getOrgAdminSettings, updateOrgAdminSettings } from "@/hooks/orgAdminHooks";
 
 export default function RegionSettingsPage() {
     const [region, setRegion] = useState("us-east");
     const [timezone, setTimezone] = useState("utc-5");
+    const [saving, setSaving] = useState(false);
 
-    const handleSave = () => {
-        toast.promise(new Promise((resolve) => setTimeout(resolve, 3000)), {
-            loading: "Migrating data residency pointers...",
-            success: "Data region updated successfully.",
-            error: "Migration failed. Contact support."
-        });
+    useEffect(() => {
+        (async () => {
+            try {
+                const res = await getOrgAdminSettings();
+                const s = res?.data?.settings || res?.data?.data || res?.data || {};
+                if (s?.region) setRegion(s.region);
+                if (s?.timezone) setTimezone(s.timezone);
+            } catch (err) {
+                // Silent — fall back to defaults
+            }
+        })();
+    }, []);
+
+    const handleSave = async () => {
+        try {
+            setSaving(true);
+            await updateOrgAdminSettings({ region, timezone });
+            toast.success("Data region updated successfully.");
+        } catch (err: any) {
+            console.error("Failed to save region:", err);
+            toast.error(err?.response?.data?.message || "Migration failed. Contact support.");
+        } finally {
+            setSaving(false);
+        }
     };
 
     return (
@@ -48,9 +68,10 @@ export default function RegionSettingsPage() {
                     <Button
                         className="h-9 bg-red-600 hover:bg-red-700 text-white gap-2 font-bold shadow-lg shadow-red-200 rounded-none transition-all"
                         onClick={handleSave}
+                        disabled={saving}
                     >
                         <Server className="w-4 h-4" />
-                        Update Residency
+                        {saving ? "Updating..." : "Update Residency"}
                     </Button>
                 </div>
             </div>
@@ -170,7 +191,7 @@ export default function RegionSettingsPage() {
                             </div>
                         </CardContent>
                         <CardFooter className="bg-slate-50 p-4 border-t border-slate-100">
-                            <Button variant="outline" className="w-full h-8 text-xs font-bold uppercase rounded-none border-slate-300">
+                            <Button variant="outline" className="w-full h-8 text-xs font-bold uppercase rounded-none border-slate-300" onClick={() => toast.info("Opening calendar editor...")}>
                                 Edit Calendar
                             </Button>
                         </CardFooter>

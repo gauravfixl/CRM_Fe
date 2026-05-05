@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Calendar,
@@ -53,7 +53,7 @@ import { useMeStore } from "@/shared/data/me-store";
 
 const MyLeavePage = () => {
   const { toast } = useToast();
-  const { leave, addLeaveRequest, cancelLeaveRequest } = useMeStore();
+  const { leave, addLeaveRequest, cancelLeaveRequest, loadMyLeave } = useMeStore();
   const [isApplyOpen, setIsApplyOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'All' | 'Pending' | 'Approved' | 'Rejected'>('All');
   const [leaveForm, setLeaveForm] = useState({
@@ -63,42 +63,90 @@ const MyLeavePage = () => {
     reason: ''
   });
 
+  useEffect(() => {
+    loadMyLeave().catch((err) => {
+      console.error("Failed to load leave:", err);
+      toast({ title: "Load Failed", description: "Could not fetch leave from server.", variant: "destructive" });
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleApply = () => {
     if (!leaveForm.startDate || !leaveForm.endDate || !leaveForm.reason) {
-      toast({ title: "Error", description: "All fields are required", variant: "destructive" });
+      toast({ title: "Missing fields", description: "All fields are required.", variant: "destructive" });
       return;
     }
 
     const start = new Date(leaveForm.startDate);
     const end = new Date(leaveForm.endDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+      toast({ title: "Invalid dates", description: "Please enter valid dates.", variant: "destructive" });
+      return;
+    }
+
+    if (start < today && leaveForm.type !== "Sick Leave") {
+      toast({ title: "Invalid start date", description: "Start date cannot be in the past (except Sick Leave).", variant: "destructive" });
+      return;
+    }
 
     if (end < start) {
-      toast({
-        title: "Invalid Dates",
-        description: "End date cannot be earlier than start date.",
-        variant: "destructive"
-      });
+      toast({ title: "Invalid dates", description: "End date cannot be earlier than start date.", variant: "destructive" });
+      return;
+    }
+
+    if (leaveForm.reason.trim().length < 10) {
+      toast({ title: "Reason too short", description: "Please provide at least 10 characters explaining the leave.", variant: "destructive" });
+      return;
+    }
+
+    if (leaveForm.reason.trim().length > 500) {
+      toast({ title: "Reason too long", description: "Please keep the reason under 500 characters.", variant: "destructive" });
       return;
     }
 
     const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
 
-    addLeaveRequest({
-      type: leaveForm.type,
-      startDate: leaveForm.startDate,
-      endDate: leaveForm.endDate,
-      days,
-      reason: leaveForm.reason
-    });
+    // Balance check
+    const balance = leave.balances.find(b => b.type === leaveForm.type);
+    if (balance) {
+      const remaining = balance.total - balance.consumed;
+      if (days > remaining) {
+        toast({ title: "Insufficient balance", description: `You only have ${remaining} day(s) of ${leaveForm.type} remaining.`, variant: "destructive" });
+        return;
+      }
+    }
 
-    setIsApplyOpen(false);
-    setLeaveForm({ type: 'Casual Leave', startDate: '', endDate: '', reason: '' });
-    toast({ title: "Application Submitted", description: `Applied for ${days} days of ${leaveForm.type}.` });
+    (async () => {
+      try {
+        await addLeaveRequest({
+          type: leaveForm.type,
+          startDate: leaveForm.startDate,
+          endDate: leaveForm.endDate,
+          days,
+          reason: leaveForm.reason
+        });
+
+        setIsApplyOpen(false);
+        setLeaveForm({ type: 'Casual Leave', startDate: '', endDate: '', reason: '' });
+        toast({ title: "Application Submitted", description: `Applied for ${days} days of ${leaveForm.type}.` });
+      } catch (e) {
+        toast({ title: "Submission Failed", description: "Server rejected the leave request.", variant: "destructive" });
+      }
+    })();
   };
 
   const handleCancel = (id: string) => {
-    cancelLeaveRequest(id);
-    toast({ title: "Leave Cancelled", description: "Your request has been cancelled." });
+    (async () => {
+      try {
+        await cancelLeaveRequest(id);
+        toast({ title: "Leave Cancelled", description: "Your request has been cancelled." });
+      } catch (e) {
+        toast({ title: "Cancel Failed", description: "Could not cancel leave request.", variant: "destructive" });
+      }
+    })();
   };
 
   const getStatusBadge = (status: string) => {
@@ -112,7 +160,7 @@ const MyLeavePage = () => {
   };
 
   return (
-    <div className="flex-1 min-h-screen bg-[#f8fafc] p-6 space-y-6 font-sans" style={{ zoom: "80%" }}>
+    <div className="flex-1 min-h-screen bg-[#f8fafc] p-6 space-y-6 font-sans" style={{ zoom: "90%" }}>
       <div className="flex flex-col md:flex-row justify-between md:items-center gap-6">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">My Leave</h1>
@@ -134,7 +182,7 @@ const MyLeavePage = () => {
               <div className="space-y-2">
                 <Label>Leave Type *</Label>
                 <Select value={leaveForm.type} onValueChange={(v) => setLeaveForm({ ...leaveForm, type: v })}>
-                  <SelectTrigger className="rounded-xl h-12 bg-slate-50 border-none">
+                  <SelectTrigger className="rounded-xl h-12 bg-slate-50 border border-slate-200">
                     <SelectValue placeholder="Select type" />
                   </SelectTrigger>
                   <SelectContent>
@@ -151,29 +199,33 @@ const MyLeavePage = () => {
                   <Label>Start Date *</Label>
                   <Input
                     type="date"
+                    min={leaveForm.type === "Sick Leave" ? undefined : new Date().toISOString().split("T")[0]}
                     value={leaveForm.startDate}
                     onChange={e => setLeaveForm({ ...leaveForm, startDate: e.target.value })}
-                    className="rounded-xl bg-slate-50 border-none h-12"
+                    className="rounded-xl bg-slate-50 border border-slate-200 h-12"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>End Date *</Label>
                   <Input
                     type="date"
+                    min={leaveForm.startDate || undefined}
                     value={leaveForm.endDate}
                     onChange={e => setLeaveForm({ ...leaveForm, endDate: e.target.value })}
-                    className="rounded-xl bg-slate-50 border-none h-12"
+                    className="rounded-xl bg-slate-50 border border-slate-200 h-12"
                   />
                 </div>
               </div>
               <div className="space-y-2">
-                <Label>Reason *</Label>
+                <Label>Reason * (10-500 chars)</Label>
                 <Textarea
                   placeholder="Why are you taking leave?"
+                  maxLength={500}
                   value={leaveForm.reason}
                   onChange={e => setLeaveForm({ ...leaveForm, reason: e.target.value })}
-                  className="rounded-xl bg-slate-50 border-none min-h-[100px]"
+                  className="rounded-xl bg-slate-50 border border-slate-200 min-h-[100px]"
                 />
+                <p className="text-[10px] text-slate-400">{leaveForm.reason.length}/500 chars</p>
               </div>
             </div>
             <DialogFooter>

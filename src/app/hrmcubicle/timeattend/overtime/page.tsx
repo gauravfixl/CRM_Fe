@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     Clock,
@@ -43,6 +44,7 @@ import {
 } from "@/shared/components/ui/dialog";
 
 const OvertimeAdminPage = () => {
+    const router = useRouter();
     const { toast } = useToast();
     const { requests, approveRequest, bulkApprove, rejectRequest } = useOvertimeStore();
 
@@ -97,15 +99,37 @@ const OvertimeAdminPage = () => {
     };
 
     const handleExport = () => {
-        toast({ title: "Generating Export", description: "OT logs are being compiled into a CSV format..." });
+        const headers = ["Request ID", "Employee", "Date", "Hours", "Reason", "Priority", "Status", "Estimated Payout"];
+        const csvContent = [
+            headers.join(","),
+            ...requests.map(r => [
+                r.id,
+                r.empName,
+                r.date,
+                r.hours,
+                `"${r.reason}"`,
+                r.priority,
+                r.status,
+                r.estimatedPayout
+            ].join(","))
+        ].join("\n");
+
+        const blob = new Blob([csvContent], { type: "text/csv" });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `ot_report_${new Date().toISOString().split("T")[0]}.csv`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+        toast({ title: "Export Complete", description: "OT report has been downloaded as CSV." });
     };
 
     return (
         <div className="flex-1 min-h-screen bg-[#fcfdff] overflow-x-hidden overflow-y-auto">
             <div style={{
-                zoom: '0.75',
+                zoom: '0.85',
                 width: '100%',
-            }} className="p-12 space-y-10">
+            }} className="p-8 space-y-8">
 
                 {/* Header */}
                 <div className="flex flex-col md:flex-row justify-between md:items-end gap-6 pb-2 border-b border-slate-100">
@@ -115,27 +139,30 @@ const OvertimeAdminPage = () => {
                     </div>
 
                     <div className="flex gap-3">
-                        <Button variant="outline" className="rounded-xl font-bold border-slate-200 text-slate-500 h-14 px-8 hover:bg-slate-50 transition-all" onClick={handleExport}>
-                            <Download size={18} className="mr-2" /> Export OT report
+                        <Button variant="outline" className="rounded-xl font-bold border-slate-200 text-slate-500 h-10 px-5 hover:bg-slate-50 transition-all text-sm" onClick={() => router.push("/hrmcubicle/timeattend/reports")}>
+                            <ArrowRight size={16} className="mr-2" /> View Report
+                        </Button>
+                        <Button variant="outline" className="rounded-xl font-bold border-slate-200 text-slate-500 h-10 px-5 hover:bg-slate-50 transition-all text-sm" onClick={handleExport}>
+                            <Download size={16} className="mr-2" /> Export OT report
                         </Button>
                         <Button
-                            className="bg-[#CB9DF0] hover:bg-[#b580e0] text-white rounded-xl font-bold h-14 px-10 shadow-2xl shadow-purple-200"
+                            className="bg-[#CB9DF0] hover:bg-[#b580e0] text-white rounded-xl font-bold h-10 px-6 shadow-lg shadow-purple-200 text-sm"
                             onClick={() => setIsBulkConfirmOpen(true)}
                         >
-                            <ShieldCheck size={18} className="mr-2" /> One-click payout approval
+                            <ShieldCheck size={16} className="mr-2" /> One-click payout approval
                         </Button>
                     </div>
                 </div>
 
                 {/* Info Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {stats.cards.map((stat, i) => (
-                        <Card key={i} className={`border-none shadow-2xl rounded-[2.5rem] ${stat.color} p-8 h-40 flex items-center justify-between overflow-hidden relative group transition-all hover:scale-[1.02]`}>
+                        <Card key={i} className={`border-none shadow-lg rounded-none ${stat.color} p-6 h-28 flex items-center justify-between overflow-hidden relative group transition-all hover:scale-[1.02]`}>
                             <div className="relative z-10">
-                                <p className="text-xl font-bold text-slate-900/60 leading-tight mb-1 tracking-tight">{stat.label}</p>
-                                <h3 className="text-5xl font-black text-slate-900 tracking-tighter leading-none">{stat.value}</h3>
+                                <p className="text-sm font-bold text-slate-900/60 leading-tight mb-1 tracking-tight">{stat.label}</p>
+                                <h3 className="text-3xl font-bold text-slate-900 tracking-tighter leading-none">{stat.value}</h3>
                             </div>
-                            <div className="h-20 w-20 bg-white/20 rounded-3xl flex items-center justify-center backdrop-blur-md shadow-sm relative z-10">
+                            <div className="h-14 w-14 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md shadow-sm relative z-10">
                                 {stat.icon}
                             </div>
                             <div className="absolute top-4 right-8 opacity-10 transform rotate-12 scale-150 group-hover:rotate-[25deg] transition-transform duration-500">
@@ -150,14 +177,14 @@ const OvertimeAdminPage = () => {
                     <div className="relative flex-1 min-w-[300px]">
                         <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300" size={20} />
                         <Input
-                            className="h-14 pl-16 rounded-2xl bg-slate-50 border-none w-full font-bold text-lg placeholder:italic transition-all shadow-inner focus:bg-white focus:ring-2 focus:ring-[#CB9DF0]/20"
+                            className="h-14 pl-16 rounded-2xl bg-slate-50 border border-slate-200 w-full font-bold text-lg placeholder:italic transition-all shadow-inner focus:bg-white focus:ring-2 focus:ring-[#CB9DF0]/20"
                             placeholder="Identify employee or Request ID..."
                             value={searchTerm}
                             onChange={e => setSearchTerm(e.target.value)}
                         />
                     </div>
                     <Select value={filterStatus} onValueChange={setFilterStatus}>
-                        <SelectTrigger className="w-64 h-14 rounded-2xl bg-slate-50 border-none font-bold text-slate-600 px-6">
+                        <SelectTrigger className="w-64 h-14 rounded-2xl bg-slate-50 border border-slate-200 font-bold text-slate-600 px-6">
                             <SelectValue placeholder="Status Filter" />
                         </SelectTrigger>
                         <SelectContent className="rounded-2xl font-bold border-none shadow-2xl">
@@ -230,7 +257,7 @@ const OvertimeAdminPage = () => {
                                             </Badge>
                                         </div>
                                     </td>
-                                    <td className="p-8 text-center text-3xl font-bold text-slate-900 tracking-tight leading-none">
+                                    <td className="p-8 text-center text-xl font-bold text-slate-900 tracking-tight leading-none">
                                         ₹{r.estimatedPayout.toLocaleString()}
                                     </td>
                                     <td className="p-8 text-right">
@@ -270,7 +297,7 @@ const OvertimeAdminPage = () => {
 
                 {/* Bulk Approval Dialog */}
                 <Dialog open={isBulkConfirmOpen} onOpenChange={setIsBulkConfirmOpen}>
-                    <DialogContent className="bg-white rounded-[2.5rem] border-none p-10 max-w-md shadow-2xl">
+                    <DialogContent className="bg-white rounded-[2.5rem] border-2 border-slate-200 p-10 max-w-md shadow-2xl">
                         <DialogHeader>
                             <DialogTitle className="text-2xl font-bold tracking-tight text-slate-900">Mass OT approval</DialogTitle>
                             <DialogDescription className="font-bold text-slate-400 text-sm leading-tight">Authorize all currently pending overtime hours into the payroll cycle?</DialogDescription>

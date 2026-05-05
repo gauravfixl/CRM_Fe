@@ -54,12 +54,18 @@ import { Textarea } from "@/shared/components/ui/textarea";
 import { useDocumentsStore, type LetterTemplate } from "@/shared/data/documents-store";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import { required, minLength, maxLength, isUnique, isPlaceholderTag, firstError } from "@/shared/utils/validators";
 
 const TemplatesPage = () => {
-    const { letterTemplates, addTemplate, updateTemplate, deleteTemplate } = useDocumentsStore();
+    const { letterTemplates, addTemplate, updateTemplate, deleteTemplate, duplicateTemplate } = useDocumentsStore();
+    const router = useRouter();
     const [searchQuery, setSearchQuery] = useState("");
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [editingTemplate, setEditingTemplate] = useState<LetterTemplate | null>(null);
+    const [previewingTemplate, setPreviewingTemplate] = useState<LetterTemplate | null>(null);
+    const [deleteTemplateId, setDeleteTemplateId] = useState<string | null>(null);
+    const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
     const [templateType, setTemplateType] = useState("all");
     const [selectedTemplateIds, setSelectedTemplateIds] = useState<string[]>([]);
 
@@ -71,6 +77,9 @@ const TemplatesPage = () => {
     });
 
     const [currentPlaceholder, setCurrentPlaceholder] = useState("");
+    const [isBold, setIsBold] = useState(false);
+    const [isItalic, setIsItalic] = useState(false);
+    const [isAiDialogOpen, setIsAiDialogOpen] = useState(false);
 
     const filteredTemplates = letterTemplates.filter(template => {
         const matchesSearch = template.name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -79,43 +88,80 @@ const TemplatesPage = () => {
     });
 
     const handleAddPlaceholder = () => {
-        if (currentPlaceholder && !newTemplate.placeholders.includes(currentPlaceholder)) {
-            setNewTemplate({
-                ...newTemplate,
-                placeholders: [...newTemplate.placeholders, currentPlaceholder]
-            });
-            setCurrentPlaceholder("");
+        const tag = currentPlaceholder.trim();
+        const err = firstError(
+            required(tag, "Placeholder"),
+            isPlaceholderTag(tag, "Placeholder"),
+            maxLength(tag, 40, "Placeholder"),
+        );
+        if (err) { toast.error(err); return; }
+        if (newTemplate.placeholders.includes(tag)) {
+            toast.error("Placeholder already exists");
+            return;
         }
+        setNewTemplate({
+            ...newTemplate,
+            placeholders: [...newTemplate.placeholders, tag]
+        });
+        setCurrentPlaceholder("");
+    };
+
+    const validateTemplate = (t: { name: string; content: string; type: string }, ignoreId?: string): string | null => {
+        const existingNames = letterTemplates.filter(x => x.id !== ignoreId).map(x => x.name);
+        return firstError(
+            required(t.name, "Template name"),
+            minLength(t.name, 3, "Template name"),
+            maxLength(t.name, 120, "Template name"),
+            isUnique(t.name, existingNames, "Template name"),
+            required(t.type, "Template type"),
+            required(t.content, "Template content"),
+            minLength(t.content, 20, "Template content"),
+        );
     };
 
     const handleCreateTemplate = () => {
-        if (!newTemplate.name || !newTemplate.content) {
-            toast.error("Please fill in template name and content");
-            return;
-        }
-        addTemplate(newTemplate);
+        const err = validateTemplate(newTemplate);
+        if (err) { toast.error(err); return; }
+        addTemplate({
+            ...newTemplate,
+            name: newTemplate.name.trim(),
+            content: newTemplate.content.trim(),
+        });
         setIsCreateOpen(false);
         setNewTemplate({ name: "", type: "Offer Letter", content: "", placeholders: [] });
         toast.success("Template created successfully");
     };
 
     const handleUpdateTemplate = () => {
-        if (!editingTemplate?.name || !editingTemplate?.content) {
-            toast.error("Required fields cannot be empty");
-            return;
-        }
-        updateTemplate(editingTemplate.id, editingTemplate);
+        if (!editingTemplate) return;
+        const err = validateTemplate(editingTemplate, editingTemplate.id);
+        if (err) { toast.error(err); return; }
+        updateTemplate(editingTemplate.id, {
+            ...editingTemplate,
+            name: editingTemplate.name.trim(),
+            content: editingTemplate.content.trim(),
+        });
         setEditingTemplate(null);
         toast.success("Template blueprint updated");
     };
 
     const handleAddPlaceholderToEdit = (tag: string) => {
-        if (editingTemplate && tag && !editingTemplate.placeholders.includes(tag)) {
-            setEditingTemplate({
-                ...editingTemplate,
-                placeholders: [...editingTemplate.placeholders, tag]
-            });
+        if (!editingTemplate) return;
+        const t = tag.trim();
+        const err = firstError(
+            required(t, "Placeholder"),
+            isPlaceholderTag(t, "Placeholder"),
+            maxLength(t, 40, "Placeholder"),
+        );
+        if (err) { toast.error(err); return; }
+        if (editingTemplate.placeholders.includes(t)) {
+            toast.error("Placeholder already exists");
+            return;
         }
+        setEditingTemplate({
+            ...editingTemplate,
+            placeholders: [...editingTemplate.placeholders, t]
+        });
     };
 
     return (
@@ -132,11 +178,7 @@ const TemplatesPage = () => {
                             <Button
                                 variant="outline"
                                 className="h-11 rounded-xl text-rose-600 font-bold border-rose-100 bg-rose-50/50 px-6"
-                                onClick={() => {
-                                    selectedTemplateIds.forEach(id => deleteTemplate(id));
-                                    setSelectedTemplateIds([]);
-                                    toast.success(`${selectedTemplateIds.length} blueprints purged`);
-                                }}
+                                onClick={() => setBulkDeleteOpen(true)}
                             >
                                 <Trash2 className="w-4 h-4 mr-2" /> Delete ({selectedTemplateIds.length})
                             </Button>
@@ -169,13 +211,13 @@ const TemplatesPage = () => {
                                             <div className="flex items-center justify-between mb-1 ml-1">
                                                 <label className="text-[10px] font-bold tracking-wide text-slate-400">Template Content</label>
                                                 <div className="flex gap-2">
-                                                    <Button variant="outline" size="sm" className="h-7 w-7 rounded-lg text-[10px] font-black p-0 border-slate-200 shadow-sm">B</Button>
-                                                    <Button variant="outline" size="sm" className="h-7 w-7 rounded-lg text-[10px] font-black p-0 border-slate-200 shadow-sm italic">I</Button>
+                                                    <Button variant="outline" size="sm" className={`h-7 w-7 rounded-lg text-[10px] font-black p-0 border-slate-200 shadow-sm ${isBold ? 'bg-indigo-100 border-indigo-300 text-indigo-700' : ''}`} onClick={() => setIsBold(!isBold)}>B</Button>
+                                                    <Button variant="outline" size="sm" className={`h-7 w-7 rounded-lg text-[10px] font-black p-0 border-slate-200 shadow-sm italic ${isItalic ? 'bg-indigo-100 border-indigo-300 text-indigo-700' : ''}`} onClick={() => setIsItalic(!isItalic)}>I</Button>
                                                 </div>
                                             </div>
                                             <Textarea
                                                 placeholder="Use {{placeholder_name}} for dynamic data..."
-                                                className="min-h-[400px] font-mono text-sm bg-slate-50 border-slate-200 rounded-[2rem] p-8 focus:bg-white focus:ring-4 focus:ring-indigo-50 transition-all custom-scrollbar overflow-y-auto"
+                                                className={`min-h-[400px] font-mono text-sm bg-slate-50 border-slate-200 rounded-[2rem] p-8 focus:bg-white focus:ring-4 focus:ring-indigo-50 transition-all custom-scrollbar overflow-y-auto ${isBold ? 'font-bold' : ''} ${isItalic ? 'italic' : ''}`}
                                                 value={newTemplate.content}
                                                 onChange={(e) => setNewTemplate({ ...newTemplate, content: e.target.value })}
                                             />
@@ -195,10 +237,10 @@ const TemplatesPage = () => {
                                                     value={newTemplate.type}
                                                     onValueChange={(val: any) => setNewTemplate({ ...newTemplate, type: val })}
                                                 >
-                                                    <SelectTrigger className="h-12 bg-white border-none rounded-xl font-bold text-xs px-4 shadow-sm">
+                                                    <SelectTrigger className="h-12 bg-white border border-slate-200 rounded-xl font-bold text-xs px-4 shadow-sm">
                                                         <SelectValue />
                                                     </SelectTrigger>
-                                                    <SelectContent className="rounded-xl border-none shadow-2xl p-2 font-bold text-xs">
+                                                    <SelectContent className="rounded-xl border border-slate-200 shadow-2xl p-2 font-bold text-xs">
                                                         <SelectItem value="Offer Letter" className="rounded-lg h-10">Offer Letter</SelectItem>
                                                         <SelectItem value="Experience Letter" className="rounded-lg h-10">Experience Letter</SelectItem>
                                                         <SelectItem value="Relieving Letter" className="rounded-lg h-10">Relieving Letter</SelectItem>
@@ -221,7 +263,7 @@ const TemplatesPage = () => {
                                             <div className="flex gap-2">
                                                 <Input
                                                     placeholder="tag_name"
-                                                    className="h-10 text-xs bg-white border-none rounded-xl font-bold px-4 shadow-sm"
+                                                    className="h-10 text-xs bg-white border border-slate-200 rounded-xl font-bold px-4 shadow-sm"
                                                     value={currentPlaceholder}
                                                     onChange={(e) => setCurrentPlaceholder(e.target.value)}
                                                     onKeyDown={(e) => e.key === 'Enter' && handleAddPlaceholder()}
@@ -303,7 +345,7 @@ const TemplatesPage = () => {
                             </div>
                             <h4 className="font-bold text-lg leading-tight mb-2 tracking-tight text-indigo-900">AI Assistant</h4>
                             <p className="text-[10px] font-medium text-indigo-600/60 leading-relaxed mb-6 tracking-wide">Draft legal documents in seconds with advanced LLM integration.</p>
-                            <Button className="w-full bg-white hover:bg-indigo-600 hover:text-white text-indigo-600 border border-indigo-100 h-10 rounded-xl font-bold text-[9px] tracking-wide shadow-sm transition-all active:scale-95">Try AI Generator</Button>
+                            <Button className="w-full bg-white hover:bg-indigo-600 hover:text-white text-indigo-600 border border-indigo-100 h-10 rounded-xl font-bold text-[9px] tracking-wide shadow-sm transition-all active:scale-95" onClick={() => setIsAiDialogOpen(true)}>Try AI Generator</Button>
                         </div>
                     </Card>
                 </div>
@@ -358,16 +400,16 @@ const TemplatesPage = () => {
                                                             <MoreVertical size={20} />
                                                         </Button>
                                                     </DropdownMenuTrigger>
-                                                    <DropdownMenuContent align="end" className="w-56 p-2 rounded-2xl border-none shadow-2xl bg-white font-sans">
+                                                    <DropdownMenuContent align="end" className="w-56 p-2 rounded-2xl border border-slate-200 shadow-2xl bg-white font-sans">
                                                         <DropdownMenuLabel className="px-3 py-2 text-[10px] font-bold text-slate-400 tracking-wide">Options</DropdownMenuLabel>
-                                                        <DropdownMenuItem className="gap-3 p-3 rounded-xl cursor-pointer font-bold text-xs hover:bg-slate-50 text-start" onClick={() => toast.success("Opening template preview")}>
+                                                        <DropdownMenuItem className="gap-3 p-3 rounded-xl cursor-pointer font-bold text-xs hover:bg-slate-50 text-start" onClick={() => setPreviewingTemplate(template)}>
                                                             <Eye size={16} className="text-indigo-500" /> Preview Blueprint
                                                         </DropdownMenuItem>
-                                                        <DropdownMenuItem className="gap-3 p-3 rounded-xl cursor-pointer font-bold text-xs hover:bg-slate-50 text-start" onClick={() => toast.success("Blueprint duplicated")}>
+                                                        <DropdownMenuItem className="gap-3 p-3 rounded-xl cursor-pointer font-bold text-xs hover:bg-slate-50 text-start" onClick={() => { duplicateTemplate(template.id); toast.success(`Duplicated "${template.name}"`); }}>
                                                             <Copy size={16} className="text-indigo-500" /> Duplicate Version
                                                         </DropdownMenuItem>
                                                         <DropdownMenuSeparator className="my-2 bg-slate-50" />
-                                                        <DropdownMenuItem className="gap-3 p-3 rounded-xl cursor-pointer font-bold text-xs text-rose-600 hover:bg-rose-50 text-start" onClick={() => deleteTemplate(template.id)}>
+                                                        <DropdownMenuItem className="gap-3 p-3 rounded-xl cursor-pointer font-bold text-xs text-rose-600 hover:bg-rose-50 text-start" onClick={() => setDeleteTemplateId(template.id)}>
                                                             <Trash2 size={16} /> Delete Blueprint
                                                         </DropdownMenuItem>
                                                     </DropdownMenuContent>
@@ -397,7 +439,7 @@ const TemplatesPage = () => {
                                             </div>
                                             <div className="flex items-center justify-between pt-4 border-t border-slate-50 mt-2">
                                                 <span className="text-[10px] text-slate-300 font-bold tracking-wide whitespace-nowrap">Updated {new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(new Date(template.updatedAt))}</span>
-                                                <Button className="h-10 bg-indigo-600 hover:bg-slate-900 text-white rounded-xl font-bold text-[10px] tracking-wide px-6 shadow-md transition-all active:scale-95 border-none">
+                                                <Button className="h-10 bg-indigo-600 hover:bg-slate-900 text-white rounded-xl font-bold text-[10px] tracking-wide px-6 shadow-md transition-all active:scale-95 border-none" onClick={() => router.push("/hrmcubicle/documents/letters")}>
                                                     Use Template <ChevronRight size={14} className="ml-2" />
                                                 </Button>
                                             </div>
@@ -418,6 +460,30 @@ const TemplatesPage = () => {
                         </div>
                     )}
                 </div>
+
+                {/* AI Enrich Dialog */}
+                <Dialog open={isAiDialogOpen} onOpenChange={setIsAiDialogOpen}>
+                    <DialogContent className="max-w-md bg-white rounded-[2rem] border border-slate-200 p-8 shadow-3xl font-sans" style={{ zoom: "80%" }}>
+                        <DialogHeader className="text-start">
+                            <div className="h-12 w-12 bg-amber-50 rounded-2xl flex items-center justify-center mb-3 border border-amber-100">
+                                <Sparkles size={22} className="text-amber-500" />
+                            </div>
+                            <DialogTitle className="text-2xl font-black tracking-tight text-slate-900">AI Document Enrichment</DialogTitle>
+                            <DialogDescription className="font-bold text-slate-400 text-[11px] tracking-wide mt-2">
+                                Advanced LLM-powered document generation is currently in development. This feature will allow you to auto-generate professional letter templates, suggest legal clauses, and enrich content with compliance-ready language.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="py-6">
+                            <div className="p-6 bg-indigo-50/50 rounded-2xl border border-indigo-100 text-start space-y-2">
+                                <p className="text-[10px] font-bold text-indigo-700 tracking-wide">Coming Soon</p>
+                                <p className="text-[10px] font-medium text-indigo-500/70 leading-relaxed">AI-assisted drafting, clause suggestions, and automated template generation will be available in the next release.</p>
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <Button className="bg-indigo-600 hover:bg-slate-900 text-white rounded-xl h-12 px-8 font-bold text-[10px] tracking-wide border-none" onClick={() => setIsAiDialogOpen(false)}>Got It</Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
 
                 {/* Edit Template Dialog */}
                 <Dialog open={!!editingTemplate} onOpenChange={(open) => !open && setEditingTemplate(null)}>
@@ -460,10 +526,10 @@ const TemplatesPage = () => {
                                             value={editingTemplate?.type}
                                             onValueChange={(val: any) => setEditingTemplate(prev => prev ? { ...prev, type: val } : null)}
                                         >
-                                            <SelectTrigger className="h-12 bg-white border-none rounded-xl font-bold text-xs px-4 shadow-sm">
+                                            <SelectTrigger className="h-12 bg-white border border-slate-200 rounded-xl font-bold text-xs px-4 shadow-sm">
                                                 <SelectValue />
                                             </SelectTrigger>
-                                            <SelectContent className="rounded-xl border-none shadow-2xl p-2 font-bold text-xs">
+                                            <SelectContent className="rounded-xl border border-slate-200 shadow-2xl p-2 font-bold text-xs">
                                                 <SelectItem value="Offer Letter">Offer Letter</SelectItem>
                                                 <SelectItem value="Experience Letter">Experience Letter</SelectItem>
                                                 <SelectItem value="Relieving Letter">Relieving Letter</SelectItem>
@@ -483,7 +549,7 @@ const TemplatesPage = () => {
                                         <Input
                                             id="tag-input-edit"
                                             placeholder="new_tag"
-                                            className="h-10 text-xs bg-white border-none rounded-xl font-bold px-4 shadow-sm"
+                                            className="h-10 text-xs bg-white border border-slate-200 rounded-xl font-bold px-4 shadow-sm"
                                             onKeyDown={(e) => {
                                                 if (e.key === 'Enter') {
                                                     handleAddPlaceholderToEdit((e.currentTarget as HTMLInputElement).value);
@@ -509,6 +575,97 @@ const TemplatesPage = () => {
                         <DialogFooter className="border-t border-slate-50 pt-8 gap-3">
                             <Button variant="ghost" onClick={() => setEditingTemplate(null)} className="h-14 rounded-2xl font-bold text-[11px] tracking-wide transition-all px-8 border-none">Discard Changes</Button>
                             <Button className="bg-indigo-600 hover:bg-slate-900 text-white rounded-2xl h-14 px-12 font-bold shadow-lg shadow-indigo-100 transition-all text-[11px] tracking-wide border-none" onClick={handleUpdateTemplate}>Synchronize Blueprint</Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* Preview Blueprint Dialog */}
+                <Dialog open={!!previewingTemplate} onOpenChange={(open) => !open && setPreviewingTemplate(null)}>
+                    <DialogContent className="max-w-3xl bg-white rounded-[2rem] border border-slate-200 p-8 shadow-3xl font-sans" style={{ zoom: "80%" }}>
+                        <DialogHeader className="text-start">
+                            <div className="h-12 w-12 bg-indigo-50 rounded-2xl flex items-center justify-center mb-3 border border-indigo-100">
+                                <Eye size={22} className="text-indigo-600" />
+                            </div>
+                            <DialogTitle className="text-2xl font-black tracking-tight text-slate-900 leading-tight">{previewingTemplate?.name}</DialogTitle>
+                            <DialogDescription className="font-bold text-slate-400 text-[11px] tracking-wide mt-2">
+                                {previewingTemplate?.type} · Last updated {previewingTemplate?.updatedAt}
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="py-6 space-y-6 text-start">
+                            <div>
+                                <p className="text-[10px] font-bold text-slate-400 tracking-wide mb-2 uppercase">Placeholders</p>
+                                <div className="flex flex-wrap gap-2">
+                                    {previewingTemplate?.placeholders.length ? previewingTemplate.placeholders.map((p, i) => (
+                                        <Badge key={i} className="bg-indigo-50 text-indigo-600 border border-indigo-100 px-3 py-1.5 rounded-lg font-bold text-[10px] font-mono">
+                                            {"{{"}{p}{"}}"}
+                                        </Badge>
+                                    )) : (
+                                        <span className="text-[11px] text-slate-400 italic font-bold">No placeholders defined</span>
+                                    )}
+                                </div>
+                            </div>
+                            <div>
+                                <p className="text-[10px] font-bold text-slate-400 tracking-wide mb-2 uppercase">Content</p>
+                                <div className="p-6 bg-slate-50 border border-slate-200 rounded-2xl max-h-[400px] overflow-auto">
+                                    <pre className="text-xs font-mono text-slate-700 whitespace-pre-wrap leading-relaxed">{previewingTemplate?.content || "No content available."}</pre>
+                                </div>
+                            </div>
+                        </div>
+                        <DialogFooter className="gap-3">
+                            <Button variant="ghost" onClick={() => setPreviewingTemplate(null)} className="h-12 rounded-xl font-bold text-[10px] tracking-wide transition-all px-6">Close</Button>
+                            <Button className="bg-indigo-600 hover:bg-slate-900 text-white rounded-xl h-12 px-8 font-bold shadow-lg text-[10px] tracking-wide border-none" onClick={() => { if (previewingTemplate) { setEditingTemplate(previewingTemplate); setPreviewingTemplate(null); } }}>
+                                <Edit3 size={14} className="mr-2" /> Edit Template
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* Delete Single Confirm Dialog */}
+                <Dialog open={!!deleteTemplateId} onOpenChange={(open) => !open && setDeleteTemplateId(null)}>
+                    <DialogContent className="max-w-md bg-white rounded-[2rem] border border-slate-200 p-8 shadow-3xl font-sans" style={{ zoom: "80%" }}>
+                        <DialogHeader className="text-start">
+                            <div className="h-12 w-12 bg-rose-50 rounded-2xl flex items-center justify-center mb-3 border border-rose-100">
+                                <Trash2 size={22} className="text-rose-500" />
+                            </div>
+                            <DialogTitle className="text-2xl font-black tracking-tight text-slate-900">Delete Blueprint?</DialogTitle>
+                            <DialogDescription className="font-bold text-slate-400 text-[11px] tracking-wide mt-2">
+                                This template will be permanently removed. Any letters already issued from it remain unaffected.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <DialogFooter className="gap-3 pt-4">
+                            <Button variant="ghost" onClick={() => setDeleteTemplateId(null)} className="h-12 rounded-xl font-bold text-[10px] tracking-wide px-6">Cancel</Button>
+                            <Button className="bg-rose-500 hover:bg-rose-600 text-white rounded-xl h-12 px-8 font-bold shadow-lg text-[10px] tracking-wide border-none" onClick={() => {
+                                if (deleteTemplateId) {
+                                    deleteTemplate(deleteTemplateId);
+                                    toast.success("Blueprint deleted");
+                                    setDeleteTemplateId(null);
+                                }
+                            }}>Delete Blueprint</Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* Bulk Delete Confirm Dialog */}
+                <Dialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
+                    <DialogContent className="max-w-md bg-white rounded-[2rem] border border-slate-200 p-8 shadow-3xl font-sans" style={{ zoom: "80%" }}>
+                        <DialogHeader className="text-start">
+                            <div className="h-12 w-12 bg-rose-50 rounded-2xl flex items-center justify-center mb-3 border border-rose-100">
+                                <Trash2 size={22} className="text-rose-500" />
+                            </div>
+                            <DialogTitle className="text-2xl font-black tracking-tight text-slate-900">Delete {selectedTemplateIds.length} Blueprints?</DialogTitle>
+                            <DialogDescription className="font-bold text-slate-400 text-[11px] tracking-wide mt-2">
+                                All selected blueprints will be permanently removed. This action cannot be undone.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <DialogFooter className="gap-3 pt-4">
+                            <Button variant="ghost" onClick={() => setBulkDeleteOpen(false)} className="h-12 rounded-xl font-bold text-[10px] tracking-wide px-6">Cancel</Button>
+                            <Button className="bg-rose-500 hover:bg-rose-600 text-white rounded-xl h-12 px-8 font-bold shadow-lg text-[10px] tracking-wide border-none" onClick={() => {
+                                const count = selectedTemplateIds.length;
+                                selectedTemplateIds.forEach(id => deleteTemplate(id));
+                                setSelectedTemplateIds([]);
+                                setBulkDeleteOpen(false);
+                                toast.success(`${count} blueprints purged`);
+                            }}>Delete All</Button>
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>

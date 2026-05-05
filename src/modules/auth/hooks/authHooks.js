@@ -8,23 +8,31 @@
  */
 
 import { axiosInstance as axios } from "@/lib/axios"
+import { clearAuthCookie } from "@/lib/auth-cookies"
 
 /**
  * Logs out the current user.
- * Clears local storage and redirects to the sign-in page.
+ * Clears local storage, auth cookie, and redirects to the sign-in page.
  */
 export const logoutUser = async () => {
   try {
     // 1. Hit logout API
     await axios.post("/auth/logout");
 
-    // 2. Clear local storage
+    // 2. Clear auth cookie (so middleware blocks access immediately)
+    clearAuthCookie();
+
+    // 3. Clear local storage
     localStorage.clear();
 
-    // 3. Redirect to login page
+    // 4. Redirect to login page
     window.location.href = "/auth/signin";
   } catch (error) {
     console.error("Logout failed:", error.message);
+    // Even if API call fails, clear client state and redirect
+    clearAuthCookie();
+    localStorage.clear();
+    window.location.href = "/auth/signin";
   }
 };
 

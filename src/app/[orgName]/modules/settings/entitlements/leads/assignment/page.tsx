@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect, useMemo } from "react"
 import { useParams } from "next/navigation"
 import {
     UserCheck,
@@ -21,7 +21,8 @@ import {
     Users,
     Settings2,
     LayoutGrid,
-    Target
+    Target,
+    Loader2
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -42,15 +43,8 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogDescription,
-    DialogFooter,
-} from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet"
 import {
     Select,
     SelectContent,
@@ -61,19 +55,67 @@ import {
 import { SmallCard, SmallCardContent, SmallCardHeader } from "@/shared/components/custom/SmallCard"
 import { Switch } from "@/components/ui/switch"
 import { toast } from "sonner"
+import { fetchUsersApi } from "@/modules/crm/organizations/hooks/orgHooks"
+import { getLeadListByOrg } from "@/hooks/leadHooks"
+
+interface OrgUser {
+    _id: string
+    name: string
+    email: string
+    role?: string
+}
+
+interface Lead {
+    _id: string
+    name: string
+    stage: string
+    assignedTo?: { email: string; name: string }
+    owner?: string
+    source: string
+    isDeleted: boolean
+}
 
 export default function LeadAssignmentRulesPage() {
     const params = useParams()
     const [searchQuery, setSearchQuery] = useState("")
     const [isLoading, setIsLoading] = useState(false)
+    const [isFetching, setIsFetching] = useState(true)
     const [isRuleOpen, setIsRuleOpen] = useState(false)
     const [editingRule, setEditingRule] = useState<any>(null)
+    const [orgUsers, setOrgUsers] = useState<OrgUser[]>([])
+    const [leads, setLeads] = useState<Lead[]>([])
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const [usersRes, leadsRes] = await Promise.all([
+                    fetchUsersApi(),
+                    getLeadListByOrg()
+                ])
+                setOrgUsers(usersRes?.users || usersRes || [])
+                setLeads(leadsRes?.data?.data || [])
+            } catch (error) {
+                console.error("Failed to fetch assignment data:", error)
+                toast.error("Failed to load assignment data")
+            } finally {
+                setIsFetching(false)
+            }
+        }
+        fetchData()
+    }, [])
+
+    const assignmentStats = useMemo(() => {
+        const assignedLeads = leads.filter(l => l.assignedTo?.name || l.owner)
+        const unassignedLeads = leads.filter(l => !l.assignedTo?.name && !l.owner)
+        const assignmentRate = leads.length > 0 ? Math.round((assignedLeads.length / leads.length) * 100) : 0
+        return { assignedCount: assignedLeads.length, unassignedCount: unassignedLeads.length, assignmentRate }
+    }, [leads])
 
     const [rules, setRules] = useState([
-        { id: "1", name: "High Value Inbound (US/UK)", conditions: "Value > $10k, Country = US/UK", target: "Enterprise Sales Team", method: "Round Robin", priority: 1, status: "ACTIVE" },
-        { id: "2", name: "SaaS Industry Routing", conditions: "Industry = SaaS", target: "Tech Specialist Group", method: "Least Loaded", priority: 2, status: "ACTIVE" },
+        { id: "1", name: "High Value Inbound (Us/Uk)", conditions: "Value > $10k, Country = US/UK", target: "Enterprise Sales Team", method: "Round Robin", priority: 1, status: "ACTIVE" },
+        { id: "2", name: "Saas Industry Routing", conditions: "Industry = SaaS", target: "Tech Specialist Group", method: "Least Loaded", priority: 2, status: "ACTIVE" },
         { id: "3", name: "Website Direct Capture", conditions: "Source = Website", target: "Sarah Jain (Owner)", method: "Fixed User", priority: 3, status: "ACTIVE" },
-        { id: "4", name: "APAC/Global Referral", conditions: "Region = APAC", target: "Global Hub Team", method: "Round Robin", priority: 4, status: "INACTIVE" },
+        { id: "4", name: "Apac/Global Referral", conditions: "Region = APAC", target: "Global Hub Team", method: "Round Robin", priority: 4, status: "INACTIVE" },
     ])
 
     const [fallbacks, setFallbacks] = useState({
@@ -105,17 +147,49 @@ export default function LeadAssignmentRulesPage() {
         setIsRuleOpen(true)
     }
 
-    const saveRule = () => {
-        if (!editingRule.name || !editingRule.conditions) {
-            toast.error("Please fill all fields")
+    const saveRule = (e: React.FormEvent) => {
+        e.preventDefault()
+        const name = (editingRule?.name || "").trim()
+        const conditions = (editingRule?.conditions || "").trim()
+        const target = (editingRule?.target || "").trim()
+
+        if (!name) {
+            toast.error("Rule name is required")
             return
         }
+        if (name.length < 3) {
+            toast.error("Name must be at least 3 characters")
+            return
+        }
+        if (name.length > 80) {
+            toast.error("Name too long (max 80)")
+            return
+        }
+        if (!conditions) {
+            toast.error("Conditions expression is required")
+            return
+        }
+        if (conditions.length < 3) {
+            toast.error("Conditions too short")
+            return
+        }
+        if (!target) {
+            toast.error("Assignment target is required")
+            return
+        }
+        const priority = Number(editingRule.priority)
+        if (!Number.isInteger(priority) || priority < 1 || priority > 999) {
+            toast.error("Priority must be a whole number between 1 and 999")
+            return
+        }
+
         setRules(prev => {
             const exists = prev.find(r => r.id === editingRule.id)
+            const cleaned = { ...editingRule, name, conditions, target, priority }
             if (exists) {
-                return prev.map(r => r.id === editingRule.id ? editingRule : r)
+                return prev.map(r => r.id === editingRule.id ? cleaned : r)
             }
-            return [...prev, editingRule]
+            return [...prev, cleaned]
         })
         setIsRuleOpen(false)
         toast.success("Rule saved successfully")
@@ -128,7 +202,7 @@ export default function LeadAssignmentRulesPage() {
 
     return (
         <div className="flex flex-col gap-6 p-6 min-h-screen bg-[#fafafa]">
-            {/* PAGE HEADER */}
+            {/* Page Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-white p-6 rounded-xl border border-zinc-200 shadow-sm gap-4">
                 <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white shadow-lg border-t border-white/20">
@@ -136,24 +210,24 @@ export default function LeadAssignmentRulesPage() {
                     </div>
                     <div>
                         <div className="flex items-center gap-2 mb-1">
-                            <h1 className="text-xl font-black text-zinc-900 tracking-tight uppercase italic">Lead Assignment Logic</h1>
-                            <Badge className="bg-zinc-100 text-zinc-500 hover:bg-zinc-100 border-none text-[9px] font-bold uppercase tracking-widest">Rule Engine</Badge>
+                            <h1 className="text-xl font-semibold text-gray-900">Lead Assignment Logic</h1>
+                            <Badge className="bg-zinc-100 text-zinc-500 hover:bg-zinc-100 border-none text-[9px] font-medium">Rule Engine</Badge>
                         </div>
-                        <p className="text-xs text-zinc-500 font-medium tracking-tight">Control automated ownership distribution across teams and users.</p>
+                        <p className="text-xs text-zinc-500 font-medium">Control automated ownership distribution across teams and users.</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
                     <Button
                         variant="outline"
                         onClick={() => handleAction("Dry run successful: Lead assigned to Sarh J.")}
-                        className="h-10 border-zinc-200 text-xs font-black uppercase tracking-widest px-6 rounded-xl shadow-sm bg-white hover:bg-zinc-50 transition-all"
+                        className="h-10 border-zinc-200 text-xs font-medium px-6 rounded-xl shadow-sm bg-white hover:bg-zinc-50 transition-all"
                     >
                         <Play className="w-4 h-4 mr-2 text-blue-600" />
                         Test All Rules
                     </Button>
                     <Button
                         onClick={startAddRule}
-                        className="h-10 bg-blue-600 hover:bg-blue-700 text-white text-xs font-black uppercase tracking-widest px-6 rounded-xl shadow-lg shadow-blue-200 active:scale-95 transition-all"
+                        className="h-10 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium px-6 rounded-xl shadow-lg shadow-blue-200 active:scale-95 transition-all"
                     >
                         <Plus className="w-4 h-4 mr-2" />
                         Define New Rule
@@ -161,54 +235,54 @@ export default function LeadAssignmentRulesPage() {
                 </div>
             </div>
 
-            {/* ASSIGNMENT INSIGHTS - 3D STYLE */}
+            {/* Assignment Insights */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <SmallCard className="bg-gradient-to-br from-blue-500 to-blue-700 border-none text-white shadow-[0_8px_30px_rgb(59,130,246,0.3)] hover:shadow-[0_20px_40px_rgba(37,99,235,0.4)] hover:-translate-y-1 transform transition-all duration-300 border-t border-white/20">
-                    <SmallCardHeader className="flex flex-row items-center justify-between pb-1 px-4 pt-4">
-                        <p className="text-[11px] text-white font-medium uppercase tracking-wider">Active Logic</p>
+                <SmallCard className="border bg-gradient-to-r from-primary/70 to-primary text-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                    <SmallCardContent className="p-4 flex flex-row items-center justify-between">
+                        <div>
+                            <p className="text-white text-xs opacity-80">Active Logic</p>
+                            <p className="text-white text-xl font-semibold">{isFetching ? "..." : `${rules.filter(r => r.status === 'ACTIVE').length} Rules`}</p>
+                            <p className="text-[10px] text-white/80">Top Priority: High Value</p>
+                        </div>
                         <Target className="w-4 h-4 text-white" />
-                    </SmallCardHeader>
-                    <SmallCardContent className="px-4 pb-4">
-                        <p className="text-2xl font-black text-white drop-shadow-md">08 Rules</p>
-                        <p className="text-[10px] text-white">Top Priority: High Value</p>
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="bg-white border-t border-white shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.1)] hover:-translate-y-1 transform transition-all duration-300">
-                    <SmallCardHeader className="flex flex-row items-center justify-between pb-1 px-4 pt-4">
-                        <p className="text-[11px] text-zinc-500 font-medium uppercase tracking-tight">Assignment Method</p>
+                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                    <SmallCardContent className="p-4 flex flex-row items-center justify-between">
+                        <div>
+                            <p className="text-xs text-gray-600">Assignment Method</p>
+                            <p className="text-xl font-semibold text-gray-900">Hybrid</p>
+                            <p className="text-[10px] text-zinc-400 font-medium">Fixed + Round Robin</p>
+                        </div>
                         <LayoutGrid className="w-4 h-4 text-blue-400" />
-                    </SmallCardHeader>
-                    <SmallCardContent className="px-4 pb-4">
-                        <p className="text-2xl font-bold text-zinc-900">Hybrid</p>
-                        <p className="text-[10px] text-zinc-400 font-medium italic">Fixed + Round Robin</p>
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="bg-white border-t border-white shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.1)] hover:-translate-y-1 transform transition-all duration-300">
-                    <SmallCardHeader className="flex flex-row items-center justify-between pb-1 px-4 pt-4">
-                        <p className="text-[11px] text-zinc-500 font-medium uppercase tracking-tight">Automation Success</p>
+                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                    <SmallCardContent className="p-4 flex flex-row items-center justify-between">
+                        <div>
+                            <p className="text-xs text-gray-600">Automation Success</p>
+                            <p className="text-xl font-semibold text-gray-900">{isFetching ? "..." : `${assignmentStats.assignmentRate}%`}</p>
+                            <p className="text-[10px] text-emerald-600 font-medium">{isFetching ? "Loading..." : `${assignmentStats.assignedCount} assigned`}</p>
+                        </div>
                         <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                    </SmallCardHeader>
-                    <SmallCardContent className="px-4 pb-4">
-                        <p className="text-2xl font-bold text-zinc-900">92%</p>
-                        <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-tighter">Minimal unassigned</p>
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="bg-white border-t border-white shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.1)] hover:-translate-y-1 transform transition-all duration-300">
-                    <SmallCardHeader className="flex flex-row items-center justify-between pb-1 px-4 pt-4">
-                        <p className="text-[11px] text-zinc-500 font-medium uppercase tracking-tight">Unassigned Leads</p>
+                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                    <SmallCardContent className="p-4 flex flex-row items-center justify-between">
+                        <div>
+                            <p className="text-xs text-gray-600">Unassigned Leads</p>
+                            <p className="text-xl font-semibold text-gray-900">{isFetching ? "..." : assignmentStats.unassignedCount}</p>
+                            <p className="text-[10px] text-zinc-400 font-medium">Require manual review</p>
+                        </div>
                         <Info className="w-4 h-4 text-amber-400" />
-                    </SmallCardHeader>
-                    <SmallCardContent className="px-4 pb-4">
-                        <p className="text-2xl font-bold text-zinc-900">14</p>
-                        <p className="text-[10px] text-zinc-400 font-medium italic">Require manual review</p>
                     </SmallCardContent>
                 </SmallCard>
             </div>
 
-            {/* RULE ENGINE LAYOUT */}
+            {/* Rule Engine Layout */}
             <div className="grid grid-cols-1 md:grid-cols-12 gap-6 mt-2">
                 <div className="md:col-span-12 bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
                     <div className="p-4 border-b border-zinc-100 flex flex-col md:flex-row justify-between items-center gap-4 bg-zinc-50/20">
@@ -221,7 +295,7 @@ export default function LeadAssignmentRulesPage() {
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
                         </div>
-                        <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400 italic">
+                        <p className="text-[10px] font-medium text-zinc-400">
                             Rules are evaluated from Priority 1 downwards. First match wins.
                         </p>
                     </div>
@@ -229,13 +303,13 @@ export default function LeadAssignmentRulesPage() {
                     <Table>
                         <TableHeader className="bg-zinc-50/50">
                             <TableRow className="hover:bg-transparent border-b-zinc-100">
-                                <TableHead className="py-4 px-6 font-black text-[10px] text-zinc-400 uppercase tracking-widest w-12 text-center">Pri</TableHead>
-                                <TableHead className="py-4 font-black text-[10px] text-zinc-400 uppercase tracking-widest">Rule Identity</TableHead>
-                                <TableHead className="py-4 font-black text-[10px] text-zinc-400 uppercase tracking-widest">Logic/Conditions</TableHead>
-                                <TableHead className="py-4 font-black text-[10px] text-zinc-400 uppercase tracking-widest">Assignment Target</TableHead>
-                                <TableHead className="py-4 font-black text-[10px] text-zinc-400 uppercase tracking-widest">Method</TableHead>
-                                <TableHead className="py-4 font-black text-[10px] text-zinc-400 uppercase tracking-widest">Status</TableHead>
-                                <TableHead className="py-4 text-right pr-6 font-black text-[10px] text-zinc-400 uppercase tracking-widest">Actions</TableHead>
+                                <TableHead className="py-4 px-6 text-[11px] font-medium text-gray-500 w-12 text-center">Pri</TableHead>
+                                <TableHead className="py-4 text-[11px] font-medium text-gray-500">Rule Identity</TableHead>
+                                <TableHead className="py-4 text-[11px] font-medium text-gray-500">Logic/Conditions</TableHead>
+                                <TableHead className="py-4 text-[11px] font-medium text-gray-500">Assignment Target</TableHead>
+                                <TableHead className="py-4 text-[11px] font-medium text-gray-500">Method</TableHead>
+                                <TableHead className="py-4 text-[11px] font-medium text-gray-500">Status</TableHead>
+                                <TableHead className="py-4 text-right pr-6 text-[11px] font-medium text-gray-500">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -244,13 +318,13 @@ export default function LeadAssignmentRulesPage() {
                                     <TableCell className="py-4 px-6 text-center">
                                         <div className="flex items-center justify-center">
                                             <GripVertical className="w-3.5 h-3.5 text-zinc-200 group-hover:text-blue-300 transition-colors mr-2 cursor-move" />
-                                            <span className="text-xs font-black text-blue-600">{rule.priority}</span>
+                                            <span className="text-xs font-semibold text-blue-600">{rule.priority}</span>
                                         </div>
                                     </TableCell>
                                     <TableCell className="py-4">
                                         <div className="flex flex-col">
-                                            <span className="text-sm font-black text-zinc-900 uppercase tracking-tight italic group-hover:text-blue-600 transition-colors">{rule.name}</span>
-                                            <span className="text-[9px] font-black uppercase text-zinc-300 tracking-tighter mt-0.5">RID: 0X{rule.id}</span>
+                                            <span className="text-sm font-semibold text-zinc-900 group-hover:text-blue-600 transition-colors">{rule.name}</span>
+                                            <span className="text-[9px] font-medium text-zinc-300 mt-0.5">Rid: 0x{rule.id}</span>
                                         </div>
                                     </TableCell>
                                     <TableCell className="py-4">
@@ -261,13 +335,13 @@ export default function LeadAssignmentRulesPage() {
                                     <TableCell className="py-4">
                                         <div className="flex items-center gap-2">
                                             <Users className="w-3.5 h-3.5 text-zinc-300" />
-                                            <span className="text-[11px] font-bold text-zinc-600 uppercase tracking-tighter">{rule.target}</span>
+                                            <span className="text-[11px] font-medium text-zinc-600">{rule.target}</span>
                                         </div>
                                     </TableCell>
                                     <TableCell className="py-4">
                                         <div className="flex items-center gap-2">
                                             <Settings2 className="w-3.5 h-3.5 text-blue-400" />
-                                            <span className="text-[11px] font-bold text-zinc-500">{rule.method}</span>
+                                            <span className="text-[11px] font-medium text-zinc-500">{rule.method}</span>
                                         </div>
                                     </TableCell>
                                     <TableCell className="py-4 text-center">
@@ -294,18 +368,18 @@ export default function LeadAssignmentRulesPage() {
                                                     </Button>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end" className="w-56 shadow-xl border-zinc-100 p-2">
-                                                    <DropdownMenuLabel className="text-[10px] font-black uppercase text-zinc-400 px-2 py-1.5">Rule Configuration</DropdownMenuLabel>
-                                                    <DropdownMenuItem className="text-xs font-bold gap-2 focus:bg-blue-50 focus:text-blue-600 rounded-md cursor-pointer">
+                                                    <DropdownMenuLabel className="text-[10px] font-medium text-zinc-400 px-2 py-1.5">Rule Configuration</DropdownMenuLabel>
+                                                    <DropdownMenuItem onClick={() => handleAction("Dry run executed successfully")} className="text-xs font-medium gap-2 focus:bg-blue-50 focus:text-blue-600 rounded-md cursor-pointer">
                                                         <Play className="w-3.5 h-3.5" />
                                                         Dry Run (Test Only)
                                                     </DropdownMenuItem>
-                                                    <DropdownMenuItem className="text-xs font-bold gap-2 focus:bg-blue-50 focus:text-blue-600 rounded-md cursor-pointer">
+                                                    <DropdownMenuItem onClick={() => handleAction("Rule cloned successfully")} className="text-xs font-medium gap-2 focus:bg-blue-50 focus:text-blue-600 rounded-md cursor-pointer">
                                                         <RefreshCcw className="w-3.5 h-3.5" />
                                                         Clone Rule
                                                     </DropdownMenuItem>
                                                     <DropdownMenuSeparator className="bg-zinc-50" />
                                                     <DropdownMenuItem
-                                                        className="text-xs font-bold gap-2 text-rose-600 focus:bg-rose-50 focus:text-rose-600 rounded-md cursor-pointer"
+                                                        className="text-xs font-medium gap-2 text-rose-600 focus:bg-rose-50 focus:text-rose-600 rounded-md cursor-pointer"
                                                         onClick={() => deleteRule(rule.id)}
                                                     >
                                                         <Trash2 className="w-3.5 h-3.5" />
@@ -322,27 +396,27 @@ export default function LeadAssignmentRulesPage() {
                 </div>
             </div>
 
-            {/* FALLBACK SETTINGS - 3D GLASS STYLE */}
+            {/* Fallback Settings */}
             <div className="bg-white rounded-xl border border-zinc-200 p-8 shadow-sm hover:shadow-md transition-shadow">
                 <div className="flex items-center gap-3 mb-8 border-b border-zinc-100 pb-6">
                     <Info className="w-5 h-5 text-amber-500" />
                     <div>
-                        <h3 className="text-sm font-black text-zinc-900 uppercase tracking-widest italic">Global Fallback Strategy</h3>
-                        <p className="text-[11px] text-zinc-400 font-medium tracking-tight">Applied when no active rules match incoming lead criteria.</p>
+                        <h3 className="text-sm font-medium text-gray-900">Global Fallback Strategy</h3>
+                        <p className="text-[11px] text-zinc-400 font-medium">Applied when no active rules match incoming lead criteria.</p>
                     </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
                     <div className="flex items-center justify-between p-4 bg-zinc-50/50 rounded-xl border border-zinc-100 group hover:border-blue-100 transition-all">
                         <div className="flex flex-col">
-                            <span className="text-xs font-black text-zinc-800 uppercase italic tracking-tighter">Default Owner</span>
-                            <span className="text-[10px] text-zinc-400 font-bold mt-1">Admin (System)</span>
+                            <span className="text-xs font-semibold text-zinc-800">Default Owner</span>
+                            <span className="text-[10px] text-zinc-400 font-medium mt-1">Admin (System)</span>
                         </div>
-                        <Button variant="ghost" size="sm" className="h-8 text-[10px] font-black uppercase tracking-widest text-blue-600">Change</Button>
+                        <Button variant="ghost" size="sm" onClick={() => handleAction("Default owner selection opened")} className="h-8 text-[10px] font-medium text-blue-600">Change</Button>
                     </div>
                     <div className="flex items-center justify-between p-4 bg-zinc-50/50 rounded-xl border border-zinc-100 group hover:border-blue-100 transition-all">
                         <div className="flex flex-col">
-                            <span className="text-xs font-black text-zinc-800 uppercase italic tracking-tighter">Alert Managers</span>
-                            <span className="text-[10px] text-zinc-400 font-bold mt-1">On failure to assign</span>
+                            <span className="text-xs font-semibold text-zinc-800">Alert Managers</span>
+                            <span className="text-[10px] text-zinc-400 font-medium mt-1">On failure to assign</span>
                         </div>
                         <Switch
                             checked={fallbacks.alertManagers}
@@ -352,8 +426,8 @@ export default function LeadAssignmentRulesPage() {
                     </div>
                     <div className="flex items-center justify-between p-4 bg-zinc-50/50 rounded-xl border border-zinc-100 group hover:border-blue-100 transition-all">
                         <div className="flex flex-col">
-                            <span className="text-xs font-black text-zinc-800 uppercase italic tracking-tighter">Auto-Decline</span>
-                            <span className="text-[10px] text-zinc-400 font-bold mt-1">Out-of-territory leads</span>
+                            <span className="text-xs font-semibold text-zinc-800">Auto-Decline</span>
+                            <span className="text-[10px] text-zinc-400 font-medium mt-1">Out-of-territory leads</span>
                         </div>
                         <Switch
                             checked={fallbacks.autoDecline}
@@ -364,54 +438,84 @@ export default function LeadAssignmentRulesPage() {
                 </div>
             </div>
 
-            {/* RULE CONFIGURATION DIALOG */}
-            <Dialog open={isRuleOpen} onOpenChange={setIsRuleOpen}>
-                <DialogContent className="sm:max-w-[500px] rounded-2xl border-none shadow-2xl">
-                    <DialogHeader>
-                        <DialogTitle className="text-xl font-black uppercase italic tracking-tight flex items-center gap-2">
-                            <Target className="w-5 h-5 text-blue-600" />
-                            {editingRule?.id.startsWith('0x') ? 'Edit Rule' : 'New Rule Definition'}
-                        </DialogTitle>
-                        <DialogDescription className="text-xs font-medium text-zinc-400">
-                            Configure conditional logic to automate lead routing.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-5 py-4">
-                        <div className="grid gap-2">
-                            <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Rule Name</Label>
+            {/* Rule Configuration — side sheet */}
+            <SideFormSheet
+                open={isRuleOpen}
+                onOpenChange={(o) => {
+                    setIsRuleOpen(o)
+                    if (!o) setEditingRule(null)
+                }}
+                title={editingRule && rules.some(r => r.id === editingRule.id) ? "Edit Rule" : "New Rule Definition"}
+                description="Configure conditional logic to automate lead routing."
+                icon={<Target className="w-5 h-5" />}
+                width="md"
+                onSubmit={saveRule}
+                submitLabel="Save Logic"
+            >
+                {editingRule && (
+                    <div className="space-y-4">
+                        <Field
+                            label="Rule Name"
+                            required
+                            hint="3-80 characters"
+                        >
                             <Input
                                 placeholder="e.g. Website Capture Round Robin"
-                                value={editingRule?.name}
+                                value={editingRule.name || ""}
                                 onChange={(e) => setEditingRule({ ...editingRule, name: e.target.value })}
-                                className="rounded-xl bg-zinc-50 border-zinc-100 focus:ring-blue-100 h-11 text-sm font-bold"
+                                className="h-11 rounded-lg bg-white border-[#E5E7EB] focus:border-primary"
+                                maxLength={80}
                             />
-                        </div>
-                        <div className="grid gap-2">
-                            <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Conditions (DSL)</Label>
+                        </Field>
+
+                        <Field
+                            label="Conditions (DSL)"
+                            required
+                            hint="e.g. Value > 1000 AND Region == 'EMEA'"
+                        >
                             <Input
-                                placeholder="e.g. Value > 1000 AND Region == 'EMEA'"
-                                value={editingRule?.conditions}
+                                placeholder="Value > 1000 AND Region == 'EMEA'"
+                                value={editingRule.conditions || ""}
                                 onChange={(e) => setEditingRule({ ...editingRule, conditions: e.target.value })}
-                                className="rounded-xl bg-zinc-50 border-zinc-100 focus:ring-blue-100 h-11 text-sm font-medium"
+                                className="h-11 rounded-lg bg-white border-[#E5E7EB] focus:border-primary font-mono text-[13px]"
+                                maxLength={300}
                             />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="grid gap-2">
-                                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Assignment Target</Label>
-                                <Input
-                                    placeholder="Team or User ID"
-                                    value={editingRule?.target}
-                                    onChange={(e) => setEditingRule({ ...editingRule, target: e.target.value })}
-                                    className="rounded-xl bg-zinc-50 border-zinc-100 focus:ring-blue-100 h-11 text-sm font-bold"
-                                />
-                            </div>
-                            <div className="grid gap-2">
-                                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Method</Label>
+                        </Field>
+
+                        <div className="grid grid-cols-2 gap-3">
+                            <Field label="Assignment Target" required>
+                                {orgUsers.length > 0 ? (
+                                    <Select
+                                        value={editingRule.target || undefined}
+                                        onValueChange={(v) => setEditingRule({ ...editingRule, target: v })}
+                                    >
+                                        <SelectTrigger className="h-11 rounded-lg border-[#E5E7EB] bg-white">
+                                            <SelectValue placeholder="Select user or team" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {orgUsers.map((user) => (
+                                                <SelectItem key={user._id} value={user.name || user.email}>
+                                                    {user.name || user.email}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                ) : (
+                                    <Input
+                                        placeholder="Team or User ID"
+                                        value={editingRule.target || ""}
+                                        onChange={(e) => setEditingRule({ ...editingRule, target: e.target.value })}
+                                        className="h-11 rounded-lg bg-white border-[#E5E7EB] focus:border-primary"
+                                        maxLength={80}
+                                    />
+                                )}
+                            </Field>
+                            <Field label="Method" required>
                                 <Select
-                                    value={editingRule?.method}
+                                    value={editingRule.method || "Round Robin"}
                                     onValueChange={(v) => setEditingRule({ ...editingRule, method: v })}
                                 >
-                                    <SelectTrigger className="h-11 rounded-xl bg-zinc-50 border-zinc-100">
+                                    <SelectTrigger className="h-11 rounded-lg border-[#E5E7EB] bg-white">
                                         <SelectValue placeholder="Select method" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -421,17 +525,38 @@ export default function LeadAssignmentRulesPage() {
                                         <SelectItem value="Random">Random</SelectItem>
                                     </SelectContent>
                                 </Select>
-                            </div>
+                            </Field>
+                        </div>
+
+                        <Field
+                            label="Priority"
+                            required
+                            hint="Lower number = evaluated first (1-999)"
+                        >
+                            <Input
+                                type="number"
+                                min={1}
+                                max={999}
+                                value={editingRule.priority || 1}
+                                onChange={(e) =>
+                                    setEditingRule({
+                                        ...editingRule,
+                                        priority: e.target.value.replace(/[^0-9]/g, ""),
+                                    })
+                                }
+                                className="h-11 rounded-lg bg-white border-[#E5E7EB] focus:border-primary font-mono w-32"
+                            />
+                        </Field>
+
+                        <div className="flex items-start gap-2 p-3 bg-[#F0F7FF] border border-[#DBEAFE] rounded-lg">
+                            <Target className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                            <p className="text-[11.5px] text-[#475569] leading-relaxed">
+                                Rules are evaluated in priority order. The first matching rule will assign the lead.
+                            </p>
                         </div>
                     </div>
-                    <DialogFooter>
-                        <Button variant="ghost" onClick={() => setIsRuleOpen(false)} className="rounded-xl font-bold uppercase text-[10px]">Cancel</Button>
-                        <Button onClick={saveRule} className="bg-blue-600 hover:bg-blue-700 rounded-xl px-10 font-bold uppercase text-[10px] tracking-widest shadow-lg shadow-blue-200">
-                            Save Logic
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                )}
+            </SideFormSheet>
         </div>
     )
 }

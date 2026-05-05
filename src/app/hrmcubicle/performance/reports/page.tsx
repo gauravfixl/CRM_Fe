@@ -7,29 +7,46 @@ import {
     TrendingUp,
     PieChart,
     Download,
-    Calendar,
-    Filter,
     ArrowUpRight,
     ArrowDownRight,
     Target,
     Users,
     Activity,
-    ShieldCheck,
     Zap,
     History,
     FilePieChart,
     LineChart,
-    Search,
-    ChevronDown,
-    MoreHorizontal
+    MoreHorizontal,
+    FileText,
+    FileSpreadsheet,
+    Printer,
 } from "lucide-react";
 import { Card, CardContent } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
 import { Badge } from "@/shared/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
+import { useToast } from "@/shared/components/ui/use-toast";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/shared/components/ui/dialog";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/shared/components/ui/dropdown-menu";
 
 const ReportsPage = () => {
+    const { toast } = useToast();
     const [timeRange, setTimeRange] = useState("Year 2026");
+    const [demographicsOpen, setDemographicsOpen] = useState(false);
+    const [refreshTick, setRefreshTick] = useState(0);
 
     const highlights = [
         { label: "Org Velocity", value: "+18%", trend: "up", desc: "Performance improvement vs last quarter", icon: TrendingUp, color: "text-emerald-600", bg: "bg-emerald-50" },
@@ -38,10 +55,69 @@ const ReportsPage = () => {
         { label: "Top Quartile", value: "22%", trend: "up", desc: "Employees exceeding expectations", icon: Zap, color: "text-amber-600", bg: "bg-amber-50" },
     ];
 
-    const chartSections = [
-        { title: "Competency Heatmap", type: "Radar Audit", icon: FilePieChart, value: "88% Avg Mastery" },
-        { title: "Review Completion", type: "Fulfillment Track", icon: LineChart, value: "92% On Time" },
+    const demographics = [
+        { group: "Age: 20-30", count: 145, pct: 35 },
+        { group: "Age: 31-40", count: 210, pct: 50 },
+        { group: "Age: 41-50", count: 50, pct: 12 },
+        { group: "Age: 50+", count: 12, pct: 3 },
+        { group: "Tenure: < 1 yr", count: 78, pct: 19 },
+        { group: "Tenure: 1-3 yrs", count: 155, pct: 37 },
+        { group: "Tenure: 3-5 yrs", count: 110, pct: 26 },
+        { group: "Tenure: 5+ yrs", count: 74, pct: 18 },
     ];
+
+    const exportCsv = () => {
+        const rows = [
+            ["Metric", "Value", "Trend", "Description"],
+            ...highlights.map((h) => [h.label, h.value, h.trend, h.desc]),
+            [""],
+            ["Category", "Count", "Percent"],
+            ...demographics.map((d) => [d.group, String(d.count), `${d.pct}%`]),
+        ];
+        const csv = rows.map((r) => r.map((c) => `"${c}"`).join(",")).join("\n");
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `performance_report_${timeRange.replace(/\s/g, "_")}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        toast({ title: "Report Exported", description: `CSV downloaded for ${timeRange}.` });
+    };
+
+    const exportPdfSummary = () => {
+        const text = [
+            `PERFORMANCE ANALYTICS — ${timeRange}`,
+            "=".repeat(50),
+            "",
+            "KEY HIGHLIGHTS",
+            ...highlights.map((h) => `  ${h.label}: ${h.value} (${h.trend})\n    ${h.desc}`),
+            "",
+            "DEMOGRAPHICS",
+            ...demographics.map((d) => `  ${d.group}: ${d.count} (${d.pct}%)`),
+            "",
+            `Generated on ${new Date().toLocaleString()}`,
+        ].join("\n");
+        const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `performance_summary_${timeRange.replace(/\s/g, "_")}.txt`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        toast({ title: "Summary Exported", description: "PDF-ready text summary saved." });
+    };
+
+    const handlePrint = () => {
+        if (typeof window !== "undefined") {
+            window.print();
+            toast({ title: "Print Dialog", description: "Use your browser's print dialog to save as PDF." });
+        }
+    };
 
     return (
         <div className="flex flex-col min-h-screen bg-[#f8fafc] font-sans" style={{ zoom: "80%" }}>
@@ -66,9 +142,25 @@ const ReportsPage = () => {
                                 <SelectItem value="Full 2025" className="rounded-lg h-10 tracking-wide">Annual Report 2025</SelectItem>
                             </SelectContent>
                         </Select>
-                        <Button className="bg-indigo-600 hover:bg-slate-900 text-white rounded-xl h-11 px-6 font-bold shadow-lg shadow-indigo-100 transition-all gap-2 text-[10px] tracking-widest border-none">
-                            <Download size={16} /> Export Full PDF
-                        </Button>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button className="bg-indigo-600 hover:bg-slate-900 text-white rounded-xl h-11 px-6 font-bold shadow-lg shadow-indigo-100 transition-all gap-2 text-[10px] tracking-widest border-none">
+                                    <Download size={16} /> Export Full PDF
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="rounded-xl border-none shadow-2xl p-1.5 w-48 font-bold">
+                                <DropdownMenuItem className="rounded-lg h-10 text-[10px] uppercase tracking-wide" onClick={handlePrint}>
+                                    <Printer size={12} className="mr-2" /> Print / Save PDF
+                                </DropdownMenuItem>
+                                <DropdownMenuItem className="rounded-lg h-10 text-[10px] uppercase tracking-wide" onClick={exportPdfSummary}>
+                                    <FileText size={12} className="mr-2" /> Text Summary
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem className="rounded-lg h-10 text-[10px] uppercase tracking-wide" onClick={exportCsv}>
+                                    <FileSpreadsheet size={12} className="mr-2" /> CSV Export
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     </div>
                 </div>
             </header>
@@ -117,7 +209,24 @@ const ReportsPage = () => {
                                         </h2>
                                         <p className="text-slate-400 text-[10px] font-bold tracking-widest">Aggregate performance across department verticals</p>
                                     </div>
-                                    <Button variant="ghost" className="h-9 w-9 rounded-xl hover:bg-slate-50 text-slate-300 transition-colors"><MoreHorizontal size={18} /></Button>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" className="h-9 w-9 rounded-xl hover:bg-slate-50 text-slate-300 hover:text-slate-600 transition-colors">
+                                                <MoreHorizontal size={18} />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end" className="rounded-xl border-none shadow-2xl p-1.5 w-44 font-bold">
+                                            <DropdownMenuItem className="rounded-lg h-10 text-[10px] uppercase tracking-wide" onClick={() => { setRefreshTick((t) => t + 1); toast({ title: "Refreshed", description: "Growth narrative chart re-rendered." }); }}>
+                                                Refresh Chart
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem className="rounded-lg h-10 text-[10px] uppercase tracking-wide" onClick={exportCsv}>
+                                                Export as CSV
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem className="rounded-lg h-10 text-[10px] uppercase tracking-wide" onClick={handlePrint}>
+                                                Print Chart
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
                                 </div>
 
                                 <div className="aspect-[16/9] w-full bg-slate-50/50 rounded-3xl border border-dashed border-slate-200 flex flex-col items-center justify-center p-12 transition-all hover:bg-slate-50 group/chart">
@@ -128,7 +237,7 @@ const ReportsPage = () => {
                                     <p className="text-slate-500 text-sm font-semibold mt-1 text-center max-w-sm italic">Connecting live data points from appraisals, audits, and completions.</p>
                                     <div className="mt-10 flex gap-3 w-full max-w-md h-32 items-end">
                                         {[1, 2, 3, 4, 5, 6].map(i => (
-                                            <div key={i} className="flex-1 space-y-2 flex flex-col items-center">
+                                            <div key={`${i}-${refreshTick}`} className="flex-1 space-y-2 flex flex-col items-center">
                                                 <motion.div
                                                     initial={{ height: 0 }}
                                                     animate={{ height: `${20 + i * 15}%` }}
@@ -192,7 +301,12 @@ const ReportsPage = () => {
                                     ))}
                                 </div>
 
-                                <Button className="w-full bg-white text-slate-900 hover:bg-slate-100 rounded-xl h-11 font-bold text-[10px] tracking-widest transition-all border-none">View Demographics</Button>
+                                <Button
+                                    onClick={() => setDemographicsOpen(true)}
+                                    className="w-full bg-white text-slate-900 hover:bg-slate-100 rounded-xl h-11 font-bold text-[10px] tracking-widest transition-all border-none"
+                                >
+                                    View Demographics
+                                </Button>
                             </div>
                             <div className="absolute -bottom-20 -right-20 h-64 w-64 bg-indigo-600/10 rounded-full blur-3xl opacity-50" />
                         </div>
@@ -222,11 +336,64 @@ const ReportsPage = () => {
                                     </div>
                                 ))}
                             </div>
-                            <Button variant="link" className="text-indigo-600 font-bold text-[10px] p-0 h-auto hover:no-underline hover:text-slate-900 tracking-widest">Download Detailed Log</Button>
+                            <Button variant="link" className="text-indigo-600 font-bold text-[10px] p-0 h-auto hover:no-underline hover:text-slate-900 tracking-widest" onClick={() => {
+                                const csvHeader = "Message,Date,Department\n";
+                                const csvRows = [
+                                    { msg: "Annual Report 2025 generated", date: "2h ago", dep: "System" },
+                                    { msg: "Sales Q4 stats uploaded", date: "5h ago", dep: "Sales" },
+                                    { msg: "Audit trail cleanup", date: "1d ago", dep: "Admin" },
+                                ].map(log => `"${log.msg}","${log.date}","${log.dep}"`).join("\n");
+                                const blob = new Blob([csvHeader + csvRows], { type: "text/csv;charset=utf-8;" });
+                                const url = URL.createObjectURL(blob);
+                                const link = document.createElement("a");
+                                link.href = url;
+                                link.download = `performance_audit_log_${new Date().toISOString().split("T")[0]}.csv`;
+                                document.body.appendChild(link);
+                                link.click();
+                                document.body.removeChild(link);
+                                URL.revokeObjectURL(url);
+                            }}>Download Detailed Log</Button>
                         </Card>
                     </div>
                 </div>
             </main>
+
+            {/* Demographics Dialog */}
+            <Dialog open={demographicsOpen} onOpenChange={setDemographicsOpen}>
+                <DialogContent className="bg-white rounded-[2.5rem] border-none p-10 max-w-2xl shadow-3xl" style={{ zoom: "80%" }}>
+                    <DialogHeader className="space-y-3">
+                        <div className="h-14 w-14 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 shadow-inner border border-indigo-100">
+                            <Users size={26} />
+                        </div>
+                        <DialogTitle className="text-2xl font-bold tracking-tight uppercase text-slate-900">Workforce Demographics</DialogTitle>
+                        <DialogDescription className="text-slate-500 font-semibold text-sm">Age and tenure distribution across the organization.</DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4 space-y-3">
+                        {demographics.map((d) => (
+                            <div key={d.group} className="space-y-1">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs font-bold text-slate-700">{d.group}</span>
+                                    <span className="text-xs text-slate-500">{d.count} ({d.pct}%)</span>
+                                </div>
+                                <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
+                                    <motion.div
+                                        initial={{ width: 0 }}
+                                        animate={{ width: `${d.pct * 2}%` }}
+                                        transition={{ duration: 0.8 }}
+                                        className="h-full bg-indigo-500 rounded-full"
+                                    />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    <DialogFooter>
+                        <Button variant="ghost" onClick={() => setDemographicsOpen(false)}>Close</Button>
+                        <Button className="bg-indigo-600 hover:bg-slate-900 text-white border-none" onClick={exportCsv}>
+                            <Download size={14} className="mr-2" /> Export
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 };

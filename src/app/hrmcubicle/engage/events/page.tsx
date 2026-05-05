@@ -28,9 +28,13 @@ import {
     ChevronRight,
     MessageCircleHeart,
     Smile,
-    Check
+    Check,
+    History,
+    RefreshCw,
+    Trash2
 } from "lucide-react";
 import { useEngageStore, type Event, type EmployeeCelebration } from "@/shared/data/engage-store";
+import { required, minLength, maxLength, isFutureOrToday, isValidDate, runValidators } from "@/shared/utils/engage-validation";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/shared/components/ui/dialog";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
@@ -48,7 +52,7 @@ import {
 } from "@/shared/components/ui/dropdown-menu";
 
 const EventsPage = () => {
-    const { events, celebrations, addEvent, updateEvent, userPoints, addPoints, toggleRegistration } = useEngageStore();
+    const { events, celebrations, addEvent, updateEvent, deleteEvent, userPoints, addPoints, toggleRegistration } = useEngageStore();
     const { toast } = useToast();
 
     const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -58,6 +62,31 @@ const EventsPage = () => {
     const [isRSVPSheetOpen, setIsRSVPSheetOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const [likedItems, setLikedItems] = useState<Record<string, boolean>>({});
+    const [isHistorySheetOpen, setIsHistorySheetOpen] = useState(false);
+
+    const handleRefreshData = () => {
+        toast({
+            title: "Data Refreshed",
+            description: "All events and celebrations have been re-synced.",
+            className: "bg-emerald-50 border-emerald-100 text-emerald-600 font-bold"
+        });
+    };
+
+    const handleCopyEventLink = (eventTitle: string) => {
+        const link = `${window.location.origin}/hrmcubicle/engage/events?event=${encodeURIComponent(eventTitle)}`;
+        navigator.clipboard.writeText(link).then(() => {
+            toast({
+                title: "Link Copied!",
+                description: `Event link for "${eventTitle}" copied to clipboard.`,
+            });
+        }).catch(() => {
+            toast({
+                title: "Copy Failed",
+                description: "Unable to copy link. Please try again.",
+                variant: "destructive"
+            });
+        });
+    };
 
     const [formData, setFormData] = useState<Partial<Event>>({
         title: "",
@@ -77,8 +106,37 @@ const EventsPage = () => {
     };
 
     const handleSave = () => {
-        if (!formData.title || !formData.date || !formData.time) {
-            toast({ title: "Details Missing", description: "Event title and schedule are required.", variant: "destructive" });
+        const titleError = runValidators(
+            required(formData.title, "title", "Title"),
+            minLength(formData.title ?? "", 3, "title", "Title"),
+            maxLength(formData.title ?? "", 120, "title", "Title")
+        );
+        if (titleError) {
+            toast({ title: "Invalid Title", description: titleError.message, variant: "destructive" });
+            return;
+        }
+        // For edits, existing past-date is OK; for new events require today or future
+        const dateError = selectedEvent
+            ? isValidDate(formData.date ?? "", "date", "Date")
+            : isFutureOrToday(formData.date ?? "", "date", "Date");
+        if (dateError) {
+            toast({ title: "Invalid Date", description: dateError.message, variant: "destructive" });
+            return;
+        }
+        if (!formData.time) {
+            toast({ title: "Missing Time", description: "Event time is required.", variant: "destructive" });
+            return;
+        }
+        const locationError = runValidators(
+            required(formData.location, "location", "Location"),
+            maxLength(formData.location ?? "", 200, "location", "Location")
+        );
+        if (locationError) {
+            toast({ title: "Invalid Location", description: locationError.message, variant: "destructive" });
+            return;
+        }
+        if (formData.description && formData.description.length > 2000) {
+            toast({ title: "Description Too Long", description: "Max 2000 characters.", variant: "destructive" });
             return;
         }
 
@@ -158,6 +216,22 @@ const EventsPage = () => {
                             <p className="text-[10px] font-bold text-white/60 mb-1">Your Karma</p>
                             <p className="text-xl font-bold text-amber-300">{userPoints} pts</p>
                         </div>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-11 w-11 rounded-2xl bg-white/10 text-white hover:bg-white/20 border border-white/10"
+                            onClick={() => setIsHistorySheetOpen(true)}
+                        >
+                            <History size={18} />
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-11 w-11 rounded-2xl bg-white/10 text-white hover:bg-white/20 border border-white/10"
+                            onClick={handleRefreshData}
+                        >
+                            <RefreshCw size={18} />
+                        </Button>
                         <Button
                             onClick={() => { resetForm(); setIsCreateDialogOpen(true); }}
                             className="bg-white text-indigo-600 hover:bg-white/90 rounded-2xl h-14 px-8 font-bold text-xs tracking-widest shadow-2xl transition-all active:scale-95 border-none"
@@ -365,6 +439,12 @@ const EventsPage = () => {
                                                                             <DropdownMenuItem className="rounded-xl px-4 py-3 hover:bg-emerald-50 cursor-pointer text-emerald-600" onClick={() => { setSelectedEvent(item as Event); setIsRSVPSheetOpen(true); }}>
                                                                                 <Users2 size={14} className="mr-3" /> Manage RSVPs
                                                                             </DropdownMenuItem>
+                                                                            <DropdownMenuItem className="rounded-xl px-4 py-3 hover:bg-amber-50 cursor-pointer text-amber-600" onClick={() => handleCopyEventLink(item.title)}>
+                                                                                <Share2 size={14} className="mr-3" /> Copy Link
+                                                                            </DropdownMenuItem>
+                                                                            <DropdownMenuItem className="rounded-xl px-4 py-3 hover:bg-rose-50 cursor-pointer text-rose-500" onClick={() => { deleteEvent(item.id); toast({ title: "Event Deleted", description: `"${item.title}" removed.` }); }}>
+                                                                                <Trash2 size={14} className="mr-3" /> Delete Event
+                                                                            </DropdownMenuItem>
                                                                         </DropdownMenuContent>
                                                                     </DropdownMenu>
                                                                 )}
@@ -410,9 +490,11 @@ const EventsPage = () => {
                                                 <Input
                                                     placeholder="Make it catchy! e.g. Pizza Friday 🍕"
                                                     value={formData.title}
+                                                    maxLength={120}
                                                     onChange={e => setFormData({ ...formData, title: e.target.value })}
                                                     className="h-16 border-slate-300 bg-slate-50/50 rounded-2xl px-6 font-black text-lg text-slate-900 focus:ring-4 focus:ring-purple-50 transition-all shadow-inner"
                                                 />
+                                                <p className="text-[10px] text-slate-400 font-bold ml-2">{(formData.title ?? "").length}/120</p>
                                             </div>
 
                                             <div className="grid grid-cols-2 gap-6">
@@ -446,9 +528,11 @@ const EventsPage = () => {
                                                 <Input
                                                     placeholder="Where's the party at?"
                                                     value={formData.location}
+                                                    maxLength={200}
                                                     onChange={e => setFormData({ ...formData, location: e.target.value })}
                                                     className="h-16 border-slate-300 bg-white rounded-2xl px-6 font-bold text-slate-600"
                                                 />
+                                                <p className="text-[10px] text-slate-400 font-bold ml-2">{(formData.location ?? "").length}/200</p>
                                             </div>
 
                                             <div className="grid grid-cols-2 gap-6">
@@ -457,6 +541,7 @@ const EventsPage = () => {
                                                     <Input
                                                         type="date"
                                                         value={formData.date}
+                                                        min={selectedEvent ? undefined : new Date().toISOString().split("T")[0]}
                                                         onChange={e => setFormData({ ...formData, date: e.target.value })}
                                                         className="h-14 border-slate-300 bg-white rounded-2xl px-6 font-bold text-slate-600"
                                                     />
@@ -480,9 +565,11 @@ const EventsPage = () => {
                                         <Textarea
                                             placeholder="Sell the experience..."
                                             value={formData.description}
+                                            maxLength={2000}
                                             onChange={e => setFormData({ ...formData, description: e.target.value })}
                                             className="h-32 border-slate-300 bg-slate-50/50 rounded-[2rem] p-6 font-bold text-sm leading-relaxed focus:ring-4 focus:ring-purple-50 resize-none shadow-inner"
                                         />
+                                        <p className="text-[10px] text-slate-400 font-bold ml-2">{(formData.description ?? "").length}/2000</p>
                                     </div>
                                 </div>
                             </ScrollArea>
@@ -536,7 +623,7 @@ const EventsPage = () => {
                                                             <span className="text-[10px] font-black text-slate-400 mt-2 tracking-widest">Excited to join! ✨</span>
                                                         </div>
                                                     </div>
-                                                    <Button size="icon" variant="ghost" className="h-10 w-10 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-xl">
+                                                    <Button size="icon" variant="ghost" className="h-10 w-10 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-xl" onClick={() => handleCopyEventLink(selectedEvent?.title || '')}>
                                                         <Share2 size={16} />
                                                     </Button>
                                                 </div>
@@ -545,6 +632,47 @@ const EventsPage = () => {
                                     </ScrollArea>
                                 </div>
                             </div>
+                        </SheetContent>
+                    </Sheet>
+
+                    {/* Event History Sheet */}
+                    <Sheet open={isHistorySheetOpen} onOpenChange={setIsHistorySheetOpen}>
+                        <SheetContent side="right" className="w-[520px] p-0 border-l-none shadow-3xl flex flex-col bg-white">
+                            <div className="bg-gradient-to-br from-slate-900 to-indigo-900 p-10 text-white">
+                                <SheetHeader>
+                                    <div className="h-14 w-14 bg-white/10 backdrop-blur-md rounded-[1.5rem] flex items-center justify-center text-amber-300 mb-6 border border-white/20 shadow-2xl">
+                                        <History size={24} />
+                                    </div>
+                                    <SheetTitle className="text-3xl font-bold text-white leading-none tracking-tighter">Event History</SheetTitle>
+                                    <SheetDescription className="text-white/40 font-medium text-[10px] capitalize tracking-[0.3em] mt-2">Past events and milestones</SheetDescription>
+                                </SheetHeader>
+                            </div>
+                            <ScrollArea className="flex-1 p-10">
+                                <div className="space-y-4">
+                                    {events.map((event, i) => (
+                                        <div key={event.id} className="flex items-center justify-between p-4 rounded-3xl border border-slate-100 bg-white shadow-sm hover:shadow-md transition-all">
+                                            <div className="flex items-center gap-4">
+                                                <div className="h-12 w-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-xs font-black text-indigo-600 border border-indigo-100">
+                                                    <CalendarIcon size={18} />
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span className="text-sm font-bold text-slate-800 leading-none">{event.title}</span>
+                                                    <span className="text-[10px] font-bold text-slate-400 mt-2 tracking-widest">{new Date(event.date).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                                                </div>
+                                            </div>
+                                            <Badge className={`border-none font-bold text-[9px] px-2 ${event.registered ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-50 text-slate-400'}`}>
+                                                {event.registered ? 'Attended' : 'Missed'}
+                                            </Badge>
+                                        </div>
+                                    ))}
+                                    {events.length === 0 && (
+                                        <div className="py-20 text-center text-slate-300">
+                                            <History size={48} className="mx-auto mb-4 opacity-20" />
+                                            <p className="text-sm font-bold">No event history yet</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </ScrollArea>
                         </SheetContent>
                     </Sheet>
                 </div>

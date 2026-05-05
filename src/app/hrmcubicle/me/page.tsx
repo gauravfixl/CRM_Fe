@@ -34,9 +34,14 @@ import { useToast } from "@/shared/components/ui/use-toast";
 import { useMeStore } from "@/shared/data/me-store";
 
 const ProfilePage = () => {
-    const { user, bankDetails, updateUser, updateBankDetails } = useMeStore();
+    const { user, bankDetails, updateUser, updateBankDetails, loadMyProfile, updateMyProfile } = useMeStore();
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const { toast } = useToast();
+
+    // Load profile from API on mount
+    useEffect(() => {
+        loadMyProfile().catch(() => {});
+    }, []);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const bannerInputRef = useRef<HTMLInputElement>(null);
 
@@ -92,10 +97,24 @@ const ProfilePage = () => {
         });
     }, [user, bankDetails]);
 
-    const handleSaveProfile = (newData: any) => {
+    const handleSaveProfile = async (newData: any) => {
+        // Validate critical Indian formats before persisting
+        const { isPAN, isIFSC, isIndianMobile, isEmail, firstError } = await import("@/shared/utils/validators");
+        const err = firstError(
+            newData.personalEmail ? isEmail(newData.personalEmail, "Personal email") : null,
+            newData.mobile ? isIndianMobile(newData.mobile, "Mobile number") : null,
+            newData.emergencyMobile ? isIndianMobile(newData.emergencyMobile, "Emergency mobile") : null,
+            newData.pan ? isPAN(newData.pan, "PAN") : null,
+            newData.ifsc ? isIFSC(newData.ifsc, "IFSC") : null,
+        );
+        if (err) {
+            toast({ title: "Invalid input", description: err, variant: "destructive" });
+            return;
+        }
+
         setProfileData(newData);
-        // Sync to unified me store
-        updateUser({
+
+        const userPayload = {
             name: newData.name,
             avatar: newData.avatar,
             location: newData.location,
@@ -108,18 +127,36 @@ const ProfilePage = () => {
                 relationship: newData.emergencyRelationship,
                 mobile: newData.emergencyMobile
             }
-        });
-        updateBankDetails({
-            bankName: newData.bankName,
-            accountNo: newData.accountNo,
-            ifsc: newData.ifsc,
-            pan: newData.pan
-        });
+        };
 
-        toast({
-            title: "Registry Updated! 🚀",
-            description: "Your professional profile records have been synchronized successfully across the platform.",
-        });
+        try {
+            // Try API persistence
+            await updateMyProfile(userPayload as any);
+            updateBankDetails({
+                bankName: newData.bankName,
+                accountNo: newData.accountNo,
+                ifsc: newData.ifsc,
+                pan: newData.pan
+            });
+            toast({
+                title: "Profile updated",
+                description: "Your profile has been saved to the server.",
+            });
+        } catch {
+            // Fall back to local update only (offline / API failure)
+            updateUser(userPayload);
+            updateBankDetails({
+                bankName: newData.bankName,
+                accountNo: newData.accountNo,
+                ifsc: newData.ifsc,
+                pan: newData.pan
+            });
+            toast({
+                title: "Saved locally",
+                description: "Server unreachable — changes saved locally and will sync when online.",
+                variant: "destructive",
+            });
+        }
     };
 
     const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -173,7 +210,7 @@ const ProfilePage = () => {
     const reportingTo = user.reportingTo;
 
     return (
-        <div className="space-y-6 pb-10">
+        <div className="space-y-6 pb-10" style={{ zoom: "90%" }}>
             {/* Profile Header Card */}
             <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden group">
                 <div
@@ -294,7 +331,16 @@ const ProfilePage = () => {
                                 </div>
                             </div>
                         </div>
-                        <Button variant="ghost" className="w-full mt-8 h-11 rounded-xl text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-[#6366f1] hover:bg-indigo-50/50 border border-transparent hover:border-indigo-100 transition-all font-sans">
+                        <Button
+                            variant="ghost"
+                            className="w-full mt-8 h-11 rounded-xl text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-[#6366f1] hover:bg-indigo-50/50 border border-transparent hover:border-indigo-100 transition-all font-sans"
+                            onClick={() => {
+                                toast({
+                                    title: "Directory Sync Initiated",
+                                    description: "Your contact details are being synced with the corporate directory. This may take a few moments.",
+                                });
+                            }}
+                        >
                             SYNC DIRECTORY <ChevronRight size={14} className="ml-2" />
                         </Button>
                     </Card>

@@ -31,6 +31,7 @@ import { Switch } from "@/components/ui/switch"
 import { useAuthStore } from "@/lib/useAuthStore"
 import { useBrandingStore } from "../../lib/useBrandingStore"
 import { logoutUser } from "@/hooks/authHooks"
+import { clearAuthCookie } from "@/lib/auth-cookies"
 
 // Helper function to get first two letters of email (uppercase)
 const getEmailInitials = (email?: string) => {
@@ -145,8 +146,20 @@ export function AppHeader({ setSidebarOpen }: { setSidebarOpen?: React.Dispatch<
   const { user } = useAuthStore()
   const { logoUrl } = useBrandingStore()
   const handleLogout = async () => {
-    await logoutUser();
-    // Optional: you can do extra cleanup or tracking here if needed
+    try {
+      await logoutUser();
+    } catch {
+      // Even if API fails, clear client state and redirect
+    }
+    // Always reset Zustand store + clear storage + cookie + redirect
+    clearAuthCookie();
+    useAuthStore.getState().logout();
+    localStorage.removeItem("auth-storage");
+    localStorage.removeItem("orgToken");
+    localStorage.removeItem("orgID");
+    localStorage.removeItem("orgName");
+    sessionStorage.clear(); // Clear firm form drafts and any other temporary data
+    window.location.href = "/auth/signin";
   };
   const viewOrgInvites = () => {
     // Clear any auth-related data
@@ -178,33 +191,27 @@ export function AppHeader({ setSidebarOpen }: { setSidebarOpen?: React.Dispatch<
   }
 
   return (
-    <header className="flex h-[63px] shrink-0 items-center gap-2 border-b px-4 top-0 fixed w-full z-50 shadow-md bg-background transition-colors duration-200">
+    <header className="flex h-[63px] shrink-0 items-center gap-1 sm:gap-2 border-b px-2 sm:px-4 top-0 fixed w-full z-50 shadow-md bg-background transition-colors duration-200">
 
       <button
         onClick={() => {
-          console.log("Header button clicked — toggling sidebar")
-          if (setSidebarOpen) {
-            setSidebarOpen(prev => !prev)
-          } else {
-            toggleSidebar()
-          }
+          toggleSidebar()
         }}
-        className="flex items-center gap-2 cursor-pointer"
+        className="flex items-center gap-2 cursor-pointer flex-shrink-0"
+        aria-label="Toggle sidebar"
       >
-        <img src={logoUrl || "/images/cubicleweb.png"} alt="Logo" className="h-12 w-12 object-contain" />
+        <img src={logoUrl || "/images/cubicleweb.png"} alt="Logo" className="h-10 w-10 sm:h-12 sm:w-12 object-contain" />
       </button>
 
 
-      <ToggleOverlayPanel
-      // onSelectModule={(selected) => {
-      //   dispatch({ type: "SET_CURRENT_MODULE", payload: selected })
-      // }}
-      />
+      <div className="hidden sm:block">
+        <ToggleOverlayPanel />
+      </div>
 
-      <Separator orientation="vertical" className="mr-2 h-4" />
+      <Separator orientation="vertical" className="mr-1 sm:mr-2 h-4 hidden sm:block" />
 
-      <div className="flex flex-1 items-center gap-2 px-3">
-        <div className="relative flex-1 max-w-md">
+      <div className="flex flex-1 items-center gap-1 sm:gap-2 px-1 sm:px-3 min-w-0">
+        <div className="relative flex-1 max-w-md hidden md:block">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             type="search"
@@ -213,7 +220,11 @@ export function AppHeader({ setSidebarOpen }: { setSidebarOpen?: React.Dispatch<
           />
         </div>
 
-        <div className="flex items-center gap-2 ml-auto">
+        <Button variant="ghost" size="icon" className="md:hidden" aria-label="Search">
+          <Search className="h-4 w-4" />
+        </Button>
+
+        <div className="flex items-center gap-0.5 sm:gap-2 ml-auto">
           {/* Module Actions Panel */}
           {/* <Sheet open={isModulePanelOpen} onOpenChange={setIsModulePanelOpen}>
             <SheetTrigger asChild>
@@ -261,7 +272,7 @@ export function AppHeader({ setSidebarOpen }: { setSidebarOpen?: React.Dispatch<
             </SheetContent>
           </Sheet> */}
 
-          <ThemeToggle />
+          {/* <ThemeToggle /> */}
 
           {/* Notifications */}
           <DropdownMenu>

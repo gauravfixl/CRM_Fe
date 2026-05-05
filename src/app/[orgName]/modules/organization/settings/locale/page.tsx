@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import {
     Globe,
     Clock,
@@ -13,8 +13,10 @@ import {
     Languages,
     MapPin,
     ArrowRight,
-    LucideIcon
+    LucideIcon,
+    Loader2,
 } from "lucide-react"
+import { getOrgAdminSettings, updateOrgAdminSettings } from "@/hooks/orgAdminHooks"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -64,19 +66,53 @@ const LocaleOption = ({ label, description, icon: Icon, value, options, onChange
     </div>
 )
 
-export default function LocalizationPage() {
-    const [locale, setLocale] = useState({
-        language: "en-US",
-        timezone: "UTC-5",
-        currency: "USD",
-        dateFormat: "MM/DD/YYYY",
-        timeFormat: "12h"
-    })
+const DEFAULT_LOCALE = {
+    language: "en-US",
+    timezone: "UTC-5",
+    currency: "USD",
+    dateFormat: "MM/DD/YYYY",
+    timeFormat: "12h",
+}
 
-    const handleSave = () => {
-        toast.success("Localization settings updated successfully!", {
-            description: "Changes will reflect across all user interfaces in the next session."
-        })
+export default function LocalizationPage() {
+    const [locale, setLocale] = useState(DEFAULT_LOCALE)
+    const [loading, setLoading] = useState(true)
+    const [saving, setSaving] = useState(false)
+
+    useEffect(() => {
+        (async () => {
+            try {
+                setLoading(true)
+                const res = await getOrgAdminSettings()
+                const s = res?.data?.settings || res?.data?.data || res?.data || {}
+                setLocale({
+                    language: s.language || DEFAULT_LOCALE.language,
+                    timezone: s.timezone || DEFAULT_LOCALE.timezone,
+                    currency: s.currency || DEFAULT_LOCALE.currency,
+                    dateFormat: s.dateFormat || DEFAULT_LOCALE.dateFormat,
+                    timeFormat: s.timeFormat || DEFAULT_LOCALE.timeFormat,
+                })
+            } catch (err) {
+                console.error("Failed to load settings:", err)
+            } finally {
+                setLoading(false)
+            }
+        })()
+    }, [])
+
+    const handleSave = async () => {
+        try {
+            setSaving(true)
+            await updateOrgAdminSettings(locale)
+            toast.success("Localization settings updated successfully!", {
+                description: "Changes will reflect across all user interfaces in the next session."
+            })
+        } catch (err: any) {
+            console.error("Save settings failed:", err)
+            toast.error(err?.response?.data?.message || "Failed to save settings")
+        } finally {
+            setSaving(false)
+        }
     }
 
     return (
@@ -88,13 +124,20 @@ export default function LocalizationPage() {
                     <p className="text-sm text-slate-500 mt-1">Configure default regional settings for all Business Units in the organization.</p>
                 </div>
                 <div className="flex gap-3">
-                    <Button variant="outline" className="h-9 gap-2 border-slate-200 font-bold" onClick={() => toast.info("Resetting to system defaults...")}>
+                    <Button variant="outline" className="h-9 gap-2 border-slate-200 font-bold" onClick={() => {
+                        setLocale(DEFAULT_LOCALE);
+                        toast.info("Reset to defaults. Click Save Changes to persist.");
+                    }}>
                         <RefreshCw className="w-4 h-4" />
                         Reset Defaults
                     </Button>
-                    <Button className="h-9 bg-blue-600 hover:bg-blue-700 text-white gap-2 font-black uppercase text-[10px] tracking-widest shadow-sm px-6" onClick={handleSave}>
-                        <Save className="w-4 h-4" />
-                        Save Changes
+                    <Button
+                        disabled={saving || loading}
+                        className="h-9 bg-blue-600 hover:bg-blue-700 text-white gap-2 font-black uppercase text-[10px] tracking-widest shadow-sm px-6 disabled:opacity-60"
+                        onClick={handleSave}
+                    >
+                        {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                        {saving ? "Saving..." : "Save Changes"}
                     </Button>
                 </div>
             </div>

@@ -15,7 +15,9 @@ export interface User {
   phone: string;
   twoFAEnabled: boolean;
   isActive: boolean;
-  permissions?: Permission[]; // add permissions array
+  permissions?: Permission[];
+  avatar?: { url?: string; public_id?: string };
+  coverPhoto?: string;
 }
 
 export interface Organization {
@@ -31,6 +33,11 @@ export interface Organization {
   orgActive?: boolean;
 }
 
+export interface FirmInfo {
+  firmId: string;
+  firmName: string;
+}
+
 interface AuthState {
   user: User | null;
   organizations: Organization[];
@@ -38,6 +45,7 @@ interface AuthState {
   singleOrg: Organization | null;
   userRole: string | null;
   permissions: Permission[]; // add permissions
+  currentFirm: FirmInfo | null;
 
   login: (userData: User) => void;
   logout: () => void;
@@ -48,35 +56,19 @@ interface AuthState {
   setSingleOrganization: (org: Organization) => void;
   setUserRole: (role: string | null) => void;
   setPermissions: (permissions: Permission[]) => void; // new setter
+  setCurrentFirm: (firm: FirmInfo | null) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
-      user: {
-        firstName: "Dev",
-        lastName: "Admin",
-        email: "admin@fixl.com",
-        phone: "0000000000",
-        twoFAEnabled: false,
-        isActive: true,
-        permissions: []
-      },
-      organizations: [
-        {
-          orgId: "dev-org-id",
-          orgName: "Fixl",
-          orgActive: true
-        }
-      ],
-      isAuthenticated: true,
-      singleOrg: {
-        orgId: "dev-org-id",
-        orgName: "Fixl",
-        orgActive: true
-      },
-      userRole: "admin",
-      permissions: [], // initialize empty array
+      user: null,
+      organizations: [],
+      isAuthenticated: false,
+      singleOrg: null,
+      userRole: null,
+      permissions: [],
+      currentFirm: null,
 
       login: (userData) =>
         set({
@@ -92,6 +84,7 @@ export const useAuthStore = create<AuthState>()(
           singleOrg: null,
           userRole: null,
           permissions: [],
+          currentFirm: null,
         }),
 
       updateUser: (updatedData) =>
@@ -124,6 +117,7 @@ export const useAuthStore = create<AuthState>()(
       setSingleOrganization: (org) => set({ singleOrg: org }),
       setUserRole: (role) => set({ userRole: role }),
       setPermissions: (permissions) => set({ permissions }), // setter for permissions
+      setCurrentFirm: (firm) => set({ currentFirm: firm }),
     }),
     {
       name: 'auth-storage',

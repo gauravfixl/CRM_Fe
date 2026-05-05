@@ -1,6 +1,7 @@
 "use client"
 
-import React, { useState, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
@@ -15,7 +16,18 @@ import { useToast } from "@/shared/components/ui/use-toast";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/shared/components/ui/dropdown-menu";
 import { motion, AnimatePresence } from "framer-motion";
 
+import {
+    approveLeaveRequest,
+    createLeaveRequest,
+    getActiveLeaveTypes,
+    getAllEmployees,
+    getLeaveBalance,
+    getPendingLeaveRequests,
+    rejectLeaveRequest,
+} from "@/modules/hrm/hooks/hrmHooks";
+
 const LeavePage = () => {
+    const router = useRouter();
     const { toast } = useToast();
     const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
     const [isDetailsOpen, setIsDetailsOpen] = useState(false);
@@ -23,40 +35,159 @@ const LeavePage = () => {
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState("All");
 
-    // Dynamic Lists
-    const [leaveRequests, setLeaveRequests] = useState([
-        { id: "LV-001", employee: "Rajesh Kumar", dept: "Engineering", type: "Casual Leave", from: "2024-01-22", to: "2024-01-23", days: 2, status: "Pending", reason: "Family Function", appliedOn: "2024-01-15" },
-        { id: "LV-002", employee: "Priya Sharma", dept: "Product", type: "Sick Leave", from: "2024-01-20", to: "2024-01-20", days: 1, status: "Approved", reason: "Viral Fever", appliedOn: "2024-01-18" },
-        { id: "LV-003", employee: "Vikram Singh", dept: "Engineering", type: "Casual Leave", from: "2024-01-25", to: "2024-01-26", days: 2, status: "Pending", reason: "Personal work", appliedOn: "2024-01-20" }
-    ]);
+    // Backend-backed data
+    const [leaveRequests, setLeaveRequests] = useState<any[]>([]);
+    const [employees, setEmployees] = useState<any[]>([]);
+    const [leaveTypes, setLeaveTypes] = useState<any[]>([]);
 
     const [balances, setBalances] = useState({ casual: 8, sick: 10, earned: 15 });
 
     // New Request State
-    const [newLeave, setNewLeave] = useState({ type: "Casual Leave", from: "", to: "", reason: "" });
+    const [newLeave, setNewLeave] = useState<{ leaveTypeId: string; from: string; to: string; reason: string }>({
+        leaveTypeId: "",
+        from: "",
+        to: "",
+        reason: "",
+    });
     const [editingId, setEditingId] = useState<string | null>(null);
+    const [calendarMonth, setCalendarMonth] = useState(() => {
+        const now = new Date();
+        return { year: now.getFullYear(), month: now.getMonth() };
+    });
 
-    // Computed: Check for overlaps in the same department
+    // Computed: Check for overlaps where requested date falls within any approved leave range
     const overlaps = useMemo(() => {
         if (!newLeave.from) return [];
-        return leaveRequests.filter(r =>
-            r.dept === "Engineering" &&
-            r.status === "Approved" &&
-            r.from === newLeave.from
-        );
+        const requested = new Date(newLeave.from).getTime();
+        if (Number.isNaN(requested)) return [];
+        return leaveRequests.filter(r => {
+            if (r.status !== "Approved" || !r.from || !r.to) return false;
+            const start = new Date(r.from).getTime();
+            const end = new Date(r.to).getTime();
+            return requested >= start && requested <= end;
+        });
     }, [newLeave.from, leaveRequests]);
 
-    // Handle Approval
-    const handleAction = (id: string, newStatus: "Approved" | "Rejected") => {
-        setLeaveRequests(prev => prev.map(req =>
-            req.id === id ? { ...req, status: newStatus } : req
-        ));
+    const fetchLeaveData = async () => {
+        try {
+            const [employeesRes, leaveTypesRes, pendingRes, balanceRes] = await Promise.all([
+                getAllEmployees(),
+                getActiveLeaveTypes(),
+                getPendingLeaveRequests(),
+                getLeaveBalance().catch(() => null),
+            ]);
 
-        if (newStatus === "Approved") {
-            const req = leaveRequests.find(r => r.id === id);
-            toast({ title: "Request Approved", description: `Leave for ${req?.employee} has been confirmed.` });
-        } else {
-            toast({ title: "Request Rejected", description: "The leave request has been denied.", variant: "destructive" });
+            const employeesRows = employeesRes?.data?.employees ?? [];
+            const leaveTypesRows = leaveTypesRes?.data?.data ?? [];
+            const pendingRows = pendingRes?.data?.data ?? [];
+            const balancesRows = balanceRes?.data?.data ?? [];
+
+            setEmployees(employeesRows);
+            setLeaveTypes(leaveTypesRows);
+
+            setNewLeave((prev) => {
+                if (prev.leaveTypeId) return prev;
+                const firstId = leaveTypesRows?.[0]?._id ? String(leaveTypesRows[0]._id) : "";
+                return { ...prev, leaveTypeId: firstId };
+            });
+
+            const mapped = pendingRows.map((r: any) => {
+                const emp = employeesRows.find((e: any) => String(e.id) === String(r.employeeId)) ?? null;
+                const lt = leaveTypesRows.find((t: any) => String(t._id) === String(r.leaveType)) ?? null;
+
+                const fromDate = r.startDate ? new Date(r.startDate) : null;
+                const toDate = r.endDate ? new Date(r.endDate) : null;
+
+                const isHalf = Boolean(r.isHalfDay);
+                const days =
+                    isHalf
+                        ? 0.5
+                        : fromDate && toDate
+                            ? Math.max(
+                                1,
+                                Math.round(
+                                    (toDate.getTime() - fromDate.getTime()) / (1000 * 60 * 60 * 24)
+                                ) + 1
+                            )
+                            : 1;
+
+                return {
+                    id: String(r._id ?? r.id),
+                    employee: emp?.name ?? "Employee",
+                    dept: emp?.department ?? "Unknown",
+                    type: lt?.name ?? "Leave",
+                    from: fromDate ? fromDate.toISOString().split("T")[0] : "",
+                    to: toDate ? toDate.toISOString().split("T")[0] : "",
+                    days,
+                    status: r.status ?? "Pending",
+                    reason: r.reason ?? "",
+                    appliedOn: r.createdAt ? new Date(r.createdAt).toISOString().split("T")[0] : "",
+                };
+            });
+
+            setLeaveRequests(mapped);
+
+            const byNeedle = (needle: string) => {
+                const match = (balancesRows ?? []).find((b: any) =>
+                    String(b?.leaveTypeId?.name ?? "").toLowerCase().includes(needle)
+                );
+                return Number(match?.remaining ?? 0);
+            };
+
+            const casual = byNeedle("casual");
+            const sick = byNeedle("sick");
+            const earned = byNeedle("earned");
+            const paid = (balancesRows ?? [])
+                .map((b: any) => ({ name: String(b?.leaveTypeId?.name ?? ""), remaining: Number(b?.remaining ?? 0) }))
+                .filter((x: any) => x.remaining > 0);
+
+            const f0 = casual || paid?.[0]?.remaining || 0;
+            const f1 = sick || paid?.[1]?.remaining || 0;
+            const f2 = earned || paid?.[2]?.remaining || 0;
+
+            setBalances({
+                casual: f0,
+                sick: f1,
+                earned: f2,
+            });
+        } catch (err) {
+            console.error("Leave data fetch failed:", err);
+            setLeaveRequests([]);
+            toast({ title: "Load Failed", description: "Could not load leave data.", variant: "destructive" });
+        }
+    };
+
+    useEffect(() => {
+        fetchLeaveData();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // Handle Approval
+    const handleAction = async (id: string, newStatus: "Approved" | "Rejected") => {
+        try {
+            if (newStatus === "Approved") {
+                await approveLeaveRequest(id);
+                toast({ title: "Request Approved", description: "Leave request approved successfully." });
+            } else {
+                const reason =
+                    window.prompt("Rejection reason (min 3 chars):", "Rejected by HR admin")?.trim() ||
+                    "Rejected by HR admin";
+                if (reason.length < 3) {
+                    toast({
+                        title: "Invalid reason",
+                        description: "Rejection reason must be at least 3 characters.",
+                        variant: "destructive"
+                    });
+                    return;
+                }
+                await rejectLeaveRequest(id, reason);
+                toast({ title: "Request Rejected", description: "Leave request rejected successfully.", variant: "destructive" });
+            }
+
+            await fetchLeaveData();
+        } catch (err) {
+            console.error("Leave action failed:", err);
+            toast({ title: "Action Failed", description: "Could not process leave request.", variant: "destructive" });
         }
     };
 
@@ -77,49 +208,81 @@ const LeavePage = () => {
         toast({ title: "Export Success", description: "Leave report has been downloaded." });
     };
 
-    const handleApply = () => {
-        if (!newLeave.from || !newLeave.to || !newLeave.reason) {
+    const handleApply = async () => {
+        if (!newLeave.leaveTypeId || !newLeave.from || !newLeave.to || !newLeave.reason) {
             toast({ title: "Incomplete Data", description: "Please provide all necessary details.", variant: "destructive" });
             return;
         }
 
-        if (editingId) {
-            setLeaveRequests(prev => prev.map(req =>
-                req.id === editingId
-                    ? { ...req, ...newLeave, employee: req.employee, dept: req.dept, status: "Pending" }
-                    : req
-            ));
-            toast({ title: "Request Updated", description: "Leave details have been modified." });
-            setEditingId(null);
-        } else {
-            const request = {
-                id: `LV-00${leaveRequests.length + 1}`,
-                employee: "Self (Admin)",
-                dept: "Engineering",
-                type: newLeave.type,
-                from: newLeave.from,
-                to: newLeave.to,
-                days: 1, // Simplified day calculation logic can be added here
-                status: "Pending",
-                reason: newLeave.reason,
-                appliedOn: new Date().toISOString().split('T')[0]
-            };
-            setLeaveRequests([request, ...leaveRequests]);
-            toast({ title: "Success", description: "Your leave application is pending review." });
+        const fromDate = new Date(newLeave.from);
+        const toDate = new Date(newLeave.to);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        if (Number.isNaN(fromDate.getTime()) || Number.isNaN(toDate.getTime())) {
+            toast({ title: "Invalid Dates", description: "Please pick valid start and end dates.", variant: "destructive" });
+            return;
         }
-        setIsApplyModalOpen(false);
-        setNewLeave({ type: "Casual Leave", from: "", to: "", reason: "" });
+        if (toDate < fromDate) {
+            toast({ title: "Invalid Range", description: "End date must be on or after start date.", variant: "destructive" });
+            return;
+        }
+        if (fromDate < today && !editingId) {
+            toast({ title: "Invalid Date", description: "Cannot apply leave starting on a past date.", variant: "destructive" });
+            return;
+        }
+        if (newLeave.reason.trim().length < 10) {
+            toast({ title: "Reason Too Short", description: "Please provide a reason of at least 10 characters.", variant: "destructive" });
+            return;
+        }
+
+        if (overlaps.length > 0) {
+            const overlapNames = overlaps.map(o => o.employee).join(", ");
+            const proceed = window.confirm(`The requested start date overlaps approved leave for: ${overlapNames}. Continue anyway?`);
+            if (!proceed) return;
+        }
+
+        if (editingId) {
+            // Remove old request from local state and create a new one
+            setLeaveRequests(prev => prev.filter(r => r.id !== editingId));
+        }
+
+        try {
+            await createLeaveRequest({
+                leaveType: newLeave.leaveTypeId,
+                startDate: newLeave.from,
+                endDate: newLeave.to,
+                reason: newLeave.reason,
+                isHalfDay: false,
+                halfDaySession: null,
+            });
+            toast({ title: "Success", description: "Your leave application is pending review." });
+            setIsApplyModalOpen(false);
+            setEditingId(null);
+            setNewLeave(prev => ({ ...prev, from: "", to: "", reason: "" }));
+            await fetchLeaveData();
+        } catch (err) {
+            console.error("Failed to create leave request:", err);
+            toast({ title: "Submit Failed", description: "Could not submit leave request.", variant: "destructive" });
+        }
     };
 
     const handleEdit = (req: any) => {
-        setNewLeave({ type: req.type, from: req.from, to: req.to, reason: req.reason });
+        const matchedType = leaveTypes.find((lt: any) => lt.name === req.type);
         setEditingId(req.id);
+        setNewLeave({
+            leaveTypeId: matchedType ? String(matchedType._id) : newLeave.leaveTypeId,
+            from: req.from,
+            to: req.to,
+            reason: req.reason,
+        });
         setIsApplyModalOpen(true);
+        toast({ title: "Editing Request", description: `Editing leave request ${req.id}. Modify the fields and re-submit.` });
     };
 
     const handleDelete = (id: string) => {
         setLeaveRequests(prev => prev.filter(r => r.id !== id));
-        toast({ title: "Request Deleted", description: "The leave request has been removed.", variant: "destructive" });
+        toast({ title: "Request Removed", description: `Leave request ${id} has been removed from the list.` });
     };
 
     const openDetails = (req: any) => {
@@ -155,6 +318,9 @@ const LeavePage = () => {
                     </div>
 
                     <div className="flex gap-4">
+                        <Button variant="outline" className="h-14 px-8 rounded-2xl border-slate-200 font-bold hover:bg-slate-50 shadow-sm" onClick={() => router.push("/hrmcubicle/timeattend/reports")}>
+                            <FileText size={20} className="mr-2" /> View Report
+                        </Button>
                         <Button variant="outline" className="h-14 px-8 rounded-2xl border-slate-200 font-bold hover:bg-slate-50 shadow-sm" onClick={handleExport}>
                             <Download size={20} className="mr-2" /> Export CSV
                         </Button>
@@ -173,14 +339,20 @@ const LeavePage = () => {
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 py-8 font-sans">
                                     <div className="grid gap-3">
                                         <Label className="font-bold ml-2 text-slate-600">Leave category</Label>
-                                        <Select value={newLeave.type} onValueChange={(v) => setNewLeave({ ...newLeave, type: v })}>
+                                        <Select value={newLeave.leaveTypeId} onValueChange={(v) => setNewLeave({ ...newLeave, leaveTypeId: v })}>
                                             <SelectTrigger className="h-16 rounded-2xl bg-white border-2 border-slate-300 px-6 font-bold text-xl">
-                                                <SelectValue />
+                                                <SelectValue placeholder="Select leave type..." />
                                             </SelectTrigger>
-                                            <SelectContent className="rounded-2xl border-none shadow-2xl p-2 font-bold">
-                                                <SelectItem value="Casual Leave" className="rounded-xl p-3">Casual leave</SelectItem>
-                                                <SelectItem value="Sick Leave" className="rounded-xl p-3">Sick leave</SelectItem>
-                                                <SelectItem value="Earned Leave" className="rounded-xl p-3">Earned leave</SelectItem>
+                                            <SelectContent className="rounded-2xl border-2 border-slate-200 shadow-2xl p-2 font-bold">
+                                                {leaveTypes.length === 0 ? (
+                                                    <div className="p-3 text-center text-slate-500">Loading leave types...</div>
+                                                ) : (
+                                                    leaveTypes.map((lt: any) => (
+                                                        <SelectItem key={String(lt._id)} value={String(lt._id)} className="rounded-xl p-3">
+                                                            {lt.name}
+                                                        </SelectItem>
+                                                    ))
+                                                )}
                                             </SelectContent>
                                         </Select>
                                     </div>
@@ -218,7 +390,17 @@ const LeavePage = () => {
                                     </div>
                                 </div>
                                 <DialogFooter className="mt-4 flex gap-4">
-                                    <Button variant="ghost" className="rounded-2xl font-bold text-slate-400 h-16 flex-1 text-lg" onClick={() => { setIsApplyModalOpen(false); setEditingId(null); setNewLeave({ type: "Casual Leave", from: "", to: "", reason: "" }); }}>Cancel</Button>
+                                    <Button
+                                        variant="ghost"
+                                        className="rounded-2xl font-bold text-slate-400 h-16 flex-1 text-lg"
+                                        onClick={() => {
+                                            setIsApplyModalOpen(false);
+                                            setEditingId(null);
+                                            setNewLeave(prev => ({ ...prev, from: "", to: "", reason: "" }));
+                                        }}
+                                    >
+                                        Cancel
+                                    </Button>
                                     <Button className="bg-[#6366f1] h-16 rounded-2xl font-bold text-white shadow-xl shadow-indigo-100 flex-1 text-lg" onClick={handleApply}>{editingId ? "Update Request" : "Submit Request"}</Button>
                                 </DialogFooter>
                             </DialogContent>
@@ -234,7 +416,7 @@ const LeavePage = () => {
                         { label: "Earned leave", val: balances.earned, bg: "bg-purple-100/80", border: "border-purple-200", text: "text-purple-800", trend: "15d Accrued" },
                         { label: "Total balance", val: balances.casual + balances.sick + balances.earned, bg: "bg-slate-100/80", border: "border-slate-300", text: "text-slate-800", trend: "Avg 33d/y" }
                     ].map((stat, i) => (
-                        <Card key={i} className={`shadow-2xl shadow-slate-200/50 border ${stat.border} ${stat.bg} rounded-[3rem] p-10 group hover:scale-[1.02] transition-transform overflow-hidden relative`}>
+                        <Card key={i} className={`shadow-2xl shadow-slate-200/50 border-none ${stat.bg} rounded-none p-10 group hover:scale-[1.02] transition-transform overflow-hidden relative`}>
                             <CardHeader className="p-0 pb-6 relative z-10">
                                 <CardTitle className={`text-sm font-bold ${stat.text} tracking-wider font-sans`}>{stat.label}</CardTitle>
                             </CardHeader>
@@ -280,7 +462,7 @@ const LeavePage = () => {
                                 <SelectTrigger className="w-64 h-16 rounded-[2rem] bg-white border-slate-100 font-bold px-8 text-lg shadow-sm">
                                     <SelectValue placeholder="All Status" />
                                 </SelectTrigger>
-                                <SelectContent className="rounded-2xl border-none shadow-2xl p-2 font-bold">
+                                <SelectContent className="rounded-2xl border-2 border-slate-200 shadow-2xl p-2 font-bold">
                                     <SelectItem value="All" className="rounded-xl">Current: All</SelectItem>
                                     <SelectItem value="Pending" className="rounded-xl">Filter: Pending</SelectItem>
                                     <SelectItem value="Approved" className="rounded-xl">Filter: Approved</SelectItem>
@@ -352,7 +534,7 @@ const LeavePage = () => {
                                                                     <MoreHorizontal size={20} />
                                                                 </Button>
                                                             </DropdownMenuTrigger>
-                                                            <DropdownMenuContent align="end" className="rounded-2xl border-none shadow-xl p-2 font-bold min-w-40">
+                                                            <DropdownMenuContent align="end" className="rounded-2xl border-2 border-slate-200 shadow-xl p-2 font-bold min-w-40">
                                                                 {req.status === "Pending" && (
                                                                     <DropdownMenuItem className="rounded-xl p-3 cursor-pointer hover:bg-indigo-50 text-indigo-600" onClick={() => handleEdit(req)}>
                                                                         <Pencil size={16} className="mr-2" /> Edit Request
@@ -378,13 +560,13 @@ const LeavePage = () => {
                             <div className="flex items-center justify-between mb-12">
                                 <div>
                                     <h3 className="text-2xl font-bold text-slate-900">Attendance Calendar View</h3>
-                                    <p className="text-slate-500 font-bold">January 2026 Operational Window</p>
+                                    <p className="text-slate-500 font-bold">{new Date(calendarMonth.year, calendarMonth.month).toLocaleString('en-US', { month: 'long', year: 'numeric' })} Operational Window</p>
                                 </div>
                                 <div className="flex gap-3">
-                                    <Button variant="outline" className="rounded-xl h-12 font-bold border-slate-100">Today</Button>
+                                    <Button variant="outline" className="rounded-xl h-12 font-bold border-slate-100" onClick={() => { const now = new Date(); setCalendarMonth({ year: now.getFullYear(), month: now.getMonth() }); }}>Today</Button>
                                     <div className="flex bg-slate-50 rounded-xl p-1 border border-slate-100">
-                                        <Button variant="ghost" className="h-10 w-10 p-0 rounded-lg"> <ChevronRight className="rotate-180" size={18} /> </Button>
-                                        <Button variant="ghost" className="h-10 w-10 p-0 rounded-lg"> <ChevronRight size={18} /> </Button>
+                                        <Button variant="ghost" className="h-10 w-10 p-0 rounded-lg" onClick={() => setCalendarMonth(prev => { const d = new Date(prev.year, prev.month - 1); return { year: d.getFullYear(), month: d.getMonth() }; })}> <ChevronRight className="rotate-180" size={18} /> </Button>
+                                        <Button variant="ghost" className="h-10 w-10 p-0 rounded-lg" onClick={() => setCalendarMonth(prev => { const d = new Date(prev.year, prev.month + 1); return { year: d.getFullYear(), month: d.getMonth() }; })}> <ChevronRight size={18} /> </Button>
                                     </div>
                                 </div>
                             </div>
@@ -395,27 +577,34 @@ const LeavePage = () => {
                                 ))}
                             </div>
                             <div className="grid grid-cols-7 gap-4">
-                                {Array.from({ length: 31 }).map((_, i) => {
-                                    const day = i + 1;
-                                    const activeLeave = leaveRequests.find(r => {
-                                        const d = new Date(r.from).getDate();
-                                        return d === day && r.status === 'Approved';
-                                    });
-
-                                    return (
-                                        <div key={i} className={`h-32 rounded-3xl border border-slate-50 p-4 transition-all hover:border-indigo-100 hover:bg-indigo-50/30 group ${activeLeave ? 'bg-amber-50/50 border-amber-100' : ''}`}>
-                                            <p className="font-bold text-slate-400 group-hover:text-indigo-500">{day}</p>
-                                            {activeLeave && (
-                                                <div className="mt-2 p-2 bg-white rounded-xl shadow-sm border border-amber-200">
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="h-1.5 w-1.5 rounded-full bg-amber-500" />
-                                                        <p className="text-[10px] font-bold text-slate-600 line-clamp-1">{activeLeave.employee.split(' ')[0]} ({activeLeave.type.split(' ')[0]})</p>
+                                {(() => {
+                                    const daysInMonth = new Date(calendarMonth.year, calendarMonth.month + 1, 0).getDate();
+                                    const firstDayOfWeek = new Date(calendarMonth.year, calendarMonth.month, 1).getDay();
+                                    const blanks = Array.from({ length: firstDayOfWeek }).map((_, i) => (
+                                        <div key={`blank-${i}`} className="h-32" />
+                                    ));
+                                    const days = Array.from({ length: daysInMonth }).map((_, i) => {
+                                        const day = i + 1;
+                                        const activeLeave = leaveRequests.find(r => {
+                                            const fromDate = new Date(r.from);
+                                            return fromDate.getDate() === day && fromDate.getMonth() === calendarMonth.month && fromDate.getFullYear() === calendarMonth.year && r.status === 'Approved';
+                                        });
+                                        return (
+                                            <div key={i} className={`h-32 rounded-3xl border border-slate-50 p-4 transition-all hover:border-indigo-100 hover:bg-indigo-50/30 group ${activeLeave ? 'bg-amber-50/50 border-amber-100' : ''}`}>
+                                                <p className="font-bold text-slate-400 group-hover:text-indigo-500">{day}</p>
+                                                {activeLeave && (
+                                                    <div className="mt-2 p-2 bg-white rounded-xl shadow-sm border border-amber-200">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                                                            <p className="text-[10px] font-bold text-slate-600 line-clamp-1">{activeLeave.employee.split(' ')[0]} ({activeLeave.type.split(' ')[0]})</p>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    );
-                                })}
+                                                )}
+                                            </div>
+                                        );
+                                    });
+                                    return [...blanks, ...days];
+                                })()}
                             </div>
                         </Card>
                     </TabsContent>
@@ -441,7 +630,7 @@ const LeavePage = () => {
                                             </div>
                                         ))}
                                     </div>
-                                    <Button variant="ghost" className="w-full mt-8 rounded-xl font-bold text-indigo-500 hover:bg-indigo-50">Read full document</Button>
+                                    <Button variant="ghost" className="w-full mt-8 rounded-xl font-bold text-indigo-500 hover:bg-indigo-50" onClick={() => toast({ title: "Policy Document", description: "Full attendance policy document would open here." })}>Read full document</Button>
                                 </Card>
                             ))}
                         </div>
@@ -450,7 +639,7 @@ const LeavePage = () => {
 
                 {/* Log Details Dialog */}
                 <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
-                    <DialogContent className="sm:max-w-2xl rounded-[3rem] border-none p-12 bg-white">
+                    <DialogContent className="sm:max-w-2xl rounded-[3rem] border-2 border-slate-200 p-12 bg-white">
                         <DialogHeader>
                             <DialogTitle className="text-3xl font-bold flex items-center gap-4">
                                 <div className="h-12 w-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-500">

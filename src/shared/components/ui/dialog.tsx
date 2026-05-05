@@ -6,7 +6,23 @@ import { X } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
-const Dialog = DialogPrimitive.Root
+// Radix bug workaround: when a Dialog is opened via a DropdownMenu/menu item,
+// `pointer-events: none` can remain stuck on document.body after close,
+// freezing the whole page. For controlled dialogs only, watch `open` prop
+// and force-clear the stuck style after the close animation settles.
+const Dialog: React.FC<React.ComponentProps<typeof DialogPrimitive.Root>> = (props) => {
+  React.useEffect(() => {
+    if (props.open !== false) return;
+    const timer = window.setTimeout(() => {
+      if (document.body.style.pointerEvents === "none") {
+        document.body.style.pointerEvents = "";
+      }
+    }, 500);
+    return () => window.clearTimeout(timer);
+  }, [props.open]);
+
+  return <DialogPrimitive.Root {...props} />;
+};
 
 const DialogTrigger = DialogPrimitive.Trigger
 
@@ -32,11 +48,22 @@ DialogOverlay.displayName = DialogPrimitive.Overlay.displayName
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
->(({ className, children, ...props }, ref) => (
+>(({ className, children, onCloseAutoFocus, onPointerDownOutside, ...props }, ref) => (
   <DialogPortal>
     <DialogOverlay />
     <DialogPrimitive.Content
       ref={ref}
+      onCloseAutoFocus={(e) => {
+        e.preventDefault();
+        onCloseAutoFocus?.(e);
+      }}
+      onPointerDownOutside={(e) => {
+        const target = e.target as HTMLElement;
+        if (target?.closest?.("[role='menu']") || target?.closest?.("[data-radix-dropdown-menu-content]")) {
+          e.preventDefault();
+        }
+        onPointerDownOutside?.(e);
+      }}
       className={cn(
         "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg",
         className

@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect, useCallback } from "react"
 import {
     History,
     Filter,
@@ -16,15 +16,18 @@ import {
     Building2,
     Calendar,
     ChevronRight,
-    SearchX
+    SearchX,
+    Users
 } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { CustomButton } from "@/shared/components/custom/CustomButton"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { SmallCard, SmallCardHeader, SmallCardContent } from "@/shared/components/custom/SmallCard"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { toast } from "sonner"
+import axiosInstance from "@/lib/axios"
 
 const activities = [
     {
@@ -89,21 +92,146 @@ const activities = [
     },
 ]
 
+const MODULE_LABELS: Record<string, string> = {
+    lead: "Lead Management",
+    firm: "Business Unit",
+    client: "Identity",
+    invoice: "Billing",
+    project: "System",
+    task: "System",
+}
+
+const MODULE_ICONS: Record<string, typeof Shield> = {
+    lead: User,
+    firm: Building2,
+    client: User,
+    invoice: Settings,
+    project: History,
+    task: History,
+}
+
+function getRelativeTime(dateStr: string): string {
+    const now = new Date()
+    const date = new Date(dateStr)
+    const diffMs = now.getTime() - date.getTime()
+    const diffSecs = Math.floor(diffMs / 1000)
+    const diffMins = Math.floor(diffSecs / 60)
+    const diffHours = Math.floor(diffMins / 60)
+    const diffDays = Math.floor(diffHours / 24)
+
+    if (diffMins < 1) return "Just now"
+    if (diffMins < 60) return `${diffMins} min${diffMins > 1 ? "s" : ""} ago`
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? "s" : ""} ago`
+    if (diffDays === 1) return "Yesterday"
+    return `${diffDays} days ago`
+}
+
+function mapApiActivity(item: any) {
+    const module = item.module || ""
+    const isSecurity = module === "lead" && /security|block|mfa|login/i.test(item.activityDesc || "")
+    return {
+        id: item._id,
+        type: MODULE_LABELS[module] || "System",
+        action: `${item.activity || ""} - ${item.activityDesc || ""}`,
+        actor: item.userId ? `${item.userId.firstName || ""} ${item.userId.lastName || ""}`.trim() : "System",
+        target: item.activityDesc || "",
+        timestamp: getRelativeTime(item.createdAt),
+        severity: isSecurity ? "high" as const : "low" as const,
+        icon: MODULE_ICONS[module] || History,
+    }
+}
+
+const MODULES = ["lead", "firm", "client", "invoice", "project", "task"]
+
 export default function OrgActivityPage() {
     const [searchQuery, setSearchQuery] = useState("")
+    const [activityList, setActivityList] = useState(activities)
+    const [loading, setLoading] = useState(false)
+    const [totalEvents, setTotalEvents] = useState(0)
+    const [refreshing, setRefreshing] = useState(false)
+    const [detailActivity, setDetailActivity] = useState<any | null>(null)
 
-    const filteredActivities = activities.filter(act =>
+    const fetchActivities = useCallback(async () => {
+        try {
+            const responses = await Promise.allSettled(
+                MODULES.map((mod) => axiosInstance.get(`/activities/module/${mod}`))
+            )
+            let allItems: any[] = []
+            let total = 0
+            let anySuccess = false
+
+            for (const res of responses) {
+                if (res.status === "fulfilled" && res.value?.data?.data) {
+                    anySuccess = true
+                    allItems = allItems.concat(res.value.data.data)
+                    if (res.value.data.pagination?.total) {
+                        total += res.value.data.pagination.total
+                    }
+                }
+            }
+
+            if (anySuccess && allItems.length > 0) {
+                allItems.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                setActivityList(allItems.map(mapApiActivity))
+                setTotalEvents(total || allItems.length)
+            } else {
+                setActivityList(activities)
+                setTotalEvents(activities.length)
+            }
+        } catch {
+            setActivityList(activities)
+            setTotalEvents(activities.length)
+        }
+    }, [])
+
+    useEffect(() => {
+        (async () => {
+            setLoading(true)
+            await fetchActivities()
+            setLoading(false)
+        })()
+    }, [fetchActivities])
+
+    const handleRefresh = async () => {
+        setRefreshing(true)
+        await fetchActivities()
+        setRefreshing(false)
+        toast.success("Activity feed updated")
+    }
+
+    const filteredActivities = activityList.filter(act =>
         act.action.toLowerCase().includes(searchQuery.toLowerCase()) ||
         act.actor.toLowerCase().includes(searchQuery.toLowerCase()) ||
         act.type.toLowerCase().includes(searchQuery.toLowerCase())
     )
 
     const handleExport = () => {
-        toast.info("Exporting audit logs to CSV...")
+        const header = ["ID", "Type", "Action", "Actor", "Target", "Severity", "Timestamp"]
+        const rows = filteredActivities.map((a: any) => [
+            a.id || "",
+            a.type || "",
+            a.action || "",
+            a.actor || "",
+            a.target || "",
+            a.severity || "",
+            a.timestamp || "",
+        ])
+        const escape = (v: string) => `"${String(v).replace(/"/g, '""')}"`
+        const csv = [header, ...rows].map((r) => r.map(escape).join(",")).join("\n")
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement("a")
+        a.href = url
+        a.download = `admin-activity-${new Date().toISOString().slice(0, 10)}.csv`
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+        toast.success("Audit log exported to CSV")
     }
 
     return (
-        <div className="flex flex-col h-full w-full bg-slate-50/50 p-6 space-y-6 overflow-y-auto">
+        <div className="flex flex-col h-full w-full bg-slate-50/50 p-6 space-y-8 overflow-y-auto font-sans">
             {/* HEADER */}
             <div className="flex items-center justify-between">
                 <div>
@@ -111,64 +239,68 @@ export default function OrgActivityPage() {
                     <p className="text-sm text-slate-500 mt-1">Real-time audit trail of all administrative events across the organization.</p>
                 </div>
                 <div className="flex gap-3">
-                    <Button variant="outline" className="h-9 gap-2 border-slate-200" onClick={() => toast.success("Feed Refreshed")}>
+                    <CustomButton variant="outline" className="h-10 px-4 gap-2 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 font-semibold shadow-sm hover:translate-y-[-1px] transition-all" onClick={handleRefresh} disabled={refreshing}>
                         <Clock className="w-4 h-4" />
-                        Refresh
-                    </Button>
-                    <Button className="h-9 bg-blue-600 hover:bg-blue-700 text-white gap-2 font-bold shadow-sm" onClick={handleExport}>
+                        {refreshing ? "Refreshing..." : "Refresh"}
+                    </CustomButton>
+                    <CustomButton className="h-10 px-6 bg-indigo-600 hover:bg-indigo-700 text-white gap-2 font-bold shadow-xl border-0" onClick={handleExport}>
                         <Download className="w-4 h-4" />
                         Export Audit Log
-                    </Button>
+                    </CustomButton>
                 </div>
             </div>
 
             {/* QUICK STATS */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <SmallCard className="bg-gradient-to-br from-blue-500 to-blue-700 border-none">
-                    <SmallCardHeader className="pb-2">
-                        <p className="text-[10px] font-bold text-blue-100 uppercase tracking-widest">Total Events (24h)</p>
-                    </SmallCardHeader>
-                    <SmallCardContent>
-                        <p className="text-2xl font-black text-white">1,284</p>
-                        <p className="text-[10px] text-blue-100 flex items-center gap-1 mt-1">
-                            <CheckCircle2 className="w-3 h-3 text-emerald-300" /> +12% from yesterday
-                        </p>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <SmallCard className="border bg-gradient-to-r from-primary/70 to-primary text-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                    <SmallCardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-white text-xs opacity-80">Total Events (24h)</p>
+                                <p className="text-white text-xl font-semibold mt-1">{totalEvents.toLocaleString()}</p>
+                                <p className="text-white text-[10px] mt-1">+12% from yesterday</p>
+                            </div>
+                            <CheckCircle2 className="w-5 h-5 text-white" />
+                        </div>
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="bg-white border-slate-200 shadow-sm">
-                    <SmallCardHeader className="pb-2">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-left">Critical Alerts</p>
-                    </SmallCardHeader>
-                    <SmallCardContent>
-                        <p className="text-2xl font-black text-slate-900 text-left">3</p>
-                        <p className="text-[10px] text-red-500 font-bold flex items-center gap-1 mt-1">
-                            <AlertCircle className="w-3 h-3" /> Requires attention
-                        </p>
+                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                    <SmallCardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-gray-600 text-xs">Critical Alerts</p>
+                                <p className="text-xl font-semibold text-gray-900 mt-1">3</p>
+                                <p className="text-red-600 text-[10px] mt-1">Requires attention</p>
+                            </div>
+                            <AlertCircle className="w-5 h-5 text-primary" />
+                        </div>
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="bg-white border-slate-200 shadow-sm">
-                    <SmallCardHeader className="pb-2">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-left">Active Admins</p>
-                    </SmallCardHeader>
-                    <SmallCardContent>
-                        <p className="text-2xl font-black text-slate-900 text-left">12</p>
-                        <p className="text-[10px] text-emerald-600 font-bold flex items-center gap-1 mt-1 text-left">
-                            <CheckCircle2 className="w-3 h-3" /> 5 online now
-                        </p>
+                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                    <SmallCardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-gray-600 text-xs">Active Admins</p>
+                                <p className="text-xl font-semibold text-gray-900 mt-1">12</p>
+                                <p className="text-green-600 text-[10px] mt-1">5 online now</p>
+                            </div>
+                            <Users className="w-5 h-5 text-primary" />
+                        </div>
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="bg-white border-slate-200 shadow-sm">
-                    <SmallCardHeader className="pb-2">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-left">Identity Sync</p>
-                    </SmallCardHeader>
-                    <SmallCardContent>
-                        <p className="text-2xl font-black text-emerald-600 text-left">100%</p>
-                        <p className="text-[10px] text-slate-400 font-medium flex items-center gap-1 mt-1 text-left">
-                            <Clock className="w-3 h-3" /> Last sync 3m ago
-                        </p>
+                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                    <SmallCardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-gray-600 text-xs">Identity Sync</p>
+                                <p className="text-xl font-semibold text-gray-900 mt-1">100%</p>
+                                <p className="text-gray-600 text-[10px] mt-1">Last sync 3m ago</p>
+                            </div>
+                            <Clock className="w-5 h-5 text-primary" />
+                        </div>
                     </SmallCardContent>
                 </SmallCard>
             </div>
@@ -185,10 +317,10 @@ export default function OrgActivityPage() {
                     />
                 </div>
                 <Separator orientation="vertical" className="h-6" />
-                <Button variant="ghost" className="h-10 text-xs font-bold gap-2 text-slate-600">
+                <CustomButton variant="ghost" className="h-10 text-xs font-bold gap-2 text-slate-600 hover:bg-slate-50 rounded-xl" onClick={() => toast.info("Opening advanced filter panel...")}>
                     <Filter className="w-4 h-4" />
                     Advanced Filters
-                </Button>
+                </CustomButton>
             </div>
 
             {/* ACTIVITY STREAM */}
@@ -229,9 +361,9 @@ export default function OrgActivityPage() {
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <Button variant="ghost" size="sm" className="h-8 text-[10px] font-bold opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => toast.info(`Viewing details for ${act.id}`)}>
+                                        <CustomButton variant="ghost" size="sm" className="h-8 px-3 text-[10px] font-bold opacity-0 group-hover:opacity-100 transition-opacity text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/20 rounded-lg" onClick={() => setDetailActivity(act)}>
                                             View Details
-                                        </Button>
+                                        </CustomButton>
                                         <ChevronRight className="w-4 h-4 text-slate-300" />
                                     </div>
                                 </div>
@@ -245,15 +377,59 @@ export default function OrgActivityPage() {
                                     <h3 className="text-lg font-bold text-slate-900">No activities found</h3>
                                     <p className="text-sm text-slate-500 max-w-xs">We couldn't find any activity matching your current filters or search query.</p>
                                 </div>
-                                <Button variant="outline" size="sm" onClick={() => setSearchQuery("")}>Clear Search</Button>
+                                <CustomButton variant="outline" size="sm" onClick={() => setSearchQuery("")}>Clear Search</CustomButton>
                             </div>
                         )}
                     </div>
                 </CardContent>
                 <CardFooter className="bg-slate-50/50 border-t border-slate-100 py-3 flex justify-center">
-                    <Button variant="ghost" className="text-xs font-bold text-blue-600">Load More Activity</Button>
+                    <CustomButton variant="ghost" className="text-xs font-bold text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/20 px-6 rounded-xl" onClick={handleRefresh} disabled={refreshing}>
+                        {refreshing ? "Refreshing..." : "Load More Activity"}
+                    </CustomButton>
                 </CardFooter>
             </Card>
+
+            {/* VIEW DETAILS DIALOG */}
+            <Dialog open={!!detailActivity} onOpenChange={(open) => { if (!open) setDetailActivity(null); }}>
+                <DialogContent className="sm:max-w-lg rounded-2xl">
+                    <DialogHeader>
+                        <DialogTitle className="text-lg font-bold tracking-tight">Activity Details</DialogTitle>
+                        <DialogDescription className="text-xs">Full record for the selected admin event.</DialogDescription>
+                    </DialogHeader>
+                    {detailActivity && (
+                        <div className="space-y-3 text-sm">
+                            <div className="grid grid-cols-3 gap-2 items-baseline">
+                                <span className="col-span-1 text-[10px] uppercase font-bold text-slate-400 tracking-wider">ID</span>
+                                <span className="col-span-2 font-mono text-xs text-slate-700 break-all">{detailActivity.id}</span>
+                            </div>
+                            <div className="grid grid-cols-3 gap-2 items-baseline">
+                                <span className="col-span-1 text-[10px] uppercase font-bold text-slate-400 tracking-wider">Action</span>
+                                <span className="col-span-2 font-semibold text-slate-900">{detailActivity.action}</span>
+                            </div>
+                            <div className="grid grid-cols-3 gap-2 items-baseline">
+                                <span className="col-span-1 text-[10px] uppercase font-bold text-slate-400 tracking-wider">Type</span>
+                                <span className="col-span-2 text-slate-700">{detailActivity.type}</span>
+                            </div>
+                            <div className="grid grid-cols-3 gap-2 items-baseline">
+                                <span className="col-span-1 text-[10px] uppercase font-bold text-slate-400 tracking-wider">Actor</span>
+                                <span className="col-span-2 text-slate-700">{detailActivity.actor}</span>
+                            </div>
+                            <div className="grid grid-cols-3 gap-2 items-baseline">
+                                <span className="col-span-1 text-[10px] uppercase font-bold text-slate-400 tracking-wider">Target</span>
+                                <span className="col-span-2 text-slate-700">{detailActivity.target}</span>
+                            </div>
+                            <div className="grid grid-cols-3 gap-2 items-baseline">
+                                <span className="col-span-1 text-[10px] uppercase font-bold text-slate-400 tracking-wider">Severity</span>
+                                <Badge variant="outline" className="col-span-2 w-fit text-[10px] uppercase font-bold">{detailActivity.severity}</Badge>
+                            </div>
+                            <div className="grid grid-cols-3 gap-2 items-baseline">
+                                <span className="col-span-1 text-[10px] uppercase font-bold text-slate-400 tracking-wider">Timestamp</span>
+                                <span className="col-span-2 text-slate-700">{detailActivity.timestamp}</span>
+                            </div>
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }

@@ -7,29 +7,29 @@ import {
     Search,
     Edit,
     Trash2,
-    Zap,
-    ChevronRight,
-    MoreVertical,
-    Settings2,
-    Lock,
-    ExternalLink,
     History,
+    Lock,
+    KeyRound,
     AlertTriangle,
-    RefreshCw
+    RefreshCw,
+    MoreVertical,
 } from "lucide-react"
 import Link from "next/link"
-import { CustomButton } from "@/components/custom/CustomButton"
-import SubHeader from "@/components/custom/SubHeader"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Button } from "@/shared/components/ui/button"
+import { Input } from "@/shared/components/ui/input"
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/shared/components/ui/dropdown-menu"
 import { toast } from "sonner"
 import { useParams, useRouter } from "next/navigation"
 import useRolesStore from "@/lib/roleStore"
 import { deleteRole, getAllRolesNPermissions } from "@/hooks/roleNPermissionHooks"
 import { decryptData } from "@/utils/crypto"
-import { Separator } from "@/components/ui/separator"
 
 export default function CustomRolesPage() {
     const params = useParams()
@@ -38,11 +38,11 @@ export default function CustomRolesPage() {
     const [orgName, setOrgName] = useState("")
     const [isLoading, setIsLoading] = useState(true)
 
-    const orgRoles = useRolesStore(state => state.roles?.organization) || []
+    const orgRoles = useRolesStore((state) => state.roles?.organization) || []
     const customRoles = useMemo(() => orgRoles.filter((r: any) => r.isCustom), [orgRoles])
 
     useEffect(() => {
-        const org = params.orgName as string || localStorage.getItem("orgName") || ""
+        const org = (params.orgName as string) || localStorage.getItem("orgName") || ""
         setOrgName(org)
         fetchData()
     }, [])
@@ -50,34 +50,42 @@ export default function CustomRolesPage() {
     const fetchData = async () => {
         setIsLoading(true)
         try {
-            const scopeParams = { scope: "sc-org" as const }
+            const orgId =
+                (typeof window !== "undefined" &&
+                    (localStorage.getItem("orgID") || localStorage.getItem("orgId"))) ||
+                ""
+            const scopeParams = {
+                scope: "sc-org" as const,
+                ...(orgId ? { orgId } : {}),
+            }
             const res = await getAllRolesNPermissions(scopeParams)
 
             if (res?.data?.permissions && res?.data?.iv) {
                 const decrypted = decryptData(res.data.permissions, res.data.iv)
-                useRolesStore.getState().setRoles(prev => ({
+                useRolesStore.getState().setRoles((prev) => ({
                     ...prev,
-                    organization: decrypted
+                    organization: decrypted,
                 }))
             }
         } catch (error) {
             console.error("Error fetching roles:", error)
-            toast.error("Failed to load custom extensions")
+            toast.error("Failed to load custom roles")
         } finally {
             setIsLoading(false)
         }
     }
 
-    const handleDelete = async (roleId: string) => {
+    const handleDelete = async (role: any) => {
+        if (!window.confirm(`Delete custom role "${role.name}"?`)) return
         try {
-            await deleteRole(roleId)
-            useRolesStore.getState().setRoles(prev => ({
+            await deleteRole(role._id)
+            useRolesStore.getState().setRoles((prev) => ({
                 ...prev,
-                organization: (prev.organization || []).filter((r: any) => r._id !== roleId)
+                organization: (prev.organization || []).filter((r: any) => r._id !== role._id),
             }))
-            toast.success("Custom identity extension removed")
+            toast.success("Custom role removed successfully")
         } catch (error) {
-            toast.error("Failed to release role")
+            toast.error("Failed to delete role")
         }
     }
 
@@ -87,225 +95,238 @@ export default function CustomRolesPage() {
             (role.description && role.description.toLowerCase().includes(searchQuery.toLowerCase()))
     )
 
-    if (isLoading && orgRoles.length === 0) {
-        return (
-            <div className="min-h-screen bg-[#F8F9FC] dark:bg-zinc-950 flex flex-col items-center justify-center space-y-4">
-                <RefreshCw className="w-10 h-10 text-emerald-600 animate-spin" />
-                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500 animate-pulse">Syncing Custom Extensions...</span>
-            </div>
-        )
-    }
+    const totalPermissions = useMemo(() => {
+        return customRoles.reduce((acc: number, role: any) => acc + (role.permissions || []).length, 0)
+    }, [customRoles])
 
     return (
-        <div className="relative min-h-screen bg-[#F8F9FC] dark:bg-zinc-950">
-            <SubHeader
-                title="Custom Roles"
-                breadcrumbItems={[
-                    { label: "Identity & Access", href: "#" },
-                    { label: "Access Management", href: "#" },
-                    { label: "Custom Roles", href: "#" }
-                ]}
-                rightControls={
-                    <div className="flex gap-2">
-                        <CustomButton
+        <div className="flex flex-col min-h-screen bg-transparent">
+            <div className="p-6 pb-0">
+                <div className="flex items-center justify-between mb-1">
+                    <div>
+                        <h1 className="text-2xl font-bold tracking-tight text-zinc-900">Custom Roles</h1>
+                        <p className="text-sm text-zinc-500 mt-1">
+                            Define organization-specific roles with fine-grained permission scopes.
+                        </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Button
                             onClick={fetchData}
+                            disabled={isLoading}
                             variant="outline"
-                            className="rounded-none h-10 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 font-bold"
+                            size="sm"
+                            className="rounded-none border-zinc-200 font-medium text-xs h-8 gap-1.5 px-4"
                         >
-                            <RefreshCw className={`w-3.5 h-3.5 mr-2 ${isLoading ? 'animate-spin' : ''}`} /> Sync Directory
-                        </CustomButton>
+                            <RefreshCw size={14} className={isLoading ? "animate-spin" : ""} />
+                            Refresh
+                        </Button>
                         <Link href={`/${orgName}/modules/administration/roles/create`}>
-                            <CustomButton className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-none h-10 px-6 font-bold shadow-xl border-0 uppercase text-[10px] tracking-widest">
-                                <Plus className="w-4 h-4 mr-2" /> Define Custom Role
-                            </CustomButton>
+                            <Button
+                                size="sm"
+                                className="rounded-none bg-primary hover:bg-primary/90 h-8 text-xs font-medium gap-2 px-5"
+                            >
+                                <Plus size={14} />
+                                Create Role
+                            </Button>
                         </Link>
                     </div>
-                }
-            />
+                </div>
+            </div>
 
-            <div className="p-4 md:p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <div className="flex-1 p-6 space-y-6">
+                {/* Stats Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="bg-gradient-to-br from-primary/80 to-primary p-6 rounded-none shadow-xl shadow-primary/20 text-white">
+                        <p className="text-white text-xs opacity-80">Custom Roles</p>
+                        <p className="text-white text-xl font-semibold mt-1">{customRoles.length}</p>
+                        <p className="text-white text-[10px] mt-1 opacity-70">Active in organization</p>
+                    </div>
 
-                {/* Custom Extensions HUD */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                    <Card className="bg-zinc-900 rounded-none p-10 text-white shadow-2xl relative overflow-hidden group col-span-1 md:col-span-2">
-                        <div className="relative z-10 space-y-6">
-                            <Badge className="bg-emerald-500 text-white rounded-none border-0 text-[10px] font-black px-2 tracking-widest">CUSTOM DIRECTORY</Badge>
-                            <h4 className="text-4xl font-black tracking-tighter italic uppercase text-white">Identity Extensions</h4>
-                            <p className="text-zinc-300 text-sm font-medium leading-relaxed max-w-sm italic opacity-90">
-                                Extend your organization's security baseline by defining granular roles for specific departmental needs.
-                            </p>
-                            <div className="flex items-center gap-10 pt-4">
-                                <div className="flex flex-col">
-                                    <span className="text-4xl font-black italic text-white uppercase">{customRoles.length}</span>
-                                    <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Active Roles</span>
-                                </div>
-                                <div className="h-10 w-px bg-zinc-800"></div>
-                                <div className="flex flex-col">
-                                    <span className="text-4xl font-black italic text-emerald-500">PRO</span>
-                                    <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Directory Tier</span>
-                                </div>
-                            </div>
-                        </div>
-                        <Zap className="absolute -bottom-10 -right-10 h-64 w-64 text-emerald-500 opacity-5 group-hover:scale-110 transition-transform" />
-                    </Card>
+                    <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
+                        <p className="text-zinc-500 text-xs">Total Permissions</p>
+                        <p className="text-xl font-semibold text-zinc-900 mt-1">{totalPermissions}</p>
+                        <p className="text-emerald-600 text-[10px] mt-1">Across all custom roles</p>
+                    </div>
 
-                    <Card className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-none shadow-sm flex flex-col justify-center p-8 space-y-4 border-b-4 border-b-indigo-500">
-                        <div className="h-10 w-10 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 flex items-center justify-center rounded-none">
-                            <History className="w-5 h-5" />
-                        </div>
-                        <div>
-                            <span className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">Compliance Check</span>
-                            <div className="text-2xl font-black text-zinc-900 dark:text-white uppercase tracking-tighter">Verified</div>
-                        </div>
-                    </Card>
+                    <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
+                        <p className="text-zinc-500 text-xs">Compliance Status</p>
+                        <p className="text-xl font-semibold text-zinc-900 mt-1">Verified</p>
+                        <p className="text-primary text-[10px] mt-1">Last checked today</p>
+                    </div>
 
-                    <Card className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-none shadow-sm flex flex-col justify-center p-8 space-y-4 border-b-4 border-b-blue-500">
-                        <div className="h-10 w-10 bg-blue-50 dark:bg-blue-900/20 text-blue-600 flex items-center justify-center rounded-none">
-                            <Lock className="w-5 h-5" />
-                        </div>
-                        <div>
-                            <span className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">Security Depth</span>
-                            <div className="text-2xl font-black text-zinc-900 dark:text-white tracking-tighter italic">GRANULAR</div>
-                        </div>
-                    </Card>
+                    <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
+                        <p className="text-zinc-500 text-xs">Security Depth</p>
+                        <p className="text-xl font-semibold text-zinc-900 mt-1">Granular</p>
+                        <p className="text-zinc-400 text-[10px] mt-1">Fine-grained access control</p>
+                    </div>
                 </div>
 
-                {/* Search & Filter Bar */}
-                <div className="flex items-center gap-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-2 rounded-none shadow-sm">
-                    <div className="relative flex-1">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
-                        <Input
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Find custom identity extensions by name, tag, or attribute..."
-                            className="pl-11 border-none focus-visible:ring-0 rounded-none h-12 bg-transparent font-bold italic"
-                        />
+                {/* Roles Table */}
+                <div className="bg-white border border-zinc-200 rounded-none shadow-lg overflow-hidden">
+                    <div className="p-4 border-b border-zinc-100 flex items-center justify-between bg-zinc-50/50">
+                        <div className="relative w-full md:w-96">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={16} />
+                            <Input
+                                placeholder="Search custom roles by name or description..."
+                                className="pl-10 rounded-none border-zinc-200 h-10 text-xs font-medium focus:ring-primary bg-white"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                        </div>
+                        <span className="text-[11px] font-medium text-zinc-500 bg-zinc-100 px-2 py-1 rounded-none">
+                            {filteredCustomRoles.length} roles
+                        </span>
                     </div>
-                    <Separator orientation="vertical" className="h-8 mx-2" />
-                    <CustomButton variant="ghost" className="rounded-none h-10 px-4 font-black text-[10px] uppercase tracking-widest text-zinc-500">
-                        <Settings2 className="w-4 h-4 mr-2" /> Policy Filters
-                    </CustomButton>
-                </div>
 
-                {/* Roles List */}
-                <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-none shadow-2xl overflow-hidden">
-                    <div className="p-6 border-b border-zinc-50 dark:border-zinc-800 flex justify-between items-center bg-zinc-50/30">
-                        <h4 className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500 italic">Connected Extensions</h4>
-                        <Badge className="bg-zinc-900 text-white rounded-none border-0 text-[10px] font-black px-4 py-1">READ-WRITE</Badge>
-                    </div>
                     <div className="overflow-x-auto">
-                        <Table>
-                            <TableHeader>
-                                <TableRow className="bg-zinc-50/50 dark:bg-zinc-900/50 border-b border-zinc-100 dark:border-zinc-800 hover:bg-transparent">
-                                    <TableHead className="p-6 text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">Extension Identity</TableHead>
-                                    <TableHead className="p-6 text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">Permissions Scope</TableHead>
-                                    <TableHead className="p-6 text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">System Status</TableHead>
-                                    <TableHead className="p-6 text-right"></TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody className="divide-y divide-zinc-50 dark:divide-zinc-800/50">
-                                {filteredCustomRoles.length === 0 ? (
-                                    <TableRow>
-                                        <TableCell colSpan={4} className="p-32 text-center space-y-6">
-                                            <div className="h-20 w-20 bg-zinc-50 dark:bg-zinc-800 flex items-center justify-center rounded-none mx-auto opacity-30 border-4 border-dashed border-zinc-200">
-                                                <AlertTriangle className="w-10 h-10" />
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="bg-zinc-100/50 border-b border-zinc-100">
+                                    <th className="px-6 py-3 text-[11px] font-medium text-gray-500">Role Name</th>
+                                    <th className="px-6 py-3 text-[11px] font-medium text-gray-500">Permissions</th>
+                                    <th className="px-6 py-3 text-[11px] font-medium text-gray-500">Status</th>
+                                    <th className="px-6 py-3 text-[11px] font-medium text-gray-500 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-zinc-100">
+                                {isLoading && customRoles.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={4} className="px-6 py-16 text-center">
+                                            <div className="flex flex-col items-center gap-3">
+                                                <RefreshCw className="w-6 h-6 text-primary animate-spin" />
+                                                <span className="text-xs text-zinc-500">Loading custom roles...</span>
                                             </div>
-                                            <div className="space-y-1">
-                                                <p className="text-xl font-black text-zinc-400 uppercase tracking-widest italic">Identity void detected</p>
-                                                <p className="text-xs text-zinc-400 font-medium italic">No custom extensions are currently mapped to this organization.</p>
+                                        </td>
+                                    </tr>
+                                ) : filteredCustomRoles.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={4} className="px-6 py-16 text-center">
+                                            <div className="flex flex-col items-center gap-3">
+                                                <div className="w-14 h-14 bg-zinc-50 flex items-center justify-center rounded-none">
+                                                    <AlertTriangle className="w-6 h-6 text-zinc-300" />
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-semibold text-zinc-500">No custom roles found</p>
+                                                    <p className="text-xs text-zinc-400 mt-1">Create a custom role to get started.</p>
+                                                </div>
+                                                <Link href={`/${orgName}/modules/administration/roles/create`}>
+                                                    <Button className="rounded-none bg-primary hover:bg-primary/90 text-xs font-medium h-8 gap-1.5 px-4 mt-2">
+                                                        <Plus size={14} />
+                                                        Create Custom Role
+                                                    </Button>
+                                                </Link>
                                             </div>
-                                            <Link href={`/${orgName}/modules/administration/roles/create`}>
-                                                <CustomButton className="bg-zinc-900 text-white rounded-none h-12 px-10 font-black uppercase text-[10px] tracking-widest shadow-xl">
-                                                    Initialize Custom Extension
-                                                </CustomButton>
-                                            </Link>
-                                        </TableCell>
-                                    </TableRow>
+                                        </td>
+                                    </tr>
                                 ) : (
                                     filteredCustomRoles.map((role: any) => (
-                                        <TableRow key={role._id} className="hover:bg-indigo-50/20 dark:hover:bg-indigo-900/10 transition-all group">
-                                            <TableCell className="p-6">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="h-12 w-12 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 flex items-center justify-center rounded-none border border-emerald-100 dark:border-emerald-800 font-black text-lg group-hover:bg-emerald-600 group-hover:text-white transition-all">
-                                                        {role.name ? role.name.charAt(0).toUpperCase() : 'C'}
+                                        <tr key={role._id} className="hover:bg-primary/5 transition-colors">
+                                            <td className="px-6 py-3">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-9 h-9 bg-primary/10 text-primary rounded-none flex items-center justify-center font-semibold text-sm">
+                                                        {role.name ? role.name.charAt(0).toUpperCase() : "C"}
                                                     </div>
                                                     <div className="flex flex-col">
-                                                        <span className="text-sm font-black text-zinc-900 dark:text-white tracking-tight uppercase italic">{role.name}</span>
-                                                        <span className="text-[9px] font-mono text-zinc-400 uppercase font-bold">DIRECTORY_ID: {role._id ? role._id.slice(-8).toUpperCase() : 'UNKNOWN'}</span>
+                                                        <span className="text-sm font-semibold text-gray-900">{role.name}</span>
+                                                        <span className="text-[10px] text-zinc-500 font-medium">
+                                                            ID: {role._id ? role._id.slice(-8) : "unknown"}
+                                                        </span>
                                                     </div>
                                                 </div>
-                                            </TableCell>
-                                            <TableCell className="p-6">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="flex -space-x-3">
+                                            </td>
+                                            <td className="px-6 py-3">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="flex -space-x-2">
                                                         {(role.permissions || []).slice(0, 3).map((p: any, idx: number) => (
-                                                            <div key={idx} className="h-10 w-10 bg-zinc-900 text-white border-2 border-white dark:border-zinc-900 flex items-center justify-center text-[10px] font-black uppercase shadow-lg">
-                                                                {p.module ? p.module.charAt(0).toUpperCase() : '?'}
+                                                            <div
+                                                                key={idx}
+                                                                className="h-7 w-7 bg-zinc-100 text-zinc-600 border-2 border-white flex items-center justify-center text-[10px] font-semibold rounded-none"
+                                                            >
+                                                                {p.module ? p.module.charAt(0).toUpperCase() : "?"}
                                                             </div>
                                                         ))}
                                                         {(role.permissions || []).length > 3 && (
-                                                            <div className="h-10 w-10 bg-emerald-500 text-white border-2 border-white flex items-center justify-center text-[10px] font-black shadow-lg">
+                                                            <div className="h-7 w-7 bg-primary/10 text-primary border-2 border-white flex items-center justify-center text-[10px] font-semibold rounded-none">
                                                                 +{(role.permissions || []).length - 3}
                                                             </div>
                                                         )}
                                                     </div>
                                                     <div className="flex flex-col">
-                                                        <span className="text-xs font-black text-zinc-800 dark:text-zinc-200">{(role.permissions || []).length} MODULES</span>
-                                                        <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">ACTIVE SCOPE</span>
+                                                        <span className="text-xs font-semibold text-zinc-700">
+                                                            {(role.permissions || []).length} modules
+                                                        </span>
+                                                        <span className="text-[10px] font-medium text-zinc-500">Active scope</span>
                                                     </div>
                                                 </div>
-                                            </TableCell>
-                                            <TableCell className="p-6">
-                                                <div className="flex items-center gap-2 border border-zinc-100 dark:border-zinc-800 px-3 py-1 bg-zinc-50/50 dark:bg-zinc-900/50 w-fit">
-                                                    <div className="h-1.5 w-1.5 rounded-none bg-emerald-500 animate-pulse"></div>
-                                                    <span className="text-[10px] font-black uppercase tracking-widest text-zinc-600 dark:text-zinc-400 italic">Live in Directory</span>
+                                            </td>
+                                            <td className="px-6 py-3">
+                                                <div className="inline-flex items-center gap-2 px-2 py-1 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-none">
+                                                    <div className="h-1.5 w-1.5 bg-emerald-500 rounded-none animate-pulse" />
+                                                    <span className="text-[10px] font-medium">Active</span>
                                                 </div>
-                                            </TableCell>
-                                            <TableCell className="p-6 text-right">
-                                                <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all scale-95 group-hover:scale-100">
-                                                    <Link href={`/${orgName}/modules/administration/roles/${role._id}/edit`}>
-                                                        <CustomButton variant="ghost" size="icon" className="h-11 w-11 text-zinc-400 hover:text-indigo-600 hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-none border border-transparent hover:border-zinc-200">
-                                                            <Edit className="w-5 h-5" />
-                                                        </CustomButton>
-                                                    </Link>
-                                                    <CustomButton
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        onClick={() => handleDelete(role._id)}
-                                                        className="h-11 w-11 text-zinc-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-none border border-transparent hover:border-red-100"
-                                                    >
-                                                        <Trash2 className="w-5 h-5" />
-                                                    </CustomButton>
-                                                    <CustomButton variant="ghost" size="icon" className="h-11 w-11 text-zinc-400 hover:text-zinc-600 rounded-none">
-                                                        <ExternalLink className="w-5 h-5" />
-                                                    </CustomButton>
-                                                </div>
-                                            </TableCell>
-                                        </TableRow>
+                                            </td>
+                                            <td className="px-6 py-3 text-right">
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button variant="ghost" className="h-8 w-8 p-0 rounded-none hover:bg-zinc-100 text-zinc-400 hover:text-zinc-900">
+                                                            <MoreVertical size={16} />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end" className="rounded-none border-zinc-200 shadow-lg p-2 min-w-[160px]">
+                                                        <DropdownMenuLabel className="text-[10px] font-medium text-gray-400 mb-1">Actions</DropdownMenuLabel>
+                                                        <DropdownMenuItem
+                                                            className="text-xs font-medium p-2 rounded-md cursor-pointer gap-2"
+                                                            onClick={() => router.push(`/${orgName}/modules/administration/roles/${role._id}/edit`)}
+                                                        >
+                                                            <Edit size={13} />
+                                                            Edit Role
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuSeparator className="my-1" />
+                                                        <DropdownMenuItem
+                                                            className="text-xs font-medium p-2 text-rose-600 rounded-md cursor-pointer gap-2"
+                                                            onClick={() => handleDelete(role)}
+                                                        >
+                                                            <Trash2 size={13} />
+                                                            Delete
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </td>
+                                        </tr>
                                     ))
                                 )}
-                            </TableBody>
-                        </Table>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div className="p-4 border-t border-zinc-100 bg-zinc-50/50">
+                        <p className="text-[11px] font-medium text-zinc-500">
+                            Showing <span className="text-zinc-900 font-semibold">{filteredCustomRoles.length}</span> of <span className="text-zinc-900 font-semibold">{customRoles.length} custom roles</span>
+                        </p>
                     </div>
                 </div>
 
-                {/* Documentation Banner */}
-                <div className="p-10 bg-zinc-950 text-white rounded-none flex flex-col md:flex-row items-center justify-between gap-10 relative overflow-hidden shadow-2xl">
-                    <Shield className="absolute -bottom-10 -left-10 h-64 w-64 opacity-5 pointer-events-none" />
-                    <div className="flex flex-col md:flex-row items-center gap-10 relative z-10">
-                        <div className="h-20 w-20 bg-zinc-900 border border-zinc-800 flex items-center justify-center rounded-none shadow-inner group">
-                            <Shield className="h-10 w-10 text-indigo-500 group-hover:scale-110 transition-transform" />
+                {/* Info banner */}
+                <div className="bg-white border border-gray-200 rounded-none p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="flex items-start gap-3">
+                        <div className="p-2 bg-primary/10 rounded-none">
+                            <Shield size={18} className="text-primary" />
                         </div>
-                        <div className="text-center md:text-left">
-                            <h5 className="text-3xl font-black tracking-tighter uppercase italic text-white">Directory Hardening</h5>
-                            <p className="text-zinc-300 text-sm font-medium mt-1 max-w-lg italic opacity-90 leading-relaxed">
-                                Custom roles are audited every 24 hours. Ensure you are following the <span className="text-white underline decoration-emerald-500/50">principle of least privilege</span> when defining new identity extensions.
+                        <div>
+                            <h3 className="text-sm font-semibold text-gray-900">Security best practices</h3>
+                            <p className="text-xs text-gray-600 mt-0.5 leading-relaxed">
+                                Custom roles are audited regularly. Follow the principle of least privilege when defining new roles.
                             </p>
                         </div>
                     </div>
-                    <CustomButton variant="outline" className="relative z-10 rounded-none border-zinc-700 bg-zinc-900 hover:bg-zinc-800 text-white font-black text-[10px] uppercase tracking-widest h-14 px-12 italic border-2">
-                        Read Security Protocol
-                    </CustomButton>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="rounded-none border-zinc-200 font-medium text-xs h-8 gap-1.5 px-4 shrink-0"
+                    >
+                        <KeyRound size={14} />
+                        Learn More
+                    </Button>
                 </div>
             </div>
         </div>

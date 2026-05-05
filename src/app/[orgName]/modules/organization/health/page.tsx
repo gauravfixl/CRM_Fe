@@ -11,7 +11,8 @@ import {
     AlertCircle,
     CheckCircle2
 } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { CustomButton } from "@/shared/components/custom/CustomButton"
+import { toast } from "sonner"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { SmallCard, SmallCardHeader, SmallCardContent } from "@/shared/components/custom/SmallCard"
@@ -27,64 +28,70 @@ export default function OrgHealthPage() {
     ]
 
     return (
-        <div className="flex flex-col h-full w-full bg-slate-50/50 p-6 space-y-6 overflow-y-auto">
+        <div className="flex flex-col h-full w-full bg-slate-50/50 p-6 space-y-8 overflow-y-auto font-sans">
             {/* HEADER */}
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight text-slate-900">Org Health & Usage</h1>
                     <p className="text-sm text-slate-500 mt-1">Real-time status of your organization's infrastructure and resources.</p>
                 </div>
-                <Button variant="outline" className="h-9 gap-2">
+                <CustomButton variant="outline" className="h-10 px-4 gap-2 rounded-xl border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 font-semibold shadow-sm hover:translate-y-[-1px] transition-all" onClick={() => toast.promise(new Promise(res => setTimeout(res, 1500)), { loading: "Refreshing system status...", success: "All systems operational", error: "Failed to refresh" })}>
                     <RefreshCw className="w-4 h-4" />
                     Refresh Status
-                </Button>
+                </CustomButton>
             </div>
 
             {/* KEY METRICS GRID */}
-            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-                <SmallCard className="p-0 bg-gradient-to-br from-blue-500 to-blue-700 border-none text-white shadow-[0_8px_30px_rgb(59,130,246,0.3)] hover:shadow-[0_20px_40px_rgba(37,99,235,0.4)] hover:-translate-y-1 transform transition-all duration-300">
-                    <SmallCardHeader className="flex flex-row items-center justify-between p-3 pb-0">
-                        <p className="text-[10px] text-white font-medium uppercase tracking-wider opacity-90">System Uptime</p>
-                        <Zap className="w-3.5 h-3.5 text-white/90" />
-                    </SmallCardHeader>
-                    <SmallCardContent className="p-3 pt-1">
-                        <p className="text-xl font-bold text-white drop-shadow-sm">99.99%</p>
-                        <p className="text-[9px] text-blue-100/80 mt-0.5">Last 30 days performance</p>
-                    </SmallCardContent>
-                </SmallCard>
-
-                <SmallCard className="p-0 bg-white shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.1)] hover:-translate-y-1 transform transition-all duration-300">
-                    <SmallCardHeader className="flex flex-row items-center justify-between p-3 pb-0">
-                        <p className="text-[10px] text-zinc-500 font-medium tracking-tight">API Traffic</p>
-                        <Activity className="w-3.5 h-3.5 text-blue-500" />
-                    </SmallCardHeader>
-                    <SmallCardContent className="p-3 pt-1">
-                        <p className="text-xl font-bold text-zinc-900">1.2M</p>
-                        <p className="text-[9px] text-zinc-400 mt-0.5">Requests per hour (Avg)</p>
-                    </SmallCardContent>
-                </SmallCard>
-
-                <SmallCard className="p-0 bg-white shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.1)] hover:-translate-y-1 transform transition-all duration-300">
-                    <SmallCardHeader className="flex flex-row items-center justify-between p-3 pb-0">
-                        <p className="text-[10px] text-zinc-500 font-medium tracking-tight">Data Usage</p>
-                        <Database className="w-3.5 h-3.5 text-emerald-500" />
-                    </SmallCardHeader>
-                    <SmallCardContent className="p-3 pt-1">
-                        <div className="flex items-end justify-between">
-                            <p className="text-xl font-bold text-zinc-900">74%</p>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <SmallCard className="border bg-gradient-to-r from-primary/70 to-primary text-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                    <SmallCardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-white text-xs opacity-80">System Uptime</p>
+                                <p className="text-white text-xl font-semibold mt-1">99.99%</p>
+                                <p className="text-white text-[10px] mt-1">Last 30 days performance</p>
+                            </div>
+                            <Zap className="w-5 h-5 text-white" />
                         </div>
-                        <Progress value={74} className="h-1 mt-1.5" />
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="p-0 bg-white shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.1)] hover:-translate-y-1 transform transition-all duration-300">
-                    <SmallCardHeader className="flex flex-row items-center justify-between p-3 pb-0">
-                        <p className="text-[10px] text-zinc-500 font-medium tracking-tight">Security Score</p>
-                        <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
-                    </SmallCardHeader>
-                    <SmallCardContent className="p-3 pt-1">
-                        <p className="text-xl font-bold text-zinc-900">A+</p>
-                        <p className="text-[9px] text-zinc-400 mt-0.5">All modules compliant</p>
+                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                    <SmallCardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-gray-600 text-xs">API Traffic</p>
+                                <p className="text-xl font-semibold text-gray-900 mt-1">1.2M</p>
+                                <p className="text-gray-600 text-[10px] mt-1">Requests per hour (Avg)</p>
+                            </div>
+                            <Activity className="w-5 h-5 text-primary" />
+                        </div>
+                    </SmallCardContent>
+                </SmallCard>
+
+                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                    <SmallCardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-gray-600 text-xs">Data Usage</p>
+                                <p className="text-xl font-semibold text-gray-900 mt-1">74%</p>
+                                <Progress value={74} className="h-1.5 mt-2 bg-slate-100" />
+                            </div>
+                            <Database className="w-5 h-5 text-primary" />
+                        </div>
+                    </SmallCardContent>
+                </SmallCard>
+
+                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                    <SmallCardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-gray-600 text-xs">Security Score</p>
+                                <p className="text-xl font-semibold text-gray-900 mt-1">A+</p>
+                                <p className="text-green-600 text-[10px] mt-1">All modules compliant</p>
+                            </div>
+                            <ShieldCheck className="w-5 h-5 text-primary" />
+                        </div>
                     </SmallCardContent>
                 </SmallCard>
             </div>

@@ -29,11 +29,78 @@ import { Progress } from "@/shared/components/ui/progress";
 import { useToast } from "@/shared/components/ui/use-toast";
 import { useOrganisationStore } from "@/shared/data/organisation-store";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 const OrganisationDashboard = () => {
     const { toast } = useToast();
+    const router = useRouter();
     const { employees, departments, designations, locations, getMetrics } = useOrganisationStore();
     const metrics = getMetrics();
+
+    const handleExportOrgReport = () => {
+        const headers = ["Name", "Employee Code", "Department", "Designation", "Location", "Status", "Join Date"];
+        const rows = employees.map(emp => {
+            const dept = departments.find(d => d.id === emp.departmentId);
+            const desig = designations.find(d => d.id === emp.designationId);
+            const loc = locations.find(l => l.id === emp.locationId);
+            return [
+                `${emp.firstName} ${emp.lastName}`,
+                emp.employeeCode,
+                dept?.name || "",
+                desig?.title || "",
+                loc?.name || "",
+                emp.status,
+                emp.dateOfJoining,
+            ];
+        });
+        const csvContent = [headers.join(","), ...rows.map(r => r.map(v => `"${v}"`).join(","))].join("\n");
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `org_report_${new Date().toISOString().split('T')[0]}.csv`;
+        link.click();
+        URL.revokeObjectURL(url);
+        toast({ title: "Report Exported", description: "Organisation report has been downloaded as CSV." });
+    };
+
+    const timeAgo = (dateStr: string) => {
+        if (!dateStr) return "—";
+        const then = new Date(dateStr).getTime();
+        const now = Date.now();
+        const diffMs = now - then;
+        const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        if (days < 0) return "upcoming";
+        if (days === 0) return "today";
+        if (days === 1) return "1 day ago";
+        if (days < 30) return `${days} days ago`;
+        const months = Math.floor(days / 30);
+        if (months === 1) return "1 month ago";
+        if (months < 12) return `${months} months ago`;
+        const years = Math.floor(days / 365);
+        return years === 1 ? "1 year ago" : `${years} years ago`;
+    };
+
+    const recentActivity = [
+        ...employees
+            .filter((e) => e.dateOfJoining)
+            .sort((a, b) => new Date(b.dateOfJoining).getTime() - new Date(a.dateOfJoining).getTime())
+            .slice(0, 2)
+            .map((e) => ({
+                action: `${e.firstName} ${e.lastName} joined ${departments.find((d) => d.id === e.departmentId)?.name || "the company"}`,
+                time: timeAgo(e.dateOfJoining),
+            })),
+        ...departments
+            .filter((d) => d.createdAt)
+            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+            .slice(0, 1)
+            .map((d) => ({ action: `Department "${d.name}" added to the org`, time: timeAgo(d.createdAt) })),
+        ...locations
+            .filter((l) => l.createdAt)
+            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+            .slice(0, 1)
+            .map((l) => ({ action: `Location "${l.name}" registered`, time: timeAgo(l.createdAt) })),
+    ].slice(0, 4);
 
     const quickStats = [
         {
@@ -161,7 +228,7 @@ const OrganisationDashboard = () => {
                         <Button
                             size="sm"
                             className="bg-indigo-600 hover:bg-slate-900 text-white rounded-xl h-9 px-5 font-bold shadow-xl shadow-indigo-100 transition-all gap-2 text-[10px]"
-                            onClick={() => toast({ title: "Generating Report", description: "The organizational summary is being compiled." })}
+                            onClick={handleExportOrgReport}
                         >
                             <BarChart3 size={14} /> Export Org Report
                         </Button>
@@ -329,7 +396,7 @@ const OrganisationDashboard = () => {
 
                                 <Button
                                     className="w-full bg-indigo-600 text-white hover:bg-slate-900 rounded-2xl h-11 font-bold text-xs shadow-xl shadow-indigo-100 transition-all font-medium"
-                                    onClick={() => toast({ title: "Opening Analytics", description: "Redirecting to detailed workforce insights." })}
+                                    onClick={() => router.push("/hrmcubicle/organization/employees")}
                                 >
                                     Detailed Analytics
                                 </Button>
@@ -371,18 +438,18 @@ const OrganisationDashboard = () => {
                                 <span className="font-bold text-slate-900 text-sm">Recent Activity</span>
                             </div>
                             <div className="space-y-3">
-                                {[
-                                    { action: "New employee onboarded", time: "2h ago" },
-                                    { action: "Department restructured", time: "5h ago" },
-                                    { action: "Location added", time: "1d ago" }
-                                ].map((activity, i) => (
-                                    <div key={i} className="flex gap-3 pl-2 border-l-2 border-indigo-200">
-                                        <div className="min-w-0">
-                                            <p className="text-xs font-bold text-slate-700 truncate">{activity.action}</p>
-                                            <p className="text-[10px] text-slate-400 font-bold">{activity.time}</p>
+                                {recentActivity.length === 0 ? (
+                                    <p className="text-[11px] font-medium text-slate-400 italic">No recent activity yet.</p>
+                                ) : (
+                                    recentActivity.map((activity, i) => (
+                                        <div key={i} className="flex gap-3 pl-2 border-l-2 border-indigo-200">
+                                            <div className="min-w-0">
+                                                <p className="text-xs font-bold text-slate-700 truncate">{activity.action}</p>
+                                                <p className="text-[10px] text-slate-400 font-bold">{activity.time}</p>
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    ))
+                                )}
                             </div>
                         </div>
                     </div>

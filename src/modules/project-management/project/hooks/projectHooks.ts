@@ -55,6 +55,7 @@ export const createProject = async (workspaceId: string, data: {
     templateId?: string;
     description?: string;
     visibility?: "public" | "private";
+    methodology?: "kanban" | "scrum";
 }) => {
     try {
         const response = await axios.post(`/project/create/${workspaceId}`, data);

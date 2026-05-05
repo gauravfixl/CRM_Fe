@@ -24,6 +24,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { useBrandingStore } from "../../../../../../lib/useBrandingStore";
 import { useTheme } from "next-themes";
+import { getOrgAdminSettings, updateOrgAdminSettings } from "@/hooks/orgAdminHooks";
 
 export default function ThemeSettingsPage() {
     const {
@@ -40,6 +41,7 @@ export default function ThemeSettingsPage() {
     const [borderRadius, setBorderRadius] = useState(storeBorderRadius);
     const [mode, setMode] = useState(storeThemeMode);
     const [mounted, setMounted] = useState(false);
+    const [saving, setSaving] = useState(false);
 
     useEffect(() => {
         setMounted(true);
@@ -51,14 +53,39 @@ export default function ThemeSettingsPage() {
         setMode(storeThemeMode)
     }, [storePrimaryColor, storeBorderRadius, storeThemeMode])
 
-    const handleSave = () => {
-        setBranding({
-            primaryColor,
-            borderRadius,
-            themeMode: mode as any
-        })
-        setTheme(mode)
-        toast.success("Theme configuration saved globally!")
+    useEffect(() => {
+        (async () => {
+            try {
+                const res = await getOrgAdminSettings()
+                const s = res?.data?.settings || res?.data?.data || res?.data || {}
+                const remoteColor = s?.branding?.primaryColor
+                if (remoteColor) {
+                    setPrimaryColor(remoteColor)
+                    setBranding({ primaryColor: remoteColor })
+                }
+            } catch (err) {
+                // Silent — fall back to Zustand store
+            }
+        })()
+    }, [setBranding])
+
+    const handleSave = async () => {
+        try {
+            setSaving(true)
+            await updateOrgAdminSettings({ branding: { primaryColor } })
+            setBranding({
+                primaryColor,
+                borderRadius,
+                themeMode: mode as any
+            })
+            setTheme(mode)
+            toast.success("Theme configuration saved globally!")
+        } catch (err: any) {
+            console.error("Failed to save theme:", err)
+            toast.error(err?.response?.data?.message || "Failed to save theme")
+        } finally {
+            setSaving(false)
+        }
     };
 
     const handleReset = () => {
@@ -71,29 +98,30 @@ export default function ThemeSettingsPage() {
     if (!mounted) return null;
 
     return (
-        <div className="flex flex-col h-full w-full bg-slate-50/50 p-6 space-y-6 overflow-y-auto pb-20">
+        <div className="flex flex-col h-full w-full bg-background p-6 space-y-6 overflow-y-auto pb-20">
             {/* HEADER */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight text-slate-900">Visual Theme & Style</h1>
-                    <p className="text-sm text-slate-500 mt-1">Manage the global colors, interface shapes and appearance mode.</p>
+                    <h1 className="text-2xl font-bold tracking-tight text-foreground">Visual Theme & Style</h1>
+                    <p className="text-sm text-muted-foreground mt-1">Manage the global colors, interface shapes and appearance mode.</p>
                 </div>
                 <div className="flex gap-3">
                     <Button
                         variant="outline"
-                        className="h-9 gap-2 border-slate-200 font-bold hover:bg-slate-100 transition-all active:scale-95"
+                        className="h-9 gap-2 border-border font-bold hover:bg-muted text-foreground transition-all active:scale-95 bg-card"
                         onClick={handleReset}
                     >
                         <RotateCcw className="w-4 h-4" />
                         Reset Defaults
                     </Button>
                     <Button
-                        className="h-9 bg-primary text-white gap-2 font-bold shadow-lg shadow-primary/20 transition-all hover:translate-y-[-1px] active:scale-95"
+                        className="h-9 bg-primary text-primary-foreground gap-2 font-bold shadow-lg shadow-primary/20 transition-all hover:translate-y-[-1px] active:scale-95"
                         onClick={handleSave}
+                        disabled={saving}
                         style={{ backgroundColor: primaryColor }}
                     >
                         <Save className="w-4 h-4" />
-                        Apply Theme
+                        {saving ? "Saving..." : "Apply Theme"}
                     </Button>
                 </div>
             </div>
@@ -101,16 +129,16 @@ export default function ThemeSettingsPage() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2 space-y-6">
                     {/* PRIMARY COLOR SELECTION */}
-                    <Card className="border-slate-200 shadow-sm overflow-hidden" style={{ borderRadius: `${borderRadius}rem` }}>
-                        <CardHeader className="bg-white border-b border-slate-100 pb-4">
-                            <CardTitle className="text-base font-bold">Color Palette</CardTitle>
-                            <CardDescription className="text-xs">Select your brand's primary color and theme presets.</CardDescription>
+                    <Card className="border-border shadow-sm overflow-hidden bg-card" style={{ borderRadius: `${borderRadius}rem` }}>
+                        <CardHeader className="bg-card border-b border-border pb-4">
+                            <CardTitle className="text-base font-bold text-foreground">Color Palette</CardTitle>
+                            <CardDescription className="text-xs text-muted-foreground">Select your brand's primary color and theme presets.</CardDescription>
                         </CardHeader>
                         <CardContent className="p-6 space-y-8">
                             <div className="space-y-4">
-                                <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">Pick Custom Color</Label>
+                                <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Pick Custom Color</Label>
                                 <div className="flex items-center gap-4">
-                                    <div className="h-14 w-14 border-2 border-slate-200 shadow-inner cursor-pointer overflow-hidden relative"
+                                    <div className="h-14 w-14 border-2 border-border shadow-inner cursor-pointer overflow-hidden relative"
                                         style={{ borderRadius: `${borderRadius}rem`, backgroundColor: primaryColor }}
                                     >
                                         <input
@@ -124,18 +152,18 @@ export default function ThemeSettingsPage() {
                                         <Input
                                             value={primaryColor}
                                             onChange={(e) => setPrimaryColor(e.target.value)}
-                                            className="font-mono text-lg uppercase font-bold h-12 border-slate-200"
+                                            className="font-mono text-lg uppercase font-bold h-12 border-border bg-background text-foreground"
                                             style={{ borderRadius: `${borderRadius}rem` }}
                                         />
-                                        <p className="text-[10px] text-slate-400 ml-1 font-bold">HEX CODE FOR SYSTEM BRANDING</p>
+                                        <p className="text-[10px] text-muted-foreground ml-1 font-bold">HEX CODE FOR SYSTEM BRANDING</p>
                                     </div>
                                 </div>
                             </div>
 
-                            <Separator />
+                            <Separator className="bg-border" />
 
                             <div className="space-y-4">
-                                <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">Theme Presets</Label>
+                                <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Theme Presets</Label>
                                 <div className="grid grid-cols-4 md:grid-cols-8 gap-3">
                                     {[
                                         { name: "Blue", color: "#2563eb" },
@@ -150,7 +178,7 @@ export default function ThemeSettingsPage() {
                                         <button
                                             key={preset.name}
                                             onClick={() => setPrimaryColor(preset.color)}
-                                            className={`group relative h-12 border-2 transition-all flex items-center justify-center ${primaryColor.toLowerCase() === preset.color.toLowerCase() ? "border-slate-900 scale-110 z-10 shadow-lg" : "border-transparent opacity-80 hover:opacity-100"}`}
+                                            className={`group relative h-12 border-2 transition-all flex items-center justify-center ${primaryColor.toLowerCase() === preset.color.toLowerCase() ? "border-foreground scale-110 z-10 shadow-lg" : "border-transparent opacity-80 hover:opacity-100"}`}
                                             title={preset.name}
                                             style={{ backgroundColor: preset.color, borderRadius: `${Number(borderRadius) * 0.5}rem` }}
                                         >
@@ -163,14 +191,14 @@ export default function ThemeSettingsPage() {
                     </Card>
 
                     {/* INTERFACE SHAPE / CORNER GEOMETRY */}
-                    <Card className="border-slate-200 shadow-sm overflow-hidden" style={{ borderRadius: `${borderRadius}rem` }}>
-                        <CardHeader className="bg-white border-b border-slate-100 pb-4">
-                            <CardTitle className="text-base font-bold">Corner Geometry (Radius)</CardTitle>
-                            <CardDescription className="text-xs">Manage how rounded or sharp your buttons and cards appear.</CardDescription>
+                    <Card className="border-border shadow-sm overflow-hidden bg-card" style={{ borderRadius: `${borderRadius}rem` }}>
+                        <CardHeader className="bg-card border-b border-border pb-4">
+                            <CardTitle className="text-base font-bold text-foreground">Corner Geometry (Radius)</CardTitle>
+                            <CardDescription className="text-xs text-muted-foreground">Manage how rounded or sharp your buttons and cards appear.</CardDescription>
                         </CardHeader>
                         <CardContent className="p-6 space-y-8">
                             <div className="space-y-4">
-                                <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">Geometry Presets</Label>
+                                <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Geometry Presets</Label>
                                 <div className="grid grid-cols-5 gap-3">
                                     {[
                                         { val: "0", label: "Sharp", class: "rounded-none" },
@@ -182,27 +210,27 @@ export default function ThemeSettingsPage() {
                                         <button
                                             key={rad.val}
                                             onClick={() => setBorderRadius(rad.val)}
-                                            className={`flex flex-col items-center gap-3 p-4 border-2 transition-all ${borderRadius === rad.val ? "border-primary bg-primary/5 shadow-sm" : "border-slate-100 hover:border-slate-300"}`}
+                                            className={`flex flex-col items-center gap-3 p-4 border-2 transition-all ${borderRadius === rad.val ? "border-primary bg-primary/5 shadow-sm" : "border-border hover:border-primary/30 bg-background"}`}
                                             style={{ borderRadius: `${rad.val}rem` }}
                                         >
-                                            <div className={`w-8 h-8 border-2 border-primary/40 ${rad.class}`}
+                                            <div className={`w-8 h-8 border-2 ${rad.class}`}
                                                 style={{ borderRadius: `${rad.val}rem`, borderColor: primaryColor + '44' }}
                                             />
-                                            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">{rad.label}</span>
+                                            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{rad.label}</span>
                                         </button>
                                     ))}
                                 </div>
                             </div>
 
-                            <Separator />
+                            <Separator className="bg-border" />
 
                             <div className="space-y-6">
                                 <div className="flex items-center justify-between">
-                                    <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">Custom Precise Radius</Label>
-                                    <Badge variant="outline" className="font-mono text-sm px-3 py-1 bg-slate-50 border-slate-200" style={{ borderRadius: `${borderRadius}rem` }}>{borderRadius}rem</Badge>
+                                    <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Custom Precise Radius</Label>
+                                    <Badge variant="outline" className="font-mono text-sm px-3 py-1 bg-muted border-border text-foreground" style={{ borderRadius: `${borderRadius}rem` }}>{borderRadius}rem</Badge>
                                 </div>
                                 <div className="space-y-4">
-                                    <div className="flex justify-between text-[10px] font-black uppercase text-slate-400">
+                                    <div className="flex justify-between text-[10px] font-black uppercase text-muted-foreground">
                                         <span>0rem (Sharp)</span>
                                         <span>2rem (Pill)</span>
                                     </div>
@@ -213,15 +241,15 @@ export default function ThemeSettingsPage() {
                                         step="0.05"
                                         value={borderRadius}
                                         onChange={(e) => setBorderRadius(e.target.value)}
-                                        className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-primary"
+                                        className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
                                         style={{ accentColor: primaryColor }}
                                     />
                                 </div>
                             </div>
 
-                            <div className="p-4 bg-slate-50 border border-slate-100 flex items-center gap-3" style={{ borderRadius: `${borderRadius}rem` }}>
+                            <div className="p-4 bg-muted/50 border border-border flex items-center gap-3" style={{ borderRadius: `${borderRadius}rem` }}>
                                 <div className="h-2 w-2 rounded-full animate-pulse" style={{ backgroundColor: primaryColor }} />
-                                <p className="text-[10px] font-bold text-slate-400 uppercase italic">Geometry changes will propagate to all UI modules instantly.</p>
+                                <p className="text-[10px] font-bold text-muted-foreground uppercase italic text-center w-full">Geometry changes will propagate to all UI modules instantly.</p>
                             </div>
                         </CardContent>
                     </Card>
@@ -230,10 +258,10 @@ export default function ThemeSettingsPage() {
                 {/* SIDEBAR CONFIG */}
                 <div className="space-y-6">
                     {/* APPEARANCE MODE */}
-                    <Card className="border-slate-200 shadow-sm overflow-hidden" style={{ borderRadius: `${borderRadius}rem` }}>
-                        <CardHeader className="bg-white border-b border-slate-100 pb-4">
-                            <CardTitle className="text-base font-bold">Appearance</CardTitle>
-                            <CardDescription className="text-xs">Default system mode for new users.</CardDescription>
+                    <Card className="border-border shadow-sm overflow-hidden bg-card" style={{ borderRadius: `${borderRadius}rem` }}>
+                        <CardHeader className="bg-card border-b border-border pb-4">
+                            <CardTitle className="text-base font-bold text-foreground">Appearance</CardTitle>
+                            <CardDescription className="text-xs text-muted-foreground">Default system mode for new users.</CardDescription>
                         </CardHeader>
                         <CardContent className="p-6 space-y-3">
                             {[
@@ -244,14 +272,14 @@ export default function ThemeSettingsPage() {
                                 <button
                                     key={m.id}
                                     onClick={() => setMode(m.id as any)}
-                                    className={`w-full flex items-center justify-between p-4 border transition-all ${mode === m.id ? "border-primary bg-primary/5" : "border-slate-100 hover:border-slate-200"}`}
+                                    className={`w-full flex items-center justify-between p-4 border transition-all ${mode === m.id ? "border-primary bg-primary/5" : "border-border hover:border-primary/20 bg-background"}`}
                                     style={{ borderRadius: `${borderRadius}rem` }}
                                 >
                                     <div className="flex items-center gap-3">
-                                        <div className={`p-2 bg-slate-100 rounded-lg ${m.color}`}>
+                                        <div className={`p-2 bg-muted rounded-lg ${m.color}`}>
                                             <m.icon className="w-4 h-4" />
                                         </div>
-                                        <span className="text-sm font-bold text-slate-700">{m.label}</span>
+                                        <span className="text-sm font-bold text-foreground">{m.label}</span>
                                     </div>
                                     {mode === m.id && <Check className="w-4 h-4 text-primary" />}
                                 </button>
@@ -260,9 +288,9 @@ export default function ThemeSettingsPage() {
                     </Card>
 
                     {/* LIVE PREVIEW MINI */}
-                    <Card className="border-none shadow-xl bg-slate-900 text-white overflow-hidden relative" style={{ borderRadius: `${borderRadius}rem` }}>
+                    <Card className="border-none shadow-xl bg-zinc-900 text-white overflow-hidden relative" style={{ borderRadius: `${borderRadius}rem` }}>
                         <div className="absolute top-0 right-0 p-8 opacity-10">
-                            <Smartphone className="w-24 h-24" />
+                            <Smartphone className="w-24 h-24 text-white" />
                         </div>
                         <CardHeader className="pb-2">
                             <CardTitle className="text-sm font-bold flex items-center gap-2">
@@ -275,21 +303,22 @@ export default function ThemeSettingsPage() {
                                 <div className="h-3 w-1/2 bg-white/5 rounded" />
                             </div>
                             <Button
-                                className="w-full font-bold h-10 shadow-lg"
+                                className="w-full font-bold h-10 shadow-lg text-white"
                                 style={{ backgroundColor: primaryColor, borderRadius: `${borderRadius}rem` }}
+                                onClick={() => toast.success("This is how your primary buttons will feel!")}
                             >
                                 Preview Button
                             </Button>
                             <Input
                                 placeholder="Input radius test"
-                                className="bg-white/5 border-white/10 h-10 text-xs text-white"
+                                className="bg-white/5 border-white/10 h-10 text-xs text-white placeholder:text-white/30"
                                 style={{ borderRadius: `${borderRadius}rem` }}
                             />
                         </CardContent>
                     </Card>
 
                     <Card className="border-none shadow-md bg-gradient-to-br from-indigo-600 to-blue-700 text-white overflow-hidden relative" style={{ borderRadius: `${borderRadius}rem` }}>
-                        <div className="absolute top-0 right-0 p-4 opacity-10">
+                        <div className="absolute top-0 right-0 p-4 opacity-10 text-white">
                             <Shield className="w-20 h-20" />
                         </div>
                         <CardHeader>

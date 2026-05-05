@@ -9,20 +9,14 @@ import {
     MoreVertical,
     Edit,
     Trash2,
-    AlertTriangle,
-    ChevronRight
+    ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/shared/components/ui/switch";
 import { Progress } from "@/shared/components/ui/progress";
-import {
-    Dialog,
-    DialogContent,
-    DialogFooter,
-} from "@/shared/components/ui/dialog";
-import { Label } from "@/shared/components/ui/label";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -38,6 +32,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/shared/components/ui/select";
+import { toast } from "sonner";
 
 export default function LimitsQuotasPage() {
     const [showCreateModal, setShowCreateModal] = useState(false);
@@ -47,6 +42,52 @@ export default function LimitsQuotasPage() {
         { id: "3", name: "Workflow Executions", type: "Automation", limit: 10000, used: 8950, unit: "runs/month", status: "Active" },
         { id: "4", name: "Data Export Limit", type: "Data", limit: 50, used: 12, unit: "exports/day", status: "Active" },
     ]);
+
+    const [form, setForm] = useState({ name: "", type: "", limit: "", unit: "", alertThreshold: "80" });
+    const [errors, setErrors] = useState<Record<string, string>>({});
+    const [saving, setSaving] = useState(false);
+
+    const resetForm = () => {
+        setForm({ name: "", type: "", limit: "", unit: "", alertThreshold: "80" });
+        setErrors({});
+    };
+
+    const validate = () => {
+        const next: Record<string, string> = {};
+        if (!form.name.trim()) next.name = "Quota name is required";
+        if (!form.type) next.type = "Choose a type";
+        const limitNum = Number(form.limit);
+        if (!form.limit.trim() || Number.isNaN(limitNum) || limitNum <= 0) next.limit = "Enter a positive number";
+        if (!form.unit.trim()) next.unit = "Specify the unit (e.g., emails/day)";
+        const threshold = Number(form.alertThreshold);
+        if (form.alertThreshold && (Number.isNaN(threshold) || threshold < 1 || threshold > 100)) next.alertThreshold = "Threshold must be 1–100";
+        setErrors(next);
+        return Object.keys(next).length === 0;
+    };
+
+    const handleCreate = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!validate()) return;
+        setSaving(true);
+        setTimeout(() => {
+            setQuotas(prev => [
+                ...prev,
+                {
+                    id: String(Date.now()),
+                    name: form.name.trim(),
+                    type: form.type,
+                    limit: Number(form.limit),
+                    used: 0,
+                    unit: form.unit.trim(),
+                    status: "Active",
+                },
+            ]);
+            toast.success("Quota added");
+            setSaving(false);
+            setShowCreateModal(false);
+            resetForm();
+        }, 600);
+    };
 
     const toggleStatus = (id: string) => {
         setQuotas(prev => prev.map(q =>
@@ -216,54 +257,88 @@ export default function LimitsQuotasPage() {
                 </div>
             </div>
 
-            {/* Create Modal */}
-            <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
-                <DialogContent className="max-w-2xl rounded-none p-0 overflow-hidden shadow-2xl border-none">
-                    <div className="bg-gradient-to-r from-amber-600 to-orange-700 p-8 text-white relative">
-                        <div className="absolute top-0 right-0 p-4 opacity-10">
-                            <Gauge size={80} />
-                        </div>
-                        <h2 className="text-2xl font-bold flex items-center gap-3">
-                            <Plus size={24} /> Add Quota Limit
-                        </h2>
-                        <p className="text-sm opacity-80 mt-2">Define resource usage limits for your organization.</p>
+            {/* Add Quota — side sheet */}
+            <SideFormSheet
+                open={showCreateModal}
+                onOpenChange={(o) => {
+                    setShowCreateModal(o);
+                    if (!o) resetForm();
+                }}
+                title="Add Quota Limit"
+                description="Define resource usage limits for your organization."
+                icon={<Gauge className="w-5 h-5" />}
+                accentColor="#D97706"
+                width="lg"
+                loading={saving}
+                onSubmit={handleCreate}
+                submitLabel="Add Quota"
+            >
+                <div className="space-y-5">
+                    <Field label="Quota Name" required error={errors.name}>
+                        <Input
+                            placeholder="e.g., Daily Email Limit"
+                            value={form.name}
+                            onChange={(e) => setForm(p => ({ ...p, name: e.target.value }))}
+                            className="h-11 rounded-lg bg-white border-slate-200 focus:border-primary"
+                            maxLength={80}
+                        />
+                    </Field>
+
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Type" required error={errors.type}>
+                            <Select
+                                value={form.type}
+                                onValueChange={(v) => setForm(p => ({ ...p, type: v }))}
+                            >
+                                <SelectTrigger className="h-11 rounded-lg border-slate-200">
+                                    <SelectValue placeholder="Select type" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Communication">Communication</SelectItem>
+                                    <SelectItem value="Integration">Integration</SelectItem>
+                                    <SelectItem value="Automation">Automation</SelectItem>
+                                    <SelectItem value="Data">Data</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <Field label="Limit Value" required error={errors.limit}>
+                            <Input
+                                type="number"
+                                inputMode="numeric"
+                                placeholder="e.g., 1000"
+                                value={form.limit}
+                                onChange={(e) => setForm(p => ({ ...p, limit: e.target.value }))}
+                                className="h-11 rounded-lg bg-white border-slate-200 focus:border-primary"
+                                min={1}
+                            />
+                        </Field>
                     </div>
-                    <div className="p-8 space-y-6 bg-white">
-                        <div className="space-y-3">
-                            <Label className="text-xs font-bold text-gray-600">Quota Name</Label>
-                            <Input placeholder="e.g., Daily Email Limit" className="rounded-none border-zinc-200 h-12 text-sm" />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-3">
-                                <Label className="text-xs font-bold text-gray-600">Type</Label>
-                                <Select>
-                                    <SelectTrigger className="rounded-none border-zinc-200 h-12">
-                                        <SelectValue placeholder="Select type" />
-                                    </SelectTrigger>
-                                    <SelectContent className="rounded-none">
-                                        <SelectItem value="comm">Communication</SelectItem>
-                                        <SelectItem value="integration">Integration</SelectItem>
-                                        <SelectItem value="automation">Automation</SelectItem>
-                                        <SelectItem value="data">Data</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-3">
-                                <Label className="text-xs font-bold text-gray-600">Limit Value</Label>
-                                <Input type="number" placeholder="e.g., 1000" className="rounded-none border-zinc-200 h-12 text-sm" />
-                            </div>
-                        </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Unit" required error={errors.unit} hint="e.g., emails/day, calls/hour">
+                            <Input
+                                placeholder="emails/day"
+                                value={form.unit}
+                                onChange={(e) => setForm(p => ({ ...p, unit: e.target.value }))}
+                                className="h-11 rounded-lg bg-white border-slate-200 focus:border-primary"
+                                maxLength={32}
+                            />
+                        </Field>
+                        <Field label="Alert Threshold (%)" error={errors.alertThreshold} hint="Notify when usage crosses this %.">
+                            <Input
+                                type="number"
+                                inputMode="numeric"
+                                placeholder="80"
+                                value={form.alertThreshold}
+                                onChange={(e) => setForm(p => ({ ...p, alertThreshold: e.target.value }))}
+                                className="h-11 rounded-lg bg-white border-slate-200 focus:border-primary"
+                                min={1}
+                                max={100}
+                            />
+                        </Field>
                     </div>
-                    <DialogFooter className="p-8 bg-zinc-50 border-t border-zinc-100 gap-4 sm:justify-end">
-                        <Button variant="ghost" onClick={() => setShowCreateModal(false)} className="rounded-none text-sm text-gray-600">
-                            Cancel
-                        </Button>
-                        <Button className="bg-amber-600 hover:bg-amber-700 rounded-none text-sm px-10 h-12 shadow-xl shadow-amber-100">
-                            Add Quota
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                </div>
+            </SideFormSheet>
         </div>
     );
 }

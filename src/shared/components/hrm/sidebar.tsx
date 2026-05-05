@@ -41,6 +41,7 @@ import {
     CollapsibleTrigger,
 } from "@/components/ui/collapsible"
 import { ChevronRight } from "lucide-react"
+import { useRoleAccess } from "@/shared/hooks/use-role-access"
 
 // Exact Keka-style Navigation Data based on Document Analysis
 // using Colorful Icons (Emojis) to match the "colorful" requirement
@@ -56,13 +57,56 @@ const hrmNavigation = [
         url: "#",
         icon: <span className="text-xl">👤</span>,
         items: [
-            { title: "My Profile", url: "/hrmcubicle/me", icon: <span className="text-lg">🆔</span> },
-            { title: "My Attendance", url: "/hrmcubicle/attendance", icon: <span className="text-lg">📅</span> },
-            { title: "My Leave", url: "/hrmcubicle/leave", icon: <span className="text-lg">🌴</span> },
-            { title: "My Finances", url: "/hrmcubicle/my-finances", icon: <span className="text-lg">💰</span> },
-            { title: "My Performance", url: "/hrmcubicle/performance", icon: <span className="text-lg">📈</span> },
-            { title: "My Documents", url: "/hrmcubicle/me/documents", icon: <span className="text-lg">📂</span> },
-            { title: "My Assets", url: "/hrmcubicle/me/assets", icon: <span className="text-lg">💻</span> },
+            {
+                title: "My Identity",
+                url: "#",
+                icon: <span className="text-lg">🪪</span>,
+                items: [
+                    { title: "My Profile", url: "/hrmcubicle/me", icon: <span className="text-base">🆔</span> },
+                    { title: "My Documents", url: "/hrmcubicle/me/documents", icon: <span className="text-base">📂</span> },
+                    { title: "My Assets", url: "/hrmcubicle/me/assets", icon: <span className="text-base">💻</span> },
+                ]
+            },
+            {
+                title: "My Time",
+                url: "#",
+                icon: <span className="text-lg">⏱️</span>,
+                items: [
+                    { title: "My Attendance", url: "/hrmcubicle/attendance", icon: <span className="text-base">📅</span> },
+                    { title: "My Leave", url: "/hrmcubicle/leave", icon: <span className="text-base">🌴</span> },
+                    { title: "My Holidays", url: "/hrmcubicle/me/holidays", icon: <span className="text-base">🎉</span> },
+                ]
+            },
+            {
+                title: "My Finance",
+                url: "#",
+                icon: <span className="text-lg">💰</span>,
+                items: [
+                    { title: "My Payslips", url: "/hrmcubicle/me/payslips", icon: <span className="text-base">🧾</span> },
+                    { title: "My Finances", url: "/hrmcubicle/my-finances", icon: <span className="text-base">💵</span> },
+                    { title: "My Expenses", url: "/hrmcubicle/me/expenses", icon: <span className="text-base">💳</span> },
+                    { title: "My Tax", url: "/hrmcubicle/me/tax", icon: <span className="text-base">📑</span> },
+                ]
+            },
+            {
+                title: "My Growth",
+                url: "#",
+                icon: <span className="text-lg">📈</span>,
+                items: [
+                    { title: "My Performance", url: "/hrmcubicle/performance", icon: <span className="text-base">📊</span> },
+                    { title: "My Goals", url: "/hrmcubicle/me/goals", icon: <span className="text-base">🎯</span> },
+                    { title: "My Training", url: "/hrmcubicle/me/training", icon: <span className="text-base">📚</span> },
+                ]
+            },
+            {
+                title: "My Support",
+                url: "#",
+                icon: <span className="text-lg">🎧</span>,
+                items: [
+                    { title: "My Helpdesk", url: "/hrmcubicle/me/helpdesk", icon: <span className="text-base">🎫</span> },
+                    { title: "My Announcements", url: "/hrmcubicle/me/announcements", icon: <span className="text-base">📢</span> },
+                ]
+            },
         ]
     },
     {
@@ -117,21 +161,6 @@ const hrmNavigation = [
                 url: "/hrmcubicle/my-team/calendar",
                 icon: <span className="text-lg">🗓️</span>
             },
-            {
-                title: "On/Offboarding",
-                url: "/hrmcubicle/my-team/lifecycle",
-                icon: <span className="text-lg">🚀</span>
-            },
-            {
-                title: "Team Documents",
-                url: "/hrmcubicle/my-team/documents",
-                icon: <span className="text-lg">📂</span>
-            },
-            {
-                title: "Team Reports",
-                url: "/hrmcubicle/my-team/reports",
-                icon: <span className="text-lg">📑</span>
-            },
         ]
     },
     {
@@ -161,6 +190,10 @@ const hrmNavigation = [
             { title: "Interviews", url: "/hrmcubicle/hire/interviews", icon: <span className="text-lg">🤝</span> },
             { title: "Offer Letters", url: "/hrmcubicle/hire/offers", icon: <span className="text-lg">✉️</span> },
             { title: "Hiring Reports", url: "/hrmcubicle/hire/reports", icon: <span className="text-lg">📑</span> },
+            { title: "Career Page", url: "/hrmcubicle/hire/career-page", icon: <span className="text-lg">🌐</span> },
+            { title: "Referrals", url: "/hrmcubicle/hire/referrals", icon: <span className="text-lg">🤝</span> },
+            { title: "Resume Parser", url: "/hrmcubicle/hire/resume-parser", icon: <span className="text-lg">📄</span> },
+            { title: "Scorecards", url: "/hrmcubicle/hire/scorecards", icon: <span className="text-lg">📋</span> },
         ]
     },
     {
@@ -192,6 +225,7 @@ const hrmNavigation = [
             { title: "Leave", url: "/hrmcubicle/timeattend/leave", icon: <span className="text-lg">🌴</span> },
             { title: "Shift Allowance", url: "/hrmcubicle/timeattend/allowance", icon: <span className="text-lg">💵</span> },
             { title: "Approvals", url: "/hrmcubicle/timeattend/approvals", icon: <span className="text-lg">✔️</span> },
+            { title: "Comp-Off", url: "/hrmcubicle/timeattend/comp-off", icon: <span className="text-lg">🔄</span> },
             { title: "Reports", url: "/hrmcubicle/timeattend/reports", icon: <span className="text-lg">📊</span> },
             { title: "Settings", url: "/hrmcubicle/timeattend/settings", icon: <span className="text-lg">⚙️</span> },
         ]
@@ -209,6 +243,11 @@ const hrmNavigation = [
             { title: "Proof Submission", url: "/hrmcubicle/payroll/proof-submission", icon: <span className="text-lg">📤</span> },
             { title: "Payroll Reports", url: "/hrmcubicle/payroll/payroll-reports", icon: <span className="text-lg">📊</span> },
             { title: "Payroll Settings", url: "/hrmcubicle/payroll/payroll-settings", icon: <span className="text-lg">⚙️</span> },
+            { title: "Salary Structure", url: "/hrmcubicle/payroll/salary-structure", icon: <span className="text-lg">🏗️</span> },
+            { title: "Statutory Compliance", url: "/hrmcubicle/payroll/statutory", icon: <span className="text-lg">🏛️</span> },
+            { title: "Loans & Advances", url: "/hrmcubicle/payroll/loans", icon: <span className="text-lg">🏦</span> },
+            { title: "Salary Revision", url: "/hrmcubicle/payroll/salary-revision", icon: <span className="text-lg">📊</span> },
+            { title: "Multi-Entity", url: "/hrmcubicle/payroll/multi-entity", icon: <span className="text-lg">🏢</span> },
         ]
     },
     {
@@ -221,6 +260,9 @@ const hrmNavigation = [
             { title: "Reviews", url: "/hrmcubicle/performance/reviews", icon: <span className="text-lg">⭐</span> },
             { title: "Feedback", url: "/hrmcubicle/performance/feedback", icon: <span className="text-lg">💬</span> },
             { title: "Performance Reports", url: "/hrmcubicle/performance/reports", icon: <span className="text-lg">📈</span> },
+            { title: "Calibration", url: "/hrmcubicle/performance/calibration", icon: <span className="text-lg">📐</span> },
+            { title: "PIP Tracking", url: "/hrmcubicle/performance/pip", icon: <span className="text-lg">📉</span> },
+            { title: "Compensation Review", url: "/hrmcubicle/performance/compensation", icon: <span className="text-lg">💵</span> },
         ]
     },
     {
@@ -233,6 +275,8 @@ const hrmNavigation = [
             { title: "Letters", url: "/hrmcubicle/documents/letters", icon: <span className="text-lg">✉️</span> },
             { title: "Templates", url: "/hrmcubicle/documents/templates", icon: <span className="text-lg">📝</span> },
             { title: "Acknowledgements", url: "/hrmcubicle/documents/acknowledgements", icon: <span className="text-lg">✅</span> },
+            { title: "E-Signatures", url: "/hrmcubicle/documents/e-signatures", icon: <span className="text-lg">✍️</span> },
+            { title: "Bulk Letters", url: "/hrmcubicle/documents/bulk-letters", icon: <span className="text-lg">📮</span> },
         ]
     },
     {
@@ -245,6 +289,8 @@ const hrmNavigation = [
             { title: "Employee Feedback", url: "/hrmcubicle/engage/feedback", icon: <span className="text-lg">💭</span> },
             { title: "Rewards & Recognition", url: "/hrmcubicle/engage/rewards", icon: <span className="text-lg">🏆</span> },
             { title: "Events", url: "/hrmcubicle/engage/events", icon: <span className="text-lg">🎉</span> },
+            { title: "Celebrations", url: "/hrmcubicle/engage/celebrations", icon: <span className="text-lg">🎂</span> },
+            { title: "Social Feed", url: "/hrmcubicle/engage/social-feed", icon: <span className="text-lg">💬</span> },
         ]
     },
     {
@@ -262,7 +308,37 @@ const hrmNavigation = [
         ]
     },
     {
-        title: "Admin",
+        title: "Expenses",
+        url: "#",
+        icon: <span className="text-xl">💳</span>,
+        items: [
+            { title: "Dashboard", url: "/hrmcubicle/expenses", icon: <span className="text-lg">📊</span> },
+            { title: "My Claims", url: "/hrmcubicle/expenses/claims", icon: <span className="text-lg">🧾</span> },
+            { title: "Travel", url: "/hrmcubicle/expenses/travel", icon: <span className="text-lg">✈️</span> },
+            { title: "Approvals", url: "/hrmcubicle/expenses/approvals", icon: <span className="text-lg">✅</span> },
+            { title: "Reports", url: "/hrmcubicle/expenses/reports", icon: <span className="text-lg">📑</span> },
+            { title: "Settings", url: "/hrmcubicle/expenses/settings", icon: <span className="text-lg">⚙️</span> },
+        ]
+    },
+    {
+        title: "Timesheets",
+        url: "/hrmcubicle/timesheets",
+        icon: <span className="text-xl">⏰</span>,
+        items: []
+    },
+    {
+        title: "Reports Hub",
+        url: "#",
+        icon: <span className="text-xl">📊</span>,
+        items: [
+            { title: "Dashboard", url: "/hrmcubicle/reports", icon: <span className="text-lg">📈</span> },
+            { title: "Report Builder", url: "/hrmcubicle/reports/builder", icon: <span className="text-lg">🔧</span> },
+            { title: "Scheduled", url: "/hrmcubicle/reports/scheduled", icon: <span className="text-lg">📅</span> },
+            { title: "Templates", url: "/hrmcubicle/reports/templates", icon: <span className="text-lg">📋</span> },
+        ]
+    },
+    {
+        title: "Settings",
         url: "#",
         icon: <span className="text-xl">⚙️</span>,
         items: [
@@ -273,26 +349,43 @@ const hrmNavigation = [
             { title: "Payroll Settings", url: "/hrmcubicle/admin/payroll", icon: <span className="text-lg">💰</span> },
             { title: "Integrations", url: "/hrmcubicle/admin/integrations", icon: <span className="text-lg">🔌</span> },
             { title: "Audit Logs", url: "/hrmcubicle/admin/audit", icon: <span className="text-lg">📝</span> },
+            { title: "Delegation", url: "/hrmcubicle/admin/delegation", icon: <span className="text-lg">🔀</span> },
+            { title: "Escalation Rules", url: "/hrmcubicle/admin/escalation", icon: <span className="text-lg">⬆️</span> },
         ]
     },
 ]
 
 function SidebarComponent({ ...props }: React.ComponentProps<typeof ShadcnSidebar>) {
     const pathname = usePathname()
+    const { filterModuleSidebar } = useRoleAccess()
+
+    // Filter navigation based on OrgAdmin role permissions
+    const filteredNavigation = useMemo(() => {
+        return filterModuleSidebar(hrmNavigation, "hrm")
+    }, [filterModuleSidebar])
+
+    // Recursively check if any descendant url matches current pathname
+    const isBranchActive = (node: any): boolean => {
+        if (node?.url && node.url !== "#" && pathname === node.url) return true;
+        if (Array.isArray(node?.items) && node.items.length > 0) {
+            return node.items.some((child: any) => isBranchActive(child));
+        }
+        return false;
+    };
 
     // Precalculate active states to avoid multiple scans during render
     const navWithActive = useMemo(() => {
-        return hrmNavigation.map(item => ({
+        return filteredNavigation.map(item => ({
             ...item,
-            isActive: pathname === item.url || (item.items.length > 0 && item.items.some(sub => pathname === sub.url))
+            isActive: isBranchActive(item)
         }));
-    }, [pathname]);
+    }, [pathname, filteredNavigation]);
 
     return (
         <ShadcnSidebar collapsible="icon" className="top-[63px] h-[calc(100vh-63px)] border-r bg-white" {...props}>
-            <SidebarContent className="py-2">
+            <SidebarContent className="py-2 text-[13px]">
                 <SidebarGroup>
-                    <SidebarMenu className="gap-2">
+                    <SidebarMenu className="gap-1">
                         {navWithActive.map((item) => {
                             const isActive = item.isActive;
                             const hasSubMenu = item.items.length > 0;
@@ -307,24 +400,66 @@ function SidebarComponent({ ...props }: React.ComponentProps<typeof ShadcnSideba
                                     >
                                         <SidebarMenuItem>
                                             <CollapsibleTrigger asChild>
-                                                <SidebarMenuButton tooltip={item.title} isActive={isActive} className="font-medium text-slate-600 h-10 hover:bg-slate-100 group-data-[collapsible=icon]:justify-center">
-                                                    <span className="flex items-center justify-center shrink-0">{item.icon}</span>
-                                                    <span className="ml-1.5 truncate group-data-[collapsible=icon]:hidden" title={item.title}>{item.title}</span>
-                                                    <ChevronRight className="ml-auto w-3.5 h-3.5 text-slate-400 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90 group-data-[collapsible=icon]:hidden" />
+                                                <SidebarMenuButton tooltip={item.title} isActive={isActive} className="font-medium text-slate-600 h-9 text-[13px] hover:bg-slate-100 group-data-[collapsible=icon]:justify-center">
+                                                    <span className="flex items-center justify-center shrink-0 text-[16px]">{item.icon}</span>
+                                                    <span className="ml-1 truncate group-data-[collapsible=icon]:hidden" title={item.title}>{item.title}</span>
+                                                    <ChevronRight className="ml-auto w-3 h-3 text-slate-400 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90 group-data-[collapsible=icon]:hidden" />
                                                 </SidebarMenuButton>
                                             </CollapsibleTrigger>
                                             <CollapsibleContent className="transition-all duration-300 ease-in-out">
                                                 <SidebarMenuSub className="border-l-slate-200 ml-2">
-                                                    {item.items.map((subItem) => (
-                                                        <SidebarMenuSubItem key={subItem.title}>
-                                                            <SidebarMenuSubButton asChild isActive={pathname === subItem.url} className="text-slate-500 h-9 hover:text-slate-900 hover:bg-slate-100 rounded-md">
-                                                                <Link href={subItem.url} prefetch={true} className="flex w-full items-center">
-                                                                    <span className="shrink-0">{subItem.icon}</span>
-                                                                    <span className="ml-1.5 truncate" title={subItem.title}>{subItem.title}</span>
-                                                                </Link>
-                                                            </SidebarMenuSubButton>
-                                                        </SidebarMenuSubItem>
-                                                    ))}
+                                                    {item.items.map((subItem) => {
+                                                        const hasNestedItems = subItem.items && subItem.items.length > 0;
+                                                        const isSubItemActive = isBranchActive(subItem);
+
+                                                        if (hasNestedItems) {
+                                                            // Nested dropdown (3rd level)
+                                                            return (
+                                                                <Collapsible
+                                                                    key={subItem.title}
+                                                                    asChild
+                                                                    defaultOpen={isSubItemActive}
+                                                                    className="group/nested-collapsible"
+                                                                >
+                                                                    <SidebarMenuSubItem>
+                                                                        <CollapsibleTrigger asChild>
+                                                                            <SidebarMenuSubButton className="text-slate-500 h-8 text-[12.5px] hover:text-slate-900 hover:bg-slate-100 rounded-md">
+                                                                                <span className="shrink-0 text-[13px]">{subItem.icon}</span>
+                                                                                <span className="ml-1 truncate" title={subItem.title}>{subItem.title}</span>
+                                                                                <ChevronRight className="ml-auto w-3 h-3 text-slate-400 transition-transform duration-200 group-data-[state=open]/nested-collapsible:rotate-90" />
+                                                                            </SidebarMenuSubButton>
+                                                                        </CollapsibleTrigger>
+                                                                        <CollapsibleContent className="transition-all duration-300 ease-in-out">
+                                                                            <SidebarMenuSub className="border-l-slate-200 ml-2">
+                                                                                {subItem.items.map((nestedItem: any) => (
+                                                                                    <SidebarMenuSubItem key={nestedItem.title}>
+                                                                                        <SidebarMenuSubButton asChild isActive={pathname === nestedItem.url} className="text-slate-500 h-7 text-[12px] hover:text-slate-900 hover:bg-slate-100 rounded-md pl-6">
+                                                                                            <Link href={nestedItem.url} prefetch={true} className="flex w-full items-center">
+                                                                                                <span className="shrink-0 text-[12px]">{nestedItem.icon}</span>
+                                                                                                <span className="ml-1 truncate" title={nestedItem.title}>{nestedItem.title}</span>
+                                                                                            </Link>
+                                                                                        </SidebarMenuSubButton>
+                                                                                    </SidebarMenuSubItem>
+                                                                                ))}
+                                                                            </SidebarMenuSub>
+                                                                        </CollapsibleContent>
+                                                                    </SidebarMenuSubItem>
+                                                                </Collapsible>
+                                                            );
+                                                        }
+
+                                                        // Regular 2nd level item
+                                                        return (
+                                                            <SidebarMenuSubItem key={subItem.title}>
+                                                                <SidebarMenuSubButton asChild isActive={pathname === subItem.url} className="text-slate-500 h-8 text-[12.5px] hover:text-slate-900 hover:bg-slate-100 rounded-md">
+                                                                    <Link href={subItem.url} prefetch={true} className="flex w-full items-center">
+                                                                        <span className="shrink-0 text-[13px]">{subItem.icon}</span>
+                                                                        <span className="ml-1 truncate" title={subItem.title}>{subItem.title}</span>
+                                                                    </Link>
+                                                                </SidebarMenuSubButton>
+                                                            </SidebarMenuSubItem>
+                                                        );
+                                                    })}
                                                 </SidebarMenuSub>
                                             </CollapsibleContent>
                                         </SidebarMenuItem>
@@ -334,9 +469,9 @@ function SidebarComponent({ ...props }: React.ComponentProps<typeof ShadcnSideba
 
                             return (
                                 <SidebarMenuItem key={item.title}>
-                                    <SidebarMenuButton asChild isActive={isActive} tooltip={item.title} className="font-medium text-slate-600 h-10 hover:bg-slate-100 group-data-[collapsible=icon]:justify-center">
+                                    <SidebarMenuButton asChild isActive={isActive} tooltip={item.title} className="font-medium text-slate-600 h-9 text-[13px] hover:bg-slate-100 group-data-[collapsible=icon]:justify-center">
                                         <Link href={item.url} prefetch={true} className="flex w-full items-center group-data-[collapsible=icon]:justify-center">
-                                            <span className="shrink-0 flex items-center justify-center">{item.icon}</span>
+                                            <span className="shrink-0 flex items-center justify-center text-[16px]">{item.icon}</span>
                                             <span className="ml-1 truncate group-data-[collapsible=icon]:hidden" title={item.title}>{item.title}</span>
                                         </Link>
                                     </SidebarMenuButton>

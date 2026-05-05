@@ -1,6 +1,5 @@
-import { redirect } from 'next/navigation'
-// Disable static prerendering
-export const dynamic = 'force-dynamic'
+import LandingPage2 from '../components/landingpage2/LandingPage2'
+
 export default function HomePage() {
-  redirect('/Fixl/dashboard')
+  return <LandingPage2 />
 }

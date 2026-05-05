@@ -46,14 +46,6 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogDescription,
-    DialogFooter,
-} from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import {
     Select,
@@ -63,6 +55,7 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import { SmallCard, SmallCardContent, SmallCardHeader } from "@/shared/components/custom/SmallCard"
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet"
 import { Switch } from "@/components/ui/switch"
 import { toast } from "sonner"
 
@@ -112,7 +105,12 @@ export default function LeadConversionRulesPage() {
         setIsEditOpen(true)
     }
 
-    const saveEdit = () => {
+    const saveEdit = (e: React.FormEvent) => {
+        e.preventDefault()
+        if (!editingMap?.clientField) {
+            toast.error("Please select a target client field")
+            return
+        }
         setFieldMappings(prev => prev.map(m =>
             m.id === editingMap.id ? { ...editingMap, status: editingMap.clientField ? "MAPPED" : "REVIEW" } : m
         ))
@@ -130,24 +128,24 @@ export default function LeadConversionRulesPage() {
                     </div>
                     <div>
                         <div className="flex items-center gap-2 mb-1">
-                            <h1 className="text-xl font-black text-zinc-900 tracking-tight uppercase italic">Lead '-&gt;' Client Conversion</h1>
-                            <Badge className="bg-zinc-100 text-zinc-500 hover:bg-zinc-100 border-none text-[9px] font-bold uppercase tracking-widest">Growth Engine</Badge>
+                            <h1 className="text-xl font-semibold text-gray-900">Lead to Client Conversion</h1>
+                            <Badge className="bg-zinc-100 text-zinc-500 hover:bg-zinc-100 border-none text-[9px] font-medium">Growth Engine</Badge>
                         </div>
-                        <p className="text-xs text-zinc-500 font-medium tracking-tight">Standardize the transition from prospecting to active relationship management.</p>
+                        <p className="text-xs text-gray-600 font-medium">Standardize the transition from prospecting to active relationship management.</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
                     <Button
                         variant="outline"
                         onClick={() => handleAction("Conversion simulation initiated")}
-                        className="h-10 border-zinc-200 text-xs font-black uppercase tracking-widest px-6 rounded-xl shadow-sm bg-white hover:bg-zinc-50 transition-all"
+                        className="h-10 border-zinc-200 text-xs font-medium px-6 rounded-xl shadow-sm bg-white hover:bg-zinc-50 transition-all"
                     >
                         <Play className="w-4 h-4 mr-2" />
                         Test Mapping
                     </Button>
                     <Button
                         onClick={() => handleAction("Settings published to all firms")}
-                        className="h-10 bg-blue-600 hover:bg-blue-700 text-white text-xs font-black uppercase tracking-widest px-6 rounded-xl shadow-lg shadow-blue-200 active:scale-95 transition-all"
+                        className="h-10 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium px-6 rounded-xl shadow-lg shadow-blue-200 active:scale-95 transition-all"
                     >
                         <RefreshCcw className="w-4 h-4 mr-2" />
                         Publish Config
@@ -155,49 +153,49 @@ export default function LeadConversionRulesPage() {
                 </div>
             </div>
 
-            {/* CONVERSION INSIGHTS - 3D STYLE */}
+            {/* CONVERSION INSIGHTS */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <SmallCard className="bg-gradient-to-br from-blue-500 to-blue-700 border-none text-white shadow-[0_8px_30px_rgb(59,130,246,0.3)] hover:shadow-[0_20px_40px_rgba(37,99,235,0.4)] hover:-translate-y-1 transform transition-all duration-300 border-t border-white/20">
-                    <SmallCardHeader className="flex flex-row items-center justify-between pb-1 px-4 pt-4">
-                        <p className="text-[11px] text-white font-medium uppercase tracking-wider">Trigger Stage</p>
-                        <Zap className="w-4 h-4 text-white" />
-                    </SmallCardHeader>
-                    <SmallCardContent className="px-4 pb-4">
-                        <p className="text-2xl font-black text-white drop-shadow-md">Won</p>
-                        <p className="text-[10px] text-white">Auto-converts instantly</p>
+                <SmallCard className="border bg-gradient-to-r from-primary/70 to-primary text-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                    <SmallCardContent className="p-4 flex flex-row items-center justify-between">
+                        <div>
+                            <p className="text-white text-xs opacity-80">Trigger Stage</p>
+                            <p className="text-white text-xl font-semibold">Won</p>
+                            <p className="text-[10px] text-white opacity-80">Auto-converts instantly</p>
+                        </div>
+                        <Zap className="w-5 h-5 text-white opacity-80" />
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="bg-white border-t border-white shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.1)] hover:-translate-y-1 transform transition-all duration-300">
-                    <SmallCardHeader className="flex flex-row items-center justify-between pb-1 px-4 pt-4">
-                        <p className="text-[11px] text-zinc-500 font-medium uppercase tracking-tight">Mapped Fields</p>
-                        <Database className="w-4 h-4 text-blue-400" />
-                    </SmallCardHeader>
-                    <SmallCardContent className="px-4 pb-4">
-                        <p className="text-2xl font-bold text-zinc-900">24 / 24</p>
-                        <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-tighter">100% Data integrity</p>
+                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                    <SmallCardContent className="p-4 flex flex-row items-center justify-between">
+                        <div>
+                            <p className="text-xs text-gray-600">Mapped Fields</p>
+                            <p className="text-xl font-semibold text-gray-900">24 / 24</p>
+                            <p className="text-[10px] text-emerald-600 font-medium">100% Data integrity</p>
+                        </div>
+                        <Database className="w-5 h-5 text-blue-400" />
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="bg-white border-t border-white shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:shadow-[0_20px_40_rgba(0,0,0,0.1)] hover:-translate-y-1 transform transition-all duration-300">
-                    <SmallCardHeader className="flex flex-row items-center justify-between pb-1 px-4 pt-4">
-                        <p className="text-[11px] text-zinc-500 font-medium uppercase tracking-tight">Manual Overrides</p>
-                        <Briefcase className="w-4 h-4 text-zinc-300" />
-                    </SmallCardHeader>
-                    <SmallCardContent className="px-4 pb-4">
-                        <p className="text-2xl font-bold text-zinc-900">Allowed</p>
-                        <p className="text-[10px] text-zinc-400 font-medium italic">Managers only</p>
+                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                    <SmallCardContent className="p-4 flex flex-row items-center justify-between">
+                        <div>
+                            <p className="text-xs text-gray-600">Manual Overrides</p>
+                            <p className="text-xl font-semibold text-gray-900">Allowed</p>
+                            <p className="text-[10px] text-zinc-400 font-medium">Managers only</p>
+                        </div>
+                        <Briefcase className="w-5 h-5 text-zinc-300" />
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="bg-white border-t border-white shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.1)] hover:-translate-y-1 transform transition-all duration-300">
-                    <SmallCardHeader className="flex flex-row items-center justify-between pb-1 px-4 pt-4">
-                        <p className="text-[11px] text-zinc-500 font-medium uppercase tracking-tight">Post-Conversion</p>
-                        <Lock className="w-4 h-4 text-zinc-300" />
-                    </SmallCardHeader>
-                    <SmallCardContent className="px-4 pb-4">
-                        <p className="text-2xl font-bold text-zinc-900">Shielded</p>
-                        <p className="text-[10px] text-zinc-400 font-medium italic">Leads locked after Won</p>
+                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                    <SmallCardContent className="p-4 flex flex-row items-center justify-between">
+                        <div>
+                            <p className="text-xs text-gray-600">Post-Conversion</p>
+                            <p className="text-xl font-semibold text-gray-900">Shielded</p>
+                            <p className="text-[10px] text-zinc-400 font-medium">Leads locked after Won</p>
+                        </div>
+                        <Lock className="w-5 h-5 text-zinc-300" />
                     </SmallCardContent>
                 </SmallCard>
             </div>
@@ -220,7 +218,7 @@ export default function LeadConversionRulesPage() {
                             variant="outline"
                             onClick={handleAutoMap}
                             disabled={isLoading}
-                            className="h-9 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest border-zinc-200 bg-white shadow-sm active:scale-95 transition-all"
+                            className="h-9 px-4 rounded-xl text-xs font-medium border-zinc-200 bg-white shadow-sm active:scale-95 transition-all"
                         >
                             <FileSpreadsheet className={`w-3.5 h-3.5 mr-2 ${isLoading ? 'animate-bounce' : ''}`} />
                             Auto-Map All
@@ -230,11 +228,11 @@ export default function LeadConversionRulesPage() {
                     <Table>
                         <TableHeader className="bg-zinc-50/50">
                             <TableRow className="hover:bg-transparent border-b-zinc-100">
-                                <TableHead className="py-4 px-6 font-black text-[10px] text-zinc-400 uppercase tracking-widest">Lead Field</TableHead>
-                                <TableHead className="py-4 font-black text-[10px] text-zinc-400 uppercase tracking-widest text-center">Logic</TableHead>
-                                <TableHead className="py-4 font-black text-[10px] text-zinc-400 uppercase tracking-widest">Client Field</TableHead>
-                                <TableHead className="py-4 font-black text-[10px] text-zinc-400 uppercase tracking-widest text-center">Status</TableHead>
-                                <TableHead className="py-4 text-right pr-6 font-black text-[10px] text-zinc-400 uppercase tracking-widest">Action</TableHead>
+                                <TableHead className="py-4 px-6 text-[11px] font-medium text-gray-500">Lead Field</TableHead>
+                                <TableHead className="py-4 text-[11px] font-medium text-gray-500 text-center">Logic</TableHead>
+                                <TableHead className="py-4 text-[11px] font-medium text-gray-500">Client Field</TableHead>
+                                <TableHead className="py-4 text-[11px] font-medium text-gray-500 text-center">Status</TableHead>
+                                <TableHead className="py-4 text-right pr-6 text-[11px] font-medium text-gray-500">Action</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -242,8 +240,8 @@ export default function LeadConversionRulesPage() {
                                 <TableRow key={map.id} className="hover:bg-zinc-50/50 transition-colors group">
                                     <TableCell className="py-4 px-6">
                                         <div className="flex flex-col">
-                                            <span className="text-xs font-black text-zinc-900 uppercase tracking-tight italic group-hover:text-blue-600 transition-colors">{map.leadField}</span>
-                                            <span className="text-[9px] font-black uppercase text-zinc-300 tracking-tighter mt-0.5">{map.type}</span>
+                                            <span className="text-xs font-medium text-gray-900 group-hover:text-blue-600 transition-colors">{map.leadField}</span>
+                                            <span className="text-[9px] font-medium text-zinc-400 mt-0.5">{map.type}</span>
                                         </div>
                                     </TableCell>
                                     <TableCell className="py-4 text-center">
@@ -251,7 +249,7 @@ export default function LeadConversionRulesPage() {
                                     </TableCell>
                                     <TableCell className="py-4">
                                         <div className="flex items-center gap-3">
-                                            <Badge variant="outline" className="text-[10px] font-bold border-zinc-200 text-zinc-600 bg-zinc-50 px-3 py-1 rounded shadow-none">
+                                            <Badge variant="outline" className="text-[10px] font-medium border-zinc-200 text-zinc-600 bg-zinc-50 px-3 py-1 rounded shadow-none">
                                                 {map.clientField || 'Unmapped'}
                                             </Badge>
                                             {map.required && (
@@ -262,8 +260,8 @@ export default function LeadConversionRulesPage() {
                                         </div>
                                     </TableCell>
                                     <TableCell className="py-4 text-center">
-                                        <Badge className={`text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${map.status === 'MAPPED' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
-                                            {map.status}
+                                        <Badge className={`text-[8px] font-medium px-2 py-0.5 rounded-full ${map.status === 'MAPPED' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
+                                            {map.status === 'MAPPED' ? 'Mapped' : 'Review'}
                                         </Badge>
                                     </TableCell>
                                     <TableCell className="py-4 text-right pr-6">
@@ -285,14 +283,14 @@ export default function LeadConversionRulesPage() {
                 {/* CONVERSION BEHAVIOR BLOCK */}
                 <div className="md:col-span-4 flex flex-col gap-6">
                     <div className="bg-white rounded-xl border border-zinc-200 p-6 shadow-sm">
-                        <h3 className="text-xs font-black text-zinc-900 uppercase tracking-widest mb-6 flex items-center gap-2 italic">
+                        <h3 className="text-sm font-medium text-gray-900 mb-6 flex items-center gap-2">
                             <Briefcase className="w-3.5 h-3.5 text-blue-600" />
                             Behavior Policy
                         </h3>
                         <div className="space-y-6">
                             <div className="flex items-center justify-between group">
                                 <div className="flex flex-col">
-                                    <span className="text-xs font-bold text-zinc-800 transition-colors group-hover:text-blue-600 uppercase italic">Block Lead Edit</span>
+                                    <span className="text-xs font-medium text-zinc-800 transition-colors group-hover:text-blue-600">Block Lead Edit</span>
                                     <span className="text-[10px] text-zinc-400 font-medium mt-0.5 leading-relaxed">Lock lead profiles after Won conversion.</span>
                                 </div>
                                 <Switch
@@ -303,7 +301,7 @@ export default function LeadConversionRulesPage() {
                             </div>
                             <div className="flex items-center justify-between group">
                                 <div className="flex flex-col">
-                                    <span className="text-xs font-bold text-zinc-800 transition-colors group-hover:text-blue-600 uppercase italic">Create Contact</span>
+                                    <span className="text-xs font-medium text-zinc-800 transition-colors group-hover:text-blue-600">Create Contact</span>
                                     <span className="text-[10px] text-zinc-400 font-medium mt-0.5 leading-relaxed">Auto-create primary contact from lead data.</span>
                                 </div>
                                 <Switch
@@ -314,7 +312,7 @@ export default function LeadConversionRulesPage() {
                             </div>
                             <div className="flex items-center justify-between group">
                                 <div className="flex flex-col">
-                                    <span className="text-xs font-bold text-zinc-800 transition-colors group-hover:text-blue-600 uppercase italic">Manual Override</span>
+                                    <span className="text-xs font-medium text-zinc-800 transition-colors group-hover:text-blue-600">Manual Override</span>
                                     <span className="text-[10px] text-zinc-400 font-medium mt-0.5 leading-relaxed">Allow conversion before Won stage.</span>
                                 </div>
                                 <Switch
@@ -329,49 +327,55 @@ export default function LeadConversionRulesPage() {
                     <div className="bg-zinc-900 rounded-xl p-8 text-white shadow-xl shadow-zinc-200 border-t border-white/10">
                         <div className="flex items-center gap-3 mb-4">
                             <Layout className="w-5 h-5 text-zinc-400" />
-                            <h4 className="text-xs font-black uppercase tracking-widest italic">Default Client Status</h4>
+                            <h4 className="text-sm font-medium text-white">Default Client Status</h4>
                         </div>
-                        <p className="text-[11px] font-medium leading-relaxed opacity-60 mb-6 italic">
+                        <p className="text-[11px] font-medium leading-relaxed opacity-60 mb-6">
                             Newly converted leads will be initialized with this status in the Client module.
                         </p>
                         <div className="flex items-center justify-between p-3 bg-white/5 border border-white/10 rounded-xl group hover:bg-blue-600 hover:border-blue-500 transition-all cursor-pointer">
-                            <span className="text-xs font-black uppercase italic tracking-widest">Onboarding</span>
-                            <Badge className="bg-white/10 text-white/60 border-none text-[8px] font-black uppercase h-5 group-hover:bg-white/20 group-hover:text-white">Active</Badge>
+                            <span className="text-xs font-medium text-white">Onboarding</span>
+                            <Badge className="bg-white/10 text-white/60 border-none text-[8px] font-medium h-5 group-hover:bg-white/20 group-hover:text-white">Active</Badge>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* EDIT MAPPING DIALOG */}
-            <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-                <DialogContent className="sm:max-w-[425px] rounded-2xl border-none shadow-2xl">
-                    <DialogHeader>
-                        <DialogTitle className="text-xl font-black uppercase italic tracking-tight flex items-center gap-2">
-                            <Settings2 className="w-5 h-5 text-blue-600" />
-                            Configure Mapping
-                        </DialogTitle>
-                        <DialogDescription className="text-xs font-medium text-zinc-400">
-                            Define which field in the Client module should receive data from Lead '{editingMap?.leadField}'.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-6 py-4">
-                        <div className="flex flex-col gap-2">
-                            <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Lead Source Field</Label>
-                            <div className="p-3 bg-zinc-50 border border-zinc-100 rounded-xl flex items-center justify-between">
-                                <span className="text-sm font-bold text-zinc-900">{editingMap?.leadField}</span>
-                                <Badge className="bg-zinc-200 text-zinc-500 border-none text-[8px]">{editingMap?.type}</Badge>
+            {/* Configure Mapping — side sheet */}
+            <SideFormSheet
+                open={isEditOpen}
+                onOpenChange={(o) => {
+                    setIsEditOpen(o)
+                    if (!o) setEditingMap(null)
+                }}
+                title="Configure Mapping"
+                description={editingMap ? `Define which Client field should receive data from '${editingMap.leadField}'.` : ""}
+                icon={<Settings2 className="w-5 h-5" />}
+                width="md"
+                onSubmit={saveEdit}
+                submitLabel="Apply Mapping"
+            >
+                {editingMap && (
+                    <div className="space-y-4">
+                        <Field label="Lead Source Field" hint="Read-only — this is the source">
+                            <div className="h-11 px-3 bg-[#F8FAFC] border border-[#E5E7EB] rounded-lg flex items-center justify-between">
+                                <span className="text-[13.5px] font-semibold text-gray-900">{editingMap.leadField}</span>
+                                <Badge className="bg-zinc-200 text-zinc-600 border-none text-[9px]">{editingMap.type}</Badge>
                             </div>
-                        </div>
-                        <div className="flex flex-col gap-2">
-                            <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Target Client Field</Label>
+                        </Field>
+
+                        <Field
+                            label="Target Client Field"
+                            required
+                            hint="Data from the lead field will be written here"
+                        >
                             <Select
-                                value={editingMap?.clientField}
+                                value={editingMap.clientField || undefined}
                                 onValueChange={(v) => setEditingMap({ ...editingMap, clientField: v })}
                             >
-                                <SelectTrigger className="h-11 rounded-xl border-zinc-200 shadow-sm font-medium">
+                                <SelectTrigger className="h-11 rounded-lg border-[#E5E7EB] bg-white">
                                     <SelectValue placeholder="Select target field" />
                                 </SelectTrigger>
-                                <SelectContent className="rounded-xl border-zinc-100 shadow-xl">
+                                <SelectContent>
                                     <SelectItem value="Contact Name">Contact Name</SelectItem>
                                     <SelectItem value="Legal Name">Legal Name</SelectItem>
                                     <SelectItem value="Primary Email">Primary Email</SelectItem>
@@ -381,17 +385,17 @@ export default function LeadConversionRulesPage() {
                                     <SelectItem value="Custom Field 1">Custom Field 1</SelectItem>
                                 </SelectContent>
                             </Select>
+                        </Field>
+
+                        <div className="flex items-start gap-2 p-3 bg-[#F0F7FF] border border-[#DBEAFE] rounded-lg">
+                            <Save className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                            <p className="text-[11.5px] text-[#475569] leading-relaxed">
+                                Applying this mapping will mark the row as <strong>MAPPED</strong>. Clearing the target field will return it to REVIEW.
+                            </p>
                         </div>
                     </div>
-                    <DialogFooter className="gap-2">
-                        <Button variant="ghost" onClick={() => setIsEditOpen(false)} className="rounded-xl font-bold uppercase text-[10px] tracking-widest">Cancel</Button>
-                        <Button onClick={saveEdit} className="bg-blue-600 hover:bg-blue-700 rounded-xl px-6 font-bold uppercase text-[10px] tracking-widest shadow-lg shadow-blue-200">
-                            <Save className="w-4 h-4 mr-2" />
-                            Apply Mapping
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                )}
+            </SideFormSheet>
         </div>
     )
 }

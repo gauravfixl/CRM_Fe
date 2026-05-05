@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     Calendar,
@@ -49,9 +49,23 @@ import {
     DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu";
 
+const HOLIDAY_NAME_RE = /^[A-Za-z][A-Za-z0-9 '&/\-()]{1,79}$/;
+
+const mapHolidayTypeToBackend = (t: Holiday["type"]): "National" | "Optional" => {
+    if (t === "Optional") return "Optional";
+    return "National";
+};
+
 const HolidayCalendarPage = () => {
     const { toast } = useToast();
-    const { holidays, locations, addHoliday, updateHoliday, deleteHoliday } = useOrganisationStore();
+    const holidays = useOrganisationStore((s) => s.holidays);
+    const locations = useOrganisationStore((s) => s.locations);
+    const loadHolidaysFromApi = useOrganisationStore((s) => s.loadHolidaysFromApi);
+    const createHolidayApi = useOrganisationStore((s) => s.createHolidayApi);
+    const updateHolidayApi = useOrganisationStore((s) => s.updateHolidayApi);
+    const deleteHolidayApi = useOrganisationStore((s) => s.deleteHolidayApi);
+
+    useEffect(() => { loadHolidaysFromApi().catch(() => {}); }, []);
 
     const [searchQuery, setSearchQuery] = useState("");
     const [yearFilter, setYearFilter] = useState<string>(new Date().getFullYear().toString());
@@ -59,6 +73,12 @@ const HolidayCalendarPage = () => {
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [selectedHoliday, setSelectedHoliday] = useState<Holiday | null>(null);
+    const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
+    const [typeFilter, setTypeFilter] = useState<string>("All");
+    const [monthFilter, setMonthFilter] = useState<string>("All");
+    const [dayFilter, setDayFilter] = useState<string>("All");
+    const [isSaving, setIsSaving] = useState(false);
+    const [errors, setErrors] = useState<Record<string, string>>({});
 
     const [formData, setFormData] = useState<Partial<Holiday>>({
         name: "",
@@ -68,42 +88,110 @@ const HolidayCalendarPage = () => {
         year: parseInt(yearFilter)
     });
 
-    const handleAddHoliday = () => {
-        if (!formData.name || !formData.date) {
-            toast({ title: "Validation Error", description: "Name and Date are required", variant: "destructive" });
-            return;
-        }
-        addHoliday({
-            ...formData,
-            year: new Date(formData.date!).getFullYear()
-        } as Omit<Holiday, 'id'>);
-        toast({ title: "Holiday Added", description: `${formData.name} has been added to the calendar.` });
-        setIsAddDialogOpen(false);
+    const resetForm = () => {
         setFormData({ name: "", date: "", type: "Public", locationIds: ["All"], year: parseInt(yearFilter) });
+        setErrors({});
     };
 
-    const handleUpdateHoliday = () => {
-        if (!selectedHoliday || !formData.name || !formData.date) return;
-        updateHoliday(selectedHoliday.id, {
-            ...formData,
-            year: new Date(formData.date!).getFullYear()
-        });
-        toast({ title: "Holiday Updated", description: "Holiday details have been updated." });
-        setIsEditDialogOpen(false);
-        setSelectedHoliday(null);
+    const validateForm = (mode: "add" | "edit"): boolean => {
+        const errs: Record<string, string> = {};
+        const name = (formData.name || "").trim();
+
+        if (!name) errs.name = "Holiday name is required";
+        else if (!HOLIDAY_NAME_RE.test(name)) errs.name = "2-80 chars, starts with a letter";
+
+        if (!formData.date) errs.date = "Date is required";
+        else {
+            const d = new Date(formData.date);
+            if (isNaN(d.getTime())) errs.date = "Invalid date";
+            else {
+                const dateStr = d.toISOString().split("T")[0];
+                const duplicate = holidays.some((h) =>
+                    h.date === dateStr &&
+                    (mode === "add" || h.id !== selectedHoliday?.id)
+                );
+                if (duplicate) errs.date = "A holiday already exists on this date";
+            }
+        }
+
+        if (!formData.type) errs.type = "Type is required";
+
+        setErrors(errs);
+        return Object.keys(errs).length === 0;
     };
 
-    const handleDeleteHoliday = (id: string) => {
-        deleteHoliday(id);
-        toast({ title: "Holiday Removed", description: "Holiday has been deleted from the calendar." });
+    const handleAddHoliday = async () => {
+        if (!validateForm("add")) return;
+        setIsSaving(true);
+        try {
+            await createHolidayApi({
+                name: (formData.name || "").trim(),
+                date: formData.date!,
+                type: mapHolidayTypeToBackend((formData.type || "Public") as Holiday["type"]),
+                isPaid: true,
+                isMandatory: (formData.type || "Public") !== "Optional",
+            });
+            toast({ title: "Holiday Added", description: `${formData.name} has been added to the calendar.` });
+            setIsAddDialogOpen(false);
+            resetForm();
+        } catch (err: any) {
+            // error toast already shown by hook
+        } finally {
+            setIsSaving(false);
+        }
     };
+
+    const handleUpdateHoliday = async () => {
+        if (!selectedHoliday) return;
+        if (!validateForm("edit")) return;
+        setIsSaving(true);
+        try {
+            await updateHolidayApi(selectedHoliday.id, {
+                name: (formData.name || "").trim(),
+                date: formData.date,
+                type: mapHolidayTypeToBackend((formData.type || "Public") as Holiday["type"]),
+                isMandatory: (formData.type || "Public") !== "Optional",
+            });
+            toast({ title: "Holiday Updated", description: "Holiday details have been updated." });
+            setIsEditDialogOpen(false);
+            setSelectedHoliday(null);
+            resetForm();
+        } catch (err: any) {
+            // error toast already shown by hook
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleDeleteHoliday = async (id: string) => {
+        if (!window.confirm("Remove this holiday from the calendar?")) return;
+        try {
+            await deleteHolidayApi(id);
+            toast({ title: "Holiday Removed", description: "Holiday has been deleted." });
+        } catch (err: any) {
+            // error toast already shown by hook
+        }
+    };
+
+    const activeAdvancedCount = [typeFilter !== "All", monthFilter !== "All", dayFilter !== "All"].filter(Boolean).length;
 
     const filteredHolidays = holidays.filter(h => {
         const matchesSearch = h.name.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesYear = h.year.toString() === yearFilter;
         const matchesLocation = locationFilter === 'All' || h.locationIds.includes('All') || h.locationIds.includes(locationFilter);
-        return matchesSearch && matchesYear && matchesLocation;
+        const matchesType = typeFilter === 'All' || h.type === typeFilter;
+        const holidayDate = new Date(h.date);
+        const matchesMonth = monthFilter === 'All' || String(holidayDate.getMonth() + 1) === monthFilter;
+        const matchesDay = dayFilter === 'All' || holidayDate.toLocaleString('default', { weekday: 'long' }) === dayFilter;
+        return matchesSearch && matchesYear && matchesLocation && matchesType && matchesMonth && matchesDay;
     }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+    const resetAdvancedFilters = () => {
+        setTypeFilter("All");
+        setMonthFilter("All");
+        setDayFilter("All");
+        toast({ title: "Filters Cleared", description: "All advanced filters have been reset." });
+    };
 
     const getTypeStyles = (type: Holiday['type']) => {
         switch (type) {
@@ -144,6 +232,25 @@ const HolidayCalendarPage = () => {
                         <Button
                             variant="outline"
                             className="h-10 px-6 rounded-xl font-bold border-slate-200 gap-2 text-xs"
+                            onClick={() => {
+                                const headers = ["Holiday Name", "Date", "Day", "Type", "Locations"];
+                                const rows = filteredHolidays.map(h => [
+                                    h.name,
+                                    h.date,
+                                    new Date(h.date).toLocaleString('default', { weekday: 'long' }),
+                                    h.type,
+                                    h.locationIds.includes('All') ? 'Global' : h.locationIds.join(', ')
+                                ]);
+                                const csvContent = [headers.join(","), ...rows.map(r => r.map(v => `"${v}"`).join(","))].join("\n");
+                                const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+                                const url = URL.createObjectURL(blob);
+                                const link = document.createElement("a");
+                                link.href = url;
+                                link.download = `holidays_${yearFilter}.csv`;
+                                link.click();
+                                URL.revokeObjectURL(url);
+                                toast({ title: "Exported", description: `Holiday list for ${yearFilter} downloaded.` });
+                            }}
                         >
                             <Download size={16} /> Export PDF
                         </Button>
@@ -160,38 +267,38 @@ const HolidayCalendarPage = () => {
             <main className="p-8 pt-6 max-w-[1440px] mx-auto w-full space-y-8">
                 {/* Stats Section - Full Width */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
-                    <Card className="rounded-[2rem] border-none bg-indigo-50/80 text-indigo-900 p-6 shadow-sm ring-1 ring-indigo-100/50 group hover:shadow-xl transition-all">
+                    <Card className="rounded-xl border-none bg-gradient-to-br from-indigo-50 to-indigo-100/60 p-6 shadow-sm ring-1 ring-indigo-100 group hover:shadow-xl transition-all">
                         <div className="flex justify-between items-start">
                             <div>
-                                <p className="text-[10px] font-black text-indigo-400 capitalize tracking-widest leading-none mb-2">Total Holidays</p>
-                                <h3 className="text-3xl font-black tracking-tight">{filteredHolidays.length}</h3>
+                                <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest leading-none mb-2">Total Holidays</p>
+                                <h3 className="text-2xl font-extrabold text-indigo-700 tracking-tight">{filteredHolidays.length}</h3>
                                 <p className="text-[9px] font-bold text-indigo-400/60 mt-1 italic">Calendar year 2026</p>
                             </div>
-                            <div className="h-10 w-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-indigo-600">
+                            <div className="h-10 w-10 rounded-xl bg-indigo-100 flex items-center justify-center text-indigo-600">
                                 <Globe size={20} />
                             </div>
                         </div>
                     </Card>
-                    <Card className="rounded-[2rem] border-none bg-emerald-50/80 text-emerald-900 p-6 shadow-sm ring-1 ring-emerald-100/50 group hover:shadow-xl transition-all">
+                    <Card className="rounded-xl border-none bg-gradient-to-br from-emerald-50 to-emerald-100/60 p-6 shadow-sm ring-1 ring-emerald-100 group hover:shadow-xl transition-all">
                         <div className="flex justify-between items-start">
                             <div>
-                                <p className="text-[10px] font-black text-emerald-400 capitalize tracking-widest leading-none mb-2">Public Holidays</p>
-                                <h3 className="text-3xl font-black tracking-tight">{filteredHolidays.filter(h => h.type === 'Public').length}</h3>
+                                <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest leading-none mb-2">Public Holidays</p>
+                                <h3 className="text-2xl font-extrabold text-emerald-700 tracking-tight">{filteredHolidays.filter(h => h.type === 'Public').length}</h3>
                                 <p className="text-[9px] font-bold text-emerald-400/60 mt-1 italic">Standard gazetted days</p>
                             </div>
-                            <div className="h-10 w-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-emerald-600">
+                            <div className="h-10 w-10 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-600">
                                 <Calendar size={20} />
                             </div>
                         </div>
                     </Card>
-                    <Card className="rounded-[2rem] border-none bg-rose-50/80 text-rose-900 p-6 shadow-sm ring-1 ring-rose-100/50 group hover:shadow-xl transition-all">
+                    <Card className="rounded-xl border-none bg-gradient-to-br from-rose-50 to-rose-100/60 p-6 shadow-sm ring-1 ring-rose-100 group hover:shadow-xl transition-all">
                         <div className="flex justify-between items-start">
                             <div>
-                                <p className="text-[10px] font-black text-rose-400 capitalize tracking-widest leading-none mb-2">Company Specific</p>
-                                <h3 className="text-3xl font-black tracking-tight">{filteredHolidays.filter(h => h.type === 'Company').length}</h3>
+                                <p className="text-[10px] font-bold text-rose-400 uppercase tracking-widest leading-none mb-2">Company Specific</p>
+                                <h3 className="text-2xl font-extrabold text-rose-700 tracking-tight">{filteredHolidays.filter(h => h.type === 'Company').length}</h3>
                                 <p className="text-[9px] font-bold text-rose-400/60 mt-1 italic">Internal culture days</p>
                             </div>
-                            <div className="h-10 w-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-rose-600">
+                            <div className="h-10 w-10 rounded-xl bg-rose-100 flex items-center justify-center text-rose-600">
                                 <Star size={20} />
                             </div>
                         </div>
@@ -205,14 +312,14 @@ const HolidayCalendarPage = () => {
                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                             <Input
                                 placeholder="Search holiday across the organization..."
-                                className="pl-11 h-9 rounded-xl bg-slate-50 border-none shadow-none font-bold text-[10px] focus-visible:ring-2 focus-visible:ring-indigo-100 w-full"
+                                className="pl-11 h-9 rounded-xl bg-slate-50 border border-slate-200 shadow-none font-bold text-[10px] focus-visible:ring-2 focus-visible:ring-indigo-100 w-full"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
                         </div>
                         <div className="h-6 w-px bg-slate-100" />
                         <Select value={yearFilter} onValueChange={setYearFilter}>
-                            <SelectTrigger className="w-28 h-9 rounded-xl bg-white border-none font-bold text-[10px] ring-1 ring-slate-100">
+                            <SelectTrigger className="w-28 h-9 rounded-xl bg-white border border-slate-200 font-bold text-[10px]">
                                 <SelectValue placeholder="Select Year" />
                             </SelectTrigger>
                             <SelectContent className="rounded-xl border-none shadow-2xl p-2 font-bold text-[10px]">
@@ -222,7 +329,7 @@ const HolidayCalendarPage = () => {
                             </SelectContent>
                         </Select>
                         <Select value={locationFilter} onValueChange={setLocationFilter}>
-                            <SelectTrigger className="w-32 h-9 rounded-xl bg-white border-none font-bold text-[10px] ring-1 ring-slate-100">
+                            <SelectTrigger className="w-32 h-9 rounded-xl bg-white border border-slate-200 font-bold text-[10px]">
                                 <SelectValue placeholder="Location" />
                             </SelectTrigger>
                             <SelectContent className="rounded-xl border-none shadow-2xl p-2 font-bold text-[10px]">
@@ -235,8 +342,16 @@ const HolidayCalendarPage = () => {
                     </Card>
 
                     <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="sm" className="h-10 rounded-xl font-black text-[10px] uppercase tracking-widest text-slate-400">
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setIsAdvancedOpen(true)}
+                            className={`h-10 rounded-xl font-black text-[10px] uppercase tracking-widest ${activeAdvancedCount > 0 ? "text-indigo-600 bg-indigo-50 hover:bg-indigo-100" : "text-slate-400"}`}
+                        >
                             <Filter size={14} className="mr-2" /> Advanced Filter
+                            {activeAdvancedCount > 0 && (
+                                <Badge className="ml-2 bg-indigo-600 text-white border-none text-[9px] h-4 px-1.5">{activeAdvancedCount}</Badge>
+                            )}
                         </Button>
                     </div>
                 </div>
@@ -274,6 +389,7 @@ const HolidayCalendarPage = () => {
                                                         onClick={() => {
                                                             setSelectedHoliday(holiday);
                                                             setFormData(holiday);
+                                                            setErrors({});
                                                             setIsEditDialogOpen(true);
                                                         }}
                                                     >
@@ -346,11 +462,13 @@ const HolidayCalendarPage = () => {
                         <div className="space-y-1.5">
                             <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Holiday Name *</Label>
                             <Input
-                                className="rounded-lg h-10 bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors"
+                                className={`rounded-lg h-10 bg-slate-50 border font-bold px-4 text-xs focus:border-indigo-500 transition-colors ${errors.name ? "border-rose-500" : "border-slate-300"}`}
                                 placeholder="e.g. Independence Day"
+                                maxLength={80}
                                 value={formData.name}
                                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                             />
+                            {errors.name && <p className="text-[10px] font-bold text-rose-500 ml-1">{errors.name}</p>}
                         </div>
 
                         <div className="grid grid-cols-2 gap-5">
@@ -358,10 +476,11 @@ const HolidayCalendarPage = () => {
                                 <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Date *</Label>
                                 <Input
                                     type="date"
-                                    className="rounded-lg h-10 bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors"
+                                    className={`rounded-lg h-10 bg-slate-50 border font-bold px-4 text-xs focus:border-indigo-500 transition-colors ${errors.date ? "border-rose-500" : "border-slate-300"}`}
                                     value={formData.date}
                                     onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                                 />
+                                {errors.date && <p className="text-[10px] font-bold text-rose-500 ml-1">{errors.date}</p>}
                             </div>
                             <div className="space-y-1.5">
                                 <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Holiday Type</Label>
@@ -396,12 +515,13 @@ const HolidayCalendarPage = () => {
 
                     <DialogFooter className="gap-2 pt-6 border-t border-slate-200 sm:justify-end">
                         <Button
-                            className="flex-1 bg-indigo-600 hover:bg-slate-900 text-white rounded-lg h-10 font-bold text-xs shadow-xl shadow-indigo-100 transition-all font-outfit"
+                            className="flex-1 bg-indigo-600 hover:bg-slate-900 text-white rounded-lg h-10 font-bold text-xs shadow-xl shadow-indigo-100 transition-all font-outfit disabled:opacity-50"
                             onClick={handleAddHoliday}
+                            disabled={isSaving}
                         >
-                            Confirm Holiday
+                            {isSaving ? "Saving..." : "Confirm Holiday"}
                         </Button>
-                        <Button variant="outline" className="h-10 px-6 rounded-lg font-bold border-slate-300 text-slate-600 text-xs" onClick={() => setIsAddDialogOpen(false)}>
+                        <Button variant="outline" className="h-10 px-6 rounded-lg font-bold border-slate-300 text-slate-600 text-xs" onClick={() => { setIsAddDialogOpen(false); resetForm(); }} disabled={isSaving}>
                             Cancel
                         </Button>
                     </DialogFooter>
@@ -474,13 +594,79 @@ const HolidayCalendarPage = () => {
 
                     <DialogFooter className="gap-2 pt-6 border-t border-slate-200 sm:justify-end">
                         <Button
-                            className="flex-1 bg-indigo-600 hover:bg-slate-900 text-white rounded-lg h-10 font-bold text-xs shadow-xl shadow-indigo-100 transition-all font-outfit"
+                            className="flex-1 bg-indigo-600 hover:bg-slate-900 text-white rounded-lg h-10 font-bold text-xs shadow-xl shadow-indigo-100 transition-all font-outfit disabled:opacity-50"
                             onClick={handleUpdateHoliday}
+                            disabled={isSaving}
                         >
-                            Save Changes
+                            {isSaving ? "Saving..." : "Save Changes"}
                         </Button>
-                        <Button variant="outline" className="h-10 px-6 rounded-lg font-bold border-slate-300 text-slate-600 text-xs" onClick={() => setIsEditDialogOpen(false)}>
+                        <Button variant="outline" className="h-10 px-6 rounded-lg font-bold border-slate-300 text-slate-600 text-xs" onClick={() => { setIsEditDialogOpen(false); resetForm(); }} disabled={isSaving}>
                             Cancel
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Advanced Filter Dialog */}
+            <Dialog open={isAdvancedOpen} onOpenChange={setIsAdvancedOpen}>
+                <DialogContent className="bg-white rounded-[2.5rem] border border-slate-300 p-8 max-w-lg">
+                    <DialogHeader>
+                        <div className="h-11 w-11 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600 mb-1">
+                            <Filter size={22} />
+                        </div>
+                        <DialogTitle className="text-2xl font-bold tracking-tight text-slate-900">Advanced Filters</DialogTitle>
+                        <DialogDescription className="text-slate-500 font-medium text-xs">
+                            Narrow holidays by type, month, or weekday.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="py-6 space-y-5">
+                        <div className="space-y-1.5">
+                            <Label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest ml-1">Holiday Type</Label>
+                            <Select value={typeFilter} onValueChange={setTypeFilter}>
+                                <SelectTrigger className="h-10 rounded-lg bg-slate-50 border border-slate-300 font-bold px-4 text-xs"><SelectValue /></SelectTrigger>
+                                <SelectContent className="rounded-xl">
+                                    <SelectItem value="All">All Types</SelectItem>
+                                    <SelectItem value="Public">Public</SelectItem>
+                                    <SelectItem value="Optional">Optional</SelectItem>
+                                    <SelectItem value="Company">Company</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <Label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest ml-1">Month</Label>
+                            <Select value={monthFilter} onValueChange={setMonthFilter}>
+                                <SelectTrigger className="h-10 rounded-lg bg-slate-50 border border-slate-300 font-bold px-4 text-xs"><SelectValue /></SelectTrigger>
+                                <SelectContent className="rounded-xl max-h-[240px]">
+                                    <SelectItem value="All">All Months</SelectItem>
+                                    {["January","February","March","April","May","June","July","August","September","October","November","December"].map((m, idx) => (
+                                        <SelectItem key={m} value={String(idx + 1)}>{m}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <Label className="text-[9px] font-bold text-slate-500 uppercase tracking-widest ml-1">Weekday</Label>
+                            <Select value={dayFilter} onValueChange={setDayFilter}>
+                                <SelectTrigger className="h-10 rounded-lg bg-slate-50 border border-slate-300 font-bold px-4 text-xs"><SelectValue /></SelectTrigger>
+                                <SelectContent className="rounded-xl">
+                                    <SelectItem value="All">Any Day</SelectItem>
+                                    {["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"].map((d) => (
+                                        <SelectItem key={d} value={d}>{d}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+
+                    <DialogFooter className="gap-2 pt-6 border-t border-slate-200">
+                        <Button variant="outline" className="h-10 px-6 rounded-lg font-bold border-slate-300 text-slate-600 text-xs" onClick={resetAdvancedFilters}>
+                            Reset All
+                        </Button>
+                        <Button className="flex-1 bg-indigo-600 hover:bg-slate-900 text-white rounded-lg h-10 font-bold text-xs" onClick={() => setIsAdvancedOpen(false)}>
+                            Apply Filters
                         </Button>
                     </DialogFooter>
                 </DialogContent>

@@ -12,20 +12,12 @@ import {
     Trash2,
     Play,
     ChevronRight,
-    Code
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/shared/components/ui/switch";
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogFooter,
-} from "@/shared/components/ui/dialog";
-import { Label } from "@/shared/components/ui/label";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -42,6 +34,7 @@ import {
     SelectValue,
 } from "@/shared/components/ui/select";
 import { Textarea } from "@/shared/components/ui/textarea";
+import { toast } from "sonner";
 
 export default function RuleTemplatesPage() {
     const [showCreateModal, setShowCreateModal] = useState(false);
@@ -51,6 +44,48 @@ export default function RuleTemplatesPage() {
         { id: "3", name: "Task Escalation", category: "Task Management", trigger: "Time-Based", actions: 2, usage: 12, status: "Active" },
         { id: "4", name: "Email Notification Chain", category: "Communication", trigger: "On Create", actions: 4, usage: 8, status: "Paused" },
     ]);
+
+    const [form, setForm] = useState({ name: "", category: "", trigger: "", description: "" });
+    const [errors, setErrors] = useState<Record<string, string>>({});
+    const [saving, setSaving] = useState(false);
+
+    const resetForm = () => {
+        setForm({ name: "", category: "", trigger: "", description: "" });
+        setErrors({});
+    };
+
+    const validate = () => {
+        const next: Record<string, string> = {};
+        if (!form.name.trim()) next.name = "Template name is required";
+        if (!form.category) next.category = "Choose a category";
+        if (!form.trigger) next.trigger = "Choose a trigger type";
+        setErrors(next);
+        return Object.keys(next).length === 0;
+    };
+
+    const handleCreate = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!validate()) return;
+        setSaving(true);
+        setTimeout(() => {
+            setTemplates(prev => [
+                ...prev,
+                {
+                    id: String(Date.now()),
+                    name: form.name.trim(),
+                    category: form.category,
+                    trigger: form.trigger,
+                    actions: 0,
+                    usage: 0,
+                    status: "Active",
+                },
+            ]);
+            toast.success("Template created");
+            setSaving(false);
+            setShowCreateModal(false);
+            resetForm();
+        }, 600);
+    };
 
     const toggleStatus = (id: string) => {
         setTemplates(prev => prev.map(t =>
@@ -214,67 +249,78 @@ export default function RuleTemplatesPage() {
                 </div>
             </div>
 
-            {/* Create Modal */}
-            <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
-                <DialogContent className="max-w-2xl rounded-none p-0 overflow-hidden shadow-2xl border-none">
-                    <div className="bg-gradient-to-r from-purple-700 to-indigo-800 p-8 text-white relative">
-                        <div className="absolute top-0 right-0 p-4 opacity-10">
-                            <Zap size={80} />
-                        </div>
-                        <h2 className="text-2xl font-bold flex items-center gap-3">
-                            <Plus size={24} /> Create Rule Template
-                        </h2>
-                        <p className="text-sm opacity-80 mt-2">Build reusable automation templates for your team.</p>
+            {/* Create Template — side sheet */}
+            <SideFormSheet
+                open={showCreateModal}
+                onOpenChange={(o) => {
+                    setShowCreateModal(o);
+                    if (!o) resetForm();
+                }}
+                title="Create Rule Template"
+                description="Build reusable automation templates for your team."
+                icon={<Zap className="w-5 h-5" />}
+                accentColor="#7C3AED"
+                width="lg"
+                loading={saving}
+                onSubmit={handleCreate}
+                submitLabel="Create Template"
+            >
+                <div className="space-y-5">
+                    <Field label="Template Name" required error={errors.name}>
+                        <Input
+                            placeholder="e.g., Lead Auto-Assignment"
+                            value={form.name}
+                            onChange={(e) => setForm(p => ({ ...p, name: e.target.value }))}
+                            className="h-11 rounded-lg bg-white border-slate-200 focus:border-primary"
+                            maxLength={80}
+                        />
+                    </Field>
+
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Category" required error={errors.category}>
+                            <Select
+                                value={form.category}
+                                onValueChange={(v) => setForm(p => ({ ...p, category: v }))}
+                            >
+                                <SelectTrigger className="h-11 rounded-lg border-slate-200">
+                                    <SelectValue placeholder="Select category" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Lead Management">Lead Management</SelectItem>
+                                    <SelectItem value="Sales Pipeline">Sales Pipeline</SelectItem>
+                                    <SelectItem value="Task Management">Task Management</SelectItem>
+                                    <SelectItem value="Communication">Communication</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <Field label="Trigger Type" required error={errors.trigger}>
+                            <Select
+                                value={form.trigger}
+                                onValueChange={(v) => setForm(p => ({ ...p, trigger: v }))}
+                            >
+                                <SelectTrigger className="h-11 rounded-lg border-slate-200">
+                                    <SelectValue placeholder="Select trigger" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="On Create">On Create</SelectItem>
+                                    <SelectItem value="Field Update">Field Update</SelectItem>
+                                    <SelectItem value="Time-Based">Time-Based</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
                     </div>
-                    <div className="p-8 space-y-6 bg-white">
-                        <div className="space-y-3">
-                            <Label className="text-xs font-bold text-gray-600">Template Name</Label>
-                            <Input placeholder="e.g., Lead Auto-Assignment" className="rounded-none border-zinc-200 h-12 text-sm" />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-3">
-                                <Label className="text-xs font-bold text-gray-600">Category</Label>
-                                <Select>
-                                    <SelectTrigger className="rounded-none border-zinc-200 h-12">
-                                        <SelectValue placeholder="Select category" />
-                                    </SelectTrigger>
-                                    <SelectContent className="rounded-none">
-                                        <SelectItem value="lead">Lead Management</SelectItem>
-                                        <SelectItem value="sales">Sales Pipeline</SelectItem>
-                                        <SelectItem value="task">Task Management</SelectItem>
-                                        <SelectItem value="comm">Communication</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-3">
-                                <Label className="text-xs font-bold text-gray-600">Trigger Type</Label>
-                                <Select>
-                                    <SelectTrigger className="rounded-none border-zinc-200 h-12">
-                                        <SelectValue placeholder="Select trigger" />
-                                    </SelectTrigger>
-                                    <SelectContent className="rounded-none">
-                                        <SelectItem value="create">On Create</SelectItem>
-                                        <SelectItem value="update">Field Update</SelectItem>
-                                        <SelectItem value="time">Time-Based</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-                        <div className="space-y-3">
-                            <Label className="text-xs font-bold text-gray-600">Description</Label>
-                            <Textarea placeholder="Describe what this template does..." className="rounded-none border-zinc-200 min-h-[100px] text-sm" />
-                        </div>
-                    </div>
-                    <DialogFooter className="p-8 bg-zinc-50 border-t border-zinc-100 gap-4 sm:justify-end">
-                        <Button variant="ghost" onClick={() => setShowCreateModal(false)} className="rounded-none text-sm text-gray-600">
-                            Cancel
-                        </Button>
-                        <Button className="bg-purple-600 hover:bg-purple-700 rounded-none text-sm px-10 h-12 shadow-xl shadow-purple-100">
-                            Create Template
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+
+                    <Field label="Description" hint="Optional. Briefly explain what this template automates.">
+                        <Textarea
+                            placeholder="Describe what this template does..."
+                            value={form.description}
+                            onChange={(e) => setForm(p => ({ ...p, description: e.target.value }))}
+                            className="min-h-[110px] rounded-lg bg-white border-slate-200 focus:border-primary text-[13px]"
+                            maxLength={500}
+                        />
+                    </Field>
+                </div>
+            </SideFormSheet>
         </div>
     );
 }

@@ -55,7 +55,7 @@ export default function PayrollPage() {
                             <TableHead className="py-3 font-semibold text-[11px] text-zinc-500 uppercase text-right">Total Cost</TableHead>
                             <TableHead className="py-3 font-semibold text-[11px] text-zinc-500 uppercase text-center">Status</TableHead>
                             <TableHead className="py-3 font-semibold text-[11px] text-zinc-500 uppercase text-right pr-4">Actions</TableHead>
-                        TableRow>
+                        </TableRow>
                     </TableHeader>
                     <TableBody>
                         {runs.map((r) => (

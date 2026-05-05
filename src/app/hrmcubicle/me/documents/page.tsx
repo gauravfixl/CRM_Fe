@@ -57,6 +57,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import { Label } from "@/shared/components/ui/label";
 import { Textarea } from "@/shared/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
@@ -75,19 +76,27 @@ const MyDocumentsPage = () => {
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
     const [isComplianceOpen, setIsComplianceOpen] = useState(false);
     const [selectedDoc, setSelectedDoc] = useState<any>(null);
+    const [isDocUnlocked, setIsDocUnlocked] = useState(false);
 
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [uploadProgress, setUploadProgress] = useState(0);
     const [isUploading, setIsUploading] = useState(false);
 
+    const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
+    const [localDocs, setLocalDocs] = useState<any[]>([]);
+    const [uploadForm, setUploadForm] = useState({ name: "", category: "Personal" });
+    const [deleteConfirm, setDeleteConfirm] = useState<{ ids: string[]; bulk: boolean } | null>(null);
+
+    const allDocs = [...localDocs, ...storeDocs].filter(d => !deletedIds.has(d.id));
+
     const categories = [
-        { name: "Identity Docs", filter: "Personal", count: storeDocs.filter(d => d.cat === 'Personal').length, icon: <FileText size={16} />, color: "from-indigo-600 to-indigo-400", bg: "bg-indigo-100", border: "border-indigo-200" },
-        { name: "Company Policies", filter: "Company", count: storeDocs.filter(d => d.cat === 'Company').length, icon: <ShieldCheck size={16} />, color: "from-rose-600 to-rose-400", bg: "bg-rose-100", border: "border-rose-200" },
-        { name: "Financial / Tax", filter: "Financial", count: storeDocs.filter(d => d.cat === 'Financial').length, icon: <FileSignature size={16} />, color: "from-emerald-600 to-emerald-400", bg: "bg-emerald-100", border: "border-emerald-200" },
-        { name: "Certifications", filter: "Certifications", count: storeDocs.filter(d => d.cat === 'Certifications').length, icon: <FolderOpen size={16} />, color: "from-amber-600 to-amber-400", bg: "bg-amber-100", border: "border-amber-200" },
+        { name: "Identity Docs", filter: "Personal", count: allDocs.filter(d => d.cat === 'Personal').length, icon: <FileText size={16} />, color: "from-indigo-600 to-indigo-400", bg: "bg-indigo-100", border: "border-indigo-200" },
+        { name: "Company Policies", filter: "Company", count: allDocs.filter(d => d.cat === 'Company').length, icon: <ShieldCheck size={16} />, color: "from-rose-600 to-rose-400", bg: "bg-rose-100", border: "border-rose-200" },
+        { name: "Financial / Tax", filter: "Financial", count: allDocs.filter(d => d.cat === 'Financial').length, icon: <FileSignature size={16} />, color: "from-emerald-600 to-emerald-400", bg: "bg-emerald-100", border: "border-emerald-200" },
+        { name: "Certifications", filter: "Certifications", count: allDocs.filter(d => d.cat === 'Certifications').length, icon: <FolderOpen size={16} />, color: "from-amber-600 to-amber-400", bg: "bg-amber-100", border: "border-amber-200" },
     ];
 
-    const documents = storeDocs.map(doc => {
+    const documents = allDocs.map(doc => {
         // Adding dummy expiry dates for logic demonstration
         let expiryStatus = null;
         if (doc.name.includes("Aadhar")) expiryStatus = { date: "12 Dec 2030", label: "Valid", color: "text-emerald-500" };
@@ -113,6 +122,25 @@ const MyDocumentsPage = () => {
     };
 
     const handleUpload = () => {
+        const name = uploadForm.name.trim();
+        if (!name) {
+            toast({ title: "Filename required", description: "Please enter a name for the document.", variant: "destructive" });
+            return;
+        }
+        if (name.length > 255) {
+            toast({ title: "Name too long", description: "Filename must be under 255 characters.", variant: "destructive" });
+            return;
+        }
+        // Extract extension if present and validate
+        const dotIndex = name.lastIndexOf(".");
+        if (dotIndex > -1) {
+            const ext = name.slice(dotIndex + 1).toLowerCase();
+            const allowed = ["pdf", "jpg", "jpeg", "png"];
+            if (!allowed.includes(ext)) {
+                toast({ title: "Unsupported file type", description: "Only PDF, JPG, or PNG files are accepted.", variant: "destructive" });
+                return;
+            }
+        }
         setIsUploading(true);
         let progress = 0;
         const interval = setInterval(() => {
@@ -123,17 +151,52 @@ const MyDocumentsPage = () => {
                 setIsUploading(false);
                 setIsUploadOpen(false);
                 setUploadProgress(0);
-                toast({ title: "Upload Complete", description: "Your file has been encrypted and stored in the vault." });
+                const newId = `local-${Date.now()}`;
+                const newDoc = {
+                    id: newId,
+                    name: uploadForm.name.includes(".") ? uploadForm.name : `${uploadForm.name}.pdf`,
+                    cat: uploadForm.category,
+                    size: "0.5 MB",
+                    uploadedAt: new Date().toISOString().split("T")[0],
+                };
+                setLocalDocs(prev => [newDoc, ...prev]);
+                setUploadForm({ name: "", category: "Personal" });
+                toast({ title: "Upload Complete", description: `"${newDoc.name}" has been encrypted and stored in the vault.` });
             }
-        }, 200);
+        }, 150);
+    };
+
+    const confirmDelete = (ids: string[], bulk = false) => {
+        setDeleteConfirm({ ids, bulk });
+    };
+
+    const executeDelete = () => {
+        if (!deleteConfirm) return;
+        const idsToDelete = deleteConfirm.ids;
+        setDeletedIds(prev => {
+            const next = new Set(prev);
+            idsToDelete.forEach(id => next.add(id));
+            return next;
+        });
+        setLocalDocs(prev => prev.filter(d => !idsToDelete.includes(d.id)));
+        setSelectedIds(prev => prev.filter(id => !idsToDelete.includes(id)));
+        toast({
+            title: deleteConfirm.bulk ? "Documents deleted" : "Document deleted",
+            description: `${idsToDelete.length} record${idsToDelete.length !== 1 ? "s" : ""} removed from your vault.`,
+        });
+        setDeleteConfirm(null);
     };
 
     const handleDeleteBulk = () => {
-        toast({
-            title: "Deletion Restricted",
-            description: `Admin approval required to delete ${selectedIds.length} vaulted records.`,
-            variant: "destructive"
-        });
+        if (selectedIds.length === 0) {
+            toast({ title: "Select documents first", description: "Choose files to delete using the checkbox.", variant: "destructive" });
+            return;
+        }
+        confirmDelete(selectedIds, true);
+    };
+
+    const handleDeleteSingle = (id: string) => {
+        confirmDelete([id], false);
     };
 
     const handleDownloadBulk = () => {
@@ -144,7 +207,7 @@ const MyDocumentsPage = () => {
     };
 
     return (
-        <div className="flex flex-col min-h-screen bg-[#f8fafc] font-sans relative" style={{ zoom: "80%" }}>
+        <div className="flex flex-col min-h-screen bg-[#f8fafc] font-sans relative" style={{ zoom: "90%" }}>
             <header className="py-2.5 px-8 bg-white border-b border-slate-100 sticky top-0 z-30 shadow-sm rounded-b-3xl">
                 <div className="max-w-[1600px] mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div className="space-y-1 text-start">
@@ -264,11 +327,14 @@ const MyDocumentsPage = () => {
                                                     <Badge variant="outline" className="border-slate-100 bg-white text-slate-400 text-[10px] font-bold px-3 py-0.5 rounded-full shadow-sm">{doc.cat}</Badge>
                                                 </div>
                                                 <div className="flex items-center gap-1">
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-slate-300 hover:text-indigo-600 hover:bg-white transition-all border-none" onClick={(e) => { e.stopPropagation(); setSelectedDoc(doc); setIsPreviewOpen(true); }}>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-slate-300 hover:text-indigo-600 hover:bg-white transition-all border-none" onClick={(e) => { e.stopPropagation(); setSelectedDoc(doc); setIsPreviewOpen(true); }} title="Preview">
                                                         <Eye size={16} />
                                                     </Button>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-slate-300 hover:text-emerald-500 hover:bg-white transition-all border-none" onClick={(e) => { e.stopPropagation(); toast({ title: "Secure Download", description: `Downloading ${doc.name}...` }); }}>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-slate-300 hover:text-emerald-500 hover:bg-white transition-all border-none" onClick={(e) => { e.stopPropagation(); toast({ title: "Secure Download", description: `Downloading ${doc.name}...` }); }} title="Download">
                                                         <Download size={16} />
+                                                    </Button>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-slate-300 hover:text-rose-500 hover:bg-white transition-all border-none" onClick={(e) => { e.stopPropagation(); handleDeleteSingle(doc.id); }} title="Delete">
+                                                        <Trash2 size={16} />
                                                     </Button>
                                                 </div>
                                             </div>
@@ -390,51 +456,57 @@ const MyDocumentsPage = () => {
             </AnimatePresence>
 
             {/* Dialogs */}
-            <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
-                <DialogContent className="bg-white rounded-[2rem] border border-slate-200 p-8 max-w-lg shadow-2xl font-sans" style={{ zoom: "80%" }}>
-                    <DialogHeader className="space-y-2">
-                        <div className="h-10 w-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
-                            <Upload size={20} />
-                        </div>
-                        <DialogTitle className="text-xl font-bold tracking-tight">Secure Vault Upload</DialogTitle>
-                        <DialogDescription className="font-medium text-slate-500 text-sm">AES-256 client-side encryption active.</DialogDescription>
-                    </DialogHeader>
-                    <div className="py-4 space-y-4">
-                        {!isUploading ? (
-                            <div className="border-2 border-dashed border-slate-200 rounded-2xl p-6 text-center space-y-3 hover:border-indigo-400 hover:bg-indigo-50/30 transition-all cursor-pointer group" onClick={handleUpload}>
-                                <div className="h-12 w-12 bg-white rounded-2xl flex items-center justify-center mx-auto shadow-sm">
-                                    <Plus size={24} className="text-slate-300 group-hover:text-indigo-500" />
-                                </div>
-                                <p className="text-sm font-bold text-slate-900 leading-none">Drop file to encrypt</p>
+            <SideFormSheet
+                open={isUploadOpen}
+                onOpenChange={setIsUploadOpen}
+                title="Secure Vault Upload"
+                description="AES-256 client-side encryption active."
+                icon={<Upload size={20} />}
+                accentColor="#4f46e5"
+                width="md"
+                loading={isUploading}
+                submitLabel={isUploading ? "Uploading..." : "Upload & Encrypt"}
+                onSubmit={(e) => { e.preventDefault(); handleUpload(); }}
+            >
+                <div className="space-y-4">
+                    {!isUploading ? (
+                        <div className="border-2 border-dashed border-slate-200 rounded-2xl p-6 text-center space-y-3 hover:border-indigo-400 hover:bg-indigo-50/30 transition-all group">
+                            <div className="h-12 w-12 bg-white rounded-2xl flex items-center justify-center mx-auto shadow-sm">
+                                <Plus size={24} className="text-slate-300 group-hover:text-indigo-500" />
                             </div>
-                        ) : (
-                            <div className="space-y-4">
-                                <Progress value={uploadProgress} className="h-2 bg-slate-50" />
-                                <p className="text-center text-[10px] font-bold text-indigo-600">Encrypting Content...</p>
-                            </div>
-                        )}
-                        <div className="space-y-2">
-                            <Label className="text-[10px] font-bold text-slate-400 capitalize text-start block">Category</Label>
-                            <Select defaultValue="Personal">
-                                <SelectTrigger className="rounded-xl bg-slate-50 border-none h-11 text-sm font-medium">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="Personal">Personal Docs</SelectItem>
-                                    <SelectItem value="Company">Company Policies</SelectItem>
-                                    <SelectItem value="Financial">Financial / Tax</SelectItem>
-                                </SelectContent>
-                            </Select>
+                            <p className="text-sm font-bold text-slate-900 leading-none">Drop file to encrypt</p>
+                            <p className="text-[10px] text-slate-400">PDF, JPG, PNG · Max 10 MB</p>
                         </div>
-                    </div>
-                    <DialogFooter>
-                        <Button variant="ghost" className="w-full text-slate-400 font-bold h-10 text-xs" onClick={() => setIsUploadOpen(false)}>Cancel</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    ) : (
+                        <div className="space-y-4">
+                            <Progress value={uploadProgress} className="h-2 bg-slate-50" />
+                            <p className="text-center text-[10px] font-bold text-indigo-600">Encrypting Content... {uploadProgress}%</p>
+                        </div>
+                    )}
+                    <Field label="Document Name" required>
+                        <Input
+                            value={uploadForm.name}
+                            onChange={e => setUploadForm({ ...uploadForm, name: e.target.value })}
+                            placeholder="e.g., PAN Card.pdf"
+                            disabled={isUploading}
+                        />
+                    </Field>
+                    <Field label="Category">
+                        <Select defaultValue="Personal">
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Personal">Personal Docs</SelectItem>
+                                <SelectItem value="Company">Company Policies</SelectItem>
+                                <SelectItem value="Financial">Financial / Tax</SelectItem>
+                                <SelectItem value="Certifications">Certifications</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                </div>
+            </SideFormSheet>
 
-            <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
-                <DialogContent className="bg-white border-slate-100 p-0 max-w-4xl overflow-hidden rounded-[2rem] h-[80vh] flex flex-col shadow-2xl font-sans" style={{ zoom: "80%" }}>
+            <Dialog open={isPreviewOpen} onOpenChange={(val) => { setIsPreviewOpen(val); if (!val) setIsDocUnlocked(false); }}>
+                <DialogContent className="bg-white border-slate-100 p-0 max-w-4xl overflow-hidden rounded-[2rem] h-[80vh] flex flex-col shadow-2xl font-sans" style={{ zoom: "90%" }}>
                     <div className="flex items-center justify-between p-6 border-b border-slate-100 sticky top-0 bg-white z-10">
                         <div className="flex items-center gap-4">
                             <div className="h-10 w-10 rounded-xl bg-slate-50 flex items-center justify-center text-indigo-600 shadow-inner">
@@ -445,24 +517,76 @@ const MyDocumentsPage = () => {
                                 <p className="text-[10px] font-bold text-slate-400">Secure Viewer • {selectedDoc?.size}</p>
                             </div>
                         </div>
-                        <Button className="rounded-xl h-10 bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 gap-2" onClick={() => toast({ title: "Authorized", description: "Loading document data..." })}>
-                            Unlock Content <Lock size={14} />
-                        </Button>
+                        {!isDocUnlocked ? (
+                            <Button className="rounded-xl h-10 bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 gap-2" onClick={() => setIsDocUnlocked(true)}>
+                                Unlock Content <Lock size={14} />
+                            </Button>
+                        ) : (
+                            <Badge className="bg-emerald-50 text-emerald-600 border-none font-bold text-[10px] px-4 py-2">
+                                <CheckCircle2 size={14} className="mr-1.5" /> Unlocked
+                            </Badge>
+                        )}
                     </div>
                     <div className="flex-1 bg-slate-50/50 flex items-center justify-center p-12">
-                        <div className="w-full max-w-xl aspect-[1/1.4] bg-white rounded-2xl shadow-lg border border-slate-200 flex flex-col items-center justify-center text-center p-10 space-y-4">
-                            <div className="h-20 w-20 bg-indigo-50 rounded-full flex items-center justify-center">
-                                <ShieldCheck size={40} className="text-indigo-200" />
+                        {!isDocUnlocked ? (
+                            <div className="w-full max-w-xl aspect-[1/1.4] bg-white rounded-2xl shadow-lg border border-slate-200 flex flex-col items-center justify-center text-center p-10 space-y-4">
+                                <div className="h-20 w-20 bg-indigo-50 rounded-full flex items-center justify-center">
+                                    <ShieldCheck size={40} className="text-indigo-200" />
+                                </div>
+                                <h4 className="text-lg font-bold text-slate-900">Protected Preview</h4>
+                                <p className="text-xs text-slate-500 leading-relaxed">This record is end-to-end encrypted. Click 'Unlock' or download to view the full details.</p>
                             </div>
-                            <h4 className="text-lg font-bold text-slate-900">Protected Preview</h4>
-                            <p className="text-xs text-slate-500 leading-relaxed">This record is end-to-end encrypted. Click 'Unlock' or download to view the full details.</p>
-                        </div>
+                        ) : (
+                            <div className="w-full max-w-xl bg-white rounded-2xl shadow-lg border border-slate-200 p-10 space-y-6 overflow-y-auto max-h-full">
+                                <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
+                                    <div className="h-10 w-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600">
+                                        <CheckCircle2 size={20} />
+                                    </div>
+                                    <div>
+                                        <h4 className="text-sm font-bold text-slate-900">Document Decrypted</h4>
+                                        <p className="text-[10px] text-slate-400 font-bold">Verified and authenticated</p>
+                                    </div>
+                                </div>
+                                <div className="space-y-4">
+                                    <h3 className="text-lg font-bold text-slate-900 tracking-tight">{selectedDoc?.name}</h3>
+                                    <div className="grid grid-cols-2 gap-4 text-xs">
+                                        <div className="p-3 bg-slate-50 rounded-xl">
+                                            <span className="text-[9px] font-bold text-slate-400 uppercase block mb-1">Category</span>
+                                            <span className="font-bold text-slate-700">{selectedDoc?.cat}</span>
+                                        </div>
+                                        <div className="p-3 bg-slate-50 rounded-xl">
+                                            <span className="text-[9px] font-bold text-slate-400 uppercase block mb-1">File Size</span>
+                                            <span className="font-bold text-slate-700">{selectedDoc?.size}</span>
+                                        </div>
+                                        <div className="p-3 bg-slate-50 rounded-xl">
+                                            <span className="text-[9px] font-bold text-slate-400 uppercase block mb-1">Upload Date</span>
+                                            <span className="font-bold text-slate-700">{selectedDoc?.date}</span>
+                                        </div>
+                                        <div className="p-3 bg-slate-50 rounded-xl">
+                                            <span className="text-[9px] font-bold text-slate-400 uppercase block mb-1">Format</span>
+                                            <span className="font-bold text-slate-700 uppercase">{selectedDoc?.type}</span>
+                                        </div>
+                                    </div>
+                                    {selectedDoc?.expiry && (
+                                        <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-100">
+                                            <span className="text-[9px] font-bold text-emerald-500 uppercase block mb-1">Validity</span>
+                                            <span className="text-sm font-bold text-emerald-700">{selectedDoc.expiry.label} — Expires {selectedDoc.expiry.date}</span>
+                                        </div>
+                                    )}
+                                    <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100 text-center">
+                                        <FileText size={48} className="text-slate-200 mx-auto mb-3" />
+                                        <p className="text-xs font-bold text-slate-500">Full document content rendered here.</p>
+                                        <p className="text-[10px] text-slate-400 mt-1">For security, download the original file for complete access.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </DialogContent>
             </Dialog>
 
             <Dialog open={isComplianceOpen} onOpenChange={setIsComplianceOpen}>
-                <DialogContent className="bg-white rounded-[2rem] border border-slate-200 p-8 max-w-lg shadow-2xl font-sans" style={{ zoom: "80%" }}>
+                <DialogContent className="bg-white rounded-[2rem] border border-slate-200 p-8 max-w-lg shadow-2xl font-sans" style={{ zoom: "90%" }}>
                     <DialogHeader className="space-y-4">
                         <div className="h-14 w-14 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-500 shadow-inner">
                             <AlertTriangle size={28} />
@@ -490,6 +614,29 @@ const MyDocumentsPage = () => {
                     </div>
                     <DialogFooter>
                         <Button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl h-12 font-bold shadow-lg" onClick={() => setIsComplianceOpen(false)}>I'll do it later</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={!!deleteConfirm} onOpenChange={v => !v && setDeleteConfirm(null)}>
+                <DialogContent className="bg-white rounded-2xl border-none p-8 max-w-md">
+                    <DialogHeader className="space-y-3">
+                        <div className="h-12 w-12 bg-rose-50 rounded-xl flex items-center justify-center">
+                            <Trash2 className="text-rose-600" size={24} />
+                        </div>
+                        <DialogTitle className="text-xl font-bold">Delete {deleteConfirm?.bulk ? "Documents" : "Document"}?</DialogTitle>
+                        <DialogDescription>
+                            {deleteConfirm?.ids.length === 1
+                                ? "This document will be permanently removed from your vault."
+                                : `${deleteConfirm?.ids.length} documents will be permanently removed from your vault.`}
+                            {" "}This action cannot be undone.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="gap-3 mt-2">
+                        <Button variant="ghost" onClick={() => setDeleteConfirm(null)}>Cancel</Button>
+                        <Button onClick={executeDelete} className="flex-1 bg-rose-600 hover:bg-rose-700 text-white rounded-xl">
+                            <Trash2 size={14} className="mr-2" />Delete {deleteConfirm?.bulk && deleteConfirm.ids.length > 1 ? `${deleteConfirm.ids.length} Documents` : "Document"}
+                        </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

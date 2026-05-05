@@ -4,51 +4,118 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     Bell,
-    CheckCircle2,
-    AlertTriangle,
-    Info,
-    XCircle,
     Trash2,
     Check,
-    ExternalLink,
-    Filter,
-    Calendar,
-    ArrowRight,
-    Zap,
     Clock,
-    MoreVertical,
-    CheckCircle,
     Settings,
     Megaphone,
     FileText,
     CreditCard,
     TrendingUp,
-    Layout
+    Layout,
+    Plus,
+    Send
 } from "lucide-react";
 import { Card, CardContent } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
 import { Badge } from "@/shared/components/ui/badge";
 import { useToast } from "@/shared/components/ui/use-toast";
-import { useInboxStore, type Notification, type NotificationCategory } from "@/shared/data/inbox-store";
+import { useInboxStore, type Notification, type NotificationCategory, type NotificationType } from "@/shared/data/inbox-store";
 import { useRouter } from "next/navigation";
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from "@/shared/components/ui/dropdown-menu";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
 import { Switch } from "@/shared/components/ui/switch";
 import { Label } from "@/shared/components/ui/label";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/shared/components/ui/dialog";
+import { Input } from "@/shared/components/ui/input";
+import { Textarea } from "@/shared/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
 
 const NotificationsPage = () => {
     const { toast } = useToast();
     const router = useRouter();
-    const { notifications, markAsRead, markAllAsRead, deleteNotification } = useInboxStore();
+    const { notifications, markAsRead, markAllAsRead, deleteNotification, addNotification } = useInboxStore();
 
     const [view, setView] = useState<'all' | 'preferences'>('all');
     const [filterCategory, setFilterCategory] = useState<NotificationCategory | 'All'>('All');
     const [unreadOnly, setUnreadOnly] = useState(false);
+
+    const [isComposeOpen, setIsComposeOpen] = useState(false);
+    const [composeTitle, setComposeTitle] = useState("");
+    const [composeMessage, setComposeMessage] = useState("");
+    const [composeType, setComposeType] = useState<NotificationType>("Info");
+    const [composeCategory, setComposeCategory] = useState<NotificationCategory>("Announcement");
+
+    const resetCompose = () => {
+        setComposeTitle("");
+        setComposeMessage("");
+        setComposeType("Info");
+        setComposeCategory("Announcement");
+    };
+
+    const composeTitleTrimmed = composeTitle.trim();
+    const composeMessageTrimmed = composeMessage.trim();
+
+    const composeTitleError = composeTitle.length > 0
+        ? composeTitleTrimmed.length < 3
+            ? "Title must be at least 3 characters."
+            : composeTitleTrimmed.length > 100
+                ? "Title cannot exceed 100 characters."
+                : ""
+        : "";
+
+    const composeMessageError = composeMessage.length > 0
+        ? composeMessageTrimmed.length < 10
+            ? "Message must be at least 10 characters."
+            : composeMessageTrimmed.length > 500
+                ? "Message cannot exceed 500 characters."
+                : ""
+        : "";
+
+    const isComposeValid =
+        composeTitleTrimmed.length >= 3 &&
+        composeTitleTrimmed.length <= 100 &&
+        composeMessageTrimmed.length >= 10 &&
+        composeMessageTrimmed.length <= 500;
+
+    const handleBroadcast = () => {
+        if (!isComposeValid) {
+            toast({ title: "Please fix the errors", description: "Title and message must meet the requirements.", variant: "destructive" });
+            return;
+        }
+        addNotification({
+            title: composeTitleTrimmed,
+            message: composeMessageTrimmed,
+            type: composeType,
+            category: composeCategory
+        });
+        toast({ title: "Notification Broadcast", description: `"${composeTitleTrimmed}" has been sent.` });
+        resetCompose();
+        setIsComposeOpen(false);
+    };
+
+    const defaultPrefs = [
+        { category: 'Announcement', inApp: true, email: true },
+        { category: 'Policy', inApp: true, email: true },
+        { category: 'Payroll', inApp: true, email: true },
+        { category: 'Performance', inApp: true, email: false },
+        { category: 'System', inApp: true, email: false },
+    ];
+    const [preferences, setPreferences] = useState(defaultPrefs);
+
+    const handleUpdatePreferences = () => {
+        toast({ title: "Preferences Saved", description: "Your notification preferences have been updated successfully." });
+    };
+
+    const handleRevertPreferences = () => {
+        setPreferences([...defaultPrefs]);
+        toast({ title: "Preferences Reverted", description: "Notification preferences have been reset to defaults." });
+    };
 
     const unreadCount = notifications.filter(n => !n.isRead).length;
     const filteredNotifications = notifications.filter(n => {
@@ -83,10 +150,10 @@ const NotificationsPage = () => {
     ];
 
     return (
-        <div className="flex flex-col min-h-screen bg-white">
-            <header className="p-6 border-b border-slate-100 bg-white sticky top-0 z-30 shadow-sm">
-                <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                    <div className="space-y-1">
+        <div className="flex flex-col min-h-screen bg-white" style={{ zoom: 0.9 }}>
+            <header className="px-6 py-3 border-b border-slate-100 bg-white sticky top-0 z-30 shadow-sm">
+                <div className="w-full flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                    <div className="space-y-0.5">
                         <div className="flex items-center gap-3">
                             <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Notification Center</h1>
                             {unreadCount > 0 && <Badge className="bg-rose-500 text-white border-none font-bold text-[10px] h-6 px-2.5 rounded-lg animate-pulse">{unreadCount} New</Badge>}
@@ -109,11 +176,17 @@ const NotificationsPage = () => {
                         >
                             <Settings size={16} /> Preferences
                         </Button>
+                        <Button
+                            onClick={() => setIsComposeOpen(true)}
+                            className="rounded-xl font-bold text-xs h-11 px-5 gap-2 bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-100"
+                        >
+                            <Plus size={16} /> New Notification
+                        </Button>
                     </div>
                 </div>
             </header>
 
-            <main className="p-6 max-w-7xl mx-auto w-full space-y-6">
+            <main className="p-6 w-full space-y-6">
                 {view === 'all' ? (
                     <div className="flex flex-col lg:flex-row gap-8">
                         {/* Filters Sidebar */}
@@ -163,7 +236,7 @@ const NotificationsPage = () => {
                                             <Megaphone size={32} />
                                         </div>
                                         <h3 className="text-lg font-bold text-slate-900">Quiet for now</h3>
-                                        <p className="text-slate-500 text-sm font-medium mt-1">No alerts found in the {filterCategory === 'All' ? 'selected' : filterCategory} category.</p>
+                                        <p className="text-slate-500 text-sm font-medium mt-1">{filterCategory === 'All' ? 'No alerts match your current filters.' : `No ${filterCategory} alerts right now.`}</p>
                                     </motion.div>
                                 ) : (
                                     <div className="space-y-4">
@@ -256,11 +329,11 @@ const NotificationsPage = () => {
                                         <div className="flex items-center gap-8">
                                             <div className="flex flex-col items-center gap-1.5">
                                                 <Label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">In-App</Label>
-                                                <Switch defaultChecked />
+                                                <Switch checked={preferences[i].inApp} onCheckedChange={(checked) => { const updated = [...preferences]; updated[i] = { ...updated[i], inApp: checked }; setPreferences(updated); }} />
                                             </div>
                                             <div className="flex flex-col items-center gap-1.5">
                                                 <Label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Email</Label>
-                                                <Switch defaultChecked={i < 3} />
+                                                <Switch checked={preferences[i].email} onCheckedChange={(checked) => { const updated = [...preferences]; updated[i] = { ...updated[i], email: checked }; setPreferences(updated); }} />
                                             </div>
                                         </div>
                                     </div>
@@ -269,12 +342,100 @@ const NotificationsPage = () => {
                         </div>
 
                         <div className="pt-6 flex justify-end gap-3">
-                            <Button variant="outline" className="rounded-2xl h-12 px-8 font-bold border-slate-200">Revert Changes</Button>
-                            <Button className="rounded-2xl h-12 px-10 font-bold bg-slate-900 text-white shadow-xl shadow-slate-100" onClick={() => toast({ title: "Preferences Saved" })}>Update Settings</Button>
+                            <Button variant="outline" className="rounded-2xl h-12 px-8 font-bold border-slate-200" onClick={handleRevertPreferences}>Revert Changes</Button>
+                            <Button className="rounded-2xl h-12 px-10 font-bold bg-slate-900 text-white shadow-xl shadow-slate-100" onClick={handleUpdatePreferences}>Update Settings</Button>
                         </div>
                     </div>
                 )}
             </main>
+
+            {/* Compose Notification Dialog */}
+            <Dialog open={isComposeOpen} onOpenChange={(open) => { setIsComposeOpen(open); if (!open) resetCompose(); }}>
+                <DialogContent className="bg-white rounded-3xl border-none p-10 max-w-xl shadow-2xl">
+                    <DialogHeader className="space-y-4">
+                        <div className="h-12 w-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 mb-2">
+                            <Send size={24} />
+                        </div>
+                        <DialogTitle className="text-2xl font-bold tracking-tight text-slate-900">Broadcast Notification</DialogTitle>
+                        <DialogDescription className="text-slate-500 font-medium">Compose an alert that will appear in the notification feed for employees.</DialogDescription>
+                    </DialogHeader>
+
+                    <div className="py-4 space-y-5">
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                                <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Title *</Label>
+                                <span className={`text-[10px] font-bold tabular-nums ${composeTitleTrimmed.length > 100 ? 'text-rose-500' : 'text-slate-300'}`}>{composeTitleTrimmed.length}/100</span>
+                            </div>
+                            <Input
+                                className={`rounded-2xl bg-slate-50 focus:bg-white h-12 font-medium px-4 ${composeTitleError ? 'border-rose-300 focus:border-rose-400' : 'border-slate-200'}`}
+                                placeholder="e.g. Quarterly Townhall Scheduled"
+                                value={composeTitle}
+                                maxLength={120}
+                                onChange={(e) => setComposeTitle(e.target.value)}
+                                aria-invalid={!!composeTitleError}
+                            />
+                            {composeTitleError && <p className="text-[11px] font-semibold text-rose-500 ml-1">{composeTitleError}</p>}
+                        </div>
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                                <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Message *</Label>
+                                <span className={`text-[10px] font-bold tabular-nums ${composeMessageTrimmed.length > 500 ? 'text-rose-500' : 'text-slate-300'}`}>{composeMessageTrimmed.length}/500</span>
+                            </div>
+                            <Textarea
+                                className={`rounded-2xl bg-slate-50 focus:bg-white min-h-[110px] font-medium p-4 ${composeMessageError ? 'border-rose-300 focus:border-rose-400' : 'border-slate-200'}`}
+                                placeholder="Write the announcement body..."
+                                value={composeMessage}
+                                maxLength={550}
+                                onChange={(e) => setComposeMessage(e.target.value)}
+                                aria-invalid={!!composeMessageError}
+                            />
+                            {composeMessageError && <p className="text-[11px] font-semibold text-rose-500 ml-1">{composeMessageError}</p>}
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Category</Label>
+                                <Select value={composeCategory} onValueChange={(v) => setComposeCategory(v as NotificationCategory)}>
+                                    <SelectTrigger className="h-12 rounded-2xl bg-slate-50 border-slate-200 font-medium">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="Announcement">Announcement</SelectItem>
+                                        <SelectItem value="Policy">Policy</SelectItem>
+                                        <SelectItem value="Payroll">Payroll</SelectItem>
+                                        <SelectItem value="Performance">Performance</SelectItem>
+                                        <SelectItem value="System">System</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Type</Label>
+                                <Select value={composeType} onValueChange={(v) => setComposeType(v as NotificationType)}>
+                                    <SelectTrigger className="h-12 rounded-2xl bg-slate-50 border-slate-200 font-medium">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="Info">Info</SelectItem>
+                                        <SelectItem value="Success">Success</SelectItem>
+                                        <SelectItem value="Warning">Warning</SelectItem>
+                                        <SelectItem value="Error">Error</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <DialogFooter className="gap-3">
+                        <Button variant="outline" className="rounded-xl h-12 font-bold px-8" onClick={() => { setIsComposeOpen(false); resetCompose(); }}>Cancel</Button>
+                        <Button
+                            className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl h-12 font-bold shadow-lg shadow-indigo-100 gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+                            onClick={handleBroadcast}
+                            disabled={!isComposeValid}
+                        >
+                            <Send size={16} /> Broadcast Now
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 };

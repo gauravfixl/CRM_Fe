@@ -1,163 +1,282 @@
 "use client";
 
 import React, { useState } from "react";
-import {
-    FileText,
-    Save,
-    MapPin,
-    Building2,
-    Mail,
-    Globe,
-    Briefcase,
-    AlertCircle,
-    ChevronRight,
-    ShieldCheck
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useRouter, useParams } from "next/navigation";
+import { FileText, Save, ChevronRight } from "lucide-react";
+import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { Textarea } from "@/shared/components/ui/textarea";
+import axiosInstance from "@/lib/axios";
+import { showSuccess, showError, showWarning } from "@/shared/utils/toast";
 
 export default function BillingSettingsPage() {
+    const router = useRouter();
+    const params = useParams() as { orgName?: string };
+    const orgName = params.orgName || "";
     const [isSaving, setIsSaving] = useState(false);
+    const [loading, setLoading] = useState(true);
 
-    const handleSave = () => {
+    const [companyName, setCompanyName] = useState("");
+    const [taxId, setTaxId] = useState("29AAAAA0000A1Z5");
+    const [billingEmail, setBillingEmail] = useState("");
+    const [industry, setIndustry] = useState("Software & Technology");
+    const [address, setAddress] = useState("");
+    const [fiscalYear, setFiscalYear] = useState("April");
+    const [contactPhone, setContactPhone] = useState("");
+    const [contactName, setContactName] = useState("");
+    const [orgCountry, setOrgCountry] = useState("");
+
+    React.useEffect(() => {
+        const fetchOrgDetails = async () => {
+            try {
+                setLoading(true);
+                // We use the org name from params to get ID if needed, 
+                // but since we are authenticated as org, we can just get /organization/:id if we knew it,
+                // or we can use the switch-org logic to get current org.
+                // Actually, let's fetch current org details.
+                const res = await axiosInstance.get(`/organization/org/all`);
+                const currentOrg = res.data?.data?.[0]; // Assuming first for now, or we find by name
+                if (currentOrg) {
+                    setCompanyName(currentOrg.orgName || "");
+                    setBillingEmail(currentOrg.orgEmail || "");
+                    setContactName(currentOrg.orgContact || "");
+                    setContactPhone(currentOrg.orgPhone || "");
+                }
+            } catch (error) {
+                console.error("Failed to fetch org details:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchOrgDetails();
+    }, []);
+
+    const handleSave = async () => {
+        // Validation
+        if (!companyName.trim()) {
+            showWarning("Company legal name is required");
+            return;
+        }
+
+        if (/\d/.test(companyName)) {
+            showWarning("Company legal name should not contain numbers");
+            return;
+        }
+
+        if (!billingEmail.trim()) {
+            showWarning("Billing email is required");
+            return;
+        }
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(billingEmail)) {
+            showWarning("Please enter a valid billing email address");
+            return;
+        }
+
         setIsSaving(true);
-        setTimeout(() => {
+        try {
+            await axiosInstance.patch("/organization/update/details", {
+                name: companyName.trim(),
+                contactEmail: billingEmail.trim(),
+                contactPhone: contactPhone.trim(),
+                contactName: contactName.trim(),
+                address: address.trim(),
+                orgCountry: orgCountry.trim() || "India"
+            });
+            showSuccess("Billing details saved successfully");
+        } catch (error: any) {
+            console.error("Failed to save billing details:", error);
+            showError(error.response?.data?.message || "Failed to save billing details");
+        } finally {
             setIsSaving(false);
-            alert("Enterprise metadata updated!");
-        }, 1000);
+        }
     };
 
+    const quickLinks = [
+        { label: "Audit Log", path: `/${orgName}/audit-logs` },
+        { label: "Invoices", path: `/${orgName}/modules/billing/invoices` },
+        { label: "Payment Methods", path: `/${orgName}/modules/billing/payments` },
+    ];
+
     return (
-        <div className="space-y-6 text-[#1A1A1A]">
-            <div className="flex items-center justify-between">
-                <div className="flex flex-col gap-1">
-                    <h1 className="text-[22px] font-bold tracking-tight">Billing Configuration</h1>
-                    <p className="text-[13px] text-zinc-500">Manage your organization's legal and tax information for invoice generation.</p>
+        <div className="flex flex-col min-h-screen bg-transparent">
+            {/* Header */}
+            <div className="p-6 pb-0">
+                <div className="flex items-center justify-between mb-1">
+                    <div>
+                        <h1 className="text-2xl font-bold tracking-tight text-zinc-900">Billing Details</h1>
+                        <p className="text-sm text-zinc-500 mt-1">
+                            Manage your organization&apos;s billing information and invoice settings.
+                        </p>
+                    </div>
+                    <Button
+                        onClick={handleSave}
+                        disabled={isSaving}
+                        size="sm"
+                        className="rounded-none bg-primary hover:bg-primary/90 h-8 text-xs font-medium gap-2 px-5"
+                    >
+                        <Save size={14} />
+                        {isSaving ? "Saving..." : "Save Changes"}
+                    </Button>
                 </div>
-                <Button
-                    onClick={handleSave}
-                    disabled={isSaving}
-                    className="rounded-none bg-blue-600 hover:bg-blue-700 font-black text-[11px] h-10 gap-2 shadow-xl shadow-blue-100 uppercase tracking-widest px-8"
-                >
-                    <Save size={14} /> {isSaving ? "SYNCING..." : "COMMIT CHANGES"}
-                </Button>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-2 space-y-8">
-                    <div className="bg-white border border-zinc-200 rounded-none shadow-2xl shadow-zinc-200/50 overflow-hidden">
-                        <div className="p-5 border-b border-zinc-100 bg-zinc-50/50 flex items-center justify-between">
-                            <h3 className="text-[13px] font-black text-zinc-900 uppercase tracking-[2pt] flex items-center gap-3">
-                                <Building2 size={18} className="text-blue-600" /> Legal Entity Node
-                            </h3>
-                            <span className="text-[10px] font-black text-zinc-400">EN-504 TYPE SPEC</span>
-                        </div>
-                        <div className="p-8 space-y-8">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                <div className="space-y-3">
-                                    <Label className="text-[10px] font-black uppercase tracking-[1.5pt] text-zinc-400">Enterprise Legal Name</Label>
-                                    <Input defaultValue="Fixl Solutions Private Limited" className="rounded-none border-zinc-200 focus:ring-blue-600 h-11 text-[14px] font-black tracking-tight" />
-                                </div>
-                                <div className="space-y-3">
-                                    <Label className="text-[10px] font-black uppercase tracking-[1.5pt] text-zinc-400">Tax Vault ID (GST/VAT)</Label>
-                                    <Input defaultValue="29AAAAA0000A1Z5" className="rounded-none border-zinc-200 focus:ring-blue-600 h-11 text-[14px] font-mono font-bold" />
-                                </div>
-                                <div className="space-y-3">
-                                    <Label className="text-[10px] font-black uppercase tracking-[1.5pt] text-zinc-400">Ledger Email Vector</Label>
-                                    <div className="relative">
-                                        <Input defaultValue="accounts@fixlsolutions.com" className="pl-12 rounded-none border-zinc-200 focus:ring-blue-600 h-11 text-[14px] font-bold" />
-                                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" size={18} />
-                                    </div>
-                                </div>
-                                <div className="space-y-3">
-                                    <Label className="text-[10px] font-black uppercase tracking-[1.5pt] text-zinc-400">Sector Classification</Label>
-                                    <Input defaultValue="Software Engineering & Cloud" className="rounded-none border-zinc-200 focus:ring-blue-600 h-11 text-[14px] font-bold" />
-                                </div>
-                            </div>
+            <div className="flex-1 p-6 space-y-6">
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="bg-gradient-to-br from-primary/80 to-primary p-6 rounded-none shadow-xl shadow-primary/20 text-white">
+                    <p className="text-white text-xs opacity-80">Organization</p>
+                    <p className="text-white text-xl font-semibold mt-1">Fixl Solutions</p>
+                    <p className="text-white text-[10px] mt-1 opacity-70">Billing entity</p>
+                </div>
 
-                            <div className="space-y-3">
-                                <Label className="text-[10px] font-black uppercase tracking-[1.5pt] text-zinc-400">Primary Compliance Address</Label>
-                                <div className="relative">
-                                    <Textarea
-                                        defaultValue="102, Innovation Hub, Outer Ring Road, Bangalore, Karnataka, 560103, India"
-                                        className="pl-12 rounded-none border-zinc-200 focus:ring-blue-600 min-h-[100px] text-[14px] pt-4 font-bold leading-relaxed"
+                <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
+                    <p className="text-zinc-500 text-xs">Tax ID</p>
+                    <p className="text-xl font-semibold text-zinc-900 mt-1">29AAA...1Z5</p>
+                    <p className="text-primary text-[10px] mt-1">GST registered</p>
+                </div>
+
+                <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
+                    <p className="text-zinc-500 text-xs">Currency</p>
+                    <p className="text-xl font-semibold text-zinc-900 mt-1">USD</p>
+                    <p className="text-zinc-400 text-[10px] mt-1">United States Dollar</p>
+                </div>
+
+                <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-lg">
+                    <p className="text-zinc-500 text-xs">Fiscal Year</p>
+                    <p className="text-xl font-semibold text-zinc-900 mt-1">April</p>
+                    <p className="text-zinc-400 text-[10px] mt-1">Start month</p>
+                </div>
+            </div>
+
+            {/* Content */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Left Column */}
+                <div className="lg:col-span-2 space-y-6">
+                    {/* Company Information */}
+                    <div className="bg-white border border-gray-200 rounded-none">
+                        <div className="px-5 py-4 border-b border-gray-100">
+                            <h3 className="text-sm font-semibold text-gray-900">Company Information</h3>
+                        </div>
+                        <div className="p-5 space-y-5">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                <div className="space-y-1.5">
+                                    <Label className="text-xs font-medium text-zinc-600">Company Legal Name</Label>
+                                    <Input
+                                        value={companyName}
+                                        onChange={(e) => setCompanyName(e.target.value)}
+                                        className="rounded-none h-9 text-sm"
                                     />
-                                    <MapPin className="absolute left-4 top-4 text-zinc-400" size={18} />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <Label className="text-xs font-medium text-zinc-600">Tax ID (GST/VAT)</Label>
+                                    <Input
+                                        value={taxId}
+                                        onChange={(e) => setTaxId(e.target.value)}
+                                        className="rounded-none h-9 text-sm font-mono"
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <Label className="text-xs font-medium text-zinc-600">Billing Email</Label>
+                                    <Input
+                                        value={billingEmail}
+                                        onChange={(e) => setBillingEmail(e.target.value)}
+                                        className="rounded-none h-9 text-sm"
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <Label className="text-xs font-medium text-zinc-600">Industry</Label>
+                                    <Input
+                                        value={industry}
+                                        onChange={(e) => setIndustry(e.target.value)}
+                                        className="rounded-none h-9 text-sm"
+                                    />
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div className="bg-white border border-zinc-200 rounded-none shadow-2xl shadow-zinc-200/50 overflow-hidden">
-                        <div className="p-5 border-b border-zinc-100 bg-zinc-50/50">
-                            <h3 className="text-[13px] font-black text-zinc-900 uppercase tracking-[2pt] flex items-center gap-3">
-                                <Globe size={18} className="text-blue-600" /> Global Region Matrix
-                            </h3>
+                    {/* Billing Address */}
+                    <div className="bg-white border border-gray-200 rounded-none">
+                        <div className="px-5 py-4 border-b border-gray-100">
+                            <h3 className="text-sm font-semibold text-gray-900">Billing Address</h3>
                         </div>
-                        <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
-                            <div className="space-y-3">
-                                <Label className="text-[10px] font-black uppercase tracking-[1.5pt] text-zinc-400">Primary Settlement Currency</Label>
-                                <Input defaultValue="USD - United States Dollar" readOnly className="bg-zinc-50 rounded-none border-zinc-200 h-11 text-[14px] font-black cursor-not-allowed text-zinc-500" />
+                        <div className="p-5">
+                            <div className="space-y-1.5">
+                                <Label className="text-xs font-medium text-zinc-600">Address</Label>
+                                <Textarea
+                                    value={address}
+                                    onChange={(e) => setAddress(e.target.value)}
+                                    className="rounded-none text-sm min-h-[80px]"
+                                />
                             </div>
-                            <div className="space-y-3">
-                                <Label className="text-[10px] font-black uppercase tracking-[1.5pt] text-zinc-400">Fiscal Period Initialization</Label>
-                                <Input defaultValue="April Lifecycle" className="rounded-none border-zinc-200 focus:ring-blue-600 h-11 text-[14px] font-black" />
+                        </div>
+                    </div>
+
+                    {/* Regional Settings */}
+                    <div className="bg-white border border-gray-200 rounded-none">
+                        <div className="px-5 py-4 border-b border-gray-100">
+                            <h3 className="text-sm font-semibold text-gray-900">Regional Settings</h3>
+                        </div>
+                        <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <div className="space-y-1.5">
+                                <Label className="text-xs font-medium text-gray-600">Currency</Label>
+                                <Input
+                                    defaultValue="USD - United States Dollar"
+                                    readOnly
+                                    className="rounded-none h-9 text-sm bg-gray-50 text-gray-500 cursor-not-allowed"
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-xs font-medium text-zinc-600">Fiscal Year Start</Label>
+                                <Input
+                                    value={fiscalYear}
+                                    onChange={(e) => setFiscalYear(e.target.value)}
+                                    className="rounded-none h-9 text-sm"
+                                />
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div className="space-y-8">
-                    <div className="bg-gradient-to-br from-blue-700 to-indigo-800 p-8 rounded-none shadow-2xl shadow-blue-200/50 text-white space-y-6">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-none">
-                                <FileText size={24} />
+                {/* Right Column (Sidebar) */}
+                <div className="space-y-6">
+                    {/* Invoice Template Card */}
+                    <div className="bg-gradient-to-br from-primary to-primary/80 p-5 rounded-none text-white">
+                        <div className="flex items-center gap-3 mb-3">
+                            <div className="p-2 bg-white/10 rounded-none">
+                                <FileText size={18} />
                             </div>
-                            <h4 className="font-black text-[15px] uppercase tracking-[1pt]">Document Logic</h4>
+                            <h4 className="text-sm font-semibold">Invoice Template</h4>
                         </div>
-                        <p className="text-[13px] text-blue-100 leading-relaxed font-medium">
-                            Enterprise metadata provided here is strictly validated and injected into all PDF nodes and tax filings in real-time.
-                        </p>
-                        <div className="pt-2">
-                            <button className="text-[11px] font-black uppercase tracking-[2pt] hover:underline flex items-center gap-2">
-                                VERIFY TEMPLATE <ChevronRight size={14} className="text-blue-300" />
-                            </button>
-                        </div>
-                    </div>
-
-                    <div className="bg-zinc-900 p-8 rounded-none shadow-2xl shadow-zinc-300 text-white space-y-5">
-                        <div className="flex items-center gap-3 text-blue-400">
-                            <ShieldCheck size={20} />
-                            <h4 className="font-black text-[13px] uppercase tracking-[1.5pt]">Compliance Guard</h4>
-                        </div>
-                        <p className="text-[12px] text-zinc-400 leading-relaxed font-medium">
-                            Address vectors are cross-referenced with local financial authorities to ensure seamless high-value transactions.
+                        <p className="text-sm text-white/80 leading-relaxed">
+                            Your billing details are automatically applied to all generated invoices.
                         </p>
                     </div>
 
-                    <div className="bg-white border border-zinc-200 p-6 rounded-none shadow-xl shadow-zinc-100 space-y-5">
-                        <div className="flex items-center gap-3 text-zinc-900">
-                            <Briefcase size={20} className="text-blue-600" />
-                            <h4 className="font-black text-[13px] uppercase tracking-[1.5pt]">Resources</h4>
+                    {/* Quick Links */}
+                    <div className="bg-white border border-gray-200 rounded-none">
+                        <div className="px-5 py-4 border-b border-gray-100">
+                            <h3 className="text-sm font-semibold text-gray-900">Quick Links</h3>
                         </div>
-                        <ul className="space-y-4">
-                            {[
-                                { label: "Audit Log Trail", icon: Save },
-                                { label: "Tax Certificates", icon: Globe },
-                                { label: "PO Management", icon: Building2 }
-                            ].map((link, i) => (
+                        <ul>
+                            {quickLinks.map((link, i) => (
                                 <li key={i}>
-                                    <a href="#" className="group flex items-center justify-between p-3 border border-zinc-50 hover:border-blue-100 hover:bg-blue-50/50 transition-all">
-                                        <span className="text-[12px] text-zinc-600 font-black uppercase tracking-tight group-hover:text-blue-700">{link.label}</span>
-                                        <link.icon size={14} className="text-zinc-300 group-hover:text-blue-400" />
-                                    </a>
+                                    <button
+                                        onClick={() => router.push(link.path)}
+                                        className="flex items-center justify-between px-5 py-3 text-sm text-zinc-600 hover:text-primary hover:bg-zinc-50 transition-colors border-b border-zinc-50 last:border-b-0 w-full text-left"
+                                    >
+                                        {link.label}
+                                        <ChevronRight size={14} className="text-zinc-300" />
+                                    </button>
                                 </li>
                             ))}
                         </ul>
                     </div>
                 </div>
+            </div>
             </div>
         </div>
     );

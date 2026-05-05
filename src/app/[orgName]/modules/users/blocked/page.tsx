@@ -1,208 +1,301 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
     ShieldAlert,
     Search,
-    RefreshCw,
     UserX,
-    UserCheck,
     AlertTriangle,
-    MapPin,
-    Clock,
-    ExternalLink,
-    Loader2,
-    ChevronRight,
-    MoreVertical,
-    Activity
+    Activity,
+    ShieldCheck
 } from "lucide-react"
 import { CustomButton } from "@/components/custom/CustomButton"
 import SubHeader from "@/components/custom/SubHeader"
 import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
-import { toast } from "sonner"
+import {
+    CustomDialog,
+    CustomDialogContent,
+    CustomDialogHeader,
+    CustomDialogTitle,
+    CustomDialogDescription,
+    CustomDialogFooter,
+} from "@/shared/components/custom/CustomDialog"
+import {
+    CustomSelect,
+    CustomSelectTrigger,
+    CustomSelectValue,
+    CustomSelectContent,
+    CustomSelectItem,
+} from "@/shared/components/custom/CustomSelect"
+import { CustomLabel } from "@/shared/components/custom/CustomLabel"
+import { showSuccess, showWarning, showError } from "@/utils/toast"
+import { fetchUsersApi, updateOrgUser } from "@/modules/crm/organizations/hooks/orgHooks"
+
+interface BlockedUser {
+    id: string
+    name: string
+    email: string
+    riskLevel: "Critical" | "Medium" | "Low"
+    reason: string
+    blockedDate: string
+    status: string
+}
+
+const mapApiUserToBlocked = (apiUser: any): BlockedUser => {
+    const name = [apiUser.firstName, apiUser.lastName].filter(Boolean).join(" ") || "Unknown"
+    const blockedDate = apiUser.updatedAt
+        ? new Date(apiUser.updatedAt).toISOString().split("T")[0]
+        : apiUser.joinedAt
+        ? new Date(apiUser.joinedAt).toISOString().split("T")[0]
+        : "N/A"
+
+    // Derive risk level + reason heuristically from API fields:
+    //   • No MFA enabled → Critical
+    //   • Failed login attempts >= 5 → Critical
+    //   • No recent activity (no lastLoginAt) → Medium
+    //   • Otherwise → Low
+    const noMfa = apiUser.twoFAEnabled === false
+    const failedAttempts = typeof apiUser.failedLoginAttempts === "number" ? apiUser.failedLoginAttempts : 0
+    const hasNeverLoggedIn = !apiUser.lastLoginAt && !apiUser.lastLogin
+
+    let riskLevel: "Critical" | "Medium" | "Low" = "Low"
+    let reason = "Account suspended"
+    if (failedAttempts >= 5) {
+        riskLevel = "Critical"
+        reason = `${failedAttempts} failed login attempts`
+    } else if (noMfa) {
+        riskLevel = "Critical"
+        reason = "MFA not enrolled"
+    } else if (hasNeverLoggedIn) {
+        riskLevel = "Medium"
+        reason = "No recent sign-in activity"
+    }
+
+    return {
+        id: apiUser._id,
+        name,
+        email: apiUser.email || "",
+        riskLevel,
+        reason,
+        blockedDate,
+        status: "Blocked",
+    }
+}
 
 export default function BlockedRiskyUsersPage() {
     const [searchQuery, setSearchQuery] = useState("")
+    const [riskFilter, setRiskFilter] = useState("all")
+    const [unblockTarget, setUnblockTarget] = useState<BlockedUser | null>(null)
+    const [blockedUsers, setBlockedUsers] = useState<BlockedUser[]>([])
+    const [loading, setLoading] = useState(true)
 
-    const riskyUsers = [
-        {
-            id: "r1",
-            name: "James Bond",
-            email: "007@mi6.gov",
-            riskLevel: "Critical",
-            reason: "Impossible Travel Detected",
-            lastLocation: "Moscow, RU",
-            status: "Blocked"
-        },
-        {
-            id: "r2",
-            name: "Unknown Entity",
-            email: "guest_82@proxy.net",
-            riskLevel: "Medium",
-            reason: "Multiple Failed MFA attempts",
-            lastLocation: "Berlin, DE",
-            status: "Active (Monitored)"
-        },
-    ]
+    useEffect(() => {
+        const loadBlockedUsers = async () => {
+            try {
+                setLoading(true)
+                const res = await fetchUsersApi()
+                const data = res?.data || res || []
+                const usersArray = Array.isArray(data) ? data : data.users ? data.users : []
+                const blocked = usersArray.filter((u: any) => u.orgActive === false)
+                setBlockedUsers(blocked.map(mapApiUserToBlocked))
+            } catch (err: any) {
+                showError(err?.response?.data?.message || "Failed to load blocked users")
+            } finally {
+                setLoading(false)
+            }
+        }
+        loadBlockedUsers()
+    }, [])
+
+    const filtered = blockedUsers.filter((u) => {
+        const matchesSearch =
+            u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            u.email.toLowerCase().includes(searchQuery.toLowerCase())
+        const matchesRisk = riskFilter === "all" || u.riskLevel.toLowerCase() === riskFilter
+        return matchesSearch && matchesRisk
+    })
+
+    const criticalCount = blockedUsers.filter((u) => u.riskLevel === "Critical").length
+    const mediumCount = blockedUsers.filter((u) => u.riskLevel === "Medium").length
+
+    const handleUnblock = async () => {
+        if (!unblockTarget) return
+        try {
+            await updateOrgUser(unblockTarget.id, { orgActive: true })
+            setBlockedUsers((prev) => prev.filter((u) => u.id !== unblockTarget.id))
+            showSuccess(`${unblockTarget.name} has been unblocked successfully`)
+            setUnblockTarget(null)
+        } catch (err: any) {
+            showError(err?.response?.data?.message || "Failed to unblock user")
+        }
+    }
+
+    const riskBadge = (level: string) => {
+        switch (level) {
+            case "Critical":
+                return <Badge className="bg-red-50 text-red-600 border border-red-200 rounded-none text-[10px] font-medium">{level}</Badge>
+            case "Medium":
+                return <Badge className="bg-amber-50 text-amber-600 border border-amber-200 rounded-none text-[10px] font-medium">{level}</Badge>
+            default:
+                return <Badge className="bg-green-50 text-green-600 border border-green-200 rounded-none text-[10px] font-medium">{level}</Badge>
+        }
+    }
 
     return (
         <div className="relative min-h-screen bg-[#F8F9FC] dark:bg-zinc-950">
             <SubHeader
                 title="Blocked & Risky Users"
                 breadcrumbItems={[
-                    { label: "Identity & Access", href: "#" },
-                    { label: "Security", href: "#" },
-                    { label: "Risky Users", href: "#" }
+                    { label: "Users", href: "#" },
+                    { label: "Blocked & risky", href: "#" },
                 ]}
-                rightControls={
-                    <CustomButton className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-xl shadow-lg shadow-red-500/20">
-                        Block All High Risk
-                    </CustomButton>
-                }
             />
 
-            <div className="p-4 md:p-8 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <div className="p-4 md:p-8 space-y-6">
+                {/* Header */}
+                <div>
+                    <h1 className="text-xl font-semibold text-gray-900">Blocked & risky users</h1>
+                    <p className="text-xs text-gray-600 mt-1">Manage blocked accounts and monitor users flagged for suspicious activity</p>
+                </div>
 
-                {/* Risk Intelligence HUD */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div className="bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-800 rounded-3xl p-5 group flex flex-col justify-between h-40">
-                        <ShieldAlert className="w-8 h-8 text-red-600 mb-4 group-hover:scale-110 transition-transform" />
-                        <div>
-                            <h5 className="text-sm font-black text-red-900 dark:text-red-100 uppercase tracking-tighter">Critical Risk</h5>
-                            <p className="text-3xl font-black text-red-600">01</p>
-                        </div>
+                {/* Stats */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="bg-white border border-gray-200 rounded-none p-4">
+                        <p className="text-xs text-gray-500">Total blocked</p>
+                        <p className="text-xl font-semibold text-primary mt-1">{blockedUsers.length}</p>
+                        <p className="text-[10px] text-gray-400 mt-0.5">All blocked accounts</p>
                     </div>
-                    <div className="bg-orange-50 dark:bg-orange-900/10 border border-orange-100 dark:border-orange-800 rounded-3xl p-5 group flex flex-col justify-between h-40">
-                        <AlertTriangle className="w-8 h-8 text-orange-600 mb-4 group-hover:scale-110 transition-transform" />
-                        <div>
-                            <h5 className="text-sm font-black text-orange-900 dark:text-orange-100 uppercase tracking-tighter">Medium Risk</h5>
-                            <p className="text-3xl font-black text-orange-600">04</p>
-                        </div>
+                    <div className="bg-white border border-gray-200 rounded-none p-4">
+                        <p className="text-xs text-gray-500">Critical risk</p>
+                        <p className="text-xl font-semibold text-red-600 mt-1">{criticalCount}</p>
+                        <p className="text-[10px] text-gray-400 mt-0.5">Immediate attention needed</p>
                     </div>
-                    <div className="bg-zinc-900 dark:bg-zinc-100 border-0 rounded-3xl p-5 group flex flex-col justify-between h-40 text-white dark:text-zinc-900 shadow-2xl">
-                        <UserX className="w-8 h-8 opacity-40 mb-4 group-hover:rotate-12 transition-transform" />
-                        <div>
-                            <h5 className="text-sm font-black uppercase tracking-tighter opacity-60">Total Blocked</h5>
-                            <p className="text-3xl font-black">12</p>
-                        </div>
+                    <div className="bg-white border border-gray-200 rounded-none p-4">
+                        <p className="text-xs text-gray-500">Medium risk</p>
+                        <p className="text-xl font-semibold text-amber-600 mt-1">{mediumCount}</p>
+                        <p className="text-[10px] text-gray-400 mt-0.5">Under review</p>
                     </div>
-                    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-5 group flex flex-col justify-between h-40 shadow-sm">
-                        <Activity className="w-8 h-8 text-blue-500 mb-4 group-hover:scale-110 transition-transform" />
-                        <div>
-                            <h5 className="text-sm font-black text-zinc-900 dark:text-zinc-100 uppercase tracking-tighter">Threat Level</h5>
-                            <p className="text-3xl font-black text-emerald-500 uppercase tracking-tighter">LOW</p>
-                        </div>
+                    <div className="bg-white border border-gray-200 rounded-none p-4">
+                        <p className="text-xs text-gray-500">Threat level</p>
+                        <p className="text-xl font-semibold text-green-600 mt-1">Low</p>
+                        <p className="text-[10px] text-gray-400 mt-0.5">Overall assessment</p>
                     </div>
                 </div>
 
-                {/* Command Bar */}
-                <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-2 shadow-sm flex items-center gap-2">
+                {/* Search + Filter */}
+                <div className="flex items-center gap-3">
                     <div className="relative flex-1">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                         <input
                             type="text"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-11 pr-4 py-2 bg-transparent border-none focus:ring-0 text-sm placeholder:text-zinc-400"
-                            placeholder="Search through risky identities and suspicious activities..."
+                            className="w-full pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-none text-sm placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-primary"
+                            placeholder="Search by name or email..."
                         />
                     </div>
+                    <CustomSelect value={riskFilter} onValueChange={setRiskFilter}>
+                        <CustomSelectTrigger className="w-[160px] rounded-none">
+                            <CustomSelectValue placeholder="Filter by risk" />
+                        </CustomSelectTrigger>
+                        <CustomSelectContent className="rounded-none">
+                            <CustomSelectItem value="all">All levels</CustomSelectItem>
+                            <CustomSelectItem value="critical">Critical</CustomSelectItem>
+                            <CustomSelectItem value="medium">Medium</CustomSelectItem>
+                            <CustomSelectItem value="low">Low</CustomSelectItem>
+                        </CustomSelectContent>
+                    </CustomSelect>
                 </div>
 
-                {/* Risk List Table */}
-                <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl shadow-xl overflow-hidden relative">
-                    <div className="overflow-x-auto min-h-[300px]">
-                        <table className="w-full text-left border-collapse">
+                {/* Table */}
+                <div className="bg-white border border-gray-200 rounded-none overflow-hidden">
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left">
                             <thead>
-                                <tr className="bg-zinc-50/50 dark:bg-zinc-900/50 border-b border-zinc-100 dark:border-zinc-800">
-                                    <th className="p-5 text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-[0.2em]">flagged identity</th>
-                                    <th className="p-5 text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-[0.2em]">risk assessment</th>
-                                    <th className="p-5 text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-[0.2em]">last anomalous activity</th>
-                                    <th className="p-5 text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-[0.2em]">action status</th>
-                                    <th className="p-5 text-right w-12"></th>
+                                <tr className="border-b border-gray-100 bg-gray-50">
+                                    <th className="px-4 py-3 text-xs font-medium text-gray-500">Name</th>
+                                    <th className="px-4 py-3 text-xs font-medium text-gray-500">Risk level</th>
+                                    <th className="px-4 py-3 text-xs font-medium text-gray-500">Reason</th>
+                                    <th className="px-4 py-3 text-xs font-medium text-gray-500">Blocked date</th>
+                                    <th className="px-4 py-3 text-xs font-medium text-gray-500">Status</th>
+                                    <th className="px-4 py-3 text-xs font-medium text-gray-500 text-right">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-zinc-50 dark:divide-zinc-800/50">
-                                {riskyUsers.map((user) => (
-                                    <tr key={user.id} className="hover:bg-red-50/10 transition-all group">
-                                        <td className="p-5">
-                                            <div className="flex items-center gap-4">
-                                                <div className={`h-10 w-10 rounded-xl flex items-center justify-center text-white font-bold text-xs shadow-lg ${user.riskLevel === 'Critical' ? 'bg-red-600 shadow-red-500/20' : 'bg-orange-500 shadow-orange-500/20'}`}>
-                                                    {user.riskLevel === 'Critical' ? '!!!' : '!!'}
-                                                </div>
-                                                <div className="flex flex-col gap-0.5">
-                                                    <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">{user.name}</span>
-                                                    <span className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400">{user.email}</span>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="p-5">
-                                            <div className="flex flex-col gap-1">
-                                                <Badge variant="outline" className={`w-fit text-[9px] font-black tracking-widest px-2 ${user.riskLevel === 'Critical' ? 'border-red-200 text-red-600 bg-red-50' : 'border-orange-200 text-orange-600 bg-orange-50'
-                                                    }`}>
-                                                    {user.riskLevel.toUpperCase()}
-                                                </Badge>
-                                                <p className="text-[11px] font-bold text-zinc-500 truncate max-w-[200px]">{user.reason}</p>
-                                            </div>
-                                        </td>
-                                        <td className="p-5">
-                                            <div className="flex flex-col gap-1">
-                                                <div className="flex items-center gap-2">
-                                                    <MapPin className="w-3 h-3 text-zinc-400" />
-                                                    <span className="text-xs font-bold text-zinc-600 dark:text-zinc-300">{user.lastLocation}</span>
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <Clock className="w-3 h-3 text-zinc-400" />
-                                                    <span className="text-[10px] font-medium text-zinc-500">2 hours ago</span>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="p-5">
-                                            <Badge className={`border-0 text-[10px] font-black truncate max-w-[120px] px-2 py-0.5 rounded-full ${user.status.includes('Blocked') ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'
-                                                }`}>
-                                                {user.status.toUpperCase()}
-                                            </Badge>
-                                        </td>
-                                        <td className="p-5 text-right">
-                                            <div className="flex items-center justify-end gap-2">
-                                                <CustomButton
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={() => toast.success("Self-remediation request sent")}
-                                                    className="h-8 rounded-lg hover:bg-blue-50 text-blue-600 font-bold text-[10px] uppercase px-3 shadow-none border-0"
-                                                >
-                                                    Remediate
-                                                </CustomButton>
-                                                <MoreVertical className="w-4 h-4 text-zinc-300 ml-2" />
-                                            </div>
+                            <tbody className="divide-y divide-gray-50">
+                                {loading ? (
+                                    <tr>
+                                        <td colSpan={6} className="px-4 py-12 text-center">
+                                            <p className="text-sm text-gray-500">Loading blocked users...</p>
                                         </td>
                                     </tr>
-                                ))}
+                                ) : filtered.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={6} className="px-4 py-12 text-center">
+                                            <ShieldCheck className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                                            <p className="text-sm text-gray-400">No blocked users found</p>
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    filtered.map((user) => (
+                                        <tr key={user.id} className="hover:bg-gray-50/50 transition-colors">
+                                            <td className="px-4 py-3">
+                                                <div>
+                                                    <p className="text-sm font-medium text-gray-900">{user.name}</p>
+                                                    <p className="text-xs text-gray-500">{user.email}</p>
+                                                </div>
+                                            </td>
+                                            <td className="px-4 py-3">{riskBadge(user.riskLevel)}</td>
+                                            <td className="px-4 py-3">
+                                                <p className="text-xs text-gray-600 max-w-[200px] truncate">{user.reason}</p>
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <p className="text-xs text-gray-600">{user.blockedDate}</p>
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <Badge className="bg-red-50 text-red-600 border border-red-200 rounded-none text-[10px] font-medium">
+                                                    {user.status}
+                                                </Badge>
+                                            </td>
+                                            <td className="px-4 py-3 text-right">
+                                                <CustomButton
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="rounded-none text-xs"
+                                                    onClick={() => setUnblockTarget(user)}
+                                                >
+                                                    Unblock
+                                                </CustomButton>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
                             </tbody>
                         </table>
                     </div>
                 </div>
-
-                {/* Global Protection Policies Link */}
-                <div className="p-8 rounded-[3rem] bg-zinc-900 text-white relative overflow-hidden group">
-                    <ShieldAlert className="absolute -top-10 -left-10 h-64 w-64 text-white opacity-5 group-hover:rotate-12 transition-transform" />
-                    <div className="relative z-10 space-y-4 max-w-2xl">
-                        <h4 className="text-3xl font-black tracking-tight">Identity Protection Policies</h4>
-                        <p className="text-zinc-400 text-sm font-medium leading-relaxed">
-                            Set up automated responses for suspicious login patterns. Take immediate action like revoking active sessions or requiring an immediate password reset when risks are detected.
-                        </p>
-                        <div className="flex items-center gap-4 pt-2">
-                            <CustomButton className="bg-white text-zinc-900 hover:bg-zinc-100 font-black rounded-xl text-xs h-11 px-8">
-                                Configure Protection <ChevronRight className="ml-2 w-4 h-4" />
-                            </CustomButton>
-                            <button className="text-xs font-bold text-zinc-500 hover:text-white transition-colors flex items-center gap-2">
-                                View Audit Logs <ExternalLink className="w-3.5 h-3.5" />
-                            </button>
-                        </div>
-                    </div>
-                </div>
             </div>
+
+            {/* Unblock confirmation dialog */}
+            <CustomDialog open={!!unblockTarget} onOpenChange={(open) => !open && setUnblockTarget(null)}>
+                <CustomDialogContent className="max-w-md rounded-none p-0 overflow-hidden">
+                    <div className="bg-primary px-5 py-4">
+                        <CustomDialogTitle className="text-white text-sm font-semibold">Confirm unblock</CustomDialogTitle>
+                    </div>
+                    <div className="px-5 py-4">
+                        <CustomDialogDescription className="text-sm text-gray-600">
+                            Are you sure you want to unblock <span className="font-semibold text-gray-900">{unblockTarget?.name}</span>? This will restore their access to the system.
+                        </CustomDialogDescription>
+                    </div>
+                    <CustomDialogFooter className="px-5 pb-4">
+                        <CustomButton variant="outline" size="sm" className="rounded-none" onClick={() => setUnblockTarget(null)}>
+                            Cancel
+                        </CustomButton>
+                        <CustomButton size="sm" className="rounded-none bg-primary text-white" onClick={handleUnblock}>
+                            Unblock user
+                        </CustomButton>
+                    </CustomDialogFooter>
+                </CustomDialogContent>
+            </CustomDialog>
         </div>
     )
 }

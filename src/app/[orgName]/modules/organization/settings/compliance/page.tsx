@@ -3,7 +3,7 @@
 import React, { useState } from "react"
 import {
     ShieldCheck,
-    FileShield,
+    Shield,
     Lock,
     AlertCircle,
     CheckCircle2,
@@ -16,7 +16,9 @@ import {
     ExternalLink,
     Scale,
     Gavel,
-    Eye
+    Eye,
+    ArrowRight,
+    FileText
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
@@ -27,7 +29,7 @@ import { SmallCard, SmallCardHeader, SmallCardContent } from "@/shared/component
 import { toast } from "sonner"
 
 const complianceStandards = [
-    { name: "GDPR Compliance", desc: "Data protection and privacy for EU citizens.", status: "Verified", date: "Jan 2024", icon: FileShield },
+    { name: "GDPR Compliance", desc: "Data protection and privacy for EU citizens.", status: "Verified", date: "Jan 2024", icon: Shield },
     { name: "SOC 2 Type II", desc: "Security, availability, and processing integrity.", status: "Active", date: "Feb 2024", icon: ShieldCheck },
     { name: "HIPAA Standard", desc: "Patient data privacy and security provisions.", status: "In-Progress", date: "Reviewing", icon: Scale },
 ]
@@ -124,8 +126,8 @@ export default function CompliancePage() {
                                         </div>
                                         <div className="flex flex-col items-end gap-1.5">
                                             <Badge className={`text-[9px] font-black uppercase tracking-widest rounded-md ${std.status === 'Verified' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
-                                                    std.status === 'Active' ? 'bg-blue-50 text-blue-700 border-blue-100' :
-                                                        'bg-amber-50 text-amber-700 border-amber-100'
+                                                std.status === 'Active' ? 'bg-blue-50 text-blue-700 border-blue-100' :
+                                                    'bg-amber-50 text-amber-700 border-amber-100'
                                                 }`} variant="outline">
                                                 {std.status}
                                             </Badge>
@@ -136,7 +138,7 @@ export default function CompliancePage() {
                             </div>
                         </CardContent>
                         <CardFooter className="bg-slate-50/30 border-t border-slate-100 p-4">
-                            <Button variant="ghost" className="w-full text-xs font-black uppercase text-blue-600 gap-2 h-9">
+                            <Button variant="ghost" className="w-full text-xs font-black uppercase text-blue-600 gap-2 h-9" onClick={() => toast.info("Opening Legal Directory portal...")}>
                                 Browse Legal Directory <ExternalLink className="w-3.5 h-3.5" />
                             </Button>
                         </CardFooter>
@@ -183,7 +185,7 @@ export default function CompliancePage() {
                             <p className="text-xs text-slate-400 font-medium leading-relaxed font-sans">
                                 Currently 4 entities are under Legal Hold due to pending "Audit-2024". Their data retention overrides all other policies.
                             </p>
-                            <Button className="w-full bg-white text-slate-950 hover:bg-slate-100 font-black uppercase text-[10px] tracking-widest h-10 mt-4 shadow-xl">
+                            <Button className="w-full bg-white text-slate-950 hover:bg-slate-100 font-black uppercase text-[10px] tracking-widest h-10 mt-4 shadow-xl" onClick={() => toast.info("Fetching active legal holds for review...")}>
                                 Review Active Holds
                             </Button>
                         </div>
@@ -201,7 +203,7 @@ export default function CompliancePage() {
                                 <p className="text-[10px] text-slate-500 font-medium mt-1">compliance@fixl.io</p>
                             </div>
                         </div>
-                        <Button variant="outline" className="w-full text-xs font-bold border-slate-200 h-10 flex items-center justify-between">
+                        <Button variant="outline" className="w-full text-xs font-bold border-slate-200 h-10 flex items-center justify-between" onClick={() => toast.info("Opening Authorized Registry...")}>
                             Authorized Registry <ArrowRight className="w-3.5 h-3.5 text-slate-300" />
                         </Button>
                     </Card>

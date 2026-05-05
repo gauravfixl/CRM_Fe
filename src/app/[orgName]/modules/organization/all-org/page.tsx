@@ -94,15 +94,15 @@ export default function OrganizationsPage() {
         }
       />
 
-      <div className="bg-zinc-50/50 p-3 md:p-4 z-10 rounded-xl shadow-sm min-h-[70vh] mt-4">
+      <div className="bg-background/50 p-3 md:p-4 z-10 rounded-xl shadow-sm min-h-[70vh] mt-4 border border-border/50">
         <div className="flex flex-col 3xl:flex-row w-full gap-6 items-start">
-          <div className="flex-1 bg-white rounded-lg shadow-sm p-4 overflow-hidden flex flex-col min-w-0 w-full">
-            <div className="p-2 border-b mb-4">
+          <div className="flex-1 bg-card border border-border rounded-lg shadow-sm p-4 overflow-hidden flex flex-col min-w-0 w-full">
+            <div className="p-2 border-b border-border mb-4">
               <div className="relative max-w-xs">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <CustomInput
                   placeholder="Search organizations..."
-                  className="pl-10 h-9"
+                  className="pl-10 h-9 bg-background border-border text-foreground"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
@@ -114,28 +114,28 @@ export default function OrganizationsPage() {
                 {filteredOrgs.map((org) => (
                   <SmallCard
                     key={org.orgId}
-                    className={`cursor-pointer transition-all hover:shadow-md ${selectedOrg?.orgId === org.orgId ? "border-primary bg-primary/5" : ""}`}
+                    className={`cursor-pointer transition-all hover:shadow-md border-border ${selectedOrg?.orgId === org.orgId ? "border-primary bg-primary/5" : ""}`}
                     onClick={() => handleSwitchOrg(org.orgId)}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2 min-w-0 flex-1">
                         {org.logo ? (
-                          <img src={org.logo} alt={org.orgName} className="h-8 w-8 rounded-md object-cover" />
+                          <img src={org.logo} alt={org.orgName} className="h-8 w-8 rounded-md object-cover border border-border" />
                         ) : (
                           <div className="h-8 w-8 rounded-md bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xs font-semibold">
                             {org.orgName?.split(" ").map((n: string) => n[0]).join("").slice(0, 2)}
                           </div>
                         )}
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium truncate">{org.orgName}</p>
-                          <p className="text-xs text-gray-500 truncate">{org.orgContact || "No Contact"}</p>
+                          <p className="text-sm font-medium truncate text-foreground">{org.orgName}</p>
+                          <p className="text-xs text-muted-foreground truncate">{org.orgContact || "No Contact"}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
                         {org.orgActive && (
-                          <Badge variant="secondary" className="bg-green-100 text-green-700 text-[10px] px-2 py-0.5 border-0"><Shield className="h-3 w-3 mr-1" />Active</Badge>
+                          <Badge variant="secondary" className="bg-green-500/10 text-green-600 dark:text-green-400 text-[10px] px-2 py-0.5 border-0"><Shield className="h-3 w-3 mr-1" />Active</Badge>
                         )}
-                        <CustomButton variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); handleViewOrg(org.orgName, org.orgId); }}><Eye className="h-4 w-4" /></CustomButton>
+                        <CustomButton variant="ghost" size="sm" className="hover:bg-muted text-foreground" onClick={(e) => { e.stopPropagation(); handleViewOrg(org.orgName, org.orgId); }}><Eye className="h-4 w-4" /></CustomButton>
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-2 mt-3 text-[11px]">
@@ -151,38 +151,38 @@ export default function OrganizationsPage() {
           </div>
 
           {selectedOrg && (
-            <FlatCard className="org-details-panel w-full 3xl:w-[350px] flex-shrink-0 sticky top-4 mb-4">
-              <div className="flex items-center justify-between px-3 py-2 border-b">
-                <p className="text-sm font-semibold">Organization Details</p>
+            <FlatCard className="org-details-panel w-full 3xl:w-[350px] flex-shrink-0 sticky top-4 mb-4 border border-border bg-card">
+              <div className="flex items-center justify-between px-3 py-2 border-b border-border">
+                <p className="text-sm font-semibold text-foreground">Organization Details</p>
                 <CustomDropdownMenu>
-                  <CustomDropdownMenuTrigger asChild><CustomButton variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></CustomButton></CustomDropdownMenuTrigger>
-                  <CustomDropdownMenuContent align="end">
-                    <CustomDropdownMenuItem>Full Profile</CustomDropdownMenuItem>
-                    <CustomDropdownMenuItem>Contact Admin</CustomDropdownMenuItem>
+                  <CustomDropdownMenuTrigger asChild><CustomButton variant="ghost" size="icon" className="hover:bg-muted text-foreground"><MoreHorizontal className="h-4 w-4" /></CustomButton></CustomDropdownMenuTrigger>
+                  <CustomDropdownMenuContent align="end" className="bg-card border-border">
+                    <CustomDropdownMenuItem className="hover:bg-muted text-foreground">Full Profile</CustomDropdownMenuItem>
+                    <CustomDropdownMenuItem className="hover:bg-muted text-foreground">Contact Admin</CustomDropdownMenuItem>
                   </CustomDropdownMenuContent>
                 </CustomDropdownMenu>
               </div>
               <ScrollArea className="flex-1 p-4">
                 <div className="text-center space-y-2 mb-6">
                   {selectedOrg?.newOrgLogo?.url ? (
-                    <img src={selectedOrg.newOrgLogo.url} alt={selectedOrg?.name} className="h-16 w-16 mx-auto rounded-xl object-cover shadow-sm border" />
+                    <img src={selectedOrg.newOrgLogo.url} alt={selectedOrg?.name} className="h-16 w-16 mx-auto rounded-xl object-cover shadow-sm border border-border" />
                   ) : (
                     <div className="h-16 w-16 mx-auto rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-2xl shadow-sm">
                       {selectedOrg?.name.split(" ").map((n: string) => n[0]).join("").slice(0, 2)}
                     </div>
                   )}
-                  <p className="text-lg font-bold break-words">{selectedOrg.name}</p>
-                  {selectedOrg.orgActive && <Badge className="bg-green-100 text-green-700 border-0">Active</Badge>}
+                  <p className="text-lg font-bold break-words text-foreground">{selectedOrg.name}</p>
+                  {selectedOrg.orgActive && <Badge className="bg-green-500/10 text-green-600 dark:text-green-400 border-0">Active</Badge>}
                 </div>
                 <div className="space-y-4">
                   <div>
                     <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Admin Information</p>
-                    <div className="flex items-center gap-3 bg-zinc-50 p-2 rounded-lg border">
-                      <Avatar className="h-8 w-8 border shadow-sm shrink-0">
-                        <AvatarFallback className="bg-primary/10 text-primary text-xs">{selectedOrg.contactName.split(" ").map((n: string) => n[0]).join("")}</AvatarFallback>
+                    <div className="flex items-center gap-3 bg-muted/30 p-2 rounded-lg border border-border">
+                      <Avatar className="h-8 w-8 border border-border shadow-sm shrink-0">
+                        <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">{selectedOrg.contactName.split(" ").map((n: string) => n[0]).join("")}</AvatarFallback>
                       </Avatar>
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-semibold truncate">{selectedOrg.contactName}</p>
+                        <p className="text-sm font-semibold truncate text-foreground">{selectedOrg.contactName}</p>
                         <p className="text-[11px] text-muted-foreground break-all">{selectedOrg.contactEmail}</p>
                       </div>
                     </div>
@@ -195,8 +195,8 @@ export default function OrganizationsPage() {
                     </div>
                   </div>
 
-                  <div className="space-y-2 pt-4 border-t">
-                    <CustomButton className="w-full text-xs h-9" onClick={() => { }}>
+                  <div className="space-y-2 pt-4 border-t border-border">
+                    <CustomButton className="w-full text-xs h-9 bg-primary text-primary-foreground hover:bg-primary/90 font-bold" onClick={() => { }}>
                       <Key className="h-4 w-4 mr-2" />
                       Request Access
                     </CustomButton>

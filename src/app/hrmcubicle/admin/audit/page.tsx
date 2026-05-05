@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Button } from "@/shared/components/ui/button";
 import { Badge } from "@/shared/components/ui/badge";
 import {
@@ -18,7 +18,82 @@ import {
     Trash2
 } from "lucide-react";
 import { useToast } from "@/shared/components/ui/use-toast";
-import { useAuditLogsStore, type AuditLog, type AuditModule, type AuditAction } from "@/shared/data/audit-logs-store";
+import { auditLogsApi, extractApiError, type ApiAuditLog } from "@/shared/api/settings-api";
+
+type AuditAction = "Create" | "Update" | "Delete" | "Login" | "Logout";
+type AuditModule = "Authentication" | "Roles & Permissions" | "Employees" | "Payroll" | "Settings";
+type AuditSeverity = "Low" | "Medium" | "High" | "Critical";
+
+interface AuditLog {
+    id: string;
+    timestamp: string;
+    userName: string;
+    userRole: "Admin" | "Manager" | "Employee";
+    userId: string;
+    action: AuditAction;
+    module: AuditModule;
+    description: string;
+    severity: AuditSeverity;
+    ipAddress: string;
+    deviceInfo: string;
+    metadata?: Record<string, any>;
+}
+
+const INITIAL_AUDIT_LOGS: AuditLog[] = [
+    { id: "log-1", timestamp: new Date().toISOString(), userName: "Admin User", userRole: "Admin", userId: "usr-1", action: "Create", module: "Roles & Permissions", description: "Created new role 'Finance Auditor'", severity: "Medium", ipAddress: "192.168.1.10", deviceInfo: "Chrome 120 / Windows 11" },
+    { id: "log-2", timestamp: new Date(Date.now() - 3600000).toISOString(), userName: "Manager X", userRole: "Manager", userId: "usr-2", action: "Update", module: "Employees", description: "Updated designation for Ravi Kumar", severity: "Low", ipAddress: "192.168.1.11", deviceInfo: "Firefox / macOS" },
+    { id: "log-3", timestamp: new Date(Date.now() - 7200000).toISOString(), userName: "Admin User", userRole: "Admin", userId: "usr-1", action: "Delete", module: "Payroll", description: "Removed deduction 'Special Levy'", severity: "High", ipAddress: "192.168.1.10", deviceInfo: "Chrome 120 / Windows 11" },
+];
+
+const mapBackendLog = (l: ApiAuditLog): AuditLog => {
+    const actor = typeof l.actorId === "object" && l.actorId
+        ? `${l.actorId.firstName || ""} ${l.actorId.lastName || ""}`.trim() || l.actorId.email || "Unknown"
+        : "System";
+    const actorId = typeof l.actorId === "object" ? l.actorId?._id || "" : (l.actorId || "");
+    const actionMap: Record<string, AuditAction> = {
+        CREATE: "Create",
+        UPDATE: "Update",
+        DELETE: "Delete",
+        APPROVE: "Update",
+        REJECT: "Update",
+        LOCK: "Update",
+        UNLOCK: "Update",
+        OVERRIDE: "Update",
+    };
+    const moduleMap: Record<string, AuditModule> = {
+        Employee: "Employees",
+        Shift: "Settings",
+        Holiday: "Settings",
+        AttendancePolicy: "Settings",
+        ShiftAssignment: "Settings",
+        LeaveRequest: "Employees",
+        LeaveType: "Settings",
+        LeaveBalance: "Employees",
+        Payroll: "Payroll",
+        PayrollRun: "Payroll",
+        Policy: "Settings",
+        Attendance: "Employees",
+        Onboarding: "Employees",
+    };
+    const severity: AuditLog["severity"] =
+        l.action === "DELETE" ? "High" :
+            l.action === "CREATE" || l.action === "UPDATE" ? "Medium" :
+                "Low";
+    return {
+        id: l._id,
+        timestamp: l.createdAt,
+        userName: actor,
+        userRole: (l.actorRole || "Admin") as any,
+        userId: actorId,
+        action: actionMap[l.action] || "Update",
+        module: moduleMap[l.entityType] || "Settings",
+        description: l.message || `${l.action} on ${l.entityType}`,
+        severity,
+        ipAddress: l.ipAddress || "-",
+        deviceInfo: l.userAgent || "-",
+        metadata: { before: l.before, after: l.after, entityId: l.entityId, entityType: l.entityType } as any,
+    };
+};
 import {
     Sheet,
     SheetContent,
@@ -33,7 +108,11 @@ import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMe
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
 
 const AuditLogsPage = () => {
-    const { logs, clearOldLogs } = useAuditLogsStore();
+    const [logs, setLogs] = useState<AuditLog[]>(INITIAL_AUDIT_LOGS);
+    const clearOldLogs = (cutoffIso: string) => {
+        const cutoff = Date.parse(cutoffIso);
+        setLogs((prev) => prev.filter((l) => Date.parse(l.timestamp) >= cutoff));
+    };
     const { toast } = useToast();
 
     // Filters
@@ -44,13 +123,35 @@ const AuditLogsPage = () => {
 
     // View State
     const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+
+    // Hydrate from backend
+    useEffect(() => {
+        let cancel = false;
+        (async () => {
+            setIsLoading(true);
+            try {
+                const res = await auditLogsApi.list({ page: 1, limit: 100 });
+                if (cancel || !Array.isArray(res?.data)) return;
+                if (res.data.length) {
+                    const mapped = res.data.map(mapBackendLog);
+                    setLogs(mapped);
+                }
+            } catch {
+                // Fall back to local mock
+            } finally {
+                if (!cancel) setIsLoading(false);
+            }
+        })();
+        return () => { cancel = true; };
+    }, []);
 
     const filteredLogs = useMemo(() => {
         return logs.filter(log => {
             const matchesSearch =
-                log.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                log.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                log.id.toLowerCase().includes(searchTerm.toLowerCase());
+                (log.description ?? "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+                (log.userName ?? "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+                (log.id ?? "").toLowerCase().includes(searchTerm.toLowerCase());
 
             const matchesModule = moduleFilter === "all" || log.module === moduleFilter;
             const matchesAction = actionFilter === "all" || log.action === actionFilter;
@@ -60,16 +161,41 @@ const AuditLogsPage = () => {
         });
     }, [logs, searchTerm, moduleFilter, actionFilter, severityFilter]);
 
-    const handleExport = () => {
-        toast({ title: "Export Started", description: `Downloading ${filteredLogs.length} audit records...` });
-        // Simulate download
+    const handleExport = async () => {
+        try {
+            const blob = await auditLogsApi.exportCsv({
+                entityType: moduleFilter === "all" ? undefined : moduleFilter,
+                action: actionFilter === "all" ? undefined : actionFilter.toUpperCase(),
+            });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `audit-logs-${Date.now()}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+            toast({ title: "Export Complete", description: "CSV downloaded." });
+        } catch (e) {
+            // Fallback: generate CSV client-side from filtered logs
+            const header = "Timestamp,User,Role,Action,Module,Description,Severity,IP\n";
+            const rows = filteredLogs.map(l =>
+                `"${new Date(l.timestamp).toISOString()}","${l.userName}","${l.userRole}","${l.action}","${l.module}","${(l.description || "").replace(/"/g, '""')}","${l.severity}","${l.ipAddress || ""}"`
+            ).join("\n");
+            const blob = new Blob([header + rows], { type: "text/csv" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url; a.download = `audit-logs-${Date.now()}.csv`; a.click();
+            URL.revokeObjectURL(url);
+            toast({ title: "Export Complete (local)", description: extractApiError(e, "Generated locally.") });
+        }
     };
 
     const handleClearLogs = () => {
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
         clearOldLogs(thirtyDaysAgo.toISOString());
-        toast({ title: "Cleaned Up", description: "Logs older than 30 days removed." });
+        toast({ title: "Cleaned Up (local)", description: "Old logs removed from the view. Backend audit logs are immutable." });
     };
 
     return (

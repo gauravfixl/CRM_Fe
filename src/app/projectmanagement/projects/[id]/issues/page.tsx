@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useEffect, useState } from "react"
 import { useParams } from "next/navigation"
 import {
     AlertCircle,
@@ -47,8 +47,13 @@ export default function IssuesPage() {
     const projectName = id === "p1" ? "Website Redesign" : "Project"
 
     const [createDialogOpen, setCreateDialogOpen] = useState(false)
-    const { getIssuesByProject, addIssue } = useIssueStore()
+    const { getIssuesByProject, addIssue, loadIssuesByProject } = useIssueStore()
     const issues = getIssuesByProject(projectId)
+
+    useEffect(() => {
+        void loadIssuesByProject(projectId).catch((e) => console.error("Failed to load issues:", e))
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [projectId])
 
     // Create Issue Form State
     const [newItem, setNewItem] = useState({ title: "", type: "TASK" as const, priority: "MEDIUM" as const })

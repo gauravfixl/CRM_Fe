@@ -9,6 +9,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useWorkspaceStore } from "@/shared/data/workspace-store"
 import { Loader2, LayoutGrid, CheckCircle } from "lucide-react"
+import { createWorkspace } from "@/modules/project-management/workspace/hooks/workspaceHooks"
+import { showError, showSuccess } from "@/utils/toast"
 
 interface CreateWorkspaceModalProps {
     isOpen: boolean
@@ -44,25 +46,34 @@ export default function CreateWorkspaceModal({ isOpen, onClose }: CreateWorkspac
     const handleCreate = async () => {
         if (!formData.name) return
 
-        setIsLoading(true)
+        try {
+            setIsLoading(true)
+            const res = await createWorkspace({
+                name: formData.name,
+                description: formData.description
+            })
 
-        // Simulate network delay
-        await new Promise(resolve => setTimeout(resolve, 1000))
+            const backendWs = res?.data?.workspace ?? res?.data
 
-        const newWorkspace = {
-            id: `ws-${Date.now()}`,
-            name: formData.name,
-            slug: formData.name.toLowerCase().replace(/\s+/g, '-'),
-            icon: formData.icon,
-            createdAt: new Date().toISOString(),
-            description: formData.description,
-            industry: formData.industry,
-            purpose: "Team Collaboration"
+            addWorkspace({
+                id: String(backendWs?._id ?? `ws-${Date.now()}`),
+                name: formData.name,
+                slug: backendWs?.slug ? String(backendWs.slug) : formData.name.toLowerCase().replace(/\s+/g, '-'),
+                icon: formData.icon,
+                createdAt: new Date().toISOString().slice(0, 10),
+                description: formData.description,
+                industry: formData.industry,
+                purpose: "Team Collaboration"
+            })
+
+            showSuccess("Workspace created successfully!")
+        } catch {
+            showError("Workspace creation failed.")
+            return
+        } finally {
+            setIsLoading(false)
         }
-
-        addWorkspace(newWorkspace)
         setStep(2)
-        setIsLoading(false)
 
         // Auto close after success? Or let user close.
         // Let's reset and close after a brief delay or let user click "Go to Workspace"

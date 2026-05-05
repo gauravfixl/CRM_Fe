@@ -1,6 +1,7 @@
 "use client"
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     Calendar,
@@ -43,14 +44,15 @@ import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
 import { Switch } from "@/shared/components/ui/switch";
+import { axiosInstance } from "@/lib/axios";
+import { getHolidaysByYear } from "@/modules/hrm/hooks/hrmHooks";
+import OptionalHolidaysPanel from "@/shared/components/hrm/timeattend/panels/optional-holidays-panel";
 
 const ShiftsAdminPage = () => {
+    const router = useRouter();
     const { toast } = useToast();
     const {
         shifts,
-        holidays,
-        addHoliday,
-        removeHoliday,
         createShift,
         updateShift,
         deleteShift,
@@ -62,6 +64,7 @@ const ShiftsAdminPage = () => {
     } = useAttendanceSettingsStore();
 
     const [activeTab, setActiveTab] = useState("shifts");
+    const [backendHolidays, setBackendHolidays] = useState<Holiday[]>([]);
 
     // Dialog States
     const [isHolidayOpen, setIsHolidayOpen] = useState(false);
@@ -84,19 +87,96 @@ const ShiftsAdminPage = () => {
     });
 
     const [selectedRule, setSelectedRule] = useState<AttendanceRule | null>(null);
+    const [ruleValue, setRuleValue] = useState<string>("");
     const [selectedStaff, setSelectedStaff] = useState<any>(null);
     const [targetShiftId, setTargetShiftId] = useState("");
 
-    const handleHolidaySubmit = () => {
-        if (!newHoliday.name || !newHoliday.date) return;
-        addHoliday(newHoliday);
-        setIsHolidayOpen(false);
-        setNewHoliday({ name: "", date: "", type: "National" });
-        toast({ title: "Holiday Added", description: "The new holiday has been saved to the calendar." });
+    const refreshBackendHolidays = async (year: number) => {
+        try {
+            const response = await getHolidaysByYear(year);
+            const holidaysFromBackend = response?.data?.data ?? [];
+
+            const mapped: Holiday[] = holidaysFromBackend.map((h: any) => ({
+                id: String(h._id || h.id),
+                name: h.name,
+                // Backend returns `date` as Date; normalize into YYYY-MM-DD for the UI store model.
+                date: new Date(h.date).toISOString().slice(0, 10),
+                type: h.type === "Optional" ? "Optional" : "National", // UI supports Regional, backend does not.
+            }));
+
+            setBackendHolidays(mapped);
+        } catch (err) {
+            // Errors are already handled inside hooks, but keep a safe toast fallback.
+            toast({ title: "Holidays Load Failed", description: "Could not fetch holidays from backend.", variant: "destructive" });
+        }
+    };
+
+    useEffect(() => {
+        // The UI is hardcoded for 2026, so load backend holidays only for that year.
+        refreshBackendHolidays(2026);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    const handleHolidaySubmit = async () => {
+        if (!newHoliday.name || !newHoliday.date) {
+            toast({ title: "Incomplete", description: "Holiday name and date are required.", variant: "destructive" });
+            return;
+        }
+        if (newHoliday.name.trim().length < 3) {
+            toast({ title: "Name Too Short", description: "Holiday name must be at least 3 characters.", variant: "destructive" });
+            return;
+        }
+        const hDate = new Date(newHoliday.date);
+        if (Number.isNaN(hDate.getTime())) {
+            toast({ title: "Invalid Date", description: "Please pick a valid date.", variant: "destructive" });
+            return;
+        }
+        const duplicate = backendHolidays.some(h => h.date === newHoliday.date && h.name.toLowerCase() === newHoliday.name.toLowerCase());
+        if (duplicate) {
+            toast({ title: "Duplicate Holiday", description: "A holiday with this name already exists on that date.", variant: "destructive" });
+            return;
+        }
+        try {
+            const backendType = newHoliday.type === "Optional" ? "Optional" : "National"; // backend has only National/Optional
+            await axiosInstance.post("/attendance/holidays/", {
+                name: newHoliday.name,
+                date: newHoliday.date,
+                type: backendType,
+                isPaid: true,
+                isMandatory: true,
+                locationId: null,
+            });
+
+            await refreshBackendHolidays(2026);
+            setIsHolidayOpen(false);
+            setNewHoliday({ name: "", date: "", type: "National" });
+            toast({ title: "Holiday Added", description: "Saved to backend holiday calendar." });
+        } catch (err: any) {
+            toast({ title: "Holiday Add Failed", description: err?.response?.data?.message || "Request failed.", variant: "destructive" });
+        }
     };
 
     const handleShiftSubmit = () => {
-        if (!newShift.name) return;
+        if (!newShift.name || newShift.name.trim().length < 3) {
+            toast({ title: "Invalid Name", description: "Shift name must be at least 3 characters.", variant: "destructive" });
+            return;
+        }
+        if (!newShift.startTime || !newShift.endTime) {
+            toast({ title: "Times Required", description: "Both start and end time are required.", variant: "destructive" });
+            return;
+        }
+        if (newShift.endTime <= newShift.startTime && !newShift.startTime.endsWith("PM")) {
+            toast({ title: "Invalid Range", description: "End time must be after start time (for overnight shifts, use isNightShift flag).", variant: "destructive" });
+            return;
+        }
+        if (newShift.workingHours < 1 || newShift.workingHours > 16) {
+            toast({ title: "Invalid Hours", description: "Working hours must be between 1 and 16.", variant: "destructive" });
+            return;
+        }
+        if (newShift.breakDuration < 0 || newShift.breakDuration > 480) {
+            toast({ title: "Invalid Break", description: "Break duration must be between 0 and 480 minutes.", variant: "destructive" });
+            return;
+        }
         if (selectedShift) {
             updateShift(selectedShift.id, newShift);
             toast({ title: "Shift Updated", description: `${newShift.name} has been modified successfully.` });
@@ -145,7 +225,7 @@ const ShiftsAdminPage = () => {
                         <Button
                             variant="outline"
                             className="rounded-xl font-bold border-slate-200 h-14 px-8"
-                            onClick={() => toast({ title: "Global Settings", description: "Redirecting to organization-wide policy dashboard..." })}
+                            onClick={() => router.push("/hrmcubicle/timeattend/settings")}
                         >
                             Global settings
                         </Button>
@@ -164,6 +244,7 @@ const ShiftsAdminPage = () => {
                             { id: "shifts", label: "Shift Types", icon: <Clock size={16} /> },
                             { id: "roster", label: "Live Roster", icon: <LayoutGrid size={16} /> },
                             { id: "holidays", label: "Holiday Deck", icon: <CalendarDays size={16} /> },
+                            { id: "optional-holidays", label: "Optional Holidays", icon: <CalendarDays size={16} /> },
                             { id: "rules", label: "System Rules", icon: <ShieldCheck size={16} /> }
                         ].map(tab => (
                             <TabsTrigger
@@ -304,9 +385,9 @@ const ShiftsAdminPage = () => {
                                         </Button>
                                     </div>
                                     <div className="divide-y divide-slate-50 max-h-[600px] overflow-y-auto no-scrollbar">
-                                        {holidays.length === 0 ? (
+                                        {backendHolidays.length === 0 ? (
                                             <div className="p-20 text-center text-slate-300 font-bold italic">No holidays configured for 2026.</div>
-                                        ) : holidays.map(h => (
+                                        ) : backendHolidays.map(h => (
                                             <div key={h.id} className="p-8 flex justify-between items-center group hover:bg-slate-50/50 transition-colors">
                                                 <div className="flex items-center gap-6">
                                                     <div className="h-16 w-16 bg-white shadow-xl rounded-[1.5rem] flex flex-col items-center justify-center border border-slate-100 group-hover:scale-105 transition-transform duration-300">
@@ -323,8 +404,15 @@ const ShiftsAdminPage = () => {
                                                     size="icon"
                                                     className="h-12 w-12 rounded-xl text-slate-200 hover:text-rose-500 hover:bg-rose-50 transition-all"
                                                     onClick={() => {
-                                                        removeHoliday(h.id);
-                                                        toast({ title: "Holiday Removed", description: `${h.name} has been deleted.`, variant: "destructive" });
+                                                        (async () => {
+                                                            try {
+                                                                await axiosInstance.delete(`/attendance/holidays/${h.id}`);
+                                                                await refreshBackendHolidays(2026);
+                                                                toast({ title: "Holiday Removed", description: `${h.name} has been deleted.`, variant: "destructive" });
+                                                            } catch (err: any) {
+                                                                toast({ title: "Holiday Remove Failed", description: err?.response?.data?.message || "Request failed.", variant: "destructive" });
+                                                            }
+                                                        })();
                                                     }}
                                                 >
                                                     <XCircle size={20} />
@@ -340,7 +428,7 @@ const ShiftsAdminPage = () => {
                                     <p className="text-indigo-200 text-sm mb-8 font-medium opacity-80">Configure holidays based on office location or regional compliance zones.</p>
                                     <div className="space-y-3 relative z-10">
                                         {["India - Delhi NCR", "India - Bangalore", "USA - Texas"].map(loc => (
-                                            <div key={loc} className="flex justify-between items-center p-5 bg-white/10 rounded-2xl backdrop-blur-sm group cursor-pointer hover:bg-white/20 transition-all border border-white/5">
+                                            <div key={loc} className="flex justify-between items-center p-5 bg-white/10 rounded-2xl backdrop-blur-sm group cursor-pointer hover:bg-white/20 transition-all border border-white/5" onClick={() => toast({ title: "Regional Setting", description: `Opening configuration for ${loc}...` })}>
                                                 <span className="font-bold text-sm tracking-tight">{loc}</span>
                                                 <div className="h-6 w-6 rounded-lg bg-emerald-500 flex items-center justify-center text-white scale-0 group-hover:scale-100 transition-transform">
                                                     <Check size={14} />
@@ -355,6 +443,11 @@ const ShiftsAdminPage = () => {
                                 </Card>
                             </div>
                         </div>
+                    </TabsContent>
+
+                    {/* Content: Optional Holidays */}
+                    <TabsContent value="optional-holidays">
+                        <OptionalHolidaysPanel />
                     </TabsContent>
 
                     {/* Content: Rules */}
@@ -397,6 +490,7 @@ const ShiftsAdminPage = () => {
                                             className="h-12 w-12 rounded-xl text-slate-200 hover:text-[#CB9DF0] hover:bg-slate-50 transition-all"
                                             onClick={() => {
                                                 setSelectedRule(rule);
+                                                setRuleValue(String(rule.config.gracePeriodMinutes || rule.config.overtimeMultiplier || ""));
                                                 setIsRuleOpen(true);
                                             }}
                                         >
@@ -413,7 +507,7 @@ const ShiftsAdminPage = () => {
 
                 {/* Holiday Dialog */}
                 <Dialog open={isHolidayOpen} onOpenChange={setIsHolidayOpen}>
-                    <DialogContent className="bg-white rounded-[2.5rem] border-none p-10 max-w-md shadow-2xl">
+                    <DialogContent className="bg-white rounded-[2.5rem] border-2 border-slate-200 p-10 max-w-md shadow-2xl">
                         <DialogHeader>
                             <DialogTitle className="text-2xl font-bold tracking-tight text-slate-900">Register new holiday</DialogTitle>
                             <DialogDescription className="font-bold text-slate-400 text-sm">Add statutory holidays to the 2026 corporate calendar.</DialogDescription>
@@ -423,7 +517,7 @@ const ShiftsAdminPage = () => {
                                 <Label className="font-bold ml-1 text-slate-600">Event name</Label>
                                 <Input
                                     placeholder="e.g. Diwali Pooja"
-                                    className="h-14 rounded-2xl bg-slate-50 border-none px-6 font-bold text-lg"
+                                    className="h-14 rounded-2xl bg-slate-50 border border-slate-200 px-6 font-bold text-lg"
                                     value={newHoliday.name}
                                     onChange={e => setNewHoliday({ ...newHoliday, name: e.target.value })}
                                 />
@@ -432,7 +526,7 @@ const ShiftsAdminPage = () => {
                                 <Label className="font-bold ml-1 text-slate-600">Calendar date</Label>
                                 <Input
                                     type="date"
-                                    className="h-14 rounded-2xl bg-slate-50 border-none px-6 font-bold text-lg"
+                                    className="h-14 rounded-2xl bg-slate-50 border border-slate-200 px-6 font-bold text-lg"
                                     value={newHoliday.date}
                                     onChange={e => setNewHoliday({ ...newHoliday, date: e.target.value })}
                                 />
@@ -440,7 +534,7 @@ const ShiftsAdminPage = () => {
                             <div className="space-y-2">
                                 <Label className="font-bold ml-1 text-slate-600">Holiday type</Label>
                                 <Select value={newHoliday.type} onValueChange={(v: any) => setNewHoliday({ ...newHoliday, type: v })}>
-                                    <SelectTrigger className="h-14 rounded-2xl bg-slate-50 border-none font-bold px-6 text-lg">
+                                    <SelectTrigger className="h-14 rounded-2xl bg-slate-50 border border-slate-200 font-bold px-6 text-lg">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent className="rounded-2xl border-none shadow-2xl">
@@ -459,7 +553,7 @@ const ShiftsAdminPage = () => {
 
                 {/* Shift Dialog */}
                 <Dialog open={isShiftOpen} onOpenChange={setIsShiftOpen}>
-                    <DialogContent className="bg-white rounded-[2.5rem] border-none p-10 max-w-lg shadow-2xl">
+                    <DialogContent className="bg-white rounded-[2.5rem] border-2 border-slate-200 p-10 max-w-lg shadow-2xl">
                         <DialogHeader>
                             <DialogTitle className="text-2xl font-bold tracking-tight text-slate-900">{selectedShift ? 'Configure shift logic' : 'Create new shift'}</DialogTitle>
                             <DialogDescription className="font-bold text-slate-400 text-sm">Define working hours and operational window for this shift.</DialogDescription>
@@ -469,7 +563,7 @@ const ShiftsAdminPage = () => {
                                 <Label className="font-bold ml-1 text-slate-600">Shift name</Label>
                                 <Input
                                     placeholder="e.g. Asia-Pac Morning"
-                                    className="h-14 rounded-2xl bg-slate-50 border-none px-6 font-bold text-lg"
+                                    className="h-14 rounded-2xl bg-slate-50 border border-slate-200 px-6 font-bold text-lg"
                                     value={newShift.name}
                                     onChange={e => setNewShift({ ...newShift, name: e.target.value })}
                                 />
@@ -478,7 +572,7 @@ const ShiftsAdminPage = () => {
                                 <Label className="font-bold ml-1 text-slate-600">Start time</Label>
                                 <Input
                                     type="time"
-                                    className="h-14 rounded-2xl bg-slate-50 border-none px-6 font-bold text-lg text-center"
+                                    className="h-14 rounded-2xl bg-slate-50 border border-slate-200 px-6 font-bold text-lg text-center"
                                     value={newShift.startTime}
                                     onChange={e => setNewShift({ ...newShift, startTime: e.target.value })}
                                 />
@@ -487,7 +581,7 @@ const ShiftsAdminPage = () => {
                                 <Label className="font-bold ml-1 text-slate-600">End time</Label>
                                 <Input
                                     type="time"
-                                    className="h-14 rounded-2xl bg-slate-50 border-none px-6 font-bold text-lg text-center"
+                                    className="h-14 rounded-2xl bg-slate-50 border border-slate-200 px-6 font-bold text-lg text-center"
                                     value={newShift.endTime}
                                     onChange={e => setNewShift({ ...newShift, endTime: e.target.value })}
                                 />
@@ -496,7 +590,7 @@ const ShiftsAdminPage = () => {
                                 <Label className="font-bold ml-1 text-slate-600">Working hours</Label>
                                 <Input
                                     type="number"
-                                    className="h-14 rounded-2xl bg-slate-50 border-none px-6 font-bold text-lg"
+                                    className="h-14 rounded-2xl bg-slate-50 border border-slate-200 px-6 font-bold text-lg"
                                     value={newShift.workingHours}
                                     onChange={e => setNewShift({ ...newShift, workingHours: Number(e.target.value) })}
                                 />
@@ -505,7 +599,7 @@ const ShiftsAdminPage = () => {
                                 <Label className="font-bold ml-1 text-slate-600">Break duration (mins)</Label>
                                 <Input
                                     type="number"
-                                    className="h-14 rounded-2xl bg-slate-50 border-none px-6 font-bold text-lg"
+                                    className="h-14 rounded-2xl bg-slate-50 border border-slate-200 px-6 font-bold text-lg"
                                     value={newShift.breakDuration}
                                     onChange={e => setNewShift({ ...newShift, breakDuration: Number(e.target.value) })}
                                 />
@@ -521,7 +615,7 @@ const ShiftsAdminPage = () => {
 
                 {/* Bulk Roster Dialog */}
                 <Dialog open={isRosterOpen} onOpenChange={setIsRosterOpen}>
-                    <DialogContent className="bg-white rounded-[2.5rem] border-none p-10 max-w-md shadow-2xl">
+                    <DialogContent className="bg-white rounded-[2.5rem] border-2 border-slate-200 p-10 max-w-md shadow-2xl">
                         <DialogHeader>
                             <DialogTitle className="text-2xl font-bold tracking-tight text-slate-900">Bulk shift assignment</DialogTitle>
                             <DialogDescription className="font-bold text-slate-400 text-sm">Reassign entire team to a different operational shift.</DialogDescription>
@@ -534,7 +628,7 @@ const ShiftsAdminPage = () => {
                             <div className="space-y-2">
                                 <Label className="font-bold ml-1 text-slate-600">Target operational shift</Label>
                                 <Select value={targetShiftId} onValueChange={setTargetShiftId}>
-                                    <SelectTrigger className="h-14 rounded-2xl bg-slate-50 border-none font-bold px-6 text-lg">
+                                    <SelectTrigger className="h-14 rounded-2xl bg-slate-50 border border-slate-200 font-bold px-6 text-lg">
                                         <SelectValue placeholder="Select target shift" />
                                     </SelectTrigger>
                                     <SelectContent className="rounded-2xl border-none shadow-2xl">
@@ -556,7 +650,7 @@ const ShiftsAdminPage = () => {
 
                 {/* Modify Individual Slot Dialog */}
                 <Dialog open={isModifySlotOpen} onOpenChange={setIsModifySlotOpen}>
-                    <DialogContent className="bg-white rounded-[2.5rem] border-none p-10 max-w-md shadow-2xl">
+                    <DialogContent className="bg-white rounded-[2.5rem] border-2 border-slate-200 p-10 max-w-md shadow-2xl">
                         <DialogHeader>
                             <DialogTitle className="text-2xl font-bold tracking-tight text-slate-900">Modify staff slot</DialogTitle>
                             <DialogDescription className="font-bold text-slate-400 text-sm">Change individual shift assignment for {selectedStaff?.name}.</DialogDescription>
@@ -574,7 +668,7 @@ const ShiftsAdminPage = () => {
                             <div className="space-y-2">
                                 <Label className="font-bold ml-1 text-slate-600">Assign to shift</Label>
                                 <Select value={targetShiftId} onValueChange={setTargetShiftId}>
-                                    <SelectTrigger className="h-14 rounded-2xl bg-slate-50 border-none font-bold px-6 text-lg">
+                                    <SelectTrigger className="h-14 rounded-2xl bg-slate-50 border border-slate-200 font-bold px-6 text-lg">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent className="rounded-2xl border-none shadow-2xl">
@@ -596,7 +690,7 @@ const ShiftsAdminPage = () => {
 
                 {/* Rule Config Dialog */}
                 <Dialog open={isRuleOpen} onOpenChange={setIsRuleOpen}>
-                    <DialogContent className="bg-white rounded-[2.5rem] border-none p-10 max-w-md shadow-2xl">
+                    <DialogContent className="bg-white rounded-[2.5rem] border-2 border-slate-200 p-10 max-w-md shadow-2xl">
                         <DialogHeader>
                             <DialogTitle className="text-2xl font-bold tracking-tight text-slate-900">System rule config</DialogTitle>
                             <DialogDescription className="font-bold text-slate-400 text-sm">Adjust global threshold for {selectedRule?.name}.</DialogDescription>
@@ -607,8 +701,9 @@ const ShiftsAdminPage = () => {
                                 <div className="relative group">
                                     <Input
                                         type="number"
-                                        className="h-14 rounded-2xl bg-slate-50 border-none px-6 font-bold text-2xl text-[#CB9DF0]"
-                                        defaultValue={selectedRule?.config.gracePeriodMinutes || selectedRule?.config.overtimeMultiplier || ""}
+                                        className="h-14 rounded-2xl bg-slate-50 border border-slate-200 px-6 font-bold text-2xl text-[#CB9DF0]"
+                                        value={ruleValue}
+                                        onChange={e => setRuleValue(e.target.value)}
                                     />
                                     <span className="absolute right-6 top-1/2 -translate-y-1/2 font-bold text-slate-400">
                                         {selectedRule?.type === 'Grace Period' ? 'Mins' : 'Multiplier'}
@@ -620,6 +715,14 @@ const ShiftsAdminPage = () => {
                             <Button
                                 className="w-full h-16 bg-[#CB9DF0] text-white rounded-[1.5rem] font-bold text-xl shadow-2xl shadow-purple-100 tracking-tight"
                                 onClick={() => {
+                                    if (selectedRule) {
+                                        const numVal = Number(ruleValue);
+                                        if (selectedRule.type === 'Grace Period') {
+                                            updateRule(selectedRule.id, { config: { ...selectedRule.config, gracePeriodMinutes: numVal } });
+                                        } else if (selectedRule.type === 'Overtime') {
+                                            updateRule(selectedRule.id, { config: { ...selectedRule.config, overtimeMultiplier: numVal } });
+                                        }
+                                    }
                                     setIsRuleOpen(false);
                                     toast({ title: "Rule Optimized", description: "Global attendance logic has been successfully calibrated." });
                                 }}

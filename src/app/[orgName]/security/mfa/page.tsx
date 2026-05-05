@@ -1,183 +1,280 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
-    Smartphone,
-    ShieldCheck,
-    Fingerprint,
-    Mail,
-    Key,
-    Plus,
-    Trash2,
-    ChevronRight,
-    ShieldAlert,
-    AlertCircle,
-    Clock,
-    Unlock,
-    History
+  Smartphone,
+  ShieldCheck,
+  Fingerprint,
+  Mail,
+  Key,
+  Users,
+  Clock,
+  RefreshCw,
+  ChevronRight,
+  Shield,
+  Zap,
+  Globe
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/shared/components/ui/button";
 import { Switch } from "@/shared/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/shared/components/ui/progress";
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-    DialogFooter,
-} from "@/shared/components/ui/dialog";
+import { Badge } from "@/shared/components/ui/badge";
+import { showSuccess, showError } from "@/utils/toast";
+import SubHeader from "@/shared/components/custom/SubHeader";
+import { SmallCard, SmallCardContent } from "@/shared/components/custom/SmallCard";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/shared/components/ui/card";
+import { Separator } from "@/shared/components/ui/separator";
+import { getOrgAdminSettings, updateOrgAdminSettings } from "@/hooks/orgAdminHooks";
 
 export default function MFAPage() {
-    const [showConfigModal, setShowConfigModal] = useState(false);
-    const [globalMFA, setGlobalMFA] = useState(true);
+  const [globalMFA, setGlobalMFA] = useState(true);
+  const [savingMFA, setSavingMFA] = useState(false);
 
-    const mfaMethods = [
-        { name: "Authenticator App (TOTP)", description: "Google Authenticator, Microsoft Authenticator, or Authy.", icon: Smartphone, status: "Mandatory", color: "text-blue-600", bg: "bg-blue-50" },
-        { name: "Security Keys (FIDO2)", description: "Hardware keys like YubiKey or Titan security keys.", icon: Key, status: "Recommended", color: "text-indigo-600", bg: "bg-indigo-50" },
-        { name: "Push Notifications", description: "One-tap approval via mobile enterprise app.", icon: Fingerprint, status: "Enabled", color: "text-emerald-600", bg: "bg-emerald-50" },
-        { name: "Email OTP", description: "Six-digit code sent to registered business email.", icon: Mail, status: "Optional", color: "text-amber-600", bg: "bg-amber-50" },
-    ];
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await getOrgAdminSettings();
+        const data: any = res?.data?.data || res?.data || {};
+        if (typeof data?.security?.enforceMFA === "boolean") {
+          setGlobalMFA(data.security.enforceMFA);
+        }
+      } catch {
+        // Silent fallback
+      }
+    })();
+  }, []);
 
-    return (
-        <div className="space-y-8 text-[#1A1A1A]">
-            {/* Header Section */}
-            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
-                <div className="flex flex-col gap-1">
-                    <h1 className="text-[24px] font-black tracking-tight uppercase">Multi-Factor Authentication</h1>
-                    <p className="text-[13px] text-zinc-500 font-medium tracking-tight">Reinforce identity verification with adaptive Second-Factor layers.</p>
-                </div>
-                <div className="flex items-center gap-6 bg-zinc-50 p-4 border border-zinc-200 rounded-none shadow-lg shadow-zinc-100/50">
-                    <div className="flex flex-col items-end">
-                        <span className="text-[10px] font-black uppercase tracking-[2pt] text-zinc-400">Global Enforcement</span>
-                        <span className={`text-[12px] font-black uppercase ${globalMFA ? 'text-blue-600' : 'text-zinc-400'}`}>
-                            {globalMFA ? 'STRICT MODE ACTIVE' : 'RELAXED MODE'}
-                        </span>
-                    </div>
-                    <Switch
-                        checked={globalMFA}
-                        onCheckedChange={setGlobalMFA}
-                        className="data-[state=checked]:bg-blue-600 h-7 w-12"
-                    />
-                </div>
-            </div>
+  const handleGlobalMFAChange = async (newValue: boolean) => {
+    if (savingMFA) return;
+    const previous = globalMFA;
+    setGlobalMFA(newValue);
+    setSavingMFA(true);
+    try {
+      await updateOrgAdminSettings({
+        security: { enforceMFA: newValue },
+      });
+      showSuccess(newValue ? "MFA enforcement enabled" : "MFA enforcement disabled");
+    } catch (err: any) {
+      setGlobalMFA(previous);
+      showError(err?.response?.data?.message || "Failed to update MFA enforcement");
+    } finally {
+      setSavingMFA(false);
+    }
+  };
+  const [methods, setMethods] = useState([
+    {
+      name: "Authenticator app (TOTP)",
+      description: "Google authenticator, Microsoft authenticator, or Authy.",
+      icon: Smartphone,
+      status: "Mandatory",
+      enabled: true,
+    },
+    {
+      name: "Security keys (FIDO2)",
+      description: "Hardware keys like YubiKey or Titan security keys.",
+      icon: Key,
+      status: "Recommended",
+      enabled: true,
+    },
+    {
+      name: "Push notifications",
+      description: "One-tap approval via mobile enterprise app.",
+      icon: Fingerprint,
+      status: "Enabled",
+      enabled: true,
+    },
+    {
+      name: "Email OTP",
+      description: "Six-digit code sent to registered business email.",
+      icon: Mail,
+      status: "Optional",
+      enabled: false,
+    },
+  ]);
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-
-                {/* MFA Methods Grid */}
-                <div className="lg:col-span-2 space-y-6">
-                    <div className="bg-white border border-zinc-200 rounded-none shadow-xl shadow-zinc-100 overflow-hidden transition-all duration-300 hover:shadow-2xl">
-                        <div className="p-8 border-b border-zinc-100 bg-gradient-to-br from-blue-700 to-indigo-800 text-white relative">
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2" />
-                            <h3 className="text-[16px] font-black uppercase tracking-[2pt] flex items-center gap-3 relative z-10">
-                                <ShieldCheck size={20} className="text-blue-300" /> Authorized Verification Nodes
-                            </h3>
-                            <p className="text-[11px] text-blue-100 font-bold uppercase tracking-widest mt-1 opacity-80 relative z-10">Select methods allowed for organization-wide identity proofing</p>
-                        </div>
-
-                        <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {mfaMethods.map((method, i) => (
-                                <div key={i} className="group p-6 border border-zinc-100 hover:border-blue-200 hover:bg-zinc-50/50 transition-all duration-300 relative overflow-hidden">
-                                    <div className="flex items-start justify-between mb-4">
-                                        <div className={`${method.bg} ${method.color} p-3 rounded-none border border-current/10 group-hover:bg-white transition-colors`}>
-                                            <method.icon size={22} className="stroke-[2.5px]" />
-                                        </div>
-                                        <Badge className={`${method.status === 'Mandatory' ? 'bg-rose-600' : 'bg-zinc-900'} text-white border-none rounded-none text-[9px] font-black uppercase px-2 py-0.5 tracking-widest`}>
-                                            {method.status}
-                                        </Badge>
-                                    </div>
-                                    <h4 className="text-[14px] font-black text-zinc-900 uppercase tracking-tight mb-2 group-hover:text-blue-600 transition-colors">{method.name}</h4>
-                                    <p className="text-[12px] text-zinc-500 font-medium leading-relaxed italic">{method.description}</p>
-                                    <div className="mt-6 flex items-center justify-between">
-                                        <Button variant="link" className="p-0 h-auto text-blue-600 font-black text-[11px] uppercase tracking-widest group-hover:gap-2 transition-all">
-                                            Configure Node <ChevronRight size={14} />
-                                        </Button>
-                                        <Switch defaultChecked className="data-[state=checked]:bg-emerald-600" />
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Trusted Recovery */}
-                    <div className="bg-white border border-zinc-200 rounded-none shadow-xl shadow-zinc-100 overflow-hidden transition-all duration-300 hover:shadow-2xl">
-                        <div className="p-5 border-b border-zinc-100 bg-zinc-50/50 flex items-center justify-between">
-                            <h3 className="text-[14px] font-black text-zinc-900 uppercase tracking-[2pt] flex items-center gap-3">
-                                <Unlock size={18} className="text-blue-600" /> Recovery Protocols
-                            </h3>
-                        </div>
-                        <div className="p-8 space-y-6">
-                            <div className="flex flex-col md:flex-row gap-8 items-center bg-blue-50/30 p-6 border border-blue-100 relative overflow-hidden">
-                                <div className="absolute top-0 right-0 p-4 opacity-5">
-                                    <History size={80} className="text-blue-600" />
-                                </div>
-                                <div className="space-y-2 relative z-10 flex-grow">
-                                    <h4 className="text-[14px] font-black text-blue-900 uppercase tracking-tight">Backup Recovery Codes</h4>
-                                    <p className="text-[12px] text-blue-700/70 font-bold leading-relaxed">System generates 10 single-use fallback codes per user. Require explicit admin approval for code generation?</p>
-                                </div>
-                                <div className="flex gap-4 relative z-10 w-full md:w-auto">
-                                    <Button variant="outline" className="flex-1 rounded-none border-blue-200 bg-white text-blue-600 font-black text-[11px] uppercase tracking-widest h-10 px-6">Review Logs</Button>
-                                    <Button className="flex-1 rounded-none bg-blue-600 hover:bg-blue-700 text-white font-black text-[11px] uppercase tracking-widest h-10 px-6">Configure Policy</Button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Right Column Index: Logic Cards */}
-                <div className="space-y-6">
-                    <div className="bg-zinc-900 p-8 rounded-none shadow-2xl text-white space-y-6 transition-all duration-300 hover:-translate-y-2 hover:shadow-blue-900/40 group relative overflow-hidden">
-                        <div className="absolute top-0 right-0 p-4 opacity-10 rotate-12">
-                            <ShieldAlert size={100} className="text-blue-500" />
-                        </div>
-                        <div className="flex items-center gap-3 text-blue-400 relative z-10">
-                            <Clock size={24} />
-                            <h4 className="font-black text-[15px] uppercase tracking-[1.5pt]">Enforcement Grace</h4>
-                        </div>
-                        <div className="space-y-4 relative z-10">
-                            <p className="text-[13px] text-zinc-400 font-black uppercase tracking-widest">Enrollment Window</p>
-                            <div className="flex items-baseline gap-2">
-                                <span className="text-[42px] font-black leading-none">72</span>
-                                <span className="text-[14px] font-bold text-zinc-500 uppercase tracking-widest">Hours</span>
-                            </div>
-                            <p className="text-[11px] text-zinc-400 font-medium leading-relaxed italic">New hires have 72 hours to link an MFA device before account suspension triggers.</p>
-                            <Button variant="link" className="p-0 text-blue-400 font-black text-[11px] uppercase tracking-[2pt] underline underline-offset-8">Modify Access Logic</Button>
-                        </div>
-                    </div>
-
-                    <div className="bg-white border border-zinc-200 p-8 rounded-none shadow-xl shadow-zinc-100 space-y-6 transition-all duration-300 hover:shadow-2xl">
-                        <div className="flex items-center gap-3 text-zinc-900">
-                            <Smartphone size={20} className="text-blue-600" />
-                            <h4 className="font-black text-[13px] uppercase tracking-[1.5pt]">Active Enrollment</h4>
-                        </div>
-                        <div className="space-y-4">
-                            <div className="flex justify-between items-end border-b border-zinc-50 pb-4">
-                                <div className="space-y-1">
-                                    <p className="text-[28px] font-black text-zinc-900 leading-none">94.2%</p>
-                                    <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Enrolled Identity Nodes</p>
-                                </div>
-                                <Badge className="bg-emerald-50 text-emerald-600 border-none rounded-none text-[9px] mb-1">HEALTHY</Badge>
-                            </div>
-                            <div className="space-y-1 mt-6">
-                                <div className="flex justify-between text-[11px] font-black uppercase tracking-wider text-zinc-500 mb-1">
-                                    <span>Coverage Matrix</span>
-                                    <span>1,204 / 1,280</span>
-                                </div>
-                                <Progress value={94} className="h-1.5 rounded-none bg-zinc-100" />
-                            </div>
-                            <div className="pt-4">
-                                <Button variant="outline" className="w-full rounded-none border-zinc-200 font-black text-[11px] uppercase tracking-widest h-10 hover:border-blue-500 hover:text-blue-600">Download Non-Compliant List</Button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="flex gap-3 bg-amber-50 border border-amber-100 p-5 rounded-none">
-                        <AlertCircle className="text-amber-600 shrink-0" size={18} />
-                        <p className="text-[11px] text-amber-700 font-bold leading-relaxed uppercase tracking-tight">Warning: Disabling global enforcement will immediately trigger security audits across all sub-regions.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
+  const toggleMethod = (index: number) => {
+    setMethods((prev) =>
+      prev.map((m, i) => (i === index ? { ...m, enabled: !m.enabled } : m))
     );
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "Mandatory":
+        return "bg-red-50 text-red-700 border-red-200";
+      case "Recommended":
+        return "bg-indigo-50 text-indigo-700 border-indigo-200";
+      case "Enabled":
+        return "bg-emerald-50 text-emerald-700 border-emerald-200";
+      case "Optional":
+        return "bg-gray-100 text-gray-600 border-gray-200";
+      default:
+        return "bg-gray-100 text-gray-600 border-gray-200";
+    }
+  };
+
+  return (
+    <div className="relative min-h-screen bg-[#F8F9FC] dark:bg-zinc-950 font-outfit">
+      <SubHeader
+        title="MFA / 2FA"
+        breadcrumbItems={[
+          { label: "Security", href: "#" },
+          { label: "MFA / 2FA", href: "#" }
+        ]}
+        description="Manage multi-factor authentication settings and enforcement policies for your organization."
+        rightControls={
+          <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl px-4 py-2 text-white">
+            <span className="text-sm font-semibold tracking-wide">Global enforcement</span>
+            <Switch
+              checked={globalMFA}
+              onCheckedChange={handleGlobalMFAChange}
+              disabled={savingMFA}
+              className="data-[state=checked]:bg-emerald-500 data-[state=unchecked]:bg-white/20 border border-white/10 shadow-inner"
+            />
+          </div>
+        }
+      />
+
+      <div className="p-4 md:p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <SmallCard className="border bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 rounded-2xl">
+            <SmallCardContent className="p-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-white/80 text-xs font-semibold uppercase tracking-widest">Enrollment rate</p>
+                  <p className="text-xl font-bold mt-2 text-white">94.2%</p>
+                  <p className="text-white/60 text-[10px] mt-1">Target: 100%</p>
+                </div>
+                <div className="h-10 w-10 bg-white/20 rounded-xl flex items-center justify-center">
+                  <ShieldCheck className="w-6 h-6 text-white" />
+                </div>
+              </div>
+            </SmallCardContent>
+          </SmallCard>
+
+          <SmallCard className="border bg-white dark:bg-zinc-900 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 rounded-2xl overflow-hidden group">
+            <SmallCardContent className="p-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-zinc-500 text-xs font-semibold uppercase tracking-widest">Enrolled users</p>
+                  <p className="text-xl font-bold text-zinc-900 dark:text-white mt-2">1,204</p>
+                  <p className="text-zinc-400 text-[10px] mt-1">Out of 1,280 total</p>
+                </div>
+                <div className="h-10 w-10 bg-zinc-50 dark:bg-zinc-800 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Users className="w-5 h-5 text-indigo-600" />
+                </div>
+              </div>
+            </SmallCardContent>
+          </SmallCard>
+
+          <SmallCard className="border bg-white dark:bg-zinc-900 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 rounded-2xl overflow-hidden group">
+            <SmallCardContent className="p-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-zinc-500 text-xs font-semibold uppercase tracking-widest">Grace period</p>
+                  <p className="text-xl font-bold text-zinc-900 dark:text-white mt-2">72 hours</p>
+                  <p className="text-indigo-600 text-[10px] mt-1 font-bold">Expires in 3 days</p>
+                </div>
+                <div className="h-10 w-10 bg-zinc-50 dark:bg-zinc-800 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Clock className="w-5 h-5 text-indigo-600" />
+                </div>
+              </div>
+            </SmallCardContent>
+          </SmallCard>
+
+          <SmallCard className="border bg-white dark:bg-zinc-900 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 rounded-2xl overflow-hidden group">
+            <SmallCardContent className="p-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-zinc-500 text-xs font-semibold uppercase tracking-widest">Recovery codes</p>
+                  <p className="text-xl font-bold text-zinc-900 dark:text-white mt-2">Active</p>
+                  <p className="text-emerald-600 text-[10px] mt-1 font-bold">10 codes per user</p>
+                </div>
+                <div className="h-10 w-10 bg-zinc-50 dark:bg-zinc-800 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <RefreshCw className="w-5 h-5 text-indigo-600" />
+                </div>
+              </div>
+            </SmallCardContent>
+          </SmallCard>
+        </div>
+
+        {/* Authentication Methods */}
+        <Card className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-xl overflow-hidden">
+          <CardHeader className="px-8 py-6 border-b border-zinc-100 dark:border-zinc-800">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl flex items-center justify-center">
+                <Shield className="w-5 h-5 text-indigo-600" />
+              </div>
+              <div>
+                <CardTitle className="text-lg font-bold">Authentication methods</CardTitle>
+                <CardDescription className="text-xs font-medium text-zinc-400">Configure which verification methods are available for your organization.</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="divide-y divide-zinc-50 dark:divide-zinc-800/50">
+              {methods.map((method, index) => (
+                <div
+                  key={index}
+                  className="px-8 py-6 flex items-center gap-6 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-all group"
+                >
+                  <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-500 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-900/40 group-hover:text-indigo-600 transition-colors">
+                    <method.icon size={24} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-bold text-zinc-900 dark:text-white">
+                      {method.name}
+                    </div>
+                    <div className="text-xs text-zinc-500 mt-1 font-medium">
+                      {method.description}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-6">
+                    <Badge
+                      className={`rounded-lg text-[10px] font-bold uppercase tracking-widest px-3 py-1 border shadow-sm ${getStatusColor(method.status)}`}
+                    >
+                      {method.status}
+                    </Badge>
+                    <Switch
+                      checked={method.enabled}
+                      onCheckedChange={() => toggleMethod(index)}
+                      className="data-[state=checked]:bg-indigo-600 shadow-sm"
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Recovery Options */}
+        <Card className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-xl overflow-hidden">
+          <div className="px-8 py-8 flex flex-col md:flex-row items-center justify-between gap-8">
+            <div className="flex items-start gap-6">
+              <div className="flex-shrink-0 w-14 h-14 rounded-2xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600">
+                <Key size={28} />
+              </div>
+              <div className="space-y-1">
+                <div className="text-lg font-bold text-zinc-900 dark:text-white">
+                  Backup recovery codes
+                </div>
+                <p className="text-sm text-zinc-500 font-medium leading-relaxed max-w-xl">
+                  Generate single-use backup codes that users can use when their
+                  primary method is unavailable. Recommended for all administrators.
+                </p>
+              </div>
+            </div>
+            <Button
+              className="bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-100 rounded-xl px-8 h-12 font-bold text-xs tracking-widest border-0 shadow-lg"
+              onClick={() =>
+                showSuccess("Recovery codes configuration saved successfully")
+              }
+            >
+              CONFIGURE CODES
+            </Button>
+          </div>
+        </Card>
+      </div>
+    </div>
+  );
 }
