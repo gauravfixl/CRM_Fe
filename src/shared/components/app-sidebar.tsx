@@ -1307,6 +1307,7 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
           { title: "Organization Dashboard", url: `/modules/organization/overview`, icon: LayoutDashboard },
           { title: "Org Health & Usage", url: `/modules/organization/health`, icon: Activity },
           { title: "Recent Admin Activity", url: `/modules/organization/activity`, icon: History },
+          { title: "Reports & Insights", url: `/modules/organization/insights`, icon: PieChart },
         ]
       }
     ].map(group => ({
@@ -1463,7 +1464,13 @@ const AppSidebarComponent = ({ open, setOpen, ...props }: SidebarProps) => {
     if (activePath?.includes("/modules/settings/entitlements/pipeline")) return "PipelineGov";
 
     // Organization Granular Drill-down
-    if (activePath?.includes("/modules/organization/overview") || activePath?.includes("/modules/organization/onboarding")) return "OrgOverview";
+    if (
+      activePath?.includes("/modules/organization/overview") ||
+      activePath?.includes("/modules/organization/onboarding") ||
+      activePath?.includes("/modules/organization/health") ||
+      activePath?.includes("/modules/organization/activity") ||
+      activePath?.includes("/modules/organization/insights")
+    ) return "OrgOverview";
     if (activePath?.includes("/modules/firm-management/firms/deleted") || activePath?.includes("/modules/organization/trash")) return "OrgRecycleBin";
     if (activePath?.includes("/modules/firm-management/firms") || activePath?.includes("/modules/organization/firms") || activePath?.includes("/modules/organization/create") || activePath?.includes("/modules/organization/admins") || activePath?.includes("/modules/organization/access")) return "OrgFirms";
     if (activePath?.includes("/modules/organization/branding")) return "OrgBranding";

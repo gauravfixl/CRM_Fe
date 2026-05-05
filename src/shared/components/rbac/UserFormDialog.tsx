@@ -23,11 +23,12 @@ import { getAllRolesNPermissions } from "@/hooks/roleNPermissionHooks"
 import { decryptData } from "@/utils/crypto"
 import {
   createOrgInvite,
+  updateOrgInvite,
   updateOrgUser,
 } from "@/modules/crm/organizations/hooks/orgHooks"
 import { adduser } from "@/modules/crm/users/hooks/userHooks"
 
-export type UserFormMode = "invite" | "direct" | "edit"
+export type UserFormMode = "invite" | "direct" | "edit" | "edit-invite"
 
 const nameRegex = /^[a-zA-Z][a-zA-Z\s]*$/
 const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/
@@ -250,7 +251,7 @@ export function UserFormDialog({
 
   useEffect(() => {
     if (!open) return
-    if (mode === "edit" && editTarget) {
+    if ((mode === "edit" || mode === "edit-invite") && editTarget) {
       editForm.reset({
         firstName: editTarget.firstName || "",
         lastName: editTarget.lastName || "",
@@ -277,6 +278,19 @@ export function UserFormDialog({
       })
     }
   }, [open, mode, editTarget])
+
+  // OrganizationInvite stores role as a plain string (e.g. "Manager"), not as
+  // an ObjectId. The edit form's zod schema requires roleId — so once the roles
+  // list arrives we backfill roleId from the invite's role name.
+  useEffect(() => {
+    if (!open || mode !== "edit-invite") return
+    if (!editTarget?.roleName) return
+    if (editForm.getValues("roleId")) return
+    const match = roles.find((r) => r.name === editTarget.roleName)
+    if (match) {
+      editForm.setValue("roleId", match._id, { shouldValidate: false })
+    }
+  }, [open, mode, editTarget, roles])
 
   const firmOptions = firms.map((f) => ({ label: f.FirmName, value: f._id }))
 
@@ -362,6 +376,28 @@ export function UserFormDialog({
     if (!editTarget) return
     try {
       const role = roles.find((r) => r._id === values.roleId)
+
+      if (mode === "edit-invite") {
+        // Pending invite — hits PATCH /organization/invite/:id which only
+        // updates firstName/lastName/role/firmIds (email is intentionally not
+        // editable for invites; that would effectively be a different invite).
+        const firmErr = validateFirmRequirement(values.roleId, values.firmIds)
+        if (firmErr) {
+          showError(firmErr)
+          return
+        }
+        await updateOrgInvite(editTarget.id, {
+          firstName: values.firstName.trim(),
+          lastName: values.lastName.trim(),
+          role: role?.name || undefined,
+          firmIds: values.firmIds,
+        })
+        showSuccess("Invite updated successfully")
+        onOpenChange(false)
+        onSuccess?.()
+        return
+      }
+
       // Backend UpdateOrganizationUser controller reads `Role` (capital R) +
       // optional `custom`/`overridePermissions`. Sending only lowercase `role`
       // was silently ignored — role changes never persisted. Send both casings
@@ -504,38 +540,47 @@ export function UserFormDialog({
   }
 
   const title =
-    mode === "edit" ? "Edit user" : mode === "direct" ? "Create user" : "Invite user"
+    mode === "edit"
+      ? "Edit user"
+      : mode === "edit-invite"
+        ? "Edit pending invite"
+        : mode === "direct"
+          ? "Create user"
+          : "Invite user"
   const description =
     mode === "edit"
       ? "Update user details, role, and firm assignments"
-      : mode === "direct"
-      ? "Create a user directly with immediate access"
-      : "Send an invitation — or create directly"
+      : mode === "edit-invite"
+        ? "Change name, role, or firm assignments before the user accepts. Email is locked."
+        : mode === "direct"
+          ? "Create a user directly with immediate access"
+          : "Send an invitation — or create directly"
 
   const icon =
-    mode === "edit" ? <Pencil className="w-5 h-5" /> : <UserPlus className="w-5 h-5" />
+    mode === "edit" || mode === "edit-invite" ? <Pencil className="w-5 h-5" /> : <UserPlus className="w-5 h-5" />
 
   const submittingEdit = editForm.formState.isSubmitting
   const submittingInvite = inviteForm.formState.isSubmitting
   const submittingDirect = directForm.formState.isSubmitting
 
   // Determine active form id + submit button state for the footer
+  const isEditMode = mode === "edit" || mode === "edit-invite"
   const activeFormId =
-    mode === "edit"
+    isEditMode
       ? EDIT_FORM_ID
       : activeTab === "direct"
       ? DIRECT_FORM_ID
       : INVITE_FORM_ID
 
   const activeSubmitting =
-    mode === "edit"
+    isEditMode
       ? submittingEdit
       : activeTab === "direct"
       ? submittingDirect
       : submittingInvite
 
   const activeSubmitLabel =
-    mode === "edit"
+    isEditMode
       ? "Save changes"
       : activeTab === "direct"
       ? "Create user"
@@ -572,7 +617,7 @@ export function UserFormDialog({
         </>
       }
     >
-      {mode === "edit" && editTarget ? (
+      {isEditMode && editTarget ? (
         <form
           id={EDIT_FORM_ID}
           onSubmit={editForm.handleSubmit(handleEditSubmit)}
@@ -582,7 +627,19 @@ export function UserFormDialog({
             {renderField("First name", "firstName", editForm, true, "text", "e.g. Priya")}
             {renderField("Last name", "lastName", editForm, true, "text", "e.g. Sharma")}
           </div>
-          {renderField("Email", "email", editForm, true, "email", "user@company.com")}
+          {mode === "edit-invite" ? (
+            <Field label="Email" hint="Email cannot be changed for an invite. Cancel and re-invite to use a different email.">
+              <Input
+                type="email"
+                value={editTarget.email}
+                disabled
+                readOnly
+                className="h-11 rounded-lg bg-gray-50 border-[#E5E7EB] text-gray-500 cursor-not-allowed"
+              />
+            </Field>
+          ) : (
+            renderField("Email", "email", editForm, true, "email", "user@company.com")
+          )}
           {renderRoleField(editForm)}
           {renderFirmsField(editForm)}
         </form>

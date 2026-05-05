@@ -12,6 +12,12 @@ import {
   Trash2,
   UserCheck,
   UserX,
+  Send,
+  Link2,
+  Eye,
+  AlertTriangle,
+  Mail,
+  CalendarClock,
 } from "lucide-react"
 import {
   Dialog,
@@ -31,7 +37,7 @@ import {
 import { showSuccess, showWarning, showError } from "@/utils/toast"
 import { UserFormDialog, splitName } from "@/shared/components/rbac/UserFormDialog"
 import { getAllUsers } from "@/modules/crm/users/hooks/userHooks"
-import { createOrgInvite, updateOrgUser, deleteOrgUser, getAllOrgInvites, declineOrgInvite } from "@/modules/crm/organizations/hooks/orgHooks"
+import { createOrgInvite, updateOrgUser, deleteOrgUser, getAllOrgInvites, declineOrgInvite, resendOrgInvite } from "@/modules/crm/organizations/hooks/orgHooks"
 
 type Role = string
 type Status = "Active" | "Pending" | "Suspended"
@@ -48,6 +54,7 @@ interface User {
   role: Role
   roleId?: string
   firmIds?: string[]
+  firmNames?: string[]
   status: Status
   mfa: MFA
   joined: string
@@ -55,6 +62,24 @@ interface User {
   // can route to the right backend endpoint (member vs invite collections).
   isPending?: boolean
   inviteToken?: string
+  // Invite-only metadata used by Resend / View details / expiry badge.
+  inviteCreatedAt?: string
+  inviteExpiresAt?: string
+  inviteIsExpired?: boolean
+  inviteExpiryLabel?: string
+  invitedById?: string
+}
+
+// Returns a friendly "expires in 45m" / "expired" label for a pending invite.
+const computeExpiryLabel = (expiresAt: string | undefined): { label: string; expired: boolean } => {
+  if (!expiresAt) return { label: "no expiry set", expired: false }
+  const diff = new Date(expiresAt).getTime() - Date.now()
+  if (Number.isNaN(diff)) return { label: "invalid expiry", expired: false }
+  if (diff <= 0) return { label: "expired", expired: true }
+  if (diff < 60 * 1000) return { label: `${Math.max(1, Math.round(diff / 1000))}s left`, expired: false }
+  if (diff < 60 * 60 * 1000) return { label: `${Math.round(diff / 60000)}m left`, expired: false }
+  if (diff < 24 * 60 * 60 * 1000) return { label: `${Math.round(diff / 3600000)}h left`, expired: false }
+  return { label: `${Math.round(diff / 86400000)}d left`, expired: false }
 }
 
 const STATUSES: Status[] = ["Active", "Pending", "Suspended"]
@@ -130,9 +155,16 @@ const mapInviteToUser = (invite: any): User => {
   const joined = invite.createdAt
     ? new Date(invite.createdAt).toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })
     : "N/A"
-  const firmIds: string[] = Array.isArray(invite.firmIds)
-    ? invite.firmIds.map((f: any) => String(f?._id || f))
-    : []
+
+  const firmRaw: any[] = Array.isArray(invite.firmIds) ? invite.firmIds : []
+  const firmIds: string[] = firmRaw.map((f: any) => String(f?._id || f))
+  const firmNames: string[] = firmRaw
+    .map((f: any) => (typeof f === "object" ? f?.FirmName : ""))
+    .filter(Boolean)
+
+  const expiresAtIso = invite.expiresAt ? new Date(invite.expiresAt).toISOString() : undefined
+  const { label: expiryLabel, expired } = computeExpiryLabel(expiresAtIso)
+
   return {
     id: invite._id || "",
     firstName,
@@ -141,11 +173,17 @@ const mapInviteToUser = (invite: any): User => {
     email: invite.email || "",
     role,
     firmIds,
+    firmNames,
     status: "Pending",
     mfa: "Disabled",
     joined,
     isPending: true,
     inviteToken: invite.token || "",
+    inviteCreatedAt: invite.createdAt,
+    inviteExpiresAt: expiresAtIso,
+    inviteIsExpired: expired,
+    inviteExpiryLabel: expiryLabel,
+    invitedById: invite.invitedBy ? String(invite.invitedBy) : undefined,
   }
 }
 
@@ -158,7 +196,10 @@ export default function AllUsersPage() {
   // Modal states
   const [inviteOpen, setInviteOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
+  const [editInviteOpen, setEditInviteOpen] = useState(false)
+  const [viewOpen, setViewOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [resendingId, setResendingId] = useState<string | null>(null)
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
 
   const loadUsers = async () => {
@@ -343,6 +384,68 @@ export default function AllUsersPage() {
   const openEditModal = (user: User) => {
     setSelectedUser(user)
     setEditOpen(true)
+  }
+
+  const openEditInviteModal = (user: User) => {
+    setSelectedUser(user)
+    setEditInviteOpen(true)
+  }
+
+  const openViewDetails = (user: User) => {
+    setSelectedUser(user)
+    setViewOpen(true)
+  }
+
+  // Builds the absolute accept-invite URL the admin can paste into Slack/WhatsApp
+  // when the email didn't reach. Token comes from the backend invite document.
+  const buildInviteLink = (token?: string) => {
+    if (!token) return ""
+    const origin = typeof window !== "undefined" ? window.location.origin : ""
+    return `${origin}/accept-invite?token=${token}`
+  }
+
+  const handleCopyInviteLink = async (user: User) => {
+    const link = buildInviteLink(user.inviteToken)
+    if (!link) {
+      showError("Invite link unavailable — token missing on this invite.")
+      return
+    }
+    try {
+      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(link)
+      } else {
+        // Fallback for older browsers / non-secure contexts (HTTP).
+        const ta = document.createElement("textarea")
+        ta.value = link
+        ta.style.position = "fixed"
+        ta.style.opacity = "0"
+        document.body.appendChild(ta)
+        ta.select()
+        document.execCommand("copy")
+        document.body.removeChild(ta)
+      }
+      showSuccess("Invite link copied to clipboard")
+    } catch {
+      showError("Couldn't copy automatically — copy from View details instead.")
+    }
+  }
+
+  const handleResendInvite = async (user: User) => {
+    if (!user.id) {
+      showError("Invite id missing — try refreshing the page.")
+      return
+    }
+    try {
+      setResendingId(user.id)
+      await resendOrgInvite(user.id)
+      showSuccess(`Invitation resent to ${user.email}`)
+      // Reload so the new expiresAt + rotated token reflect in the row.
+      loadUsers()
+    } catch (err: any) {
+      showError(err?.response?.data?.message || "Failed to resend invitation")
+    } finally {
+      setResendingId(null)
+    }
   }
 
   const handleChangeRole = async (user: User) => {
@@ -576,11 +679,24 @@ export default function AllUsersPage() {
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded-none ${statusBadgeClass(user.status)}`}>
-                          <span className={`h-1.5 w-1.5 rounded-full ${user.status === "Active" ? "bg-green-500" : user.status === "Pending" ? "bg-amber-500" : "bg-red-500"
-                            }`} />
-                          {user.status}
-                        </span>
+                        <div className="flex flex-col gap-0.5">
+                          <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded-none w-fit ${user.isPending && user.inviteIsExpired
+                              ? "bg-gray-100 text-gray-600 border border-gray-200"
+                              : statusBadgeClass(user.status)
+                            }`}>
+                            <span className={`h-1.5 w-1.5 rounded-full ${user.isPending && user.inviteIsExpired
+                                ? "bg-gray-400"
+                                : user.status === "Active" ? "bg-green-500"
+                                  : user.status === "Pending" ? "bg-amber-500" : "bg-red-500"
+                              }`} />
+                            {user.isPending && user.inviteIsExpired ? "Expired" : user.status}
+                          </span>
+                          {user.isPending && user.inviteExpiryLabel && !user.inviteIsExpired && (
+                            <span className="text-[10px] text-amber-600 font-medium pl-2">
+                              {user.inviteExpiryLabel}
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-4 py-3">
                         <span className={`inline-flex items-center text-xs font-medium px-2 py-1 rounded-none ${mfaBadgeClass(user.mfa)}`}>
@@ -597,8 +713,64 @@ export default function AllUsersPage() {
                               <MoreVertical className="w-4 h-4" />
                             </button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-48 rounded-none">
-                            {!user.isPending && (
+                          <DropdownMenuContent align="end" className="w-56 rounded-none">
+                            {user.isPending ? (
+                              <>
+                                <DropdownMenuItem
+                                  onClick={() => handleResendInvite(user)}
+                                  disabled={resendingId === user.id}
+                                  className="rounded-none cursor-pointer text-sm"
+                                >
+                                  <Send className={`w-4 h-4 mr-2 ${user.inviteIsExpired ? "text-red-500" : ""}`} />
+                                  <span className="flex-1">
+                                    {user.inviteIsExpired ? (
+                                      <span className="text-red-600 font-medium">Resend (expired)</span>
+                                    ) : (
+                                      "Resend invitation"
+                                    )}
+                                  </span>
+                                  {!user.inviteIsExpired && user.inviteExpiryLabel && (
+                                    <span className="text-[10px] text-gray-400 ml-2">{user.inviteExpiryLabel}</span>
+                                  )}
+                                </DropdownMenuItem>
+
+                                {!user.inviteIsExpired && (
+                                  <>
+                                    <DropdownMenuItem
+                                      onClick={() => handleCopyInviteLink(user)}
+                                      className="rounded-none cursor-pointer text-sm"
+                                    >
+                                      <Link2 className="w-4 h-4 mr-2" />
+                                      Copy invite link
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      onClick={() => openEditInviteModal(user)}
+                                      className="rounded-none cursor-pointer text-sm"
+                                    >
+                                      <Edit3 className="w-4 h-4 mr-2" />
+                                      Edit invite details
+                                    </DropdownMenuItem>
+                                  </>
+                                )}
+
+                                <DropdownMenuItem
+                                  onClick={() => openViewDetails(user)}
+                                  className="rounded-none cursor-pointer text-sm"
+                                >
+                                  <Eye className="w-4 h-4 mr-2" />
+                                  View details
+                                </DropdownMenuItem>
+
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  onClick={() => openDeleteConfirm(user)}
+                                  className="rounded-none cursor-pointer text-sm text-red-600 focus:text-red-600"
+                                >
+                                  <Trash2 className="w-4 h-4 mr-2" />
+                                  Cancel invite
+                                </DropdownMenuItem>
+                              </>
+                            ) : (
                               <>
                                 <DropdownMenuItem
                                   onClick={() => openEditModal(user)}
@@ -624,15 +796,15 @@ export default function AllUsersPage() {
                                   )}
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  onClick={() => openDeleteConfirm(user)}
+                                  className="rounded-none cursor-pointer text-sm text-red-600 focus:text-red-600"
+                                >
+                                  <Trash2 className="w-4 h-4 mr-2" />
+                                  Delete
+                                </DropdownMenuItem>
                               </>
                             )}
-                            <DropdownMenuItem
-                              onClick={() => openDeleteConfirm(user)}
-                              className="rounded-none cursor-pointer text-sm text-red-600 focus:text-red-600"
-                            >
-                              <Trash2 className="w-4 h-4 mr-2" />
-                              {user.isPending ? "Cancel invite" : "Delete"}
-                            </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </td>
@@ -661,12 +833,11 @@ export default function AllUsersPage() {
         }}
         mode="invite"
         onSuccess={() => {
-          // Reload users or refresh the list
-          window.location.reload()
+          loadUsers()
         }}
       />
 
-      {/* Edit User Dialog */}
+      {/* Edit User Dialog (accepted org members) */}
       <UserFormDialog
         open={editOpen}
         onOpenChange={(v) => {
@@ -692,23 +863,168 @@ export default function AllUsersPage() {
             : null
         }
         onSuccess={() => {
-          // Reload users or refresh the list
-          window.location.reload()
+          loadUsers()
         }}
       />
 
-      {/* Delete Confirmation Dialog */}
+      {/* Edit Pending Invite Dialog */}
+      <UserFormDialog
+        open={editInviteOpen}
+        onOpenChange={(v) => {
+          setEditInviteOpen(v)
+          if (!v) setSelectedUser(null)
+        }}
+        mode="edit-invite"
+        editTarget={
+          selectedUser && selectedUser.isPending
+            ? {
+              id: selectedUser.id,
+              firstName: selectedUser.firstName || splitName(selectedUser.name).firstName,
+              lastName: selectedUser.lastName || splitName(selectedUser.name).lastName,
+              email: selectedUser.email,
+              roleId: selectedUser.roleId,
+              roleName: selectedUser.role,
+              firmIds: selectedUser.firmIds,
+            }
+            : null
+        }
+        onSuccess={() => {
+          loadUsers()
+        }}
+      />
+
+      {/* View Invite Details Dialog */}
+      <Dialog open={viewOpen} onOpenChange={(v) => { setViewOpen(v); if (!v) setSelectedUser(null) }}>
+        <DialogContent className="max-w-lg rounded-none p-0 gap-0">
+          <div className={`px-5 py-4 ${selectedUser?.inviteIsExpired ? "bg-gradient-to-r from-gray-700 to-gray-600" : "bg-gradient-to-r from-primary to-primary/80"}`}>
+            <DialogHeader>
+              <DialogTitle className="text-white text-sm font-semibold flex items-center gap-2">
+                <Mail className="w-4 h-4" />
+                Invite details
+              </DialogTitle>
+              <DialogDescription className="text-white/80 text-xs">
+                {selectedUser?.inviteIsExpired
+                  ? "This invite has expired — resend to extend or cancel it."
+                  : "Pending invitation — user has not accepted yet."}
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          <div className="p-5 space-y-4 text-sm">
+            <div className="grid grid-cols-3 gap-3">
+              <span className="text-gray-500 col-span-1">Name</span>
+              <span className="col-span-2 text-gray-900 font-medium">{selectedUser?.name || "—"}</span>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <span className="text-gray-500 col-span-1">Email</span>
+              <span className="col-span-2 text-gray-900">{selectedUser?.email || "—"}</span>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <span className="text-gray-500 col-span-1">Role</span>
+              <span className="col-span-2">
+                <span className={`inline-flex items-center text-[11px] font-medium px-2 py-0.5 rounded-none ${roleBadgeClass(selectedUser?.role || "")}`}>
+                  {selectedUser?.role || "—"}
+                </span>
+              </span>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <span className="text-gray-500 col-span-1">Firms</span>
+              <span className="col-span-2 text-gray-900">
+                {selectedUser?.firmNames && selectedUser.firmNames.length > 0
+                  ? selectedUser.firmNames.join(", ")
+                  : <span className="text-gray-400 italic">No firms (org-wide / admin)</span>}
+              </span>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <span className="text-gray-500 col-span-1">Sent on</span>
+              <span className="col-span-2 text-gray-900">
+                {selectedUser?.inviteCreatedAt
+                  ? new Date(selectedUser.inviteCreatedAt).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })
+                  : "—"}
+              </span>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <span className="text-gray-500 col-span-1">Expiry</span>
+              <span className="col-span-2 flex items-center gap-2">
+                <CalendarClock className="w-3.5 h-3.5 text-gray-400" />
+                <span className={selectedUser?.inviteIsExpired ? "text-red-600 font-medium" : "text-gray-900"}>
+                  {selectedUser?.inviteExpiresAt
+                    ? `${new Date(selectedUser.inviteExpiresAt).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })} · ${selectedUser?.inviteExpiryLabel}`
+                    : "—"}
+                </span>
+              </span>
+            </div>
+            {selectedUser?.inviteToken && !selectedUser.inviteIsExpired && (
+              <div className="pt-2 border-t border-gray-100">
+                <p className="text-[11px] text-gray-500 mb-1.5">Invite link</p>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 px-2 py-1.5 bg-gray-50 border border-gray-200 text-[11px] text-gray-700 rounded-none truncate">
+                    {buildInviteLink(selectedUser.inviteToken)}
+                  </code>
+                  <button
+                    onClick={() => selectedUser && handleCopyInviteLink(selectedUser)}
+                    className="px-3 py-1.5 text-[11px] font-medium bg-primary text-white hover:bg-primary/90 rounded-none transition-colors flex items-center gap-1.5"
+                  >
+                    <Link2 className="w-3 h-3" />
+                    Copy
+                  </button>
+                </div>
+              </div>
+            )}
+            {selectedUser?.inviteIsExpired && (
+              <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-none text-[12px] text-amber-800">
+                <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                <span>
+                  This invite link is no longer valid. Click <strong>Resend invitation</strong> from the dropdown to issue a new token and email.
+                </span>
+              </div>
+            )}
+          </div>
+          <DialogFooter className="px-5 py-3 border-t border-gray-100 bg-gray-50">
+            <button
+              onClick={() => setViewOpen(false)}
+              className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 rounded-none transition-colors"
+            >
+              Close
+            </button>
+            {selectedUser?.isPending && (
+              <button
+                onClick={() => {
+                  setViewOpen(false)
+                  if (selectedUser) handleResendInvite(selectedUser)
+                }}
+                disabled={resendingId !== null}
+                className="px-4 py-2 text-sm font-medium bg-primary text-white hover:bg-primary/90 rounded-none transition-colors flex items-center gap-1.5"
+              >
+                <Send className="w-3.5 h-3.5" />
+                Resend
+              </button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog (handles both accepted member delete and pending invite cancel) */}
       <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <DialogContent className="max-w-md rounded-none p-0 gap-0">
           <div className="bg-gradient-to-r from-red-600 to-red-500 px-5 py-4">
             <DialogHeader>
-              <DialogTitle className="text-white text-sm font-semibold">Delete user</DialogTitle>
-              <DialogDescription className="text-white/70 text-xs">This action cannot be undone</DialogDescription>
+              <DialogTitle className="text-white text-sm font-semibold">
+                {selectedUser?.isPending ? "Cancel invitation" : "Delete user"}
+              </DialogTitle>
+              <DialogDescription className="text-white/70 text-xs">
+                {selectedUser?.isPending
+                  ? "The invitation link will be invalidated immediately"
+                  : "This action cannot be undone"}
+              </DialogDescription>
             </DialogHeader>
           </div>
           <div className="p-5">
             <p className="text-sm text-gray-700">
-              Are you sure you want to delete <span className="font-semibold">{selectedUser?.name}</span>? This will permanently remove their account and all associated data.
+              {selectedUser?.isPending ? (
+                <>Are you sure you want to cancel the invitation for <span className="font-semibold">{selectedUser?.email}</span>? They won't be able to use the existing email link, but you can re-invite them anytime.</>
+              ) : (
+                <>Are you sure you want to delete <span className="font-semibold">{selectedUser?.name}</span>? This will permanently remove their account and all associated data.</>
+              )}
             </p>
           </div>
           <DialogFooter className="px-5 py-3 border-t border-gray-100 bg-gray-50">
@@ -716,13 +1032,13 @@ export default function AllUsersPage() {
               onClick={() => setDeleteOpen(false)}
               className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 rounded-none transition-colors"
             >
-              Cancel
+              Keep
             </button>
             <button
               onClick={handleDelete}
               className="px-4 py-2 text-sm font-medium bg-red-600 text-white hover:bg-red-700 rounded-none transition-colors"
             >
-              Delete user
+              {selectedUser?.isPending ? "Cancel invite" : "Delete user"}
             </button>
           </DialogFooter>
         </DialogContent>
