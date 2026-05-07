@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { useEffect, useMemo, useState } from "react"
+import { Suspense, useEffect, useMemo, useState } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { Plus, Download, Users, Star } from "lucide-react"
 
@@ -19,6 +19,14 @@ import {
 } from "@/shared/data/scm/scm-vendors-store"
 
 export default function VendorsListPage() {
+    return (
+        <Suspense fallback={null}>
+            <VendorsListPageInner />
+        </Suspense>
+    )
+}
+
+function VendorsListPageInner() {
     const { toast } = useToast()
     const router = useRouter()
     const searchParams = useSearchParams()

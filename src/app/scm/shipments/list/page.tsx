@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { useEffect, useMemo, useState } from "react"
+import { Suspense, useEffect, useMemo, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Plus, Download, Truck } from "lucide-react"
 
@@ -19,6 +19,14 @@ import {
 } from "@/shared/data/scm/scm-shipments-store"
 
 export default function ShipmentsListPage() {
+    return (
+        <Suspense fallback={null}>
+            <ShipmentsListPageInner />
+        </Suspense>
+    )
+}
+
+function ShipmentsListPageInner() {
     const { toast } = useToast()
     const router = useRouter()
     const searchParams = useSearchParams()
