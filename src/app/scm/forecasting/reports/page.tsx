@@ -24,14 +24,14 @@ export default function ForecastReportsPage() {
                 {REPORTS.map((r) => (
                     <Link key={r.title} href={r.href} className="group">
                         <div
-                            className="rounded-xl border shadow-sm p-4 hover:shadow-md hover:-translate-y-0.5 transition-all"
+                            className="rounded-none border shadow-sm p-4 hover:shadow-md hover:-translate-y-0.5 transition-all"
                             style={{
                                 background: `linear-gradient(135deg, ${r.accent}14 0%, ${r.accent}06 45%, #ffffff 100%)`,
                                 borderColor: `${r.accent}33`,
                             }}
                         >
                             <div className="flex items-start justify-between gap-3">
-                                <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white shrink-0" style={{ backgroundColor: r.accent, boxShadow: `0 4px 12px ${r.accent}33` }}>
+                                <div className="w-10 h-10 rounded-none flex items-center justify-center text-white shrink-0" style={{ backgroundColor: r.accent, boxShadow: `0 4px 12px ${r.accent}33` }}>
                                     {r.icon}
                                 </div>
                                 <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-all" style={{ color: r.accent }} />

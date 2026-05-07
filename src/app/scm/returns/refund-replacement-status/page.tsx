@@ -86,10 +86,10 @@ export default function RefundReplacementStatusPage() {
                 <Stat label="Rejected" value={summary.rejected} color="#ef4444" />
             </div>
 
-            <div className="bg-white rounded-xl border border-[#EEF1F6] shadow-sm p-4 flex items-center gap-3">
+            <div className="bg-white rounded-none border border-[#EEF1F6] shadow-sm p-4 flex items-center gap-3">
                 <span className="text-[12px] font-medium text-[#64748B] inline-flex items-center gap-1.5"><Filter className="w-3.5 h-3.5" /> Filter:</span>
                 <Select value={filter} onValueChange={(v) => setFilter(v as StatusFilter)}>
-                    <SelectTrigger className="h-9 w-[220px] border-[#E5E7EB] text-[13px]"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="h-9 w-[220px] rounded-none border-[#E5E7EB] text-[13px]"><SelectValue /></SelectTrigger>
                     <SelectContent>
                         <SelectItem value="all">All</SelectItem>
                         <SelectItem value="refund-pending">Refund Pending</SelectItem>
@@ -115,10 +115,10 @@ export default function RefundReplacementStatusPage() {
                         extraItems={
                             <>
                                 {row.status !== "Refunded" && row.status !== "Rejected" && (
-                                    <button onClick={() => handleProcessRefund(row)} className="w-full text-left px-2 py-1.5 text-[13px] hover:bg-emerald-50 text-emerald-700 rounded-md">Process Refund</button>
+                                    <button onClick={() => handleProcessRefund(row)} className="w-full text-left px-2 py-1.5 text-[13px] hover:bg-emerald-50 text-emerald-700 rounded-none">Process Refund</button>
                                 )}
                                 {row.status !== "Replaced" && row.status !== "Rejected" && (
-                                    <button onClick={() => handleShipReplacement(row)} className="w-full text-left px-2 py-1.5 text-[13px] hover:bg-blue-50 text-blue-700 rounded-md">Ship Replacement</button>
+                                    <button onClick={() => handleShipReplacement(row)} className="w-full text-left px-2 py-1.5 text-[13px] hover:bg-blue-50 text-blue-700 rounded-none">Ship Replacement</button>
                                 )}
                             </>
                         }
@@ -132,7 +132,7 @@ export default function RefundReplacementStatusPage() {
 function Stat({ label, value, color }: { label: string; value: number; color: string }) {
     return (
         <div
-            className="rounded-xl border shadow-sm p-4 transition-all duration-200"
+            className="rounded-none border shadow-sm p-4 transition-all duration-200"
             style={{
                 background: `linear-gradient(135deg, ${color}14 0%, ${color}06 45%, #ffffff 100%)`,
                 borderColor: `${color}33`,
