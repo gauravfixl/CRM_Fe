@@ -18,7 +18,8 @@ import {
   SquarePlus,
   LayoutDashboard,
   Building2,
-  Check
+  Check,
+  Truck
 } from "lucide-react"
 import { getAllOrg, switchOrganization } from "@/hooks/orgHooks"
 import { getFirmList } from "@/hooks/firmHooks"
@@ -35,7 +36,7 @@ import {
 } from "@/components/ui/tooltip"
 
 // STATIC DATA OUTSIDE COMPONENT
-const DEFAULT_MODULES = ["dashboard", "lead", "hrms"]
+const DEFAULT_MODULES = ["dashboard", "lead", "hrms", "scm"]
 
 const MODULES_MAP: Record<string, { label: string; url: string; icon: React.ReactNode }> = {
   dashboard: { label: "Dashboard", url: "/dashboard", icon: <Home size={18} /> },
@@ -49,6 +50,7 @@ const MODULES_MAP: Record<string, { label: string; url: string; icon: React.Reac
   tax: { label: "Tax", url: "/modules/taxes", icon: <Cog size={18} /> },
   accounting: { label: "Accounting", url: "/modules/accounting", icon: <DollarSign size={18} /> },
   hrms: { label: "HRM Dashboard", url: "/hrmcubicle", icon: <LayoutDashboard size={18} /> },
+  scm: { label: "Supply Chain Management", url: "/scm/dashboard", icon: <Truck size={18} /> },
 }
 
 // ============================================
@@ -108,7 +110,7 @@ export default function ToggleOverlayPanel() {
 
   const prefixUrl = React.useCallback((url: string) => {
     if (!currentOrg) return url;
-    if (url.startsWith("/hrmcubicle") || url.startsWith("/projectmanagement") || url.startsWith("/lead-management") || url.startsWith("/client-management")) return url;
+    if (url.startsWith("/hrmcubicle") || url.startsWith("/projectmanagement") || url.startsWith("/lead-management") || url.startsWith("/client-management") || url.startsWith("/scm")) return url;
     const cleanPath = url.startsWith("/") ? url : `/${url}`;
     return `/${currentOrg}${cleanPath}`;
   }, [currentOrg]);
