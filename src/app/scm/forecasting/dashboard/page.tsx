@@ -60,7 +60,7 @@ export default function ForecastDashboardPage() {
                             <CartesianGrid strokeDasharray="3 3" stroke="#EEF1F6" vertical={false} />
                             <XAxis dataKey="month" tick={{ fontSize: 12, fill: "#64748B" }} axisLine={false} tickLine={false} />
                             <YAxis tick={{ fontSize: 12, fill: "#64748B" }} axisLine={false} tickLine={false} domain={[60, 100]} />
-                            <ReTooltip contentStyle={{ background: "white", border: "1px solid #EEF1F6", borderRadius: 8, fontSize: 12 }} />
+                            <ReTooltip contentStyle={{ background: "white", border: "1px solid #EEF1F6", borderRadius: 0, fontSize: 12 }} />
                             <Line type="monotone" dataKey="accuracy" stroke="#10b981" strokeWidth={2.5} dot={{ r: 4, fill: "#10b981" }} />
                         </LineChart>
                     </ResponsiveContainer>
@@ -72,21 +72,21 @@ export default function ForecastDashboardPage() {
                             <CartesianGrid strokeDasharray="3 3" stroke="#EEF1F6" vertical={false} />
                             <XAxis dataKey="week" tick={{ fontSize: 12, fill: "#64748B" }} axisLine={false} tickLine={false} />
                             <YAxis tick={{ fontSize: 12, fill: "#64748B" }} axisLine={false} tickLine={false} />
-                            <ReTooltip contentStyle={{ background: "white", border: "1px solid #EEF1F6", borderRadius: 8, fontSize: 12 }} />
+                            <ReTooltip contentStyle={{ background: "white", border: "1px solid #EEF1F6", borderRadius: 0, fontSize: 12 }} />
                             <Legend wrapperStyle={{ fontSize: 12 }} />
-                            <Bar dataKey="forecast" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
-                            <Bar dataKey="actual" fill="#10b981" radius={[4, 4, 0, 0]} />
+                            <Bar dataKey="forecast" fill="#8b5cf6" radius={[0, 0, 0, 0]} />
+                            <Bar dataKey="actual" fill="#10b981" radius={[0, 0, 0, 0]} />
                         </BarChart>
                     </ResponsiveContainer>
                 </ChartCard>
             </div>
 
             <div
-                className="rounded-xl border shadow-sm p-4"
+                className="rounded-none border shadow-sm p-4"
                 style={{ background: "linear-gradient(180deg, #f59e0b0d 0%, #ffffff 50%)", borderColor: "#f59e0b26" }}
             >
                 <div className="flex items-start gap-2 mb-3">
-                    <span className="w-1 h-9 rounded-full shrink-0 bg-amber-500" />
+                    <span className="w-1 h-9 rounded-none shrink-0 bg-amber-500" />
                     <div>
                         <h3 className="text-[14px] font-semibold text-[#0F172A]">Top Predicted High-Demand Products</h3>
                         <p className="text-[11.5px] text-[#94A3B8] mt-0.5">Based on history, season, and reorder patterns</p>
@@ -94,7 +94,7 @@ export default function ForecastDashboardPage() {
                 </div>
                 <div className="space-y-2">
                     {highDemand.map((p) => (
-                        <div key={p.id} className="flex items-center justify-between p-3 bg-[#FAFBFC] rounded-lg">
+                        <div key={p.id} className="flex items-center justify-between p-3 bg-[#FAFBFC] rounded-none">
                             <div className="min-w-0">
                                 <p className="font-medium text-[13.5px] text-[#0F172A] truncate">{p.productName}</p>
                                 <p className="text-[12px] text-[#64748B]">{p.sku} · {p.category}</p>
@@ -114,11 +114,11 @@ export default function ForecastDashboardPage() {
 function ChartCard({ title, subtitle, children, accentColor = "#8b5cf6" }: { title: string; subtitle?: string; children: React.ReactNode; accentColor?: string }) {
     return (
         <div
-            className="rounded-xl border shadow-sm p-4 overflow-hidden"
+            className="rounded-none border shadow-sm p-4 overflow-hidden"
             style={{ background: `linear-gradient(180deg, ${accentColor}0d 0%, #ffffff 50%)`, borderColor: `${accentColor}26` }}
         >
             <div className="mb-3 flex items-start gap-2">
-                <span className="w-1 h-9 rounded-full shrink-0" style={{ backgroundColor: accentColor }} />
+                <span className="w-1 h-9 rounded-none shrink-0" style={{ backgroundColor: accentColor }} />
                 <div>
                     <h3 className="text-[14px] font-semibold text-[#0F172A]">{title}</h3>
                     {subtitle && <p className="text-[11.5px] text-[#94A3B8] mt-0.5">{subtitle}</p>}

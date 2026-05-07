@@ -74,8 +74,8 @@ export function AlertCenter({ title, subtitle, icon, accentColor, items, emptyMe
             </div>
 
             {visibleItems.length === 0 ? (
-                <div className="bg-white rounded-xl border border-[#EEF1F6] shadow-sm p-8 text-center">
-                    <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center mx-auto">
+                <div className="bg-white rounded-none border border-[#EEF1F6] shadow-sm p-8 text-center">
+                    <div className="w-12 h-12 rounded-none bg-emerald-50 flex items-center justify-center mx-auto">
                         <Check className="w-6 h-6 text-emerald-600" />
                     </div>
                     <p className="text-[14px] font-semibold text-[#0F172A] mt-3">All clear!</p>
@@ -89,7 +89,7 @@ export function AlertCenter({ title, subtitle, icon, accentColor, items, emptyMe
                             <li
                                 key={item.id}
                                 className={cn(
-                                    "rounded-xl border shadow-sm p-4 transition-all",
+                                    "rounded-none border shadow-sm p-4 transition-all",
                                     isResolved ? "opacity-50 border-emerald-200 bg-emerald-50/30" : "hover:shadow-md"
                                 )}
                                 style={
@@ -102,7 +102,7 @@ export function AlertCenter({ title, subtitle, icon, accentColor, items, emptyMe
                                 }
                             >
                                 <div className="flex items-start gap-3">
-                                    <div className="w-9 h-9 rounded-lg flex items-center justify-center text-white shrink-0 mt-0.5" style={{ backgroundColor: accentColor }}>
+                                    <div className="w-9 h-9 rounded-none flex items-center justify-center text-white shrink-0 mt-0.5" style={{ backgroundColor: accentColor }}>
                                         {icon}
                                     </div>
                                     <div className="flex-1 min-w-0">
@@ -111,7 +111,7 @@ export function AlertCenter({ title, subtitle, icon, accentColor, items, emptyMe
                                                 <p className="text-[13.5px] font-semibold text-[#0F172A]">{item.title}</p>
                                                 <p className="text-[12.5px] text-[#64748B] mt-0.5">{item.description}</p>
                                                 <div className="flex items-center gap-2 mt-2 flex-wrap">
-                                                    <span className={cn("inline-flex items-center px-2 py-0.5 rounded-md border text-[11px] font-semibold", PRIORITY_TONE[item.priority])}>
+                                                    <span className={cn("inline-flex items-center px-2 py-0.5 rounded-none border text-[11px] font-semibold", PRIORITY_TONE[item.priority])}>
                                                         {item.priority}
                                                     </span>
                                                     <span className="text-[11.5px] text-[#94A3B8]">{item.createdDate}</span>
@@ -121,17 +121,17 @@ export function AlertCenter({ title, subtitle, icon, accentColor, items, emptyMe
                                             <div className="flex items-center gap-1 shrink-0">
                                                 {item.relatedHref && (
                                                     <Link href={item.relatedHref}>
-                                                        <Button variant="outline" size="sm" className="h-8 px-2 text-[12px] border-[#E5E7EB]">
+                                                        <Button variant="outline" size="sm" className="h-8 px-2 rounded-none text-[12px] border-[#E5E7EB]">
                                                             {item.relatedLabel ?? "Open"} <ArrowRight className="w-3.5 h-3.5 ml-1" />
                                                         </Button>
                                                     </Link>
                                                 )}
                                                 {!isResolved && (
-                                                    <Button onClick={() => handleResolve(item.id, item.title)} variant="ghost" size="sm" className="h-8 px-2 text-emerald-700 hover:bg-emerald-50" title="Mark resolved">
+                                                    <Button onClick={() => handleResolve(item.id, item.title)} variant="ghost" size="sm" className="h-8 px-2 rounded-none text-emerald-700 hover:bg-emerald-50" title="Mark resolved">
                                                         <Check className="w-4 h-4" />
                                                     </Button>
                                                 )}
-                                                <Button onClick={() => handleDismiss(item.id, item.title)} variant="ghost" size="sm" className="h-8 px-2 text-[#64748B] hover:bg-slate-100" title="Dismiss">
+                                                <Button onClick={() => handleDismiss(item.id, item.title)} variant="ghost" size="sm" className="h-8 px-2 rounded-none text-[#64748B] hover:bg-slate-100" title="Dismiss">
                                                     <BellOff className="w-4 h-4" />
                                                 </Button>
                                             </div>
@@ -150,7 +150,7 @@ export function AlertCenter({ title, subtitle, icon, accentColor, items, emptyMe
 function SummaryCard({ label, value, color }: { label: string; value: number; color: string }) {
     return (
         <div
-            className="rounded-xl border shadow-sm p-4 transition-all duration-200"
+            className="rounded-none border shadow-sm p-4 transition-all duration-200"
             style={{
                 background: `linear-gradient(135deg, ${color}14 0%, ${color}06 45%, #ffffff 100%)`,
                 borderColor: `${color}33`,

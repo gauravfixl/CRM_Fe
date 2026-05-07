@@ -157,10 +157,10 @@ export default function CourierPartnersPage() {
                     <p className="text-[13px] text-[#64748B] mt-0.5">Logistics partners and their tracking integrations.</p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <Button variant="outline" onClick={handleExport} className="h-9 px-3 rounded-lg border-[#E5E7EB] text-[#374151] hover:bg-[#F3F4F6] text-[13px]">
+                    <Button variant="outline" onClick={handleExport} className="h-9 px-3 rounded-none border-[#E5E7EB] text-[#374151] hover:bg-[#F3F4F6] text-[13px]">
                         <Download className="w-4 h-4 mr-1.5" /> Export
                     </Button>
-                    <Button onClick={() => { setEditing(null); setMode("create"); setFormOpen(true) }} className="h-9 px-3 rounded-lg text-white text-[13px]" style={{ backgroundColor: "#8b5cf6", boxShadow: "0 4px 12px #8b5cf633" }}>
+                    <Button onClick={() => { setEditing(null); setMode("create"); setFormOpen(true) }} className="h-9 px-3 rounded-none text-white text-[13px]" style={{ backgroundColor: "#8b5cf6", boxShadow: "0 4px 12px #8b5cf633" }}>
                         <Plus className="w-4 h-4 mr-1.5" /> Add Courier
                     </Button>
                 </div>
@@ -172,13 +172,13 @@ export default function CourierPartnersPage() {
                 <Stat label="Inactive" value={couriers.filter((c) => c.status === "Inactive").length} color="#94a3b8" />
             </div>
 
-            <div className="bg-white rounded-xl border border-[#EEF1F6] shadow-sm p-3 flex items-center gap-3 flex-wrap">
+            <div className="bg-white rounded-none border border-[#EEF1F6] shadow-sm p-3 flex items-center gap-3 flex-wrap">
                 <div className="relative flex-1 max-w-sm">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-[#94A3B8]" />
-                    <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search couriers..." className="pl-8 h-9 border-[#E5E7EB] text-[13px]" />
+                    <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search couriers..." className="pl-8 h-9 rounded-none border-[#E5E7EB] text-[13px]" />
                 </div>
                 <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as any)}>
-                    <SelectTrigger className="h-9 w-[140px] border-[#E5E7EB] text-[13px]"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="h-9 w-[140px] rounded-none border-[#E5E7EB] text-[13px]"><SelectValue /></SelectTrigger>
                     <SelectContent>
                         <SelectItem value="all">All statuses</SelectItem>
                         <SelectItem value="Active">Active</SelectItem>
@@ -189,7 +189,7 @@ export default function CourierPartnersPage() {
             </div>
 
             {filtered.length === 0 ? (
-                <div className="bg-white rounded-xl border border-[#EEF1F6] shadow-sm p-12 text-center">
+                <div className="bg-white rounded-none border border-[#EEF1F6] shadow-sm p-12 text-center">
                     <p className="text-[13px] text-[#64748B]">No couriers match your filters.</p>
                 </div>
             ) : (
@@ -260,12 +260,12 @@ function CourierCard({ courier, onEdit, onDelete }: { courier: ScmCourier; onEdi
     const accent = colorFor(courier.courierName)
     const initials = initialsOf(courier.courierName)
     return (
-        <div className={cn("bg-white rounded-xl border border-[#EEF1F6] shadow-sm overflow-hidden hover:shadow-md transition-all", courier.status === "Inactive" && "opacity-70")}>
+        <div className={cn("bg-white rounded-none border border-[#EEF1F6] shadow-sm overflow-hidden hover:shadow-md transition-all", courier.status === "Inactive" && "opacity-70")}>
             {/* Branded header */}
             <div className="px-5 py-4 flex items-center justify-between gap-3" style={{ background: `linear-gradient(135deg, ${accent}15, ${accent}05)` }}>
                 <div className="flex items-center gap-3 min-w-0">
                     <div
-                        className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-[16px] shrink-0 shadow-md"
+                        className="w-12 h-12 rounded-none flex items-center justify-center text-white font-bold text-[16px] shrink-0 shadow-md"
                         style={{ backgroundColor: accent, boxShadow: `0 4px 12px ${accent}40` }}
                     >
                         {initials}
@@ -284,7 +284,7 @@ function CourierCard({ courier, onEdit, onDelete }: { courier: ScmCourier; onEdi
                 <Row icon={<Mail className="w-3.5 h-3.5" />} value={courier.email} />
                 <Row icon={<MapPin className="w-3.5 h-3.5" />} value={courier.serviceAreas || "—"} />
                 {courier.rateCard && (
-                    <div className="bg-[#F8FAFC] rounded-md px-2.5 py-1.5 mt-2">
+                    <div className="bg-[#F8FAFC] rounded-none px-2.5 py-1.5 mt-2">
                         <p className="text-[10.5px] uppercase tracking-wide font-semibold text-[#94A3B8]">Rate Card</p>
                         <p className="text-[12.5px] font-medium text-[#0F172A] mt-0.5">{courier.rateCard}</p>
                     </div>
@@ -326,7 +326,7 @@ function Row({ icon, value }: { icon: React.ReactNode; value: string }) {
 function Stat({ label, value, color }: { label: string; value: number; color: string }) {
     return (
         <div
-            className="rounded-xl border shadow-sm p-4 transition-all duration-200"
+            className="rounded-none border shadow-sm p-4 transition-all duration-200"
             style={{
                 background: `linear-gradient(135deg, ${color}14 0%, ${color}06 45%, #ffffff 100%)`,
                 borderColor: `${color}33`,

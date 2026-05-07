@@ -80,21 +80,21 @@ export default function ReturnApprovalsPage() {
 
             <div className="grid grid-cols-3 gap-4">
                 <div
-                    className="rounded-xl border shadow-sm p-4"
+                    className="rounded-none border shadow-sm p-4"
                     style={{ background: "linear-gradient(135deg, #2563eb14 0%, #2563eb06 45%, #ffffff 100%)", borderColor: "#2563eb33" }}
                 >
                     <p className="text-[12px] text-[#64748B] font-medium">Customer Returns</p>
                     <p className="text-[22px] font-semibold text-blue-600 mt-1 tabular-nums leading-tight">{rows.filter((r) => r.type === "Customer").length}</p>
                 </div>
                 <div
-                    className="rounded-xl border shadow-sm p-4"
+                    className="rounded-none border shadow-sm p-4"
                     style={{ background: "linear-gradient(135deg, #8b5cf614 0%, #8b5cf606 45%, #ffffff 100%)", borderColor: "#8b5cf633" }}
                 >
                     <p className="text-[12px] text-[#64748B] font-medium">Supplier Returns</p>
                     <p className="text-[22px] font-semibold text-purple-600 mt-1 tabular-nums leading-tight">{rows.filter((r) => r.type === "Supplier").length}</p>
                 </div>
                 <div
-                    className="rounded-xl border shadow-sm p-4"
+                    className="rounded-none border shadow-sm p-4"
                     style={{ background: "linear-gradient(135deg, #0F172A14 0%, #0F172A06 45%, #ffffff 100%)", borderColor: "#0F172A22" }}
                 >
                     <p className="text-[12px] text-[#64748B] font-medium">Total Pending</p>

@@ -94,7 +94,7 @@ export function DataTable<T extends Record<string, any>>({
     }
 
     return (
-        <div className="bg-white rounded-xl border border-[#EEF1F6] shadow-sm overflow-hidden">
+        <div className="bg-white rounded-none border border-[#EEF1F6] shadow-sm overflow-hidden">
             {searchable && (
                 <div className="px-4 py-3 border-b border-[#EEF1F6] flex items-center gap-3">
                     <div className="relative flex-1 max-w-sm">

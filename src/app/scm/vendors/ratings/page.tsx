@@ -96,7 +96,7 @@ export default function VendorRatingsPage() {
                     <h1 className="text-[20px] font-semibold text-[#0F172A] leading-tight">Vendor Ratings</h1>
                     <p className="text-[13px] text-[#64748B] mt-0.5">Rate vendors on 6 parameters and see the leaderboard.</p>
                 </div>
-                <Button variant="outline" onClick={handleExport} className="h-9 px-3 rounded-lg border-[#E5E7EB] text-[#374151] hover:bg-[#F3F4F6] text-[13px]">
+                <Button variant="outline" onClick={handleExport} className="h-9 px-3 rounded-none border-[#E5E7EB] text-[#374151] hover:bg-[#F3F4F6] text-[13px]">
                     <Download className="w-4 h-4 mr-1.5" /> Export
                 </Button>
             </div>
@@ -110,7 +110,7 @@ export default function VendorRatingsPage() {
 
             {/* Podium — Top 3 */}
             {podium.length > 0 && (
-                <div className="bg-white rounded-xl border border-[#EEF1F6] shadow-sm p-5">
+                <div className="bg-white rounded-none border border-[#EEF1F6] shadow-sm p-5">
                     <div className="flex items-center gap-2 mb-4">
                         <Trophy className="w-4 h-4 text-amber-500" />
                         <h3 className="text-[14px] font-semibold text-[#0F172A]">Top Performers</h3>
@@ -127,8 +127,8 @@ export default function VendorRatingsPage() {
                                 : { color: "#a16207", bg: "from-orange-100 to-orange-50", icon: <Medal className="w-5 h-5" />, height: "h-20" }
                             return (
                                 <div key={v.id} className="flex flex-col items-center">
-                                    <div className={cn("w-full rounded-xl bg-gradient-to-b p-4 text-center shadow-sm border", meta.bg)} style={{ borderColor: `${meta.color}33` }}>
-                                        <div className="w-12 h-12 rounded-full mx-auto flex items-center justify-center text-white shadow-md" style={{ backgroundColor: meta.color }}>
+                                    <div className={cn("w-full rounded-none bg-gradient-to-b p-4 text-center shadow-sm border", meta.bg)} style={{ borderColor: `${meta.color}33` }}>
+                                        <div className="w-12 h-12 rounded-none mx-auto flex items-center justify-center text-white shadow-md" style={{ backgroundColor: meta.color }}>
                                             {meta.icon}
                                         </div>
                                         <p className="text-[11px] uppercase tracking-wide font-semibold mt-2" style={{ color: meta.color }}>Rank #{rank}</p>
@@ -141,7 +141,7 @@ export default function VendorRatingsPage() {
                                         </div>
                                         <p className="text-[20px] font-bold mt-1 tabular-nums" style={{ color: meta.color }}>{v.rating.toFixed(1)}</p>
                                     </div>
-                                    <div className={cn("w-full rounded-b-md", meta.height)} style={{ backgroundColor: `${meta.color}20`, marginTop: "8px" }} />
+                                    <div className={cn("w-full rounded-none", meta.height)} style={{ backgroundColor: `${meta.color}20`, marginTop: "8px" }} />
                                 </div>
                             )
                         })}
@@ -150,10 +150,10 @@ export default function VendorRatingsPage() {
             )}
 
             {/* Search */}
-            <div className="bg-white rounded-xl border border-[#EEF1F6] shadow-sm p-3">
+            <div className="bg-white rounded-none border border-[#EEF1F6] shadow-sm p-3">
                 <div className="relative max-w-sm">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-[#94A3B8]" />
-                    <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search vendor by name, code, category..." className="pl-8 h-9 border-[#E5E7EB] text-[13px]" />
+                    <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search vendor by name, code, category..." className="pl-8 h-9 rounded-none border-[#E5E7EB] text-[13px]" />
                 </div>
             </div>
 
@@ -175,7 +175,7 @@ export default function VendorRatingsPage() {
             )}
 
             {ranked.length === 0 && (
-                <div className="bg-white rounded-xl border border-[#EEF1F6] shadow-sm p-12 text-center">
+                <div className="bg-white rounded-none border border-[#EEF1F6] shadow-sm p-12 text-center">
                     <p className="text-[13px] text-[#64748B]">No vendors match the search.</p>
                 </div>
             )}
@@ -224,7 +224,7 @@ function VendorCard({ vendor, rank, onRate }: { vendor: ScmVendor; rank: number;
     const accent = vendor.rating >= 4.5 ? "#10b981" : vendor.rating >= 3.5 ? "#f59e0b" : "#ef4444"
     return (
         <div
-            className="rounded-xl border shadow-sm p-4 hover:shadow-md transition-all"
+            className="rounded-none border shadow-sm p-4 hover:shadow-md transition-all"
             style={{
                 background: `linear-gradient(135deg, ${accent}10 0%, ${accent}05 45%, #ffffff 100%)`,
                 borderColor: `${accent}33`,
@@ -232,7 +232,7 @@ function VendorCard({ vendor, rank, onRate }: { vendor: ScmVendor; rank: number;
         >
             <div className="flex items-start justify-between gap-3">
                 <div className="flex items-start gap-3 min-w-0">
-                    <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-[13px] font-bold text-[#64748B] shrink-0">
+                    <div className="w-9 h-9 rounded-none bg-slate-100 flex items-center justify-center text-[13px] font-bold text-[#64748B] shrink-0">
                         #{rank}
                     </div>
                     <div className="min-w-0">
@@ -252,9 +252,9 @@ function VendorCard({ vendor, rank, onRate }: { vendor: ScmVendor; rank: number;
                     </div>
                     <span className="text-[14px] font-bold tabular-nums text-[#0F172A]">{vendor.rating.toFixed(1)}</span>
                 </div>
-                <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                <div className="h-1.5 bg-slate-100 rounded-none overflow-hidden">
                     <div
-                        className="h-full rounded-full transition-all"
+                        className="h-full rounded-none transition-all"
                         style={{
                             width: `${fillPct}%`,
                             backgroundColor: vendor.rating >= 4.5 ? "#10b981" : vendor.rating >= 3.5 ? "#f59e0b" : "#ef4444",
@@ -263,7 +263,7 @@ function VendorCard({ vendor, rank, onRate }: { vendor: ScmVendor; rank: number;
                 </div>
             </div>
 
-            <Button onClick={onRate} variant="outline" size="sm" className="w-full mt-3 h-8 text-[12px] border-[#E5E7EB]">
+            <Button onClick={onRate} variant="outline" size="sm" className="w-full mt-3 h-8 rounded-none text-[12px] border-[#E5E7EB]">
                 <Star className="w-3.5 h-3.5 mr-1" /> Rate Vendor
             </Button>
         </div>
@@ -273,7 +273,7 @@ function VendorCard({ vendor, rank, onRate }: { vendor: ScmVendor; rank: number;
 function SummaryStat({ label, value, color, suffix }: { label: string; value: number | string; color: string; suffix?: string }) {
     return (
         <div
-            className="rounded-xl border shadow-sm p-4 transition-all duration-200"
+            className="rounded-none border shadow-sm p-4 transition-all duration-200"
             style={{
                 background: `linear-gradient(135deg, ${color}14 0%, ${color}06 45%, #ffffff 100%)`,
                 borderColor: `${color}33`,
