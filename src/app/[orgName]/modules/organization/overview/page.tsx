@@ -763,13 +763,13 @@ export default function OrgOverviewPage() {
                             <div className="flex items-start justify-between">
                                 <div>
                                     <p className="text-white/70 text-[10px] font-bold uppercase tracking-widest">Active Plan</p>
-                                    <p className="text-2xl font-black mt-1">{planName}</p>
+                                    <p className="text-2xl font-black mt-1 text-white">{planName}</p>
                                 </div>
                                 <Sparkles className="w-6 h-6 text-amber-300" />
                             </div>
                             <div className="mt-4 flex items-end justify-between">
                                 <div>
-                                    <p className="text-3xl font-black">
+                                    <p className="text-3xl font-black text-white">
                                         {typeof planPrice === "number" ? `$${planPrice.toLocaleString()}` : "—"}
                                     </p>
                                     <p className="text-white/70 text-xs">per month</p>
@@ -777,7 +777,7 @@ export default function OrgOverviewPage() {
                                 {nextBill && (
                                     <div className="text-right">
                                         <p className="text-white/70 text-[10px] uppercase tracking-widest">Renews in</p>
-                                        <p className="text-xl font-bold">{daysToRenewal}d</p>
+                                        <p className="text-xl font-bold text-white">{daysToRenewal}d</p>
                                     </div>
                                 )}
                             </div>
