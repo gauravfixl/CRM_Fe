@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import React, { useState } from "react"
 import { useParams } from "next/navigation"
@@ -66,7 +66,7 @@ export default function ClientDataRetentionPage() {
     return (
         <div className="flex flex-col gap-6 p-6 min-h-screen bg-[#fafafa]">
             {/* PAGE HEADER */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm gap-4">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-white p-6 rounded-none border border-zinc-200 shadow-sm gap-4">
                 <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-rose-500 to-rose-700 flex items-center justify-center text-white shadow-lg border-t border-white/20">
                         <Database className="w-6 h-6" />
@@ -148,13 +148,13 @@ export default function ClientDataRetentionPage() {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                 {/* CONFIGURATION SIDE */}
                 <div className="lg:col-span-12">
-                    <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden p-8">
+                    <div className="bg-white rounded-none border border-zinc-200 shadow-sm overflow-hidden p-8">
                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 mb-10">
                             <div className="max-w-md">
                                 <h3 className="text-lg font-black text-zinc-900 uppercase italic tracking-tight mb-2">Global Retention Window</h3>
                                 <p className="text-sm text-zinc-400 font-bold leading-relaxed italic">Determine exactly how many years a client record remains in the primary system after the last activity.</p>
                             </div>
-                            <div className="w-full md:w-80 bg-zinc-50 p-6 rounded-2xl border border-zinc-100">
+                            <div className="w-full md:w-80 bg-zinc-50 p-6 rounded-none border border-zinc-100">
                                 <div className="flex items-center justify-between mb-4">
                                     <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Selected Window</span>
                                     <span className="text-2xl font-black text-rose-600">{retentionYears[0]}Y</span>
@@ -213,10 +213,10 @@ export default function ClientDataRetentionPage() {
 
                 {/* HISTORICAL LOGS TABLE */}
                 <div className="lg:col-span-12">
-                    <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden">
+                    <div className="bg-white rounded-none border border-zinc-200 shadow-sm overflow-hidden">
                         <div className="p-6 border-b border-zinc-100 bg-zinc-50/20 flex items-center justify-between">
                             <h3 className="text-sm font-black text-zinc-900 uppercase italic tracking-widest">Recent Policy Enforcement</h3>
-                            <Button variant="ghost" size="sm" className="h-8 text-[10px] font-bold uppercase tracking-widest text-rose-600 italic">View All Logs →</Button>
+                            <Button variant="ghost" size="sm" className="h-8 text-[10px] font-bold uppercase tracking-widest text-rose-600 italic">View All Logs â†’</Button>
                         </div>
                         <Table>
                             <TableHeader className="bg-zinc-50/50">
@@ -243,7 +243,7 @@ export default function ClientDataRetentionPage() {
 
 function PolicyToggle({ title, description, checked, onCheckedChange, icon: Icon }: any) {
     return (
-        <div className="flex items-start justify-between p-4 rounded-2xl border border-zinc-100 hover:border-rose-100 transition-all group">
+        <div className="flex items-start justify-between p-4 rounded-none border border-zinc-100 hover:border-rose-100 transition-all group">
             <div className="flex gap-4">
                 <div className="w-10 h-10 rounded-xl bg-zinc-50 group-hover:bg-rose-50 flex items-center justify-center text-zinc-400 group-hover:text-rose-600 transition-colors shadow-sm">
                     <Icon className="w-5 h-5" />

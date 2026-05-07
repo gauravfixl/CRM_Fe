@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect } from "react";
 import {
@@ -113,7 +113,7 @@ export default function InvitesPage() {
                                 Invite Users
                             </CustomButton>
                         </DialogTrigger>
-                        <DialogContent className="sm:max-w-md rounded-3xl border-0 shadow-2xl p-0 overflow-hidden">
+                        <DialogContent className="sm:max-w-md rounded-none border-0 shadow-2xl p-0 overflow-hidden">
                             <div className="h-2 bg-indigo-600 w-full" />
                             <div className="p-6 sm:p-8 space-y-6">
                                 <DialogHeader>
@@ -165,7 +165,7 @@ export default function InvitesPage() {
 
             <div className="p-4 md:p-8 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
                 {/* INVITE LINK CARD */}
-                <Card className="border border-indigo-100 dark:border-indigo-900/50 bg-indigo-50/50 dark:bg-indigo-900/10 shadow-none rounded-3xl">
+                <Card className="border border-indigo-100 dark:border-indigo-900/50 bg-indigo-50/50 dark:bg-indigo-900/10 shadow-none rounded-none">
                     <CardContent className="p-6 flex flex-col md:flex-row items-center justify-between gap-6">
                         <div className="flex items-start gap-4">
                             <div className="p-3 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 rounded-xl">
@@ -217,7 +217,7 @@ export default function InvitesPage() {
                 {/* INVITE LIST */}
                 <div className="grid gap-4">
                     {loading ? (
-                        <div className="text-center py-20 bg-white/50 dark:bg-zinc-900/50 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-3xl">
+                        <div className="text-center py-20 bg-white/50 dark:bg-zinc-900/50 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-none">
                             <Loader2 className="w-8 h-8 animate-spin text-indigo-600 mx-auto mb-4" />
                             <p className="text-zinc-500 font-medium text-sm">Loading invitations...</p>
                         </div>
@@ -226,7 +226,7 @@ export default function InvitesPage() {
                             const isExpired = inv.status?.toLowerCase() === "expired";
                             const sentAt = inv.createdAt ? new Date(inv.createdAt).toLocaleDateString() : "Unknown";
                             return (
-                                <Card key={inv.token || inv._id} className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm hover:shadow-xl transition-all rounded-3xl group overflow-hidden">
+                                <Card key={inv.token || inv._id} className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm hover:shadow-xl transition-all rounded-none group overflow-hidden">
                                     <CardContent className="p-0 flex flex-col md:flex-row items-center justify-between">
                                         <div className="p-6 flex-1 flex items-center gap-4">
                                             <div className={`h-12 w-12 rounded-full flex items-center justify-center border ${isExpired ? 'bg-zinc-50 dark:bg-zinc-800 text-zinc-400 border-zinc-200 dark:border-zinc-700' : 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 border-indigo-100 dark:border-indigo-900/50'}`}>
@@ -276,7 +276,7 @@ export default function InvitesPage() {
                             );
                         })
                     ) : (
-                        <div className="text-center py-20 bg-white/50 dark:bg-zinc-900/50 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-3xl">
+                        <div className="text-center py-20 bg-white/50 dark:bg-zinc-900/50 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-none">
                             <div className="h-16 w-16 bg-emerald-50 dark:bg-emerald-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
                                 <CheckCircle2 className="w-8 h-8 text-emerald-500" />
                             </div>

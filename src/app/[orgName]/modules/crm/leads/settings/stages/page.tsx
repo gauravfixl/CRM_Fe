@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import {
@@ -63,7 +63,7 @@ export default function LeadSettingsStagesPage() {
                             <Reorder.Item
                                 key={stage.id}
                                 value={stage}
-                                className="bg-zinc-50 dark:bg-zinc-800/20 p-4 rounded-2xl border border-zinc-100 flex items-center justify-between cursor-grab active:cursor-grabbing hover:border-blue-200 transition-colors"
+                                className="bg-zinc-50 dark:bg-zinc-800/20 p-4 rounded-none border border-zinc-100 flex items-center justify-between cursor-grab active:cursor-grabbing hover:border-blue-200 transition-colors"
                             >
                                 <div className="flex items-center gap-4">
                                     <GripVertical className="h-4 w-4 text-zinc-300" />
@@ -94,15 +94,15 @@ export default function LeadSettingsStagesPage() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-6">
-                    <div className="bg-white dark:bg-zinc-900 rounded-3xl p-6 border border-zinc-100 shadow-sm flex items-center gap-4">
-                        <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl"><LayoutDashboard className="h-5 w-5" /></div>
+                    <div className="bg-white dark:bg-zinc-900 rounded-none p-6 border border-zinc-100 shadow-sm flex items-center gap-4">
+                        <div className="p-3 bg-blue-50 text-blue-600 rounded-none"><LayoutDashboard className="h-5 w-5" /></div>
                         <div>
                             <p className="text-xs font-black text-zinc-400 uppercase tracking-widest">Visibility</p>
                             <p className="text-sm font-bold">Standard CRM Workflow</p>
                         </div>
                     </div>
-                    <div className="bg-white dark:bg-zinc-900 rounded-3xl p-6 border border-zinc-100 shadow-sm flex items-center gap-4">
-                        <div className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl"><CheckCircle2 className="h-5 w-5" /></div>
+                    <div className="bg-white dark:bg-zinc-900 rounded-none p-6 border border-zinc-100 shadow-sm flex items-center gap-4">
+                        <div className="p-3 bg-emerald-50 text-emerald-600 rounded-none"><CheckCircle2 className="h-5 w-5" /></div>
                         <div>
                             <p className="text-xs font-black text-zinc-400 uppercase tracking-widest">Automation</p>
                             <p className="text-sm font-bold">Smart Conversion Active</p>

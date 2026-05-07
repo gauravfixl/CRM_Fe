@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect } from "react";
 import {
@@ -25,7 +25,7 @@ export default function EmailBrandingPage() {
     const [template, setTemplate] = useState("welcome");
     const [headerImage, setHeaderImage] = useState<string | null>(null);
     const fileInputRef = React.useRef<HTMLInputElement>(null);
-    const [footerText, setFooterText] = useState("© 2026 Fixl Solutions. All rights reserved.");
+    const [footerText, setFooterText] = useState("Â© 2026 Fixl Solutions. All rights reserved.");
     const [primaryColor, setPrimaryColor] = useState("#2563eb");
     const [saving, setSaving] = useState(false);
 
@@ -37,7 +37,7 @@ export default function EmailBrandingPage() {
                 if (s?.branding?.emailFooter) setFooterText(s.branding.emailFooter);
                 if (s?.branding?.primaryColor) setPrimaryColor(s.branding.primaryColor);
             } catch (err) {
-                // Silent — fall back to defaults
+                // Silent â€” fall back to defaults
             }
         })();
     }, []);
@@ -206,7 +206,7 @@ export default function EmailBrandingPage() {
                         </div>
                     </div>
 
-                    <Card className="border-none shadow-xl bg-zinc-200 dark:bg-zinc-900/50 h-full min-h-[600px] rounded-xl flex flex-col items-center pt-14 pb-8 px-4 relative">
+                    <Card className="border-none shadow-xl bg-zinc-200 dark:bg-zinc-900/50 h-full min-h-[600px] rounded-none flex flex-col items-center pt-14 pb-8 px-4 relative">
 
                         {/* EMAIL CANVAS - Theme Aware Preview */}
                         <div className="bg-white dark:bg-zinc-950 w-full max-w-md shadow-2xl rounded-sm overflow-hidden flex flex-col border dark:border-zinc-800 transition-colors">
@@ -266,9 +266,9 @@ export default function EmailBrandingPage() {
                                 <p>{footerText}</p>
                                 <div className="mt-2 flex gap-3 justify-center opacity-70">
                                     <a href="#" className="hover:underline">Privacy Policy</a>
-                                    <span>•</span>
+                                    <span>â€¢</span>
                                     <a href="#" className="hover:underline">Terms of Service</a>
-                                    <span>•</span>
+                                    <span>â€¢</span>
                                     <a href="#" className="hover:underline">Unsubscribe</a>
                                 </div>
                             </div>

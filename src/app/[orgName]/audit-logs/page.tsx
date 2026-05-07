@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -109,9 +109,9 @@ const activityToLabel = (activity: string, module: string): string => {
 };
 
 const formatRelative = (iso: string): string => {
-    if (!iso) return "—";
+    if (!iso) return "â€”";
     const t = new Date(iso).getTime();
-    if (!Number.isFinite(t)) return "—";
+    if (!Number.isFinite(t)) return "â€”";
     const diff = Date.now() - t;
     const min = Math.floor(diff / 60000);
     if (min < 1) return "Just now";
@@ -124,9 +124,9 @@ const formatRelative = (iso: string): string => {
 };
 
 const formatExact = (iso: string): string => {
-    if (!iso) return "—";
+    if (!iso) return "â€”";
     const t = new Date(iso);
-    if (!Number.isFinite(t.getTime())) return "—";
+    if (!Number.isFinite(t.getTime())) return "â€”";
     return t.toLocaleString("en-US", {
         month: "short",
         day: "2-digit",
@@ -147,8 +147,8 @@ const actorName = (userId: any): string => {
 };
 
 const actorIp = (userId: any): string => {
-    if (!userId || typeof userId === "string") return "—";
-    return userId.lastLoginIp || "—";
+    if (!userId || typeof userId === "string") return "â€”";
+    return userId.lastLoginIp || "â€”";
 };
 
 const mapApiActivity = (item: any): AuditEvent => {
@@ -401,7 +401,7 @@ export default function AuditLogsPage() {
             </div>
 
             {/* CATEGORY TABS */}
-            <Card className="border-zinc-200 shadow-md rounded-2xl bg-white">
+            <Card className="border-zinc-200 shadow-md rounded-none bg-white">
                 <CardContent className="p-2 overflow-x-auto">
                     <div className="flex items-center gap-1 min-w-max">
                         {CATEGORIES.map((cat) => (
@@ -431,7 +431,7 @@ export default function AuditLogsPage() {
             </Card>
 
             {/* SEARCH */}
-            <Card className="border-zinc-200 shadow-md rounded-2xl bg-white">
+            <Card className="border-zinc-200 shadow-md rounded-none bg-white">
                 <CardContent className="p-4 flex flex-col md:flex-row md:items-center gap-3">
                     <div className="relative flex-1">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
@@ -450,7 +450,7 @@ export default function AuditLogsPage() {
             </Card>
 
             {/* TABLE */}
-            <Card className="border-zinc-200 shadow-xl rounded-3xl bg-white overflow-hidden">
+            <Card className="border-zinc-200 shadow-xl rounded-none bg-white overflow-hidden">
                 <CardHeader className="border-b border-zinc-100">
                     <div className="flex items-center justify-between">
                         <div>

@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import React, { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
@@ -240,11 +240,11 @@ export default function CRMContactsPage() {
                                                 </CustomButton>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end" className="rounded-[32px] w-64 p-2 shadow-3xl bg-white/95 backdrop-blur-xl border-zinc-100">
-                                                <DropdownMenuItem className="rounded-3xl gap-4 font-bold px-8 py-5 text-sm italic uppercase tracking-tighter"><Edit3 size={18} /> Modify Identity</DropdownMenuItem>
-                                                <DropdownMenuItem className="rounded-3xl gap-4 font-bold px-8 py-5 text-sm italic uppercase tracking-tighter"><SearchCheck size={18} /> Deep Insight Audit</DropdownMenuItem>
-                                                <DropdownMenuItem className="rounded-3xl gap-4 font-bold px-8 py-5 text-sm italic uppercase tracking-tighter"><History size={18} /> Lifecycle Log</DropdownMenuItem>
+                                                <DropdownMenuItem className="rounded-none gap-4 font-bold px-8 py-5 text-sm italic uppercase tracking-tighter"><Edit3 size={18} /> Modify Identity</DropdownMenuItem>
+                                                <DropdownMenuItem className="rounded-none gap-4 font-bold px-8 py-5 text-sm italic uppercase tracking-tighter"><SearchCheck size={18} /> Deep Insight Audit</DropdownMenuItem>
+                                                <DropdownMenuItem className="rounded-none gap-4 font-bold px-8 py-5 text-sm italic uppercase tracking-tighter"><History size={18} /> Lifecycle Log</DropdownMenuItem>
                                                 <DropdownMenuSeparator />
-                                                <DropdownMenuItem onClick={() => handleDelete(contact.id)} className="rounded-3xl gap-4 font-bold px-8 py-5 text-sm text-red-600 focus:bg-red-600 focus:text-white font-black italic uppercase tracking-tighter"><Trash2 size={18} /> Expunge Identity</DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => handleDelete(contact.id)} className="rounded-none gap-4 font-bold px-8 py-5 text-sm text-red-600 focus:bg-red-600 focus:text-white font-black italic uppercase tracking-tighter"><Trash2 size={18} /> Expunge Identity</DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </div>

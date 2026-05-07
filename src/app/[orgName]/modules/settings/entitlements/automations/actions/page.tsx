@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState } from "react";
 import { useRouter, useParams } from "next/navigation";
@@ -121,7 +121,7 @@ export default function AllowedActionsPage() {
     return (
         <div className="relative min-h-screen bg-[#F8F9FC] dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-outfit p-6 space-y-6">
             {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white dark:bg-zinc-900 p-6 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-sm">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white dark:bg-zinc-900 p-6 border border-zinc-200 dark:border-zinc-800 rounded-none shadow-sm">
                 <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 flex items-center justify-center text-white shadow-lg">
                         <ShieldCheck className="w-6 h-6" />
@@ -160,7 +160,7 @@ export default function AllowedActionsPage() {
                             <span className="text-xl font-semibold text-zinc-900 dark:text-white block">{actions.filter(a => a.status === "Allowed").length}</span>
                             <span className="text-[10px] text-emerald-600 font-medium mt-1 block">Available for use</span>
                         </div>
-                        <div className="h-10 w-10 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500 rounded-2xl flex items-center justify-center">
+                        <div className="h-10 w-10 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500 rounded-none flex items-center justify-center">
                             <ShieldCheck className="w-5 h-5" />
                         </div>
                     </SmallCardContent>
@@ -172,7 +172,7 @@ export default function AllowedActionsPage() {
                             <span className="text-xl font-semibold text-zinc-900 dark:text-white block">{actions.filter(a => a.status === "Restricted").length}</span>
                             <span className="text-[10px] text-rose-600 font-medium mt-1 block">Blocked</span>
                         </div>
-                        <div className="h-10 w-10 bg-rose-50 dark:bg-rose-900/20 text-rose-500 rounded-2xl flex items-center justify-center">
+                        <div className="h-10 w-10 bg-rose-50 dark:bg-rose-900/20 text-rose-500 rounded-none flex items-center justify-center">
                             <ShieldAlert className="w-5 h-5" />
                         </div>
                     </SmallCardContent>
@@ -184,7 +184,7 @@ export default function AllowedActionsPage() {
                             <span className="text-xl font-semibold text-zinc-900 dark:text-white block">{actions.filter(a => a.risk === "High").length}</span>
                             <span className="text-[10px] text-amber-600 font-medium mt-1 block">Needs review</span>
                         </div>
-                        <div className="h-10 w-10 bg-amber-50 dark:bg-amber-900/20 text-amber-500 rounded-2xl flex items-center justify-center">
+                        <div className="h-10 w-10 bg-amber-50 dark:bg-amber-900/20 text-amber-500 rounded-none flex items-center justify-center">
                             <AlertTriangle className="w-5 h-5" />
                         </div>
                     </SmallCardContent>
@@ -192,7 +192,7 @@ export default function AllowedActionsPage() {
             </div>
 
             {/* Actions Table */}
-            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-sm overflow-hidden">
+            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-none shadow-sm overflow-hidden">
                 <div className="p-4 border-b border-zinc-100 dark:border-zinc-800 flex flex-col md:flex-row gap-4 justify-between items-center bg-zinc-50/20 dark:bg-zinc-900/50">
                     <div className="relative w-full md:w-96">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={16} />
@@ -301,7 +301,7 @@ export default function AllowedActionsPage() {
 
             {/* Create Modal */}
             <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
-                <DialogContent className="max-w-2xl rounded-2xl p-0 overflow-hidden shadow-2xl border-none">
+                <DialogContent className="max-w-2xl rounded-none p-0 overflow-hidden shadow-2xl border-none">
                     <div className="bg-gradient-to-r from-emerald-600 to-teal-700 p-8 text-white relative">
                         <div className="absolute top-0 right-0 p-4 opacity-10"><Shield size={80} /></div>
                         <h2 className="text-xl font-semibold flex items-center gap-3"><Plus size={22} /> Add Allowed Action</h2>
@@ -350,7 +350,7 @@ export default function AllowedActionsPage() {
 
             {/* Edit Modal */}
             <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
-                <DialogContent className="max-w-2xl rounded-2xl p-0 overflow-hidden shadow-2xl border-none">
+                <DialogContent className="max-w-2xl rounded-none p-0 overflow-hidden shadow-2xl border-none">
                     <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-8 text-white relative">
                         <h2 className="text-xl font-semibold flex items-center gap-3"><Edit size={22} /> Edit Action</h2>
                         <p className="text-xs opacity-80 mt-2">Update action configuration.</p>

@@ -763,6 +763,22 @@ const adminSidebarGroupsData = [
       { title: "Billing Details", icon: FileText, url: "/modules/billing/settings" },
       { title: "Upgrade / Downgrade", icon: ArrowUpCircle, url: "/modules/billing/upgrade" },
     ]
+  },
+  {
+    title: "SETTINGS",
+    icon: Settings,
+    items: [
+      { title: "General Preferences", icon: Settings, url: "/modules/settings/preferences" },
+      { title: "Localization", icon: Globe, url: "/modules/settings/localization" },
+      { title: "Email Templates", icon: Mail, url: "/modules/settings/email-templates" },
+      { title: "Document Templates", icon: FileText, url: "/modules/settings/document-templates" },
+      { title: "Communication Gateways", icon: Webhook, url: "/modules/settings/communication" },
+      { title: "Custom Fields & Tags", icon: ListTree, url: "/modules/settings/custom-fields" },
+      { title: "Numbering Schemes", icon: Receipt, url: "/modules/settings/numbering" },
+      { title: "My Account", icon: UserCheck, url: "/modules/settings/my-account" },
+      { title: "System Tools", icon: HardDrive, url: "/modules/settings/system-tools" },
+      { title: "About & Help", icon: ShieldCheck, url: "/modules/settings/about" },
+    ]
   }
 ];
 

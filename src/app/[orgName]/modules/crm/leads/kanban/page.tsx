@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -192,7 +192,7 @@ export default function LeadKanbanPage() {
                                         <div
                                             {...provided.droppableProps}
                                             ref={provided.innerRef}
-                                            className={`flex-1 overflow-y-auto rounded-2xl transition-colors duration-200 p-2 min-h-[150px] ${snapshot.isDraggingOver ? "bg-zinc-100/50 dark:bg-zinc-800/20" : "bg-transparent"
+                                            className={`flex-1 overflow-y-auto rounded-none transition-colors duration-200 p-2 min-h-[150px] ${snapshot.isDraggingOver ? "bg-zinc-100/50 dark:bg-zinc-800/20" : "bg-transparent"
                                                 }`}
                                         >
                                             <AnimatePresence>

@@ -356,7 +356,7 @@ export default function SignUpPage() {
             <span className="font-bold text-[15px] text-[#1A1A1A]">{orgName || "CubicleERP"}</span>
           </div>
 
-          <div className="signup-container w-full max-w-[640px] px-6 py-10 lg:py-8">
+          <div className="signup-container w-full max-w-[640px] px-6 py-10 lg:py-8" style={{ zoom: 0.8 }}>
             {/* Header with Avatar */}
             <div className="text-center mb-6">
               <div className="flex justify-center mb-4">

@@ -30,6 +30,8 @@ import { CustomButton } from "@/shared/components/custom/CustomButton";
 import { axiosInstance } from "@/lib/axios";
 import { getOrgDetails, getAllOrgInvites } from "@/hooks/orgHooks";
 import Loader from "@/shared/components/custom/Loader";
+import { useFormatCurrency, useFormatDate } from "@/shared/hooks/useAdminFormatters";
+import { useFormatCurrency, useFormatDate } from "@/shared/hooks/useAdminFormatters";
 
 type ActivityKind = "firm" | "invite_pending" | "invite_accepted" | "invite_expired" | "invite_rejected";
 
@@ -87,6 +89,12 @@ export default function OrgOverviewPage() {
     const [firms, setFirms] = useState<any[]>([]);
     const [billingPlan, setBillingPlan] = useState<any>(null);
     const [loading, setLoading] = useState<boolean>(true);
+
+    const formatCurrency = useFormatCurrency();
+    const formatDate = useFormatDate();
+
+    const formatCurrency = useFormatCurrency();
+    const formatDate = useFormatDate();
 
     const loadedRef = useRef(false);
     useEffect(() => {
@@ -311,7 +319,8 @@ export default function OrgOverviewPage() {
                         </h1>
                         {org?.createdAt && (
                             <p className="text-white/70 text-xs font-medium">
-                                Member since {formatShortDate(org.createdAt)}
+                                Member since {formatDate(org.createdAt)}
+                                Member since {formatDate(org.createdAt)}
                             </p>
                         )}
                     </div>
@@ -342,7 +351,8 @@ export default function OrgOverviewPage() {
 
             {/* TOP STATS */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 px-4">
-                <SmallCard className="border bg-gradient-to-r from-primary/70 to-primary text-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                <SmallCard className="border rounded-none bg-gradient-to-r from-primary/70 to-primary text-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                <SmallCard className="border rounded-none bg-gradient-to-r from-primary/70 to-primary text-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
                     <SmallCardContent className="p-4">
                         <div className="flex items-center justify-between">
                             <div>
@@ -359,7 +369,8 @@ export default function OrgOverviewPage() {
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                <SmallCard className="border rounded-none bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                <SmallCard className="border rounded-none bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
                     <SmallCardContent className="p-4">
                         <div className="flex items-center justify-between">
                             <div>
@@ -376,7 +387,8 @@ export default function OrgOverviewPage() {
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                <SmallCard className="border rounded-none bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                <SmallCard className="border rounded-none bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
                     <SmallCardContent className="p-4">
                         <div className="flex items-center justify-between">
                             <div>
@@ -396,13 +408,15 @@ export default function OrgOverviewPage() {
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="border bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                <SmallCard className="border rounded-none bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                <SmallCard className="border rounded-none bg-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
                     <SmallCardContent className="p-4">
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-gray-600 text-xs">Monthly Spend</p>
                                 <p className="text-2xl font-bold text-gray-900 mt-1">
-                                    {typeof planPrice === "number" ? `$${planPrice.toLocaleString()}` : "—"}
+                                    {typeof planPrice === "number" ? formatCurrency(planPrice, { decimals: 0 }) : "—"}
+                                    {typeof planPrice === "number" ? formatCurrency(planPrice, { decimals: 0 }) : "—"}
                                 </p>
                                 <p className="text-gray-600 text-[10px] mt-1">
                                     {nextBill
@@ -418,7 +432,8 @@ export default function OrgOverviewPage() {
 
             {/* ACTIVITY FEED + STATUS DONUT */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 px-4">
-                <Card className="lg:col-span-2 border-zinc-200 dark:border-zinc-800 shadow-xl rounded-3xl overflow-hidden">
+                <Card className="lg:col-span-2 border-zinc-200 dark:border-zinc-800 shadow-xl rounded-none overflow-hidden">
+                <Card className="lg:col-span-2 border-zinc-200 dark:border-zinc-800 shadow-xl rounded-none overflow-hidden">
                     <CardHeader className="border-b border-zinc-100 dark:border-zinc-800 p-6 bg-white dark:bg-zinc-900">
                         <div className="flex items-center justify-between">
                             <div>
@@ -492,7 +507,8 @@ export default function OrgOverviewPage() {
                     </CardContent>
                 </Card>
 
-                <Card className="border-zinc-200 dark:border-zinc-800 shadow-xl rounded-3xl overflow-hidden bg-white dark:bg-zinc-900">
+                <Card className="border-zinc-200 dark:border-zinc-800 shadow-xl rounded-none overflow-hidden bg-white dark:bg-zinc-900">
+                <Card className="border-zinc-200 dark:border-zinc-800 shadow-xl rounded-none overflow-hidden bg-white dark:bg-zinc-900">
                     <CardHeader className="p-6 pb-2">
                         <CardTitle className="text-lg font-bold text-zinc-900 dark:text-white flex items-center gap-2">
                             <Users className="w-5 h-5 text-indigo-600" /> User Status
@@ -534,7 +550,8 @@ export default function OrgOverviewPage() {
 
             {/* RECENT FIRMS + PENDING INVITES */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 px-4">
-                <Card className="border-zinc-200 dark:border-zinc-800 shadow-xl rounded-3xl overflow-hidden bg-white dark:bg-zinc-900">
+                <Card className="border-zinc-200 dark:border-zinc-800 shadow-xl rounded-none overflow-hidden bg-white dark:bg-zinc-900">
+                <Card className="border-zinc-200 dark:border-zinc-800 shadow-xl rounded-none overflow-hidden bg-white dark:bg-zinc-900">
                     <CardHeader className="border-b border-zinc-100 dark:border-zinc-800 p-6">
                         <div className="flex items-center justify-between">
                             <div>
@@ -605,7 +622,8 @@ export default function OrgOverviewPage() {
                     </CardContent>
                 </Card>
 
-                <Card className="border-zinc-200 dark:border-zinc-800 shadow-xl rounded-3xl overflow-hidden bg-white dark:bg-zinc-900">
+                <Card className="border-zinc-200 dark:border-zinc-800 shadow-xl rounded-none overflow-hidden bg-white dark:bg-zinc-900">
+                <Card className="border-zinc-200 dark:border-zinc-800 shadow-xl rounded-none overflow-hidden bg-white dark:bg-zinc-900">
                     <CardHeader className="border-b border-zinc-100 dark:border-zinc-800 p-6">
                         <div className="flex items-center justify-between">
                             <div>
@@ -674,7 +692,8 @@ export default function OrgOverviewPage() {
 
             {/* ROLES DISTRIBUTION + SUBSCRIPTION */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 px-4">
-                <Card className="border-zinc-200 dark:border-zinc-800 shadow-xl rounded-3xl overflow-hidden bg-white dark:bg-zinc-900">
+                <Card className="border-zinc-200 dark:border-zinc-800 shadow-xl rounded-none overflow-hidden bg-white dark:bg-zinc-900">
+                <Card className="border-zinc-200 dark:border-zinc-800 shadow-xl rounded-none overflow-hidden bg-white dark:bg-zinc-900">
                     <CardHeader className="border-b border-zinc-100 dark:border-zinc-800 p-6">
                         <div className="flex items-center justify-between">
                             <div>
@@ -740,7 +759,8 @@ export default function OrgOverviewPage() {
                     </CardContent>
                 </Card>
 
-                <Card className="border-zinc-200 dark:border-zinc-800 shadow-xl rounded-3xl overflow-hidden bg-white dark:bg-zinc-900">
+                <Card className="border-zinc-200 dark:border-zinc-800 shadow-xl rounded-none overflow-hidden bg-white dark:bg-zinc-900">
+                <Card className="border-zinc-200 dark:border-zinc-800 shadow-xl rounded-none overflow-hidden bg-white dark:bg-zinc-900">
                     <CardHeader className="border-b border-zinc-100 dark:border-zinc-800 p-6">
                         <div className="flex items-center justify-between">
                             <div>
@@ -759,7 +779,8 @@ export default function OrgOverviewPage() {
                         </div>
                     </CardHeader>
                     <CardContent className="p-6 space-y-4">
-                        <div className="rounded-2xl bg-gradient-to-br from-indigo-600 to-indigo-800 text-white p-5 shadow-lg">
+                        <div className="rounded-none bg-gradient-to-br from-indigo-600 to-indigo-800 text-white p-5 shadow-lg">
+                        <div className="rounded-none bg-gradient-to-br from-indigo-600 to-indigo-800 text-white p-5 shadow-lg">
                             <div className="flex items-start justify-between">
                                 <div>
                                     <p className="text-white/70 text-[10px] font-bold uppercase tracking-widest">Active Plan</p>
@@ -834,7 +855,8 @@ export default function OrgOverviewPage() {
 
             {/* QUICK ACTIONS */}
             <div className="px-4">
-                <Card className="border-zinc-200 dark:border-zinc-800 shadow-xl rounded-3xl overflow-hidden bg-white dark:bg-zinc-900">
+                <Card className="border-zinc-200 dark:border-zinc-800 shadow-xl rounded-none overflow-hidden bg-white dark:bg-zinc-900">
+                <Card className="border-zinc-200 dark:border-zinc-800 shadow-xl rounded-none overflow-hidden bg-white dark:bg-zinc-900">
                     <CardHeader className="p-6 pb-2">
                         <CardTitle className="text-lg font-bold text-zinc-900 dark:text-white flex items-center gap-2">
                             <Sparkles className="w-5 h-5 text-indigo-600" /> Quick Actions

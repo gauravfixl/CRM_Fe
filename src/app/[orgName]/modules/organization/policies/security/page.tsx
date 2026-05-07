@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import React, { useState, useEffect } from "react"
 import {
@@ -163,7 +163,7 @@ export default function SecurityPoliciesPage() {
                         <Card key={policy.id} className="border-slate-200 shadow-sm hover:border-blue-200 transition-all group">
                             <CardContent className="p-5 flex items-center justify-between">
                                 <div className="flex items-center gap-5">
-                                    <div className={`h-12 w-12 rounded-2xl flex items-center justify-center border transition-all ${policy.enabled ?
+                                    <div className={`h-12 w-12 rounded-none flex items-center justify-center border transition-all ${policy.enabled ?
                                             'bg-blue-50 text-blue-600 border-blue-100 group-hover:scale-105' :
                                             'bg-slate-100 text-slate-400 border-slate-200'
                                         }`}>
@@ -197,7 +197,7 @@ export default function SecurityPoliciesPage() {
                 </div>
 
                 <div className="space-y-6">
-                    <Card className="bg-slate-900 text-white border-none rounded-3xl p-6 shadow-2xl relative overflow-hidden group">
+                    <Card className="bg-slate-900 text-white border-none rounded-none p-6 shadow-2xl relative overflow-hidden group">
                         <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform duration-700">
                             <ShieldAlert className="w-32 h-32 text-red-500" />
                         </div>
@@ -226,7 +226,7 @@ export default function SecurityPoliciesPage() {
                         </Button>
                     </Card>
 
-                    <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl flex items-start gap-3">
+                    <div className="p-4 bg-amber-50 border border-amber-100 rounded-none flex items-start gap-3">
                         <Info className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
                         <p className="text-[11px] font-medium text-amber-800 leading-relaxed italic">
                             Deploying protocols updates the <span className="font-bold">Security Envelope</span> across all 12 Firms. Note: Old browser sessions may be forcibly terminated.

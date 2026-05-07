@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useRef } from "react";
 import {
@@ -100,7 +100,7 @@ export default function LeadImportPage() {
                                         <h3 className="text-2xl font-black text-zinc-900 uppercase tracking-tighter">Secure File Drop</h3>
                                         <p className="text-sm text-zinc-400 max-w-xs mx-auto mt-2">Support for .xlsx, .xls, and .csv files. Max file size 10MB.</p>
                                     </div>
-                                    <CustomButton className="h-14 px-12 bg-zinc-950 text-white rounded-3xl font-black uppercase tracking-tight shadow-xl shadow-zinc-200">
+                                    <CustomButton className="h-14 px-12 bg-zinc-950 text-white rounded-none font-black uppercase tracking-tight shadow-xl shadow-zinc-200">
                                         Select Local File
                                     </CustomButton>
                                 </motion.div>
@@ -112,12 +112,12 @@ export default function LeadImportPage() {
                                             { name: "Website_Leads_Jan.xlsx", count: 450, status: "Success", date: "2 hours ago" },
                                             { name: "Conference_List_2023.csv", count: 1200, status: "Success", date: "Jan 10, 2024" },
                                         ].map((item, i) => (
-                                            <div key={i} className="flex items-center justify-between p-5 bg-zinc-50 rounded-3xl border border-zinc-100 hover:bg-white hover:shadow-xl transition-all cursor-pointer group">
+                                            <div key={i} className="flex items-center justify-between p-5 bg-zinc-50 rounded-none border border-zinc-100 hover:bg-white hover:shadow-xl transition-all cursor-pointer group">
                                                 <div className="flex items-center gap-4">
-                                                    <div className="p-3 bg-white rounded-2xl shadow-sm text-zinc-400 group-hover:text-blue-600 transition-colors"><FileText className="h-5 w-5" /></div>
+                                                    <div className="p-3 bg-white rounded-none shadow-sm text-zinc-400 group-hover:text-blue-600 transition-colors"><FileText className="h-5 w-5" /></div>
                                                     <div>
                                                         <p className="text-sm font-black text-zinc-900 uppercase tracking-tighter">{item.name}</p>
-                                                        <p className="text-[10px] text-zinc-400 font-bold">{item.count} records mapped • {item.date}</p>
+                                                        <p className="text-[10px] text-zinc-400 font-bold">{item.count} records mapped â€¢ {item.date}</p>
                                                     </div>
                                                 </div>
                                                 <Badge className="bg-emerald-50 text-emerald-600 font-black border-none px-3 uppercase text-[9px]">
@@ -138,7 +138,7 @@ export default function LeadImportPage() {
                                     <p className="text-sm text-zinc-400 leading-relaxed font-normal mb-10 relative z-10">
                                         Download our pre-configured mapping schema to ensure 100% ingestion accuracy.
                                     </p>
-                                    <CustomButton onClick={() => toast.success("Template download started!")} variant="outline" className="w-full h-14 border-zinc-800 text-white hover:bg-zinc-800 rounded-3xl font-black uppercase tracking-widest text-xs relative z-10">
+                                    <CustomButton onClick={() => toast.success("Template download started!")} variant="outline" className="w-full h-14 border-zinc-800 text-white hover:bg-zinc-800 rounded-none font-black uppercase tracking-widest text-xs relative z-10">
                                         <Download className="h-4 w-4 mr-2" /> Lead_Schema.xlsx
                                     </CustomButton>
                                 </div>
@@ -167,7 +167,7 @@ export default function LeadImportPage() {
                                         <div className="p-5 bg-blue-50 text-blue-600 rounded-[32px]"><FileText size={40} /></div>
                                         <div>
                                             <h3 className="text-3xl font-black text-zinc-900 tracking-tighter uppercase">{selectedFile?.name}</h3>
-                                            <p className="text-sm text-zinc-400 font-bold uppercase tracking-widest mt-1">Ready for schema mapping • {(selectedFile?.size || 0 / 1024).toFixed(2)} KB</p>
+                                            <p className="text-sm text-zinc-400 font-bold uppercase tracking-widest mt-1">Ready for schema mapping â€¢ {(selectedFile?.size || 0 / 1024).toFixed(2)} KB</p>
                                         </div>
                                     </div>
                                     <button onClick={() => { setStep(1); setSelectedFile(null); }} className="p-4 hover:bg-zinc-50 rounded-full transition-colors"><X className="text-zinc-300 hover:text-red-500" /></button>
@@ -177,7 +177,7 @@ export default function LeadImportPage() {
                                     <h4 className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.3em] text-center">Auto-detected Columns</h4>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         {['Full Name', 'Email Address', 'Company Name', 'Phone Number'].map((col, i) => (
-                                            <div key={i} className="flex items-center justify-between p-6 bg-zinc-50/50 rounded-3xl border border-zinc-50 group hover:bg-white hover:border-blue-200 transition-all">
+                                            <div key={i} className="flex items-center justify-between p-6 bg-zinc-50/50 rounded-none border border-zinc-50 group hover:bg-white hover:border-blue-200 transition-all">
                                                 <span className="text-sm font-bold text-zinc-500">{col}</span>
                                                 <div className="flex items-center gap-3">
                                                     <ArrowRight size={14} className="text-zinc-300" />

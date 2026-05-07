@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect } from "react";
 import {
@@ -64,7 +64,7 @@ export default function ThemeSettingsPage() {
                     setBranding({ primaryColor: remoteColor })
                 }
             } catch (err) {
-                // Silent — fall back to Zustand store
+                // Silent â€” fall back to Zustand store
             }
         })()
     }, [setBranding])
@@ -205,7 +205,7 @@ export default function ThemeSettingsPage() {
                                         { val: "0.25", label: "Compact", class: "rounded-sm" },
                                         { val: "0.5", label: "Smooth", class: "rounded-md" },
                                         { val: "0.75", label: "Default", class: "rounded-lg" },
-                                        { val: "1.25", label: "Curvy", class: "rounded-2xl" }
+                                        { val: "1.25", label: "Curvy", class: "rounded-none" }
                                     ].map((rad) => (
                                         <button
                                             key={rad.val}

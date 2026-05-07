@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -35,9 +35,9 @@ import { showError, showSuccess } from "@/utils/toast";
 import Loader from "@/shared/components/custom/Loader";
 
 const formatDateLong = (input: string | undefined): string => {
-    if (!input) return "—";
+    if (!input) return "â€”";
     const t = new Date(input).getTime();
-    if (!Number.isFinite(t)) return "—";
+    if (!Number.isFinite(t)) return "â€”";
     return new Date(t).toLocaleDateString("en-US", { month: "long", day: "2-digit", year: "numeric" });
 };
 
@@ -192,7 +192,7 @@ export default function OrgSettingsProfilePage() {
                 <div className="absolute inset-0 bg-gradient-to-br from-indigo-700 via-blue-800 to-indigo-900" />
                 <div className="absolute -right-20 -top-20 w-96 h-96 bg-white/10 rounded-full blur-3xl" />
                 <div className="relative z-10 flex items-center gap-6">
-                    <div className="h-24 w-24 rounded-2xl border-4 border-white/40 flex items-center justify-center overflow-hidden shadow-2xl ring-4 ring-white/10 bg-gradient-to-br from-indigo-400 via-purple-500 to-pink-500">
+                    <div className="h-24 w-24 rounded-none border-4 border-white/40 flex items-center justify-center overflow-hidden shadow-2xl ring-4 ring-white/10 bg-gradient-to-br from-indigo-400 via-purple-500 to-pink-500">
                         {hasRealLogo ? (
                             <img src={org.OrgLogo.url} alt={org?.name || "Org"} className="w-full h-full object-cover" />
                         ) : (
@@ -259,7 +259,7 @@ export default function OrgSettingsProfilePage() {
 
             {/* QUICK STATS */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 px-6 mt-6">
-                <Card className="border bg-white shadow-md rounded-2xl">
+                <Card className="border bg-white shadow-md rounded-none">
                     <CardContent className="p-4 flex items-center gap-3">
                         <div className="h-10 w-10 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center">
                             <Users className="w-5 h-5" />
@@ -270,7 +270,7 @@ export default function OrgSettingsProfilePage() {
                         </div>
                     </CardContent>
                 </Card>
-                <Card className="border bg-white shadow-md rounded-2xl">
+                <Card className="border bg-white shadow-md rounded-none">
                     <CardContent className="p-4 flex items-center gap-3">
                         <div className="h-10 w-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center">
                             <Briefcase className="w-5 h-5" />
@@ -281,7 +281,7 @@ export default function OrgSettingsProfilePage() {
                         </div>
                     </CardContent>
                 </Card>
-                <Card className="border bg-white shadow-md rounded-2xl">
+                <Card className="border bg-white shadow-md rounded-none">
                     <CardContent className="p-4 flex items-center gap-3">
                         <div className="h-10 w-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center">
                             <Package className="w-5 h-5" />
@@ -292,7 +292,7 @@ export default function OrgSettingsProfilePage() {
                         </div>
                     </CardContent>
                 </Card>
-                <Card className="border bg-white shadow-md rounded-2xl">
+                <Card className="border bg-white shadow-md rounded-none">
                     <CardContent className="p-4 flex items-center gap-3">
                         <div className="h-10 w-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center">
                             <Clock className="w-5 h-5" />
@@ -307,7 +307,7 @@ export default function OrgSettingsProfilePage() {
 
             {/* GENERAL INFORMATION + AT A GLANCE */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 px-6 mt-6">
-                <Card className="lg:col-span-2 border-zinc-200 shadow-xl rounded-3xl bg-white">
+                <Card className="lg:col-span-2 border-zinc-200 shadow-xl rounded-none bg-white">
                     <CardHeader className="border-b border-zinc-100">
                         <CardTitle className="text-lg font-bold text-zinc-900 flex items-center gap-2">
                             <Building2 className="w-5 h-5 text-indigo-600" /> General Information
@@ -406,7 +406,7 @@ export default function OrgSettingsProfilePage() {
                     </CardContent>
                 </Card>
 
-                <Card className="border-zinc-200 shadow-xl rounded-3xl bg-white">
+                <Card className="border-zinc-200 shadow-xl rounded-none bg-white">
                     <CardHeader className="border-b border-zinc-100">
                         <CardTitle className="text-lg font-bold text-zinc-900 flex items-center gap-2">
                             <UserIcon className="w-5 h-5 text-indigo-600" /> At a Glance
@@ -430,7 +430,7 @@ export default function OrgSettingsProfilePage() {
                             </div>
                             <div className="min-w-0 flex-1">
                                 <p className="text-xs text-zinc-500">Primary Email</p>
-                                <p className="text-sm font-semibold text-zinc-900 truncate">{org?.contactEmail || "—"}</p>
+                                <p className="text-sm font-semibold text-zinc-900 truncate">{org?.contactEmail || "â€”"}</p>
                             </div>
                         </div>
                         <div className="flex items-start gap-3">
@@ -439,7 +439,7 @@ export default function OrgSettingsProfilePage() {
                             </div>
                             <div className="min-w-0 flex-1">
                                 <p className="text-xs text-zinc-500">Primary Phone</p>
-                                <p className="text-sm font-semibold text-zinc-900">{org?.contactPhone || "—"}</p>
+                                <p className="text-sm font-semibold text-zinc-900">{org?.contactPhone || "â€”"}</p>
                             </div>
                         </div>
                         <div className="flex items-start gap-3">
@@ -449,7 +449,7 @@ export default function OrgSettingsProfilePage() {
                             <div className="min-w-0 flex-1">
                                 <p className="text-xs text-zinc-500">Address</p>
                                 <p className="text-sm font-semibold text-zinc-900 break-words">
-                                    {org?.address || "—"}
+                                    {org?.address || "â€”"}
                                     {org?.orgCity && `, ${org.orgCity}`}
                                     {org?.orgState && `, ${org.orgState}`}
                                     {org?.orgCountry && `, ${org.orgCountry}`}
@@ -488,7 +488,7 @@ export default function OrgSettingsProfilePage() {
 
             {/* MODULES + OTHER SETTINGS */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 px-6 mt-6">
-                <Card className="border-zinc-200 shadow-xl rounded-3xl bg-white">
+                <Card className="border-zinc-200 shadow-xl rounded-none bg-white">
                     <CardHeader className="border-b border-zinc-100">
                         <CardTitle className="text-lg font-bold text-zinc-900 flex items-center gap-2">
                             <Package className="w-5 h-5 text-indigo-600" /> Active Modules
@@ -522,7 +522,7 @@ export default function OrgSettingsProfilePage() {
                     </CardContent>
                 </Card>
 
-                <Card className="border-zinc-200 shadow-xl rounded-3xl bg-white">
+                <Card className="border-zinc-200 shadow-xl rounded-none bg-white">
                     <CardHeader className="border-b border-zinc-100">
                         <CardTitle className="text-lg font-bold text-zinc-900 flex items-center gap-2">
                             <Globe className="w-5 h-5 text-indigo-600" /> Other Settings

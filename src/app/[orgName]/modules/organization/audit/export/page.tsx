@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import React, { useState } from "react"
 import {
@@ -135,7 +135,7 @@ export default function ExportLogsAuditPage() {
                                     <tr key={log.id} className="hover:bg-slate-50/50 transition-colors group">
                                         <td className="px-6 py-5">
                                             <div className="flex items-center gap-4">
-                                                <div className="h-11 w-11 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 group-hover:text-blue-600 shadow-sm transition-colors">
+                                                <div className="h-11 w-11 rounded-none bg-white border border-slate-100 flex items-center justify-center text-slate-400 group-hover:text-blue-600 shadow-sm transition-colors">
                                                     {log.type === 'CSV' ? <FileText className="w-5 h-5 text-blue-500" /> :
                                                         log.type === 'XLSX' ? <FileSpreadsheet className="w-5 h-5 text-emerald-500" /> :
                                                             log.type === 'ZIP' ? <FileArchive className="w-5 h-5 text-amber-500" /> :
@@ -144,7 +144,7 @@ export default function ExportLogsAuditPage() {
                                                 <div>
                                                     <p className="text-sm font-black text-slate-900 leading-none truncate max-w-xs" title={log.name}>{log.name}</p>
                                                     <p className="text-[10px] text-slate-400 mt-1.5 uppercase tracking-widest font-bold flex items-center gap-2">
-                                                        {log.type} <span className="text-slate-200">•</span> {log.size}
+                                                        {log.type} <span className="text-slate-200">â€¢</span> {log.size}
                                                     </p>
                                                 </div>
                                             </div>
@@ -190,7 +190,7 @@ export default function ExportLogsAuditPage() {
                 </CardFooter>
             </Card>
 
-            <div className="p-4 bg-blue-50/30 border border-blue-100 rounded-2xl flex gap-3">
+            <div className="p-4 bg-blue-50/30 border border-blue-100 rounded-none flex gap-3">
                 <ShieldCheck className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
                 <p className="text-[11px] font-medium text-blue-700 leading-relaxed font-sans">
                     Data disclosure logs are monitored by the <span className="font-bold">Privacy Core Engine (PCE)</span>.

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { ChartBar, Search, Plus, Filter, MoreVertical, Star, Activity, Target, Zap, Settings, Save } from "lucide-react";
@@ -109,7 +109,7 @@ export default function LeadScoringPage() {
 
                         <div className="space-y-4">
                             {scoringRules.map((rule, idx) => (
-                                <div key={rule.id} className="p-5 rounded-2xl border border-zinc-50 bg-zinc-50/50 flex items-center justify-between group hover:bg-white hover:shadow-xl transition-all">
+                                <div key={rule.id} className="p-5 rounded-none border border-zinc-50 bg-zinc-50/50 flex items-center justify-between group hover:bg-white hover:shadow-xl transition-all">
                                     <div className="flex items-center gap-4">
                                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${rule.points.startsWith('+') ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
                                             {rule.points.startsWith('+') ? <Plus size={18} /> : <Target size={18} />}
@@ -154,7 +154,7 @@ export default function LeadScoringPage() {
                                 <Badge className="bg-emerald-50 text-emerald-600 border-none px-3 font-bold">8.2ms</Badge>
                             </div>
                             <Separator className="bg-zinc-50" />
-                            <div className="p-6 bg-zinc-50 rounded-3xl space-y-3">
+                            <div className="p-6 bg-zinc-50 rounded-none space-y-3">
                                 <div className="flex items-center gap-2">
                                     <Target className="h-4 w-4 text-blue-600" />
                                     <span className="text-[10px] font-black uppercase text-zinc-800">Threshold Alert</span>

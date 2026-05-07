@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import React, { useState } from "react"
 import SubHeader from "@/components/custom/SubHeader"
@@ -365,7 +365,7 @@ export default function ConditionalAccessPage() {
 
             {/* Policy Simulator Dialog */}
             <Dialog open={isSimulatorOpen} onOpenChange={(o) => { setIsSimulatorOpen(o); if (!o) { setSimResult(null); setSimIdentity(""); setSimLocation("") } }}>
-                <DialogContent className="sm:max-w-[600px] rounded-2xl border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
+                <DialogContent className="sm:max-w-[600px] rounded-none border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
                     <DialogHeader>
                         <DialogTitle className="text-xl font-bold tracking-tight flex items-center gap-2">
                             <Cpu className="w-5 h-5 text-indigo-600" />
@@ -427,11 +427,11 @@ export default function ConditionalAccessPage() {
                         {[1, 2, 3, 4, 5].map((i) => (
                             <div key={i} className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors">
                                 <div className="flex items-center justify-between mb-1">
-                                    <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">2026-05-04 · 14:2{i}</span>
+                                    <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">2026-05-04 Â· 14:2{i}</span>
                                     <Badge className="bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400 border-0 text-[10px] uppercase font-semibold px-2 tracking-wide">Blocked</Badge>
                                 </div>
                                 <p className="text-sm font-semibold text-zinc-900 dark:text-white">Login attempt from restricted IP</p>
-                                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">user{i}@company.com · IP 45.12.33.{i}</p>
+                                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">user{i}@company.com Â· IP 45.12.33.{i}</p>
                             </div>
                         ))}
                     </div>
@@ -484,7 +484,7 @@ export default function ConditionalAccessPage() {
 
             {/* Delete Confirmation */}
             <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-                <DialogContent className="sm:max-w-[420px] rounded-2xl border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
+                <DialogContent className="sm:max-w-[420px] rounded-none border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
                     <DialogHeader>
                         <div className="h-12 w-12 bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 rounded-full flex items-center justify-center mb-2">
                             <AlertTriangle className="w-6 h-6" />

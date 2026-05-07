@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -218,7 +218,7 @@ export default function ClientWizardPage() {
 
     if (s === 3) {
       const cp = formData.contactPerson;
-      // contactPerson is fully optional in backend — validate only if filled
+      // contactPerson is fully optional in backend â€” validate only if filled
       if (cp.name && !RX.name.test(cp.name))
         e.cpName = "Letters only, 2-80 chars";
       if (cp.email && !RX.email.test(cp.email))
@@ -412,7 +412,7 @@ export default function ClientWizardPage() {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.3 }}
-              className="bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200/50 dark:border-zinc-800 shadow-xl overflow-hidden"
+              className="bg-white dark:bg-zinc-900 rounded-none border border-zinc-200/50 dark:border-zinc-800 shadow-xl overflow-hidden"
             >
               <div className="p-10 space-y-8">
                 {/* ============ STEP 1 ============ */}
@@ -968,7 +968,7 @@ export default function ClientWizardPage() {
                       </h2>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-zinc-50/50 dark:bg-zinc-800/20 p-8 rounded-2xl border border-zinc-100 dark:border-zinc-800">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-zinc-50/50 dark:bg-zinc-800/20 p-8 rounded-none border border-zinc-100 dark:border-zinc-800">
                       <div className="space-y-4">
                         <h3 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
                           Identity
@@ -981,7 +981,7 @@ export default function ClientWizardPage() {
                                 ?.FirmName ||
                               firms.find((f) => f._id === formData.firmId)
                                 ?.firmName ||
-                              "—"
+                              "â€”"
                             }
                           />
                           <Row
@@ -1009,13 +1009,13 @@ export default function ClientWizardPage() {
                           />
                           <Row
                             label="City / State"
-                            value={`${formData.address.city || "—"}, ${
-                              formData.address.state || "—"
+                            value={`${formData.address.city || "â€”"}, ${
+                              formData.address.state || "â€”"
                             }`}
                           />
                           <Row
                             label="Pin / Country"
-                            value={`${formData.address.pinCode} • ${formData.address.country}`}
+                            value={`${formData.address.pinCode} â€¢ ${formData.address.country}`}
                           />
                           <Row label="TIN" value={formData.tinNo} />
                           <Row label="CIN" value={formData.cinNo} />
@@ -1068,7 +1068,7 @@ const Row = ({ label, value }: { label: string; value: string }) => (
   <div className="flex justify-between border-b border-zinc-100 pb-2 gap-3">
     <span className="text-xs text-zinc-500">{label}</span>
     <span className="text-xs font-bold text-zinc-800 text-right truncate max-w-[60%]">
-      {value || "—"}
+      {value || "â€”"}
     </span>
   </div>
 );

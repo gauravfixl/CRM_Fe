@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useState } from "react"
 import { toast } from "sonner"
@@ -225,7 +225,7 @@ export default function AuthenticationSettingsPage() {
                                                     </span>
                                                 </div>
                                                 <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium mt-0.5 truncate">
-                                                    {log.user} <span className="mx-1.5 text-zinc-300">•</span> {log.details}
+                                                    {log.user} <span className="mx-1.5 text-zinc-300">â€¢</span> {log.details}
                                                 </p>
                                             </div>
                                         </div>
@@ -248,7 +248,7 @@ export default function AuthenticationSettingsPage() {
 
             {/* Security Reports Dialog */}
             <Dialog open={isReportsOpen} onOpenChange={setIsReportsOpen}>
-                <DialogContent className="sm:max-w-[700px] rounded-3xl border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
+                <DialogContent className="sm:max-w-[700px] rounded-none border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
                     <DialogHeader>
                         <DialogTitle className="text-2xl font-bold tracking-tight flex items-center gap-2">
                             <BarChart3 className="w-6 h-6 text-indigo-600" />
@@ -265,7 +265,7 @@ export default function AuthenticationSettingsPage() {
                             { title: "Active Sessions", value: "842", trend: "+2%", bg: "bg-blue-50 text-blue-600", icon: Monitor },
                             { title: "Global Reach", value: "14 Countries", trend: "0%", bg: "bg-amber-50 text-amber-600", icon: Globe },
                         ].map((s) => (
-                            <div key={s.title} className="p-4 rounded-2xl border border-zinc-100 dark:border-zinc-800 flex items-start justify-between">
+                            <div key={s.title} className="p-4 rounded-none border border-zinc-100 dark:border-zinc-800 flex items-start justify-between">
                                 <div>
                                     <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1">{s.title}</p>
                                     <p className="text-2xl font-black italic">{s.value}</p>
@@ -295,7 +295,7 @@ export default function AuthenticationSettingsPage() {
                         <SheetDescription className="text-zinc-500 font-medium">Quick security configuration.</SheetDescription>
                     </SheetHeader>
                     <div className="py-8 space-y-6">
-                        <div className="p-6 rounded-2xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 space-y-4">
+                        <div className="p-6 rounded-none bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 space-y-4">
                             <h4 className="text-xs font-bold uppercase tracking-widest text-zinc-400">Enforcement Tier</h4>
                             <div className="grid grid-cols-1 gap-2">
                                 {["Standard Enforcement", "Strict (All Users)", "Custom Selection"].map((tier) => (
@@ -337,7 +337,7 @@ export default function AuthenticationSettingsPage() {
                         <SheetDescription className="text-zinc-500 font-medium">Detailed forensics for the selected authentication event.</SheetDescription>
                     </SheetHeader>
                     <div className="py-8 space-y-6 text-left">
-                        <div className={`p-6 rounded-2xl border-2 ${selectedLog?.severity === 'critical' ? 'border-red-500 bg-red-50/10' : 'border-orange-500 bg-orange-50/10'} space-y-2`}>
+                        <div className={`p-6 rounded-none border-2 ${selectedLog?.severity === 'critical' ? 'border-red-500 bg-red-50/10' : 'border-orange-500 bg-orange-50/10'} space-y-2`}>
                             <h4 className="text-lg font-black italic uppercase tracking-tighter">{selectedLog?.action}</h4>
                             <p className="text-xs font-bold opacity-70 italic">{selectedLog?.details}</p>
                         </div>

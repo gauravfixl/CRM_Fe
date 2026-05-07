@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
@@ -87,7 +87,7 @@ export default function RolesPage() {
     const openEditDialog = (role: RoleItem) => {
         setEditingRole(role);
         setEditName(role.name);
-        // Heuristic — derive switch states from existing permissions map
+        // Heuristic â€” derive switch states from existing permissions map
         setEditManageUsers(
             !!(role.permissions["VIEW_ORG_USER"] || role.permissions["UPDATE_ORG_USER"] || role.permissions["DELETE_ORG_USER"] || role.permissions["SEND_INVITATION"])
         );
@@ -285,7 +285,7 @@ export default function RolesPage() {
                                 Create Custom Role
                             </CustomButton>
                         </DialogTrigger>
-                        <DialogContent className="sm:max-w-lg rounded-3xl border-0 shadow-2xl p-0 overflow-hidden">
+                        <DialogContent className="sm:max-w-lg rounded-none border-0 shadow-2xl p-0 overflow-hidden">
                             <div className="h-2 bg-indigo-600 w-full" />
                             <div className="p-6 sm:p-8 space-y-6">
                                 <DialogHeader>
@@ -297,7 +297,7 @@ export default function RolesPage() {
                                         <label className="text-xs uppercase font-semibold text-zinc-500 tracking-wider">Role Name</label>
                                         <Input ref={roleNameRef} className="rounded-xl font-medium h-12 bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800" placeholder="e.g. Finance Manager" required />
                                     </div>
-                                    <div className="space-y-4 border border-zinc-200 dark:border-zinc-800 p-6 rounded-2xl bg-white dark:bg-zinc-950">
+                                    <div className="space-y-4 border border-zinc-200 dark:border-zinc-800 p-6 rounded-none bg-white dark:bg-zinc-950">
                                         <label className="text-xs uppercase font-semibold text-zinc-500 tracking-wider block mb-4">Capabilities</label>
                                         <div className="flex items-center justify-between">
                                             <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Manage Users</span>
@@ -337,7 +337,7 @@ export default function RolesPage() {
                 ) : (
                 <div className="grid grid-cols-1 gap-6">
                     {roles.map((role) => (
-                        <Card key={role.id} className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm hover:shadow-xl transition-all rounded-3xl overflow-hidden group">
+                        <Card key={role.id} className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm hover:shadow-xl transition-all rounded-none overflow-hidden group">
                             <div className={`p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 ${role.type === 'System' ? 'border-l-4 border-l-slate-400 dark:border-l-slate-600' : 'border-l-4 border-l-indigo-500'}`}>
                                 <div className="flex-1 space-y-2">
                                     <div className="flex items-center gap-3">
@@ -395,7 +395,7 @@ export default function RolesPage() {
 
             {/* EDIT ROLE DIALOG */}
             <Dialog open={!!editingRole} onOpenChange={(open) => { if (!open) setEditingRole(null); }}>
-                <DialogContent className="sm:max-w-lg rounded-3xl border-0 shadow-2xl p-0 overflow-hidden">
+                <DialogContent className="sm:max-w-lg rounded-none border-0 shadow-2xl p-0 overflow-hidden">
                     <div className="h-2 bg-indigo-600 w-full" />
                     <div className="p-6 sm:p-8 space-y-6">
                         <DialogHeader>
@@ -413,7 +413,7 @@ export default function RolesPage() {
                                     required
                                 />
                             </div>
-                            <div className="space-y-4 border border-zinc-200 dark:border-zinc-800 p-6 rounded-2xl bg-white dark:bg-zinc-950">
+                            <div className="space-y-4 border border-zinc-200 dark:border-zinc-800 p-6 rounded-none bg-white dark:bg-zinc-950">
                                 <label className="text-xs uppercase font-semibold text-zinc-500 tracking-wider block mb-4">Capabilities</label>
                                 <div className="flex items-center justify-between">
                                     <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Manage Users</span>

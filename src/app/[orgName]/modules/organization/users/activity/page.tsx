@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import React, { useState } from "react"
 import {
@@ -157,7 +157,7 @@ export default function LoginActivityPage() {
                             filteredEvents.map((ev) => (
                                 <div key={ev.id} className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors group">
                                     <div className="flex items-center gap-4">
-                                        <div className={`h-11 w-11 rounded-2xl flex items-center justify-center border transition-colors ${ev.status === 'Success' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                                        <div className={`h-11 w-11 rounded-none flex items-center justify-center border transition-colors ${ev.status === 'Success' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
                                                 ev.status === 'Failed' ? 'bg-red-50 text-red-600 border-red-100' :
                                                     'bg-amber-50 text-amber-600 border-amber-100'
                                             }`}>
@@ -177,9 +177,9 @@ export default function LoginActivityPage() {
                                             </div>
                                             <div className="flex items-center gap-3 mt-1 text-[11px] text-slate-500 font-medium">
                                                 <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {ev.location}</span>
-                                                <span className="text-slate-300">•</span>
+                                                <span className="text-slate-300">â€¢</span>
                                                 <span className="flex items-center gap-1 font-mono">{ev.ip}</span>
-                                                <span className="text-slate-300">•</span>
+                                                <span className="text-slate-300">â€¢</span>
                                                 <span className="font-bold text-slate-400 uppercase tracking-tighter">{ev.browser}</span>
                                             </div>
                                         </div>

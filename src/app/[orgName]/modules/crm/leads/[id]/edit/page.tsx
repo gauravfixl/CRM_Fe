@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -274,7 +274,7 @@ export default function EditLeadPage() {
                         <textarea
                           value={formData.notes}
                           onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                          className="w-full min-h-[120px] bg-zinc-50/50 border border-zinc-200 rounded-2xl p-4 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
+                          className="w-full min-h-[120px] bg-zinc-50/50 border border-zinc-200 rounded-none p-4 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
                           placeholder="Describe any specific requirements or strategy for this lead..."
                         />
                       </div>
@@ -289,11 +289,11 @@ export default function EditLeadPage() {
 
                   <div className="flex items-center gap-3">
                     {step < 3 ? (
-                      <CustomButton onClick={() => setStep(step + 1)} className="h-12 px-8 bg-zinc-900 text-white rounded-2xl shadow-xl hover:bg-zinc-800">
+                      <CustomButton onClick={() => setStep(step + 1)} className="h-12 px-8 bg-zinc-900 text-white rounded-none shadow-xl hover:bg-zinc-800">
                         Continue to Next <ChevronRight className="ml-2 h-4 w-4" />
                       </CustomButton>
                     ) : (
-                      <CustomButton onClick={handleSubmit} disabled={isLoading} className="h-12 px-10 bg-blue-600 text-white rounded-2xl shadow-xl hover:bg-blue-700">
+                      <CustomButton onClick={handleSubmit} disabled={isLoading} className="h-12 px-10 bg-blue-600 text-white rounded-none shadow-xl hover:bg-blue-700">
                         <Save className="mr-2 h-4 w-4" /> {isLoading ? "Synchronizing..." : "Update Record"}
                       </CustomButton>
                     )}

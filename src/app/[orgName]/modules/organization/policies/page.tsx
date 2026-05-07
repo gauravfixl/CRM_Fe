@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useState } from "react"
 import { ShieldCheck, Lock, Clock, Ban, Database, AlertCircle, Save, Info, Key, Fingerprint } from "lucide-react"
@@ -50,7 +50,7 @@ export default function OrganizationPolicies() {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {/* Section: Authentication & Access */}
                     <div className="space-y-6">
-                        <div className="bg-white rounded-2xl shadow-sm border p-6 space-y-6">
+                        <div className="bg-white rounded-none shadow-sm border p-6 space-y-6">
                             <div className="flex items-center gap-3 border-b pb-4">
                                 <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
                                     <Lock className="w-5 h-5" />
@@ -88,7 +88,7 @@ export default function OrganizationPolicies() {
                             </div>
                         </div>
 
-                        <div className="bg-white rounded-2xl shadow-sm border p-6 space-y-6">
+                        <div className="bg-white rounded-none shadow-sm border p-6 space-y-6">
                             <div className="flex items-center gap-3 border-b pb-4">
                                 <div className="p-2 bg-purple-50 text-purple-600 rounded-lg">
                                     <Key className="w-5 h-5" />
@@ -136,7 +136,7 @@ export default function OrganizationPolicies() {
 
                     {/* Section: Session & Data */}
                     <div className="space-y-6">
-                        <div className="bg-white rounded-2xl shadow-sm border p-6 space-y-6">
+                        <div className="bg-white rounded-none shadow-sm border p-6 space-y-6">
                             <div className="flex items-center gap-3 border-b pb-4">
                                 <div className="p-2 bg-amber-50 text-amber-600 rounded-lg">
                                     <Clock className="w-5 h-5" />
@@ -164,7 +164,7 @@ export default function OrganizationPolicies() {
                             </div>
                         </div>
 
-                        <div className="bg-white rounded-2xl shadow-sm border p-6 space-y-6">
+                        <div className="bg-white rounded-none shadow-sm border p-6 space-y-6">
                             <div className="flex items-center gap-3 border-b pb-4">
                                 <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
                                     <Database className="w-5 h-5" />
@@ -201,7 +201,7 @@ export default function OrganizationPolicies() {
                         </div>
 
                         {/* Extra Widget */}
-                        <div className="bg-zinc-900 rounded-2xl p-6 text-white text-center space-y-3 shadow-xl">
+                        <div className="bg-zinc-900 rounded-none p-6 text-white text-center space-y-3 shadow-xl">
                             <Fingerprint className="w-10 h-10 text-blue-400 mx-auto" />
                             <h4 className="font-bold">Biometric Authentication</h4>
                             <p className="text-zinc-400 text-xs">Allow your users to log in using Windows Hello or Touch ID for enhanced security.</p>

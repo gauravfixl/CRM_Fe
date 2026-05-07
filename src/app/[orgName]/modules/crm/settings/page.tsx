@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import {
@@ -112,7 +112,7 @@ export default function CRMGlobalSettingsPage() {
             {/* Header */}
             <header className="sticky top-[-1.01rem] -mt-4 -mx-4 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800 px-12 py-8 flex items-center justify-between z-40">
                 <div className="flex items-center gap-6">
-                    <div className="h-14 w-14 bg-cyan-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-cyan-600/20 transform rotate-2">
+                    <div className="h-14 w-14 bg-cyan-600 rounded-none flex items-center justify-center text-white shadow-xl shadow-cyan-600/20 transform rotate-2">
                         <Target size={28} />
                     </div>
                     <div>
@@ -124,8 +124,8 @@ export default function CRMGlobalSettingsPage() {
                     </div>
                 </div>
                 <div className="flex items-center gap-4">
-                    <CustomButton variant="outline" className="rounded-2xl h-12 px-6 font-bold border-zinc-200 dark:border-zinc-700">Export .JSON</CustomButton>
-                    <CustomButton onClick={handleDeploy} className="bg-zinc-900 dark:bg-zinc-50 text-white dark:text-zinc-900 rounded-2xl px-10 h-12 font-black uppercase tracking-tight shadow-xl hover:scale-[1.02]">
+                    <CustomButton variant="outline" className="rounded-none h-12 px-6 font-bold border-zinc-200 dark:border-zinc-700">Export .JSON</CustomButton>
+                    <CustomButton onClick={handleDeploy} className="bg-zinc-900 dark:bg-zinc-50 text-white dark:text-zinc-900 rounded-none px-10 h-12 font-black uppercase tracking-tight shadow-xl hover:scale-[1.02]">
                         <Save className="h-4 w-4 mr-2" /> Sync Module
                     </CustomButton>
                 </div>
@@ -162,7 +162,7 @@ export default function CRMGlobalSettingsPage() {
                                     </div>
                                     <Dialog open={isAddStageOpen} onOpenChange={setIsAddStageOpen}>
                                         <DialogTrigger asChild>
-                                            <CustomButton className="rounded-3xl bg-cyan-600 text-white font-black uppercase tracking-tight px-8 h-14 shadow-lg">
+                                            <CustomButton className="rounded-none bg-cyan-600 text-white font-black uppercase tracking-tight px-8 h-14 shadow-lg">
                                                 <Plus size={20} className="mr-2" /> New Milestone
                                             </CustomButton>
                                         </DialogTrigger>
@@ -182,7 +182,7 @@ export default function CRMGlobalSettingsPage() {
                                                 </div>
                                             </div>
                                             <DialogFooter className="pt-10">
-                                                <CustomButton onClick={addLeadStage} className="w-full h-14 bg-zinc-900 dark:bg-zinc-50 text-white dark:text-zinc-900 rounded-2xl font-black uppercase">Initialize Stage</CustomButton>
+                                                <CustomButton onClick={addLeadStage} className="w-full h-14 bg-zinc-900 dark:bg-zinc-50 text-white dark:text-zinc-900 rounded-none font-black uppercase">Initialize Stage</CustomButton>
                                             </DialogFooter>
                                         </DialogContent>
                                     </Dialog>
@@ -192,7 +192,7 @@ export default function CRMGlobalSettingsPage() {
                                         <div key={stage.id} className="group flex items-center justify-between p-8 bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-100 dark:border-zinc-800 rounded-[32px] hover:bg-white dark:hover:bg-zinc-800 transition-all">
                                             <div className="flex items-center gap-8">
                                                 <GripVertical size={24} className="text-zinc-300 pointer-events-none" />
-                                                <div className={`h-14 w-14 rounded-2xl ${stage.color} flex items-center justify-center text-white font-black text-xl shadow-lg`}>
+                                                <div className={`h-14 w-14 rounded-none ${stage.color} flex items-center justify-center text-white font-black text-xl shadow-lg`}>
                                                     0{idx + 1}
                                                 </div>
                                                 <div>
@@ -201,7 +201,7 @@ export default function CRMGlobalSettingsPage() {
                                                 </div>
                                             </div>
                                             <div className="flex gap-2">
-                                                <CustomButton variant="ghost" className="h-12 w-12 rounded-2xl hover:bg-red-50 text-red-600" onClick={() => setLeadStages(l => l.filter(s => s.id !== stage.id))}><Trash2 size={20} /></CustomButton>
+                                                <CustomButton variant="ghost" className="h-12 w-12 rounded-none hover:bg-red-50 text-red-600" onClick={() => setLeadStages(l => l.filter(s => s.id !== stage.id))}><Trash2 size={20} /></CustomButton>
                                             </div>
                                         </div>
                                     ))}
@@ -248,7 +248,7 @@ export default function CRMGlobalSettingsPage() {
                                         <h4 className="text-2xl font-black uppercase tracking-tighter italic mb-10 leading-none">{stage.name}</h4>
                                         <div className="flex items-center justify-between">
                                             <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">PHASE 0{idx + 1}</span>
-                                            <CustomButton variant="ghost" className="h-12 w-12 rounded-2xl hover:bg-zinc-100 dark:hover:bg-zinc-700"><Edit3 size={18} /></CustomButton>
+                                            <CustomButton variant="ghost" className="h-12 w-12 rounded-none hover:bg-zinc-100 dark:hover:bg-zinc-700"><Edit3 size={18} /></CustomButton>
                                         </div>
                                     </div>
                                 ))}
@@ -264,7 +264,7 @@ export default function CRMGlobalSettingsPage() {
                                     <h3 className="text-3xl font-black uppercase tracking-tighter italic leading-none">Account Logic</h3>
                                     <p className="text-sm font-black text-zinc-400 uppercase tracking-widest mt-2">Segmented corporate management rules.</p>
                                 </div>
-                                <CustomButton className="h-16 px-12 rounded-3xl bg-zinc-900 dark:bg-zinc-50 text-white dark:text-zinc-900 font-black uppercase tracking-tight shadow-xl">Create Account Tier</CustomButton>
+                                <CustomButton className="h-16 px-12 rounded-none bg-zinc-900 dark:bg-zinc-50 text-white dark:text-zinc-900 font-black uppercase tracking-tight shadow-xl">Create Account Tier</CustomButton>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
                                 {clientCategories.map(cat => (
@@ -284,8 +284,8 @@ export default function CRMGlobalSettingsPage() {
                                             </div>
                                         </div>
                                         <div className="mt-12 pt-10 border-t border-dashed border-zinc-200 dark:border-zinc-700 flex gap-4">
-                                            <CustomButton variant="ghost" className="flex-1 rounded-2xl h-14 bg-white dark:bg-zinc-900 shadow-sm font-black uppercase text-[10px] tracking-widest">Global Policy</CustomButton>
-                                            <CustomButton variant="ghost" className="h-14 w-14 rounded-2xl bg-white dark:bg-zinc-900 shadow-sm text-red-500"><Trash2 size={20} /></CustomButton>
+                                            <CustomButton variant="ghost" className="flex-1 rounded-none h-14 bg-white dark:bg-zinc-900 shadow-sm font-black uppercase text-[10px] tracking-widest">Global Policy</CustomButton>
+                                            <CustomButton variant="ghost" className="h-14 w-14 rounded-none bg-white dark:bg-zinc-900 shadow-sm text-red-500"><Trash2 size={20} /></CustomButton>
                                         </div>
                                     </div>
                                 ))}
@@ -313,7 +313,7 @@ export default function CRMGlobalSettingsPage() {
                                         ].map(rule => (
                                             <div key={rule.key} className="p-10 bg-white/5 rounded-[40px] border border-white/10 flex items-center justify-between hover:bg-white/10 transition-all group/rule">
                                                 <div className="flex items-center gap-6">
-                                                    <div className="h-14 w-14 rounded-2xl bg-white/5 text-cyan-400 flex items-center justify-center border border-white/5 group-hover/rule:bg-cyan-500/10 transition-all">
+                                                    <div className="h-14 w-14 rounded-none bg-white/5 text-cyan-400 flex items-center justify-center border border-white/5 group-hover/rule:bg-cyan-500/10 transition-all">
                                                         <rule.icon size={28} />
                                                     </div>
                                                     <div>
@@ -363,7 +363,7 @@ export default function CRMGlobalSettingsPage() {
                                     </h3>
                                     <p className="text-sm font-bold text-zinc-400 dark:text-zinc-500 mt-4 uppercase tracking-[0.2em] italic">Manage enterprise-level CRM access controls and data retention policies.</p>
                                 </div>
-                                <Badge className="bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-2xl px-8 py-3 font-black uppercase text-xs tracking-widest shadow-2xl">V2.4 STABLE ENGINE</Badge>
+                                <Badge className="bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-none px-8 py-3 font-black uppercase text-xs tracking-widest shadow-2xl">V2.4 STABLE ENGINE</Badge>
                             </div>
 
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">

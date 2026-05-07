@@ -273,7 +273,7 @@ export default function OrgActivityPage() {
             </div>
 
             {/* FILTERS */}
-            <Card className="border-zinc-200 shadow-md rounded-2xl bg-white">
+            <Card className="border-zinc-200 shadow-md rounded-none bg-white">
                 <CardContent className="p-4 flex flex-col md:flex-row md:items-center gap-3">
                     <div className="relative flex-1">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
@@ -315,7 +315,7 @@ export default function OrgActivityPage() {
             </Card>
 
             {/* ACTIVITY TIMELINE */}
-            <Card className="border-zinc-200 shadow-xl rounded-3xl bg-white">
+            <Card className="border-zinc-200 shadow-xl rounded-none bg-white">
                 <CardHeader className="border-b border-zinc-100">
                     <div className="flex items-center justify-between">
                         <div>

@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import React, { useState } from "react"
 import {
@@ -68,7 +68,7 @@ export default function PurgePage() {
             </div>
 
             {/* DANGER BANNER */}
-            <div className="p-5 bg-red-50/80 border border-red-100 rounded-2xl flex items-start gap-4 shadow-sm border-l-4 border-l-red-600">
+            <div className="p-5 bg-red-50/80 border border-red-100 rounded-none flex items-start gap-4 shadow-sm border-l-4 border-l-red-600">
                 <div className="h-10 w-10 bg-red-100 flex items-center justify-center rounded-full shrink-0">
                     <AlertTriangle className="w-6 h-6 text-red-600" />
                 </div>
@@ -241,7 +241,7 @@ export default function PurgePage() {
             </Card>
 
             {/* SECURITY WARNING */}
-            <div className="flex items-start gap-4 p-5 bg-zinc-900 text-white rounded-2xl shadow-2xl relative overflow-hidden group">
+            <div className="flex items-start gap-4 p-5 bg-zinc-900 text-white rounded-none shadow-2xl relative overflow-hidden group">
                 <div className="absolute top-0 right-0 p-8 opacity-10 rotate-12 group-hover:scale-110 transition-transform duration-700">
                     <Trash2 className="w-32 h-32" />
                 </div>

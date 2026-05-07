@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -115,7 +115,7 @@ export default function AllInvoicesPage() {
       <div className="bg-white dark:bg-zinc-900 border-b px-8 py-6 shadow-sm relative z-50">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-center gap-4">
-            <div className="p-3 rounded-2xl bg-blue-600 text-white shadow-xl shadow-blue-500/20">
+            <div className="p-3 rounded-none bg-blue-600 text-white shadow-xl shadow-blue-500/20">
               <FileText className="h-6 w-6" />
             </div>
             <div>
@@ -298,7 +298,7 @@ function StatCard({ label, value, icon: Icon, color }: { label: string, value: n
         <p className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">{label}</p>
         <p className="text-3xl font-black text-zinc-900 tracking-tighter">${value.toLocaleString()}</p>
       </div>
-      <div className={`p-4 rounded-2xl bg-gradient-to-br ${color} text-white shadow-xl rotate-3 group-hover:rotate-12 transition-all relative z-10`}>
+      <div className={`p-4 rounded-none bg-gradient-to-br ${color} text-white shadow-xl rotate-3 group-hover:rotate-12 transition-all relative z-10`}>
         <Icon className="h-6 w-6" />
       </div>
     </motion.div>

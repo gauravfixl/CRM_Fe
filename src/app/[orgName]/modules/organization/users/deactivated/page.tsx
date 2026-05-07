@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect, useCallback } from "react";
 import {
@@ -128,7 +128,7 @@ export default function DeactivatedUsersPage() {
 
             <div className="p-4 md:p-8 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
                 {/* SEARCH */}
-                <div className="bg-white dark:bg-zinc-900 p-2 border border-zinc-200 dark:border-zinc-800 shadow-sm rounded-2xl flex items-center gap-4">
+                <div className="bg-white dark:bg-zinc-900 p-2 border border-zinc-200 dark:border-zinc-800 shadow-sm rounded-none flex items-center gap-4">
                     <div className="relative flex-1">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
                         <Input
@@ -143,7 +143,7 @@ export default function DeactivatedUsersPage() {
                 {/* LIST */}
                 <div className="grid gap-4">
                     {loading ? (
-                        <div className="flex flex-col items-center justify-center py-20 bg-white/50 dark:bg-zinc-900/50 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-3xl">
+                        <div className="flex flex-col items-center justify-center py-20 bg-white/50 dark:bg-zinc-900/50 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-none">
                             <Loader2 className="w-8 h-8 text-zinc-400 animate-spin mb-4" />
                             <p className="text-zinc-500 font-medium text-sm">Loading deactivated users...</p>
                         </div>
@@ -151,7 +151,7 @@ export default function DeactivatedUsersPage() {
                         users
                             .filter(u => u.name.toLowerCase().includes(searchQuery.toLowerCase()))
                             .map((user) => (
-                                <Card key={user.id} className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm hover:shadow-xl transition-all rounded-3xl group overflow-hidden border-l-4 border-l-zinc-300 dark:border-l-zinc-700">
+                                <Card key={user.id} className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm hover:shadow-xl transition-all rounded-none group overflow-hidden border-l-4 border-l-zinc-300 dark:border-l-zinc-700">
                                     <div className="p-6 flex flex-col md:flex-row items-center justify-between gap-6">
                                         <div className="flex items-center gap-4 w-full md:w-auto">
                                             <Avatar className="h-12 w-12 rounded-full border border-zinc-200 dark:border-zinc-700 grayscale opacity-80">
@@ -197,7 +197,7 @@ export default function DeactivatedUsersPage() {
                                                         <Trash2 className="w-4 h-4" />
                                                     </CustomButton>
                                                 </AlertDialogTrigger>
-                                                <AlertDialogContent className="rounded-3xl border-0 shadow-2xl p-0 overflow-hidden">
+                                                <AlertDialogContent className="rounded-none border-0 shadow-2xl p-0 overflow-hidden">
                                                     <div className="h-2 bg-red-500 w-full" />
                                                     <div className="p-6 sm:p-8 space-y-6">
                                                         <AlertDialogHeader>
@@ -229,7 +229,7 @@ export default function DeactivatedUsersPage() {
                                 </Card>
                             ))
                     ) : (
-                        <div className="flex flex-col items-center justify-center py-20 bg-white/50 dark:bg-zinc-900/50 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-3xl">
+                        <div className="flex flex-col items-center justify-center py-20 bg-white/50 dark:bg-zinc-900/50 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-none">
                             <div className="h-16 w-16 bg-emerald-50 dark:bg-emerald-900/20 rounded-full flex items-center justify-center mb-4">
                                 <ShieldAlert className="w-8 h-8 text-emerald-500" />
                             </div>

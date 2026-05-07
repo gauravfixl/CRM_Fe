@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import React, { useState } from "react"
 import {
@@ -60,7 +60,7 @@ export default function PermissionsMatrix() {
             </div>
 
             {/* INFO BANNER */}
-            <div className="p-4 bg-indigo-50/50 border border-indigo-100 rounded-2xl flex items-start gap-4 shadow-sm border-l-4 border-l-indigo-600">
+            <div className="p-4 bg-indigo-50/50 border border-indigo-100 rounded-none flex items-start gap-4 shadow-sm border-l-4 border-l-indigo-600">
                 <ShieldCheck className="w-6 h-6 text-indigo-600 shrink-0 mt-1" />
                 <div className="space-y-1">
                     <h4 className="text-sm font-black text-indigo-950 uppercase tracking-tighter">Enterprise Access Control (EAC)</h4>
@@ -148,7 +148,7 @@ export default function PermissionsMatrix() {
             </Card>
 
             {/* DANGER AREA BOX */}
-            <div className="p-5 bg-amber-50/50 border border-amber-100 rounded-2xl flex items-start gap-4">
+            <div className="p-5 bg-amber-50/50 border border-amber-100 rounded-none flex items-start gap-4">
                 <div className="h-10 w-10 bg-amber-100 flex items-center justify-center rounded-full shrink-0">
                     <ShieldAlert className="w-5 h-5 text-amber-600" />
                 </div>
