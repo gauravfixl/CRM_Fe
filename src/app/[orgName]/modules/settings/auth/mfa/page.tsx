@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import React, { useState, useEffect } from "react"
 import SubHeader from "@/components/custom/SubHeader"
@@ -243,7 +243,7 @@ export default function MFASetupPage() {
 
             {/* Recovery Codes Dialog */}
             <Dialog open={isRecoveryCodesOpen} onOpenChange={setIsRecoveryCodesOpen}>
-                <DialogContent className="sm:max-w-md rounded-2xl border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
+                <DialogContent className="sm:max-w-md rounded-none border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
                     <DialogHeader>
                         <DialogTitle className="text-xl font-bold tracking-tight">Recovery Codes</DialogTitle>
                         <DialogDescription className="text-sm text-zinc-500 dark:text-zinc-400">

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -198,7 +198,7 @@ export default function DealDetailsPage() {
                                                     <PieChart className="h-4 w-4 text-zinc-300" />
                                                 </div>
                                                 <div className="space-y-6">
-                                                    <div className="bg-zinc-50 p-6 rounded-3xl border border-zinc-100 flex items-center justify-between">
+                                                    <div className="bg-zinc-50 p-6 rounded-none border border-zinc-100 flex items-center justify-between">
                                                         <div className="flex items-center gap-4">
                                                             <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center font-bold">LS</div>
                                                             <div>
@@ -209,7 +209,7 @@ export default function DealDetailsPage() {
                                                         <Badge className="bg-white border-zinc-100 text-zinc-500 font-bold scale-90">VERIFIED</Badge>
                                                     </div>
 
-                                                    <div className="bg-zinc-50 p-6 rounded-3xl border border-zinc-100">
+                                                    <div className="bg-zinc-50 p-6 rounded-none border border-zinc-100">
                                                         <div className="flex items-center justify-between mb-4">
                                                             <p className="text-[10px] font-black text-zinc-400 uppercase">Closing Probability</p>
                                                             <p className="text-lg font-black text-blue-600">75%</p>
@@ -226,7 +226,7 @@ export default function DealDetailsPage() {
                                                 </div>
                                                 <div className="space-y-8">
                                                     <div className="flex gap-5">
-                                                        <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center flex-shrink-0"><Calendar className="h-5 w-5" /></div>
+                                                        <div className="w-12 h-12 rounded-none bg-emerald-50 text-emerald-600 flex items-center justify-center flex-shrink-0"><Calendar className="h-5 w-5" /></div>
                                                         <div>
                                                             <p className="text-[10px] font-black text-zinc-400 uppercase mb-1">Target Close Date</p>
                                                             <p className="text-base font-black text-zinc-900">{deal.expectedCloseDate ? new Date(deal.expectedCloseDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : "Pending Confirmation"}</p>
@@ -234,7 +234,7 @@ export default function DealDetailsPage() {
                                                         </div>
                                                     </div>
                                                     <div className="flex gap-5">
-                                                        <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center flex-shrink-0"><ShieldCheck className="h-5 w-5" /></div>
+                                                        <div className="w-12 h-12 rounded-none bg-amber-50 text-amber-600 flex items-center justify-center flex-shrink-0"><ShieldCheck className="h-5 w-5" /></div>
                                                         <div>
                                                             <p className="text-[10px] font-black text-zinc-400 uppercase mb-1">Contract Tenure</p>
                                                             <p className="text-base font-black text-zinc-900">12 Month Enterprise Subscription</p>
@@ -263,7 +263,7 @@ export default function DealDetailsPage() {
                                                 <h3 className="text-xl font-black uppercase tracking-tighter">Activity Stream</h3>
                                                 <p className="text-sm">No recent interactions logged for this opportunity.</p>
                                             </div>
-                                            <CustomButton variant="outline" className="rounded-2xl border-2">Record New Interaction</CustomButton>
+                                            <CustomButton variant="outline" className="rounded-none border-2">Record New Interaction</CustomButton>
                                         </div>
                                     </TabsContent>
 
@@ -276,7 +276,7 @@ export default function DealDetailsPage() {
                                             ].map((history, idx) => (
                                                 <div key={idx} className="flex gap-8 relative items-start group">
                                                     {idx < 2 && <div className="absolute left-[20px] top-10 bottom-[-32px] w-[2px] bg-zinc-100 group-last:hidden" />}
-                                                    <div className="w-10 h-10 rounded-2xl bg-zinc-900 text-white flex items-center justify-center font-black text-xs z-10 shadow-xl">{3 - idx}</div>
+                                                    <div className="w-10 h-10 rounded-none bg-zinc-900 text-white flex items-center justify-center font-black text-xs z-10 shadow-xl">{3 - idx}</div>
                                                     <div className="flex-1 bg-white p-8 rounded-[32px] border border-zinc-100 shadow-sm transition-all hover:shadow-xl hover:border-blue-100 group cursor-default">
                                                         <div className="flex items-center justify-between mb-4">
                                                             <div className="flex items-center gap-3">
@@ -320,7 +320,7 @@ export default function DealDetailsPage() {
                                     </div>
                                 </div>
                                 <Progress value={92} className="h-4 bg-white/5 [&>div]:bg-emerald-400 shadow-inner" />
-                                <div className="bg-white/5 p-5 rounded-2xl border border-white/10">
+                                <div className="bg-white/5 p-5 rounded-none border border-white/10">
                                     <p className="text-[11px] text-white/70 font-medium leading-relaxed italic">
                                         "Proposal was viewed 4 times by Decision Makers in the last 48 hours. Ready for final push."
                                     </p>
@@ -333,7 +333,7 @@ export default function DealDetailsPage() {
                             <h3 className="text-[11px] font-black text-zinc-400 uppercase tracking-[0.2em] border-b border-zinc-50 pb-6 mb-8">Account Logistics</h3>
                             <div className="space-y-8">
                                 <div className="flex gap-5">
-                                    <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0 shadow-sm"><Users className="h-5 w-5" /></div>
+                                    <div className="w-12 h-12 rounded-none bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0 shadow-sm"><Users className="h-5 w-5" /></div>
                                     <div>
                                         <p className="text-[10px] font-black text-zinc-400 uppercase mb-1">Key Decision Maker</p>
                                         <p className="text-base font-black text-zinc-900 leading-tight">Sarah Jenkins</p>
@@ -341,14 +341,14 @@ export default function DealDetailsPage() {
                                     </div>
                                 </div>
                                 <div className="flex gap-5">
-                                    <div className="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center flex-shrink-0 shadow-sm"><MapPin className="h-5 w-5" /></div>
+                                    <div className="w-12 h-12 rounded-none bg-purple-50 text-purple-600 flex items-center justify-center flex-shrink-0 shadow-sm"><MapPin className="h-5 w-5" /></div>
                                     <div>
                                         <p className="text-[10px] font-black text-zinc-400 uppercase mb-1">HQ / Jurisdiction</p>
                                         <p className="text-base font-black text-zinc-900 leading-tight">London, United Kingdom</p>
                                     </div>
                                 </div>
                                 <div className="flex gap-5">
-                                    <div className="w-12 h-12 rounded-2xl bg-zinc-50 text-zinc-900 flex items-center justify-center flex-shrink-0 shadow-sm"><Briefcase className="h-5 w-5" /></div>
+                                    <div className="w-12 h-12 rounded-none bg-zinc-50 text-zinc-900 flex items-center justify-center flex-shrink-0 shadow-sm"><Briefcase className="h-5 w-5" /></div>
                                     <div>
                                         <p className="text-[10px] font-black text-zinc-400 uppercase mb-1">Account Owner</p>
                                         <div className="flex items-center gap-2 mt-1">
@@ -361,12 +361,12 @@ export default function DealDetailsPage() {
 
                         {/* Quick Record Call Widget */}
                         <div className="bg-blue-600/5 dark:bg-blue-900/10 border-2 border-dashed border-blue-200 dark:border-blue-800 rounded-[40px] p-10 text-center">
-                            <div className="w-16 h-16 bg-blue-600 text-white rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-blue-500/20">
+                            <div className="w-16 h-16 bg-blue-600 text-white rounded-none flex items-center justify-center mx-auto mb-6 shadow-xl shadow-blue-500/20">
                                 <Phone className="h-8 w-8" />
                             </div>
                             <h4 className="text-lg font-black text-zinc-900 tracking-tight mb-2">Engage Decision Makers</h4>
                             <p className="text-xs text-zinc-500 font-medium mb-8">Record the outcome of your latest discovery or negotiation call.</p>
-                            <CustomButton className="w-full bg-blue-600 text-white h-12 rounded-2xl font-bold shadow-lg hover:bg-blue-700">Record Call Log</CustomButton>
+                            <CustomButton className="w-full bg-blue-600 text-white h-12 rounded-none font-bold shadow-lg hover:bg-blue-700">Record Call Log</CustomButton>
                         </div>
 
                     </div>

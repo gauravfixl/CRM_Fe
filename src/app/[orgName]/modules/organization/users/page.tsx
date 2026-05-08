@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useEffect, useState } from "react";
 import {
@@ -200,7 +200,7 @@ export default function UsersListPage() {
 
         setIsInviting(true);
         try {
-            // Find the selected role to send both slug and roleId — backend can pick either.
+            // Find the selected role to send both slug and roleId â€” backend can pick either.
             const selectedRole = roles.find((r) => r.id === inviteData.role);
             await axiosInstance.post("/organization/createInvite", {
                 email: inviteData.email.trim(),
@@ -269,7 +269,7 @@ export default function UsersListPage() {
                                     Add User
                                 </CustomButton>
                             </DialogTrigger>
-                            <DialogContent className="sm:max-w-[450px] rounded-3xl border-0 shadow-2xl p-0 overflow-hidden bg-white dark:bg-zinc-950">
+                            <DialogContent className="sm:max-w-[450px] rounded-none border-0 shadow-2xl p-0 overflow-hidden bg-white dark:bg-zinc-950">
                                 <div className="h-2 bg-indigo-600 w-full" />
                                 <div className="p-6 sm:p-8 space-y-6">
                                     <DialogHeader>
@@ -320,7 +320,7 @@ export default function UsersListPage() {
                                                         <SelectValue placeholder="Select a role" />
                                                     </div>
                                                 </SelectTrigger>
-                                                <SelectContent className="rounded-2xl border-zinc-200 dark:border-zinc-800 shadow-xl">
+                                                <SelectContent className="rounded-none border-zinc-200 dark:border-zinc-800 shadow-xl">
                                                     {roles.map((role) => (
                                                         <SelectItem key={role.id} value={role.id} className="font-medium focus:bg-indigo-50 dark:focus:bg-indigo-950/20">
                                                             {role.name}
@@ -355,7 +355,7 @@ export default function UsersListPage() {
 
             <div className="p-4 md:p-8 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
                 {/* FILTERS & SEARCH */}
-                <div className="flex items-center gap-4 bg-white dark:bg-zinc-900 p-2 border border-zinc-200 dark:border-zinc-800 shadow-sm rounded-2xl">
+                <div className="flex items-center gap-4 bg-white dark:bg-zinc-900 p-2 border border-zinc-200 dark:border-zinc-800 shadow-sm rounded-none">
                     <div className="flex-1 relative">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
                         <Input
@@ -372,7 +372,7 @@ export default function UsersListPage() {
                 </div>
 
                 {/* USERS TABLE */}
-                <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm rounded-3xl overflow-hidden min-h-[400px]">
+                <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm rounded-none overflow-hidden min-h-[400px]">
                     <CardContent className="p-0">
                         <table className="w-full text-left">
                             <thead className="bg-zinc-50 dark:bg-zinc-900/50 text-xs text-zinc-500 font-semibold border-b border-zinc-100 dark:border-zinc-800">
@@ -426,7 +426,7 @@ export default function UsersListPage() {
                                             </Badge>
                                         </td>
                                         <td className="px-6 py-4 text-zinc-500 font-medium text-xs">
-                                            {user.joinedAt ? new Date(user.joinedAt).toLocaleDateString() : "—"}
+                                            {user.joinedAt ? new Date(user.joinedAt).toLocaleDateString() : "â€”"}
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <DropdownMenu>

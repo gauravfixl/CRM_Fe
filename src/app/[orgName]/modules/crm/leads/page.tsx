@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
@@ -251,7 +251,7 @@ export default function LeadsPage() {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: i * 0.1, duration: 0.4, type: "spring", stiffness: 100 }}
               whileHover={{ y: -5, transition: { duration: 0.2 } }}
-              className={`relative overflow-hidden rounded-2xl p-6 bg-gradient-to-br ${stat.gradient} ${stat.shadow} border-0 flex flex-col justify-between h-32 group`}
+              className={`relative overflow-hidden rounded-none p-6 bg-gradient-to-br ${stat.gradient} ${stat.shadow} border-0 flex flex-col justify-between h-32 group`}
             >
               {/* Animated Inner Glow */}
               <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl group-hover:scale-150 transition-transform duration-700" />
@@ -279,7 +279,7 @@ export default function LeadsPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4, duration: 0.5 }}
-          className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-100 dark:border-zinc-800 overflow-hidden shadow-sm"
+          className="bg-white dark:bg-zinc-900 rounded-none border border-zinc-100 dark:border-zinc-800 overflow-hidden shadow-sm"
         >
           <div className="p-4 border-b flex flex-col md:flex-row items-center justify-between gap-4 bg-zinc-50/30">
             <div className="flex items-center gap-3 w-full md:w-auto">

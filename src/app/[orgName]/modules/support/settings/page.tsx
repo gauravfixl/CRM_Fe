@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import {
@@ -76,20 +76,20 @@ export default function SupportGlobalSettingsPage() {
             {/* Helpdesk Header */}
             <header className="sticky top-[-1.01rem] -mt-4 -mx-4 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800 px-12 py-8 flex items-center justify-between z-40 transition-colors">
                 <div className="flex items-center gap-6">
-                    <div className="h-14 w-14 bg-amber-600 rounded-2xl flex items-center justify-center text-white shadow-2xl shadow-amber-600/30 transform rotate-2 hover:rotate-0 transition-all duration-300">
+                    <div className="h-14 w-14 bg-amber-600 rounded-none flex items-center justify-center text-white shadow-2xl shadow-amber-600/30 transform rotate-2 hover:rotate-0 transition-all duration-300">
                         <LifeBuoy size={28} />
                     </div>
                     <div>
                         <h1 className="text-3xl font-black text-zinc-900 dark:text-zinc-50 uppercase tracking-tighter italic leading-none">Global Helpdesk Authority</h1>
                         <div className="flex items-center gap-2 mt-2">
                             <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
-                            <p className="text-[10px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-[0.2em] italic">Service Level Management • Support Engine v6.0</p>
+                            <p className="text-[10px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-[0.2em] italic">Service Level Management â€¢ Support Engine v6.0</p>
                         </div>
                     </div>
                 </div>
                 <div className="flex items-center gap-4">
-                    <CustomButton variant="outline" className="rounded-2xl h-12 px-8 font-bold border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">Audit SLA Logs</CustomButton>
-                    <CustomButton onClick={handleDeploy} className="bg-zinc-900 dark:bg-zinc-50 text-white dark:text-zinc-900 rounded-2xl h-12 px-10 font-black uppercase tracking-tight shadow-xl hover:translate-y-[-2px] transition-all">
+                    <CustomButton variant="outline" className="rounded-none h-12 px-8 font-bold border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">Audit SLA Logs</CustomButton>
+                    <CustomButton onClick={handleDeploy} className="bg-zinc-900 dark:bg-zinc-50 text-white dark:text-zinc-900 rounded-none h-12 px-10 font-black uppercase tracking-tight shadow-xl hover:translate-y-[-2px] transition-all">
                         <Save className="h-4 w-4 mr-3" /> Commit SLA Rules
                     </CustomButton>
                 </div>
@@ -146,7 +146,7 @@ export default function SupportGlobalSettingsPage() {
                                                     <MessageSquare size={40} />
                                                 </div>
                                                 <div className="flex gap-4 opacity-0 group-hover:opacity-100 transition-all duration-500 -translate-x-4 group-hover:translate-x-0">
-                                                    <CustomButton variant="ghost" className="h-12 w-12 p-0 rounded-2xl bg-white dark:bg-zinc-950 shadow-sm hover:bg-amber-50 text-amber-600" onClick={() => setTicketTypes(t => t.filter(x => x.id !== type.id))}><Trash2 size={20} /></CustomButton>
+                                                    <CustomButton variant="ghost" className="h-12 w-12 p-0 rounded-none bg-white dark:bg-zinc-950 shadow-sm hover:bg-amber-50 text-amber-600" onClick={() => setTicketTypes(t => t.filter(x => x.id !== type.id))}><Trash2 size={20} /></CustomButton>
                                                 </div>
                                             </div>
                                             <h4 className="text-2xl font-black text-zinc-900 dark:text-zinc-50 uppercase tracking-tighter mb-2 italic leading-tight">{type.name}</h4>
@@ -173,7 +173,7 @@ export default function SupportGlobalSettingsPage() {
                                     </h3>
                                     <p className="text-sm font-bold text-zinc-400 mt-4 uppercase tracking-[0.2em] italic">Orchestrate organization-wide response and resolution commitments across global customer tiers.</p>
                                 </div>
-                                <Badge className="bg-amber-100 dark:bg-amber-950/40 text-amber-600 px-8 py-3 rounded-2xl font-black uppercase text-xs tracking-widest">REAL-TIME TELEMETRY</Badge>
+                                <Badge className="bg-amber-100 dark:bg-amber-950/40 text-amber-600 px-8 py-3 rounded-none font-black uppercase text-xs tracking-widest">REAL-TIME TELEMETRY</Badge>
                             </div>
 
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
@@ -208,7 +208,7 @@ export default function SupportGlobalSettingsPage() {
                                     <div className="space-y-6 max-w-2xl">
                                         <h4 className="text-3xl font-black uppercase tracking-tighter italic text-amber-500 leading-none">Automated Escalation Rule 1.4</h4>
                                         <p className="text-base text-zinc-400 font-bold uppercase tracking-widest italic leading-relaxed">System-wide logic to bump unassigned cases to L2 Senior Agents if T+15m threshold is reached across all standard queues.</p>
-                                        <CustomButton className="h-14 rounded-2xl bg-amber-600 text-white font-black px-12 uppercase tracking-widest shadow-xl">Calibrate Escalation</CustomButton>
+                                        <CustomButton className="h-14 rounded-none bg-amber-600 text-white font-black px-12 uppercase tracking-widest shadow-xl">Calibrate Escalation</CustomButton>
                                     </div>
                                     <div className="h-48 w-48 bg-white/5 rounded-[48px] backdrop-blur-md border border-white/5 flex flex-col items-center justify-center gap-2">
                                         <Activity size={48} className="text-amber-500 animate-pulse" />
@@ -226,7 +226,7 @@ export default function SupportGlobalSettingsPage() {
                                 <div className="absolute -bottom-20 -right-20 h-80 w-80 bg-amber-500/10 rounded-full blur-[100px] pointer-events-none group-hover:scale-150 transition-transform duration-1000" />
                                 <div className="relative z-10 space-y-12">
                                     <div className="flex items-center gap-6">
-                                        <div className="h-16 w-16 bg-amber-500/10 text-amber-400 rounded-3xl flex items-center justify-center shadow-lg border border-amber-500/20">
+                                        <div className="h-16 w-16 bg-amber-500/10 text-amber-400 rounded-none flex items-center justify-center shadow-lg border border-amber-500/20">
                                             <Bot size={40} />
                                         </div>
                                         <h3 className="text-3xl font-black uppercase tracking-tighter italic leading-none">Service Intelligence (AI)</h3>
@@ -251,7 +251,7 @@ export default function SupportGlobalSettingsPage() {
 
                             <div className="space-y-10">
                                 <div className="bg-white dark:bg-zinc-900 rounded-[56px] p-16 border border-zinc-200 dark:border-zinc-800 shadow-2xl flex flex-col items-center justify-center text-center space-y-10 group transition-colors">
-                                    <div className="h-32 w-32 bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-500 rounded-full flex items-center justify-center animate-[pulse_4s_infinite] shadow-inner font-black text-3xl">🤖</div>
+                                    <div className="h-32 w-32 bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-500 rounded-full flex items-center justify-center animate-[pulse_4s_infinite] shadow-inner font-black text-3xl">ðŸ¤–</div>
                                     <div className="space-y-4">
                                         <h4 className="text-3xl font-black text-zinc-900 dark:text-zinc-50 uppercase tracking-tighter italic leading-tight">Neural Knowledge Base</h4>
                                         <p className="text-base text-zinc-500 dark:text-zinc-400 font-bold max-w-sm mx-auto leading-relaxed uppercase tracking-tighter italic">Currently analyzing 14k historical tickets to optimize resolution drafts.</p>

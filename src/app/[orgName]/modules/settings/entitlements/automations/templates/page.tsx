@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect } from "react";
 import {
@@ -89,7 +89,7 @@ export default function RuleTemplatesPage() {
                 arr.map((r: any) => ({
                     id: r._id || r.id || "",
                     name: r.name || "Untitled",
-                    category: r.module || "—",
+                    category: r.module || "â€”",
                     trigger: r.trigger?.event || "manual",
                     actions: Array.isArray(r.actions) ? r.actions.length : 0,
                     usage: typeof r.triggerCount === "number" ? r.triggerCount : 0,
@@ -98,7 +98,7 @@ export default function RuleTemplatesPage() {
                 }))
             );
         } catch (err: any) {
-            // Silent — table just stays empty
+            // Silent â€” table just stays empty
         }
     };
 
@@ -230,7 +230,7 @@ export default function RuleTemplatesPage() {
     return (
         <div className="relative min-h-screen bg-[#F8F9FC] dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-outfit p-6 space-y-6">
             {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white dark:bg-zinc-900 p-6 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-sm">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white dark:bg-zinc-900 p-6 border border-zinc-200 dark:border-zinc-800 rounded-none shadow-sm">
                 <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 flex items-center justify-center text-white shadow-lg">
                         <LayoutTemplate className="w-6 h-6" />
@@ -269,7 +269,7 @@ export default function RuleTemplatesPage() {
                             <span className="text-xl font-semibold text-zinc-900 dark:text-white block">{templates.filter(t => t.status === "Active").length}</span>
                             <span className="text-[10px] text-emerald-600 font-medium mt-1 block">Currently in use</span>
                         </div>
-                        <div className="h-10 w-10 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500 rounded-2xl flex items-center justify-center">
+                        <div className="h-10 w-10 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500 rounded-none flex items-center justify-center">
                             <Zap className="w-5 h-5" />
                         </div>
                     </SmallCardContent>
@@ -281,7 +281,7 @@ export default function RuleTemplatesPage() {
                             <span className="text-xl font-semibold text-zinc-900 dark:text-white block">{templates.reduce((sum, t) => sum + t.usage, 0)}</span>
                             <span className="text-[10px] text-blue-600 font-medium mt-1 block">Instances deployed</span>
                         </div>
-                        <div className="h-10 w-10 bg-blue-50 dark:bg-blue-900/20 text-blue-500 rounded-2xl flex items-center justify-center">
+                        <div className="h-10 w-10 bg-blue-50 dark:bg-blue-900/20 text-blue-500 rounded-none flex items-center justify-center">
                             <Layers className="w-5 h-5" />
                         </div>
                     </SmallCardContent>
@@ -293,7 +293,7 @@ export default function RuleTemplatesPage() {
                             <span className="text-xl font-semibold text-zinc-900 dark:text-white block">{categories.length}</span>
                             <span className="text-[10px] text-zinc-500 font-medium mt-1 block">Template types</span>
                         </div>
-                        <div className="h-10 w-10 bg-purple-50 dark:bg-purple-900/20 text-purple-500 rounded-2xl flex items-center justify-center">
+                        <div className="h-10 w-10 bg-purple-50 dark:bg-purple-900/20 text-purple-500 rounded-none flex items-center justify-center">
                             <Code className="w-5 h-5" />
                         </div>
                     </SmallCardContent>
@@ -301,7 +301,7 @@ export default function RuleTemplatesPage() {
             </div>
 
             {/* Templates Table */}
-            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-sm overflow-hidden">
+            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-none shadow-sm overflow-hidden">
                 <div className="p-4 border-b border-zinc-100 dark:border-zinc-800 flex flex-col md:flex-row gap-4 justify-between items-center bg-zinc-50/20 dark:bg-zinc-900/50">
                     <div className="relative w-full md:w-96">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={16} />
@@ -425,7 +425,7 @@ export default function RuleTemplatesPage() {
 
             {/* Create Modal */}
             <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
-                <DialogContent className="max-w-2xl rounded-2xl p-0 overflow-hidden shadow-2xl border-none">
+                <DialogContent className="max-w-2xl rounded-none p-0 overflow-hidden shadow-2xl border-none">
                     <div className="bg-gradient-to-r from-purple-600 to-indigo-700 p-8 text-white relative">
                         <div className="absolute top-0 right-0 p-4 opacity-10">
                             <LayoutTemplate size={80} />
@@ -493,7 +493,7 @@ export default function RuleTemplatesPage() {
 
             {/* Edit Modal */}
             <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
-                <DialogContent className="max-w-2xl rounded-2xl p-0 overflow-hidden shadow-2xl border-none">
+                <DialogContent className="max-w-2xl rounded-none p-0 overflow-hidden shadow-2xl border-none">
                     <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-8 text-white relative">
                         <h2 className="text-xl font-semibold flex items-center gap-3">
                             <Edit size={22} /> Edit Template

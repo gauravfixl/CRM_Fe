@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useState } from "react"
 import { MapPin, Plus, Search, Globe, Clock, Calendar, MoreVertical, ExternalLink, Building2, Phone, Mail } from "lucide-react"
@@ -54,7 +54,7 @@ export default function Locations() {
                     ))}
                 </div>
 
-                <div className="bg-white border rounded-2xl overflow-hidden shadow-sm">
+                <div className="bg-white border rounded-none overflow-hidden shadow-sm">
                     <div className="p-4 border-b flex flex-col md:flex-row gap-4 items-center justify-between bg-zinc-50/30">
                         <div className="relative w-full md:w-80">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
@@ -132,12 +132,12 @@ export default function Locations() {
                 </div>
 
                 {/* Info Board */}
-                <div className="bg-blue-600 rounded-2xl p-6 text-white flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl relative overflow-hidden">
+                <div className="bg-blue-600 rounded-none p-6 text-white flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl relative overflow-hidden">
                     <div className="absolute top-0 right-0 p-8 opacity-10">
                         <Globe className="w-24 h-24" />
                     </div>
                     <div className="relative z-10 flex flex-col md:flex-row items-center gap-6">
-                        <div className="p-4 bg-white/20 rounded-2xl">
+                        <div className="p-4 bg-white/20 rounded-none">
                             <Calendar className="w-8 h-8" />
                         </div>
                         <div>

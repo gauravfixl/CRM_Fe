@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState } from "react";
 import {
@@ -74,7 +74,7 @@ export default function EnabledAppsPage() {
 
     return (
         <div className="relative min-h-screen bg-[#F8F9FC] dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-outfit p-6 space-y-6">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm gap-4">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-white dark:bg-zinc-900 p-6 rounded-none border border-zinc-200 dark:border-zinc-800 shadow-sm gap-4">
                 <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-primary/70 to-primary flex items-center justify-center text-white shadow-lg">
                         <LayoutDashboard className="w-6 h-6" />
@@ -88,7 +88,7 @@ export default function EnabledAppsPage() {
                 </div>
                 <Button
                     className="h-10 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-semibold px-6 gap-2"
-                    onClick={() => toast.info("Checking for updates…")}
+                    onClick={() => toast.info("Checking for updatesâ€¦")}
                 >
                     <RotateCw className="w-4 h-4" /> Check for Updates
                 </Button>
@@ -114,7 +114,7 @@ export default function EnabledAppsPage() {
                             </span>
                             <span className="text-[10px] text-emerald-600 font-medium mt-1 block">Running</span>
                         </div>
-                        <div className="h-10 w-10 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500 rounded-2xl flex items-center justify-center">
+                        <div className="h-10 w-10 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500 rounded-none flex items-center justify-center">
                             <CheckCircle2 className="w-5 h-5" />
                         </div>
                     </SmallCardContent>
@@ -128,7 +128,7 @@ export default function EnabledAppsPage() {
                             </span>
                             <span className="text-[10px] text-zinc-500 font-medium mt-1 block">Disabled</span>
                         </div>
-                        <div className="h-10 w-10 bg-zinc-100 dark:bg-zinc-800 text-zinc-500 rounded-2xl flex items-center justify-center">
+                        <div className="h-10 w-10 bg-zinc-100 dark:bg-zinc-800 text-zinc-500 rounded-none flex items-center justify-center">
                             <XCircle className="w-5 h-5" />
                         </div>
                     </SmallCardContent>
@@ -142,19 +142,19 @@ export default function EnabledAppsPage() {
                             </span>
                             <span className="text-[10px] text-blue-500 font-medium mt-1 block">Apps enabled</span>
                         </div>
-                        <div className="h-10 w-10 bg-blue-50 dark:bg-blue-900/20 text-blue-500 rounded-2xl flex items-center justify-center">
+                        <div className="h-10 w-10 bg-blue-50 dark:bg-blue-900/20 text-blue-500 rounded-none flex items-center justify-center">
                             <RotateCw className="w-5 h-5" />
                         </div>
                     </SmallCardContent>
                 </SmallCard>
             </div>
 
-            <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
+            <div className="bg-white dark:bg-zinc-900 rounded-none border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
                 <div className="p-4 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between bg-zinc-50/20 dark:bg-zinc-900/50">
                     <div className="relative w-full md:w-80">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
                         <Input
-                            placeholder="Search apps…"
+                            placeholder="Search appsâ€¦"
                             className="pl-10 h-10 bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 rounded-xl text-xs font-medium"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
@@ -163,7 +163,7 @@ export default function EnabledAppsPage() {
                     <Button
                         variant="outline"
                         className="h-10 rounded-xl border-zinc-200 dark:border-zinc-700 text-[11px] font-semibold gap-2"
-                        onClick={() => toast.info("Opening marketplace…")}
+                        onClick={() => toast.info("Opening marketplaceâ€¦")}
                     >
                         <Plus className="w-4 h-4" /> Add App
                     </Button>

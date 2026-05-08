@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { Mail, Search, Plus, Filter, MoreVertical, Send, User, ChevronRight, X } from "lucide-react";
@@ -97,7 +97,7 @@ export default function LeadEmailsPage() {
                                     onClick={() => setSelectedEmail(email)}
                                     className="p-6 hover:bg-zinc-50 transition-all group flex gap-6 cursor-pointer items-center"
                                 >
-                                    <div className="w-12 h-12 rounded-2xl bg-zinc-50 border border-zinc-100 flex items-center justify-center text-zinc-400 group-hover:bg-purple-50 group-hover:text-purple-600 transition-colors">
+                                    <div className="w-12 h-12 rounded-none bg-zinc-50 border border-zinc-100 flex items-center justify-center text-zinc-400 group-hover:bg-purple-50 group-hover:text-purple-600 transition-colors">
                                         <Send className="h-5 w-5" />
                                     </div>
                                     <div className="flex-1 min-w-0">
@@ -107,7 +107,7 @@ export default function LeadEmailsPage() {
                                         </div>
                                         <div className="flex items-center gap-2 mb-2">
                                             <span className="text-xs font-medium text-zinc-500">{email.lead}</span>
-                                            <span className="text-zinc-300">•</span>
+                                            <span className="text-zinc-300">â€¢</span>
                                             {email.status === "opened" && <Badge className="bg-emerald-50 text-emerald-600 border-emerald-100 text-[9px] uppercase font-bold">Opened</Badge>}
                                             {email.status === "sent" && <Badge className="bg-blue-50 text-blue-600 border-blue-100 text-[9px] uppercase font-bold">Sent</Badge>}
                                             {email.status === "replied" && <Badge className="bg-purple-50 text-purple-600 border-purple-100 text-[9px] uppercase font-bold">Replied</Badge>}
@@ -136,7 +136,7 @@ export default function LeadEmailsPage() {
                         >
                             <div className="p-8 border-b flex items-center justify-between">
                                 <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center">
+                                    <div className="w-12 h-12 rounded-none bg-purple-50 text-purple-600 flex items-center justify-center">
                                         <User size={24} />
                                     </div>
                                     <div>
@@ -156,8 +156,8 @@ export default function LeadEmailsPage() {
                                     </div>
                                 </div>
                                 <div className="flex gap-4">
-                                    <CustomButton className="flex-1 h-12 bg-zinc-900 text-white rounded-2xl">Reply Now</CustomButton>
-                                    <CustomButton variant="outline" className="flex-1 h-12 rounded-2xl">Forward</CustomButton>
+                                    <CustomButton className="flex-1 h-12 bg-zinc-900 text-white rounded-none">Reply Now</CustomButton>
+                                    <CustomButton variant="outline" className="flex-1 h-12 rounded-none">Forward</CustomButton>
                                 </div>
                             </div>
                         </motion.div>

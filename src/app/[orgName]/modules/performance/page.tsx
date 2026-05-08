@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import React, { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
@@ -128,7 +128,7 @@ export default function PerformanceReviewsPage() {
                     ].map((stat, i) => (
                         <Card key={i} className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-[48px] p-10 shadow-xl overflow-hidden relative group transition-all hover:shadow-2xl">
                             <div className="flex justify-between items-start mb-6">
-                                <div className={`h-12 w-12 rounded-2xl ${stat.color} text-white flex items-center justify-center shadow-lg transform rotate-3 group-hover:rotate-0 transition-transform duration-500`}>
+                                <div className={`h-12 w-12 rounded-none ${stat.color} text-white flex items-center justify-center shadow-lg transform rotate-3 group-hover:rotate-0 transition-transform duration-500`}>
                                     <stat.icon size={24} />
                                 </div>
                                 <Badge className="bg-zinc-50 dark:bg-zinc-800 text-[9px] font-black italic border-zinc-100 dark:border-zinc-800">{stat.trend}</Badge>
@@ -191,16 +191,16 @@ export default function PerformanceReviewsPage() {
                                             </div>
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
-                                                    <CustomButton variant="ghost" className="h-10 w-10 p-0 rounded-2xl bg-white/50 border border-zinc-100 group-hover:shadow-lg transition-all">
+                                                    <CustomButton variant="ghost" className="h-10 w-10 p-0 rounded-none bg-white/50 border border-zinc-100 group-hover:shadow-lg transition-all">
                                                         <MoreVertical size={20} className="text-zinc-400" />
                                                     </CustomButton>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end" className="rounded-[32px] w-64 p-2 shadow-3xl bg-white dark:bg-zinc-900 border-zinc-100">
-                                                    <DropdownMenuItem className="rounded-2xl gap-3 font-bold px-6 py-4 text-xs italic uppercase tracking-tighter"><SearchCheck size={18} /> Review Profile</DropdownMenuItem>
-                                                    <DropdownMenuItem className="rounded-2xl gap-3 font-bold px-6 py-4 text-xs italic uppercase tracking-tighter"><Edit3 size={18} /> Calibrate Rating</DropdownMenuItem>
-                                                    <DropdownMenuItem className="rounded-2xl gap-3 font-bold px-6 py-4 text-xs italic uppercase tracking-tighter"><Share2 size={18} /> Internal Link</DropdownMenuItem>
+                                                    <DropdownMenuItem className="rounded-none gap-3 font-bold px-6 py-4 text-xs italic uppercase tracking-tighter"><SearchCheck size={18} /> Review Profile</DropdownMenuItem>
+                                                    <DropdownMenuItem className="rounded-none gap-3 font-bold px-6 py-4 text-xs italic uppercase tracking-tighter"><Edit3 size={18} /> Calibrate Rating</DropdownMenuItem>
+                                                    <DropdownMenuItem className="rounded-none gap-3 font-bold px-6 py-4 text-xs italic uppercase tracking-tighter"><Share2 size={18} /> Internal Link</DropdownMenuItem>
                                                     <DropdownMenuSeparator />
-                                                    <DropdownMenuItem onClick={() => handleDelete(rev.id)} className="rounded-2xl gap-3 font-bold px-6 py-4 text-xs text-red-600 focus:bg-red-600 focus:text-white font-black italic uppercase tracking-tighter"><Trash2 size={18} /> Expunge Node</DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => handleDelete(rev.id)} className="rounded-none gap-3 font-bold px-6 py-4 text-xs text-red-600 focus:bg-red-600 focus:text-white font-black italic uppercase tracking-tighter"><Trash2 size={18} /> Expunge Node</DropdownMenuItem>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
                                         </div>

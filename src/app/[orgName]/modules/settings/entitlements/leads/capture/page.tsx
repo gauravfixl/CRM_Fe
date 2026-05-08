@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import React, { useState } from "react"
 import { useParams } from "next/navigation"
@@ -229,7 +229,7 @@ export default function LeadCapturePage() {
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                     {/* Inbound Gateway Registry + summary (left) */}
                     <div className="lg:col-span-8 flex flex-col gap-4 self-start">
-                        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-md overflow-hidden text-left">
+                        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-none shadow-md overflow-hidden text-left">
                             <div className="px-4 py-2 border-b border-zinc-50 dark:border-zinc-800 flex items-center justify-between bg-zinc-50/40 dark:bg-zinc-900/40">
                                 <div className="text-left space-y-1">
                                     <h4 className="text-base font-medium text-gray-900 dark:text-zinc-100 leading-none">
@@ -394,7 +394,7 @@ export default function LeadCapturePage() {
 
                     {/* API Configuration Panel */}
                     <div className="lg:col-span-4 space-y-8">
-                        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-md p-6 text-left">
+                        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-none shadow-md p-6 text-left">
                             <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-6 pb-4 border-b border-zinc-50 dark:border-zinc-800 flex items-center gap-3 leading-none">
                                 <Terminal className="w-5 h-5 text-blue-600" /> Api Access Authority
                             </h3>
@@ -453,7 +453,7 @@ export default function LeadCapturePage() {
                         </div>
 
                         {/* Integration Quicklinks */}
-                        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-md p-6 space-y-4 text-left">
+                        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-none shadow-md p-6 space-y-4 text-left">
                             <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-2 leading-none">Implementation Assets</h3>
                             <div className="space-y-3">
                                 {[
@@ -476,7 +476,7 @@ export default function LeadCapturePage() {
                 </div>
 
                 {/* Algorithmic Security Matrix */}
-                <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-md p-6 relative overflow-hidden group text-left">
+                <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-none shadow-md p-6 relative overflow-hidden group text-left">
                     <Activity className="absolute -bottom-20 -right-20 h-96 w-96 text-indigo-600 opacity-5 group-hover:scale-110 transition-transform pointer-events-none" />
                     <div className="relative z-10 w-full text-left">
                         <div className="flex items-center justify-between mb-8 border-b border-zinc-50 dark:border-zinc-800/50 pb-6">
@@ -515,7 +515,7 @@ export default function LeadCapturePage() {
                     </div>
                 </div>
             </div>
-            {/* Provision Gateway — side sheet */}
+            {/* Provision Gateway â€” side sheet */}
             <SideFormSheet
                 open={isProvisionOpen}
                 onOpenChange={(o) => {

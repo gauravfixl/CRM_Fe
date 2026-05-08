@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -212,7 +212,7 @@ export default function LeadDetailsPage() {
               <div className="absolute top-0 right-0 w-64 h-64 bg-blue-50/50 rounded-full blur-[80px] -mr-32 -mt-32" />
 
               <div className="relative flex flex-col md:flex-row gap-8 items-start md:items-center">
-                <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-blue-600 to-indigo-800 flex items-center justify-center text-white text-3xl font-black shadow-2xl shadow-blue-500/20">
+                <div className="w-24 h-24 rounded-none bg-gradient-to-br from-blue-600 to-indigo-800 flex items-center justify-center text-white text-3xl font-black shadow-2xl shadow-blue-500/20">
                   {lead.contact?.name?.[0] || lead.title?.[0] || "L"}
                 </div>
 
@@ -239,7 +239,7 @@ export default function LeadDetailsPage() {
                   </div>
                 </div>
 
-                <div className="bg-zinc-50 dark:bg-zinc-800/50 p-6 rounded-2xl border border-dashed border-zinc-200 text-center min-w-[160px]">
+                <div className="bg-zinc-50 dark:bg-zinc-800/50 p-6 rounded-none border border-dashed border-zinc-200 text-center min-w-[160px]">
                   <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1">Estimated Value</p>
                   <div className="flex items-center justify-center gap-1 text-2xl font-black text-zinc-900 dark:text-zinc-100">
                     <DollarSign className="h-5 w-5 text-emerald-600" />
@@ -347,7 +347,7 @@ export default function LeadDetailsPage() {
                           <div className="absolute left-[15px] top-8 bottom-0 w-[2px] bg-zinc-100 group-last:hidden" />
                         )}
                         <div className="w-8 h-8 rounded-full border-4 border-white dark:border-zinc-900 bg-blue-600 shadow-md relative z-10" />
-                        <div className="flex-1 bg-zinc-50 dark:bg-zinc-800/30 p-5 rounded-2xl border border-zinc-100 dark:border-zinc-800 transition-all hover:bg-white hover:shadow-lg">
+                        <div className="flex-1 bg-zinc-50 dark:bg-zinc-800/30 p-5 rounded-none border border-zinc-100 dark:border-zinc-800 transition-all hover:bg-white hover:shadow-lg">
                           <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-2">
                               <span className="text-xs font-bold text-zinc-900 uppercase tracking-tighter">Stage Transitioned to</span>
@@ -396,7 +396,7 @@ export default function LeadDetailsPage() {
               <h3 className="text-xs font-black text-zinc-400 uppercase tracking-widest border-b pb-4 mb-6">Client Logistics</h3>
               <div className="space-y-6">
                 <div className="flex gap-4">
-                  <div className="p-3 rounded-2xl bg-zinc-50 text-zinc-500"><MapPin className="h-5 w-5" /></div>
+                  <div className="p-3 rounded-none bg-zinc-50 text-zinc-500"><MapPin className="h-5 w-5" /></div>
                   <div>
                     <p className="text-[10px] font-black text-zinc-400 uppercase mb-1">Business Location</p>
                     <p className="text-sm font-bold text-zinc-900 leading-tight">
@@ -406,7 +406,7 @@ export default function LeadDetailsPage() {
                   </div>
                 </div>
                 <div className="flex gap-4">
-                  <div className="p-3 rounded-2xl bg-zinc-50 text-zinc-500"><Building className="h-5 w-5" /></div>
+                  <div className="p-3 rounded-none bg-zinc-50 text-zinc-500"><Building className="h-5 w-5" /></div>
                   <div>
                     <p className="text-[10px] font-black text-zinc-400 uppercase mb-1">Enterprise Link</p>
                     <p className="text-sm font-bold text-zinc-900 underline">ABC Corporation HQ</p>
@@ -485,7 +485,7 @@ export default function LeadDetailsPage() {
               </div>
             </div>
 
-            <div className="p-4 bg-blue-50/50 rounded-2xl border border-blue-100 flex items-start gap-4">
+            <div className="p-4 bg-blue-50/50 rounded-none border border-blue-100 flex items-start gap-4">
               <div className="p-2 bg-blue-600 rounded-lg text-white"><CheckCircle2 className="h-4 w-4" /></div>
               <p className="text-[11px] text-blue-800 font-medium leading-relaxed">
                 Conversion will automatically create a <strong>Firm Account</strong> for the client and link this new <strong>Opportunity</strong> to their profile.

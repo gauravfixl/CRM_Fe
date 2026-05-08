@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import React, { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
@@ -220,21 +220,21 @@ export default function PaymentsPage() {
                                     </div>
 
                                     <div className="col-span-2 flex items-center justify-end gap-3">
-                                        <CustomButton variant="outline" className="h-12 w-12 rounded-2xl border-zinc-100 hover:border-emerald-500 transition-all p-0">
+                                        <CustomButton variant="outline" className="h-12 w-12 rounded-none border-zinc-100 hover:border-emerald-500 transition-all p-0">
                                             <FileText size={20} className="text-zinc-300 group-hover:text-emerald-500" />
                                         </CustomButton>
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
-                                                <CustomButton variant="ghost" className="h-12 w-12 p-0 rounded-2xl bg-white/50 border border-zinc-100 group-hover:shadow-lg transition-all">
+                                                <CustomButton variant="ghost" className="h-12 w-12 p-0 rounded-none bg-white/50 border border-zinc-100 group-hover:shadow-lg transition-all">
                                                     <MoreVertical size={20} className="text-zinc-400" />
                                                 </CustomButton>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end" className="rounded-[40px] w-64 p-3 shadow-4xl bg-white dark:bg-zinc-900 border-zinc-100">
-                                                <DropdownMenuItem className="rounded-3xl gap-4 font-bold px-10 py-6 text-sm italic uppercase tracking-tighter"><SearchCheck size={20} /> Inspect Node</DropdownMenuItem>
-                                                <DropdownMenuItem className="rounded-3xl gap-4 font-bold px-10 py-6 text-sm italic uppercase tracking-tighter"><RotateCcw2 size={20} /> Re-sync Settlement</DropdownMenuItem>
-                                                <DropdownMenuItem className="rounded-3xl gap-4 font-bold px-10 py-6 text-sm italic uppercase tracking-tighter"><Share2 size={20} /> Internal Link</DropdownMenuItem>
+                                                <DropdownMenuItem className="rounded-none gap-4 font-bold px-10 py-6 text-sm italic uppercase tracking-tighter"><SearchCheck size={20} /> Inspect Node</DropdownMenuItem>
+                                                <DropdownMenuItem className="rounded-none gap-4 font-bold px-10 py-6 text-sm italic uppercase tracking-tighter"><RotateCcw2 size={20} /> Re-sync Settlement</DropdownMenuItem>
+                                                <DropdownMenuItem className="rounded-none gap-4 font-bold px-10 py-6 text-sm italic uppercase tracking-tighter"><Share2 size={20} /> Internal Link</DropdownMenuItem>
                                                 <DropdownMenuSeparator />
-                                                <DropdownMenuItem onClick={() => handleDelete(tx.id)} className="rounded-3xl gap-4 font-bold px-10 py-6 text-sm text-red-600 focus:bg-red-600 focus:text-white font-black italic uppercase"><Trash2 size={20} /> expunge entry</DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => handleDelete(tx.id)} className="rounded-none gap-4 font-bold px-10 py-6 text-sm text-red-600 focus:bg-red-600 focus:text-white font-black italic uppercase"><Trash2 size={20} /> expunge entry</DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </div>

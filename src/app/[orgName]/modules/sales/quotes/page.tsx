@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import React, { useState } from "react"
 import { motion, AnimatePresence } from "react"
@@ -241,11 +241,11 @@ export default function QuotesPage() {
                                                 </CustomButton>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end" className="rounded-[32px] w-64 p-2 shadow-3xl bg-white dark:bg-zinc-900 border-zinc-100">
-                                                <DropdownMenuItem className="rounded-2xl gap-3 font-bold px-8 py-5 text-sm italic uppercase tracking-tight"><Edit3 size={18} /> Modify Blueprint</DropdownMenuItem>
-                                                <DropdownMenuItem className="rounded-2xl gap-3 font-bold px-8 py-5 text-sm italic uppercase tracking-tight"><SearchCheck size={18} /> Internal Audit</DropdownMenuItem>
-                                                <DropdownMenuItem className="rounded-2xl gap-3 font-bold px-8 py-5 text-sm italic uppercase tracking-tight"><Copy size={18} /> Clone Proposal</DropdownMenuItem>
+                                                <DropdownMenuItem className="rounded-none gap-3 font-bold px-8 py-5 text-sm italic uppercase tracking-tight"><Edit3 size={18} /> Modify Blueprint</DropdownMenuItem>
+                                                <DropdownMenuItem className="rounded-none gap-3 font-bold px-8 py-5 text-sm italic uppercase tracking-tight"><SearchCheck size={18} /> Internal Audit</DropdownMenuItem>
+                                                <DropdownMenuItem className="rounded-none gap-3 font-bold px-8 py-5 text-sm italic uppercase tracking-tight"><Copy size={18} /> Clone Proposal</DropdownMenuItem>
                                                 <DropdownMenuSeparator />
-                                                <DropdownMenuItem onClick={() => handleDelete(quote.id)} className="rounded-2xl gap-3 font-bold px-8 py-5 text-sm text-red-600 focus:bg-red-600 focus:text-white font-black italic uppercase"><Trash2 size={18} /> expunge record</DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => handleDelete(quote.id)} className="rounded-none gap-3 font-bold px-8 py-5 text-sm text-red-600 focus:bg-red-600 focus:text-white font-black italic uppercase"><Trash2 size={18} /> expunge record</DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </div>

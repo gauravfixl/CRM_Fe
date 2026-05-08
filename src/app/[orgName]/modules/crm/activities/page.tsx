@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import React, { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
@@ -213,19 +213,19 @@ export default function CRMActivitiesPage() {
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center gap-3">
-                                                    <CustomButton variant="outline" className="rounded-2xl h-12 px-6 font-black uppercase text-[10px] tracking-widest border-zinc-200 hover:border-blue-600 hover:bg-blue-50 transition-all opacity-0 group-hover/card:opacity-100 italic">View Transcript</CustomButton>
+                                                    <CustomButton variant="outline" className="rounded-none h-12 px-6 font-black uppercase text-[10px] tracking-widest border-zinc-200 hover:border-blue-600 hover:bg-blue-50 transition-all opacity-0 group-hover/card:opacity-100 italic">View Transcript</CustomButton>
                                                     <DropdownMenu>
                                                         <DropdownMenuTrigger asChild>
-                                                            <CustomButton variant="ghost" className="h-12 w-12 p-0 rounded-2xl bg-white/50 border border-zinc-100 group-hover/card:shadow-lg transition-all">
+                                                            <CustomButton variant="ghost" className="h-12 w-12 p-0 rounded-none bg-white/50 border border-zinc-100 group-hover/card:shadow-lg transition-all">
                                                                 <MoreVertical size={20} className="text-zinc-400" />
                                                             </CustomButton>
                                                         </DropdownMenuTrigger>
                                                         <DropdownMenuContent align="end" className="rounded-[32px] w-56 p-2 shadow-3xl bg-white dark:bg-zinc-900 border-zinc-100">
-                                                            <DropdownMenuItem className="rounded-2xl gap-3 font-bold px-6 py-4 text-xs italic"><Edit3 size={16} /> Edit Entry</DropdownMenuItem>
-                                                            <DropdownMenuItem className="rounded-2xl gap-3 font-bold px-6 py-4 text-xs italic"><Copy size={16} /> Duplicate Logic</DropdownMenuItem>
-                                                            <DropdownMenuItem className="rounded-2xl gap-3 font-bold px-6 py-4 text-xs italic"><Share2 size={16} /> Internal Link</DropdownMenuItem>
+                                                            <DropdownMenuItem className="rounded-none gap-3 font-bold px-6 py-4 text-xs italic"><Edit3 size={16} /> Edit Entry</DropdownMenuItem>
+                                                            <DropdownMenuItem className="rounded-none gap-3 font-bold px-6 py-4 text-xs italic"><Copy size={16} /> Duplicate Logic</DropdownMenuItem>
+                                                            <DropdownMenuItem className="rounded-none gap-3 font-bold px-6 py-4 text-xs italic"><Share2 size={16} /> Internal Link</DropdownMenuItem>
                                                             <DropdownMenuSeparator />
-                                                            <DropdownMenuItem onClick={() => handleDelete(act.id)} className="rounded-2xl gap-3 font-bold px-6 py-4 text-xs text-red-600 focus:bg-red-600 focus:text-white-100 font-black italic uppercase"><Trash2 size={16} /> Expunge Record</DropdownMenuItem>
+                                                            <DropdownMenuItem onClick={() => handleDelete(act.id)} className="rounded-none gap-3 font-bold px-6 py-4 text-xs text-red-600 focus:bg-red-600 focus:text-white-100 font-black italic uppercase"><Trash2 size={16} /> Expunge Record</DropdownMenuItem>
                                                         </DropdownMenuContent>
                                                     </DropdownMenu>
                                                 </div>

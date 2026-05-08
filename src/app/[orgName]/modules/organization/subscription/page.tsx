@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import React, { useEffect, useState } from "react"
 import { useRouter, useParams } from "next/navigation"
@@ -89,11 +89,11 @@ export default function OrgSubscriptionPage() {
                 const planName = h?.planSnapshot?.name ?? "Plan"
                 const price = h?.planSnapshot?.price
                 const amount =
-                    typeof price === "number" ? `$${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "$—"
+                    typeof price === "number" ? `$${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "$â€”"
 
                 return {
                     id: `#${planName}-${idx + 1}`,
-                    date: createdAt ? createdAt.toLocaleDateString(undefined, { month: "short", day: "2-digit", year: "numeric" }) : "—",
+                    date: createdAt ? createdAt.toLocaleDateString(undefined, { month: "short", day: "2-digit", year: "numeric" }) : "â€”",
                     amount,
                     status: h?.paymentStatus === "active" ? "Paid" : h?.paymentStatus === "trialing" ? "Trial" : "Updated",
                     method: "Billing on file",
@@ -103,9 +103,9 @@ export default function OrgSubscriptionPage() {
 
         // fallback
         return [
-            { id: "#Inv-2026-001", date: "Jan 24, 2026", amount: "$1,499.00", status: "Paid", method: "Visa •••• 4242" },
-            { id: "#Inv-2025-012", date: "Dec 24, 2025", amount: "$1,499.00", status: "Paid", method: "Visa •••• 4242" },
-            { id: "#Inv-2025-011", date: "Nov 24, 2025", amount: "$1,499.00", status: "Paid", method: "Visa •••• 4242" },
+            { id: "#Inv-2026-001", date: "Jan 24, 2026", amount: "$1,499.00", status: "Paid", method: "Visa â€¢â€¢â€¢â€¢ 4242" },
+            { id: "#Inv-2025-012", date: "Dec 24, 2025", amount: "$1,499.00", status: "Paid", method: "Visa â€¢â€¢â€¢â€¢ 4242" },
+            { id: "#Inv-2025-011", date: "Nov 24, 2025", amount: "$1,499.00", status: "Paid", method: "Visa â€¢â€¢â€¢â€¢ 4242" },
         ]
     })()
 
@@ -220,7 +220,7 @@ export default function OrgSubscriptionPage() {
                             </div>
                             <div className="space-y-0.5">
                                 <p className="text-[10px] font-medium text-indigo-300">Payment Method</p>
-                                <p className="text-xs font-medium text-white flex items-center gap-1.5">•••• 4242 <CreditCard className="w-3 h-3" /></p>
+                                <p className="text-xs font-medium text-white flex items-center gap-1.5">â€¢â€¢â€¢â€¢ 4242 <CreditCard className="w-3 h-3" /></p>
                             </div>
                             <div className="space-y-0.5">
                                 <p className="text-[10px] font-medium text-indigo-300">Billing Logic</p>
@@ -332,7 +332,7 @@ export default function OrgSubscriptionPage() {
                 </CardContent>
             </Card>
 
-            {/* Upgrade Plan — side sheet */}
+            {/* Upgrade Plan â€” side sheet */}
             <SideFormSheet
                 open={isUpgradeOpen}
                 onOpenChange={(o) => {
@@ -354,8 +354,8 @@ export default function OrgSubscriptionPage() {
                 submitLabel="Commit Upgrade"
             >
                 <div className="space-y-5">
-                    {/* Plan summary — dark panel, explicit white text */}
-                    <div className="relative bg-slate-900 rounded-2xl p-6 overflow-hidden">
+                    {/* Plan summary â€” dark panel, explicit white text */}
+                    <div className="relative bg-slate-900 rounded-none p-6 overflow-hidden">
                         <div
                             className="absolute inset-0 opacity-[0.04] pointer-events-none"
                             style={{
@@ -403,7 +403,7 @@ export default function OrgSubscriptionPage() {
                                     <div className="w-10 h-6 bg-slate-900 rounded flex items-center justify-center text-[9px] font-bold italic text-white">
                                         VISA
                                     </div>
-                                    <p className="text-[13px] font-semibold text-slate-900">•••• 4242</p>
+                                    <p className="text-[13px] font-semibold text-slate-900">â€¢â€¢â€¢â€¢ 4242</p>
                                 </div>
                                 <Button
                                     variant="link"
@@ -422,7 +422,7 @@ export default function OrgSubscriptionPage() {
                     <Field label="Security Code (CVV)" required error={cvvError} hint="3 digits on the back of your card">
                         <Input
                             type="password"
-                            placeholder="•••"
+                            placeholder="â€¢â€¢â€¢"
                             value={cvv}
                             onChange={(e) => {
                                 setCvv(e.target.value.replace(/\D/g, ""))
@@ -444,7 +444,7 @@ export default function OrgSubscriptionPage() {
                 </div>
             </SideFormSheet>
 
-            {/* Update Payment Details — side sheet */}
+            {/* Update Payment Details â€” side sheet */}
             <SideFormSheet
                 open={isPaymentOpen}
                 onOpenChange={(o) => {
@@ -514,7 +514,7 @@ export default function OrgSubscriptionPage() {
                         <Field label="CVC" required error={paymentErrors.cvc} hint="3 or 4 digits">
                             <Input
                                 type="password"
-                                placeholder="•••"
+                                placeholder="â€¢â€¢â€¢"
                                 value={paymentForm.cvc}
                                 onChange={(e) =>
                                     setPaymentForm((prev) => ({
@@ -539,7 +539,7 @@ export default function OrgSubscriptionPage() {
                 </div>
             </SideFormSheet>
 
-            {/* Compare Plans — side sheet */}
+            {/* Compare Plans â€” side sheet */}
             <SideFormSheet
                 open={isCompareOpen}
                 onOpenChange={setIsCompareOpen}

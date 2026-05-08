@@ -16,6 +16,7 @@ import { decryptData } from "@/utils/crypto"
 import useRolesStore from "@/lib/roleStore"
 import { SmallCard, SmallCardContent } from "@/components/custom/SmallCard"
 import { Users, Building2, Activity, Settings, ChevronRight, Sparkles, Shield } from "lucide-react"
+import { useFormatNumber } from "@/shared/hooks/useAdminFormatters"
 
 type ScopeParams = {
   scope: "sc-wrk" | "sc-org" | "sc-plat" | "sc-prj" | "sc-tm"
@@ -41,6 +42,7 @@ export default function DashboardPage() {
   const simpleRoles = useRolesStore((state) => state.simpleRoles)
   const totalRoles = Array.isArray(simpleRoles) ? simpleRoles.length : 0
   const { setSingleOrganization } = useAuthStore.getState()
+  const formatNumber = useFormatNumber()
 
   useEffect(() => {
     setSelectedModule(localStorage.getItem("selectedModule") ?? "");
@@ -208,7 +210,7 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-white text-xs opacity-80">Total Users</p>
-                    <p className="text-white text-xl font-semibold mt-1">{totalUsers.toLocaleString()}</p>
+                    <p className="text-white text-xl font-semibold mt-1">{formatNumber(totalUsers)}</p>
                     <p className="text-white text-[10px] opacity-80 mt-1">Across organisation</p>
                   </div>
                   <Users className="w-5 h-5 text-white" />
@@ -234,7 +236,7 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-zinc-600 dark:text-zinc-400 text-xs">Active Sessions</p>
-                    <p className="text-xl font-semibold text-zinc-900 dark:text-white mt-1">{activeSessions.toLocaleString()}</p>
+                    <p className="text-xl font-semibold text-zinc-900 dark:text-white mt-1">{formatNumber(activeSessions)}</p>
                     <p className="text-zinc-500 dark:text-zinc-400 text-[10px] mt-1">Currently signed in</p>
                   </div>
                   <Activity className="w-5 h-5 text-primary" />
@@ -247,7 +249,7 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-zinc-600 dark:text-zinc-400 text-xs">Total Roles</p>
-                    <p className="text-xl font-semibold text-zinc-900 dark:text-white mt-1">{totalRoles.toLocaleString()}</p>
+                    <p className="text-xl font-semibold text-zinc-900 dark:text-white mt-1">{formatNumber(totalRoles)}</p>
                     <p className="text-zinc-500 dark:text-zinc-400 text-[10px] mt-1">Defined in this scope</p>
                   </div>
                   <Shield className="w-5 h-5 text-primary" />
@@ -256,7 +258,7 @@ export default function DashboardPage() {
             </SmallCard>
           </div>
 
-          <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-md border border-zinc-200 dark:border-zinc-800 p-4">
+          <div className="bg-white dark:bg-zinc-900 rounded-none shadow-md border border-zinc-200 dark:border-zinc-800 p-4">
             <div className="flex items-center justify-between mb-4">
               <p className="text-base font-medium text-zinc-900 dark:text-white">Performance Metrics</p>
               <Badge variant="secondary" className="bg-primary/10 text-primary text-xs px-2 py-0.5">Live Data</Badge>

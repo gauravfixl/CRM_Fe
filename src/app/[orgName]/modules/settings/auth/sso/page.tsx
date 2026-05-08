@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useState } from "react"
 import {
@@ -275,7 +275,7 @@ export default function SSOIdentityProvidersPage() {
 
             {/* Endpoints Dialog */}
             <Dialog open={isEndpointsOpen} onOpenChange={setIsEndpointsOpen}>
-                <DialogContent className="sm:max-w-lg rounded-2xl border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
+                <DialogContent className="sm:max-w-lg rounded-none border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
                     <DialogHeader>
                         <DialogTitle className="text-xl font-bold tracking-tight">Configuration Endpoints</DialogTitle>
                         <DialogDescription className="text-sm text-zinc-500 dark:text-zinc-400">Use these to configure your application in the identity provider console.</DialogDescription>
@@ -328,7 +328,7 @@ export default function SSOIdentityProvidersPage() {
                             <div className="space-y-2">
                                 <Label className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">Bearer Token</Label>
                                 <div className="flex gap-2">
-                                    <Input type="password" value="••••••••••••••••••••••••" readOnly className="h-9 text-xs bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-700" />
+                                    <Input type="password" value="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" readOnly className="h-9 text-xs bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-700" />
                                     <CustomButton size="sm" variant="outline" className="h-9 px-3 rounded-lg text-xs font-semibold" onClick={() => toast.success("New token generated")}>Regenerate</CustomButton>
                                 </div>
                             </div>

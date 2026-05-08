@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useState } from "react"
 import {
@@ -307,7 +307,7 @@ export default function LoginPoliciesPage() {
 
             {/* Policy Simulator Dialog */}
             <Dialog open={isSimulatorOpen} onOpenChange={(o) => { setIsSimulatorOpen(o); if (!o) setSimResult(null) }}>
-                <DialogContent className="sm:max-w-2xl rounded-2xl border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
+                <DialogContent className="sm:max-w-2xl rounded-none border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
                     <DialogHeader>
                         <DialogTitle className="text-xl font-bold tracking-tight flex items-center gap-2">
                             <Terminal className="w-5 h-5 text-indigo-600" />

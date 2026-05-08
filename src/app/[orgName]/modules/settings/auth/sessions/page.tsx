@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useEffect, useState } from "react"
 import {
@@ -380,7 +380,7 @@ export default function SessionManagementPage() {
 
             {/* OTP Revocation Dialog */}
             <Dialog open={isOtpOpen} onOpenChange={(o) => { setIsOtpOpen(o); if (!o) setOtpValue("") }}>
-                <DialogContent className="sm:max-w-md rounded-2xl border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
+                <DialogContent className="sm:max-w-md rounded-none border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
                     <DialogHeader>
                         <div className="h-12 w-12 bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 rounded-full flex items-center justify-center mb-2">
                             <Mail className="w-6 h-6" />
@@ -458,7 +458,7 @@ export default function SessionManagementPage() {
 
             {/* Revoke Single Confirmation */}
             <Dialog open={isRevokeConfirmOpen} onOpenChange={setIsRevokeConfirmOpen}>
-                <DialogContent className="sm:max-w-md rounded-2xl border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
+                <DialogContent className="sm:max-w-md rounded-none border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
                     <DialogHeader>
                         <div className="h-12 w-12 bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 rounded-full flex items-center justify-center mb-2">
                             <ShieldX className="w-6 h-6" />

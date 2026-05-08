@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect } from "react";
 import {
@@ -40,7 +40,7 @@ export default function WhiteLabelPage() {
                     setIsVerified(true);
                 }
             } catch (err) {
-                // Silent — fall back to defaults
+                // Silent â€” fall back to defaults
             }
         })();
     }, []);
@@ -81,7 +81,7 @@ export default function WhiteLabelPage() {
             </div>
 
             {/* DOMAIN CONFIG */}
-            <Card className="border border-border shadow-sm rounded-xl overflow-hidden relative group bg-card">
+            <Card className="border border-border shadow-sm rounded-none overflow-hidden relative group bg-card">
                 <div className="absolute top-0 right-0 w-full h-1 bg-gradient-to-r from-primary via-indigo-500 to-purple-500" />
                 <CardHeader className="p-6 border-b border-border bg-muted/30">
                     <CardTitle className="text-lg font-bold flex items-center gap-2 text-foreground">
@@ -153,7 +153,7 @@ export default function WhiteLabelPage() {
                             )}
                         </div>
 
-                        <div className="w-full md:w-80 bg-muted/30 p-5 border border-border shadow-sm rounded-xl">
+                        <div className="w-full md:w-80 bg-muted/30 p-5 border border-border shadow-sm rounded-none">
                             <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4 border-b border-border pb-2">DNS Values</h4>
                             <div className="space-y-3">
                                 <div className="flex justify-between items-center text-sm">
@@ -180,7 +180,7 @@ export default function WhiteLabelPage() {
 
             {/* BRANDING REMOVAL */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <SmallCard className="bg-card shadow-sm border-border hover:border-primary/50 transition-colors rounded-xl overflow-hidden">
+                <SmallCard className="bg-card shadow-sm border-border hover:border-primary/50 transition-colors rounded-none overflow-hidden">
                     <SmallCardHeader className="flex flex-row items-center justify-between pb-2 bg-card">
                         <div className="space-y-1">
                             <CardTitle className="text-base font-bold text-foreground">Remove "Powered By"</CardTitle>
@@ -198,7 +198,7 @@ export default function WhiteLabelPage() {
                     </SmallCardHeader>
                 </SmallCard>
 
-                <SmallCard className="bg-card shadow-sm border-border hover:border-primary/50 transition-colors rounded-xl overflow-hidden">
+                <SmallCard className="bg-card shadow-sm border-border hover:border-primary/50 transition-colors rounded-none overflow-hidden">
                     <SmallCardHeader className="flex flex-row items-center justify-between pb-2 bg-card">
                         <div className="space-y-1">
                             <CardTitle className="text-base font-bold text-foreground">Custom Login URL</CardTitle>

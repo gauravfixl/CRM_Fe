@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import React, { useState } from "react"
 import {
@@ -127,7 +127,7 @@ export default function FirmEventsAuditPage() {
                         {firmEvents.map((evt) => (
                             <div key={evt.id} className="p-5 flex items-center justify-between hover:bg-slate-50 transition-colors group">
                                 <div className="flex items-center gap-4">
-                                    <div className="h-11 w-11 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-slate-400 group-hover:text-blue-600 shadow-sm transition-colors">
+                                    <div className="h-11 w-11 rounded-none bg-white border border-slate-200 flex items-center justify-center text-slate-400 group-hover:text-blue-600 shadow-sm transition-colors">
                                         <Building2 className="w-5 h-5" />
                                     </div>
                                     <div>
@@ -143,9 +143,9 @@ export default function FirmEventsAuditPage() {
                                         </div>
                                         <div className="flex items-center gap-3 mt-1.5 text-[11px] text-slate-500 font-medium">
                                             <span className="font-black text-slate-700 uppercase tracking-tighter">{evt.firm}</span>
-                                            <span className="text-slate-300">•</span>
+                                            <span className="text-slate-300">â€¢</span>
                                             <span className="font-bold text-slate-500">{evt.actor}</span>
-                                            <span className="text-slate-300">•</span>
+                                            <span className="text-slate-300">â€¢</span>
                                             <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {evt.time}</span>
                                         </div>
                                     </div>

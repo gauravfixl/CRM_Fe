@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import React, { useState } from "react"
 import {
@@ -297,7 +297,7 @@ export default function ModuleAccessPage() {
             </div>
 
             {/* ALERT BOX */}
-            <div className="flex items-start gap-4 p-5 bg-amber-50/50 border border-amber-100 rounded-2xl shadow-sm">
+            <div className="flex items-start gap-4 p-5 bg-amber-50/50 border border-amber-100 rounded-none shadow-sm">
                 <div className="h-10 w-10 bg-amber-100 flex items-center justify-center rounded-full shrink-0">
                     <AlertCircle className="w-5 h-5 text-amber-600" />
                 </div>

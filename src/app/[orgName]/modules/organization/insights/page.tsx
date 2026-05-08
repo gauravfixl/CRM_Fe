@@ -205,7 +205,67 @@ export default function OrgInsightsPage() {
         ? Math.max(0, Math.floor((Date.now() - new Date(org.createdAt).getTime()) / 86400000))
         : null;
 
-    const enabledModules: string[] = Array.isArray(org?.modules) ? org.modules : [];
+    /** Coerce a module entry (string | object | char-indexed | stringified-object) into a clean display name */
+    const normalizeModuleName = (mod: any): string => {
+        if (mod == null) return "";
+
+        // Helper: reconstruct string from object with numeric character indices
+        const reconstructFromIndexedObject = (obj: Record<string, any>): string | null => {
+            const keys = Object.keys(obj);
+            if (keys.length === 0) return null;
+            if (!keys.every((k) => /^\d+$/.test(k))) return null;
+            return keys
+                .sort((a, b) => Number(a) - Number(b))
+                .map((k) => String(obj[k]))
+                .join("");
+        };
+
+        if (typeof mod === "string") {
+            const trimmed = mod.trim();
+            // Detect a literal stringified char-indexed object like:
+            //   { '0': 'D', '1': 'A', ... }   or   {"0":"D","1":"A",...}
+            if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
+                // Regex extract: matches both single-quote and double-quote variants
+                const pairs = [...trimmed.matchAll(/['"](\d+)['"]\s*:\s*['"]([^'"]*)['"]/g)];
+                if (pairs.length > 0) {
+                    return pairs
+                        .sort((a, b) => Number(a[1]) - Number(b[1]))
+                        .map((m) => m[2])
+                        .join("");
+                }
+                // Last resort: try JSON.parse for clean double-quoted JSON
+                try {
+                    const parsed = JSON.parse(trimmed);
+                    if (parsed && typeof parsed === "object") {
+                        const fromIdx = reconstructFromIndexedObject(parsed);
+                        if (fromIdx) return fromIdx;
+                        if (typeof parsed.name === "string") return parsed.name;
+                        if (typeof parsed.module === "string") return parsed.module;
+                    }
+                } catch {
+                    // ignore parse errors
+                }
+            }
+            return mod;
+        }
+
+        if (typeof mod === "object") {
+            // Common backend shapes: { name }, { module }, { code }, { label }, { key }
+            if (typeof mod.name === "string") return mod.name;
+            if (typeof mod.module === "string") return mod.module;
+            if (typeof mod.code === "string") return mod.code;
+            if (typeof mod.label === "string") return mod.label;
+            if (typeof mod.key === "string") return mod.key;
+            // Fallback: object with numeric character indices like { 0: 'D', 1: 'A', ... }
+            const fromIdx = reconstructFromIndexedObject(mod);
+            if (fromIdx) return fromIdx;
+        }
+        return "";
+    };
+
+    const enabledModules: string[] = Array.isArray(org?.modules)
+        ? org.modules.map(normalizeModuleName).filter((n: string) => n.length > 0)
+        : [];
 
     const statusSegments = [
         { label: "Active", value: userStatus.active, color: "#10b981" },
@@ -316,7 +376,7 @@ export default function OrgInsightsPage() {
             </div>
 
             {/* GROWTH CHART */}
-            <Card className="border-zinc-200 shadow-xl rounded-3xl bg-white">
+            <Card className="border-zinc-200 shadow-xl rounded-none bg-white">
                 <CardHeader className="border-b border-zinc-100">
                     <div className="flex items-center justify-between">
                         <div>
@@ -374,7 +434,7 @@ export default function OrgInsightsPage() {
 
             {/* INVITE FUNNEL + STATUS DONUT */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <Card className="lg:col-span-2 border-zinc-200 shadow-xl rounded-3xl bg-white">
+                <Card className="lg:col-span-2 border-zinc-200 shadow-xl rounded-none bg-white">
                     <CardHeader className="border-b border-zinc-100">
                         <CardTitle className="text-lg font-bold text-zinc-900 flex items-center gap-2">
                             <Mail className="w-5 h-5 text-amber-500" /> Invitation Funnel
@@ -411,7 +471,7 @@ export default function OrgInsightsPage() {
                     </CardContent>
                 </Card>
 
-                <Card className="border-zinc-200 shadow-xl rounded-3xl bg-white">
+                <Card className="border-zinc-200 shadow-xl rounded-none bg-white">
                     <CardHeader className="border-b border-zinc-100">
                         <CardTitle className="text-lg font-bold text-zinc-900 flex items-center gap-2">
                             <PieChart className="w-5 h-5 text-indigo-600" /> Active vs Suspended
@@ -453,7 +513,7 @@ export default function OrgInsightsPage() {
 
             {/* ROLE DISTRIBUTION + TOP FIRMS */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card className="border-zinc-200 shadow-xl rounded-3xl bg-white">
+                <Card className="border-zinc-200 shadow-xl rounded-none bg-white">
                     <CardHeader className="border-b border-zinc-100">
                         <div className="flex items-center justify-between">
                             <div>
@@ -503,7 +563,7 @@ export default function OrgInsightsPage() {
                     </CardContent>
                 </Card>
 
-                <Card className="border-zinc-200 shadow-xl rounded-3xl bg-white">
+                <Card className="border-zinc-200 shadow-xl rounded-none bg-white">
                     <CardHeader className="border-b border-zinc-100">
                         <div className="flex items-center justify-between">
                             <div>
@@ -564,7 +624,7 @@ export default function OrgInsightsPage() {
             </div>
 
             {/* MODULES USAGE */}
-            <Card className="border-zinc-200 shadow-xl rounded-3xl bg-white">
+            <Card className="border-zinc-200 shadow-xl rounded-none bg-white">
                 <CardHeader className="border-b border-zinc-100">
                     <CardTitle className="text-lg font-bold text-zinc-900 flex items-center gap-2">
                         <Sparkles className="w-5 h-5 text-indigo-600" /> Module Activation
@@ -589,7 +649,7 @@ export default function OrgInsightsPage() {
                                     organization: `/${orgName}/modules/organization/overview`,
                                 };
                                 const target = moduleRoutes[mod.toLowerCase()];
-                                const baseClass = "rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50 to-white p-4 flex items-center gap-3 transition-all";
+                                const baseClass = "rounded-none border border-indigo-100 bg-gradient-to-br from-indigo-50 to-white p-4 flex items-center gap-3 transition-all";
                                 const cardContent = (
                                     <>
                                         <div className="h-10 w-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center flex-shrink-0">

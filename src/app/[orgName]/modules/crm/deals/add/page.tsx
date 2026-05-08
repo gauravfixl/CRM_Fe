@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -103,7 +103,7 @@ export default function AddDealPage() {
                         <motion.button
                             whileHover={{ x: -5 }}
                             onClick={() => router.back()}
-                            className="p-3 rounded-2xl hover:bg-zinc-100 transition-colors"
+                            className="p-3 rounded-none hover:bg-zinc-100 transition-colors"
                         >
                             <ArrowLeft className="h-6 w-6 text-zinc-600" />
                         </motion.button>
@@ -116,7 +116,7 @@ export default function AddDealPage() {
                     <div className="hidden lg:flex items-center gap-4">
                         {STEPS.map((s, idx) => (
                             <div key={s.id} className="flex items-center">
-                                <div className={`flex items-center gap-3 px-4 py-2 rounded-2xl border transition-all duration-500 ${step === s.id ? `${s.color} border-transparent text-white shadow-xl scale-105` :
+                                <div className={`flex items-center gap-3 px-4 py-2 rounded-none border transition-all duration-500 ${step === s.id ? `${s.color} border-transparent text-white shadow-xl scale-105` :
                                         step > s.id ? "bg-zinc-100 border-zinc-200 text-zinc-500" : "bg-white border-zinc-100 text-zinc-300"
                                     }`}>
                                     <s.icon className={`h-4 w-4 ${step === s.id ? "text-white" : ""}`} />
@@ -146,7 +146,7 @@ export default function AddDealPage() {
                                 {step === 1 && (
                                     <div className="space-y-10">
                                         <div className="flex items-center gap-4 mb-2">
-                                            <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shadow-inner">
+                                            <div className="w-12 h-12 rounded-none bg-blue-50 text-blue-600 flex items-center justify-center shadow-inner">
                                                 <Briefcase className="h-6 w-6" />
                                             </div>
                                             <h2 className="text-2xl font-black text-zinc-900">Basic Opportunity Info</h2>
@@ -178,9 +178,9 @@ export default function AddDealPage() {
                                                 <CustomSelect value={formData.priority} onValueChange={(v) => setFormData({ ...formData, priority: v })}>
                                                     <CustomSelectTrigger className="h-14 bg-zinc-50/50"><CustomSelectValue placeholder="Priority" /></CustomSelectTrigger>
                                                     <CustomSelectContent>
-                                                        <CustomSelectItem value="High">🔥 High Priority</CustomSelectItem>
-                                                        <CustomSelectItem value="Medium">⚡ Medium</CustomSelectItem>
-                                                        <CustomSelectItem value="Low">🧊 Low</CustomSelectItem>
+                                                        <CustomSelectItem value="High">ðŸ”¥ High Priority</CustomSelectItem>
+                                                        <CustomSelectItem value="Medium">âš¡ Medium</CustomSelectItem>
+                                                        <CustomSelectItem value="Low">ðŸ§Š Low</CustomSelectItem>
                                                     </CustomSelectContent>
                                                 </CustomSelect>
                                             </div>
@@ -191,7 +191,7 @@ export default function AddDealPage() {
                                 {step === 2 && (
                                     <div className="space-y-10">
                                         <div className="flex items-center gap-4 mb-2">
-                                            <div className="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center shadow-inner">
+                                            <div className="w-12 h-12 rounded-none bg-purple-50 text-purple-600 flex items-center justify-center shadow-inner">
                                                 <Building2 className="h-6 w-6" />
                                             </div>
                                             <h2 className="text-2xl font-black text-zinc-900">Account Mapping & Deadline</h2>
@@ -248,19 +248,19 @@ export default function AddDealPage() {
                                         </div>
 
                                         <div className="grid grid-cols-2 gap-6">
-                                            <div className="p-6 bg-zinc-50 rounded-3xl border border-zinc-100">
+                                            <div className="p-6 bg-zinc-50 rounded-none border border-zinc-100">
                                                 <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1">Title</p>
                                                 <p className="text-sm font-bold">{formData.title || "---"}</p>
                                             </div>
-                                            <div className="p-6 bg-zinc-50 rounded-3xl border border-zinc-100">
+                                            <div className="p-6 bg-zinc-50 rounded-none border border-zinc-100">
                                                 <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1">Contract Value</p>
                                                 <p className="text-sm font-black text-blue-600">${formData.value.toLocaleString()}</p>
                                             </div>
-                                            <div className="p-6 bg-zinc-50 rounded-3xl border border-zinc-100">
+                                            <div className="p-6 bg-zinc-50 rounded-none border border-zinc-100">
                                                 <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1">Account</p>
                                                 <p className="text-sm font-bold">{firms.find(f => f._id === formData.firmId)?.FirmName || "No account linked"}</p>
                                             </div>
-                                            <div className="p-6 bg-zinc-50 rounded-3xl border border-zinc-100">
+                                            <div className="p-6 bg-zinc-50 rounded-none border border-zinc-100">
                                                 <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1">Target Closing</p>
                                                 <p className="text-sm font-bold">{formData.expectedCloseDate || "TBD"}</p>
                                             </div>

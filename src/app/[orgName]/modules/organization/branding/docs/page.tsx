@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect } from "react";
 import {
@@ -35,7 +35,7 @@ export default function DocBrandingPage() {
                 if (s?.branding?.companyDisplayName) setCompanyName(s.branding.companyDisplayName);
                 if (s?.branding?.primaryColor) setPrimaryColor(s.branding.primaryColor);
             } catch (err) {
-                // Silent — fall back to defaults
+                // Silent â€” fall back to defaults
             }
         })();
     }, []);
@@ -174,7 +174,7 @@ export default function DocBrandingPage() {
                 </div>
 
                 {/* PREVIEW COLUMN */}
-                <div className="lg:col-span-3 bg-zinc-100 dark:bg-zinc-900 border border-border pt-16 pb-8 px-8 flex justify-center overflow-hidden rounded-xl shadow-inner relative h-full min-h-[700px]">
+                <div className="lg:col-span-3 bg-zinc-100 dark:bg-zinc-900 border border-border pt-16 pb-8 px-8 flex justify-center overflow-hidden rounded-none shadow-inner relative h-full min-h-[700px]">
                     <div className="absolute top-4 right-4 z-10">
                         <div className="bg-zinc-900 dark:bg-zinc-950 text-white text-[11px] uppercase font-bold px-3 py-1.5 rounded-full flex items-center gap-2 shadow-sm ring-1 ring-white/20">
                             <Eye className="w-3.5 h-3.5" /> <span className="leading-none mt-[1px]">A4 Preview</span>

@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import React, { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
@@ -154,7 +154,7 @@ export default function PipelinePage() {
                                         <span className="text-xl font-black italic tracking-tighter text-zinc-600 dark:text-zinc-400 opacity-60">{col.value}</span>
                                     </div>
                                 </div>
-                                <CustomButton variant="ghost" className="h-12 w-12 rounded-2xl bg-white/20 hover:bg-white text-zinc-400 hover:text-zinc-900">
+                                <CustomButton variant="ghost" className="h-12 w-12 rounded-none bg-white/20 hover:bg-white text-zinc-400 hover:text-zinc-900">
                                     <MoreVertical size={20} />
                                 </CustomButton>
                             </div>
@@ -185,16 +185,16 @@ export default function PipelinePage() {
                                                     </div>
                                                     <DropdownMenu>
                                                         <DropdownMenuTrigger asChild>
-                                                            <CustomButton variant="ghost" className="h-10 w-10 p-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity">
+                                                            <CustomButton variant="ghost" className="h-10 w-10 p-0 rounded-none opacity-0 group-hover:opacity-100 transition-opacity">
                                                                 <MoreVertical size={18} className="text-zinc-400" />
                                                             </CustomButton>
                                                         </DropdownMenuTrigger>
-                                                        <DropdownMenuContent align="end" className="rounded-3xl w-56 p-2 shadow-3xl bg-white/95 backdrop-blur-xl">
-                                                            <DropdownMenuItem className="rounded-2xl gap-3 font-bold px-6 py-4 text-xs italic"><Edit3 size={16} /> Edit Blueprint</DropdownMenuItem>
-                                                            <DropdownMenuItem className="rounded-2xl gap-3 font-bold px-6 py-4 text-xs italic"><Copy size={16} /> Clone Geometry</DropdownMenuItem>
-                                                            <DropdownMenuItem className="rounded-2xl gap-3 font-bold px-6 py-4 text-xs italic"><Share2 size={16} /> Broadcast Link</DropdownMenuItem>
+                                                        <DropdownMenuContent align="end" className="rounded-none w-56 p-2 shadow-3xl bg-white/95 backdrop-blur-xl">
+                                                            <DropdownMenuItem className="rounded-none gap-3 font-bold px-6 py-4 text-xs italic"><Edit3 size={16} /> Edit Blueprint</DropdownMenuItem>
+                                                            <DropdownMenuItem className="rounded-none gap-3 font-bold px-6 py-4 text-xs italic"><Copy size={16} /> Clone Geometry</DropdownMenuItem>
+                                                            <DropdownMenuItem className="rounded-none gap-3 font-bold px-6 py-4 text-xs italic"><Share2 size={16} /> Broadcast Link</DropdownMenuItem>
                                                             <DropdownMenuSeparator />
-                                                            <DropdownMenuItem onClick={() => handleDelete(col.id, deal.id)} className="rounded-2xl gap-3 font-bold px-6 py-4 text-xs text-red-600 focus:text-red-100 focus:bg-red-600 font-black italic uppercase"><Trash2 size={16} /> Expunge Deal</DropdownMenuItem>
+                                                            <DropdownMenuItem onClick={() => handleDelete(col.id, deal.id)} className="rounded-none gap-3 font-bold px-6 py-4 text-xs text-red-600 focus:text-red-100 focus:bg-red-600 font-black italic uppercase"><Trash2 size={16} /> Expunge Deal</DropdownMenuItem>
                                                         </DropdownMenuContent>
                                                     </DropdownMenu>
                                                 </div>
@@ -222,7 +222,7 @@ export default function PipelinePage() {
                                                             <span className="text-[10px] font-black uppercase italic tracking-tighter">{deal.days}d ago</span>
                                                         </div>
                                                     </div>
-                                                    <CustomButton variant="ghost" className="h-10 w-10 rounded-2xl bg-zinc-50 dark:bg-zinc-800 text-zinc-400 hover:text-indigo-600 transition-colors">
+                                                    <CustomButton variant="ghost" className="h-10 w-10 rounded-none bg-zinc-50 dark:bg-zinc-800 text-zinc-400 hover:text-indigo-600 transition-colors">
                                                         <Maximize2 size={16} />
                                                     </CustomButton>
                                                 </div>
@@ -236,7 +236,7 @@ export default function PipelinePage() {
                                     whileHover={{ scale: 1.02 }}
                                     className="border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-[40px] p-8 flex flex-col items-center justify-center text-center group cursor-pointer hover:bg-white dark:hover:bg-zinc-900 hover:border-indigo-400 transition-all active:scale-[0.98]"
                                 >
-                                    <div className="h-12 w-12 bg-zinc-50 dark:bg-zinc-800 group-hover:bg-indigo-600 group-hover:text-white rounded-2xl flex items-center justify-center mb-4 transition-all duration-500 shadow-inner group-hover:shadow-xl group-hover:shadow-indigo-600/20">
+                                    <div className="h-12 w-12 bg-zinc-50 dark:bg-zinc-800 group-hover:bg-indigo-600 group-hover:text-white rounded-none flex items-center justify-center mb-4 transition-all duration-500 shadow-inner group-hover:shadow-xl group-hover:shadow-indigo-600/20">
                                         <Plus size={24} />
                                     </div>
                                     <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-300 group-hover:text-indigo-600 transition-colors italic">Inject {col.title} Lead</span>
