@@ -15,7 +15,9 @@ import {
     AlertCircle,
     Zap,
     Target,
-    Clock
+    Clock,
+    Plus,
+    Trash2
 } from 'lucide-react'
 import { LeadInboxTable, Lead } from '@/shared/components/lead-management/LeadInboxTable'
 import { Button } from "@/shared/components/ui/button"
@@ -28,11 +30,11 @@ import {
 } from "@/shared/components/ui/dropdown-menu"
 import { useToast } from "@/shared/components/ui/use-toast"
 
-import { LeadFormModal } from '@/shared/components/lead-management/modals/LeadFormModal'
 import { DeleteConfirmationModal } from '@/shared/components/lead-management/modals/DeleteConfirmationModal'
-import { AdvancedFilterModal } from '@/shared/components/lead-management/modals/AdvancedFilterModal'
-import { MoveOwnerModal } from '@/shared/components/lead-management/modals/MoveOwnerModal'
-import { BatchTaggingModal } from '@/shared/components/lead-management/modals/BatchTaggingModal'
+import LeadSideForm, { type LeadFormShape } from '@/shared/components/lead-management/sheets/LeadSideForm'
+import LeadFiltersSide, { type FiltersShape } from '@/shared/components/lead-management/sheets/LeadFiltersSide'
+import MoveOwnerSide from '@/shared/components/lead-management/sheets/MoveOwnerSide'
+import BatchTaggingSide from '@/shared/components/lead-management/sheets/BatchTaggingSide'
 
 const CATEGORY_MAP: Record<string, { title: string; desc: string; color: string; icon: any }> = {
     new: {
@@ -145,12 +147,15 @@ export default function LeadInboxPage() {
     const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>('desc')
     const [loading, setLoading] = React.useState(false)
 
-    // Modal States
-    const [isEditModalOpen, setIsEditModalOpen] = React.useState(false)
+    // Modal / sheet states
+    const [isFormOpen, setIsFormOpen] = React.useState(false)
+    const [formMode, setFormMode] = React.useState<"create" | "edit">("create")
     const [selectedLead, setSelectedLead] = React.useState<Lead | null>(null)
-    const [isFilterModalOpen, setIsFilterModalOpen] = React.useState(false)
-    const [isMoveOwnerModalOpen, setIsMoveOwnerModalOpen] = React.useState(false)
-    const [isBatchTaggingModalOpen, setIsBatchTaggingModalOpen] = React.useState(false)
+    const [isFilterOpen, setIsFilterOpen] = React.useState(false)
+    const [isMoveOwnerOpen, setIsMoveOwnerOpen] = React.useState(false)
+    const [isBatchTaggingOpen, setIsBatchTaggingOpen] = React.useState(false)
+    const [isDeleteOpen, setIsDeleteOpen] = React.useState(false)
+    const [leadToDelete, setLeadToDelete] = React.useState<Lead | null>(null)
 
     // Advanced Filters State
     const [advancedFilters, setAdvancedFilters] = React.useState({
@@ -197,10 +202,22 @@ export default function LeadInboxPage() {
     }, [leads, searchQuery, sortOrder, advancedFilters])
 
     // Handlers
+    const openCreate = () => {
+        setSelectedLead(null)
+        setFormMode("create")
+        setIsFormOpen(true)
+    }
+
     const handleLeadAction = (lead: Lead, action: string) => {
-        if (action === 'Open Full Profile') {
+        if (action === 'Open Full Profile' || action === 'Edit') {
             setSelectedLead(lead)
-            setIsEditModalOpen(true)
+            setFormMode("edit")
+            setIsFormOpen(true)
+            return
+        }
+        if (action === 'Delete') {
+            setLeadToDelete(lead)
+            setIsDeleteOpen(true)
             return
         }
 
@@ -224,15 +241,49 @@ export default function LeadInboxPage() {
         }
     }
 
-    const handleEditSubmit = (data: any) => {
-        if (!selectedLead) return
-        setLeads(leads.map(l => l.id === selectedLead.id ? { ...l, ...data } : l))
-        setIsEditModalOpen(false)
+    const handleFormSubmit = (data: LeadFormShape) => {
+        if (formMode === "edit" && selectedLead) {
+            setLeads(prev => prev.map(l => l.id === selectedLead.id ? { ...l, ...data, id: l.id } : l))
+            toast({
+                title: "Lead updated",
+                description: `${data.name} has been saved successfully.`,
+            })
+        } else {
+            const newLead: Lead = {
+                id: `n_${Date.now()}`,
+                name: data.name,
+                email: data.email,
+                company: data.company,
+                source: data.source,
+                score: 50,
+                status: data.status,
+                stage: data.stage,
+                lastActivity: "Just now",
+                value: data.value,
+                ownerName: data.ownerName,
+                slaStatus: 'healthy',
+                slaTimeRemaining: '2h',
+                tags: data.tags,
+            }
+            setLeads(prev => [newLead, ...prev])
+            toast({
+                title: "Lead created",
+                description: `${data.name} added to ${config.title}.`,
+            })
+        }
+        setIsFormOpen(false)
         setSelectedLead(null)
+    }
+
+    const confirmDelete = () => {
+        if (!leadToDelete) return
+        setLeads(prev => prev.filter(l => l.id !== leadToDelete.id))
         toast({
-            title: "Lead Updated",
-            description: `Details for ${data.name} have been updated.`,
+            title: "Lead deleted",
+            description: `${leadToDelete.name} removed from ${config.title}.`,
         })
+        setIsDeleteOpen(false)
+        setLeadToDelete(null)
     }
 
     const handleBulkAction = (action?: string) => {
@@ -252,12 +303,19 @@ export default function LeadInboxPage() {
         )
 
         if (effectiveAction === 'Move Owner') {
-            setIsMoveOwnerModalOpen(true)
+            setIsMoveOwnerOpen(true)
             return
         }
 
         if (effectiveAction === 'Batch Tagging') {
-            setIsBatchTaggingModalOpen(true)
+            setIsBatchTaggingOpen(true)
+            return
+        }
+
+        if (effectiveAction === 'Delete') {
+            setLeads(prev => prev.filter(l => !selectedIds.includes(l.id)))
+            toast({ title: "Bulk delete complete", description: `${selectedIds.length} records removed.` })
+            setSelectedIds([])
             return
         }
 
@@ -276,18 +334,21 @@ export default function LeadInboxPage() {
         }, 1000)
     }
 
-    const confirmBulkOwnerMove = (newOwner: string) => {
+    const confirmBulkOwnerMove = (newOwner: string, note?: string) => {
         setLeads(prev => prev.map(l => selectedIds.includes(l.id) ? { ...l, ownerName: newOwner } : l))
-        setIsMoveOwnerModalOpen(false)
+        setIsMoveOwnerOpen(false)
         setSelectedIds([])
-        toast({ title: "Ownership Transferred", description: `Selected leads reassigned to ${newOwner}.` })
+        toast({
+            title: "Ownership transferred",
+            description: `${selectedIds.length} lead${selectedIds.length === 1 ? "" : "s"} reassigned to ${newOwner}.${note ? ` Note: ${note}` : ""}`,
+        })
     }
 
     const confirmBatchTagging = (tags: string[]) => {
         setLeads(prev => prev.map(l => selectedIds.includes(l.id) ? { ...l, tags: [...(l.tags || []), ...tags.filter(t => !l.tags?.includes(t))] } : l))
-        setIsBatchTaggingModalOpen(false)
+        setIsBatchTaggingOpen(false)
         setSelectedIds([])
-        toast({ title: "Tags Applied", description: `Added ${tags.length} labels to selection.` })
+        toast({ title: "Tags applied", description: `Added ${tags.length} label${tags.length === 1 ? "" : "s"} to ${selectedIds.length} lead${selectedIds.length === 1 ? "" : "s"}.` })
     }
 
     const handleExport = () => {
@@ -310,17 +371,20 @@ export default function LeadInboxPage() {
         })
     }
 
-    const applyAdvancedFilters = (filters: any) => {
+    const applyAdvancedFilters = (filters: FiltersShape) => {
         setAdvancedFilters(filters)
-        setIsFilterModalOpen(false)
+        setIsFilterOpen(false)
         toast({
-            title: "Filters Applied",
+            title: "Filters applied",
             description: "Inbox view has been restricted to your selection.",
         })
     }
 
     return (
-        <div className="space-y-6 pb-12 max-w-[1600px] mx-auto animate-in fade-in slide-in-from-bottom-2 duration-500">
+        <div
+            className="space-y-6 pb-12 max-w-[1600px] mx-auto animate-in fade-in slide-in-from-bottom-2 duration-500"
+            style={{ zoom: 0.9 }}
+        >
 
             {/* Dynamic Context Header */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-slate-100 pb-8">
@@ -347,19 +411,29 @@ export default function LeadInboxPage() {
                         </div>
                     </div>
                 </div>
-                <div className="flex items-center gap-2.5">
+                <div className="flex items-center gap-2">
                     <Button
                         variant="outline"
                         size="sm"
                         onClick={handleExport}
-                        className="h-9 border-slate-200 text-slate-600 font-bold px-4 bg-white hover:bg-slate-50 shadow-sm transition-all hover:border-slate-300 rounded-xl"
+                        className="h-9 border-slate-200 text-slate-600 font-semibold px-3 bg-white hover:bg-slate-50 shadow-sm transition-all rounded-none"
                     >
-                        <Download className="h-4 w-4 mr-2 text-slate-400" /> Export List
+                        <Download className="h-4 w-4 mr-1.5 text-slate-400" /> Export
                     </Button>
+                    {selectedIds.length > 0 && (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleBulkAction('Delete')}
+                            className="h-9 border-rose-200 text-rose-600 font-semibold px-3 bg-white hover:bg-rose-50 shadow-sm transition-all rounded-none"
+                        >
+                            <Trash2 className="h-4 w-4 mr-1.5" /> Delete <span className="ml-1 bg-rose-100 px-1.5 rounded-none text-[10px]">{selectedIds.length}</span>
+                        </Button>
+                    )}
                     <Button
                         size="sm"
                         onClick={() => handleBulkAction()}
-                        className={`h-9 text-white font-bold px-5 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 rounded-xl ${category === 'at-risk' ? 'bg-rose-600 hover:bg-rose-700' :
+                        className={`h-9 text-white font-semibold px-4 shadow-sm transition-all hover:shadow-md rounded-none ${category === 'at-risk' ? 'bg-rose-600 hover:bg-rose-700' :
                             category === 'pending' ? 'bg-amber-500 hover:bg-amber-600' :
                                 'bg-indigo-600 hover:bg-indigo-700'
                             }`}
@@ -367,8 +441,17 @@ export default function LeadInboxPage() {
                         {category === 'unassigned' ? 'Bulk Assign' :
                             category === 'at-risk' ? 'Escalate All' :
                                 category === 'pending' ? 'Nudge All' : 'Bulk Action'}
-                        {selectedIds.length > 0 && <span className="ml-2 bg-white/20 px-1.5 rounded text-[10px]">{selectedIds.length}</span>}
+                        {selectedIds.length > 0 && <span className="ml-2 bg-white/20 px-1.5 rounded-none text-[10px]">{selectedIds.length}</span>}
                     </Button>
+                    {category === 'new' && (
+                        <Button
+                            size="sm"
+                            onClick={openCreate}
+                            className="h-9 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 shadow-sm rounded-none"
+                        >
+                            <Plus className="h-4 w-4 mr-1.5" /> New Lead
+                        </Button>
+                    )}
                 </div>
             </div>
 
@@ -391,7 +474,7 @@ export default function LeadInboxPage() {
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="rounded-xl p-1 shadow-xl border-slate-100">
-                            <DropdownMenuItem onClick={() => setIsFilterModalOpen(true)} className="text-[12px] font-medium py-2 rounded-lg cursor-pointer">Advanced Filters</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setIsFilterOpen(true)} className="text-[12px] font-medium py-2 rounded-none cursor-pointer">Advanced Filters</DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleBulkAction('Batch Tagging')} className="text-[12px] font-medium py-2 rounded-lg cursor-pointer">Batch Tagging</DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleBulkAction('Move Owner')} className="text-[12px] font-medium py-2 rounded-lg cursor-pointer">Move Owner</DropdownMenuItem>
                         </DropdownMenuContent>
@@ -440,37 +523,45 @@ export default function LeadInboxPage() {
                 <p>Last synced: Just now</p>
             </div>
 
-            {/* Modals */}
-            <LeadFormModal
-                isOpen={isEditModalOpen}
-                onClose={() => {
-                    setIsEditModalOpen(false)
-                    setSelectedLead(null)
+            {/* Side-slide forms */}
+            <LeadSideForm
+                open={isFormOpen}
+                onOpenChange={(o) => {
+                    setIsFormOpen(o)
+                    if (!o) setSelectedLead(null)
                 }}
-                initialData={selectedLead}
-                onSubmit={handleEditSubmit}
-                title="Review Lead Profile"
+                initialData={formMode === "edit" ? selectedLead : null}
+                onSubmit={handleFormSubmit}
             />
 
-            <AdvancedFilterModal
-                isOpen={isFilterModalOpen}
-                onClose={() => setIsFilterModalOpen(false)}
+            <LeadFiltersSide
+                open={isFilterOpen}
+                onOpenChange={setIsFilterOpen}
+                currentFilters={advancedFilters as FiltersShape}
                 onApply={applyAdvancedFilters}
-                currentFilters={advancedFilters}
             />
 
-            <MoveOwnerModal
-                isOpen={isMoveOwnerModalOpen}
-                onClose={() => setIsMoveOwnerModalOpen(false)}
+            <MoveOwnerSide
+                open={isMoveOwnerOpen}
+                onOpenChange={setIsMoveOwnerOpen}
                 onConfirm={confirmBulkOwnerMove}
                 selectedCount={selectedIds.length}
             />
 
-            <BatchTaggingModal
-                isOpen={isBatchTaggingModalOpen}
-                onClose={() => setIsBatchTaggingModalOpen(false)}
+            <BatchTaggingSide
+                open={isBatchTaggingOpen}
+                onOpenChange={setIsBatchTaggingOpen}
                 onConfirm={confirmBatchTagging}
                 selectedCount={selectedIds.length}
+            />
+
+            <DeleteConfirmationModal
+                isOpen={isDeleteOpen}
+                onClose={() => { setIsDeleteOpen(false); setLeadToDelete(null) }}
+                onConfirm={confirmDelete}
+                title="Delete this lead?"
+                description="This action cannot be undone. The lead and all activity history will be permanently removed."
+                itemName={leadToDelete?.name ?? "this lead"}
             />
         </div>
     )

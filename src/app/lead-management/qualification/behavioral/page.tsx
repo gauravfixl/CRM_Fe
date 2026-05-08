@@ -15,11 +15,14 @@ import {
     ArrowUpRight,
     Play,
     Settings,
-    Layout,
     ExternalLink,
     Zap,
     RefreshCw,
-    Gauge
+    Gauge,
+    Search,
+    Filter,
+    Trash2,
+    Target
 } from "lucide-react"
 
 import { Button } from "@/shared/components/ui/button"
@@ -29,14 +32,6 @@ import { useToast } from "@/shared/components/ui/use-toast"
 import { Progress } from "@/shared/components/ui/progress"
 import { Switch } from "@/shared/components/ui/switch"
 import { Input } from "@/shared/components/ui/input"
-import { Label } from "@/shared/components/ui/label"
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from "@/shared/components/ui/dialog"
 import {
     Select,
     SelectContent,
@@ -44,9 +39,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/shared/components/ui/select"
-import { Trash2 } from "lucide-react"
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet"
 
-// --- Mock Data: Behavioral Actions ---
 const INITIAL_BEHAVIORAL_ACTIONS = [
     { id: "1", action: "Pricing Page Visit", source: "Website", icon: Globe, score: 15, intensity: "High", triggers: 420 },
     { id: "2", action: "Email Clicked (Sales)", source: "Outreach", icon: Mail, score: 10, intensity: "Medium", triggers: 1850 },
@@ -56,19 +50,48 @@ const INITIAL_BEHAVIORAL_ACTIONS = [
     { id: "6", action: "Email Opened", source: "Outreach", icon: Mail, score: 1, intensity: "Low", triggers: 45200 },
 ]
 
+type BehavioralAction = {
+    id: string
+    action: string
+    source: string
+    icon: any
+    score: number
+    intensity: string
+    triggers: number
+}
+
+type FormErrors = {
+    action?: string
+    source?: string
+    score?: string
+    intensity?: string
+}
+
 export default function BehavioralScoringPage() {
     const { toast } = useToast()
     const router = useRouter()
     const [isClient, setIsClient] = useState(false)
-    const [actions, setActions] = useState(INITIAL_BEHAVIORAL_ACTIONS)
+    const [actions, setActions] = useState<BehavioralAction[]>(INITIAL_BEHAVIORAL_ACTIONS)
     const [isSimulating, setIsSimulating] = useState(false)
     const [isAddOpen, setIsAddOpen] = useState(false)
-    const [editingAction, setEditingAction] = useState<any>(null)
+    const [editingAction, setEditingAction] = useState<BehavioralAction | null>(null)
     const [newAction, setNewAction] = useState({ action: "", source: "Website", score: 10, intensity: "Medium" })
+    const [errors, setErrors] = useState<FormErrors>({})
+    const [searchTerm, setSearchTerm] = useState("")
+    const [filterSource, setFilterSource] = useState("all")
+    const [botFilterActive, setBotFilterActive] = useState(true)
 
     useEffect(() => {
         setIsClient(true)
     }, [])
+
+    const filteredActions = actions.filter(a => {
+        const matchSearch = !searchTerm ||
+            a.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            a.source.toLowerCase().includes(searchTerm.toLowerCase())
+        const matchSource = filterSource === "all" || a.source === filterSource
+        return matchSearch && matchSource
+    })
 
     const handleSimulation = () => {
         setIsSimulating(true)
@@ -76,31 +99,66 @@ export default function BehavioralScoringPage() {
         setTimeout(() => {
             setIsSimulating(false)
             setActions(prev => prev.map(a => ({ ...a, triggers: a.triggers + Math.floor(Math.random() * 20) })))
+            toast({ title: "Ingestion Complete", description: "Trigger counts have been updated." })
         }, 1500)
     }
 
-    const handleAddOrUpdate = () => {
-        if (!newAction.action) return
+    const validateForm = (): boolean => {
+        const e: FormErrors = {}
+        if (!newAction.action.trim()) e.action = "Event/action name is required"
+        else if (newAction.action.trim().length < 3) e.action = "Name must be at least 3 characters"
+        else if (newAction.action.trim().length > 80) e.action = "Name must be under 80 characters"
+
+        if (!newAction.source) e.source = "Traffic source is required"
+
+        if (newAction.score === undefined || newAction.score === null || isNaN(newAction.score)) e.score = "Intent score is required"
+        else if (newAction.score < -100) e.score = "Score cannot be lower than -100"
+        else if (newAction.score > 100) e.score = "Score cannot exceed 100"
+
+        if (!newAction.intensity) e.intensity = "Intensity level is required"
+
+        setErrors(e)
+        return Object.keys(e).length === 0
+    }
+
+    const handleAddOrUpdate = (e?: React.FormEvent) => {
+        if (e) e.preventDefault()
+        if (!validateForm()) {
+            toast({ title: "Validation Failed", description: "Please fix the highlighted errors.", variant: "destructive" })
+            return
+        }
         if (editingAction) {
             setActions(prev => prev.map(a => a.id === editingAction.id ? { ...a, ...newAction } : a))
             toast({ title: "Action Updated", description: "Behavioral rule synchronized." })
         } else {
+            const iconMap: Record<string, any> = {
+                Website: Globe, Outreach: Mail, Events: Calendar, Content: FileDown, API: Zap
+            }
             setActions([...actions, {
                 ...newAction,
                 id: Math.random().toString(36).substr(2, 9),
                 triggers: 0,
-                icon: newAction.source === 'Website' ? Globe : newAction.source === 'Outreach' ? Mail : Zap
-            } as any])
+                icon: iconMap[newAction.source] || Zap,
+            }])
             toast({ title: "Action Registered", description: "New behavioral trigger is now live." })
         }
         setIsAddOpen(false)
         setEditingAction(null)
+        setErrors({})
         setNewAction({ action: "", source: "Website", score: 10, intensity: "Medium" })
     }
 
-    const startEdit = (item: any) => {
+    const startEdit = (item: BehavioralAction) => {
         setEditingAction(item)
-        setNewAction({ ...item })
+        setNewAction({ action: item.action, source: item.source, score: item.score, intensity: item.intensity })
+        setErrors({})
+        setIsAddOpen(true)
+    }
+
+    const openCreate = () => {
+        setEditingAction(null)
+        setNewAction({ action: "", source: "Website", score: 10, intensity: "Medium" })
+        setErrors({})
         setIsAddOpen(true)
     }
 
@@ -112,10 +170,10 @@ export default function BehavioralScoringPage() {
     if (!isClient) return null
 
     return (
-        <div className="space-y-6 pb-12 max-w-[1600px] mx-auto animate-in fade-in duration-500">
+        <div style={{ zoom: 0.9 }} className="space-y-6 pb-12 max-w-[1600px] mx-auto animate-in fade-in duration-500">
 
-            {/* Structural Header */}
-            <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm transition-all hover:shadow-md">
+            {/* Structural Header — colorful light fill */}
+            <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 bg-pink-50 p-6 border border-pink-100 shadow-sm">
                 <div className="space-y-3">
                     <Button
                         variant="ghost"
@@ -127,14 +185,14 @@ export default function BehavioralScoringPage() {
                     </Button>
                     <div className="space-y-1">
                         <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-lg bg-pink-50 text-pink-600 border border-pink-100">
+                            <div className="p-2 rounded-lg bg-white text-pink-600 border border-pink-100">
                                 <Activity className="h-5 w-5" />
                             </div>
                             <h1 className="text-[22px] font-semibold tracking-tight text-slate-900">
                                 Behavioral Scoring Tracker
                             </h1>
                         </div>
-                        <p className="text-[13px] text-slate-500 font-medium max-w-xl">
+                        <p className="text-[13px] text-slate-600 font-medium max-w-xl">
                             Map digital interactions to intent scores. Higher intent actions should drive faster MQL/SQL conversion velocities.
                         </p>
                     </div>
@@ -145,120 +203,84 @@ export default function BehavioralScoringPage() {
                         variant="outline"
                         onClick={handleSimulation}
                         disabled={isSimulating}
-                        className="h-10 border-slate-100 bg-white shadow-sm text-slate-600 font-semibold text-[12px] px-5"
+                        className="h-10 border-slate-200 bg-white shadow-sm text-slate-600 font-semibold text-[12px] px-5"
                     >
                         {isSimulating ? <RefreshCw className="h-4 w-4 mr-2 animate-spin text-indigo-500" /> : <Play className="h-4 w-4 mr-2 text-slate-400" />}
                         {isSimulating ? "Tracking..." : "Test Ingestion"}
                     </Button>
-                    <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-                        <DialogTrigger asChild>
-                            <Button
-                                onClick={() => { setEditingAction(null); setNewAction({ action: "", source: "Website", score: 10, intensity: "Medium" }) }}
-                                className="h-10 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 shadow-indigo-100 shadow-lg border-none"
-                            >
-                                <Plus className="h-4 w-4 mr-2" /> Add Event Type
-                            </Button>
-                        </DialogTrigger>
-                        <DialogContent className="bg-white rounded-3xl p-6">
-                            <DialogHeader>
-                                <DialogTitle>{editingAction ? 'Edit Event Logic' : 'Define New Digital Touchpoint'}</DialogTitle>
-                            </DialogHeader>
-                            <div className="grid gap-4 py-4">
-                                <div className="space-y-2">
-                                    <Label className="text-[12px] font-semibold">Event / Action Name</Label>
-                                    <Input value={newAction.action} onChange={e => setNewAction({ ...newAction, action: e.target.value })} placeholder="e.g., API Documentation Accessed" className="h-11 rounded-xl" />
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label className="text-[12px] font-semibold">Traffic Source</Label>
-                                        <Select value={newAction.source} onValueChange={v => setNewAction({ ...newAction, source: v })}>
-                                            <SelectTrigger className="h-11 rounded-xl">
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent className="rounded-xl">
-                                                <SelectItem value="Website">Website</SelectItem>
-                                                <SelectItem value="Outreach">Outreach</SelectItem>
-                                                <SelectItem value="Events">Events</SelectItem>
-                                                <SelectItem value="Content">Content</SelectItem>
-                                                <SelectItem value="API">API Integration</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label className="text-[12px] font-semibold">Intent Score</Label>
-                                        <Input type="number" value={newAction.score} onChange={e => setNewAction({ ...newAction, score: parseInt(e.target.value) || 0 })} className="h-11 rounded-xl" />
-                                    </div>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label className="text-[12px] font-semibold">Intensity Level</Label>
-                                    <Select value={newAction.intensity} onValueChange={v => setNewAction({ ...newAction, intensity: v })}>
-                                        <SelectTrigger className="h-11 rounded-xl">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent className="rounded-xl">
-                                            <SelectItem value="High">High Intent</SelectItem>
-                                            <SelectItem value="Medium">Medium Intent</SelectItem>
-                                            <SelectItem value="Low">Low / General</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
-                            <Button className="h-11 w-full bg-indigo-600 font-semibold rounded-xl" onClick={handleAddOrUpdate}>
-                                {editingAction ? 'Sync Changes' : 'Register Touchpoint'}
-                            </Button>
-                        </DialogContent>
-                    </Dialog>
+                    <Button
+                        onClick={openCreate}
+                        className="h-10 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 shadow-indigo-100 shadow-lg border-none"
+                    >
+                        <Plus className="h-4 w-4 mr-2" /> Add Event Type
+                    </Button>
                 </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-                {/* Intent Analytics Dashboard */}
-                <div className="lg:col-span-12 grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-3xl bg-white group hover:ring-indigo-100 transition-all">
-                        <CardContent className="p-6 space-y-4">
+                {/* Intent Analytics — compact 4-up KPI strip */}
+                <div className="lg:col-span-12 grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <Card className="border-none shadow-sm ring-1 ring-indigo-100 rounded-none bg-indigo-50 group transition-all">
+                        <CardContent className="p-3 space-y-2">
                             <div className="flex justify-between items-start">
-                                <div className="p-3 rounded-2xl bg-indigo-50 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors duration-500">
-                                    <Globe size={24} />
+                                <div className="p-1.5 rounded-none bg-white text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors duration-500">
+                                    <Globe size={16} />
                                 </div>
-                                <Badge className="bg-emerald-50 text-emerald-600 border-none">+12.4%</Badge>
+                                <Badge className="bg-emerald-50 text-emerald-600 border-none text-[10px] px-1.5 py-0 rounded-none">+12.4%</Badge>
                             </div>
-                            <div className="space-y-1">
-                                <p className="text-[11px] font-semibold text-slate-400 tracking-wider">Web Performance</p>
-                                <h3 className="text-[28px] font-semibold text-slate-900 tracking-tighter">14,280</h3>
-                                <p className="text-[11px] font-medium text-slate-500">Intelligent events captured this month</p>
+                            <div className="space-y-0.5">
+                                <p className="text-[10px] font-semibold text-slate-500 tracking-wider truncate">Web Performance</p>
+                                <h3 className="text-[20px] font-semibold text-slate-900 tracking-tight tabular-nums leading-tight">14,280</h3>
+                                <p className="text-[10px] font-medium text-slate-600 truncate">Events captured this month</p>
                             </div>
                         </CardContent>
                     </Card>
 
-                    <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-3xl bg-white group hover:ring-indigo-100 transition-all">
-                        <CardContent className="p-6 space-y-4">
+                    <Card className="border-none shadow-sm ring-1 ring-pink-100 rounded-none bg-pink-50 group transition-all">
+                        <CardContent className="p-3 space-y-2">
                             <div className="flex justify-between items-start">
-                                <div className="p-3 rounded-2xl bg-pink-50 text-pink-600 group-hover:bg-pink-600 group-hover:text-white transition-colors duration-500">
-                                    <Mail size={24} />
+                                <div className="p-1.5 rounded-none bg-white text-pink-600 group-hover:bg-pink-600 group-hover:text-white transition-colors duration-500">
+                                    <Mail size={16} />
                                 </div>
-                                <Badge className="bg-emerald-50 text-emerald-600 border-none">+8.2%</Badge>
+                                <Badge className="bg-emerald-50 text-emerald-600 border-none text-[10px] px-1.5 py-0 rounded-none">+8.2%</Badge>
                             </div>
-                            <div className="space-y-1">
-                                <p className="text-[11px] font-semibold text-slate-400 tracking-wider">Outreach Engagement</p>
-                                <h3 className="text-[28px] font-semibold text-slate-900 tracking-tighter">6,140</h3>
-                                <p className="text-[11px] font-medium text-slate-500">Positive email response triggers</p>
+                            <div className="space-y-0.5">
+                                <p className="text-[10px] font-semibold text-slate-500 tracking-wider truncate">Outreach Engagement</p>
+                                <h3 className="text-[20px] font-semibold text-slate-900 tracking-tight tabular-nums leading-tight">6,140</h3>
+                                <p className="text-[10px] font-medium text-slate-600 truncate">Positive email triggers</p>
                             </div>
                         </CardContent>
                     </Card>
 
-                    <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-3xl bg-white group hover:ring-indigo-100 transition-all">
-                        <CardContent className="p-6 space-y-4">
+                    <Card className="border-none shadow-sm ring-1 ring-amber-100 rounded-none bg-amber-50 group transition-all">
+                        <CardContent className="p-3 space-y-2">
                             <div className="flex justify-between items-start">
-                                <div className="p-3 rounded-2xl bg-amber-50 text-amber-600 group-hover:bg-amber-600 group-hover:text-white transition-colors duration-500">
-                                    <Gauge size={24} />
+                                <div className="p-1.5 rounded-none bg-white text-amber-600 group-hover:bg-amber-600 group-hover:text-white transition-colors duration-500">
+                                    <Gauge size={16} />
                                 </div>
-                                <Badge className="bg-rose-50 text-rose-600 border-none">-2.1%</Badge>
+                                <Badge className="bg-rose-50 text-rose-600 border-none text-[10px] px-1.5 py-0 rounded-none">-2.1%</Badge>
                             </div>
-                            <div className="space-y-1">
-                                <p className="text-[11px] font-semibold text-slate-400 tracking-wider">Intent Velocity</p>
-                                <h3 className="text-[28px] font-semibold text-slate-900 tracking-tighter">High</h3>
-                                <p className="text-[11px] font-medium text-slate-500">Avg. 4.2 events per qualified lead</p>
+                            <div className="space-y-0.5">
+                                <p className="text-[10px] font-semibold text-slate-500 tracking-wider truncate">Intent Velocity</p>
+                                <h3 className="text-[20px] font-semibold text-slate-900 tracking-tight leading-tight">High</h3>
+                                <p className="text-[10px] font-medium text-slate-600 truncate">Avg. 4.2 events per lead</p>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="border-none shadow-sm ring-1 ring-emerald-100 rounded-none bg-emerald-50 group transition-all">
+                        <CardContent className="p-3 space-y-2">
+                            <div className="flex justify-between items-start">
+                                <div className="p-1.5 rounded-none bg-white text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-colors duration-500">
+                                    <Target size={16} />
+                                </div>
+                                <Badge className="bg-emerald-50 text-emerald-600 border-none text-[10px] px-1.5 py-0 rounded-none">+5.6%</Badge>
+                            </div>
+                            <div className="space-y-0.5">
+                                <p className="text-[10px] font-semibold text-slate-500 tracking-wider truncate">High-Intent Sessions</p>
+                                <h3 className="text-[20px] font-semibold text-slate-900 tracking-tight tabular-nums leading-tight">2,840</h3>
+                                <p className="text-[10px] font-medium text-slate-600 truncate">Matched scoring thresholds</p>
                             </div>
                         </CardContent>
                     </Card>
@@ -269,13 +291,51 @@ export default function BehavioralScoringPage() {
                     <div className="flex items-center justify-between px-2">
                         <h2 className="text-[16px] font-semibold text-slate-900">Event Scoring Map</h2>
                         <div className="flex items-center gap-2">
-                            <Button variant="ghost" size="sm" className="h-8 text-slate-500 font-semibold text-[11px]">Recent Triggers <ExternalLink size={12} className="ml-1.5" /></Button>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => toast({ title: "Recent Triggers", description: "Opening trigger history feed..." })}
+                                className="h-8 text-slate-500 font-semibold text-[11px]"
+                            >
+                                Recent Triggers <ExternalLink size={12} className="ml-1.5" />
+                            </Button>
                         </div>
                     </div>
 
+                    {/* Filter / Search */}
+                    <div className="flex items-center gap-3 bg-slate-50/50 p-2 border border-slate-100">
+                        <div className="relative flex-1">
+                            <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                            <Input
+                                placeholder="Search events by name or source..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="pl-9 h-10 border-slate-100 bg-white text-[13px] rounded-lg focus-visible:ring-indigo-500"
+                            />
+                        </div>
+                        <Select value={filterSource} onValueChange={setFilterSource}>
+                            <SelectTrigger className="w-[180px] h-10 border-slate-100 bg-white font-semibold text-[12px] rounded-lg">
+                                <Filter className="h-3.5 w-3.5 mr-2 text-slate-400" />
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Sources</SelectItem>
+                                <SelectItem value="Website">Website</SelectItem>
+                                <SelectItem value="Outreach">Outreach</SelectItem>
+                                <SelectItem value="Events">Events</SelectItem>
+                                <SelectItem value="Content">Content</SelectItem>
+                                <SelectItem value="API">API Integration</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+
                     <div className="grid grid-cols-1 gap-3">
-                        {actions.map((item) => (
-                            <Card key={item.id} className="border-none shadow-sm ring-1 ring-slate-100 rounded-2xl bg-white group hover:ring-indigo-100 transition-all overflow-hidden border-l-4 border-l-transparent hover:border-l-indigo-500">
+                        {filteredActions.length === 0 ? (
+                            <div className="p-10 border-2 border-dashed border-slate-200 text-center">
+                                <p className="text-[13px] font-semibold text-slate-400">No events match your filters.</p>
+                            </div>
+                        ) : filteredActions.map((item) => (
+                            <Card key={item.id} className="border-none shadow-sm ring-1 ring-slate-100 rounded-none bg-white group hover:ring-indigo-100 transition-all overflow-hidden border-l-4 border-l-transparent hover:border-l-indigo-500">
                                 <CardContent className="p-5 flex items-center justify-between gap-6">
                                     <div className="flex items-center gap-4 min-w-0">
                                         <div className="p-3 rounded-xl bg-slate-50 text-slate-400 group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors">
@@ -295,11 +355,11 @@ export default function BehavioralScoringPage() {
                                         <div className="flex flex-col items-end gap-1">
                                             <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest leading-none">Scoring Impact</span>
                                             <div className="flex items-center gap-2">
-                                                <span className="text-[18px] font-semibold text-indigo-600">+{item.score}</span>
+                                                <span className={`text-[18px] font-semibold ${item.score >= 0 ? 'text-indigo-600' : 'text-rose-600'}`}>{item.score >= 0 ? '+' : ''}{item.score}</span>
                                                 <Badge className={`
                                                     ${item.intensity === 'High' ? 'bg-rose-50 text-rose-500' :
                                                         item.intensity === 'Medium' ? 'bg-amber-50 text-amber-600' :
-                                                            'bg-slate-50 text-slate-400'} 
+                                                            'bg-slate-50 text-slate-400'}
                                                     border-none text-[9px] font-semibold px-1.5 h-4.5 rounded uppercase
                                                 `}>
                                                     {item.intensity}
@@ -328,12 +388,12 @@ export default function BehavioralScoringPage() {
 
                 {/* Smart Aggregates Side */}
                 <div className="lg:col-span-4 space-y-6">
-                    <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-3xl bg-white overflow-hidden">
-                        <CardHeader className="p-6 border-b border-slate-50">
+                    <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-none bg-blue-50 overflow-hidden">
+                        <CardHeader className="p-6 border-b border-blue-100">
                             <CardTitle className="text-[16px] font-semibold text-slate-900">Automation Health</CardTitle>
-                            <CardDescription className="text-[11px] font-medium text-slate-500">Quality of signal vs. noise in behavioral tracking.</CardDescription>
+                            <CardDescription className="text-[11px] font-medium text-slate-600">Quality of signal vs. noise in behavioral tracking.</CardDescription>
                         </CardHeader>
-                        <CardContent className="p-6 space-y-6">
+                        <CardContent className="p-6 space-y-6 bg-white">
                             <div className="space-y-2.5">
                                 <div className="flex justify-between items-center text-[12px] font-semibold text-slate-600">
                                     <span>Signal Quality</span>
@@ -346,25 +406,29 @@ export default function BehavioralScoringPage() {
                             <div className="space-y-2.5 pt-2">
                                 <div className="flex justify-between items-center text-[12px] font-semibold text-slate-600">
                                     <span>Bot Filtering</span>
-                                    <span className="text-emerald-500">Active</span>
+                                    <span className={botFilterActive ? "text-emerald-500" : "text-slate-400"}>{botFilterActive ? "Active" : "Disabled"}</span>
                                 </div>
-                                <div className="flex items-center justify-between p-3 rounded-2xl bg-emerald-50 border border-emerald-100">
+                                <div className="flex items-center justify-between p-3 bg-emerald-50 border border-emerald-100">
                                     <div className="flex items-center gap-3">
                                         <Zap size={14} className="text-emerald-600" />
                                         <span className="text-[12px] font-semibold text-emerald-700">Blocked 1.2k bot hits</span>
                                     </div>
-                                    <Switch checked={true} className="data-[state=checked]:bg-emerald-600" />
+                                    <Switch
+                                        checked={botFilterActive}
+                                        onCheckedChange={(c) => { setBotFilterActive(c); toast({ title: c ? "Bot Filter Enabled" : "Bot Filter Disabled" }) }}
+                                        className="data-[state=checked]:bg-emerald-600"
+                                    />
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
 
-                    <Card className="border-none shadow-sm ring-1 ring-slate-100 rounded-3xl bg-indigo-50 text-slate-900 p-1 overflow-hidden relative group">
+                    <Card className="border-none shadow-sm ring-1 ring-indigo-100 rounded-none bg-indigo-50 text-slate-900 p-1 overflow-hidden relative group">
                         <div className="absolute top-0 right-0 p-8 opacity-10 text-indigo-200 translate-x-4">
                             <Activity size={120} />
                         </div>
                         <CardContent className="p-6 space-y-4 relative z-10">
-                            <div className="p-2.5 rounded-xl bg-indigo-100 text-indigo-600 w-fit">
+                            <div className="p-2.5 rounded-xl bg-white text-indigo-600 w-fit">
                                 <BarChart3 size={20} />
                             </div>
                             <div className="space-y-1">
@@ -373,7 +437,10 @@ export default function BehavioralScoringPage() {
                                     Analyzing 42k interaction patterns. We've detected a trend: leads visiting "API Docs" convert 4x faster.
                                 </p>
                             </div>
-                            <Button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white border-none font-semibold text-[12px] h-10 mt-2">
+                            <Button
+                                onClick={() => toast({ title: "AI Optimization Started", description: "Recalibrating weights based on conversion data..." })}
+                                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white border-none font-semibold text-[12px] h-10 mt-2"
+                            >
                                 Adjust weights based on AI
                             </Button>
                         </CardContent>
@@ -381,6 +448,69 @@ export default function BehavioralScoringPage() {
                 </div>
 
             </div>
+
+            {/* Side-drawer Form */}
+            <SideFormSheet
+                open={isAddOpen}
+                onOpenChange={(o) => { setIsAddOpen(o); if (!o) setErrors({}) }}
+                title={editingAction ? 'Edit Event Logic' : 'Define New Digital Touchpoint'}
+                description={editingAction ? 'Update the scoring logic for this event.' : 'Register a new behavioral trigger for the scoring engine.'}
+                icon={<Activity size={18} />}
+                onSubmit={handleAddOrUpdate}
+                submitLabel={editingAction ? 'Sync Changes' : 'Register Touchpoint'}
+                accentColor="#4f46e5"
+            >
+                <div className="space-y-5">
+                    <Field label="Event / Action Name" required error={errors.action}>
+                        <Input
+                            value={newAction.action}
+                            onChange={e => { setNewAction({ ...newAction, action: e.target.value }); if (errors.action) setErrors({ ...errors, action: undefined }) }}
+                            placeholder="e.g., API Documentation Accessed"
+                            className="h-11 rounded-lg"
+                        />
+                    </Field>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <Field label="Traffic Source" required error={errors.source}>
+                            <Select value={newAction.source} onValueChange={v => { setNewAction({ ...newAction, source: v }); if (errors.source) setErrors({ ...errors, source: undefined }) }}>
+                                <SelectTrigger className="h-11 rounded-lg">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Website">Website</SelectItem>
+                                    <SelectItem value="Outreach">Outreach</SelectItem>
+                                    <SelectItem value="Events">Events</SelectItem>
+                                    <SelectItem value="Content">Content</SelectItem>
+                                    <SelectItem value="API">API Integration</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <Field label="Intent Score" required error={errors.score} hint="Range: -100 to 100">
+                            <Input
+                                type="number"
+                                min={-100}
+                                max={100}
+                                value={newAction.score}
+                                onChange={e => { setNewAction({ ...newAction, score: parseInt(e.target.value) || 0 }); if (errors.score) setErrors({ ...errors, score: undefined }) }}
+                                className="h-11 rounded-lg"
+                            />
+                        </Field>
+                    </div>
+
+                    <Field label="Intensity Level" required error={errors.intensity}>
+                        <Select value={newAction.intensity} onValueChange={v => { setNewAction({ ...newAction, intensity: v }); if (errors.intensity) setErrors({ ...errors, intensity: undefined }) }}>
+                            <SelectTrigger className="h-11 rounded-lg">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="High">High Intent</SelectItem>
+                                <SelectItem value="Medium">Medium Intent</SelectItem>
+                                <SelectItem value="Low">Low / General</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                </div>
+            </SideFormSheet>
 
         </div>
     )

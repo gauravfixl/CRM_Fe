@@ -33,12 +33,12 @@ import {
 import { useToast } from "@/shared/components/ui/use-toast"
 import { axiosInstance as axios } from "@/lib/axios"
 
-import { LeadFormModal } from '@/shared/components/lead-management/modals/LeadFormModal'
 import { DeleteConfirmationModal } from '@/shared/components/lead-management/modals/DeleteConfirmationModal'
-import { AdvancedFilterModal } from '@/shared/components/lead-management/modals/AdvancedFilterModal'
-import { MoveOwnerModal } from '@/shared/components/lead-management/modals/MoveOwnerModal'
-import { BatchTaggingModal } from '@/shared/components/lead-management/modals/BatchTaggingModal'
-import { ImportLeadsModal } from '@/shared/components/lead-management/modals/ImportLeadsModal'
+import LeadSideForm, { type LeadFormShape } from '@/shared/components/lead-management/sheets/LeadSideForm'
+import LeadFiltersSide, { type FiltersShape } from '@/shared/components/lead-management/sheets/LeadFiltersSide'
+import MoveOwnerSide from '@/shared/components/lead-management/sheets/MoveOwnerSide'
+import BatchTaggingSide from '@/shared/components/lead-management/sheets/BatchTaggingSide'
+import ImportLeadsSide from '@/shared/components/lead-management/sheets/ImportLeadsSide'
 
 const CATEGORY_CONFIG: Record<string, { title: string; desc: string; icon: any; accent: string }> = {
     all: { title: "All Leads", desc: "The complete master list of all lead records stored in the platform.", icon: Database, accent: "indigo" },
@@ -103,15 +103,19 @@ export default function LeadDatabasePage() {
     const [selectedIds, setSelectedIds] = React.useState<string[]>([])
     const [loading, setLoading] = React.useState(true)
 
-    // Modal States
-    const [isCreateModalOpen, setIsCreateModalOpen] = React.useState(false)
-    const [isEditModalOpen, setIsEditModalOpen] = React.useState(false)
-    const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false)
-    const [isFilterModalOpen, setIsFilterModalOpen] = React.useState(false)
-    const [isMoveOwnerModalOpen, setIsMoveOwnerModalOpen] = React.useState(false)
-    const [isBatchTaggingModalOpen, setIsBatchTaggingModalOpen] = React.useState(false)
-    const [isImportModalOpen, setIsImportModalOpen] = React.useState(false)
+    // Side-form / modal states
+    const [isCreateOpen, setIsCreateOpen] = React.useState(false)
+    const [isEditOpen, setIsEditOpen] = React.useState(false)
+    const [isDeleteOpen, setIsDeleteOpen] = React.useState(false)
+    const [isFilterOpen, setIsFilterOpen] = React.useState(false)
+    const [isMoveOwnerOpen, setIsMoveOwnerOpen] = React.useState(false)
+    const [isBatchTaggingOpen, setIsBatchTaggingOpen] = React.useState(false)
+    const [isImportOpen, setIsImportOpen] = React.useState(false)
     const [selectedLead, setSelectedLead] = React.useState<Lead | null>(null)
+    const [leadToDelete, setLeadToDelete] = React.useState<Lead | null>(null)
+
+    // Categories where manual lead creation makes sense
+    const showCreate = category === 'all' || category === 'active'
 
     // Filter & Sort State
     const [searchQuery, setSearchQuery] = React.useState("")
@@ -275,54 +279,67 @@ export default function LeadDatabasePage() {
         })
     }
 
-    const handleCreateSubmit = (data: any) => {
+    const handleCreateSubmit = (data: LeadFormShape) => {
         const newLead: Lead = {
             id: Math.random().toString(36).substr(2, 9),
-            ...data,
-            score: 50, // Default score
+            name: data.name,
+            email: data.email,
+            company: data.company,
+            source: data.source,
+            score: 50,
+            status: data.status,
+            stage: data.stage,
             lastActivity: 'Just now',
+            value: data.value,
             slaStatus: 'healthy',
+            tags: data.tags,
+            ownerName: data.ownerName,
         }
         setAllLeads([newLead, ...allLeads])
-        setIsCreateModalOpen(false)
+        setIsCreateOpen(false)
         toast({
-            title: "Lead Created",
+            title: "Lead created",
             description: `${data.name} has been successfully added.`,
         })
     }
 
-    const handleEditSubmit = (data: any) => {
+    const handleEditSubmit = (data: LeadFormShape) => {
         if (!selectedLead) return
         setAllLeads(allLeads.map(l => l.id === selectedLead.id ? { ...l, ...data } : l))
-        setIsEditModalOpen(false)
+        setIsEditOpen(false)
         setSelectedLead(null)
         toast({
-            title: "Lead Updated",
+            title: "Lead updated",
             description: `Details for ${data.name} have been updated.`,
         })
     }
 
     const handleDeleteConfirm = () => {
-        if (!selectedLead) return
-        setAllLeads(allLeads.filter(l => l.id !== selectedLead.id))
-        setIsDeleteModalOpen(false)
+        const target = leadToDelete ?? selectedLead
+        if (!target) return
+        setAllLeads(allLeads.filter(l => l.id !== target.id))
+        setIsDeleteOpen(false)
+        setLeadToDelete(null)
         setSelectedLead(null)
         toast({
-            title: "Lead Deleted",
-            description: "The record has been permanently removed.",
+            title: "Lead deleted",
+            description: `${target.name} has been permanently removed.`,
         })
     }
 
-    const handleCreateEntry = () => setIsCreateModalOpen(true)
+    const handleCreateEntry = () => {
+        setSelectedLead(null)
+        setIsCreateOpen(true)
+    }
 
-    const handleAdvancedFilter = () => setIsFilterModalOpen(true)
+    const handleAdvancedFilter = () => setIsFilterOpen(true)
 
-    const applyAdvancedFilters = (filters: any) => {
+    const applyAdvancedFilters = (filters: FiltersShape) => {
         setAdvancedFilters(filters)
-        setIsFilterModalOpen(false)
+        setIsFilterOpen(false)
         setCurrentPage(1)
         toast({
-            title: "Filters Applied",
+            title: "Filters applied",
             description: "Database view has been restricted to your selection.",
         })
     }
@@ -339,17 +356,24 @@ export default function LeadDatabasePage() {
     }
 
     const handleLeadAction = (lead: Lead, action: string) => {
-        if (action === 'Open Full Profile') {
+        if (action === 'Open Full Profile' || action === 'Edit') {
             setSelectedLead(lead)
-            setIsEditModalOpen(true)
-        } else if (action === 'Archive') {
-            handleLeadActionInternal(lead, 'Archive')
-        } else {
-            toast({
-                title: action,
-                description: `Processing ${action} for ${lead.name}`,
-            })
+            setIsEditOpen(true)
+            return
         }
+        if (action === 'Delete') {
+            setLeadToDelete(lead)
+            setIsDeleteOpen(true)
+            return
+        }
+        if (action === 'Archive') {
+            handleLeadActionInternal(lead, 'Archive')
+            return
+        }
+        toast({
+            title: action,
+            description: `Processing ${action} for ${lead.name}`,
+        })
     }
 
     const handleLeadActionInternal = (lead: Lead, action: string) => {
@@ -360,36 +384,43 @@ export default function LeadDatabasePage() {
     }
 
     const handleBulkAction = (action: string) => {
+        if (selectedIds.length === 0 && (action === 'Archive' || action === 'Move Owner' || action === 'Batch Tagging' || action === 'Delete' || action === 'Delete Permanently')) {
+            toast({ title: "No selection", description: "Please select at least one record.", variant: "destructive" })
+            return
+        }
         if (action === 'Archive') {
             setAllLeads(prev => prev.filter(l => !selectedIds.includes(l.id)))
-            toast({ title: "Bulk Archive", description: `${selectedIds.length} leads moved to archives.` })
+            toast({ title: "Bulk archive", description: `${selectedIds.length} leads moved to archives.` })
             setSelectedIds([])
         } else if (action === 'Delete' || action === 'Delete Permanently') {
             setAllLeads(prev => prev.filter(l => !selectedIds.includes(l.id)))
-            toast({ title: "Bulk Delete", description: `${selectedIds.length} records purged successfully.`, variant: "destructive" })
+            toast({ title: "Bulk delete", description: `${selectedIds.length} records purged successfully.`, variant: "destructive" })
             setSelectedIds([])
         } else if (action === 'Move Owner') {
-            setIsMoveOwnerModalOpen(true)
+            setIsMoveOwnerOpen(true)
         } else if (action === 'Batch Tagging') {
-            setIsBatchTaggingModalOpen(true)
+            setIsBatchTaggingOpen(true)
         }
     }
 
-    const confirmBulkOwnerMove = (newOwner: string) => {
+    const confirmBulkOwnerMove = (newOwner: string, note?: string) => {
         setAllLeads(prev => prev.map(l => selectedIds.includes(l.id) ? { ...l, ownerName: newOwner } : l))
-        setIsMoveOwnerModalOpen(false)
+        setIsMoveOwnerOpen(false)
         setSelectedIds([])
-        toast({ title: "Ownership Transferred", description: `Selected leads reassigned to ${newOwner}.` })
+        toast({
+            title: "Ownership transferred",
+            description: `${selectedIds.length} lead${selectedIds.length === 1 ? "" : "s"} reassigned to ${newOwner}.${note ? ` Note: ${note}` : ""}`,
+        })
     }
 
     const confirmBatchTagging = (tags: string[]) => {
         setAllLeads(prev => prev.map(l => selectedIds.includes(l.id) ? { ...l, tags: [...(l.tags || []), ...tags.filter(t => !l.tags?.includes(t))] } : l))
-        setIsBatchTaggingModalOpen(false)
+        setIsBatchTaggingOpen(false)
         setSelectedIds([])
-        toast({ title: "Tags Applied", description: `Added ${tags.length} labels to selection.` })
+        toast({ title: "Tags applied", description: `Added ${tags.length} labels to ${selectedIds.length} lead${selectedIds.length === 1 ? "" : "s"}.` })
     }
 
-    const handleImport = () => setIsImportModalOpen(true)
+    const handleImport = () => setIsImportOpen(true)
 
     const handleExport = () => {
         const headers = ["Name", "Email", "Company", "Source", "Score", "Value", "Owner"]
@@ -411,23 +442,44 @@ export default function LeadDatabasePage() {
         })
     }
 
-    return (
-        <div className="space-y-6 pb-12 max-w-[1600px] mx-auto animate-in fade-in duration-500">
+    const accentHex = ({
+        indigo: "#6366f1",
+        emerald: "#10b981",
+        teal: "#14b8a6",
+        rose: "#f43f5e",
+        slate: "#64748b",
+        amber: "#f59e0b",
+    } as Record<string, string>)[config.accent] ?? "#6366f1"
 
-            {/* Structural Header */}
-            <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+    return (
+        <div
+            className="space-y-6 pb-12 max-w-[1600px] mx-auto animate-in fade-in duration-500"
+            style={{ zoom: 0.9 }}
+        >
+
+            {/* Structural Header — tinted by category */}
+            <div
+                className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 p-4 rounded-none border shadow-sm"
+                style={{
+                    background: `linear-gradient(135deg, ${accentHex}14 0%, ${accentHex}06 45%, #ffffff 100%)`,
+                    borderColor: `${accentHex}33`,
+                }}
+            >
                 <div className="space-y-2">
                     <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => router.push('/lead-management')}
-                        className="-ml-2 h-7 text-[10px] font-semibold text-slate-400 hover:text-indigo-600"
+                        className="-ml-2 h-7 text-[10px] font-semibold text-slate-400 hover:text-indigo-600 rounded-none"
                     >
                         <ChevronLeft className="h-3 w-3 mr-1" /> Back to Dashboard
                     </Button>
                     <div className="space-y-0.5">
                         <div className="flex items-center gap-3">
-                            <div className={`p-2 rounded-lg bg-${config.accent}-50 text-${config.accent}-600`}>
+                            <div
+                                className="p-2 rounded-none text-white shadow-sm"
+                                style={{ background: accentHex, boxShadow: `0 4px 12px ${accentHex}33` }}
+                            >
                                 <config.icon className="h-5 w-5" />
                             </div>
                             <h1 className="text-[20px] font-semibold tracking-tight text-slate-900">
@@ -440,13 +492,19 @@ export default function LeadDatabasePage() {
                     </div>
                 </div>
 
-                <div className="flex items-center gap-3 flex-wrap">
-                    <Button variant="outline" onClick={handleExport} className="h-9 border-slate-200 text-slate-600 font-semibold bg-white px-4 shadow-sm hover:bg-slate-50 rounded-xl">
+                <div className="flex items-center gap-2 flex-wrap">
+                    <Button variant="outline" onClick={handleExport} className="h-9 border-slate-200 text-slate-600 font-semibold bg-white px-4 shadow-sm hover:bg-slate-50 rounded-none">
                         <FileSpreadsheet className="h-4 w-4 mr-2 text-slate-400" /> Export CSV
                     </Button>
-                    <Button onClick={handleCreateEntry} className="h-9 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-5 shadow-md border-none rounded-xl transition-all active:scale-95">
-                        <UserPlus className="h-4 w-4 mr-2" /> Create Entry
-                    </Button>
+                    {showCreate && (
+                        <Button
+                            onClick={handleCreateEntry}
+                            className="h-9 text-white font-semibold px-5 shadow-md border-none rounded-none transition-all"
+                            style={{ background: accentHex, boxShadow: `0 4px 12px ${accentHex}33` }}
+                        >
+                            <UserPlus className="h-4 w-4 mr-2" /> Create Entry
+                        </Button>
+                    )}
                 </div>
             </div>
 
@@ -457,40 +515,40 @@ export default function LeadDatabasePage() {
                         <Search className="absolute left-4 top-3.5 h-4 w-4 text-slate-400" />
                         <Input
                             placeholder="Find by name, company, or email address..."
-                            className="pl-11 h-12 border-slate-200 bg-white text-[13px] font-semibold shadow-none focus-visible:ring-indigo-500 rounded-xl"
+                            className="pl-11 h-12 border-slate-200 bg-white text-[13px] font-semibold shadow-none focus-visible:ring-indigo-500 rounded-none"
                             value={searchQuery}
                             onChange={handleSearch}
                         />
                     </div>
-                    <Button variant="outline" size="sm" onClick={handleAdvancedFilter} className="h-10 px-4 gap-2 border-slate-200 text-slate-600 font-semibold bg-white rounded-xl">
+                    <Button variant="outline" size="sm" onClick={handleAdvancedFilter} className="h-10 px-4 gap-2 border-slate-200 text-slate-600 font-semibold bg-white rounded-none">
                         <Filter className="h-4 w-4 text-slate-400" /> Filters
                     </Button>
 
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="outline" size="sm" className="h-10 px-4 gap-2 border-slate-200 text-slate-600 font-semibold bg-white rounded-xl">
+                            <Button variant="outline" size="sm" className="h-10 px-4 gap-2 border-slate-200 text-slate-600 font-semibold bg-white rounded-none">
                                 <ArrowUpDown className="h-4 w-4 text-slate-400" /> Sort: {sortConfig.key === 'value' ? 'Value' : sortConfig.key === 'score' ? 'Score' : 'Activity'}
                             </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-56 rounded-xl p-1.5 shadow-2xl border-slate-100">
-                            <DropdownMenuItem onClick={() => handleSort('value', 'desc')} className="text-[12.5px] font-semibold py-2.5 cursor-pointer hover:bg-slate-50 rounded-lg">
+                        <DropdownMenuContent align="end" className="w-56 rounded-none p-1.5 shadow-2xl border-slate-100">
+                            <DropdownMenuItem onClick={() => handleSort('value', 'desc')} className="text-[12.5px] font-semibold py-2.5 cursor-pointer hover:bg-slate-50 rounded-none">
                                 Highest Value ($)
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleSort('value', 'asc')} className="text-[12.5px] font-semibold py-2.5 cursor-pointer hover:bg-slate-50 rounded-lg">
+                            <DropdownMenuItem onClick={() => handleSort('value', 'asc')} className="text-[12.5px] font-semibold py-2.5 cursor-pointer hover:bg-slate-50 rounded-none">
                                 Lowest Value ($)
                             </DropdownMenuItem>
                             <DropdownMenuSeparator className="my-1.5" />
-                            <DropdownMenuItem onClick={() => handleSort('score', 'desc')} className="text-[12.5px] font-semibold py-2.5 cursor-pointer hover:bg-slate-50 rounded-lg">
+                            <DropdownMenuItem onClick={() => handleSort('score', 'desc')} className="text-[12.5px] font-semibold py-2.5 cursor-pointer hover:bg-slate-50 rounded-none">
                                 Highest Score
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleSort('score', 'asc')} className="text-[12.5px] font-semibold py-2.5 cursor-pointer hover:bg-slate-50 rounded-lg">
+                            <DropdownMenuItem onClick={() => handleSort('score', 'asc')} className="text-[12.5px] font-semibold py-2.5 cursor-pointer hover:bg-slate-50 rounded-none">
                                 Lowest Score
                             </DropdownMenuItem>
                             <DropdownMenuSeparator className="my-1.5" />
-                            <DropdownMenuItem onClick={() => handleSort('activity', 'desc')} className="text-[12.5px] font-semibold py-2.5 cursor-pointer hover:bg-slate-50 rounded-lg">
+                            <DropdownMenuItem onClick={() => handleSort('activity', 'desc')} className="text-[12.5px] font-semibold py-2.5 cursor-pointer hover:bg-slate-50 rounded-none">
                                 Most Recent Activity
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleSort('activity', 'asc')} className="text-[12.5px] font-semibold py-2.5 cursor-pointer hover:bg-slate-50 rounded-lg">
+                            <DropdownMenuItem onClick={() => handleSort('activity', 'asc')} className="text-[12.5px] font-semibold py-2.5 cursor-pointer hover:bg-slate-50 rounded-none">
                                 Oldest Activity
                             </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -498,11 +556,11 @@ export default function LeadDatabasePage() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                    <div className="flex bg-slate-100/80 p-1 rounded-xl border border-slate-200/50">
+                    <div className="flex bg-slate-100/80 p-1 rounded-none border border-slate-200/50">
                         <Button
                             variant="ghost"
                             size="sm"
-                            className="h-9 text-[11px] font-semibold text-slate-500 px-4 rounded-lg hover:bg-white hover:text-indigo-600 disabled:opacity-50 transition-all shadow-none"
+                            className="h-9 text-[11px] font-semibold text-slate-500 px-4 rounded-none hover:bg-white hover:text-indigo-600 disabled:opacity-50 transition-all shadow-none"
                             disabled={selectedIds.length === 0}
                             onClick={() => handleBulkAction('Archive')}
                         >
@@ -511,7 +569,7 @@ export default function LeadDatabasePage() {
                         <Button
                             variant="ghost"
                             size="sm"
-                            className="h-9 text-[11px] font-semibold text-slate-500 px-4 rounded-lg hover:bg-white hover:text-indigo-600 disabled:opacity-50 transition-all shadow-none"
+                            className="h-9 text-[11px] font-semibold text-slate-500 px-4 rounded-none hover:bg-white hover:text-indigo-600 disabled:opacity-50 transition-all shadow-none"
                             disabled={selectedIds.length === 0}
                             onClick={() => handleBulkAction('Move Owner')}
                         >
@@ -521,26 +579,26 @@ export default function LeadDatabasePage() {
 
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="outline" size="icon" className="h-10 w-10 rounded-xl border-slate-200 bg-white hover:bg-slate-50 transition-all shadow-sm">
+                            <Button variant="outline" size="icon" className="h-10 w-10 rounded-none border-slate-200 bg-white hover:bg-slate-50 transition-all shadow-sm">
                                 <MoreHorizontal className="h-4 w-4 text-slate-400" />
                             </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-56 rounded-xl p-1.5 shadow-2xl border-slate-100">
+                        <DropdownMenuContent align="end" className="w-56 rounded-none p-1.5 shadow-2xl border-slate-100">
                             <DropdownMenuItem
                                 onClick={() => handleBulkAction('Batch Tagging')}
-                                className="text-[12.5px] font-semibold py-2.5 rounded-lg cursor-pointer"
+                                className="text-[12.5px] font-semibold py-2.5 rounded-none cursor-pointer"
                             >
                                 Batch Tagging
                             </DropdownMenuItem>
                             <DropdownMenuItem
                                 onClick={handleImport}
-                                className="text-[12.5px] font-semibold py-2.5 rounded-lg cursor-pointer"
+                                className="text-[12.5px] font-semibold py-2.5 rounded-none cursor-pointer"
                             >
                                 Import from Excel
                             </DropdownMenuItem>
                             <DropdownMenuSeparator className="my-1.5" />
                             <DropdownMenuItem
-                                className="text-[12.5px] font-bold py-2.5 rounded-lg text-rose-500 focus:bg-rose-50 focus:text-rose-600 cursor-pointer"
+                                className="text-[12.5px] font-bold py-2.5 rounded-none text-rose-500 focus:bg-rose-50 focus:text-rose-600 cursor-pointer"
                                 onClick={() => handleBulkAction('Delete Permanently')}
                             >
                                 Delete Entire Selection
@@ -554,7 +612,7 @@ export default function LeadDatabasePage() {
             <div className="animate-in fade-in slide-in-from-top-1 duration-700 min-h-[400px]">
                 {loading ? (
                     <div className="flex flex-col items-center justify-center h-64 text-slate-400 gap-4">
-                        <div className="h-8 w-8 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin"></div>
+                        <div className="h-8 w-8 border-4 border-indigo-100 border-t-indigo-600 rounded-none animate-spin"></div>
                         <p className="text-sm font-semibold tracking-tight">Syncing Database...</p>
                     </div>
                 ) : (
@@ -569,14 +627,14 @@ export default function LeadDatabasePage() {
             </div>
 
             {/* Database Pagination & Status */}
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between px-6 py-5 bg-white rounded-2xl border border-slate-100 shadow-sm mt-4 hover:shadow-md transition-all">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between px-6 py-5 bg-white rounded-none border border-slate-100 shadow-sm mt-4 hover:shadow-md transition-all">
                 <div className="flex items-center gap-6">
                     <div className="space-y-0.5 text-center lg:text-left">
                         <p className="text-[14px] font-semibold text-slate-900 leading-none">{filteredLeads.length} Recorded Leads</p>
                         <p className="text-[11px] font-medium text-slate-400">Filtered from master database</p>
                     </div>
                     <div className="h-8 w-px bg-slate-100 hidden lg:block"></div>
-                    <p className="text-[11px] font-semibold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-lg hidden lg:flex items-center gap-1.5">
+                    <p className="text-[11px] font-semibold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-none hidden lg:flex items-center gap-1.5">
                         <Zap className="h-3 w-3 fill-current" /> Live sync
                     </p>
                 </div>
@@ -584,19 +642,19 @@ export default function LeadDatabasePage() {
                 <div className="flex items-center gap-2 mt-4 lg:mt-0">
                     <Button
                         variant="ghost"
-                        className="h-10 px-4 text-[11px] font-semibold text-slate-400 disabled:opacity-50 rounded-lg"
+                        className="h-10 px-4 text-[11px] font-semibold text-slate-400 disabled:opacity-50 rounded-none"
                         onClick={() => handlePageChange(currentPage - 1)}
                         disabled={currentPage === 1}
                     >
                         Prev
                     </Button>
-                    <div className="flex gap-1.5 px-2 py-1 bg-slate-50/80 rounded-xl">
+                    <div className="flex gap-1.5 px-2 py-1 bg-slate-50/80 rounded-none">
                         {Array.from({ length: Math.min(totalPages, 5) }).map((_, i) => (
                             <Button
                                 key={i}
                                 size="sm"
                                 onClick={() => handlePageChange(i + 1)}
-                                className={`h-8 w-8 text-[11px] font-semibold rounded-lg transition-all ${currentPage === i + 1
+                                className={`h-8 w-8 text-[11px] font-semibold rounded-none transition-all ${currentPage === i + 1
                                     ? "bg-white border border-slate-200 text-indigo-600 shadow-sm scale-110"
                                     : "bg-transparent text-slate-400 hover:text-slate-600 hover:bg-slate-100"
                                     }`}
@@ -608,7 +666,7 @@ export default function LeadDatabasePage() {
                     </div>
                     <Button
                         variant="ghost"
-                        className="h-10 px-4 text-[11px] font-semibold text-indigo-600 hover:bg-indigo-50 disabled:opacity-50 disabled:text-slate-300 rounded-lg"
+                        className="h-10 px-4 text-[11px] font-semibold text-indigo-600 hover:bg-indigo-50 disabled:opacity-50 disabled:text-slate-300 rounded-none"
                         onClick={() => handlePageChange(currentPage + 1)}
                         disabled={currentPage === totalPages}
                     >
@@ -617,62 +675,54 @@ export default function LeadDatabasePage() {
                 </div>
             </div>
 
-            {/* Modals */}
-            <LeadFormModal
-                isOpen={isCreateModalOpen}
-                onClose={() => setIsCreateModalOpen(false)}
+            {/* Side-slide forms */}
+            <LeadSideForm
+                open={isCreateOpen}
+                onOpenChange={setIsCreateOpen}
                 onSubmit={handleCreateSubmit}
-                title="Create New Lead"
             />
 
-            <LeadFormModal
-                isOpen={isEditModalOpen}
-                onClose={() => {
-                    setIsEditModalOpen(false)
-                    setSelectedLead(null)
-                }}
+            <LeadSideForm
+                open={isEditOpen}
+                onOpenChange={(o) => { setIsEditOpen(o); if (!o) setSelectedLead(null) }}
                 initialData={selectedLead}
                 onSubmit={handleEditSubmit}
-                title="Edit Lead Details"
             />
 
             <DeleteConfirmationModal
-                isOpen={isDeleteModalOpen}
-                onClose={() => {
-                    setIsDeleteModalOpen(false)
-                    setSelectedLead(null)
-                }}
+                isOpen={isDeleteOpen}
+                onClose={() => { setIsDeleteOpen(false); setLeadToDelete(null); setSelectedLead(null) }}
                 onConfirm={handleDeleteConfirm}
                 title="Delete Lead Record"
                 description="Are you sure you want to delete this lead? This action cannot be undone and all associated activity logs will be lost."
-                itemName={selectedLead?.name}
+                itemName={(leadToDelete ?? selectedLead)?.name}
             />
 
-            <AdvancedFilterModal
-                isOpen={isFilterModalOpen}
-                onClose={() => setIsFilterModalOpen(false)}
+            <LeadFiltersSide
+                open={isFilterOpen}
+                onOpenChange={setIsFilterOpen}
+                currentFilters={advancedFilters as FiltersShape}
                 onApply={applyAdvancedFilters}
-                currentFilters={advancedFilters}
             />
 
-            <MoveOwnerModal
-                isOpen={isMoveOwnerModalOpen}
-                onClose={() => setIsMoveOwnerModalOpen(false)}
+            <MoveOwnerSide
+                open={isMoveOwnerOpen}
+                onOpenChange={setIsMoveOwnerOpen}
                 onConfirm={confirmBulkOwnerMove}
                 selectedCount={selectedIds.length}
             />
 
-            <BatchTaggingModal
-                isOpen={isBatchTaggingModalOpen}
-                onClose={() => setIsBatchTaggingModalOpen(false)}
+            <BatchTaggingSide
+                open={isBatchTaggingOpen}
+                onOpenChange={setIsBatchTaggingOpen}
                 onConfirm={confirmBatchTagging}
                 selectedCount={selectedIds.length}
             />
 
-            <ImportLeadsModal
-                isOpen={isImportModalOpen}
-                onClose={() => setIsImportModalOpen(false)}
-                onImport={() => { }} // Placeholder for actual ingestion logic
+            <ImportLeadsSide
+                open={isImportOpen}
+                onOpenChange={setIsImportOpen}
+                onImport={() => { /* hook into ingestion later */ }}
             />
         </div>
     )
