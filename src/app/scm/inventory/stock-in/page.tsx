@@ -2,13 +2,14 @@
 
 import * as React from "react"
 import { useMemo, useState } from "react"
-import { Plus, Download } from "lucide-react"
+import { Plus, Download, ArrowDownToLine } from "lucide-react"
 
 import { Button } from "@/shared/components/ui/button"
 import { useToast } from "@/shared/components/ui/use-toast"
 
 import { DataTable, type DataTableColumn } from "@/shared/components/scm/shared/DataTable"
 import { RowActions, DeleteConfirmDialog } from "@/shared/components/scm/shared/RowActions"
+import { RowDetailSheet } from "@/shared/components/scm/shared/RowDetailSheet"
 import { StockInForm } from "@/shared/components/scm/forms/StockInForm"
 import {
     useScmStockMovementsStore,
@@ -25,6 +26,7 @@ export default function StockInPage() {
 
     const [formOpen, setFormOpen] = useState(false)
     const [deleting, setDeleting] = useState<ScmStockMovement | null>(null)
+    const [viewing, setViewing] = useState<ScmStockMovement | null>(null)
 
     const stockIns = useMemo(() => movements.filter((m) => m.direction === "in"), [movements])
 
@@ -113,9 +115,20 @@ export default function StockInPage() {
                 searchKeys={["productName", "sku", "warehouse", "supplier", "poNumber", "batchNumber"]}
                 pageSize={10}
                 emptyMessage="No stock-in entries yet."
+                onRowClick={(row) => setViewing(row)}
                 actions={(row) => (
                     <RowActions onDelete={() => setDeleting(row)} />
                 )}
+            />
+
+            <RowDetailSheet
+                row={viewing}
+                columns={columns}
+                onOpenChange={(o) => !o && setViewing(null)}
+                title={(r) => r.productName}
+                description={(r) => `Stock In · ${r.movementDate}`}
+                icon={<ArrowDownToLine className="w-5 h-5" />}
+                accentColor="#10b981"
             />
 
             <StockInForm open={formOpen} onOpenChange={setFormOpen} />

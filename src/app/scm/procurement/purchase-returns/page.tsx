@@ -2,13 +2,14 @@
 
 import * as React from "react"
 import { useMemo, useState } from "react"
-import { Plus, Download } from "lucide-react"
+import { Plus, Download, RotateCcw } from "lucide-react"
 import { Button } from "@/shared/components/ui/button"
 import { useToast } from "@/shared/components/ui/use-toast"
 
 import { DataTable, type DataTableColumn } from "@/shared/components/scm/shared/DataTable"
 import { StatusBadge } from "@/shared/components/scm/shared/StatusBadge"
 import { RowActions, DeleteConfirmDialog } from "@/shared/components/scm/shared/RowActions"
+import { RowDetailSheet } from "@/shared/components/scm/shared/RowDetailSheet"
 import { PurchaseReturnForm } from "@/shared/components/scm/forms/PurchaseReturnForm"
 import { useScmProcurementExtraStore, type ScmPurchaseReturn } from "@/shared/data/scm/scm-procurement-extra-store"
 
@@ -21,6 +22,7 @@ export default function PurchaseReturnsPage() {
     const [mode, setMode] = useState<"create" | "edit">("create")
     const [editing, setEditing] = useState<ScmPurchaseReturn | null>(null)
     const [deleting, setDeleting] = useState<ScmPurchaseReturn | null>(null)
+    const [viewing, setViewing] = useState<ScmPurchaseReturn | null>(null)
 
     const columns: DataTableColumn<ScmPurchaseReturn>[] = useMemo(
         () => [
@@ -79,7 +81,18 @@ export default function PurchaseReturnsPage() {
                 searchKeys={["returnNumber", "poNumber", "vendorName", "productName", "sku"]}
                 pageSize={10}
                 emptyMessage="No purchase returns yet."
+                onRowClick={(row) => setViewing(row)}
                 actions={(row) => <RowActions onEdit={() => handleEdit(row)} onDelete={() => setDeleting(row)} />}
+            />
+
+            <RowDetailSheet
+                row={viewing}
+                columns={columns}
+                onOpenChange={(o) => !o && setViewing(null)}
+                title={(r) => r.returnNumber}
+                description={(r) => `PO ${r.poNumber} · ${r.vendorName}`}
+                icon={<RotateCcw className="w-5 h-5" />}
+                accentColor="#ef4444"
             />
 
             <PurchaseReturnForm open={formOpen} onOpenChange={setFormOpen} initial={editing} mode={mode} />

@@ -164,6 +164,7 @@ export default function WarehousesPage() {
                 searchKeys={["warehouseName", "warehouseCode", "city", "state", "managerName"]}
                 pageSize={10}
                 emptyMessage="No warehouses yet. Click 'Add Warehouse' to register one."
+                onRowClick={(row) => setViewing(row)}
                 actions={(row) => (
                     <RowActions
                         onView={() => setViewing(row)}
@@ -182,26 +183,51 @@ export default function WarehousesPage() {
                 description={viewing ? `Code ${viewing.warehouseCode}` : undefined}
                 icon={<Warehouse className="w-5 h-5" />}
                 hideFooter
-                width="md"
+                width="lg"
                 accentColor="#0ea5e9"
             >
                 {viewing && (
-                    <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-[13px]">
-                        <Cell label="Status" value={<StatusBadge status={viewing.status} />} />
-                        <Cell label="Manager" value={viewing.managerName} />
-                        <Cell label="Manager Contact" value={viewing.contact} />
-                        <Cell label="City" value={viewing.city} />
-                        <Cell label="State" value={viewing.state} />
-                        <Cell label="Country" value={viewing.country} />
-                        <Cell label="Pincode" value={viewing.pincode} />
-                        <Cell label="Capacity" value={viewing.storageCapacity.toLocaleString()} />
-                        <Cell label="Current Utilization" value={`${viewing.currentUtilization.toLocaleString()} (${utilizationPct(viewing)}%)`} />
-                        <Cell label="Created" value={viewing.createdAt} />
-                        <div className="col-span-2">
-                            <dt className="text-[11.5px] uppercase tracking-wide font-semibold text-[#94A3B8]">Address</dt>
-                            <dd className="mt-0.5 text-[13px] text-[#0F172A] font-medium whitespace-pre-wrap">{viewing.address}</dd>
+                    <div className="space-y-5">
+                        <Section title="Basic Information">
+                            <Cell label="Warehouse Name" value={viewing.warehouseName} />
+                            <Cell label="Warehouse Code" value={<span className="font-mono">{viewing.warehouseCode}</span>} />
+                            <Cell label="Status" value={<StatusBadge status={viewing.status} />} />
+                            <Cell label="Created" value={viewing.createdAt} />
+                        </Section>
+
+                        <Section title="Location & Address">
+                            <div className="col-span-2">
+                                <dt className="text-[11.5px] uppercase tracking-wide font-semibold text-[#94A3B8]">Address</dt>
+                                <dd className="mt-0.5 text-[13px] text-[#0F172A] font-medium whitespace-pre-wrap">{viewing.address}</dd>
+                            </div>
+                            <Cell label="City" value={viewing.city} />
+                            <Cell label="State" value={viewing.state} />
+                            <Cell label="Country" value={viewing.country} />
+                            <Cell label="Pincode" value={viewing.pincode} />
+                        </Section>
+
+                        <Section title="Manager">
+                            <Cell label="Manager Name" value={viewing.managerName} />
+                            <Cell label="Manager Contact" value={viewing.contact} />
+                        </Section>
+
+                        <div>
+                            <h4 className="text-[12px] font-semibold uppercase tracking-wide text-[#64748B] mb-2">Capacity & Utilization</h4>
+                            <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-[13px]">
+                                <Cell label="Storage Capacity" value={<span className="tabular-nums">{viewing.storageCapacity.toLocaleString()} units</span>} />
+                                <Cell label="Current Utilization" value={<span className="tabular-nums">{viewing.currentUtilization.toLocaleString()} units</span>} />
+                                <Cell label="Available Space" value={<span className="tabular-nums">{(viewing.storageCapacity - viewing.currentUtilization).toLocaleString()} units</span>} />
+                                <Cell label="Utilization %" value={<span className="tabular-nums font-semibold">{utilizationPct(viewing)}%</span>} />
+                                <div className="col-span-2 mt-1">
+                                    <div className="flex items-center justify-between text-[11.5px] text-[#64748B] mb-1">
+                                        <span>Utilization</span>
+                                        <span className="font-semibold tabular-nums text-[#0F172A]">{utilizationPct(viewing)}%</span>
+                                    </div>
+                                    <Progress value={utilizationPct(viewing)} className="h-2" />
+                                </div>
+                            </div>
                         </div>
-                    </dl>
+                    </div>
                 )}
             </SideFormSheet>
 
@@ -212,6 +238,15 @@ export default function WarehousesPage() {
                 itemLabel={deleting ? `${deleting.warehouseName} (${deleting.warehouseCode})` : ""}
                 onConfirm={confirmDelete}
             />
+        </div>
+    )
+}
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+    return (
+        <div>
+            <h4 className="text-[12px] font-semibold uppercase tracking-wide text-[#64748B] mb-2">{title}</h4>
+            <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-[13px]">{children}</dl>
         </div>
     )
 }

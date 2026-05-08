@@ -1,13 +1,14 @@
 "use client"
 
 import * as React from "react"
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import { Download, TrendingUp } from "lucide-react"
 import { Button } from "@/shared/components/ui/button"
 import { useToast } from "@/shared/components/ui/use-toast"
 
 import { DataTable, type DataTableColumn } from "@/shared/components/scm/shared/DataTable"
 import { StatusBadge } from "@/shared/components/scm/shared/StatusBadge"
+import { RowDetailSheet } from "@/shared/components/scm/shared/RowDetailSheet"
 import { useScmProductsStore, type ScmProduct } from "@/shared/data/scm/scm-products-store"
 
 interface DemandRow extends ScmProduct {
@@ -26,6 +27,7 @@ const computeRisk = (current: number, predicted: number): DemandRow["riskLevel"]
 export default function ProductDemandPage() {
     const { toast } = useToast()
     const products = useScmProductsStore((s) => s.products)
+    const [viewing, setViewing] = useState<DemandRow | null>(null)
 
     const rows: DemandRow[] = useMemo(
         () => products.map((p) => {
@@ -87,6 +89,17 @@ export default function ProductDemandPage() {
                 searchKeys={["productName", "sku", "category"]}
                 pageSize={15}
                 emptyMessage="No products to forecast."
+                onRowClick={(row) => setViewing(row)}
+            />
+
+            <RowDetailSheet
+                row={viewing}
+                columns={columns}
+                onOpenChange={(o) => !o && setViewing(null)}
+                title={(r) => r.productName}
+                description={(r) => `${r.sku} · ${r.category}`}
+                icon={<TrendingUp className="w-5 h-5" />}
+                accentColor="#8b5cf6"
             />
         </div>
     )

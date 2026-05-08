@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { useMemo, useState } from "react"
-import { Download, Filter } from "lucide-react"
+import { Download, Filter, Receipt } from "lucide-react"
 import { Button } from "@/shared/components/ui/button"
 import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -12,6 +12,7 @@ import { useToast } from "@/shared/components/ui/use-toast"
 import { DataTable, type DataTableColumn } from "@/shared/components/scm/shared/DataTable"
 import { StatusBadge } from "@/shared/components/scm/shared/StatusBadge"
 import { RowActions } from "@/shared/components/scm/shared/RowActions"
+import { RowDetailSheet } from "@/shared/components/scm/shared/RowDetailSheet"
 import { useScmReturnsStore, type ScmCustomerReturn } from "@/shared/data/scm/scm-returns-store"
 
 const formatINR = (n: number) =>
@@ -25,6 +26,7 @@ export default function RefundReplacementStatusPage() {
     const updateReturn = useScmReturnsStore((s) => s.updateCustomerReturn)
 
     const [filter, setFilter] = useState<StatusFilter>("all")
+    const [viewing, setViewing] = useState<ScmCustomerReturn | null>(null)
 
     const filtered = useMemo(() => {
         if (filter === "all") return customerReturns
@@ -110,6 +112,7 @@ export default function RefundReplacementStatusPage() {
                 searchKeys={["returnId", "orderNumber", "customerName", "productName"]}
                 pageSize={15}
                 emptyMessage="No returns match the filter."
+                onRowClick={(row) => setViewing(row)}
                 actions={(row) => (
                     <RowActions
                         extraItems={
@@ -124,6 +127,16 @@ export default function RefundReplacementStatusPage() {
                         }
                     />
                 )}
+            />
+
+            <RowDetailSheet
+                row={viewing}
+                columns={columns}
+                onOpenChange={(o) => !o && setViewing(null)}
+                title={(r) => r.returnId}
+                description={(r) => `${r.customerName} · Order ${r.orderNumber}`}
+                icon={<Receipt className="w-5 h-5" />}
+                accentColor="#10b981"
             />
         </div>
     )

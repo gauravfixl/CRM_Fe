@@ -1,13 +1,14 @@
 "use client"
 
 import * as React from "react"
-import { useMemo } from "react"
-import { Download, AlertTriangle } from "lucide-react"
+import { useMemo, useState } from "react"
+import { Download, AlertTriangle, Hash } from "lucide-react"
 import { Button } from "@/shared/components/ui/button"
 import { useToast } from "@/shared/components/ui/use-toast"
 
 import { DataTable, type DataTableColumn } from "@/shared/components/scm/shared/DataTable"
 import { StatusBadge } from "@/shared/components/scm/shared/StatusBadge"
+import { RowDetailSheet } from "@/shared/components/scm/shared/RowDetailSheet"
 import { useScmStockMovementsStore } from "@/shared/data/scm/scm-stock-movements-store"
 
 interface BatchRow {
@@ -33,6 +34,7 @@ const addDays = (d: string, days: number) => {
 export default function BatchSerialTrackingPage() {
     const { toast } = useToast()
     const movements = useScmStockMovementsStore((s) => s.movements)
+    const [viewing, setViewing] = useState<BatchRow | null>(null)
 
     const rows: BatchRow[] = useMemo(() => {
         // Show all stock-in movements that have batch or serial info, plus a few synthesized rows for completeness
@@ -145,6 +147,17 @@ export default function BatchSerialTrackingPage() {
                 searchKeys={["productName", "sku", "batchNumber", "serialNumber", "warehouse"]}
                 pageSize={15}
                 emptyMessage="No tracked batches yet."
+                onRowClick={(row) => setViewing(row)}
+            />
+
+            <RowDetailSheet
+                row={viewing}
+                columns={columns}
+                onOpenChange={(o) => !o && setViewing(null)}
+                title={(r) => r.productName}
+                description={(r) => `Batch ${r.batchNumber}`}
+                icon={<Hash className="w-5 h-5" />}
+                accentColor="#10b981"
             />
         </div>
     )

@@ -14,6 +14,7 @@ import { useToast } from "@/shared/components/ui/use-toast"
 import { DataTable, type DataTableColumn } from "@/shared/components/scm/shared/DataTable"
 import { StatusBadge } from "@/shared/components/scm/shared/StatusBadge"
 import { RowActions, DeleteConfirmDialog } from "@/shared/components/scm/shared/RowActions"
+import { RowDetailSheet } from "@/shared/components/scm/shared/RowDetailSheet"
 import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet"
 import { useScmVendorExtraStore, type ScmVendorCategory } from "@/shared/data/scm/scm-vendor-extra-store"
 
@@ -35,6 +36,7 @@ export default function VendorCategoriesPage() {
     const [touched, setTouched] = useState<Record<string, boolean>>({})
     const [deleting, setDeleting] = useState<ScmVendorCategory | null>(null)
     const [submitting, setSubmitting] = useState(false)
+    const [viewing, setViewing] = useState<ScmVendorCategory | null>(null)
 
     useEffect(() => {
         if (!formOpen) return
@@ -105,9 +107,20 @@ export default function VendorCategoriesPage() {
                 searchKeys={["name", "description"]}
                 pageSize={10}
                 emptyMessage="No categories yet."
+                onRowClick={(row) => setViewing(row)}
                 actions={(row) => (
                     <RowActions onEdit={() => { setEditing(row); setMode("edit"); setFormOpen(true) }} onDelete={() => setDeleting(row)} />
                 )}
+            />
+
+            <RowDetailSheet
+                row={viewing}
+                columns={columns}
+                onOpenChange={(o) => !o && setViewing(null)}
+                title={(r) => r.name}
+                description="Vendor category"
+                icon={<Tag className="w-5 h-5" />}
+                accentColor="#8b5cf6"
             />
 
             <SideFormSheet

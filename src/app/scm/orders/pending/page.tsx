@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import { Download, Clock } from "lucide-react"
 import { Button } from "@/shared/components/ui/button"
 import { useToast } from "@/shared/components/ui/use-toast"
@@ -9,6 +9,7 @@ import { useToast } from "@/shared/components/ui/use-toast"
 import { DataTable, type DataTableColumn } from "@/shared/components/scm/shared/DataTable"
 import { StatusBadge } from "@/shared/components/scm/shared/StatusBadge"
 import { RowActions } from "@/shared/components/scm/shared/RowActions"
+import { RowDetailSheet } from "@/shared/components/scm/shared/RowDetailSheet"
 import { useScmSalesOrdersStore, type ScmSalesOrder } from "@/shared/data/scm/scm-sales-orders-store"
 
 const formatINR = (n: number) =>
@@ -26,6 +27,7 @@ const REASON_OF_PENDING = (so: ScmSalesOrder): string => {
 export default function PendingOrdersPage() {
     const { toast } = useToast()
     const orders = useScmSalesOrdersStore((s) => s.salesOrders)
+    const [viewing, setViewing] = useState<ScmSalesOrder | null>(null)
 
     const filtered = useMemo(
         () => orders.filter((o) => o.status === "Draft" || ["Pending", "Awaiting Stock", "Picked", "Packed"].includes(o.fulfillmentStatus)),
@@ -80,7 +82,18 @@ export default function PendingOrdersPage() {
                 searchKeys={["orderNumber", "customerName", "warehouse"]}
                 pageSize={15}
                 emptyMessage="No pending orders. All caught up."
+                onRowClick={(row) => setViewing(row)}
                 actions={() => <RowActions />}
+            />
+
+            <RowDetailSheet
+                row={viewing}
+                columns={columns}
+                onOpenChange={(o) => !o && setViewing(null)}
+                title={(r) => r.orderNumber}
+                description={(r) => r.customerName}
+                icon={<Clock className="w-5 h-5" />}
+                accentColor="#f59e0b"
             />
         </div>
     )

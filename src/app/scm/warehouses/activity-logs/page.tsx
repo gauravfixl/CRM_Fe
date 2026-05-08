@@ -158,7 +158,7 @@ export default function ActivityLogsPage() {
             </div>
 
             {/* Filters */}
-            <div className="bg-white rounded-xl border border-[#EEF1F6] shadow-sm p-3 flex items-center gap-3 flex-wrap">
+            <div className="bg-white rounded-none border border-[#EEF1F6] shadow-sm p-3 flex items-center gap-3 flex-wrap">
                 <div className="relative flex-1 min-w-[200px] max-w-sm">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-[#94A3B8]" />
                     <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search logs..." className="pl-8 h-9 border-[#E5E7EB] text-[13px]" />
@@ -189,11 +189,11 @@ export default function ActivityLogsPage() {
 
             {/* Timeline */}
             {grouped.length === 0 ? (
-                <div className="bg-white rounded-xl border border-[#EEF1F6] shadow-sm p-12 text-center">
+                <div className="bg-white rounded-none border border-[#EEF1F6] shadow-sm p-12 text-center">
                     <p className="text-[13px] text-[#64748B]">No activity logs match the current filters.</p>
                 </div>
             ) : (
-                <div className="bg-white rounded-xl border border-[#EEF1F6] shadow-sm p-5">
+                <div className="bg-white rounded-none border border-[#EEF1F6] shadow-sm p-5">
                     <div className="space-y-6">
                         {grouped.map(([date, logs]) => (
                             <div key={date}>
@@ -224,7 +224,7 @@ export default function ActivityLogsPage() {
                                                 {/* Entry card */}
                                                 <div
                                                     className={cn(
-                                                        "rounded-lg border border-[#EEF1F6] p-3 hover:shadow-sm transition-all border-l-[3px]"
+                                                        "rounded-none border border-[#EEF1F6] p-3 hover:shadow-sm transition-all border-l-[3px]"
                                                     )}
                                                     style={{ borderLeftColor: meta.color, backgroundColor: meta.bg }}
                                                 >
@@ -265,7 +265,7 @@ export default function ActivityLogsPage() {
 function Stat({ label, value, color, icon }: { label: string; value: number; color: string; icon: React.ReactNode }) {
     return (
         <div
-            className="rounded-xl border shadow-sm p-4 flex items-center justify-between gap-2 transition-all duration-200"
+            className="rounded-none border shadow-sm p-4 flex items-center justify-between gap-2 transition-all duration-200"
             style={{
                 background: `linear-gradient(135deg, ${color}14 0%, ${color}06 45%, #ffffff 100%)`,
                 borderColor: `${color}33`,
@@ -275,7 +275,7 @@ function Stat({ label, value, color, icon }: { label: string; value: number; col
                 <p className="text-[11.5px] font-medium text-[#64748B] truncate">{label}</p>
                 <p className="text-[20px] font-semibold mt-0.5 tabular-nums leading-tight" style={{ color }}>{value}</p>
             </div>
-            <div className="w-9 h-9 rounded-lg flex items-center justify-center text-white shrink-0" style={{ backgroundColor: color, boxShadow: `0 4px 12px ${color}33` }}>
+            <div className="w-9 h-9 rounded-none flex items-center justify-center text-white shrink-0" style={{ backgroundColor: color, boxShadow: `0 4px 12px ${color}33` }}>
                 {icon}
             </div>
         </div>

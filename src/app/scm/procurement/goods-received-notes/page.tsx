@@ -2,13 +2,14 @@
 
 import * as React from "react"
 import { useMemo, useState } from "react"
-import { Plus, Download } from "lucide-react"
+import { Plus, Download, ClipboardCheck } from "lucide-react"
 import { Button } from "@/shared/components/ui/button"
 import { useToast } from "@/shared/components/ui/use-toast"
 
 import { DataTable, type DataTableColumn } from "@/shared/components/scm/shared/DataTable"
 import { StatusBadge } from "@/shared/components/scm/shared/StatusBadge"
 import { RowActions, DeleteConfirmDialog } from "@/shared/components/scm/shared/RowActions"
+import { RowDetailSheet } from "@/shared/components/scm/shared/RowDetailSheet"
 import { GRNForm } from "@/shared/components/scm/forms/GRNForm"
 import { useScmProcurementExtraStore, type ScmGRN } from "@/shared/data/scm/scm-procurement-extra-store"
 
@@ -21,6 +22,7 @@ export default function GRNPage() {
     const [mode, setMode] = useState<"create" | "edit">("create")
     const [editing, setEditing] = useState<ScmGRN | null>(null)
     const [deleting, setDeleting] = useState<ScmGRN | null>(null)
+    const [viewing, setViewing] = useState<ScmGRN | null>(null)
 
     const columns: DataTableColumn<ScmGRN>[] = useMemo(
         () => [
@@ -78,7 +80,18 @@ export default function GRNPage() {
                 searchKeys={["grnNumber", "poNumber", "vendorName", "warehouse"]}
                 pageSize={10}
                 emptyMessage="No GRNs yet."
+                onRowClick={(row) => setViewing(row)}
                 actions={(row) => <RowActions onEdit={() => handleEdit(row)} onDelete={() => setDeleting(row)} />}
+            />
+
+            <RowDetailSheet
+                row={viewing}
+                columns={columns}
+                onOpenChange={(o) => !o && setViewing(null)}
+                title={(r) => r.grnNumber}
+                description={(r) => `PO ${r.poNumber} · ${r.vendorName}`}
+                icon={<ClipboardCheck className="w-5 h-5" />}
+                accentColor="#10b981"
             />
 
             <GRNForm open={formOpen} onOpenChange={setFormOpen} initial={editing} mode={mode} />

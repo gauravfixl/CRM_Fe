@@ -9,6 +9,7 @@ import { useToast } from "@/shared/components/ui/use-toast"
 import { DataTable, type DataTableColumn } from "@/shared/components/scm/shared/DataTable"
 import { StatusBadge } from "@/shared/components/scm/shared/StatusBadge"
 import { RowActions, DeleteConfirmDialog } from "@/shared/components/scm/shared/RowActions"
+import { RowDetailSheet } from "@/shared/components/scm/shared/RowDetailSheet"
 import { DamageForm } from "@/shared/components/scm/forms/DamageForm"
 import { useScmReturnsStore, type ScmDamageRecord } from "@/shared/data/scm/scm-returns-store"
 
@@ -21,6 +22,7 @@ export default function DamagedGoodsPage() {
     const [mode, setMode] = useState<"create" | "edit">("create")
     const [editing, setEditing] = useState<ScmDamageRecord | null>(null)
     const [deleting, setDeleting] = useState<ScmDamageRecord | null>(null)
+    const [viewing, setViewing] = useState<ScmDamageRecord | null>(null)
 
     const columns: DataTableColumn<ScmDamageRecord>[] = useMemo(
         () => [
@@ -81,7 +83,18 @@ export default function DamagedGoodsPage() {
                 searchKeys={["damageId", "productName", "sku", "warehouse", "damageReason", "reportedBy"]}
                 pageSize={10}
                 emptyMessage="No damaged goods reported."
+                onRowClick={(row) => setViewing(row)}
                 actions={(row) => <RowActions onEdit={() => handleEdit(row)} onDelete={() => setDeleting(row)} />}
+            />
+
+            <RowDetailSheet
+                row={viewing}
+                columns={columns}
+                onOpenChange={(o) => !o && setViewing(null)}
+                title={(r) => r.damageId}
+                description={(r) => `${r.productName} · ${r.warehouse}`}
+                icon={<AlertTriangle className="w-5 h-5" />}
+                accentColor="#ef4444"
             />
 
             <DamageForm open={formOpen} onOpenChange={setFormOpen} initial={editing} mode={mode} />

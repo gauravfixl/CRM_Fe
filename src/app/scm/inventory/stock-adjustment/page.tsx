@@ -2,13 +2,14 @@
 
 import * as React from "react"
 import { useMemo, useState } from "react"
-import { Plus, Download } from "lucide-react"
+import { Plus, Download, ClipboardCheck } from "lucide-react"
 import { Button } from "@/shared/components/ui/button"
 import { useToast } from "@/shared/components/ui/use-toast"
 
 import { DataTable, type DataTableColumn } from "@/shared/components/scm/shared/DataTable"
 import { StatusBadge } from "@/shared/components/scm/shared/StatusBadge"
 import { RowActions, DeleteConfirmDialog } from "@/shared/components/scm/shared/RowActions"
+import { RowDetailSheet } from "@/shared/components/scm/shared/RowDetailSheet"
 import { StockAdjustmentForm } from "@/shared/components/scm/forms/StockAdjustmentForm"
 import { useScmWarehouseOpsStore, type ScmAdjustment } from "@/shared/data/scm/scm-warehouse-ops-store"
 
@@ -21,6 +22,7 @@ export default function StockAdjustmentPage() {
     const [mode, setMode] = useState<"create" | "edit">("create")
     const [editing, setEditing] = useState<ScmAdjustment | null>(null)
     const [deleting, setDeleting] = useState<ScmAdjustment | null>(null)
+    const [viewing, setViewing] = useState<ScmAdjustment | null>(null)
 
     const columns: DataTableColumn<ScmAdjustment>[] = useMemo(
         () => [
@@ -92,9 +94,20 @@ export default function StockAdjustmentPage() {
                 searchKeys={["adjustmentNumber", "productName", "sku", "warehouse", "reason", "approvedBy"]}
                 pageSize={10}
                 emptyMessage="No adjustments yet."
+                onRowClick={(row) => setViewing(row)}
                 actions={(row) => (
                     <RowActions onEdit={() => handleEdit(row)} onDelete={() => setDeleting(row)} />
                 )}
+            />
+
+            <RowDetailSheet
+                row={viewing}
+                columns={columns}
+                onOpenChange={(o) => !o && setViewing(null)}
+                title={(r) => r.adjustmentNumber}
+                description={(r) => `${r.productName} · ${r.adjustmentDate}`}
+                icon={<ClipboardCheck className="w-5 h-5" />}
+                accentColor="#f59e0b"
             />
 
             <StockAdjustmentForm open={formOpen} onOpenChange={setFormOpen} initial={editing} mode={mode} />
