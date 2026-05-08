@@ -39,7 +39,7 @@ import { Button } from "@/shared/components/ui/button"
 import { Badge } from "@/shared/components/ui/badge"
 import { useRouter } from 'next/navigation'
 import { useToast } from "@/shared/components/ui/use-toast"
-import AddLeadDialog from '@/shared/components/custom/leads/AddLeadDialog'
+import AddLeadSideForm from '@/shared/components/custom/leads/AddLeadSideForm'
 import { Progress } from "@/shared/components/ui/progress"
 import { motion } from 'framer-motion'
 import { axiosInstance as axios } from "@/lib/axios"
@@ -291,7 +291,7 @@ export default function UniversalLeadDashboard() {
     }
 
     return (
-        <div className="space-y-6 pb-16 animate-in fade-in duration-700">
+        <div className="space-y-6 pb-16 animate-in fade-in duration-700" style={{ zoom: 0.9 }}>
             {/* Header Section */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
@@ -307,7 +307,7 @@ export default function UniversalLeadDashboard() {
                     >
                         <Download className="h-4 w-4 mr-2" /> Audit Report
                     </Button>
-                    <AddLeadDialog />
+                    <AddLeadSideForm />
                 </div>
             </div>
 
@@ -330,14 +330,14 @@ export default function UniversalLeadDashboard() {
                     >
                         <Card
                             onClick={() => router.push(stat.path)}
-                            className={`relative border border-${stat.color}-200 shadow-sm bg-${stat.color}-50 hover:bg-${stat.color}-100 transition-all duration-300 group cursor-pointer overflow-hidden active:scale-95 h-full`}
+                            className={`rounded-none relative border border-${stat.color}-200 shadow-sm bg-${stat.color}-50 hover:bg-${stat.color}-100 transition-all duration-300 group cursor-pointer overflow-hidden active:scale-95 h-full`}
                         >
                             <CardContent className="p-4 relative z-10">
                                 <div className="flex items-center justify-between mb-3">
-                                    <div className={`p-2 rounded-lg bg-white border border-${stat.color}-100 text-${stat.color}-600 shadow-sm group-hover:scale-110 group-hover:rotate-3 transition-all duration-300`}>
+                                    <div className={`p-2 rounded-none bg-white border border-${stat.color}-100 text-${stat.color}-600 shadow-sm group-hover:scale-110 group-hover:rotate-3 transition-all duration-300`}>
                                         <stat.icon className="h-4 w-4" />
                                     </div>
-                                    <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/80 border border-${stat.color}-100/50`}>
+                                    <div className={`flex items-center gap-1 px-2 py-0.5 rounded-none bg-white/80 border border-${stat.color}-100/50`}>
                                         {stat.trend === 'up' ?
                                             <ArrowUpRight className={`h-3 w-3 ${stat.title.includes('Lost') ? 'text-rose-600' : 'text-emerald-600'}`} /> :
                                             <ArrowDownRight className={`h-3 w-3 ${stat.title.includes('Lost') ? 'text-emerald-600' : 'text-rose-600'}`} />
@@ -367,7 +367,10 @@ export default function UniversalLeadDashboard() {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
                 {/* 3. Funnel Snapshot */}
-                <Card className="lg:col-span-8 border-none shadow-sm bg-white overflow-hidden">
+                <Card
+                    className="rounded-none lg:col-span-8 border-none shadow-sm overflow-hidden"
+                    style={{ background: "linear-gradient(135deg, #6366f114 0%, #6366f106 45%, #ffffff 100%)" }}
+                >
                     <CardHeader className="flex flex-row items-center justify-between pb-2 border-b border-slate-50">
                         <div>
                             <CardTitle className="text-[15px] font-semibold text-slate-800">Pipeline Funnel Analysis</CardTitle>
@@ -396,7 +399,7 @@ export default function UniversalLeadDashboard() {
                                         </div>
                                     </div>
                                     <div className="flex-1">
-                                        <div className="relative h-9 w-full bg-slate-50/50 rounded-md overflow-hidden">
+                                        <div className="relative h-9 w-full bg-slate-50/50 rounded-none overflow-hidden">
                                             <motion.div
                                                 initial={{ width: 0 }}
                                                 whileInView={{ width: item.width.replace('w-', '').replace('[', '').replace(']', '').replace('full', '100%') }}
@@ -438,7 +441,10 @@ export default function UniversalLeadDashboard() {
                 </Card>
 
                 {/* 4. SLA & Assignment Health */}
-                <Card className="lg:col-span-4 border-none shadow-sm bg-white overflow-hidden">
+                <Card
+                    className="rounded-none lg:col-span-4 border-none shadow-sm overflow-hidden"
+                    style={{ background: "linear-gradient(135deg, #06b6d414 0%, #06b6d406 45%, #ffffff 100%)" }}
+                >
                     <CardHeader className="pb-4 border-b border-slate-50">
                         <CardTitle className="text-[15px] font-semibold text-slate-800 flex items-center gap-2">
                             <Repeat className="h-4 w-4 text-cyan-500" /> Operational Discipline
@@ -461,7 +467,7 @@ export default function UniversalLeadDashboard() {
                                         <p className="text-[13px] font-medium text-slate-700">{item.label}</p>
                                         <p className="text-[11px] font-normal text-slate-400">{item.desc}</p>
                                     </div>
-                                    <div className={`h-12 w-12 rounded-xl flex items-center justify-center font-bold text-lg shadow-sm
+                                    <div className={`h-12 w-12 rounded-none flex items-center justify-center font-bold text-lg shadow-sm
                                         ${item.status === 'critical' ? 'bg-rose-100 text-rose-600' : item.status === 'warning' ? 'bg-amber-100 text-amber-600' : 'bg-orange-100 text-orange-600'}
                                         group-hover:scale-110 group-hover:rotate-6 transition-transform`}
                                     >
@@ -487,7 +493,10 @@ export default function UniversalLeadDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
                 {/* 2. Lead Capture & Source Snapshot */}
-                <Card className="border-none shadow-sm bg-white">
+                <Card
+                    className="rounded-none border-none shadow-sm"
+                    style={{ background: "linear-gradient(135deg, #6366f114 0%, #6366f106 45%, #ffffff 100%)" }}
+                >
                     <CardHeader className="pb-2">
                         <CardTitle className="text-[14px] font-semibold text-slate-800 flex items-center gap-2">
                             <PieChart className="h-4 w-4 text-indigo-500" /> Acquisition Source
@@ -500,13 +509,13 @@ export default function UniversalLeadDashboard() {
                                     <span className="font-bold text-slate-700">{source.label}</span>
                                     <span className="font-bold text-slate-400">{source.count} <span className="text-slate-900 ml-1">({source.percentage}%)</span></span>
                                 </div>
-                                <div className="h-1.5 w-full bg-slate-50 rounded-full overflow-hidden">
+                                <div className="h-1.5 w-full bg-slate-50 rounded-none overflow-hidden">
                                     <motion.div
                                         initial={{ width: 0 }}
                                         whileInView={{ width: `${source.percentage}%` }}
                                         viewport={{ once: true }}
                                         transition={{ duration: 1, ease: "easeOut", delay: i * 0.1 }}
-                                        className={`h-full ${source.color} rounded-full`}
+                                        className={`h-full ${source.color} rounded-none`}
                                     />
                                 </div>
                             </div>
@@ -515,7 +524,10 @@ export default function UniversalLeadDashboard() {
                 </Card>
 
                 {/* 5. Activity & Engagement Snapshot */}
-                <Card className="border-none shadow-sm bg-white">
+                <Card
+                    className="rounded-none border-none shadow-sm"
+                    style={{ background: "linear-gradient(135deg, #10b98114 0%, #10b98106 45%, #ffffff 100%)" }}
+                >
                     <CardHeader className="pb-2">
                         <CardTitle className="text-[14px] font-semibold text-slate-800 flex items-center gap-2">
                             <Activity className="h-4 w-4 text-emerald-500" /> Activity Discipline
@@ -525,9 +537,9 @@ export default function UniversalLeadDashboard() {
                         <div className="grid grid-cols-2 gap-3">
                             <div
                                 onClick={() => router.push('/lead-management/activities/calls')}
-                                className="p-3 rounded-xl bg-blue-50/50 border border-blue-100 flex items-center gap-3 cursor-pointer hover:bg-blue-100/50 transition-colors active:scale-95"
+                                className="p-3 rounded-none bg-blue-50/50 border border-blue-100 flex items-center gap-3 cursor-pointer hover:bg-blue-100/50 transition-colors active:scale-95"
                             >
-                                <div className="h-8 w-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center">
+                                <div className="h-8 w-8 rounded-none bg-blue-100 text-blue-600 flex items-center justify-center">
                                     <Phone className="h-4 w-4" />
                                 </div>
                                 <div>
@@ -537,9 +549,9 @@ export default function UniversalLeadDashboard() {
                             </div>
                             <div
                                 onClick={() => router.push('/lead-management/activities/emails')}
-                                className="p-3 rounded-xl bg-purple-50/50 border border-purple-100 flex items-center gap-3 cursor-pointer hover:bg-purple-100/50 transition-colors active:scale-95"
+                                className="p-3 rounded-none bg-purple-50/50 border border-purple-100 flex items-center gap-3 cursor-pointer hover:bg-purple-100/50 transition-colors active:scale-95"
                             >
-                                <div className="h-8 w-8 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center">
+                                <div className="h-8 w-8 rounded-none bg-purple-100 text-purple-600 flex items-center justify-center">
                                     <Mail className="h-4 w-4" />
                                 </div>
                                 <div>
@@ -549,9 +561,9 @@ export default function UniversalLeadDashboard() {
                             </div>
                             <div
                                 onClick={() => router.push('/lead-management/activities/meetings')}
-                                className="p-3 rounded-xl bg-amber-50/50 border border-amber-100 flex items-center gap-3 cursor-pointer hover:bg-amber-100/50 transition-colors active:scale-95"
+                                className="p-3 rounded-none bg-amber-50/50 border border-amber-100 flex items-center gap-3 cursor-pointer hover:bg-amber-100/50 transition-colors active:scale-95"
                             >
-                                <div className="h-8 w-8 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center">
+                                <div className="h-8 w-8 rounded-none bg-amber-100 text-amber-600 flex items-center justify-center">
                                     <Calendar className="h-4 w-4" />
                                 </div>
                                 <div>
@@ -561,9 +573,9 @@ export default function UniversalLeadDashboard() {
                             </div>
                             <div
                                 onClick={() => router.push('/lead-management/activities/overdue')}
-                                className="p-3 rounded-xl bg-rose-50/50 border border-rose-100 flex items-center gap-3 cursor-pointer hover:bg-rose-100/50 transition-colors active:scale-95"
+                                className="p-3 rounded-none bg-rose-50/50 border border-rose-100 flex items-center gap-3 cursor-pointer hover:bg-rose-100/50 transition-colors active:scale-95"
                             >
-                                <div className="h-8 w-8 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center">
+                                <div className="h-8 w-8 rounded-none bg-rose-100 text-rose-600 flex items-center justify-center">
                                     <History className="h-4 w-4" />
                                 </div>
                                 <div>
@@ -583,7 +595,10 @@ export default function UniversalLeadDashboard() {
                 </Card>
 
                 {/* 6. Lead Quality & Scoring Overview */}
-                <Card className="border-none shadow-sm bg-white">
+                <Card
+                    className="rounded-none border-none shadow-sm"
+                    style={{ background: "linear-gradient(135deg, #6366f114 0%, #6366f106 45%, #ffffff 100%)" }}
+                >
                     <CardHeader className="pb-2">
                         <CardTitle className="text-[14px] font-semibold text-slate-800 flex items-center gap-2">
                             <ShieldCheck className="h-4 w-4 text-indigo-500" /> Quality & Scoring
@@ -596,13 +611,13 @@ export default function UniversalLeadDashboard() {
                                     <span>HIGH SCORE</span>
                                     <span>65%</span>
                                 </div>
-                                <div className="h-3 w-full bg-slate-50 rounded-full overflow-hidden">
+                                <div className="h-3 w-full bg-slate-50 rounded-none overflow-hidden">
                                     <motion.div
                                         initial={{ width: 0 }}
                                         whileInView={{ width: "65%" }}
                                         viewport={{ once: true }}
                                         transition={{ duration: 1.5, ease: "circOut" }}
-                                        className="h-full bg-emerald-500 rounded-full"
+                                        className="h-full bg-emerald-500 rounded-none"
                                     />
                                 </div>
                             </div>
@@ -611,13 +626,13 @@ export default function UniversalLeadDashboard() {
                                     <span>MQL COUNT</span>
                                     <span>425</span>
                                 </div>
-                                <div className="h-3 w-full bg-slate-50 rounded-full overflow-hidden">
+                                <div className="h-3 w-full bg-slate-50 rounded-none overflow-hidden">
                                     <motion.div
                                         initial={{ width: 0 }}
                                         whileInView={{ width: "80%" }}
                                         viewport={{ once: true }}
                                         transition={{ duration: 1.5, ease: "circOut", delay: 0.2 }}
-                                        className="h-full bg-indigo-500 rounded-full"
+                                        className="h-full bg-indigo-500 rounded-none"
                                     />
                                 </div>
                             </div>
@@ -630,7 +645,7 @@ export default function UniversalLeadDashboard() {
                                 <div
                                     key={i}
                                     onClick={() => router.push(item.path)}
-                                    className="flex items-center justify-between p-3 rounded-lg border border-slate-50 group hover:border-indigo-100 hover:bg-indigo-50/30 transition-all cursor-pointer active:scale-95"
+                                    className="flex items-center justify-between p-3 rounded-none border border-slate-50 group hover:border-indigo-100 hover:bg-indigo-50/30 transition-all cursor-pointer active:scale-95"
                                 >
                                     <div className="space-y-0.5">
                                         <p className="text-[12px] font-bold text-slate-700">{item.label}</p>
@@ -644,7 +659,10 @@ export default function UniversalLeadDashboard() {
                 </Card>
 
                 {/* 7. Performance Snapshot */}
-                <Card className="border-none shadow-sm bg-white">
+                <Card
+                    className="rounded-none border-none shadow-sm"
+                    style={{ background: "linear-gradient(135deg, #3b82f614 0%, #3b82f606 45%, #ffffff 100%)" }}
+                >
                     <CardHeader className="pb-2 flex flex-row items-center justify-between">
                         <CardTitle className="text-[14px] font-semibold text-slate-800 flex items-center gap-2">
                             <Users className="h-4 w-4 text-blue-500" /> Rep Productivity
@@ -654,9 +672,9 @@ export default function UniversalLeadDashboard() {
                     <CardContent className="px-6 pb-6">
                         <div className="space-y-3">
                             {PERFORMANCE_LEADERBOARD.map((rep, i) => (
-                                <div key={i} className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 transition-all group">
+                                <div key={i} className="flex items-center justify-between p-3 rounded-none hover:bg-slate-50 transition-all group">
                                     <div className="flex items-center gap-3">
-                                        <div className="h-9 w-9 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[12px] font-bold text-slate-600 shadow-sm group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                                        <div className="h-9 w-9 rounded-none bg-slate-100 border border-slate-200 flex items-center justify-center text-[12px] font-bold text-slate-600 shadow-sm group-hover:bg-indigo-600 group-hover:text-white transition-colors">
                                             {rep.avatar}
                                         </div>
                                         <div>
@@ -679,14 +697,17 @@ export default function UniversalLeadDashboard() {
                 </Card>
 
                 {/* 8. Aging & Risk Indicators */}
-                <Card className="border-none shadow-sm bg-white">
+                <Card
+                    className="rounded-none border-none shadow-sm"
+                    style={{ background: "linear-gradient(135deg, #f9731614 0%, #f9731606 45%, #ffffff 100%)" }}
+                >
                     <CardHeader className="pb-2">
                         <CardTitle className="text-[14px] font-semibold text-slate-800 flex items-center gap-2">
                             <AlertTriangle className="h-4 w-4 text-orange-500" /> Pipeline Aging & Risk
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="px-6 pb-6">
-                        <div className="flex gap-1.5 h-4 mb-6 rounded-full overflow-hidden">
+                        <div className="flex gap-1.5 h-4 mb-6 rounded-none overflow-hidden">
                             {agingAnalysis.map((item, i) => (
                                 <div key={i} className={`h-full ${item.color}`} style={{ width: `${item.percentage}%` }} />
                             ))}
@@ -695,7 +716,7 @@ export default function UniversalLeadDashboard() {
                             {agingAnalysis.map((item, i) => (
                                 <div key={i} className="flex items-center justify-between">
                                     <div className="flex items-center gap-2.5">
-                                        <div className={`h-2.5 w-2.5 rounded-full ${item.color}`} />
+                                        <div className={`h-2.5 w-2.5 rounded-none ${item.color}`} />
                                         <p className="text-[13px] font-bold text-slate-700">{item.label}</p>
                                     </div>
                                     <div className="flex items-center gap-4">
@@ -709,7 +730,10 @@ export default function UniversalLeadDashboard() {
                 </Card>
 
                 {/* 10. Alerts Panel */}
-                <Card className="border-none shadow-sm bg-white overflow-hidden">
+                <Card
+                    className="rounded-none border-none shadow-sm overflow-hidden"
+                    style={{ background: "linear-gradient(135deg, #f59e0b14 0%, #f59e0b06 45%, #ffffff 100%)" }}
+                >
                     <CardHeader className="pb-2 flex flex-row items-center justify-between">
                         <CardTitle className="text-[14px] font-semibold text-slate-800 flex items-center gap-2">
                             <Zap className="h-4 w-4 text-amber-500" /> Critical System Alerts
@@ -750,9 +774,9 @@ export default function UniversalLeadDashboard() {
             </div>
 
             {/* 9. Conversion & Forecast Summary */}
-            <Card className="border border-indigo-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] bg-gradient-to-br from-indigo-50/50 via-white to-blue-50/50 overflow-hidden relative">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-100/40 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
-                <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-100/40 rounded-full blur-3xl -ml-20 -mb-20 pointer-events-none" />
+            <Card className="rounded-none border border-indigo-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] bg-gradient-to-br from-indigo-50/50 via-white to-blue-50/50 overflow-hidden relative">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-100/40 rounded-none blur-3xl -mr-20 -mt-20 pointer-events-none" />
+                <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-100/40 rounded-none blur-3xl -ml-20 -mb-20 pointer-events-none" />
 
                 <CardContent className="p-8 relative z-10">
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
@@ -767,8 +791,8 @@ export default function UniversalLeadDashboard() {
                                     <span>Target Progress</span>
                                     <span className="text-indigo-600">74%</span>
                                 </div>
-                                <div className="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden border border-slate-100">
-                                    <div className="h-full bg-gradient-to-r from-indigo-500 to-blue-500 rounded-full w-[74%] shadow-sm" />
+                                <div className="h-2.5 w-full bg-slate-100 rounded-none overflow-hidden border border-slate-100">
+                                    <div className="h-full bg-gradient-to-r from-indigo-500 to-blue-500 rounded-none w-[74%] shadow-sm" />
                                 </div>
                             </div>
                             <p className="text-[11px] text-slate-500 font-medium leading-tight">We are <span className="text-indigo-600 font-bold">$125k</span> away from hitting Q1 targets.</p>
@@ -778,7 +802,7 @@ export default function UniversalLeadDashboard() {
                                 <p className="text-[11px] font-bold text-slate-400 uppercase mb-1">Efficiency Ratio</p>
                                 <p className="text-xl font-bold text-slate-900">1:4.2 <span className="text-[12px] text-emerald-500 font-bold italic ml-1">Top 5%</span></p>
                             </div>
-                            <Button onClick={() => router.push('/lead-management/reports/executive')} className="bg-slate-900 hover:bg-indigo-600 text-white font-bold h-11 px-6 rounded-xl shadow-lg shadow-indigo-200 transition-all hover:scale-105 active:scale-95">
+                            <Button onClick={() => router.push('/lead-management/reports/executive')} className="bg-slate-900 hover:bg-indigo-600 text-white font-bold h-11 px-6 rounded-none shadow-lg shadow-indigo-200 transition-all hover:scale-105 active:scale-95">
                                 View Full Analytics Report
                             </Button>
                         </div>

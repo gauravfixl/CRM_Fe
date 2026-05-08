@@ -25,7 +25,7 @@ export default function LeadManagementLayout({ children }: { children: React.Rea
 
     return (
         <DashboardAccessGate dashboardPath="/lead-management" dashboardName="Lead Management">
-        <SidebarProvider style={{ "--sidebar-width": "16rem" } as React.CSSProperties}>
+        <SidebarProvider style={{ "--sidebar-width": "14.5rem" } as React.CSSProperties}>
             <div className="flex flex-col min-h-screen w-full bg-[#f8fafc] text-foreground font-outfit relative transition-all duration-300">
                 {/* 🚀 Global Top Loader */}
                 <AnimatePresence>

@@ -33,6 +33,12 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/sha
 import { useToast } from "@/shared/components/ui/use-toast"
 import { Progress } from "@/shared/components/ui/progress"
 import { Switch } from "@/shared/components/ui/switch"
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/shared/components/ui/dropdown-menu"
 
 // --- Mock Data: Nurture Sequences ---
 const NURTURE_SEQUENCES = [
