@@ -21,6 +21,8 @@ import {
   Users,
   ArrowRight,
   CheckCircle2,
+  Sparkles,
+  Copy,
 } from "lucide-react"
 import { useAuthStore } from "@/lib/useAuthStore"
 import { showError, showSuccess } from "@/utils/toast"
@@ -49,7 +51,25 @@ export default function SignInPage() {
   const [isOtpMode, setIsOtpMode] = useState(false)
   const [otpSent, setOtpSent] = useState(false)
   const [errors, setErrors] = useState<{ email?: string; password?: string; otp?: string }>({})
+  const [demoFilled, setDemoFilled] = useState(false)
   const router = useRouter()
+
+  const DEMO_EMAIL = "orgadmin@gmail.com"
+  const DEMO_PASSWORD = "Admin@123"
+
+  const fillDemoCredentials = () => {
+    if (isOtpMode) {
+      setIsOtpMode(false)
+      setOtpSent(false)
+      setOtp("")
+    }
+    setEmail(DEMO_EMAIL)
+    setPassword(DEMO_PASSWORD)
+    setErrors({})
+    setDemoFilled(true)
+    showSuccess("Demo credentials filled — click Sign In to continue")
+    setTimeout(() => setDemoFilled(false), 1500)
+  }
   const searchParams = useSearchParams()
   const redirectTo = searchParams.get("redirect")
   const login = useAuthStore((state) => state.login)
@@ -240,7 +260,7 @@ export default function SignInPage() {
           <span className="font-bold text-[15px] text-[#1A1A1A]">{orgName || "Cubicle ERP"}</span>
         </div>
 
-        <div className="signin-container w-full max-w-[420px]">
+        <div className="signin-container w-full max-w-[420px]" style={{ zoom: 0.9 }}>
           {/* Header */}
           <div className="text-center mb-8">
             <div
@@ -425,6 +445,55 @@ export default function SignInPage() {
                   Sign in with OTP
                 </>
               )}
+            </button>
+
+            {/* Demo Account Card — compact */}
+            <button
+              type="button"
+              onClick={fillDemoCredentials}
+              className="signin-demo mt-4 w-full rounded-xl border p-3 relative overflow-hidden transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 group flex items-center gap-3 text-left"
+              style={{
+                background: demoFilled
+                  ? "linear-gradient(135deg, rgba(16, 185, 129, 0.10) 0%, rgba(5, 150, 105, 0.06) 100%)"
+                  : "linear-gradient(135deg, rgba(139, 92, 246, 0.10) 0%, rgba(37, 99, 235, 0.06) 100%)",
+                borderColor: demoFilled ? "rgba(16, 185, 129, 0.30)" : "rgba(139, 92, 246, 0.30)",
+              }}
+            >
+              <div
+                className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 text-white shadow-sm"
+                style={{
+                  background: demoFilled
+                    ? "linear-gradient(135deg, #10b981, #059669)"
+                    : "linear-gradient(135deg, #8b5cf6, #2563eb)",
+                  boxShadow: demoFilled
+                    ? "0 4px 12px rgba(16, 185, 129, 0.30)"
+                    : "0 4px 12px rgba(139, 92, 246, 0.30)",
+                }}
+              >
+                {demoFilled ? <CheckCircle2 className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[12.5px] font-semibold text-[#1A1A1A] flex items-center gap-1.5">
+                  {demoFilled ? "Credentials filled" : "Try Demo Account"}
+                  <span
+                    className="text-[8.5px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded text-white"
+                    style={{
+                      background: demoFilled
+                        ? "linear-gradient(135deg, #10b981, #059669)"
+                        : "linear-gradient(135deg, #8b5cf6, #2563eb)",
+                    }}
+                  >
+                    Demo
+                  </span>
+                </p>
+                <p className="text-[11px] text-[#6B7280] mt-0.5 truncate">
+                  {demoFilled ? "Click Sign In to continue" : "Auto-fill OrgAdmin test credentials"}
+                </p>
+              </div>
+              <ArrowRight
+                className="w-4 h-4 shrink-0 transition-transform group-hover:translate-x-0.5"
+                style={{ color: demoFilled ? "#10b981" : "#8b5cf6" }}
+              />
             </button>
           </div>
 
