@@ -2,13 +2,14 @@
 
 import * as React from "react"
 import { useMemo, useState } from "react"
-import { Plus, Download } from "lucide-react"
+import { Plus, Download, FileSignature } from "lucide-react"
 import { Button } from "@/shared/components/ui/button"
 import { useToast } from "@/shared/components/ui/use-toast"
 
 import { DataTable, type DataTableColumn } from "@/shared/components/scm/shared/DataTable"
 import { StatusBadge } from "@/shared/components/scm/shared/StatusBadge"
 import { RowActions, DeleteConfirmDialog } from "@/shared/components/scm/shared/RowActions"
+import { RowDetailSheet } from "@/shared/components/scm/shared/RowDetailSheet"
 import { VendorContractForm } from "@/shared/components/scm/forms/VendorContractForm"
 import { useScmVendorExtraStore, type ScmVendorContract } from "@/shared/data/scm/scm-vendor-extra-store"
 
@@ -24,6 +25,7 @@ export default function VendorContractsPage() {
     const [mode, setMode] = useState<"create" | "edit">("create")
     const [editing, setEditing] = useState<ScmVendorContract | null>(null)
     const [deleting, setDeleting] = useState<ScmVendorContract | null>(null)
+    const [viewing, setViewing] = useState<ScmVendorContract | null>(null)
 
     const columns: DataTableColumn<ScmVendorContract>[] = useMemo(
         () => [
@@ -80,7 +82,18 @@ export default function VendorContractsPage() {
                 searchKeys={["contractNumber", "vendorName"]}
                 pageSize={10}
                 emptyMessage="No contracts yet."
+                onRowClick={(row) => setViewing(row)}
                 actions={(row) => <RowActions onEdit={() => handleEdit(row)} onDelete={() => setDeleting(row)} />}
+            />
+
+            <RowDetailSheet
+                row={viewing}
+                columns={columns}
+                onOpenChange={(o) => !o && setViewing(null)}
+                title={(r) => r.contractNumber}
+                description={(r) => r.vendorName}
+                icon={<FileSignature className="w-5 h-5" />}
+                accentColor="#8b5cf6"
             />
 
             <VendorContractForm open={formOpen} onOpenChange={setFormOpen} initial={editing} mode={mode} />

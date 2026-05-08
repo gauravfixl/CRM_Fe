@@ -2,13 +2,14 @@
 
 import * as React from "react"
 import { useMemo, useState } from "react"
-import { Plus, Download } from "lucide-react"
+import { Plus, Download, RotateCcw } from "lucide-react"
 import { Button } from "@/shared/components/ui/button"
 import { useToast } from "@/shared/components/ui/use-toast"
 
 import { DataTable, type DataTableColumn } from "@/shared/components/scm/shared/DataTable"
 import { StatusBadge } from "@/shared/components/scm/shared/StatusBadge"
 import { RowActions, DeleteConfirmDialog } from "@/shared/components/scm/shared/RowActions"
+import { RowDetailSheet } from "@/shared/components/scm/shared/RowDetailSheet"
 import { CustomerReturnForm } from "@/shared/components/scm/forms/CustomerReturnForm"
 import { useScmReturnsStore, type ScmCustomerReturn } from "@/shared/data/scm/scm-returns-store"
 
@@ -24,6 +25,7 @@ export default function CustomerReturnsPage() {
     const [mode, setMode] = useState<"create" | "edit">("create")
     const [editing, setEditing] = useState<ScmCustomerReturn | null>(null)
     const [deleting, setDeleting] = useState<ScmCustomerReturn | null>(null)
+    const [viewing, setViewing] = useState<ScmCustomerReturn | null>(null)
 
     const columns: DataTableColumn<ScmCustomerReturn>[] = useMemo(
         () => [
@@ -83,7 +85,18 @@ export default function CustomerReturnsPage() {
                 searchKeys={["returnId", "orderNumber", "customerName", "productName", "sku"]}
                 pageSize={10}
                 emptyMessage="No customer returns yet."
+                onRowClick={(row) => setViewing(row)}
                 actions={(row) => <RowActions onEdit={() => handleEdit(row)} onDelete={() => setDeleting(row)} />}
+            />
+
+            <RowDetailSheet
+                row={viewing}
+                columns={columns}
+                onOpenChange={(o) => !o && setViewing(null)}
+                title={(r) => r.returnId}
+                description={(r) => `${r.customerName} · Order ${r.orderNumber}`}
+                icon={<RotateCcw className="w-5 h-5" />}
+                accentColor="#ef4444"
             />
 
             <CustomerReturnForm open={formOpen} onOpenChange={setFormOpen} initial={editing} mode={mode} />

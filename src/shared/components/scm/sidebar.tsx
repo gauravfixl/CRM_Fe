@@ -241,13 +241,11 @@ export function ScmSidebar({ ...props }: React.ComponentProps<typeof ShadcnSideb
                             const hasSub = item.items.length > 0
                             const accent = item.accent
 
-                            // Active state styling — light tint + colored text + left border accent
+                            // Active state styling — light tint + colored text
                             const buttonStyle: React.CSSProperties = item.isActive
                                 ? {
                                     backgroundColor: `${accent}14`,
                                     color: accent,
-                                    borderLeft: `3px solid ${accent}`,
-                                    paddingLeft: "9px",
                                 }
                                 : {}
 

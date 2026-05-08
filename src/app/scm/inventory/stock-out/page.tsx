@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { useMemo, useState } from "react"
-import { Plus, Download } from "lucide-react"
+import { Plus, Download, ArrowUpFromLine } from "lucide-react"
 
 import { Button } from "@/shared/components/ui/button"
 import { useToast } from "@/shared/components/ui/use-toast"
@@ -10,6 +10,7 @@ import { useToast } from "@/shared/components/ui/use-toast"
 import { DataTable, type DataTableColumn } from "@/shared/components/scm/shared/DataTable"
 import { StatusBadge } from "@/shared/components/scm/shared/StatusBadge"
 import { RowActions, DeleteConfirmDialog } from "@/shared/components/scm/shared/RowActions"
+import { RowDetailSheet } from "@/shared/components/scm/shared/RowDetailSheet"
 import { StockOutForm } from "@/shared/components/scm/forms/StockOutForm"
 import {
     useScmStockMovementsStore,
@@ -23,6 +24,7 @@ export default function StockOutPage() {
 
     const [formOpen, setFormOpen] = useState(false)
     const [deleting, setDeleting] = useState<ScmStockMovement | null>(null)
+    const [viewing, setViewing] = useState<ScmStockMovement | null>(null)
 
     const stockOuts = useMemo(() => movements.filter((m) => m.direction === "out"), [movements])
 
@@ -108,9 +110,20 @@ export default function StockOutPage() {
                 searchKeys={["productName", "sku", "warehouse", "reason", "issuedTo", "referenceNumber"]}
                 pageSize={10}
                 emptyMessage="No stock-out entries yet."
+                onRowClick={(row) => setViewing(row)}
                 actions={(row) => (
                     <RowActions onDelete={() => setDeleting(row)} />
                 )}
+            />
+
+            <RowDetailSheet
+                row={viewing}
+                columns={columns}
+                onOpenChange={(o) => !o && setViewing(null)}
+                title={(r) => r.productName}
+                description={(r) => `Stock Out · ${r.movementDate}`}
+                icon={<ArrowUpFromLine className="w-5 h-5" />}
+                accentColor="#f59e0b"
             />
 
             <StockOutForm open={formOpen} onOpenChange={setFormOpen} />

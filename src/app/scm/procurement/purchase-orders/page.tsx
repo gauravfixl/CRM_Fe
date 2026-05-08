@@ -101,6 +101,7 @@ export default function PurchaseOrdersPage() {
                 searchKeys={["poNumber", "vendorName", "warehouse", "status", "paymentStatus", "deliveryStatus"]}
                 pageSize={10}
                 emptyMessage="No purchase orders yet."
+                onRowClick={(row) => setViewing(row)}
                 actions={(row) => (
                     <RowActions
                         onView={() => setViewing(row)}

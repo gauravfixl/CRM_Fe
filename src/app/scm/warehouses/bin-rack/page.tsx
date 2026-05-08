@@ -2,13 +2,14 @@
 
 import * as React from "react"
 import { useMemo, useState } from "react"
-import { Plus, Download } from "lucide-react"
+import { Plus, Download, Boxes } from "lucide-react"
 import { Button } from "@/shared/components/ui/button"
 import { useToast } from "@/shared/components/ui/use-toast"
 
 import { DataTable, type DataTableColumn } from "@/shared/components/scm/shared/DataTable"
 import { StatusBadge } from "@/shared/components/scm/shared/StatusBadge"
 import { RowActions, DeleteConfirmDialog } from "@/shared/components/scm/shared/RowActions"
+import { RowDetailSheet } from "@/shared/components/scm/shared/RowDetailSheet"
 import { BinRackForm } from "@/shared/components/scm/forms/BinRackForm"
 import { useScmWarehouseOpsStore, type ScmBin } from "@/shared/data/scm/scm-warehouse-ops-store"
 
@@ -21,6 +22,7 @@ export default function BinRackPage() {
     const [mode, setMode] = useState<"create" | "edit">("create")
     const [editing, setEditing] = useState<ScmBin | null>(null)
     const [deleting, setDeleting] = useState<ScmBin | null>(null)
+    const [viewing, setViewing] = useState<ScmBin | null>(null)
 
     const columns: DataTableColumn<ScmBin>[] = useMemo(
         () => [
@@ -76,7 +78,18 @@ export default function BinRackPage() {
                 searchKeys={["warehouse", "zone", "rackNumber", "binNumber", "productAssigned"]}
                 pageSize={15}
                 emptyMessage="No bins yet. Add one to start tracking storage locations."
+                onRowClick={(row) => setViewing(row)}
                 actions={(row) => <RowActions onEdit={() => handleEdit(row)} onDelete={() => setDeleting(row)} />}
+            />
+
+            <RowDetailSheet
+                row={viewing}
+                columns={columns}
+                onOpenChange={(o) => !o && setViewing(null)}
+                title={(r) => `Bin ${r.binNumber}`}
+                description={(r) => `${r.warehouse} · ${r.zone} · ${r.rackNumber}`}
+                icon={<Boxes className="w-5 h-5" />}
+                accentColor="#0ea5e9"
             />
 
             <BinRackForm open={formOpen} onOpenChange={setFormOpen} initial={editing} mode={mode} />

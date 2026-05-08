@@ -3,12 +3,13 @@
 import * as React from "react"
 import { useMemo, useState } from "react"
 import Link from "next/link"
-import { Download, FilePlus2, Bell, X } from "lucide-react"
+import { Download, FilePlus2, Bell, X, RefreshCw } from "lucide-react"
 import { Button } from "@/shared/components/ui/button"
 import { useToast } from "@/shared/components/ui/use-toast"
 
 import { DataTable, type DataTableColumn } from "@/shared/components/scm/shared/DataTable"
 import { StatusBadge } from "@/shared/components/scm/shared/StatusBadge"
+import { RowDetailSheet } from "@/shared/components/scm/shared/RowDetailSheet"
 import { useScmProductsStore, type ScmProduct } from "@/shared/data/scm/scm-products-store"
 
 interface SuggestionRow extends ScmProduct {
@@ -27,6 +28,7 @@ export default function ReorderSuggestionsPage() {
     const { toast } = useToast()
     const products = useScmProductsStore((s) => s.products)
     const [ignored, setIgnored] = useState<Set<string>>(new Set())
+    const [viewing, setViewing] = useState<SuggestionRow | null>(null)
 
     const rows: SuggestionRow[] = useMemo(
         () => products
@@ -90,6 +92,7 @@ export default function ReorderSuggestionsPage() {
                 searchKeys={["sku", "productName", "category"]}
                 pageSize={15}
                 emptyMessage="No reorder suggestions. Stock levels are healthy."
+                onRowClick={(row) => setViewing(row)}
                 actions={(row) => (
                     <div className="flex items-center gap-1 justify-end">
                         <Link href="/scm/procurement/purchase-requests" title="Create PR">
@@ -105,6 +108,16 @@ export default function ReorderSuggestionsPage() {
                         </Button>
                     </div>
                 )}
+            />
+
+            <RowDetailSheet
+                row={viewing}
+                columns={columns}
+                onOpenChange={(o) => !o && setViewing(null)}
+                title={(r) => r.productName}
+                description={(r) => `${r.sku} · Suggest ${r.suggestedQuantity}`}
+                icon={<RefreshCw className="w-5 h-5" />}
+                accentColor="#10b981"
             />
         </div>
     )

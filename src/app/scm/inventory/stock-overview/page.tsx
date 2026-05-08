@@ -18,6 +18,7 @@ import {
 import { DataTable, type DataTableColumn } from "@/shared/components/scm/shared/DataTable"
 import { StatusBadge } from "@/shared/components/scm/shared/StatusBadge"
 import { KpiCard } from "@/shared/components/scm/shared/KpiCard"
+import { RowDetailSheet } from "@/shared/components/scm/shared/RowDetailSheet"
 import {
     useScmProductsStore,
     type ScmProduct,
@@ -56,6 +57,7 @@ export default function StockOverviewPage() {
 
     const [whFilter, setWhFilter] = useState<string>("all")
     const [statusFilter, setStatusFilter] = useState<StockStatusFilter>("all")
+    const [viewing, setViewing] = useState<OverviewRow | null>(null)
 
     const overview: OverviewRow[] = useMemo(() => {
         return products.map((p: ScmProduct) => {
@@ -211,6 +213,17 @@ export default function StockOverviewPage() {
                 searchKeys={["productName", "sku", "warehouse"]}
                 pageSize={15}
                 emptyMessage="No products match the current filters."
+                onRowClick={(row) => setViewing(row)}
+            />
+
+            <RowDetailSheet
+                row={viewing}
+                columns={columns}
+                onOpenChange={(o) => !o && setViewing(null)}
+                title={(r) => r.productName}
+                description={(r) => `${r.sku} · ${r.warehouse}`}
+                icon={<Boxes className="w-5 h-5" />}
+                accentColor="#2563eb"
             />
         </div>
     )

@@ -14,6 +14,7 @@ import { useToast } from "@/shared/components/ui/use-toast"
 import { DataTable, type DataTableColumn } from "@/shared/components/scm/shared/DataTable"
 import { StatusBadge } from "@/shared/components/scm/shared/StatusBadge"
 import { RowActions } from "@/shared/components/scm/shared/RowActions"
+import { RowDetailSheet } from "@/shared/components/scm/shared/RowDetailSheet"
 import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet"
 import { useScmShipmentsStore, type ScmShipment } from "@/shared/data/scm/scm-shipments-store"
 
@@ -38,6 +39,7 @@ export default function DeliveryProofPage() {
     const [errors, setErrors] = useState<Record<string, string>>({})
     const [touched, setTouched] = useState<Record<string, boolean>>({})
     const [submitting, setSubmitting] = useState(false)
+    const [viewing, setViewing] = useState<ScmShipment | null>(null)
 
     const delivered = useMemo(() => shipments.filter((s) => s.status === "Delivered"), [shipments])
 
@@ -120,11 +122,22 @@ export default function DeliveryProofPage() {
                 searchKeys={["shipmentId", "orderNumber", "customerName"]}
                 pageSize={15}
                 emptyMessage="No delivered shipments yet."
+                onRowClick={(row) => setViewing(row)}
                 actions={(row) => (
                     <Button onClick={() => setEditing(row)} variant="outline" size="sm" className="h-8 px-2 text-[12px] border-[#E5E7EB]">
                         <Upload className="w-3.5 h-3.5 mr-1" /> Upload Proof
                     </Button>
                 )}
+            />
+
+            <RowDetailSheet
+                row={viewing}
+                columns={columns}
+                onOpenChange={(o) => !o && setViewing(null)}
+                title={(r) => r.shipmentId}
+                description={(r) => `${r.customerName} · Order ${r.orderNumber}`}
+                icon={<FileImage className="w-5 h-5" />}
+                accentColor="#10b981"
             />
 
             <SideFormSheet

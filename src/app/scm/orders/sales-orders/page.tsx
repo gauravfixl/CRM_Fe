@@ -111,6 +111,7 @@ export default function SalesOrdersPage() {
                 searchKeys={["orderNumber", "customerName", "customerEmail", "warehouse", "fulfillmentStatus", "paymentStatus"]}
                 pageSize={10}
                 emptyMessage="No sales orders yet."
+                onRowClick={(row) => setViewing(row)}
                 actions={(row) => (
                     <RowActions
                         onView={() => setViewing(row)}

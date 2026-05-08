@@ -2,13 +2,14 @@
 
 import * as React from "react"
 import { useMemo, useState } from "react"
-import { Plus, Download } from "lucide-react"
+import { Plus, Download, FileSearch } from "lucide-react"
 import { Button } from "@/shared/components/ui/button"
 import { useToast } from "@/shared/components/ui/use-toast"
 
 import { DataTable, type DataTableColumn } from "@/shared/components/scm/shared/DataTable"
 import { StatusBadge } from "@/shared/components/scm/shared/StatusBadge"
 import { RowActions, DeleteConfirmDialog } from "@/shared/components/scm/shared/RowActions"
+import { RowDetailSheet } from "@/shared/components/scm/shared/RowDetailSheet"
 import { QuotationForm } from "@/shared/components/scm/forms/QuotationForm"
 import { useScmProcurementExtraStore, type ScmQuotation } from "@/shared/data/scm/scm-procurement-extra-store"
 
@@ -25,6 +26,7 @@ export default function QuotationsPage() {
     const [mode, setMode] = useState<"create" | "edit">("create")
     const [editing, setEditing] = useState<ScmQuotation | null>(null)
     const [deleting, setDeleting] = useState<ScmQuotation | null>(null)
+    const [viewing, setViewing] = useState<ScmQuotation | null>(null)
 
     const handleConvert = (q: ScmQuotation) => {
         updateQuotation(q.id, { status: "Converted to PO" })
@@ -88,6 +90,7 @@ export default function QuotationsPage() {
                 searchKeys={["quotationId", "vendorName", "productName", "sku"]}
                 pageSize={10}
                 emptyMessage="No quotations yet."
+                onRowClick={(row) => setViewing(row)}
                 actions={(row) => (
                     <RowActions
                         onEdit={() => handleEdit(row)}
@@ -99,6 +102,16 @@ export default function QuotationsPage() {
                         }
                     />
                 )}
+            />
+
+            <RowDetailSheet
+                row={viewing}
+                columns={columns}
+                onOpenChange={(o) => !o && setViewing(null)}
+                title={(r) => r.quotationId}
+                description={(r) => `${r.vendorName} · ${r.productName}`}
+                icon={<FileSearch className="w-5 h-5" />}
+                accentColor="#8b5cf6"
             />
 
             <QuotationForm open={formOpen} onOpenChange={setFormOpen} initial={editing} mode={mode} />

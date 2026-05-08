@@ -216,7 +216,7 @@ export default function ScmDashboardPage() {
                                     fontSize: 12,
                                 }}
                             />
-                            <Bar dataKey="value" fill="#2563eb" radius={[0, 0, 0, 0]} />
+                            <Bar dataKey="value" fill="#2563eb" radius={[0, 0, 0, 0]} barSize={32} />
                         </BarChart>
                     </ResponsiveContainer>
                 </ChartCard>

@@ -13,6 +13,7 @@ import { useToast } from "@/shared/components/ui/use-toast"
 import { DataTable, type DataTableColumn } from "@/shared/components/scm/shared/DataTable"
 import { StatusBadge } from "@/shared/components/scm/shared/StatusBadge"
 import { RowActions, DeleteConfirmDialog } from "@/shared/components/scm/shared/RowActions"
+import { RowDetailSheet } from "@/shared/components/scm/shared/RowDetailSheet"
 import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet"
 import { useScmSettingsStore, type ScmTaxRate } from "@/shared/data/scm/scm-settings-store"
 
@@ -36,6 +37,7 @@ export default function TaxSettingsPage() {
     const [touched, setTouched] = useState<Record<string, boolean>>({})
     const [deleting, setDeleting] = useState<ScmTaxRate | null>(null)
     const [submitting, setSubmitting] = useState(false)
+    const [viewing, setViewing] = useState<ScmTaxRate | null>(null)
 
     useEffect(() => {
         if (!formOpen) return
@@ -112,9 +114,20 @@ export default function TaxSettingsPage() {
                 searchKeys={["name", "region"]}
                 pageSize={10}
                 emptyMessage="No tax rates yet."
+                onRowClick={(row) => setViewing(row)}
                 actions={(row) => (
                     <RowActions onEdit={() => { setEditing(row); setMode("edit"); setFormOpen(true) }} onDelete={() => setDeleting(row)} />
                 )}
+            />
+
+            <RowDetailSheet
+                row={viewing}
+                columns={columns}
+                onOpenChange={(o) => !o && setViewing(null)}
+                title={(r) => r.name}
+                description={(r) => `${r.percentage}% · ${r.region}`}
+                icon={<Percent className="w-5 h-5" />}
+                accentColor="#2563eb"
             />
 
             <SideFormSheet

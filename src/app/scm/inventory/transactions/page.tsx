@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { useMemo, useState } from "react"
-import { Download, Filter } from "lucide-react"
+import { Download, Filter, ArrowLeftRight } from "lucide-react"
 import { Button } from "@/shared/components/ui/button"
 import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -12,6 +12,7 @@ import { useToast } from "@/shared/components/ui/use-toast"
 
 import { DataTable, type DataTableColumn } from "@/shared/components/scm/shared/DataTable"
 import { StatusBadge } from "@/shared/components/scm/shared/StatusBadge"
+import { RowDetailSheet } from "@/shared/components/scm/shared/RowDetailSheet"
 import { useScmStockMovementsStore, type ScmStockMovement } from "@/shared/data/scm/scm-stock-movements-store"
 import { useScmWarehousesStore } from "@/shared/data/scm/scm-warehouses-store"
 
@@ -26,6 +27,7 @@ export default function InventoryTransactionsPage() {
     const [warehouse, setWarehouse] = useState<string>("all")
     const [fromDate, setFromDate] = useState("")
     const [toDate, setToDate] = useState("")
+    const [viewing, setViewing] = useState<ScmStockMovement | null>(null)
 
     const filtered = useMemo(() => movements.filter((m) => {
         if (direction !== "all" && m.direction !== direction) return false
@@ -118,6 +120,17 @@ export default function InventoryTransactionsPage() {
                 searchKeys={["productName", "sku", "warehouse", "referenceNumber", "poNumber", "supplier", "issuedTo"]}
                 pageSize={15}
                 emptyMessage="No transactions match the filters."
+                onRowClick={(row) => setViewing(row)}
+            />
+
+            <RowDetailSheet
+                row={viewing}
+                columns={columns}
+                onOpenChange={(o) => !o && setViewing(null)}
+                title={(r) => r.productName}
+                description={(r) => `Txn ${r.id} · ${r.movementDate}`}
+                icon={<ArrowLeftRight className="w-5 h-5" />}
+                accentColor="#2563eb"
             />
         </div>
     )
