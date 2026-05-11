@@ -36,6 +36,7 @@ import {
     DialogFooter,
     DialogDescription,
 } from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import {
     Select,
     SelectContent,
@@ -390,59 +391,45 @@ const TeamAttendancePage = () => {
             </Dialog>
 
             {/* Correct Attendance Dialog */}
-            <Dialog open={correctionOpen} onOpenChange={setCorrectionOpen}>
-                <DialogContent className="bg-white rounded-2xl border border-slate-200 shadow-2xl p-8 max-w-md">
-                    <DialogHeader>
-                        <DialogTitle className="text-xl font-bold text-slate-900">Correct Attendance</DialogTitle>
-                        <DialogDescription className="text-slate-500 text-sm mt-1">
-                            Update today's record for <span className="font-bold text-indigo-600">{selectedMember?.name}</span>
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
-                        <div className="space-y-2">
-                            <Label className="font-bold text-slate-700 text-xs">Status</Label>
-                            <Select value={correctionStatus} onValueChange={(v: any) => setCorrectionStatus(v)}>
-                                <SelectTrigger className="rounded-xl bg-slate-50 border border-slate-200 h-11 font-bold text-sm">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent className="rounded-xl border-none shadow-xl bg-white">
-                                    <SelectItem value="Present" className="font-bold text-xs">Present</SelectItem>
-                                    <SelectItem value="Absent" className="font-bold text-xs">Absent</SelectItem>
-                                    <SelectItem value="On Leave" className="font-bold text-xs">On Leave</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-1">
-                                <Label className="font-bold text-slate-700 text-xs">Check In</Label>
-                                <Input
-                                    placeholder="09:00 AM or 09:00"
-                                    value={correctionCheckIn}
-                                    onChange={e => { setCorrectionCheckIn(e.target.value); if (correctionErrors.checkIn) setCorrectionErrors({ ...correctionErrors, checkIn: "" }); }}
-                                    className={`rounded-xl bg-slate-50 border h-11 font-bold text-sm ${correctionErrors.checkIn ? 'border-rose-400' : 'border-slate-200'}`}
-                                />
-                                {correctionErrors.checkIn && <p className="text-[11px] font-medium text-rose-500">{correctionErrors.checkIn}</p>}
-                            </div>
-                            <div className="space-y-1">
-                                <Label className="font-bold text-slate-700 text-xs">Check Out</Label>
-                                <Input
-                                    placeholder="06:00 PM or 18:00"
-                                    value={correctionCheckOut}
-                                    onChange={e => { setCorrectionCheckOut(e.target.value); if (correctionErrors.checkOut) setCorrectionErrors({ ...correctionErrors, checkOut: "" }); }}
-                                    className={`rounded-xl bg-slate-50 border h-11 font-bold text-sm ${correctionErrors.checkOut ? 'border-rose-400' : 'border-slate-200'}`}
-                                />
-                                {correctionErrors.checkOut && <p className="text-[11px] font-medium text-rose-500">{correctionErrors.checkOut}</p>}
-                            </div>
-                        </div>
+            <SideFormSheet
+                open={correctionOpen}
+                onOpenChange={(o) => { setCorrectionOpen(o); if (!o) setCorrectionErrors({}); }}
+                title="Correct Attendance"
+                description={selectedMember?.name ? `Update today's record for ${selectedMember.name}` : undefined}
+                accentColor="#4f46e5"
+                width="md"
+                submitLabel="Save Correction"
+                onSubmit={(e) => { e.preventDefault(); handleSaveCorrection(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Status">
+                        <Select value={correctionStatus} onValueChange={(v: any) => setCorrectionStatus(v)}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Present">Present</SelectItem>
+                                <SelectItem value="Absent">Absent</SelectItem>
+                                <SelectItem value="On Leave">On Leave</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Check In" error={correctionErrors.checkIn || undefined}>
+                            <Input
+                                placeholder="09:00 AM or 09:00"
+                                value={correctionCheckIn}
+                                onChange={e => { setCorrectionCheckIn(e.target.value); if (correctionErrors.checkIn) setCorrectionErrors({ ...correctionErrors, checkIn: "" }); }}
+                            />
+                        </Field>
+                        <Field label="Check Out" error={correctionErrors.checkOut || undefined}>
+                            <Input
+                                placeholder="06:00 PM or 18:00"
+                                value={correctionCheckOut}
+                                onChange={e => { setCorrectionCheckOut(e.target.value); if (correctionErrors.checkOut) setCorrectionErrors({ ...correctionErrors, checkOut: "" }); }}
+                            />
+                        </Field>
                     </div>
-                    <DialogFooter className="gap-2">
-                        <Button variant="outline" className="rounded-xl h-10 font-bold" onClick={() => { setCorrectionOpen(false); setCorrectionErrors({}); }}>Cancel</Button>
-                        <Button className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl h-10 font-bold text-sm border-none" onClick={handleSaveCorrection}>
-                            Save Correction
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                </div>
+            </SideFormSheet>
         </div>
     );
 };

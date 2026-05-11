@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import { useEngageStore, type Recognition } from "@/shared/data/engage-store";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { Textarea } from "@/shared/components/ui/textarea";
@@ -324,118 +325,86 @@ const RewardsPage = () => {
                 </div>
             </div>
 
-            {/* Standardized Recognition Dialog */}
-            <Dialog open={isDialogOpen} onOpenChange={(val) => { if (!val) resetForm(); setIsDialogOpen(val); }}>
-                <DialogContent className="max-w-5xl p-0 overflow-hidden border-2 border-slate-300 rounded-[3rem] shadow-3xl bg-white" style={{ zoom: "67%" }}>
-                    <div className="bg-gradient-to-br from-[#854d0e] to-[#b45309] p-10 text-white">
-                        <DialogHeader>
-                            <div className="flex items-center gap-6 mb-2">
-                                <div className="h-16 w-16 bg-white/20 backdrop-blur-md rounded-3xl flex items-center justify-center border border-white/20 shadow-2xl">
-                                    <Trophy size={32} />
-                                </div>
-                                <div>
-                                    <DialogTitle className="text-3xl font-bold tracking-tighter text-white">{editingId ? "Edit Recognition" : "Crown a Colleague"}</DialogTitle>
-                                    <DialogDescription className="text-white/40 font-medium text-xs tracking-widest mt-2 capitalize">{editingId ? "Update the citation" : "Recognize greatness in the organization"}</DialogDescription>
-                                </div>
-                            </div>
-                        </DialogHeader>
+            {/* Recognition Form - SideFormSheet */}
+            <SideFormSheet
+                open={isDialogOpen}
+                onOpenChange={(val) => { setIsDialogOpen(val); if (!val) resetForm(); }}
+                title={editingId ? "Edit Recognition" : "Crown a Colleague"}
+                description={editingId ? "Update the citation." : "Recognize greatness in the organization."}
+                icon={<Trophy size={20} />}
+                accentColor={editingId ? "#7c3aed" : "#d97706"}
+                width="md"
+                submitLabel={editingId ? "Save Changes" : "Cast Recognition"}
+                onSubmit={(e) => { e.preventDefault(); handleSave(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Recipient" required hint={`${(formData.recipient ?? "").length}/80 • min 2`}>
+                        <Input
+                            placeholder="e.g. Rahul Sharma"
+                            value={formData.recipient}
+                            maxLength={80}
+                            onChange={e => setFormData({ ...formData, recipient: e.target.value })}
+                        />
+                    </Field>
+
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Badge Type">
+                            <Select value={formData.awardType} onValueChange={(v) => setFormData({ ...formData, awardType: v })}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Values Hero">Values Hero</SelectItem>
+                                    <SelectItem value="Star Performer">Star Performer</SelectItem>
+                                    <SelectItem value="Team Player">Team Player</SelectItem>
+                                    <SelectItem value="Innovation King">Innovation King</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <Field label="Tier">
+                            <Select value={formData.category} onValueChange={(v) => setFormData({ ...formData, category: v as any })}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Peer">Peer Shoutout</SelectItem>
+                                    <SelectItem value="Manager">Manager Spotlight</SelectItem>
+                                    <SelectItem value="Company">Company Milestone</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
                     </div>
 
-                    <ScrollArea className="max-h-[70vh]">
-                        <div className="p-10 space-y-10">
-                            {/* Horizontal Grid for Recognition Fields */}
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                                {/* Left Side: Meta Details */}
-                                <div className="space-y-8">
-                                    <div className="space-y-4">
-                                        <Label className="text-[10px] font-black text-slate-400 tracking-widest ml-1 capitalize">The Hero (Recipient)</Label>
-                                        <Input
-                                            placeholder="e.g. Rahul Sharma"
-                                            value={formData.recipient}
-                                            maxLength={80}
-                                            onChange={e => setFormData({ ...formData, recipient: e.target.value })}
-                                            className="h-16 border-slate-300 bg-slate-50/50 rounded-2xl px-6 font-black text-lg text-slate-900 focus:ring-4 focus:ring-amber-50 transition-all shadow-inner"
-                                        />
-                                        <p className="text-[10px] text-slate-400 font-bold ml-2">{(formData.recipient ?? "").length}/80 • min 2</p>
-                                    </div>
+                    <Field label="Points (1-500)">
+                        <Input
+                            type="number"
+                            min={1}
+                            max={500}
+                            value={formData.points ?? 50}
+                            onChange={e => setFormData({ ...formData, points: Math.max(0, Number(e.target.value) || 0) })}
+                        />
+                    </Field>
 
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                        <div className="space-y-4">
-                                            <Label className="text-[10px] font-black text-slate-400 tracking-widest ml-1 capitalize">Badge Type</Label>
-                                            <Select value={formData.awardType} onValueChange={(v) => setFormData({ ...formData, awardType: v })}>
-                                                <SelectTrigger className="h-14 border-slate-300 bg-white rounded-2xl px-6 font-bold text-slate-600"><SelectValue /></SelectTrigger>
-                                                <SelectContent className="rounded-2xl border-none shadow-2xl font-bold">
-                                                    <SelectItem value="Values Hero" className="rounded-xl my-1">Values Hero</SelectItem>
-                                                    <SelectItem value="Star Performer" className="rounded-xl my-1">Star Performer</SelectItem>
-                                                    <SelectItem value="Team Player" className="rounded-xl my-1">Team Player</SelectItem>
-                                                    <SelectItem value="Innovation King" className="rounded-xl my-1">Innovation King</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                        <div className="space-y-4">
-                                            <Label className="text-[10px] font-black text-slate-400 tracking-widest ml-1 capitalize">Appreciation Tier</Label>
-                                            <Select value={formData.category} onValueChange={(v) => setFormData({ ...formData, category: v as any })}>
-                                                <SelectTrigger className="h-14 border-slate-300 bg-white rounded-2xl px-6 font-bold text-slate-600"><SelectValue /></SelectTrigger>
-                                                <SelectContent className="rounded-2xl border-none shadow-2xl font-bold">
-                                                    <SelectItem value="Peer" className="rounded-xl my-1">Peer Shoutout</SelectItem>
-                                                    <SelectItem value="Manager" className="rounded-xl my-1">Manager Spotlight</SelectItem>
-                                                    <SelectItem value="Company" className="rounded-xl my-1">Company Milestone</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                    </div>
-                                    <div className="space-y-4">
-                                        <Label className="text-[10px] font-black text-slate-400 tracking-widest ml-1 capitalize">Points (1-500)</Label>
-                                        <Input
-                                            type="number"
-                                            min={1}
-                                            max={500}
-                                            value={formData.points ?? 50}
-                                            onChange={e => setFormData({ ...formData, points: Math.max(0, Number(e.target.value) || 0) })}
-                                            className="h-14 border-slate-300 bg-white rounded-2xl px-6 font-bold text-slate-600"
-                                        />
-                                    </div>
-                                </div>
+                    <Field label="Citation (Why?)" required hint={`${(formData.reason ?? "").length}/1000 • min 10`}>
+                        <Textarea
+                            className="min-h-[140px]"
+                            placeholder="Tell the story of their legend..."
+                            value={formData.reason}
+                            maxLength={1000}
+                            onChange={e => setFormData({ ...formData, reason: e.target.value })}
+                        />
+                    </Field>
 
-                                {/* Right Side: The Citation */}
-                                <div className="space-y-4 flex flex-col h-full">
-                                    <Label className="text-[10px] font-black text-slate-400 tracking-widest ml-1 capitalize">The Citation (Why?)</Label>
-                                    <Textarea
-                                        placeholder="Tell the story of their legend..."
-                                        value={formData.reason}
-                                        maxLength={1000}
-                                        onChange={e => setFormData({ ...formData, reason: e.target.value })}
-                                        className="flex-1 min-h-[160px] border-slate-300 bg-slate-50/50 rounded-[2rem] p-6 font-bold text-sm leading-relaxed focus:ring-4 focus:ring-amber-50 resize-none shadow-inner"
-                                    />
-                                    <p className="text-[10px] text-slate-400 font-bold ml-2">{(formData.reason ?? "").length}/1000 • min 10</p>
-                                </div>
+                    <div className="p-4 bg-slate-900 rounded-xl flex items-center justify-between text-white">
+                        <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 bg-white/10 rounded-lg flex items-center justify-center text-amber-500">
+                                <Zap size={20} />
                             </div>
-
-                            {/* Award Points Summary */}
-                            <div className="p-8 bg-slate-900 rounded-[3rem] border-2 border-slate-300 flex items-center justify-between shadow-2xl overflow-hidden relative">
-                                <div className="flex items-center gap-6 text-white relative z-10">
-                                    <div className="h-16 w-16 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center text-amber-500 shadow-inner border border-white/10">
-                                        <Zap size={32} />
-                                    </div>
-                                    <div className="flex flex-col">
-                                        <span className="text-sm font-black tracking-[0.2em] text-amber-500 capitalize">Culture Boost</span>
-                                        <span className="text-xs font-bold text-white/40 italic">Fixed point allocation for this achievement</span>
-                                    </div>
-                                </div>
-                                <div className="text-5xl font-black text-white relative z-10">+{formData.points} <span className="text-xs text-amber-500 uppercase tracking-widest">Pts</span></div>
-                                <Sparkles className="absolute right-[-20px] top-[-20px] h-40 w-40 text-white/5" />
+                            <div>
+                                <p className="text-xs font-bold text-amber-500 uppercase tracking-wider">Culture Boost</p>
+                                <p className="text-[11px] text-white/50">Point allocation for this recognition</p>
                             </div>
                         </div>
-                    </ScrollArea>
-
-                    <DialogFooter className="p-10 bg-slate-50 border-t border-slate-100 flex gap-4">
-                        <Button variant="ghost" onClick={() => setIsDialogOpen(false)} className="h-14 px-8 font-black text-slate-400 text-[10px] capitalize tracking-[0.2em] hover:text-slate-600">Cancel</Button>
-                        <Button onClick={handleSave} className="bg-amber-600 hover:bg-amber-700 text-white rounded-[1.5rem] h-14 px-12 font-black text-xs tracking-widest shadow-xl flex-1">
-                            {editingId ? "Save Changes" : "Cast Recognition 🏆"}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                        <div className="text-2xl font-bold">+{formData.points} <span className="text-[10px] text-amber-500 uppercase tracking-widest">Pts</span></div>
+                    </div>
+                </div>
+            </SideFormSheet>
         </div>
     );
 };

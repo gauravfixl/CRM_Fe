@@ -62,6 +62,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/shared/components/ui/dialog"
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet"
 import {
     Sheet,
     SheetContent,
@@ -2040,34 +2041,20 @@ const SalaryProcessingPage = () => {
                     </div>
                 </div>
 
-                {/* ── Add Employee Dialog ─────────── */}
-                <Dialog open={addEmployeeOpen} onOpenChange={setAddEmployeeOpen}>
-                    <DialogContent className="max-w-2xl bg-white rounded-2xl p-0 font-sans max-h-[90vh] overflow-hidden flex flex-col">
-                        <DialogHeader className="p-6 border-b border-slate-100 space-y-1">
-                            <div className="h-10 w-10 bg-[#8B5CF6]/10 rounded-xl flex items-center justify-center text-[#8B5CF6] mb-2">
-                                <UserPlus size={20} />
-                            </div>
-                            <DialogTitle className="text-lg font-bold text-slate-900">Add employee to {activeRun.month}</DialogTitle>
-                            <DialogDescription className="text-xs font-medium text-slate-500">
-                                Fill in salary components. Values persist to the pay run and can be edited later.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <ScrollArea className="flex-1 p-6">
-                            <EmployeeForm value={newEmployeeForm} onChange={setNewEmployeeForm} />
-                        </ScrollArea>
-                        <DialogFooter className="p-4 border-t border-slate-100 bg-slate-50/50 gap-2">
-                            <Button variant="ghost" onClick={() => setAddEmployeeOpen(false)} className="h-10 px-5 font-semibold text-xs">
-                                Cancel
-                            </Button>
-                            <Button
-                                onClick={handleAddEmployee}
-                                className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-lg h-10 px-6 font-bold text-xs border-none"
-                            >
-                                Add employee
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                {/* Add Employee Sheet */}
+                <SideFormSheet
+                    open={addEmployeeOpen}
+                    onOpenChange={setAddEmployeeOpen}
+                    title={`Add employee to ${activeRun.month}`}
+                    description="Fill in salary components. Values persist to the pay run and can be edited later."
+                    icon={<UserPlus size={20} />}
+                    accentColor="#4f46e5"
+                    width="xl"
+                    submitLabel="Add employee"
+                    onSubmit={(e) => { e.preventDefault(); handleAddEmployee(); }}
+                >
+                    <EmployeeForm value={newEmployeeForm} onChange={setNewEmployeeForm} />
+                </SideFormSheet>
 
                 {/* ── Edit Sheet ─────────── */}
                 <Sheet open={editSheetOpen} onOpenChange={setEditSheetOpen}>
@@ -2255,216 +2242,157 @@ const SalaryProcessingPage = () => {
 
                 {/* ──────────── Round 2 Dialogs ──────────── */}
 
-                {/* ── Hold Dialog ─────────── */}
-                <Dialog open={holdDialogOpen} onOpenChange={setHoldDialogOpen}>
-                    <DialogContent className="max-w-md bg-white rounded-2xl p-6 font-sans">
-                        <DialogHeader className="space-y-1">
-                            <div className="h-10 w-10 bg-amber-50 rounded-xl flex items-center justify-center text-amber-600 mb-2">
-                                <PauseCircle size={20} />
-                            </div>
-                            <DialogTitle className="text-lg font-bold text-slate-900">
-                                Put {holdTargetIds.length > 1 ? `${holdTargetIds.length} employees` : "employee"} on hold
-                            </DialogTitle>
-                            <DialogDescription className="text-xs font-medium text-slate-500">
-                                Held employees are excluded from payroll until released. Reason gets logged.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="mt-4">
-                            <Label className="text-[11px] font-semibold text-slate-600 mb-1.5 block">Reason for hold</Label>
-                            <Textarea
-                                value={holdReason}
-                                onChange={(e) => setHoldReason(e.target.value)}
-                                placeholder="e.g. Salary correction pending, legal matter, document verification, etc."
-                                className="min-h-[90px] text-xs font-medium"
-                            />
-                        </div>
-                        <DialogFooter className="mt-4 gap-2">
-                            <Button variant="ghost" onClick={() => setHoldDialogOpen(false)} className="h-10 font-semibold text-xs">Cancel</Button>
-                            <Button onClick={handleConfirmHold} className="bg-amber-500 hover:bg-amber-600 text-white rounded-lg h-10 px-5 font-bold text-xs border-none">
-                                <PauseCircle size={13} className="mr-1.5" /> Confirm hold
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                {/* Hold Sheet */}
+                <SideFormSheet
+                    open={holdDialogOpen}
+                    onOpenChange={setHoldDialogOpen}
+                    title={`Put ${holdTargetIds.length > 1 ? `${holdTargetIds.length} employees` : "employee"} on hold`}
+                    description="Held employees are excluded from payroll until released. Reason gets logged."
+                    icon={<PauseCircle size={20} />}
+                    accentColor="#d97706"
+                    width="md"
+                    submitLabel="Confirm hold"
+                    onSubmit={(e) => { e.preventDefault(); handleConfirmHold(); }}
+                >
+                    <Field label="Reason for hold">
+                        <Textarea
+                            value={holdReason}
+                            onChange={(e) => setHoldReason(e.target.value)}
+                            placeholder="e.g. Salary correction pending, legal matter, document verification, etc."
+                        />
+                    </Field>
+                </SideFormSheet>
 
-                {/* ── Clone Dialog ─────────── */}
-                <Dialog open={cloneDialogOpen} onOpenChange={setCloneDialogOpen}>
-                    <DialogContent className="max-w-md bg-white rounded-2xl p-6 font-sans">
-                        <DialogHeader className="space-y-1">
-                            <div className="h-10 w-10 bg-[#8B5CF6]/10 rounded-xl flex items-center justify-center text-[#8B5CF6] mb-2">
-                                <Copy size={20} />
+                {/* Clone Sheet */}
+                <SideFormSheet
+                    open={cloneDialogOpen}
+                    onOpenChange={setCloneDialogOpen}
+                    title="Clone pay run"
+                    description="Copies all employees from source → new Draft cycle. LOP, OT, variable and approvals reset."
+                    icon={<Copy size={20} />}
+                    accentColor="#4f46e5"
+                    width="md"
+                    submitLabel="Clone now"
+                    onSubmit={(e) => { e.preventDefault(); handleConfirmClone(); }}
+                >
+                    <div className="space-y-4">
+                        <Field label="Source pay run">
+                            <Select value={cloneSourceRunId} onValueChange={setCloneSourceRunId}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    {payRuns.map((r) => {
+                                        const empCount = payrollEmployees.filter(e => e.payRunId === r.id).length
+                                        return (
+                                            <SelectItem key={r.id} value={r.id}>
+                                                {r.month} • {empCount} employees • {r.status}
+                                            </SelectItem>
+                                        )
+                                    })}
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <Field label="New cycle label" hint="Must be unique — existing months blocked.">
+                            <Input value={cloneTargetMonth} onChange={(e) => setCloneTargetMonth(e.target.value)} placeholder="e.g. May 2026" />
+                        </Field>
+                        {cloneSourceRunId && (
+                            <div className="p-3 bg-[#8B5CF6]/5 rounded-lg border border-[#8B5CF6]/10 text-xs font-medium text-slate-700">
+                                <div className="font-bold mb-1">Will copy:</div>
+                                <div>{payrollEmployees.filter(e => e.payRunId === cloneSourceRunId).length} employees</div>
+                                <div className="text-[11px] text-slate-500 mt-1">Identity + salary components preserved; LOP/OT/variable/approvals reset.</div>
                             </div>
-                            <DialogTitle className="text-lg font-bold text-slate-900">Clone pay run</DialogTitle>
-                            <DialogDescription className="text-xs font-medium text-slate-500">
-                                Copies all employees from source → new Draft cycle. LOP, OT, variable and approvals reset.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="mt-4 space-y-3">
-                            <div className="space-y-1.5">
-                                <Label className="text-[11px] font-semibold text-slate-600">Source pay run</Label>
-                                <Select value={cloneSourceRunId} onValueChange={setCloneSourceRunId}>
-                                    <SelectTrigger className="h-10 text-sm"><SelectValue /></SelectTrigger>
+                        )}
+                    </div>
+                </SideFormSheet>
+
+                {/* Bulk Adjust Sheet */}
+                <SideFormSheet
+                    open={adjustDialogOpen}
+                    onOpenChange={setAdjustDialogOpen}
+                    title="Bulk adjustment"
+                    description={`Apply a uniform change to ${selectedIds.length} employee${selectedIds.length > 1 ? "s" : ""}. Recomputes totals instantly.`}
+                    icon={<Sliders size={20} />}
+                    accentColor="#4f46e5"
+                    width="md"
+                    submitLabel="Apply adjustment"
+                    onSubmit={(e) => { e.preventDefault(); handleConfirmAdjust(); }}
+                >
+                    <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-3">
+                            <Field label="Field">
+                                <Select value={adjustField} onValueChange={(v) => setAdjustField(v as any)}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
                                     <SelectContent>
-                                        {payRuns.map((r) => {
-                                            const empCount = payrollEmployees.filter(e => e.payRunId === r.id).length
-                                            return (
-                                                <SelectItem key={r.id} value={r.id}>
-                                                    {r.month} • {empCount} employees • {r.status}
-                                                </SelectItem>
-                                            )
-                                        })}
+                                        <SelectItem value="variable">Variable / Bonus (₹)</SelectItem>
+                                        <SelectItem value="lopDays">LOP days</SelectItem>
+                                        <SelectItem value="otHours">OT hours</SelectItem>
                                     </SelectContent>
                                 </Select>
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-[11px] font-semibold text-slate-600">New cycle label</Label>
-                                <Input
-                                    value={cloneTargetMonth}
-                                    onChange={(e) => setCloneTargetMonth(e.target.value)}
-                                    placeholder="e.g. May 2026"
-                                    className="h-10 text-sm font-medium"
-                                />
-                                <p className="text-[10px] font-medium text-slate-400">Must be unique — existing months blocked.</p>
-                            </div>
-                            {cloneSourceRunId && (
-                                <div className="p-3 bg-[#8B5CF6]/5 rounded-lg border border-[#8B5CF6]/10 text-xs font-medium text-slate-700">
-                                    <div className="font-bold mb-1">Will copy:</div>
-                                    <div>{payrollEmployees.filter(e => e.payRunId === cloneSourceRunId).length} employees</div>
-                                    <div className="text-[11px] text-slate-500 mt-1">Identity + salary components preserved; LOP/OT/variable/approvals reset.</div>
-                                </div>
-                            )}
+                            </Field>
+                            <Field label="Mode">
+                                <Select value={adjustMode} onValueChange={(v) => setAdjustMode(v as any)}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="fixed">Set fixed</SelectItem>
+                                        <SelectItem value="delta">Add / subtract</SelectItem>
+                                        <SelectItem value="percent">% change</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </Field>
                         </div>
-                        <DialogFooter className="mt-4 gap-2">
-                            <Button variant="ghost" onClick={() => setCloneDialogOpen(false)} className="h-10 font-semibold text-xs">Cancel</Button>
-                            <Button onClick={handleConfirmClone} className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-lg h-10 px-5 font-bold text-xs border-none">
-                                <Copy size={13} className="mr-1.5" /> Clone now
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                        <Field label={`Value ${adjustMode === "percent" ? "(%)" : adjustField === "variable" ? "(₹)" : ""}`}>
+                            <Input
+                                type="number"
+                                className="tabular-nums"
+                                value={adjustValue}
+                                onChange={(e) => setAdjustValue(e.target.value)}
+                                placeholder={adjustMode === "delta" ? "Positive to add, negative to subtract" : ""}
+                            />
+                        </Field>
+                        <div className="p-3 bg-slate-50 rounded-lg border border-slate-100 text-[11px] font-medium text-slate-700">
+                            {adjustMode === "fixed" && `Will set ${adjustField} to ${adjustValue} for all selected.`}
+                            {adjustMode === "delta" && `Will ${parseFloat(adjustValue) >= 0 ? "add" : "subtract"} ${Math.abs(parseFloat(adjustValue) || 0)} to ${adjustField} of all selected.`}
+                            {adjustMode === "percent" && `Will change ${adjustField} by ${adjustValue}% for all selected.`}
+                        </div>
+                    </div>
+                </SideFormSheet>
 
-                {/* ── Bulk Adjust Dialog ─────────── */}
-                <Dialog open={adjustDialogOpen} onOpenChange={setAdjustDialogOpen}>
-                    <DialogContent className="max-w-md bg-white rounded-2xl p-6 font-sans">
-                        <DialogHeader className="space-y-1">
-                            <div className="h-10 w-10 bg-[#8B5CF6]/10 rounded-xl flex items-center justify-center text-[#8B5CF6] mb-2">
-                                <Sliders size={20} />
-                            </div>
-                            <DialogTitle className="text-lg font-bold text-slate-900">Bulk adjustment</DialogTitle>
-                            <DialogDescription className="text-xs font-medium text-slate-500">
-                                Apply a uniform change to {selectedIds.length} employee{selectedIds.length > 1 ? "s" : ""}. Recomputes totals instantly.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="mt-4 space-y-3">
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="space-y-1.5">
-                                    <Label className="text-[11px] font-semibold text-slate-600">Field</Label>
-                                    <Select value={adjustField} onValueChange={(v) => setAdjustField(v as any)}>
-                                        <SelectTrigger className="h-10 text-sm"><SelectValue /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="variable">Variable / Bonus (₹)</SelectItem>
-                                            <SelectItem value="lopDays">LOP days</SelectItem>
-                                            <SelectItem value="otHours">OT hours</SelectItem>
-                                        </SelectContent>
-                                    </Select>
+                {/* Pro-rata Sheet */}
+                <SideFormSheet
+                    open={proRataDialogOpen}
+                    onOpenChange={setProRataDialogOpen}
+                    title={`Pro-rata: ${proRataTarget?.name ?? ""}`}
+                    description="For mid-month joiners or leavers. Salary components scale by worked days / total days in month."
+                    icon={<CalendarDays size={20} />}
+                    accentColor="#4f46e5"
+                    width="md"
+                    submitLabel="Apply pro-rata"
+                    onSubmit={(e) => { e.preventDefault(); handleConfirmProRata(); }}
+                >
+                    <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-3">
+                            <Field label="Joining date">
+                                <Input type="date" value={proRataJoinDate} onChange={(e) => setProRataJoinDate(e.target.value)} />
+                            </Field>
+                            <Field label="Exit date (optional)">
+                                <Input type="date" value={proRataExitDate} onChange={(e) => setProRataExitDate(e.target.value)} />
+                            </Field>
+                        </div>
+                        <div className="p-3 bg-blue-50 rounded-lg border border-blue-100 text-[11px] font-medium text-blue-900">
+                            <div className="flex items-start gap-2">
+                                <AlertCircle size={13} className="shrink-0 mt-0.5" />
+                                <div>
+                                    Pro-rata will recompute <strong>Basic, HRA, Special, Conveyance, Medical</strong> based on (worked days / month days). Variable pay, deductions and OT are untouched.
                                 </div>
-                                <div className="space-y-1.5">
-                                    <Label className="text-[11px] font-semibold text-slate-600">Mode</Label>
-                                    <Select value={adjustMode} onValueChange={(v) => setAdjustMode(v as any)}>
-                                        <SelectTrigger className="h-10 text-sm"><SelectValue /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="fixed">Set fixed</SelectItem>
-                                            <SelectItem value="delta">Add / subtract</SelectItem>
-                                            <SelectItem value="percent">% change</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-[11px] font-semibold text-slate-600">
-                                    Value {adjustMode === "percent" ? "(%)" : adjustField === "variable" ? "(₹)" : ""}
-                                </Label>
-                                <Input
-                                    type="number"
-                                    value={adjustValue}
-                                    onChange={(e) => setAdjustValue(e.target.value)}
-                                    className="h-10 text-sm font-semibold tabular-nums"
-                                    placeholder={adjustMode === "delta" ? "Positive to add, negative to subtract" : ""}
-                                />
-                            </div>
-                            <div className="p-3 bg-slate-50 rounded-lg border border-slate-100 text-[11px] font-medium text-slate-700">
-                                {adjustMode === "fixed" && `Will set ${adjustField} to ${adjustValue} for all selected.`}
-                                {adjustMode === "delta" && `Will ${parseFloat(adjustValue) >= 0 ? "add" : "subtract"} ${Math.abs(parseFloat(adjustValue) || 0)} to ${adjustField} of all selected.`}
-                                {adjustMode === "percent" && `Will change ${adjustField} by ${adjustValue}% for all selected.`}
                             </div>
                         </div>
-                        <DialogFooter className="mt-4 gap-2">
-                            <Button variant="ghost" onClick={() => setAdjustDialogOpen(false)} className="h-10 font-semibold text-xs">Cancel</Button>
-                            <Button onClick={handleConfirmAdjust} className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-lg h-10 px-5 font-bold text-xs border-none">
-                                Apply adjustment
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
-
-                {/* ── Pro-rata Dialog ─────────── */}
-                <Dialog open={proRataDialogOpen} onOpenChange={setProRataDialogOpen}>
-                    <DialogContent className="max-w-md bg-white rounded-2xl p-6 font-sans">
-                        <DialogHeader className="space-y-1">
-                            <div className="h-10 w-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 mb-2">
-                                <CalendarDays size={20} />
+                        {proRataTarget?.isProrated && (
+                            <div className="p-3 bg-amber-50 rounded-lg border border-amber-100 text-[11px] font-medium text-amber-800">
+                                <AlertCircle size={13} className="inline mr-1" />
+                                This employee is already pro-rated ({proRataTarget.proratedDays} days). Re-applying will overwrite.
                             </div>
-                            <DialogTitle className="text-lg font-bold text-slate-900">
-                                Pro-rata: {proRataTarget?.name}
-                            </DialogTitle>
-                            <DialogDescription className="text-xs font-medium text-slate-500">
-                                For mid-month joiners or leavers. Salary components scale by worked days / total days in month.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="mt-4 space-y-3">
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="space-y-1.5">
-                                    <Label className="text-[11px] font-semibold text-slate-600">Joining date</Label>
-                                    <Input
-                                        type="date"
-                                        value={proRataJoinDate}
-                                        onChange={(e) => setProRataJoinDate(e.target.value)}
-                                        className="h-10 text-sm font-medium"
-                                    />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <Label className="text-[11px] font-semibold text-slate-600">Exit date (optional)</Label>
-                                    <Input
-                                        type="date"
-                                        value={proRataExitDate}
-                                        onChange={(e) => setProRataExitDate(e.target.value)}
-                                        className="h-10 text-sm font-medium"
-                                    />
-                                </div>
-                            </div>
-                            <div className="p-3 bg-blue-50 rounded-lg border border-blue-100 text-[11px] font-medium text-blue-900">
-                                <div className="flex items-start gap-2">
-                                    <AlertCircle size={13} className="shrink-0 mt-0.5" />
-                                    <div>
-                                        Pro-rata will recompute <strong>Basic, HRA, Special, Conveyance, Medical</strong> based on (worked days / month days). Variable pay, deductions and OT are untouched.
-                                    </div>
-                                </div>
-                            </div>
-                            {proRataTarget?.isProrated && (
-                                <div className="p-3 bg-amber-50 rounded-lg border border-amber-100 text-[11px] font-medium text-amber-800">
-                                    <AlertCircle size={13} className="inline mr-1" />
-                                    This employee is already pro-rated ({proRataTarget.proratedDays} days). Re-applying will overwrite.
-                                </div>
-                            )}
-                        </div>
-                        <DialogFooter className="mt-4 gap-2">
-                            <Button variant="ghost" onClick={() => setProRataDialogOpen(false)} className="h-10 font-semibold text-xs">Cancel</Button>
-                            <Button onClick={handleConfirmProRata} className="bg-blue-500 hover:bg-blue-600 text-white rounded-lg h-10 px-5 font-bold text-xs border-none">
-                                <CalendarDays size={13} className="mr-1.5" /> Apply pro-rata
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                        )}
+                    </div>
+                </SideFormSheet>
 
                 {/* ── Approval Chain Dialog ─────────── */}
                 <Dialog open={approvalDialogOpen} onOpenChange={setApprovalDialogOpen}>
@@ -2663,43 +2591,21 @@ const ExportOption = ({ title, subtitle, icon: Icon, color, onClick }: { title: 
 )
 
 const NewRunDialog = ({ open, onOpenChange, value, onChange, onCreate }: { open: boolean; onOpenChange: (v: boolean) => void; value: string; onChange: (v: string) => void; onCreate: () => void }) => (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-md bg-white rounded-2xl p-6 font-sans">
-            <DialogHeader className="space-y-1">
-                <div className="h-11 w-11 bg-[#8B5CF6]/10 rounded-xl flex items-center justify-center text-[#8B5CF6] mb-2">
-                    <Plus size={22} />
-                </div>
-                <DialogTitle className="text-lg font-bold text-slate-900">Create new pay run</DialogTitle>
-                <DialogDescription className="text-xs font-medium text-slate-500">
-                    Starts a fresh cycle in Draft status with no employees yet.
-                </DialogDescription>
-            </DialogHeader>
-            <div className="mt-4 space-y-2">
-                <Label className="text-[11px] font-semibold text-slate-600">Cycle label</Label>
-                <Input
-                    value={value}
-                    onChange={(e) => onChange(e.target.value)}
-                    placeholder="e.g. February 2026"
-                    className="h-11 text-sm font-medium"
-                    autoFocus
-                />
-                <p className="text-[11px] font-medium text-slate-400">
-                    Use a unique label. Existing cycles cannot be duplicated.
-                </p>
-            </div>
-            <DialogFooter className="mt-4 gap-2">
-                <Button variant="ghost" onClick={() => onOpenChange(false)} className="h-10 font-semibold text-xs">
-                    Cancel
-                </Button>
-                <Button
-                    onClick={onCreate}
-                    className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-lg h-10 px-5 font-bold text-xs border-none"
-                >
-                    Create pay run
-                </Button>
-            </DialogFooter>
-        </DialogContent>
-    </Dialog>
+    <SideFormSheet
+        open={open}
+        onOpenChange={onOpenChange}
+        title="Create new pay run"
+        description="Starts a fresh cycle in Draft status with no employees yet."
+        icon={<Plus size={20} />}
+        accentColor="#4f46e5"
+        width="md"
+        submitLabel="Create pay run"
+        onSubmit={(e) => { e.preventDefault(); onCreate(); }}
+    >
+        <Field label="Cycle label" hint="Use a unique label. Existing cycles cannot be duplicated.">
+            <Input value={value} onChange={(e) => onChange(e.target.value)} placeholder="e.g. February 2026" autoFocus />
+        </Field>
+    </SideFormSheet>
 )
 
 const EmployeeForm = ({ value, onChange, showIdentity = true }: { value: any; onChange: (v: any) => void; showIdentity?: boolean }) => {

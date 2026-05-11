@@ -75,6 +75,7 @@ import {
     DialogDescription,
     DialogFooter,
 } from "@/shared/components/ui/dialog"
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select"
 import { Switch } from "@/shared/components/ui/switch"
 import { ScrollArea } from "@/shared/components/ui/scroll-area"
@@ -2303,70 +2304,61 @@ const PayrollSettingsPage = () => {
                     </div>
                 </div>
 
-                {/* ── Component Dialog ───────────── */}
-                <Dialog open={compFormOpen} onOpenChange={setCompFormOpen}>
-                    <DialogContent className="max-w-md bg-white rounded-2xl p-6 font-sans">
-                        <DialogHeader className="space-y-1">
-                            <div className="h-10 w-10 bg-[#8B5CF6]/10 rounded-xl flex items-center justify-center text-[#8B5CF6] mb-2">
-                                {editingComp ? <Edit size={20} /> : <Plus size={20} />}
-                            </div>
-                            <DialogTitle className="text-lg font-bold text-slate-900">
-                                {editingComp ? "Edit component" : "New component"}
-                            </DialogTitle>
-                            <DialogDescription className="text-xs font-medium text-slate-500">
-                                Used across all salary templates and pay runs.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="mt-4 space-y-3">
-                            <FormField label="Name" required>
-                                <Input value={compForm.name} onChange={(e) => setCompForm({ ...compForm, name: e.target.value })} className="h-10 text-sm font-medium" placeholder="e.g. Special Allowance" />
-                            </FormField>
-                            <div className="grid grid-cols-2 gap-3">
-                                <FormField label="Type" required>
-                                    <Select value={compForm.type} onValueChange={(v) => setCompForm({ ...compForm, type: v as SalaryComponent["type"] })}>
-                                        <SelectTrigger className="h-10 text-sm"><SelectValue /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="Earning">Earning</SelectItem>
-                                            <SelectItem value="Deduction">Deduction</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </FormField>
-                                <FormField label="Calculation">
-                                    <Select value={compForm.amountType} onValueChange={(v) => setCompForm({ ...compForm, amountType: v as SalaryComponent["amountType"] })}>
-                                        <SelectTrigger className="h-10 text-sm"><SelectValue /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="Fixed">Fixed amount</SelectItem>
-                                            <SelectItem value="Percentage of Basic">% of Basic</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </FormField>
-                            </div>
-                            <FormField label={compForm.amountType === "Fixed" ? "Default amount (₹/month)" : "Default rate (%)"}>
-                                <Input type="number" value={compForm.value} onChange={(e) => setCompForm({ ...compForm, value: parseFloat(e.target.value) || 0 })} className="h-10 text-sm font-semibold tabular-nums" />
-                            </FormField>
-                            <div className="flex items-center justify-between p-2.5 bg-slate-50 rounded-lg border border-slate-200">
-                                <div>
-                                    <Label className="text-xs font-bold text-slate-700">Taxable</Label>
-                                    <p className="text-[10px] font-medium text-slate-500 mt-0.5">Adds to taxable income</p>
-                                </div>
-                                <Switch checked={compForm.isTaxable} onCheckedChange={(v) => setCompForm({ ...compForm, isTaxable: v })} className="data-[state=checked]:bg-[#8B5CF6]" />
-                            </div>
-                            <div className="flex items-center justify-between p-2.5 bg-slate-50 rounded-lg border border-slate-200">
-                                <div>
-                                    <Label className="text-xs font-bold text-slate-700">Statutory</Label>
-                                    <p className="text-[10px] font-medium text-slate-500 mt-0.5">Required by law</p>
-                                </div>
-                                <Switch checked={compForm.isStatutory} onCheckedChange={(v) => setCompForm({ ...compForm, isStatutory: v })} className="data-[state=checked]:bg-[#8B5CF6]" />
-                            </div>
+                {/* Component Sheet */}
+                <SideFormSheet
+                    open={compFormOpen}
+                    onOpenChange={setCompFormOpen}
+                    title={editingComp ? "Edit component" : "New component"}
+                    description="Used across all salary templates and pay runs."
+                    icon={editingComp ? <Edit size={20} /> : <Layers size={20} />}
+                    accentColor={editingComp ? "#7c3aed" : "#4f46e5"}
+                    width="md"
+                    submitLabel={editingComp ? "Save" : "Add component"}
+                    onSubmit={(e) => { e.preventDefault(); handleSaveComp(); }}
+                >
+                    <div className="space-y-4">
+                        <Field label="Name" required>
+                            <Input value={compForm.name} onChange={(e) => setCompForm({ ...compForm, name: e.target.value })} placeholder="e.g. Special Allowance" />
+                        </Field>
+                        <div className="grid grid-cols-2 gap-3">
+                            <Field label="Type" required>
+                                <Select value={compForm.type} onValueChange={(v) => setCompForm({ ...compForm, type: v as SalaryComponent["type"] })}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="Earning">Earning</SelectItem>
+                                        <SelectItem value="Deduction">Deduction</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </Field>
+                            <Field label="Calculation">
+                                <Select value={compForm.amountType} onValueChange={(v) => setCompForm({ ...compForm, amountType: v as SalaryComponent["amountType"] })}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="Fixed">Fixed amount</SelectItem>
+                                        <SelectItem value="Percentage of Basic">% of Basic</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </Field>
                         </div>
-                        <DialogFooter className="mt-4 gap-2">
-                            <Button variant="ghost" onClick={() => setCompFormOpen(false)} className="h-10 font-semibold text-xs">Cancel</Button>
-                            <Button onClick={handleSaveComp} className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-lg h-10 px-5 font-bold text-xs border-none">
-                                {editingComp ? "Save" : "Add component"}
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                        <Field label={compForm.amountType === "Fixed" ? "Default amount (₹/month)" : "Default rate (%)"}>
+                            <Input type="number" className="tabular-nums" value={compForm.value} onChange={(e) => setCompForm({ ...compForm, value: parseFloat(e.target.value) || 0 })} />
+                        </Field>
+                        <div className="flex items-center justify-between p-2.5 bg-slate-50 rounded-lg border border-slate-200">
+                            <div>
+                                <Label className="text-xs font-bold text-slate-700">Taxable</Label>
+                                <p className="text-[10px] font-medium text-slate-500 mt-0.5">Adds to taxable income</p>
+                            </div>
+                            <Switch checked={compForm.isTaxable} onCheckedChange={(v) => setCompForm({ ...compForm, isTaxable: v })} className="data-[state=checked]:bg-[#8B5CF6]" />
+                        </div>
+                        <div className="flex items-center justify-between p-2.5 bg-slate-50 rounded-lg border border-slate-200">
+                            <div>
+                                <Label className="text-xs font-bold text-slate-700">Statutory</Label>
+                                <p className="text-[10px] font-medium text-slate-500 mt-0.5">Required by law</p>
+                            </div>
+                            <Switch checked={compForm.isStatutory} onCheckedChange={(v) => setCompForm({ ...compForm, isStatutory: v })} className="data-[state=checked]:bg-[#8B5CF6]" />
+                        </div>
+                    </div>
+                </SideFormSheet>
 
                 {/* ── Component Delete Confirm ───────── */}
                 <Dialog open={compDeleteOpen} onOpenChange={setCompDeleteOpen}>
@@ -2385,89 +2377,80 @@ const PayrollSettingsPage = () => {
                     </DialogContent>
                 </Dialog>
 
-                {/* ── Bank Dialog ───────────── */}
-                <Dialog open={bankFormOpen} onOpenChange={setBankFormOpen}>
-                    <DialogContent className="max-w-xl bg-white rounded-2xl p-6 font-sans">
-                        <DialogHeader className="space-y-1">
-                            <div className="h-10 w-10 bg-[#8B5CF6]/10 rounded-xl flex items-center justify-center text-[#8B5CF6] mb-2">
-                                <Banknote size={20} />
-                            </div>
-                            <DialogTitle className="text-lg font-bold text-slate-900">
-                                {editingBank ? "Edit bank account" : "Add bank account"}
-                            </DialogTitle>
-                            <DialogDescription className="text-xs font-medium text-slate-500">
-                                Company account used for disbursement or statutory payouts.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="mt-4 space-y-3">
-                            <div className="grid grid-cols-2 gap-3">
-                                <FormField label="Bank name" required>
-                                    <Input value={bankForm.bankName} onChange={(e) => setBankForm({ ...bankForm, bankName: e.target.value })} className="h-10 text-sm font-medium" placeholder="HDFC Bank" />
-                                </FormField>
-                                <FormField label="Account type">
-                                    <Select value={bankForm.accountType} onValueChange={(v) => setBankForm({ ...bankForm, accountType: v as BankAccount["accountType"] })}>
-                                        <SelectTrigger className="h-10 text-sm"><SelectValue /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="Current">Current</SelectItem>
-                                            <SelectItem value="Savings">Savings</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </FormField>
-                            </div>
-                            <FormField label="Account holder name" required>
-                                <Input value={bankForm.accountName} onChange={(e) => setBankForm({ ...bankForm, accountName: e.target.value })} className="h-10 text-sm font-medium" placeholder="Fixl Solutions Pvt. Ltd." />
-                            </FormField>
-                            <div className="grid grid-cols-2 gap-3">
-                                <FormField label="Account number" required>
-                                    <Input value={bankForm.accountNumber} onChange={(e) => setBankForm({ ...bankForm, accountNumber: e.target.value })} className="h-10 text-sm font-mono" />
-                                </FormField>
-                                <FormField label="IFSC code" required>
-                                    <Input value={bankForm.ifsc} onChange={(e) => setBankForm({ ...bankForm, ifsc: e.target.value.toUpperCase() })} className="h-10 text-sm font-mono font-semibold" maxLength={11} />
-                                </FormField>
-                                <FormField label="Branch">
-                                    <Input value={bankForm.branch ?? ""} onChange={(e) => setBankForm({ ...bankForm, branch: e.target.value })} className="h-10 text-sm font-medium" placeholder="Whitefield, Bangalore" />
-                                </FormField>
-                                <FormField label="Purpose" required>
-                                    <Select value={bankForm.purpose} onValueChange={(v) => setBankForm({ ...bankForm, purpose: v as BankAccount["purpose"] })}>
-                                        <SelectTrigger className="h-10 text-sm"><SelectValue /></SelectTrigger>
-                                        <SelectContent>
-                                            {BANK_ACCOUNT_PURPOSES.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}
-                                        </SelectContent>
-                                    </Select>
-                                </FormField>
-                                <FormField label="Current balance (₹)">
-                                    <Input type="number" value={bankForm.balance ?? 0} onChange={(e) => setBankForm({ ...bankForm, balance: parseFloat(e.target.value) || 0 })} className="h-10 text-sm font-semibold tabular-nums" />
-                                </FormField>
-                                <FormField label="Added date">
-                                    <Input type="date" value={bankForm.addedDate} onChange={(e) => setBankForm({ ...bankForm, addedDate: e.target.value })} className="h-10 text-sm font-medium" />
-                                </FormField>
-                            </div>
-                            <FormField label="Notes">
-                                <Textarea value={bankForm.notes ?? ""} onChange={(e) => setBankForm({ ...bankForm, notes: e.target.value })} className="min-h-[50px] text-xs font-medium" placeholder="E.g. NEFT/RTGS enabled, contact details..." />
-                            </FormField>
-                            <div className="flex items-center justify-between p-2.5 bg-slate-50 rounded-lg border border-slate-200">
-                                <div>
-                                    <Label className="text-xs font-bold text-slate-700">Primary account</Label>
-                                    <p className="text-[10px] font-medium text-slate-500 mt-0.5">Default for salary disbursement</p>
-                                </div>
-                                <Switch checked={bankForm.isPrimary} onCheckedChange={(v) => setBankForm({ ...bankForm, isPrimary: v })} className="data-[state=checked]:bg-[#8B5CF6]" />
-                            </div>
-                            <div className="flex items-center justify-between p-2.5 bg-slate-50 rounded-lg border border-slate-200">
-                                <div>
-                                    <Label className="text-xs font-bold text-slate-700">Active</Label>
-                                    <p className="text-[10px] font-medium text-slate-500 mt-0.5">Available for use</p>
-                                </div>
-                                <Switch checked={bankForm.isActive} onCheckedChange={(v) => setBankForm({ ...bankForm, isActive: v })} className="data-[state=checked]:bg-[#8B5CF6]" />
-                            </div>
+                {/* Bank Sheet */}
+                <SideFormSheet
+                    open={bankFormOpen}
+                    onOpenChange={setBankFormOpen}
+                    title={editingBank ? "Edit bank account" : "Add bank account"}
+                    description="Company account used for disbursement or statutory payouts."
+                    icon={<Banknote size={20} />}
+                    accentColor={editingBank ? "#7c3aed" : "#4f46e5"}
+                    width="lg"
+                    submitLabel={editingBank ? "Save" : "Add account"}
+                    onSubmit={(e) => { e.preventDefault(); handleSaveBank(); }}
+                >
+                    <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-3">
+                            <Field label="Bank name" required>
+                                <Input value={bankForm.bankName} onChange={(e) => setBankForm({ ...bankForm, bankName: e.target.value })} placeholder="HDFC Bank" />
+                            </Field>
+                            <Field label="Account type">
+                                <Select value={bankForm.accountType} onValueChange={(v) => setBankForm({ ...bankForm, accountType: v as BankAccount["accountType"] })}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="Current">Current</SelectItem>
+                                        <SelectItem value="Savings">Savings</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </Field>
                         </div>
-                        <DialogFooter className="mt-4 gap-2">
-                            <Button variant="ghost" onClick={() => setBankFormOpen(false)} className="h-10 font-semibold text-xs">Cancel</Button>
-                            <Button onClick={handleSaveBank} className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-lg h-10 px-5 font-bold text-xs border-none">
-                                {editingBank ? "Save" : "Add account"}
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                        <Field label="Account holder name" required>
+                            <Input value={bankForm.accountName} onChange={(e) => setBankForm({ ...bankForm, accountName: e.target.value })} placeholder="Fixl Solutions Pvt. Ltd." />
+                        </Field>
+                        <div className="grid grid-cols-2 gap-3">
+                            <Field label="Account number" required>
+                                <Input className="font-mono" value={bankForm.accountNumber} onChange={(e) => setBankForm({ ...bankForm, accountNumber: e.target.value })} />
+                            </Field>
+                            <Field label="IFSC code" required>
+                                <Input className="font-mono" value={bankForm.ifsc} onChange={(e) => setBankForm({ ...bankForm, ifsc: e.target.value.toUpperCase() })} maxLength={11} />
+                            </Field>
+                            <Field label="Branch">
+                                <Input value={bankForm.branch ?? ""} onChange={(e) => setBankForm({ ...bankForm, branch: e.target.value })} placeholder="Whitefield, Bangalore" />
+                            </Field>
+                            <Field label="Purpose" required>
+                                <Select value={bankForm.purpose} onValueChange={(v) => setBankForm({ ...bankForm, purpose: v as BankAccount["purpose"] })}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        {BANK_ACCOUNT_PURPOSES.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                            </Field>
+                            <Field label="Current balance (₹)">
+                                <Input type="number" className="tabular-nums" value={bankForm.balance ?? 0} onChange={(e) => setBankForm({ ...bankForm, balance: parseFloat(e.target.value) || 0 })} />
+                            </Field>
+                            <Field label="Added date">
+                                <Input type="date" value={bankForm.addedDate} onChange={(e) => setBankForm({ ...bankForm, addedDate: e.target.value })} />
+                            </Field>
+                        </div>
+                        <Field label="Notes">
+                            <Textarea value={bankForm.notes ?? ""} onChange={(e) => setBankForm({ ...bankForm, notes: e.target.value })} placeholder="E.g. NEFT/RTGS enabled, contact details..." />
+                        </Field>
+                        <div className="flex items-center justify-between p-2.5 bg-slate-50 rounded-lg border border-slate-200">
+                            <div>
+                                <Label className="text-xs font-bold text-slate-700">Primary account</Label>
+                                <p className="text-[10px] font-medium text-slate-500 mt-0.5">Default for salary disbursement</p>
+                            </div>
+                            <Switch checked={bankForm.isPrimary} onCheckedChange={(v) => setBankForm({ ...bankForm, isPrimary: v })} className="data-[state=checked]:bg-[#8B5CF6]" />
+                        </div>
+                        <div className="flex items-center justify-between p-2.5 bg-slate-50 rounded-lg border border-slate-200">
+                            <div>
+                                <Label className="text-xs font-bold text-slate-700">Active</Label>
+                                <p className="text-[10px] font-medium text-slate-500 mt-0.5">Available for use</p>
+                            </div>
+                            <Switch checked={bankForm.isActive} onCheckedChange={(v) => setBankForm({ ...bankForm, isActive: v })} className="data-[state=checked]:bg-[#8B5CF6]" />
+                        </div>
+                    </div>
+                </SideFormSheet>
 
                 {/* ── Bank Delete Confirm ───────── */}
                 <Dialog open={bankDeleteOpen} onOpenChange={setBankDeleteOpen}>
@@ -2507,48 +2490,41 @@ const PayrollSettingsPage = () => {
                     </DialogContent>
                 </Dialog>
 
-                {/* ── Capture Snapshot Dialog ─────── */}
-                <Dialog open={captureOpen} onOpenChange={setCaptureOpen}>
-                    <DialogContent className="max-w-lg bg-white rounded-2xl p-6 font-sans">
-                        <DialogHeader className="space-y-1">
-                            <div className="h-10 w-10 bg-[#8B5CF6]/10 rounded-xl flex items-center justify-center text-[#8B5CF6] mb-2">
-                                <Camera size={20} />
-                            </div>
-                            <DialogTitle className="text-lg font-bold text-slate-900">Capture settings snapshot</DialogTitle>
-                            <DialogDescription className="text-xs font-medium text-slate-500">
-                                Save the current statutory + cycle settings for future restore.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="mt-4 space-y-3">
-                            <FormField label="Snapshot name" required>
-                                <Input value={captureForm.name} onChange={(e) => setCaptureForm({ ...captureForm, name: e.target.value })} className="h-10 text-sm font-medium" placeholder="e.g. Pre-FY close snapshot" />
-                            </FormField>
-                            <FormField label="Description">
-                                <Textarea value={captureForm.description} onChange={(e) => setCaptureForm({ ...captureForm, description: e.target.value })} className="min-h-[60px] text-xs font-medium" placeholder="Optional context" />
-                            </FormField>
-                            <FormField label="Reason">
-                                <Textarea value={captureForm.reason} onChange={(e) => setCaptureForm({ ...captureForm, reason: e.target.value })} className="min-h-[50px] text-xs font-medium" placeholder="Why are you capturing this?" />
-                            </FormField>
-                            <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-2">
-                                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Current state preview</div>
-                                <div className="grid grid-cols-2 gap-2">
-                                    <StatBox label="PF" value={`${statutorySettings.pfRate}% ${statutorySettings.pfEnabled ? "on" : "off"}`} />
-                                    <StatBox label="ESI" value={`${statutorySettings.esiRate}% ${statutorySettings.esiEnabled ? "on" : "off"}`} />
-                                    <StatBox label="TDS" value={statutorySettings.tdsEnabled ? "on" : "off"} />
-                                    <StatBox label="PT" value={statutorySettings.ptEnabled ? "on" : "off"} />
-                                    <StatBox label="Frequency" value={payrollCycle.frequency} />
-                                    <StatBox label="Payout day" value={`Day ${payrollCycle.payoutDay}`} />
-                                </div>
+                {/* Capture Snapshot Sheet */}
+                <SideFormSheet
+                    open={captureOpen}
+                    onOpenChange={setCaptureOpen}
+                    title="Capture settings snapshot"
+                    description="Save the current statutory + cycle settings for future restore."
+                    icon={<Camera size={20} />}
+                    accentColor="#4f46e5"
+                    width="lg"
+                    submitLabel="Capture"
+                    onSubmit={(e) => { e.preventDefault(); handleCaptureSnapshot(); }}
+                >
+                    <div className="space-y-4">
+                        <Field label="Snapshot name" required>
+                            <Input value={captureForm.name} onChange={(e) => setCaptureForm({ ...captureForm, name: e.target.value })} placeholder="e.g. Pre-FY close snapshot" />
+                        </Field>
+                        <Field label="Description">
+                            <Textarea value={captureForm.description} onChange={(e) => setCaptureForm({ ...captureForm, description: e.target.value })} placeholder="Optional context" />
+                        </Field>
+                        <Field label="Reason">
+                            <Textarea value={captureForm.reason} onChange={(e) => setCaptureForm({ ...captureForm, reason: e.target.value })} placeholder="Why are you capturing this?" />
+                        </Field>
+                        <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-2">
+                            <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Current state preview</div>
+                            <div className="grid grid-cols-2 gap-2">
+                                <StatBox label="PF" value={`${statutorySettings.pfRate}% ${statutorySettings.pfEnabled ? "on" : "off"}`} />
+                                <StatBox label="ESI" value={`${statutorySettings.esiRate}% ${statutorySettings.esiEnabled ? "on" : "off"}`} />
+                                <StatBox label="TDS" value={statutorySettings.tdsEnabled ? "on" : "off"} />
+                                <StatBox label="PT" value={statutorySettings.ptEnabled ? "on" : "off"} />
+                                <StatBox label="Frequency" value={payrollCycle.frequency} />
+                                <StatBox label="Payout day" value={`Day ${payrollCycle.payoutDay}`} />
                             </div>
                         </div>
-                        <DialogFooter className="mt-4 gap-2">
-                            <Button variant="ghost" onClick={() => setCaptureOpen(false)} className="h-10 font-semibold text-xs">Cancel</Button>
-                            <Button onClick={handleCaptureSnapshot} className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-lg h-10 px-5 font-bold text-xs border-none gap-1">
-                                <Camera size={13} /> Capture
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                    </div>
+                </SideFormSheet>
 
                 {/* ── Snapshot Detail / Compare Dialog ─────── */}
                 <Dialog open={snapshotDetailOpen} onOpenChange={setSnapshotDetailOpen}>
@@ -2663,21 +2639,19 @@ const PayrollSettingsPage = () => {
                     </DialogContent>
                 </Dialog>
 
-                {/* ── Policy Template Form Dialog ─────── */}
-                <Dialog open={policyFormOpen} onOpenChange={setPolicyFormOpen}>
-                    <DialogContent className="max-w-2xl bg-white rounded-2xl p-6 font-sans max-h-[90vh] overflow-y-auto">
-                        <DialogHeader className="space-y-1">
-                            <div className="h-10 w-10 bg-[#8B5CF6]/10 rounded-xl flex items-center justify-center text-[#8B5CF6] mb-2">
-                                <Layers size={20} />
-                            </div>
-                            <DialogTitle className="text-lg font-bold text-slate-900">
-                                {editingPolicy ? "Edit policy template" : "New policy template"}
-                            </DialogTitle>
-                            <DialogDescription className="text-xs font-medium text-slate-500">
-                                Bundle statutory + cycle overrides for quick application.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="mt-4 space-y-3">
+                {/* Policy Template Form Sheet */}
+                <SideFormSheet
+                    open={policyFormOpen}
+                    onOpenChange={setPolicyFormOpen}
+                    title={editingPolicy ? "Edit policy template" : "New policy template"}
+                    description="Bundle statutory + cycle overrides for quick application."
+                    icon={<Layers size={20} />}
+                    accentColor={editingPolicy ? "#7c3aed" : "#4f46e5"}
+                    width="xl"
+                    submitLabel={editingPolicy ? "Save" : "Add template"}
+                    onSubmit={(e) => { e.preventDefault(); handleSavePolicy(); }}
+                >
+                    <div className="space-y-4">
                             <div className="grid grid-cols-2 gap-3">
                                 <FormField label="Name" required>
                                     <Input value={policyForm.name} onChange={(e) => setPolicyForm({ ...policyForm, name: e.target.value })} className="h-10 text-sm font-medium" placeholder="e.g. Mid-Market Standard" />
@@ -2812,15 +2786,8 @@ const PayrollSettingsPage = () => {
                                     </CardContent>
                                 </Card>
                             </div>
-                        </div>
-                        <DialogFooter className="mt-4 gap-2">
-                            <Button variant="ghost" onClick={() => setPolicyFormOpen(false)} className="h-10 font-semibold text-xs">Cancel</Button>
-                            <Button onClick={handleSavePolicy} className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-lg h-10 px-5 font-bold text-xs border-none">
-                                {editingPolicy ? "Save" : "Add template"}
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                    </div>
+                </SideFormSheet>
 
                 {/* ── Apply Policy Confirm Dialog ─────── */}
                 <Dialog open={applyPolicyOpen} onOpenChange={setApplyPolicyOpen}>
@@ -2965,21 +2932,19 @@ const PayrollSettingsPage = () => {
                     </DialogContent>
                 </Dialog>
 
-                {/* ── Validation Rule Form Dialog ─────── */}
-                <Dialog open={ruleFormOpen} onOpenChange={setRuleFormOpen}>
-                    <DialogContent className="max-w-lg bg-white rounded-2xl p-6 font-sans">
-                        <DialogHeader className="space-y-1">
-                            <div className="h-10 w-10 bg-[#8B5CF6]/10 rounded-xl flex items-center justify-center text-[#8B5CF6] mb-2">
-                                <FileCheck size={20} />
-                            </div>
-                            <DialogTitle className="text-lg font-bold text-slate-900">
-                                {editingRule ? "Edit validation rule" : "New validation rule"}
-                            </DialogTitle>
-                            <DialogDescription className="text-xs font-medium text-slate-500">
-                                Guardrails against bad configuration values.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="mt-4 space-y-3">
+                {/* Validation Rule Form Sheet */}
+                <SideFormSheet
+                    open={ruleFormOpen}
+                    onOpenChange={setRuleFormOpen}
+                    title={editingRule ? "Edit validation rule" : "New validation rule"}
+                    description="Guardrails against bad configuration values."
+                    icon={<FileCheck size={20} />}
+                    accentColor={editingRule ? "#7c3aed" : "#4f46e5"}
+                    width="lg"
+                    submitLabel={editingRule ? "Save" : "Add rule"}
+                    onSubmit={(e) => { e.preventDefault(); handleSaveRule(); }}
+                >
+                    <div className="space-y-4">
                             <div className="grid grid-cols-2 gap-3">
                                 <FormField label="Setting key" required>
                                     <Select value={ruleForm.settingKey} onValueChange={(v) => setRuleForm({ ...ruleForm, settingKey: v })}>
@@ -3060,15 +3025,8 @@ const PayrollSettingsPage = () => {
                                 </div>
                                 <Switch checked={ruleForm.active} onCheckedChange={(v) => setRuleForm({ ...ruleForm, active: v })} className="data-[state=checked]:bg-[#8B5CF6]" />
                             </div>
-                        </div>
-                        <DialogFooter className="mt-4 gap-2">
-                            <Button variant="ghost" onClick={() => setRuleFormOpen(false)} className="h-10 font-semibold text-xs">Cancel</Button>
-                            <Button onClick={handleSaveRule} className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-lg h-10 px-5 font-bold text-xs border-none">
-                                {editingRule ? "Save" : "Add rule"}
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                    </div>
+                </SideFormSheet>
 
                 {/* ── Rule Delete Confirm ─────── */}
                 <Dialog open={ruleDeleteOpen} onOpenChange={setRuleDeleteOpen}>
@@ -3089,21 +3047,19 @@ const PayrollSettingsPage = () => {
                     </DialogContent>
                 </Dialog>
 
-                {/* ── Permission Form Dialog ─────── */}
-                <Dialog open={permFormOpen} onOpenChange={setPermFormOpen}>
-                    <DialogContent className="max-w-md bg-white rounded-2xl p-6 font-sans">
-                        <DialogHeader className="space-y-1">
-                            <div className="h-10 w-10 bg-[#8B5CF6]/10 rounded-xl flex items-center justify-center text-[#8B5CF6] mb-2">
-                                <KeyRound size={20} />
-                            </div>
-                            <DialogTitle className="text-lg font-bold text-slate-900">
-                                {editingPerm ? "Edit permission" : "Add role permission"}
-                            </DialogTitle>
-                            <DialogDescription className="text-xs font-medium text-slate-500">
-                                Role + scope → view / edit / approve flags.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="mt-4 space-y-3">
+                {/* Permission Form Sheet */}
+                <SideFormSheet
+                    open={permFormOpen}
+                    onOpenChange={setPermFormOpen}
+                    title={editingPerm ? "Edit permission" : "Add role permission"}
+                    description="Role + scope → view / edit / approve flags."
+                    icon={<KeyRound size={20} />}
+                    accentColor={editingPerm ? "#7c3aed" : "#4f46e5"}
+                    width="md"
+                    submitLabel={editingPerm ? "Save" : "Add permission"}
+                    onSubmit={(e) => { e.preventDefault(); handleSavePerm(); }}
+                >
+                    <div className="space-y-4">
                             <div className="grid grid-cols-2 gap-3">
                                 <FormField label="Role" required>
                                     <Input value={permForm.role} onChange={(e) => setPermForm({ ...permForm, role: e.target.value })} className="h-10 text-sm font-medium" placeholder="HR Manager" />
@@ -3143,15 +3099,8 @@ const PayrollSettingsPage = () => {
                                 </div>
                                 <Checkbox checked={permForm.canApprove ?? false} onCheckedChange={(v) => setPermForm({ ...permForm, canApprove: !!v })} />
                             </div>
-                        </div>
-                        <DialogFooter className="mt-4 gap-2">
-                            <Button variant="ghost" onClick={() => setPermFormOpen(false)} className="h-10 font-semibold text-xs">Cancel</Button>
-                            <Button onClick={handleSavePerm} className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-lg h-10 px-5 font-bold text-xs border-none">
-                                {editingPerm ? "Save" : "Add permission"}
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                    </div>
+                </SideFormSheet>
 
                 {/* ── Permission Delete Confirm ─────── */}
                 <Dialog open={permDeleteOpen} onOpenChange={setPermDeleteOpen}>
@@ -3172,60 +3121,30 @@ const PayrollSettingsPage = () => {
                     </DialogContent>
                 </Dialog>
 
-                {/* ── Department Form Dialog ──────────── */}
-                <Dialog open={deptFormOpen} onOpenChange={setDeptFormOpen}>
-                    <DialogContent className="max-w-md bg-white rounded-2xl p-6 font-sans">
-                        <DialogHeader className="space-y-1">
-                            <div className="h-10 w-10 bg-[#8B5CF6]/10 rounded-xl flex items-center justify-center text-[#8B5CF6] mb-2">
-                                <Building2 size={20} />
-                            </div>
-                            <DialogTitle className="text-lg font-bold text-slate-900">
-                                {editingDept ? "Edit department" : "Add department"}
-                            </DialogTitle>
-                            <DialogDescription className="text-xs font-medium text-slate-500">
-                                Organization department used for grouping employees.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="grid gap-3 mt-3">
-                            <div className="space-y-1.5">
-                                <Label className="text-[11px] font-semibold text-slate-600">Name *</Label>
-                                <Input
-                                    value={deptForm.name}
-                                    onChange={(e) => setDeptForm({ ...deptForm, name: e.target.value })}
-                                    placeholder="e.g. Engineering"
-                                    className="h-10 text-sm"
-                                />
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-[11px] font-semibold text-slate-600">Description</Label>
-                                <Textarea
-                                    value={deptForm.description}
-                                    onChange={(e) => setDeptForm({ ...deptForm, description: e.target.value })}
-                                    placeholder="Short description"
-                                    rows={2}
-                                    className="text-sm"
-                                />
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-[11px] font-semibold text-slate-600">Head</Label>
-                                <Input
-                                    value={deptForm.head}
-                                    onChange={(e) => setDeptForm({ ...deptForm, head: e.target.value })}
-                                    placeholder="Head of department"
-                                    className="h-10 text-sm"
-                                />
-                            </div>
-                        </div>
-                        <DialogFooter className="mt-4 gap-2">
-                            <Button variant="ghost" onClick={() => setDeptFormOpen(false)} className="h-10 font-semibold text-xs gap-1">
-                                <X size={13} /> Cancel
-                            </Button>
-                            <Button onClick={handleSaveDept} className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-lg h-10 px-5 font-bold text-xs border-none">
-                                {editingDept ? "Save changes" : "Create"}
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                {/* Department Form Sheet */}
+                <SideFormSheet
+                    open={deptFormOpen}
+                    onOpenChange={setDeptFormOpen}
+                    title={editingDept ? "Edit department" : "Add department"}
+                    description="Organization department used for grouping employees."
+                    icon={<Building2 size={20} />}
+                    accentColor={editingDept ? "#7c3aed" : "#4f46e5"}
+                    width="md"
+                    submitLabel={editingDept ? "Save changes" : "Create"}
+                    onSubmit={(e) => { e.preventDefault(); handleSaveDept(); }}
+                >
+                    <div className="space-y-4">
+                        <Field label="Name" required>
+                            <Input value={deptForm.name} onChange={(e) => setDeptForm({ ...deptForm, name: e.target.value })} placeholder="e.g. Engineering" />
+                        </Field>
+                        <Field label="Description">
+                            <Textarea value={deptForm.description} onChange={(e) => setDeptForm({ ...deptForm, description: e.target.value })} placeholder="Short description" rows={2} />
+                        </Field>
+                        <Field label="Head">
+                            <Input value={deptForm.head} onChange={(e) => setDeptForm({ ...deptForm, head: e.target.value })} placeholder="Head of department" />
+                        </Field>
+                    </div>
+                </SideFormSheet>
 
                 {/* ── Department Delete Confirm ──────── */}
                 <Dialog open={deptDeleteOpen} onOpenChange={setDeptDeleteOpen}>
@@ -3246,73 +3165,42 @@ const PayrollSettingsPage = () => {
                     </DialogContent>
                 </Dialog>
 
-                {/* ── Position Form Dialog ──────────── */}
-                <Dialog open={posFormOpen} onOpenChange={setPosFormOpen}>
-                    <DialogContent className="max-w-md bg-white rounded-2xl p-6 font-sans">
-                        <DialogHeader className="space-y-1">
-                            <div className="h-10 w-10 bg-[#8B5CF6]/10 rounded-xl flex items-center justify-center text-[#8B5CF6] mb-2">
-                                <Briefcase size={20} />
-                            </div>
-                            <DialogTitle className="text-lg font-bold text-slate-900">
-                                {editingPos ? "Edit position" : "Add position"}
-                            </DialogTitle>
-                            <DialogDescription className="text-xs font-medium text-slate-500">
-                                Job title linked to a department.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="grid gap-3 mt-3">
-                            <div className="space-y-1.5">
-                                <Label className="text-[11px] font-semibold text-slate-600">Title *</Label>
-                                <Input
-                                    value={posForm.title}
-                                    onChange={(e) => setPosForm({ ...posForm, title: e.target.value })}
-                                    placeholder="e.g. Senior Engineer"
-                                    className="h-10 text-sm"
-                                />
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-[11px] font-semibold text-slate-600">Department {!editingPos && "*"}</Label>
-                                <Select value={posForm.department} onValueChange={(v) => setPosForm({ ...posForm, department: v })}>
-                                    <SelectTrigger className="h-10 text-sm">
-                                        <SelectValue placeholder="Select department" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {departments.map((d) => (
-                                            <SelectItem key={d._id} value={d._id}>{d.name}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-[11px] font-semibold text-slate-600">Level</Label>
-                                <Input
-                                    value={posForm.level}
-                                    onChange={(e) => setPosForm({ ...posForm, level: e.target.value })}
-                                    placeholder="e.g. L3, Senior"
-                                    className="h-10 text-sm"
-                                />
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-[11px] font-semibold text-slate-600">Description</Label>
-                                <Textarea
-                                    value={posForm.description}
-                                    onChange={(e) => setPosForm({ ...posForm, description: e.target.value })}
-                                    placeholder="Optional role description"
-                                    rows={2}
-                                    className="text-sm"
-                                />
-                            </div>
-                        </div>
-                        <DialogFooter className="mt-4 gap-2">
-                            <Button variant="ghost" onClick={() => setPosFormOpen(false)} className="h-10 font-semibold text-xs gap-1">
-                                <X size={13} /> Cancel
-                            </Button>
-                            <Button onClick={handleSavePos} className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-lg h-10 px-5 font-bold text-xs border-none">
-                                {editingPos ? "Save changes" : "Create"}
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                {/* Position Form Sheet */}
+                <SideFormSheet
+                    open={posFormOpen}
+                    onOpenChange={setPosFormOpen}
+                    title={editingPos ? "Edit position" : "Add position"}
+                    description="Job title linked to a department."
+                    icon={<Briefcase size={20} />}
+                    accentColor={editingPos ? "#7c3aed" : "#4f46e5"}
+                    width="md"
+                    submitLabel={editingPos ? "Save changes" : "Create"}
+                    onSubmit={(e) => { e.preventDefault(); handleSavePos(); }}
+                >
+                    <div className="space-y-4">
+                        <Field label="Title" required>
+                            <Input value={posForm.title} onChange={(e) => setPosForm({ ...posForm, title: e.target.value })} placeholder="e.g. Senior Engineer" />
+                        </Field>
+                        <Field label="Department" required={!editingPos}>
+                            <Select value={posForm.department} onValueChange={(v) => setPosForm({ ...posForm, department: v })}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select department" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {departments.map((d) => (
+                                        <SelectItem key={d._id} value={d._id}>{d.name}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <Field label="Level">
+                            <Input value={posForm.level} onChange={(e) => setPosForm({ ...posForm, level: e.target.value })} placeholder="e.g. L3, Senior" />
+                        </Field>
+                        <Field label="Description">
+                            <Textarea value={posForm.description} onChange={(e) => setPosForm({ ...posForm, description: e.target.value })} placeholder="Optional role description" rows={2} />
+                        </Field>
+                    </div>
+                </SideFormSheet>
 
                 {/* ── Position Delete Confirm ──────── */}
                 <Dialog open={posDeleteOpen} onOpenChange={setPosDeleteOpen}>
@@ -3333,77 +3221,52 @@ const PayrollSettingsPage = () => {
                     </DialogContent>
                 </Dialog>
 
-                {/* ── Holiday Form Dialog ──────────── */}
-                <Dialog open={holidayFormOpen} onOpenChange={setHolidayFormOpen}>
-                    <DialogContent className="max-w-md bg-white rounded-2xl p-6 font-sans">
-                        <DialogHeader className="space-y-1">
-                            <div className="h-10 w-10 bg-[#8B5CF6]/10 rounded-xl flex items-center justify-center text-[#8B5CF6] mb-2">
-                                <CalendarDays size={20} />
+                {/* Holiday Form Sheet */}
+                <SideFormSheet
+                    open={holidayFormOpen}
+                    onOpenChange={setHolidayFormOpen}
+                    title={editingHoliday ? "Edit holiday" : "Add holiday"}
+                    description="Company holiday calendar entry."
+                    icon={<CalendarDays size={20} />}
+                    accentColor={editingHoliday ? "#7c3aed" : "#4f46e5"}
+                    width="md"
+                    submitLabel={editingHoliday ? "Save changes" : "Create"}
+                    onSubmit={(e) => { e.preventDefault(); handleSaveHoliday(); }}
+                >
+                    <div className="space-y-4">
+                        <Field label="Name" required>
+                            <Input value={holidayForm.name} onChange={(e) => setHolidayForm({ ...holidayForm, name: e.target.value })} placeholder="e.g. Independence Day" />
+                        </Field>
+                        <Field label="Date" required>
+                            <Input type="date" value={holidayForm.date} onChange={(e) => setHolidayForm({ ...holidayForm, date: e.target.value })} disabled={!!editingHoliday} />
+                        </Field>
+                        <Field label="Type">
+                            <Select value={holidayForm.type} onValueChange={(v) => setHolidayForm({ ...holidayForm, type: v as "National" | "Optional" })}>
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="National">National</SelectItem>
+                                    <SelectItem value="Optional">Optional</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <div className="flex items-center justify-between rounded-lg border border-slate-200 p-3">
+                            <div>
+                                <p className="text-sm font-bold text-slate-900">Paid holiday</p>
+                                <p className="text-[11px] font-medium text-slate-500">Employees are paid for this day.</p>
                             </div>
-                            <DialogTitle className="text-lg font-bold text-slate-900">
-                                {editingHoliday ? "Edit holiday" : "Add holiday"}
-                            </DialogTitle>
-                            <DialogDescription className="text-xs font-medium text-slate-500">
-                                Company holiday calendar entry.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="grid gap-3 mt-3">
-                            <div className="space-y-1.5">
-                                <Label className="text-[11px] font-semibold text-slate-600">Name *</Label>
-                                <Input
-                                    value={holidayForm.name}
-                                    onChange={(e) => setHolidayForm({ ...holidayForm, name: e.target.value })}
-                                    placeholder="e.g. Independence Day"
-                                    className="h-10 text-sm"
-                                />
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-[11px] font-semibold text-slate-600">Date *</Label>
-                                <Input
-                                    type="date"
-                                    value={holidayForm.date}
-                                    onChange={(e) => setHolidayForm({ ...holidayForm, date: e.target.value })}
-                                    disabled={!!editingHoliday}
-                                    className="h-10 text-sm"
-                                />
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-[11px] font-semibold text-slate-600">Type</Label>
-                                <Select value={holidayForm.type} onValueChange={(v) => setHolidayForm({ ...holidayForm, type: v as "National" | "Optional" })}>
-                                    <SelectTrigger className="h-10 text-sm">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="National">National</SelectItem>
-                                        <SelectItem value="Optional">Optional</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="flex items-center justify-between rounded-lg border border-slate-200 p-3">
-                                <div>
-                                    <p className="text-sm font-bold text-slate-900">Paid holiday</p>
-                                    <p className="text-[11px] font-medium text-slate-500">Employees are paid for this day.</p>
-                                </div>
-                                <Switch checked={holidayForm.isPaid} onCheckedChange={(c) => setHolidayForm({ ...holidayForm, isPaid: c })} className="data-[state=checked]:bg-[#8B5CF6]" />
-                            </div>
-                            <div className="flex items-center justify-between rounded-lg border border-slate-200 p-3">
-                                <div>
-                                    <p className="text-sm font-bold text-slate-900">Mandatory</p>
-                                    <p className="text-[11px] font-medium text-slate-500">Cannot be swapped by employees.</p>
-                                </div>
-                                <Switch checked={holidayForm.isMandatory} onCheckedChange={(c) => setHolidayForm({ ...holidayForm, isMandatory: c })} className="data-[state=checked]:bg-[#8B5CF6]" />
-                            </div>
+                            <Switch checked={holidayForm.isPaid} onCheckedChange={(c) => setHolidayForm({ ...holidayForm, isPaid: c })} className="data-[state=checked]:bg-[#8B5CF6]" />
                         </div>
-                        <DialogFooter className="mt-4 gap-2">
-                            <Button variant="ghost" onClick={() => setHolidayFormOpen(false)} className="h-10 font-semibold text-xs gap-1">
-                                <X size={13} /> Cancel
-                            </Button>
-                            <Button onClick={handleSaveHoliday} className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-lg h-10 px-5 font-bold text-xs border-none">
-                                {editingHoliday ? "Save changes" : "Create"}
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                        <div className="flex items-center justify-between rounded-lg border border-slate-200 p-3">
+                            <div>
+                                <p className="text-sm font-bold text-slate-900">Mandatory</p>
+                                <p className="text-[11px] font-medium text-slate-500">Cannot be swapped by employees.</p>
+                            </div>
+                            <Switch checked={holidayForm.isMandatory} onCheckedChange={(c) => setHolidayForm({ ...holidayForm, isMandatory: c })} className="data-[state=checked]:bg-[#8B5CF6]" />
+                        </div>
+                    </div>
+                </SideFormSheet>
 
                 {/* ── Holiday Delete Confirm ──────── */}
                 <Dialog open={holidayDeleteOpen} onOpenChange={setHolidayDeleteOpen}>

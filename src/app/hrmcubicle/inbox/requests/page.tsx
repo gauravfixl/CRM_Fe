@@ -34,6 +34,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import { Textarea } from "@/shared/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
 import { Input } from "@/shared/components/ui/input";
@@ -376,201 +377,161 @@ const RequestsPage = () => {
             </main>
 
             {/* Response Portal Dialog */}
-            <Dialog open={isDetailDialogOpen} onOpenChange={(open) => { setIsDetailDialogOpen(open); if (!open) setReply(""); }}>
-                <DialogContent className="bg-white rounded-[2.5rem] border-none p-10 max-w-2xl shadow-3xl">
-                    <DialogHeader className="space-y-6">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                                <Avatar className="h-14 w-14 border-4 border-slate-50 shadow-sm ring-1 ring-slate-100">
-                                    <AvatarFallback className="bg-indigo-50 text-indigo-700 text-lg font-bold">{selectedRequest?.from.avatar}</AvatarFallback>
-                                </Avatar>
-                                <div className="space-y-0.5">
-                                    <h3 className="font-bold text-2xl text-slate-900 tracking-tight">{selectedRequest?.from.name}</h3>
-                                    <Badge className="bg-slate-100 text-slate-500 border-none font-bold text-[9px] uppercase tracking-widest px-2 h-5">Employee Support Ticket</Badge>
+            <SideFormSheet
+                open={isDetailDialogOpen}
+                onOpenChange={(open) => { setIsDetailDialogOpen(open); if (!open) setReply(""); }}
+                title={selectedRequest?.subject || "Ticket Detail"}
+                description={selectedRequest ? `${selectedRequest.from.name} · #REQ-${selectedRequest.id.slice(-6).toUpperCase()}` : undefined}
+                icon={<MailCheck size={20} />}
+                accentColor="#0f172a"
+                width="lg"
+                submitLabel="Dispatch & Resolve Ticket"
+                submitDisabled={!isReplyValid}
+                onSubmit={(e) => {
+                    e.preventDefault();
+                    if (selectedRequest) {
+                        if (!reply.trim()) {
+                            toast({ title: "Reply Required", description: "Please write a response before resolving.", variant: "destructive" });
+                            return;
+                        }
+                        addReplyToRequest(selectedRequest.id, reply.trim());
+                        handleStatusUpdate(selectedRequest.id, 'Resolved');
+                        setIsDetailDialogOpen(false);
+                        setReply("");
+                    }
+                }}
+            >
+                {selectedRequest && (
+                    <div className="space-y-5">
+                        <div className="flex items-center gap-3">
+                            <Avatar className="h-11 w-11 border-2 border-slate-50 shadow-sm">
+                                <AvatarFallback className="bg-indigo-50 text-indigo-700 font-bold">{selectedRequest.from.avatar}</AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-sm font-bold text-slate-900">{selectedRequest.from.name}</p>
+                                <div className="flex items-center gap-2 mt-1">
+                                    <Badge variant="outline" className="border-indigo-100 text-indigo-600 bg-indigo-50 text-[9px] font-bold h-5 px-2 rounded-md">{selectedRequest.type}</Badge>
+                                    <Badge variant="outline" className={`${selectedRequest.priority === 'High' ? 'border-rose-100 text-rose-600 bg-rose-50' : 'border-slate-100 text-slate-400 bg-slate-50'} text-[9px] font-bold h-5 px-2 rounded-md`}>{selectedRequest.priority} Priority</Badge>
                                 </div>
                             </div>
-                            <div className="text-right shrink-0">
-                                <p className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">Ticket ID</p>
-                                <p className="text-sm font-bold text-slate-500 tabular-nums">#REQ-{selectedRequest?.id.slice(-6).toUpperCase()}</p>
-                            </div>
                         </div>
-                        <div className="h-px bg-slate-100 w-full" />
-                        <div className="space-y-2">
-                            <div className="flex items-center gap-2">
-                                <Badge variant="outline" className="border-indigo-100 text-indigo-600 bg-indigo-50 text-[9px] font-bold h-5 px-2 rounded-md">{selectedRequest?.type}</Badge>
-                                <Badge variant="outline" className={`${selectedRequest?.priority === 'High' ? 'border-rose-100 text-rose-600 bg-rose-50' : 'border-slate-100 text-slate-400 bg-slate-50'} text-[9px] font-bold h-5 px-2 rounded-md`}>{selectedRequest?.priority} Priority</Badge>
-                            </div>
-                            <DialogTitle className="text-xl font-bold text-slate-900 tracking-tight">{selectedRequest?.subject}</DialogTitle>
+
+                        <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                            <p className="text-sm text-slate-600 font-medium leading-relaxed italic">"{selectedRequest.message}"</p>
                         </div>
-                    </DialogHeader>
 
-                    {selectedRequest && (
-                        <div className="space-y-6 py-6">
-                            <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
-                                <p className="text-sm text-slate-600 font-medium leading-relaxed italic">"{selectedRequest.message}"</p>
-                            </div>
-
-                            <div className="space-y-3">
-                                <div className="flex items-center justify-between px-1">
-                                    <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2"><Send size={12} /> Communication Portal</Label>
-                                    <div className="flex items-center gap-3">
-                                        <span className={`text-[10px] font-bold tabular-nums ${replyTrimmed.length > 1000 ? 'text-rose-500' : 'text-slate-300'}`}>{replyTrimmed.length}/1000</span>
-                                        <span className="text-[10px] text-slate-300 font-medium italic">Sent to employee's workspace instantly</span>
-                                    </div>
-                                </div>
-                                <Textarea
-                                    className={`rounded-2xl bg-white focus:border-indigo-500 min-h-[140px] p-5 font-medium text-sm transition-all shadow-inner ${replyError ? 'border-rose-300' : 'border-slate-200'}`}
-                                    placeholder="Draft your administrative response or action steps here..."
-                                    value={reply}
-                                    maxLength={1100}
-                                    onChange={(e) => setReply(e.target.value)}
-                                    aria-invalid={!!replyError}
-                                />
-                                {replyError && <p className="text-[11px] font-semibold text-rose-500 ml-1">{replyError}</p>}
-                            </div>
-                        </div>
-                    )}
-
-                    <DialogFooter className="gap-3 pt-6 border-t border-slate-50 sm:justify-start">
-                        <Button
-                            className="flex-1 bg-slate-900 hover:bg-emerald-600 text-white rounded-2xl h-14 font-bold text-sm shadow-xl shadow-slate-200 transition-all flex gap-3 group disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
-                            disabled={!isReplyValid}
-                            onClick={() => {
-                                if (selectedRequest) {
-                                    if (!reply.trim()) {
-                                        toast({ title: "Reply Required", description: "Please write a response before resolving.", variant: "destructive" });
-                                        return;
-                                    }
-                                    addReplyToRequest(selectedRequest.id, reply.trim());
-                                    handleStatusUpdate(selectedRequest.id, 'Resolved');
-                                    setIsDetailDialogOpen(false);
-                                    setReply("");
-                                }
-                            }}
+                        <Field
+                            label="Communication Portal"
+                            required
+                            error={replyError || undefined}
+                            hint={replyError ? undefined : `${replyTrimmed.length}/1000 · sent to employee instantly`}
                         >
-                            <MailCheck size={18} className="group-hover:scale-110 transition-transform" /> Dispatch & Resolve Ticket
-                        </Button>
-                        <Button variant="outline" className="h-14 px-8 rounded-2xl font-bold border-slate-200 text-slate-600" onClick={() => { setIsDetailDialogOpen(false); setReply(""); }}>Close Portal</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                            <Textarea
+                                className="min-h-[160px]"
+                                placeholder="Draft your administrative response or action steps here..."
+                                value={reply}
+                                maxLength={1100}
+                                onChange={(e) => setReply(e.target.value)}
+                                aria-invalid={!!replyError}
+                            />
+                        </Field>
+                    </div>
+                )}
+            </SideFormSheet>
 
             {/* Create New Ticket Dialog */}
-            <Dialog open={isCreateOpen} onOpenChange={(open) => { setIsCreateOpen(open); if (!open) resetCreateForm(); }}>
-                <DialogContent className="bg-white rounded-3xl border-none p-10 max-w-2xl shadow-2xl">
-                    <DialogHeader className="space-y-4">
-                        <div className="h-12 w-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 mb-2">
-                            <Plus size={24} />
-                        </div>
-                        <DialogTitle className="text-2xl font-bold tracking-tight text-slate-900">Log a New Support Ticket</DialogTitle>
-                        <DialogDescription className="text-slate-500 font-medium">Raise a new request on behalf of an employee. It will be added to the queue as Open.</DialogDescription>
-                    </DialogHeader>
-
-                    <div className="py-4 space-y-5">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Employee Name *</Label>
-                                <Input
-                                    className={`rounded-2xl bg-slate-50 focus:bg-white h-12 font-medium px-4 ${fromNameError ? 'border-rose-300 focus:border-rose-400' : 'border-slate-200'}`}
-                                    placeholder="e.g. Priya Sharma"
-                                    value={createForm.fromName}
-                                    maxLength={80}
-                                    onChange={(e) => setCreateForm(f => ({ ...f, fromName: e.target.value }))}
-                                    aria-invalid={!!fromNameError}
-                                />
-                                {fromNameError && <p className="text-[11px] font-semibold text-rose-500 ml-1">{fromNameError}</p>}
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Employee ID</Label>
-                                <Input
-                                    className={`rounded-2xl bg-slate-50 focus:bg-white h-12 font-medium px-4 ${fromIdError ? 'border-rose-300 focus:border-rose-400' : 'border-slate-200'}`}
-                                    placeholder="e.g. EMP006 (optional)"
-                                    value={createForm.fromId}
-                                    maxLength={25}
-                                    onChange={(e) => setCreateForm(f => ({ ...f, fromId: e.target.value }))}
-                                    aria-invalid={!!fromIdError}
-                                />
-                                {fromIdError && <p className="text-[11px] font-semibold text-rose-500 ml-1">{fromIdError}</p>}
-                            </div>
-                        </div>
-
-                        <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                                <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Subject *</Label>
-                                <span className={`text-[10px] font-bold tabular-nums ${subjectTrimmed.length > 100 ? 'text-rose-500' : 'text-slate-300'}`}>{subjectTrimmed.length}/100</span>
-                            </div>
+            <SideFormSheet
+                open={isCreateOpen}
+                onOpenChange={(open) => { setIsCreateOpen(open); if (!open) resetCreateForm(); }}
+                title="Log a New Support Ticket"
+                description="Raise a new request on behalf of an employee. It will be added to the queue as Open."
+                icon={<Plus size={20} />}
+                accentColor="#4f46e5"
+                width="lg"
+                submitLabel="Create Ticket"
+                submitDisabled={!isCreateValid}
+                onSubmit={(e) => { e.preventDefault(); handleCreateRequest(); }}
+            >
+                <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Employee Name" required error={fromNameError || undefined}>
                             <Input
-                                className={`rounded-2xl bg-slate-50 focus:bg-white h-12 font-medium px-4 ${subjectError ? 'border-rose-300 focus:border-rose-400' : 'border-slate-200'}`}
-                                placeholder="Short headline for the ticket"
-                                value={createForm.subject}
-                                maxLength={120}
-                                onChange={(e) => setCreateForm(f => ({ ...f, subject: e.target.value }))}
-                                aria-invalid={!!subjectError}
+                                placeholder="e.g. Priya Sharma"
+                                value={createForm.fromName}
+                                maxLength={80}
+                                onChange={(e) => setCreateForm(f => ({ ...f, fromName: e.target.value }))}
+                                aria-invalid={!!fromNameError}
                             />
-                            {subjectError && <p className="text-[11px] font-semibold text-rose-500 ml-1">{subjectError}</p>}
-                        </div>
-
-                        <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                                <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Message *</Label>
-                                <span className={`text-[10px] font-bold tabular-nums ${messageTrimmed.length > 500 ? 'text-rose-500' : 'text-slate-300'}`}>{messageTrimmed.length}/500</span>
-                            </div>
-                            <Textarea
-                                className={`rounded-2xl bg-slate-50 focus:bg-white min-h-[110px] font-medium p-4 ${messageError ? 'border-rose-300 focus:border-rose-400' : 'border-slate-200'}`}
-                                placeholder="Describe the request in detail..."
-                                value={createForm.message}
-                                maxLength={550}
-                                onChange={(e) => setCreateForm(f => ({ ...f, message: e.target.value }))}
-                                aria-invalid={!!messageError}
+                        </Field>
+                        <Field label="Employee ID" error={fromIdError || undefined}>
+                            <Input
+                                placeholder="e.g. EMP006 (optional)"
+                                value={createForm.fromId}
+                                maxLength={25}
+                                onChange={(e) => setCreateForm(f => ({ ...f, fromId: e.target.value }))}
+                                aria-invalid={!!fromIdError}
                             />
-                            {messageError && <p className="text-[11px] font-semibold text-rose-500 ml-1">{messageError}</p>}
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Type</Label>
-                                <Select value={createForm.type} onValueChange={(v) => setCreateForm(f => ({ ...f, type: v as RequestType }))}>
-                                    <SelectTrigger className="h-12 rounded-2xl bg-slate-50 border-slate-200 font-medium">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="Leave">Leave</SelectItem>
-                                        <SelectItem value="Attendance">Attendance</SelectItem>
-                                        <SelectItem value="Expense">Expense</SelectItem>
-                                        <SelectItem value="Asset">Asset</SelectItem>
-                                        <SelectItem value="Profile Update">Profile Update</SelectItem>
-                                        <SelectItem value="Letter">Letter</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Priority</Label>
-                                <Select value={createForm.priority} onValueChange={(v) => setCreateForm(f => ({ ...f, priority: v as 'Low' | 'Medium' | 'High' }))}>
-                                    <SelectTrigger className="h-12 rounded-2xl bg-slate-50 border-slate-200 font-medium">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="Low">Low</SelectItem>
-                                        <SelectItem value="Medium">Medium</SelectItem>
-                                        <SelectItem value="High">High</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
+                        </Field>
                     </div>
 
-                    <DialogFooter className="gap-3">
-                        <Button variant="outline" className="rounded-xl h-12 font-bold px-8" onClick={() => { setIsCreateOpen(false); resetCreateForm(); }}>Cancel</Button>
-                        <Button
-                            className="flex-1 bg-slate-900 hover:bg-indigo-600 text-white rounded-xl h-12 font-bold shadow-lg gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
-                            onClick={handleCreateRequest}
-                            disabled={!isCreateValid}
-                        >
-                            <Plus size={16} /> Create Ticket
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    <Field
+                        label="Subject"
+                        required
+                        error={subjectError || undefined}
+                        hint={subjectError ? undefined : `${subjectTrimmed.length}/100`}
+                    >
+                        <Input
+                            placeholder="Short headline for the ticket"
+                            value={createForm.subject}
+                            maxLength={120}
+                            onChange={(e) => setCreateForm(f => ({ ...f, subject: e.target.value }))}
+                            aria-invalid={!!subjectError}
+                        />
+                    </Field>
+
+                    <Field
+                        label="Message"
+                        required
+                        error={messageError || undefined}
+                        hint={messageError ? undefined : `${messageTrimmed.length}/500`}
+                    >
+                        <Textarea
+                            className="min-h-[120px]"
+                            placeholder="Describe the request in detail..."
+                            value={createForm.message}
+                            maxLength={550}
+                            onChange={(e) => setCreateForm(f => ({ ...f, message: e.target.value }))}
+                            aria-invalid={!!messageError}
+                        />
+                    </Field>
+
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Type">
+                            <Select value={createForm.type} onValueChange={(v) => setCreateForm(f => ({ ...f, type: v as RequestType }))}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Leave">Leave</SelectItem>
+                                    <SelectItem value="Attendance">Attendance</SelectItem>
+                                    <SelectItem value="Expense">Expense</SelectItem>
+                                    <SelectItem value="Asset">Asset</SelectItem>
+                                    <SelectItem value="Profile Update">Profile Update</SelectItem>
+                                    <SelectItem value="Letter">Letter</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <Field label="Priority">
+                            <Select value={createForm.priority} onValueChange={(v) => setCreateForm(f => ({ ...f, priority: v as 'Low' | 'Medium' | 'High' }))}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Low">Low</SelectItem>
+                                    <SelectItem value="Medium">Medium</SelectItem>
+                                    <SelectItem value="High">High</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                    </div>
+                </div>
+            </SideFormSheet>
 
             {/* Delete Confirmation Dialog */}
             <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>

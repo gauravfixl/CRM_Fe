@@ -10,8 +10,8 @@ import { FileText, Download, BarChart3, PieChart, Calendar, Search, Filter, Cloc
 import { useToast } from "@/shared/components/ui/use-toast";
 import { Input } from "@/shared/components/ui/input";
 import { motion } from "framer-motion";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/shared/components/ui/dialog";
-import { Label } from "@/shared/components/ui/label";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
 
 const TimeAttendReportsPage = () => {
@@ -421,107 +421,100 @@ const TimeAttendReportsPage = () => {
                 </DialogContent>
             </Dialog>
 
-            {/* Custom Report Dialog */}
-            <Dialog open={isCustomReportOpen} onOpenChange={setIsCustomReportOpen}>
-                <DialogContent className="sm:max-w-[425px] rounded-3xl p-8 bg-white border-2 border-slate-200 shadow-2xl">
-                    <DialogHeader>
-                        <DialogTitle className="text-2xl font-bold text-slate-900">Custom Report Builder</DialogTitle>
-                        <DialogDescription className="font-semibold text-slate-500">
-                            Configure parameters for a new report.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-6 py-4">
-                        <div className="grid gap-2">
-                            <Label htmlFor="type" className="font-bold text-slate-700">Report Type</Label>
-                            <Select value={customReportType} onValueChange={setCustomReportType}>
-                                <SelectTrigger className="w-full h-12 rounded-xl bg-slate-50 border-slate-200 font-bold text-slate-600">
-                                    <SelectValue placeholder="Select type" />
-                                </SelectTrigger>
-                                <SelectContent className="rounded-xl border border-slate-200 shadow-xl font-bold">
-                                    <SelectItem value="summary">Attendance Summary</SelectItem>
-                                    <SelectItem value="detailed">Detailed Logs</SelectItem>
-                                    <SelectItem value="exception">Exception Report</SelectItem>
-                                </SelectContent>
-                            </Select>
+            {/* Custom Report Builder */}
+            <SideFormSheet
+                open={isCustomReportOpen}
+                onOpenChange={setIsCustomReportOpen}
+                title="Custom Report Builder"
+                description="Configure parameters for a new report."
+                icon={<FileJson size={20} />}
+                accentColor="#4f46e5"
+                width="md"
+                submitLabel="Generate Report"
+                onSubmit={(e) => {
+                    e.preventDefault();
+                    if (!customFromDate || !customToDate) {
+                        toast({ title: "Missing Dates", description: "Please pick both from and to dates.", variant: "destructive" });
+                        return;
+                    }
+                    const fromD = new Date(customFromDate);
+                    const toD = new Date(customToDate);
+                    if (Number.isNaN(fromD.getTime()) || Number.isNaN(toD.getTime())) {
+                        toast({ title: "Invalid Dates", description: "Please pick valid dates.", variant: "destructive" });
+                        return;
+                    }
+                    if (toD < fromD) {
+                        toast({ title: "Invalid Range", description: "End date must be on or after start date.", variant: "destructive" });
+                        return;
+                    }
+                    const spanDays = (toD.getTime() - fromD.getTime()) / (1000 * 60 * 60 * 24);
+                    if (spanDays > 365) {
+                        toast({ title: "Range Too Wide", description: "Date range cannot exceed 365 days.", variant: "destructive" });
+                        return;
+                    }
+                    if (toD > new Date()) {
+                        toast({ title: "Invalid End Date", description: "End date cannot be in the future.", variant: "destructive" });
+                        return;
+                    }
+
+                    setIsCustomReportOpen(false);
+
+                    const headers = ["Department", "Attendance Rate", "Late Count", "Overtime Hours", "Leave Days", "Status"];
+                    const rows = [
+                        ["Engineering", "94%", "3", "18h", "4", "Good"],
+                        ["Sales", "88%", "7", "12h", "6", "Needs Attention"],
+                        ["Operations", "91%", "5", "22h", "3", "Good"],
+                        ["HR", "97%", "1", "8h", "2", "Excellent"],
+                    ];
+                    const reportTypeLabel = customReportType === "summary" ? "Summary" : customReportType === "detailed" ? "Detailed" : "Exception";
+                    const meta = [`# Report Type: ${reportTypeLabel}`, `# Date Range: ${customFromDate} to ${customToDate}`, ""];
+                    const csvContent = [...meta, headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+
+                    const blob = new Blob([csvContent], { type: "text/csv" });
+                    const url = window.URL.createObjectURL(blob);
+                    const link = document.createElement("a");
+                    link.href = url;
+                    link.download = `Custom_${reportTypeLabel}_Report_${customFromDate}_to_${customToDate}.csv`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    window.URL.revokeObjectURL(url);
+
+                    toast({ title: "Report Generated", description: `${reportTypeLabel} report (${customFromDate} → ${customToDate}) downloaded.`, className: "bg-emerald-50 border-emerald-100 text-emerald-800" });
+                }}
+            >
+                <div className="space-y-4">
+                    <Field label="Report Type" required>
+                        <Select value={customReportType} onValueChange={setCustomReportType}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="summary">Attendance Summary</SelectItem>
+                                <SelectItem value="detailed">Detailed Logs</SelectItem>
+                                <SelectItem value="exception">Exception Report</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                    <Field label="Date Range" required hint="From and To must be valid; range limited to past 365 days.">
+                        <div className="flex gap-2">
+                            <Input
+                                type="date"
+                                value={customFromDate}
+                                onChange={(e) => setCustomFromDate(e.target.value)}
+                                max={new Date().toISOString().split("T")[0]}
+                            />
+                            <Input
+                                type="date"
+                                value={customToDate}
+                                onChange={(e) => setCustomToDate(e.target.value)}
+                                max={new Date().toISOString().split("T")[0]}
+                                min={customFromDate}
+                            />
                         </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="range" className="font-bold text-slate-700">Date Range</Label>
-                            <div className="flex gap-2">
-                                <Input
-                                    type="date"
-                                    value={customFromDate}
-                                    onChange={(e) => setCustomFromDate(e.target.value)}
-                                    max={new Date().toISOString().split("T")[0]}
-                                    className="h-12 rounded-xl bg-slate-50 border-slate-200 font-bold text-slate-600"
-                                />
-                                <Input
-                                    type="date"
-                                    value={customToDate}
-                                    onChange={(e) => setCustomToDate(e.target.value)}
-                                    max={new Date().toISOString().split("T")[0]}
-                                    min={customFromDate}
-                                    className="h-12 rounded-xl bg-slate-50 border-slate-200 font-bold text-slate-600"
-                                />
-                            </div>
-                            <p className="text-xs text-slate-400">From and To must be valid; range limited to past 365 days.</p>
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button className="w-full h-12 rounded-xl bg-[#6366f1] hover:bg-[#5558e6] font-bold text-lg shadow-lg shadow-indigo-200" onClick={() => {
-                            if (!customFromDate || !customToDate) {
-                                toast({ title: "Missing Dates", description: "Please pick both from and to dates.", variant: "destructive" });
-                                return;
-                            }
-                            const fromD = new Date(customFromDate);
-                            const toD = new Date(customToDate);
-                            if (Number.isNaN(fromD.getTime()) || Number.isNaN(toD.getTime())) {
-                                toast({ title: "Invalid Dates", description: "Please pick valid dates.", variant: "destructive" });
-                                return;
-                            }
-                            if (toD < fromD) {
-                                toast({ title: "Invalid Range", description: "End date must be on or after start date.", variant: "destructive" });
-                                return;
-                            }
-                            const spanDays = (toD.getTime() - fromD.getTime()) / (1000 * 60 * 60 * 24);
-                            if (spanDays > 365) {
-                                toast({ title: "Range Too Wide", description: "Date range cannot exceed 365 days.", variant: "destructive" });
-                                return;
-                            }
-                            if (toD > new Date()) {
-                                toast({ title: "Invalid End Date", description: "End date cannot be in the future.", variant: "destructive" });
-                                return;
-                            }
-
-                            setIsCustomReportOpen(false);
-
-                            const headers = ["Department", "Attendance Rate", "Late Count", "Overtime Hours", "Leave Days", "Status"];
-                            const rows = [
-                                ["Engineering", "94%", "3", "18h", "4", "Good"],
-                                ["Sales", "88%", "7", "12h", "6", "Needs Attention"],
-                                ["Operations", "91%", "5", "22h", "3", "Good"],
-                                ["HR", "97%", "1", "8h", "2", "Excellent"],
-                            ];
-                            const reportTypeLabel = customReportType === "summary" ? "Summary" : customReportType === "detailed" ? "Detailed" : "Exception";
-                            const meta = [`# Report Type: ${reportTypeLabel}`, `# Date Range: ${customFromDate} to ${customToDate}`, ""];
-                            const csvContent = [...meta, headers.join(","), ...rows.map(r => r.join(","))].join("\n");
-
-                            const blob = new Blob([csvContent], { type: "text/csv" });
-                            const url = window.URL.createObjectURL(blob);
-                            const link = document.createElement("a");
-                            link.href = url;
-                            link.download = `Custom_${reportTypeLabel}_Report_${customFromDate}_to_${customToDate}.csv`;
-                            document.body.appendChild(link);
-                            link.click();
-                            document.body.removeChild(link);
-                            window.URL.revokeObjectURL(url);
-
-                            toast({ title: "Report Generated", description: `${reportTypeLabel} report (${customFromDate} → ${customToDate}) downloaded.`, className: "bg-emerald-50 border-emerald-100 text-emerald-800" });
-                        }}>
-                            Generate Report
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    </Field>
+                </div>
+            </SideFormSheet>
         </div>
     );
 };

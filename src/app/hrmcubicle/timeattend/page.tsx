@@ -24,16 +24,7 @@ import { Avatar, AvatarFallback } from "@/shared/components/ui/avatar";
 import { useToast } from "@/shared/components/ui/use-toast";
 import { useAttendanceStore } from "@/shared/data/attendance-store";
 import { Input } from "@/shared/components/ui/input";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/shared/components/ui/dialog";
-import { Label } from "@/shared/components/ui/label";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
 
 const TimeAttendDashboard = () => {
@@ -151,56 +142,51 @@ const TimeAttendDashboard = () => {
         </div>
 
         <div className="flex gap-3">
-          <Dialog open={isManualEntryOpen} onOpenChange={setIsManualEntryOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-[#CB9DF0] hover:bg-[#b580e0] text-white rounded-xl h-12 px-6 shadow-lg font-bold">
-                <UserPlus className="mr-2 h-5 w-5" /> Manual Entry
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="bg-white rounded-[2rem] border-2 border-slate-200 p-8">
-              <DialogHeader>
-                <DialogTitle>Manual Attendance Entry</DialogTitle>
-                <DialogDescription>Mark attendance for employees who forgot to punch or had biometric issues.</DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-6 py-4">
-                <div className="space-y-2">
-                  <Label>Employee ID</Label>
-                  <Input
-                    placeholder="e.g. EMP007"
-                    value={manualEntry.empId}
-                    onChange={e => setManualEntry({ ...manualEntry, empId: e.target.value })}
-                    className="rounded-xl bg-slate-50 border border-slate-200 h-12"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Employee Name</Label>
-                  <Input
-                    placeholder="e.g. Rahul Verma"
-                    value={manualEntry.empName}
-                    onChange={e => setManualEntry({ ...manualEntry, empName: e.target.value })}
-                    className="rounded-xl bg-slate-50 border border-slate-200 h-12"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Action</Label>
-                  <Select value={manualEntry.action} onValueChange={v => setManualEntry({ ...manualEntry, action: v })}>
-                    <SelectTrigger className="rounded-xl h-12 bg-slate-50 border border-slate-200">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="in">Clock In</SelectItem>
-                      <SelectItem value="out">Clock Out</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button className="w-full bg-slate-900 text-white rounded-xl h-12 font-bold" onClick={handleManualEntry}>
-                  Submit Entry
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <Button
+            onClick={() => setIsManualEntryOpen(true)}
+            className="bg-[#CB9DF0] hover:bg-[#b580e0] text-white rounded-xl h-12 px-6 shadow-lg font-bold"
+          >
+            <UserPlus className="mr-2 h-5 w-5" /> Manual Entry
+          </Button>
+          <SideFormSheet
+            open={isManualEntryOpen}
+            onOpenChange={setIsManualEntryOpen}
+            title="Manual Attendance Entry"
+            description="Mark attendance for employees who forgot to punch or had biometric issues."
+            icon={<UserPlus size={20} />}
+            accentColor="#4f46e5"
+            width="md"
+            submitLabel="Submit Entry"
+            onSubmit={(e) => { e.preventDefault(); handleManualEntry(); }}
+          >
+            <div className="space-y-4">
+              <Field label="Employee ID" required>
+                <Input
+                  placeholder="e.g. EMP007"
+                  value={manualEntry.empId}
+                  onChange={e => setManualEntry({ ...manualEntry, empId: e.target.value })}
+                />
+              </Field>
+              <Field label="Employee Name" required>
+                <Input
+                  placeholder="e.g. Rahul Verma"
+                  value={manualEntry.empName}
+                  onChange={e => setManualEntry({ ...manualEntry, empName: e.target.value })}
+                />
+              </Field>
+              <Field label="Action" required>
+                <Select value={manualEntry.action} onValueChange={v => setManualEntry({ ...manualEntry, action: v })}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="in">Clock In</SelectItem>
+                    <SelectItem value="out">Clock Out</SelectItem>
+                  </SelectContent>
+                </Select>
+              </Field>
+            </div>
+          </SideFormSheet>
 
           <Button variant="outline" className="rounded-xl h-12 border-slate-200 font-bold text-slate-600 hover:bg-slate-50"
             onClick={() => {

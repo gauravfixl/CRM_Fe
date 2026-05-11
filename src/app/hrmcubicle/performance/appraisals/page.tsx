@@ -60,6 +60,7 @@ import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { Textarea } from "@/shared/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import {
     createAppraisal as apiCreateAppraisal,
     deleteAppraisal as apiDeleteAppraisal,
@@ -703,227 +704,118 @@ const PerformanceAppraisalsPage = () => {
                 </div>
             </main>
 
-            {/* HR Audit Dialog */}
-            <Dialog open={isReviewOpen} onOpenChange={setIsReviewOpen}>
-                <DialogContent
-                    className="bg-white rounded-[2.5rem] border-none p-10 max-w-2xl shadow-3xl font-sans"
-                    style={{ zoom: "80%" }}
-                >
-                    <DialogHeader className="space-y-3">
-                        <div className="h-14 w-14 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 mb-2 shadow-inner border border-indigo-100">
-                            <Award size={28} />
-                        </div>
-                        <DialogTitle className="text-2xl font-bold tracking-tight text-slate-900 uppercase">
-                            HR Master Audit & Mapping
-                        </DialogTitle>
-                        <DialogDescription className="text-slate-500 font-semibold text-sm">
-                            Finalize rating, propose increments, and select promotion tracks.
-                        </DialogDescription>
-                    </DialogHeader>
+            {/* HR Audit SideFormSheet */}
+            <SideFormSheet
+                open={isReviewOpen}
+                onOpenChange={(o) => { setIsReviewOpen(o); if (!o) setReviewErrors({}); }}
+                title="HR Master Audit & Mapping"
+                description="Finalize rating, propose increments, and select promotion tracks."
+                icon={<Award size={20} />}
+                accentColor="#4f46e5"
+                width="lg"
+                loading={saving}
+                submitLabel={saving ? "Saving..." : "Commit Audit Decision"}
+                onSubmit={(e) => { e.preventDefault(); handleUpdateReview(); }}
+            >
+                <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Proposed Increment (%)" error={reviewErrors.proposedIncrement || undefined}>
+                            <Input
+                                placeholder="e.g. 10 or 10%"
+                                value={reviewData.proposedIncrement}
+                                onChange={(e) => setReviewData({ ...reviewData, proposedIncrement: e.target.value })}
+                            />
+                        </Field>
+                        <Field label="Proposed Promotion">
+                            <Input
+                                placeholder="e.g. Senior Lead"
+                                value={reviewData.proposedPromotion}
+                                onChange={(e) => setReviewData({ ...reviewData, proposedPromotion: e.target.value })}
+                            />
+                        </Field>
+                    </div>
 
-                    <div className="py-8 space-y-5 text-start">
-                        <div className="grid grid-cols-2 gap-5">
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">
-                                    Proposed Increment (%)
-                                </Label>
-                                <Input
-                                    className={`rounded-xl h-12 bg-slate-50 border-slate-100 font-bold px-5 focus:bg-white transition-all text-sm ${reviewErrors.proposedIncrement ? "border-rose-400" : ""}`}
-                                    placeholder="e.g. 10 or 10%"
-                                    value={reviewData.proposedIncrement}
-                                    onChange={(e) => setReviewData({ ...reviewData, proposedIncrement: e.target.value })}
-                                />
-                                {reviewErrors.proposedIncrement && (
-                                    <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 ml-1"><AlertCircle size={10} /> {reviewErrors.proposedIncrement}</p>
-                                )}
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">
-                                    Proposed Promotion
-                                </Label>
-                                <Input
-                                    className="rounded-xl h-12 bg-slate-50 border-slate-100 font-bold px-5 focus:bg-white transition-all text-sm"
-                                    placeholder="e.g. Senior Lead"
-                                    value={reviewData.proposedPromotion}
-                                    onChange={(e) => setReviewData({ ...reviewData, proposedPromotion: e.target.value })}
-                                />
-                            </div>
-                        </div>
+                    <Field label="Workflow Status">
+                        <Select
+                            value={reviewData.status}
+                            onValueChange={(v) => setReviewData({ ...reviewData, status: v as any })}
+                        >
+                            <SelectTrigger>
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Self Review">Self Review</SelectItem>
+                                <SelectItem value="Manager Review">With Manager</SelectItem>
+                                <SelectItem value="HR Review">With HR Auditor</SelectItem>
+                                <SelectItem value="Calibration">In Calibration</SelectItem>
+                                <SelectItem value="Completed">Finalized</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </Field>
 
-                        <div className="space-y-1.5">
-                            <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">
-                                Workflow Status
-                            </Label>
-                            <Select
-                                value={reviewData.status}
-                                onValueChange={(v) => setReviewData({ ...reviewData, status: v as any })}
-                            >
-                                <SelectTrigger className="h-12 rounded-xl bg-slate-50 border-slate-100 font-bold px-5 focus:bg-white text-sm">
+                    <Field label="Audit Notes" error={reviewErrors.hrNotes || undefined} hint={`${reviewData.hrNotes.length}/1000`}>
+                        <Textarea
+                            maxLength={1000}
+                            className="min-h-[100px]"
+                            placeholder="Confidential summary..."
+                            value={reviewData.hrNotes}
+                            onChange={(e) => setReviewData({ ...reviewData, hrNotes: e.target.value })}
+                        />
+                    </Field>
+                </div>
+            </SideFormSheet>
+
+            {/* Launch SideFormSheet */}
+            <SideFormSheet
+                open={isLaunchOpen}
+                onOpenChange={(o) => { setIsLaunchOpen(o); if (!o) setLaunchErrors({}); }}
+                title="Initiate Appraisal Cycle"
+                description="Select an employee to start their performance audit."
+                icon={<Rocket size={20} />}
+                accentColor="#7c3aed"
+                width="lg"
+                loading={saving}
+                submitLabel={saving ? "Deploying..." : "Deploy Review Framework"}
+                onSubmit={(e) => { e.preventDefault(); handleLaunch(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Select Employee" required error={launchErrors.employee || undefined}>
+                        <Select value={formData.employee} onValueChange={(v) => setFormData({ ...formData, employee: v })}>
+                            <SelectTrigger>
+                                <SelectValue placeholder={employees.length ? "Choose an employee" : "Loading employees…"} />
+                            </SelectTrigger>
+                            <SelectContent className="max-h-72 overflow-y-auto">
+                                {employees.length === 0 && <div className="px-3 py-2 text-xs text-slate-400 italic">No employees available</div>}
+                                {employees.map((e) => (
+                                    <SelectItem key={e.id} value={e.id}>{e.label}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Review Framework / Cycle" required error={launchErrors.cycle || undefined}>
+                            <Select value={formData.cycle} onValueChange={(v) => setFormData({ ...formData, cycle: v })}>
+                                <SelectTrigger>
                                     <SelectValue />
                                 </SelectTrigger>
-                                <SelectContent className="rounded-xl border-none shadow-2xl p-1.5 font-bold">
-                                    <SelectItem
-                                        value="Self Review"
-                                        className="rounded-lg h-10 text-[11px] uppercase tracking-wide"
-                                    >
-                                        Self Review
-                                    </SelectItem>
-                                    <SelectItem
-                                        value="Manager Review"
-                                        className="rounded-lg h-10 text-[11px] uppercase tracking-wide"
-                                    >
-                                        With Manager
-                                    </SelectItem>
-                                    <SelectItem
-                                        value="HR Review"
-                                        className="rounded-lg h-10 text-[11px] uppercase tracking-wide"
-                                    >
-                                        With HR Auditor
-                                    </SelectItem>
-                                    <SelectItem
-                                        value="Calibration"
-                                        className="rounded-lg h-10 text-[11px] uppercase tracking-wide"
-                                    >
-                                        In Calibration
-                                    </SelectItem>
-                                    <SelectItem
-                                        value="Completed"
-                                        className="rounded-lg h-10 text-[11px] uppercase tracking-wide"
-                                    >
-                                        Finalized
-                                    </SelectItem>
+                                <SelectContent>
+                                    <SelectItem value="Annual Appraisal 2026">Annual Audit 2026</SelectItem>
+                                    <SelectItem value="Mid-Year Review 2026">Mid-Year Review 2026</SelectItem>
+                                    <SelectItem value="Q1 2026 Review">Q1 2026 Review</SelectItem>
+                                    <SelectItem value="Q2 2026 Review">Q2 2026 Review</SelectItem>
                                 </SelectContent>
                             </Select>
-                        </div>
-
-                        <div className="space-y-1.5">
-                            <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">
-                                Audit Notes
-                            </Label>
-                            <Textarea
-                                maxLength={1000}
-                                className={`rounded-2xl bg-slate-50 border-slate-100 min-h-[100px] p-5 font-semibold text-sm focus:bg-white transition-all shadow-inner ${reviewErrors.hrNotes ? "border-rose-400" : ""}`}
-                                placeholder="Confidential summary..."
-                                value={reviewData.hrNotes}
-                                onChange={(e) => setReviewData({ ...reviewData, hrNotes: e.target.value })}
+                        </Field>
+                        <Field label="Initial Rating (1-5)" required error={launchErrors.initialRating || undefined}>
+                            <Input
+                                type="number" min={1} max={5} step={0.1}
+                                value={formData.initialRating}
+                                onChange={(e) => setFormData({ ...formData, initialRating: Math.max(1, Math.min(5, parseFloat(e.target.value) || 1)) })}
                             />
-                            <p className="text-[10px] text-slate-400 ml-1">{reviewData.hrNotes.length}/1000</p>
-                            {reviewErrors.hrNotes && (
-                                <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 ml-1"><AlertCircle size={10} /> {reviewErrors.hrNotes}</p>
-                            )}
-                        </div>
+                        </Field>
                     </div>
-
-                    <DialogFooter className="gap-2 pt-6 border-t border-slate-50 sm:justify-start">
-                        <Button
-                            className="flex-1 bg-indigo-600 hover:bg-slate-900 text-white rounded-xl h-12 font-bold text-[11px] uppercase tracking-widest shadow-xl transition-all border-none gap-2"
-                            onClick={handleUpdateReview}
-                            disabled={saving}
-                        >
-                            {saving && <Loader2 size={14} className="animate-spin" />}
-                            {saving ? "Saving..." : "Commit Audit Decision"}
-                        </Button>
-                        <Button
-                            variant="ghost"
-                            className="h-12 px-6 rounded-xl font-bold text-[10px] uppercase tracking-widest text-slate-400"
-                            onClick={() => setIsReviewOpen(false)}
-                            disabled={saving}
-                        >
-                            Discard
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            {/* Launch Dialog */}
-            <Dialog open={isLaunchOpen} onOpenChange={setIsLaunchOpen}>
-                <DialogContent
-                    className="bg-white rounded-[2.5rem] border-none p-10 max-w-2xl shadow-3xl font-sans"
-                    style={{ zoom: "80%" }}
-                >
-                    <DialogHeader className="space-y-3">
-                        <div className="h-14 w-14 bg-purple-50 rounded-2xl flex items-center justify-center text-purple-600 mb-2 shadow-inner border border-purple-100">
-                            <Rocket size={26} />
-                        </div>
-                        <DialogTitle className="text-2xl font-bold tracking-tight text-slate-900 uppercase">
-                            Initiate Appraisal Cycle
-                        </DialogTitle>
-                        <DialogDescription className="text-slate-500 font-semibold text-sm">
-                            Select an employee to start their performance audit.
-                        </DialogDescription>
-                    </DialogHeader>
-
-                    <div className="py-8 space-y-5 text-start">
-                        <div className="space-y-1.5">
-                            <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Select Employee *</Label>
-                            <Select value={formData.employee} onValueChange={(v) => setFormData({ ...formData, employee: v })}>
-                                <SelectTrigger className={`h-12 rounded-xl bg-slate-50 border-slate-100 font-bold px-5 focus:bg-white text-sm ${launchErrors.employee ? "border-rose-400" : ""}`}>
-                                    <SelectValue placeholder={employees.length ? "Choose an employee" : "Loading employees…"} />
-                                </SelectTrigger>
-                                <SelectContent className="rounded-xl border-none shadow-2xl p-1.5 font-bold max-h-72 overflow-y-auto">
-                                    {employees.length === 0 && <div className="px-3 py-2 text-xs text-slate-400 italic">No employees available</div>}
-                                    {employees.map((e) => (
-                                        <SelectItem key={e.id} value={e.id} className="rounded-lg h-9 text-[11px]">{e.label}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            {launchErrors.employee && (
-                                <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 ml-1"><AlertCircle size={10} /> {launchErrors.employee}</p>
-                            )}
-                        </div>
-                        <div className="grid grid-cols-2 gap-5">
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Review Framework / Cycle *</Label>
-                                <Select value={formData.cycle} onValueChange={(v) => setFormData({ ...formData, cycle: v })}>
-                                    <SelectTrigger className={`h-12 rounded-xl bg-slate-50 border-slate-100 font-bold px-5 focus:bg-white text-sm ${launchErrors.cycle ? "border-rose-400" : ""}`}>
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent className="rounded-xl border-none shadow-2xl p-1.5 font-bold">
-                                        <SelectItem value="Annual Appraisal 2026" className="rounded-lg h-10 text-[11px] uppercase tracking-wide">Annual Audit 2026</SelectItem>
-                                        <SelectItem value="Mid-Year Review 2026" className="rounded-lg h-10 text-[11px] uppercase tracking-wide">Mid-Year Review 2026</SelectItem>
-                                        <SelectItem value="Q1 2026 Review" className="rounded-lg h-10 text-[11px] uppercase tracking-wide">Q1 2026 Review</SelectItem>
-                                        <SelectItem value="Q2 2026 Review" className="rounded-lg h-10 text-[11px] uppercase tracking-wide">Q2 2026 Review</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                {launchErrors.cycle && (
-                                    <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 ml-1"><AlertCircle size={10} /> {launchErrors.cycle}</p>
-                                )}
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Initial Rating (1-5) *</Label>
-                                <Input
-                                    type="number" min={1} max={5} step={0.1}
-                                    className={`rounded-xl h-12 bg-slate-50 border-slate-100 font-bold px-5 focus:bg-white text-sm ${launchErrors.initialRating ? "border-rose-400" : ""}`}
-                                    value={formData.initialRating}
-                                    onChange={(e) => setFormData({ ...formData, initialRating: Math.max(1, Math.min(5, parseFloat(e.target.value) || 1)) })}
-                                />
-                                {launchErrors.initialRating && (
-                                    <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 ml-1"><AlertCircle size={10} /> {launchErrors.initialRating}</p>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-
-                    <DialogFooter className="gap-2 pt-6 border-t border-slate-50">
-                        <Button
-                            variant="ghost"
-                            className="h-12 px-6 rounded-xl font-bold text-[10px] uppercase tracking-widest text-slate-400"
-                            onClick={() => setIsLaunchOpen(false)}
-                            disabled={saving}
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            className="flex-1 bg-indigo-600 hover:bg-slate-900 text-white rounded-xl h-12 font-bold text-[11px] uppercase tracking-widest shadow-xl border-none gap-2"
-                            onClick={handleLaunch}
-                            disabled={saving}
-                        >
-                            {saving && <Loader2 size={14} className="animate-spin" />}
-                            {saving ? "Deploying..." : "Deploy Review Framework"}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                </div>
+            </SideFormSheet>
 
             {/* View Details Dialog */}
             <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
@@ -1039,174 +931,130 @@ const PerformanceAppraisalsPage = () => {
                 </DialogContent>
             </Dialog>
 
-            {/* Edit Dialog */}
-            <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-                <DialogContent
-                    className="bg-white rounded-[2.5rem] border-none p-10 max-w-3xl shadow-3xl font-sans max-h-[85vh] overflow-y-auto"
-                    style={{ zoom: "80%" }}
-                >
-                    <DialogHeader className="space-y-3">
-                        <div className="h-14 w-14 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600 mb-2 shadow-inner border border-emerald-100">
-                            <Edit size={26} />
-                        </div>
-                        <DialogTitle className="text-2xl font-bold tracking-tight text-slate-900 uppercase">
-                            Edit Appraisal Record
-                        </DialogTitle>
-                        <DialogDescription className="text-slate-500 font-semibold text-sm">
-                            Update identity, cycle, and competency scoring.
-                        </DialogDescription>
-                    </DialogHeader>
-
-                    <div className="py-6 space-y-5 text-start">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Employee Name *</Label>
-                                <Input
-                                    maxLength={100}
-                                    className={`rounded-xl h-12 bg-slate-50 border-slate-100 font-bold px-5 focus:bg-white text-sm ${editErrors.employeeName ? "border-rose-400" : ""}`}
-                                    value={editData.employeeName}
-                                    onChange={(e) => setEditData({ ...editData, employeeName: e.target.value })}
-                                />
-                                {editErrors.employeeName && (
-                                    <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 ml-1"><AlertCircle size={10} /> {editErrors.employeeName}</p>
-                                )}
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Work ID</Label>
-                                <Input
-                                    className="rounded-xl h-12 bg-slate-50 border-slate-100 font-bold px-5 focus:bg-white text-sm"
-                                    value={editData.employeeId}
-                                    onChange={(e) => setEditData({ ...editData, employeeId: e.target.value })}
-                                />
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Cycle *</Label>
-                                <Input
-                                    maxLength={100}
-                                    className={`rounded-xl h-12 bg-slate-50 border-slate-100 font-bold px-5 focus:bg-white text-sm ${editErrors.cycle ? "border-rose-400" : ""}`}
-                                    value={editData.cycle}
-                                    onChange={(e) => setEditData({ ...editData, cycle: e.target.value })}
-                                />
-                                {editErrors.cycle && (
-                                    <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 ml-1"><AlertCircle size={10} /> {editErrors.cycle}</p>
-                                )}
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Overall Rating (0–5)</Label>
-                                <Input
-                                    type="number" step="0.1" min={0} max={5}
-                                    className={`rounded-xl h-12 bg-slate-50 border-slate-100 font-bold px-5 focus:bg-white text-sm ${editErrors.overallRating ? "border-rose-400" : ""}`}
-                                    value={editData.overallRating}
-                                    onChange={(e) => setEditData({ ...editData, overallRating: Math.max(0, Math.min(5, parseFloat(e.target.value) || 0)) })}
-                                />
-                                {editErrors.overallRating && (
-                                    <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 ml-1"><AlertCircle size={10} /> {editErrors.overallRating}</p>
-                                )}
-                            </div>
-                        </div>
-
-                        <div className="space-y-3">
-                            <div className="flex items-center justify-between">
-                                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">
-                                    Competencies
-                                </Label>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    className="h-8 text-[10px] font-bold text-indigo-600 uppercase tracking-widest gap-1"
-                                    onClick={() =>
-                                        setEditData({
-                                            ...editData,
-                                            competencies: [...editData.competencies, { name: "", rating: 3, feedback: "" }],
-                                        })
-                                    }
-                                >
-                                    <Plus size={12} /> Add Competency
-                                </Button>
-                            </div>
-                            {editData.competencies.length === 0 ? (
-                                <p className="text-xs text-slate-400 italic p-4 bg-slate-50 rounded-xl">
-                                    No competencies. Click "Add Competency" to start.
-                                </p>
-                            ) : (
-                                <div className="space-y-2">
-                                    {editData.competencies.map((c, i) => (
-                                        <div
-                                            key={i}
-                                            className="p-3 bg-slate-50 rounded-xl grid grid-cols-12 gap-2 items-center"
-                                        >
-                                            <Input
-                                                className="col-span-4 h-9 bg-white border-slate-100 text-xs font-bold"
-                                                placeholder="Name"
-                                                value={c.name}
-                                                onChange={(e) => {
-                                                    const arr = [...editData.competencies];
-                                                    arr[i] = { ...arr[i], name: e.target.value };
-                                                    setEditData({ ...editData, competencies: arr });
-                                                }}
-                                            />
-                                            <Input
-                                                type="number"
-                                                min={1}
-                                                max={5}
-                                                className="col-span-2 h-9 bg-white border-slate-100 text-xs font-bold text-center"
-                                                value={c.rating}
-                                                onChange={(e) => {
-                                                    const arr = [...editData.competencies];
-                                                    arr[i] = { ...arr[i], rating: parseInt(e.target.value) || 0 };
-                                                    setEditData({ ...editData, competencies: arr });
-                                                }}
-                                            />
-                                            <Input
-                                                className="col-span-5 h-9 bg-white border-slate-100 text-xs"
-                                                placeholder="Feedback (optional)"
-                                                value={c.feedback || ""}
-                                                onChange={(e) => {
-                                                    const arr = [...editData.competencies];
-                                                    arr[i] = { ...arr[i], feedback: e.target.value };
-                                                    setEditData({ ...editData, competencies: arr });
-                                                }}
-                                            />
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                className="col-span-1 h-9 w-9 p-0 text-rose-500 hover:bg-rose-50"
-                                                onClick={() =>
-                                                    setEditData({
-                                                        ...editData,
-                                                        competencies: editData.competencies.filter((_, idx) => idx !== i),
-                                                    })
-                                                }
-                                            >
-                                                <Trash2 size={14} />
-                                            </Button>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
+            {/* Edit SideFormSheet */}
+            <SideFormSheet
+                open={isEditOpen}
+                onOpenChange={(o) => { setIsEditOpen(o); if (!o) setEditErrors({}); }}
+                title="Edit Appraisal Record"
+                description="Update identity, cycle, and competency scoring."
+                icon={<Edit size={20} />}
+                accentColor="#059669"
+                width="xl"
+                loading={saving}
+                submitLabel={saving ? "Saving..." : "Save Changes"}
+                onSubmit={(e) => { e.preventDefault(); handleEdit(); }}
+            >
+                <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Employee Name" required error={editErrors.employeeName || undefined}>
+                            <Input
+                                maxLength={100}
+                                value={editData.employeeName}
+                                onChange={(e) => setEditData({ ...editData, employeeName: e.target.value })}
+                            />
+                        </Field>
+                        <Field label="Work ID">
+                            <Input
+                                value={editData.employeeId}
+                                onChange={(e) => setEditData({ ...editData, employeeId: e.target.value })}
+                            />
+                        </Field>
+                        <Field label="Cycle" required error={editErrors.cycle || undefined}>
+                            <Input
+                                maxLength={100}
+                                value={editData.cycle}
+                                onChange={(e) => setEditData({ ...editData, cycle: e.target.value })}
+                            />
+                        </Field>
+                        <Field label="Overall Rating (0–5)" error={editErrors.overallRating || undefined}>
+                            <Input
+                                type="number" step="0.1" min={0} max={5}
+                                value={editData.overallRating}
+                                onChange={(e) => setEditData({ ...editData, overallRating: Math.max(0, Math.min(5, parseFloat(e.target.value) || 0)) })}
+                            />
+                        </Field>
                     </div>
 
-                    <DialogFooter className="gap-2">
-                        <Button
-                            variant="ghost"
-                            className="h-12 px-6 rounded-xl font-bold text-[10px] uppercase tracking-widest text-slate-400"
-                            onClick={() => setIsEditOpen(false)}
-                            disabled={saving}
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            className="bg-emerald-600 hover:bg-slate-900 text-white rounded-xl h-12 px-6 font-bold text-[11px] uppercase tracking-widest border-none gap-2"
-                            onClick={handleEdit}
-                            disabled={saving}
-                        >
-                            {saving && <Loader2 size={14} className="animate-spin" />}
-                            {saving ? "Saving..." : "Save Changes"}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                            <label className="text-[13px] font-semibold text-[#374151]">Competencies</label>
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                className="h-7 text-[11px] font-bold text-indigo-600 gap-1"
+                                onClick={() =>
+                                    setEditData({
+                                        ...editData,
+                                        competencies: [...editData.competencies, { name: "", rating: 3, feedback: "" }],
+                                    })
+                                }
+                            >
+                                <Plus size={12} /> Add Competency
+                            </Button>
+                        </div>
+                        {editData.competencies.length === 0 ? (
+                            <p className="text-xs text-slate-400 italic p-4 bg-slate-50 rounded-xl">
+                                No competencies. Click "Add Competency" to start.
+                            </p>
+                        ) : (
+                            <div className="space-y-2">
+                                {editData.competencies.map((c, i) => (
+                                    <div
+                                        key={i}
+                                        className="p-3 bg-slate-50 rounded-xl grid grid-cols-12 gap-2 items-center"
+                                    >
+                                        <Input
+                                            className="col-span-4 h-9 bg-white text-xs"
+                                            placeholder="Name"
+                                            value={c.name}
+                                            onChange={(e) => {
+                                                const arr = [...editData.competencies];
+                                                arr[i] = { ...arr[i], name: e.target.value };
+                                                setEditData({ ...editData, competencies: arr });
+                                            }}
+                                        />
+                                        <Input
+                                            type="number"
+                                            min={1}
+                                            max={5}
+                                            className="col-span-2 h-9 bg-white text-xs text-center"
+                                            value={c.rating}
+                                            onChange={(e) => {
+                                                const arr = [...editData.competencies];
+                                                arr[i] = { ...arr[i], rating: parseInt(e.target.value) || 0 };
+                                                setEditData({ ...editData, competencies: arr });
+                                            }}
+                                        />
+                                        <Input
+                                            className="col-span-5 h-9 bg-white text-xs"
+                                            placeholder="Feedback (optional)"
+                                            value={c.feedback || ""}
+                                            onChange={(e) => {
+                                                const arr = [...editData.competencies];
+                                                arr[i] = { ...arr[i], feedback: e.target.value };
+                                                setEditData({ ...editData, competencies: arr });
+                                            }}
+                                        />
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            className="col-span-1 h-9 w-9 p-0 text-rose-500 hover:bg-rose-50"
+                                            onClick={() =>
+                                                setEditData({
+                                                    ...editData,
+                                                    competencies: editData.competencies.filter((_, idx) => idx !== i),
+                                                })
+                                            }
+                                        >
+                                            <Trash2 size={14} />
+                                        </Button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </SideFormSheet>
 
             {/* Delete Confirmation */}
             <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>

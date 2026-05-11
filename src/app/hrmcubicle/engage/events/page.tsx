@@ -36,6 +36,7 @@ import {
 import { useEngageStore, type Event, type EmployeeCelebration } from "@/shared/data/engage-store";
 import { required, minLength, maxLength, isFutureOrToday, isValidDate, runValidators } from "@/shared/utils/engage-validation";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { Textarea } from "@/shared/components/ui/textarea";
@@ -460,128 +461,87 @@ const EventsPage = () => {
                         </ScrollArea>
                     </div>
 
-                    {/* Event Form Modal - Vibrant Update */}
-                    <Dialog open={isCreateDialogOpen} onOpenChange={(val) => { if (!val) resetForm(); setIsCreateDialogOpen(val); }}>
-                        <DialogContent className="max-w-5xl p-0 overflow-hidden border-2 border-slate-300 rounded-[3rem] shadow-3xl bg-white" style={{ zoom: "67%" }}>
-                            <div className="bg-gradient-to-r from-indigo-900 to-purple-900 p-10 text-white">
-                                <DialogHeader>
-                                    <div className="flex items-center gap-6 mb-2">
-                                        <div className="h-16 w-16 bg-white/10 backdrop-blur-md rounded-3xl flex items-center justify-center border border-white/20 shadow-2xl">
-                                            <Plus size={32} />
-                                        </div>
-                                        <div>
-                                            <DialogTitle className="text-3xl font-bold tracking-tighter text-white">
-                                                {selectedEvent ? "Transform Event" : "Birth a New Moment"}
-                                            </DialogTitle>
-                                            <DialogDescription className="text-white/40 font-medium text-xs tracking-widest mt-2 capitalize">Spread joy across the organization</DialogDescription>
-                                        </div>
-                                    </div>
-                                </DialogHeader>
+                    {/* Event Form - SideFormSheet */}
+                    <SideFormSheet
+                        open={isCreateDialogOpen}
+                        onOpenChange={(val) => { setIsCreateDialogOpen(val); if (!val) resetForm(); }}
+                        title={selectedEvent ? "Edit Event" : "Create New Event"}
+                        description="Spread joy across the organization."
+                        icon={<CalendarDays size={20} />}
+                        accentColor={selectedEvent ? "#7c3aed" : "#4f46e5"}
+                        width="lg"
+                        submitLabel={selectedEvent ? "Save Changes" : "Create Event"}
+                        onSubmit={(e) => { e.preventDefault(); handleSave(); }}
+                    >
+                        <div className="space-y-4">
+                            <Field label="Headline" required hint={`${(formData.title ?? "").length}/120`}>
+                                <Input
+                                    placeholder="Make it catchy! e.g. Pizza Friday"
+                                    value={formData.title}
+                                    maxLength={120}
+                                    onChange={e => setFormData({ ...formData, title: e.target.value })}
+                                />
+                            </Field>
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <Field label="Category">
+                                    <Select value={formData.category} onValueChange={(v) => setFormData({ ...formData, category: v })}>
+                                        <SelectTrigger><SelectValue /></SelectTrigger>
+                                        <SelectContent>
+                                            {categories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                </Field>
+                                <Field label="Format">
+                                    <Select value={formData.eventType} onValueChange={(v) => setFormData({ ...formData, eventType: v as any })}>
+                                        <SelectTrigger><SelectValue /></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="Virtual">Virtual</SelectItem>
+                                            <SelectItem value="In-Person">In-Person</SelectItem>
+                                            <SelectItem value="Hybrid">Hybrid</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </Field>
                             </div>
 
-                            <ScrollArea className="max-h-[70vh]">
-                                <div className="p-10 space-y-10">
-                                    {/* Horizontal Grid for Metadata */}
-                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                                        {/* Left Side: Branding & Type */}
-                                        <div className="space-y-8">
-                                            <div className="space-y-4">
-                                                <Label className="text-xs font-black text-slate-400 tracking-widest ml-1">The Headline</Label>
-                                                <Input
-                                                    placeholder="Make it catchy! e.g. Pizza Friday 🍕"
-                                                    value={formData.title}
-                                                    maxLength={120}
-                                                    onChange={e => setFormData({ ...formData, title: e.target.value })}
-                                                    className="h-16 border-slate-300 bg-slate-50/50 rounded-2xl px-6 font-black text-lg text-slate-900 focus:ring-4 focus:ring-purple-50 transition-all shadow-inner"
-                                                />
-                                                <p className="text-[10px] text-slate-400 font-bold ml-2">{(formData.title ?? "").length}/120</p>
-                                            </div>
+                            <Field label="Location (Link or Venue)" required hint={`${(formData.location ?? "").length}/200`}>
+                                <Input
+                                    placeholder="Where's the party at?"
+                                    value={formData.location}
+                                    maxLength={200}
+                                    onChange={e => setFormData({ ...formData, location: e.target.value })}
+                                />
+                            </Field>
 
-                                            <div className="grid grid-cols-2 gap-6">
-                                                <div className="space-y-4">
-                                                    <Label className="text-xs font-black text-slate-400 tracking-widest ml-1">Vibe Category</Label>
-                                                    <Select value={formData.category} onValueChange={(v) => setFormData({ ...formData, category: v })}>
-                                                        <SelectTrigger className="h-14 border-slate-300 bg-white rounded-2xl px-6 font-bold text-slate-600"><SelectValue /></SelectTrigger>
-                                                        <SelectContent className="rounded-2xl border-none shadow-2xl font-bold">
-                                                            {categories.map(cat => <SelectItem key={cat} value={cat} className="rounded-xl my-1">{cat}</SelectItem>)}
-                                                        </SelectContent>
-                                                    </Select>
-                                                </div>
-                                                <div className="space-y-4">
-                                                    <Label className="text-xs font-black text-slate-400 tracking-widest ml-1">The Format</Label>
-                                                    <Select value={formData.eventType} onValueChange={(v) => setFormData({ ...formData, eventType: v as any })}>
-                                                        <SelectTrigger className="h-14 border-slate-300 bg-white rounded-2xl px-6 font-bold text-slate-600"><SelectValue /></SelectTrigger>
-                                                        <SelectContent className="rounded-2xl border-none shadow-2xl font-bold">
-                                                            <SelectItem value="Virtual" className="rounded-xl my-1">Digital Hangout</SelectItem>
-                                                            <SelectItem value="In-Person" className="rounded-xl my-1">IRL / Meatspace</SelectItem>
-                                                            <SelectItem value="Hybrid" className="rounded-xl my-1">Mixed Reality</SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
-                                                </div>
-                                            </div>
-                                        </div>
+                            <div className="grid grid-cols-2 gap-3">
+                                <Field label="Date" required>
+                                    <Input
+                                        type="date"
+                                        value={formData.date}
+                                        min={selectedEvent ? undefined : new Date().toISOString().split("T")[0]}
+                                        onChange={e => setFormData({ ...formData, date: e.target.value })}
+                                    />
+                                </Field>
+                                <Field label="Time" required>
+                                    <Input
+                                        type="time"
+                                        value={formData.time}
+                                        onChange={e => setFormData({ ...formData, time: e.target.value })}
+                                    />
+                                </Field>
+                            </div>
 
-                                        {/* Right Side: Logistics */}
-                                        <div className="space-y-8">
-                                            <div className="space-y-4">
-                                                <Label className="text-xs font-black text-slate-400 tracking-widest ml-1">The Spot (Link or Venue)</Label>
-                                                <Input
-                                                    placeholder="Where's the party at?"
-                                                    value={formData.location}
-                                                    maxLength={200}
-                                                    onChange={e => setFormData({ ...formData, location: e.target.value })}
-                                                    className="h-16 border-slate-300 bg-white rounded-2xl px-6 font-bold text-slate-600"
-                                                />
-                                                <p className="text-[10px] text-slate-400 font-bold ml-2">{(formData.location ?? "").length}/200</p>
-                                            </div>
-
-                                            <div className="grid grid-cols-2 gap-6">
-                                                <div className="space-y-4">
-                                                    <Label className="text-xs font-black text-slate-400 tracking-widest ml-1">Launch Date</Label>
-                                                    <Input
-                                                        type="date"
-                                                        value={formData.date}
-                                                        min={selectedEvent ? undefined : new Date().toISOString().split("T")[0]}
-                                                        onChange={e => setFormData({ ...formData, date: e.target.value })}
-                                                        className="h-14 border-slate-300 bg-white rounded-2xl px-6 font-bold text-slate-600"
-                                                    />
-                                                </div>
-                                                <div className="space-y-4">
-                                                    <Label className="text-xs font-black text-slate-400 tracking-widest ml-1">Countdown Time</Label>
-                                                    <Input
-                                                        type="time"
-                                                        value={formData.time}
-                                                        onChange={e => setFormData({ ...formData, time: e.target.value })}
-                                                        className="h-14 border-slate-300 bg-white rounded-2xl px-6 font-bold text-slate-600"
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Full Width Description Area */}
-                                    <div className="space-y-4 border-t border-slate-300 pt-10">
-                                        <Label className="text-xs font-black text-slate-400 tracking-widest ml-1">What's the hype about?</Label>
-                                        <Textarea
-                                            placeholder="Sell the experience..."
-                                            value={formData.description}
-                                            maxLength={2000}
-                                            onChange={e => setFormData({ ...formData, description: e.target.value })}
-                                            className="h-32 border-slate-300 bg-slate-50/50 rounded-[2rem] p-6 font-bold text-sm leading-relaxed focus:ring-4 focus:ring-purple-50 resize-none shadow-inner"
-                                        />
-                                        <p className="text-[10px] text-slate-400 font-bold ml-2">{(formData.description ?? "").length}/2000</p>
-                                    </div>
-                                </div>
-                            </ScrollArea>
-
-                            <DialogFooter className="p-8 bg-slate-50 border-t border-slate-100 flex gap-4">
-                                <Button variant="ghost" onClick={() => setIsCreateDialogOpen(false)} className="h-14 px-8 font-black text-slate-400 text-[10px] capitalize tracking-[0.2em] hover:text-slate-600">Cancel</Button>
-                                <Button onClick={handleSave} className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-[1.5rem] h-14 px-12 font-black text-xs tracking-widest shadow-xl shadow-indigo-100 flex-1">
-                                    Let's Go! 🚀
-                                </Button>
-                            </DialogFooter>
-                        </DialogContent>
-                    </Dialog>
+                            <Field label="Description" hint={`${(formData.description ?? "").length}/2000`}>
+                                <Textarea
+                                    className="min-h-[120px]"
+                                    placeholder="Sell the experience..."
+                                    value={formData.description}
+                                    maxLength={2000}
+                                    onChange={e => setFormData({ ...formData, description: e.target.value })}
+                                />
+                            </Field>
+                        </div>
+                    </SideFormSheet>
 
                     {/* Attendee Sheet - Vibrant Update */}
                     <Sheet open={isRSVPSheetOpen} onOpenChange={setIsRSVPSheetOpen}>

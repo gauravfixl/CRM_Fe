@@ -60,6 +60,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import {
     Table,
     TableBody,
@@ -2437,71 +2438,62 @@ const ScheduleReportDialog: React.FC<{
     };
 
     return (
-        <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-            <DialogContent className="max-w-[560px] rounded-2xl font-sans">
-                <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2">
-                        <Send className="h-4 w-4" style={{ color: VIOLET }} />
-                        Schedule report
-                    </DialogTitle>
-                    <DialogDescription className="text-[12px]">
-                        Automate delivery of this report to stakeholders.
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-3 py-2">
-                    <div className="space-y-1.5">
-                        <Label className="text-[11px] font-semibold">
-                            Report name
-                        </Label>
-                        <Input
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            className="h-9 rounded-xl text-[12px]"
-                        />
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1.5">
-                            <Label className="text-[11px] font-semibold">
-                                Report type
-                            </Label>
-                            <Select value={type} onValueChange={setType}>
-                                <SelectTrigger className="h-9 rounded-xl text-[12px]">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="overview">Overview</SelectItem>
-                                    <SelectItem value="funnel">Funnel</SelectItem>
-                                    <SelectItem value="sources">Sources</SelectItem>
-                                    <SelectItem value="departments">
-                                        Departments
-                                    </SelectItem>
-                                    <SelectItem value="tth">Time-to-Hire</SelectItem>
-                                    <SelectItem value="interviewers">
-                                        Interviewer performance
-                                    </SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label className="text-[11px] font-semibold">
-                                Frequency
-                            </Label>
-                            <Select value={frequency} onValueChange={setFrequency}>
-                                <SelectTrigger className="h-9 rounded-xl text-[12px]">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="Daily">Daily</SelectItem>
-                                    <SelectItem value="Weekly">Weekly</SelectItem>
-                                    <SelectItem value="Monthly">Monthly</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </div>
-                    <div className="space-y-1.5">
-                        <Label className="text-[11px] font-semibold">
-                            Recipients
-                        </Label>
+        <SideFormSheet
+            open={open}
+            onOpenChange={(o) => !o && onClose()}
+            title="Schedule report"
+            description="Automate delivery of this report to stakeholders."
+            icon={<Send className="h-5 w-5" />}
+            accentColor={VIOLET}
+            width="lg"
+            submitLabel="Save schedule"
+            onSubmit={(e) => {
+                e.preventDefault();
+                onSave({ name, type, frequency, recipients, format });
+            }}
+        >
+            <div className="space-y-4">
+                <Field label="Report name" required>
+                    <Input
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                    />
+                </Field>
+                <div className="grid grid-cols-2 gap-3">
+                    <Field label="Report type">
+                        <Select value={type} onValueChange={setType}>
+                            <SelectTrigger>
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="overview">Overview</SelectItem>
+                                <SelectItem value="funnel">Funnel</SelectItem>
+                                <SelectItem value="sources">Sources</SelectItem>
+                                <SelectItem value="departments">
+                                    Departments
+                                </SelectItem>
+                                <SelectItem value="tth">Time-to-Hire</SelectItem>
+                                <SelectItem value="interviewers">
+                                    Interviewer performance
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                    <Field label="Frequency">
+                        <Select value={frequency} onValueChange={setFrequency}>
+                            <SelectTrigger>
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Daily">Daily</SelectItem>
+                                <SelectItem value="Weekly">Weekly</SelectItem>
+                                <SelectItem value="Monthly">Monthly</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                </div>
+                <Field label="Recipients">
+                    <div className="space-y-2">
                         <div className="flex gap-2">
                             <Input
                                 type="email"
@@ -2514,18 +2506,18 @@ const ScheduleReportDialog: React.FC<{
                                         addEmail();
                                     }
                                 }}
-                                className="h-9 rounded-xl text-[12px]"
                             />
                             <Button
+                                type="button"
                                 variant="outline"
                                 onClick={addEmail}
-                                className="h-9 rounded-xl border-slate-200 text-[12px]"
+                                className="h-10 rounded-lg border-slate-200 text-[12px]"
                             >
                                 <Plus className="h-3.5 w-3.5 mr-1" />
                                 Add
                             </Button>
                         </div>
-                        <div className="flex flex-wrap gap-1.5 mt-2">
+                        <div className="flex flex-wrap gap-1.5">
                             {recipients.map((r) => (
                                 <span
                                     key={r}
@@ -2534,6 +2526,7 @@ const ScheduleReportDialog: React.FC<{
                                     <Mail className="h-3 w-3" />
                                     {r}
                                     <button
+                                        type="button"
                                         onClick={() =>
                                             setRecipients((p) =>
                                                 p.filter((x) => x !== r)
@@ -2547,40 +2540,21 @@ const ScheduleReportDialog: React.FC<{
                             ))}
                         </div>
                     </div>
-                    <div className="space-y-1.5">
-                        <Label className="text-[11px] font-semibold">Format</Label>
-                        <Select value={format} onValueChange={setFormat}>
-                            <SelectTrigger className="h-9 rounded-xl text-[12px]">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="PDF">PDF</SelectItem>
-                                <SelectItem value="CSV">CSV</SelectItem>
-                                <SelectItem value="Excel">Excel</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                </div>
-                <DialogFooter>
-                    <Button
-                        variant="outline"
-                        onClick={onClose}
-                        className="h-9 rounded-xl border-slate-200 text-[12px]"
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        onClick={() =>
-                            onSave({ name, type, frequency, recipients, format })
-                        }
-                        className="h-9 rounded-xl text-white text-[12px]"
-                        style={{ backgroundColor: VIOLET }}
-                    >
-                        Save schedule
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+                </Field>
+                <Field label="Format">
+                    <Select value={format} onValueChange={setFormat}>
+                        <SelectTrigger>
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="PDF">PDF</SelectItem>
+                            <SelectItem value="CSV">CSV</SelectItem>
+                            <SelectItem value="Excel">Excel</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </Field>
+            </div>
+        </SideFormSheet>
     );
 };
 
@@ -2611,72 +2585,53 @@ const ExportOptionsDialog: React.FC<{
         );
 
     return (
-        <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-            <DialogContent className="max-w-[520px] rounded-2xl font-sans">
-                <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2">
-                        <Download className="h-4 w-4" style={{ color: VIOLET }} />
-                        Export options
-                    </DialogTitle>
-                    <DialogDescription className="text-[12px]">
-                        Choose sections and format
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-3 py-2">
-                    <div className="space-y-1.5">
-                        <Label className="text-[11px] font-semibold">
-                            Sections to include
-                        </Label>
-                        <div className="grid grid-cols-2 gap-2">
-                            {EXPORT_COLUMNS.map((c) => (
-                                <label
-                                    key={c.key}
-                                    className="flex items-center gap-2 p-2 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer"
-                                >
-                                    <Checkbox
-                                        checked={cols.includes(c.key)}
-                                        onCheckedChange={() => toggle(c.key)}
-                                    />
-                                    <span className="text-[12px] font-medium text-slate-700">
-                                        {c.label}
-                                    </span>
-                                </label>
-                            ))}
-                        </div>
+        <SideFormSheet
+            open={open}
+            onOpenChange={(o) => !o && onClose()}
+            title="Export options"
+            description="Choose sections and format"
+            icon={<Download className="h-5 w-5" />}
+            accentColor={VIOLET}
+            width="md"
+            submitLabel="Download"
+            onSubmit={(e) => {
+                e.preventDefault();
+                onExport({ cols, format });
+            }}
+        >
+            <div className="space-y-4">
+                <Field label="Sections to include">
+                    <div className="grid grid-cols-2 gap-2">
+                        {EXPORT_COLUMNS.map((c) => (
+                            <label
+                                key={c.key}
+                                className="flex items-center gap-2 p-2 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer"
+                            >
+                                <Checkbox
+                                    checked={cols.includes(c.key)}
+                                    onCheckedChange={() => toggle(c.key)}
+                                />
+                                <span className="text-[12px] font-medium text-slate-700">
+                                    {c.label}
+                                </span>
+                            </label>
+                        ))}
                     </div>
-                    <div className="space-y-1.5">
-                        <Label className="text-[11px] font-semibold">Format</Label>
-                        <Select value={format} onValueChange={setFormat}>
-                            <SelectTrigger className="h-9 rounded-xl text-[12px]">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="CSV">CSV</SelectItem>
-                                <SelectItem value="Excel">Excel</SelectItem>
-                                <SelectItem value="JSON">JSON</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                </div>
-                <DialogFooter>
-                    <Button
-                        variant="outline"
-                        onClick={onClose}
-                        className="h-9 rounded-xl border-slate-200 text-[12px]"
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        onClick={() => onExport({ cols, format })}
-                        className="h-9 rounded-xl text-white text-[12px]"
-                        style={{ backgroundColor: VIOLET }}
-                    >
-                        <Download className="h-3.5 w-3.5 mr-1.5" />
-                        Download
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+                </Field>
+                <Field label="Format">
+                    <Select value={format} onValueChange={setFormat}>
+                        <SelectTrigger>
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="CSV">CSV</SelectItem>
+                            <SelectItem value="Excel">Excel</SelectItem>
+                            <SelectItem value="JSON">JSON</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </Field>
+            </div>
+        </SideFormSheet>
     );
 };
 
@@ -2833,172 +2788,138 @@ const CustomReportBuilderDialog: React.FC<{
         setMetrics((p) => (p.includes(k) ? p.filter((x) => x !== k) : [...p, k]));
 
     return (
-        <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-            <DialogContent className="max-w-[720px] rounded-2xl font-sans">
-                <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2">
-                        <Layers className="h-4 w-4" style={{ color: VIOLET }} />
-                        Custom report builder
-                    </DialogTitle>
-                    <DialogDescription className="text-[12px]">
-                        Assemble a report from metrics, filters and grouping.
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-2">
-                    <div className="space-y-1.5">
-                        <Label className="text-[11px] font-semibold">
-                            Report name
-                        </Label>
-                        <Input
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            className="h-9 rounded-xl text-[12px]"
-                        />
-                    </div>
-                    <div className="space-y-1.5">
-                        <Label className="text-[11px] font-semibold">Metrics</Label>
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                            {METRIC_OPTIONS.map((m) => (
-                                <label
-                                    key={m.key}
-                                    className="flex items-center gap-2 p-2 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer"
-                                >
-                                    <Checkbox
-                                        checked={metrics.includes(m.key)}
-                                        onCheckedChange={() => toggleMetric(m.key)}
-                                    />
-                                    <span className="text-[12px] font-medium text-slate-700">
-                                        {m.label}
-                                    </span>
-                                </label>
-                            ))}
-                        </div>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <div className="space-y-1.5">
-                            <Label className="text-[11px] font-semibold">
-                                Group by
-                            </Label>
-                            <Select value={groupBy} onValueChange={setGroupBy}>
-                                <SelectTrigger className="h-9 rounded-xl text-[12px]">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {GROUP_OPTIONS.map((g) => (
-                                        <SelectItem key={g.key} value={g.key}>
-                                            {g.label}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label className="text-[11px] font-semibold">
-                                Sort by
-                            </Label>
-                            <Select value={sortBy} onValueChange={setSortBy}>
-                                <SelectTrigger className="h-9 rounded-xl text-[12px]">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {METRIC_OPTIONS.map((m) => (
-                                        <SelectItem key={m.key} value={m.key}>
-                                            {m.label}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <div className="space-y-1.5">
-                            <Label className="text-[11px] font-semibold">
-                                Filter: stage
-                            </Label>
-                            <Select
-                                value={filterStage}
-                                onValueChange={setFilterStage}
+        <SideFormSheet
+            open={open}
+            onOpenChange={(o) => !o && onClose()}
+            title="Custom report builder"
+            description="Assemble a report from metrics, filters and grouping."
+            icon={<Layers className="h-5 w-5" />}
+            accentColor={VIOLET}
+            width="xl"
+            submitLabel="Save report"
+            onSubmit={(e) => {
+                e.preventDefault();
+                onSave({
+                    name,
+                    metrics,
+                    groupBy,
+                    sortBy,
+                    filters: {
+                        stage: filterStage,
+                        source: filterSource,
+                    },
+                });
+            }}
+        >
+            <div className="space-y-4">
+                <Field label="Report name" required>
+                    <Input
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                    />
+                </Field>
+                <Field label="Metrics">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                        {METRIC_OPTIONS.map((m) => (
+                            <label
+                                key={m.key}
+                                className="flex items-center gap-2 p-2 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer"
                             >
-                                <SelectTrigger className="h-9 rounded-xl text-[12px]">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All stages</SelectItem>
-                                    <SelectItem value="New">New</SelectItem>
-                                    <SelectItem value="Screening">Screening</SelectItem>
-                                    <SelectItem value="Interview">Interview</SelectItem>
-                                    <SelectItem value="Offer">Offer</SelectItem>
-                                    <SelectItem value="Hired">Hired</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label className="text-[11px] font-semibold">
-                                Filter: source
-                            </Label>
-                            <Select
-                                value={filterSource}
-                                onValueChange={setFilterSource}
-                            >
-                                <SelectTrigger className="h-9 rounded-xl text-[12px]">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All sources</SelectItem>
-                                    <SelectItem value="LinkedIn">LinkedIn</SelectItem>
-                                    <SelectItem value="Agency">Agency</SelectItem>
-                                    <SelectItem value="Referral">Referral</SelectItem>
-                                    <SelectItem value="CareerPage">
-                                        Career Page
+                                <Checkbox
+                                    checked={metrics.includes(m.key)}
+                                    onCheckedChange={() => toggleMetric(m.key)}
+                                />
+                                <span className="text-[12px] font-medium text-slate-700">
+                                    {m.label}
+                                </span>
+                            </label>
+                        ))}
+                    </div>
+                </Field>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <Field label="Group by">
+                        <Select value={groupBy} onValueChange={setGroupBy}>
+                            <SelectTrigger>
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {GROUP_OPTIONS.map((g) => (
+                                    <SelectItem key={g.key} value={g.key}>
+                                        {g.label}
                                     </SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </div>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                    <Field label="Sort by">
+                        <Select value={sortBy} onValueChange={setSortBy}>
+                            <SelectTrigger>
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {METRIC_OPTIONS.map((m) => (
+                                    <SelectItem key={m.key} value={m.key}>
+                                        {m.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <Field label="Filter: stage">
+                        <Select
+                            value={filterStage}
+                            onValueChange={setFilterStage}
+                        >
+                            <SelectTrigger>
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All stages</SelectItem>
+                                <SelectItem value="New">New</SelectItem>
+                                <SelectItem value="Screening">Screening</SelectItem>
+                                <SelectItem value="Interview">Interview</SelectItem>
+                                <SelectItem value="Offer">Offer</SelectItem>
+                                <SelectItem value="Hired">Hired</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                    <Field label="Filter: source">
+                        <Select
+                            value={filterSource}
+                            onValueChange={setFilterSource}
+                        >
+                            <SelectTrigger>
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All sources</SelectItem>
+                                <SelectItem value="LinkedIn">LinkedIn</SelectItem>
+                                <SelectItem value="Agency">Agency</SelectItem>
+                                <SelectItem value="Referral">Referral</SelectItem>
+                                <SelectItem value="CareerPage">
+                                    Career Page
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                </div>
 
-                    <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
-                        <div className={MICRO_LABEL}>Preview</div>
-                        <div className="text-[12px] text-slate-700 mt-2 leading-relaxed">
-                            <strong>{name}</strong> &middot; grouped by{" "}
-                            <strong>{groupBy}</strong>, sorted by{" "}
-                            <strong>{sortBy}</strong> &middot;{" "}
-                            {metrics.length} metric{metrics.length === 1 ? "" : "s"}{" "}
-                            &middot; stage:{" "}
-                            <strong>{filterStage}</strong>, source:{" "}
-                            <strong>{filterSource}</strong>.
-                        </div>
+                <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
+                    <div className={MICRO_LABEL}>Preview</div>
+                    <div className="text-[12px] text-slate-700 mt-2 leading-relaxed">
+                        <strong>{name}</strong> &middot; grouped by{" "}
+                        <strong>{groupBy}</strong>, sorted by{" "}
+                        <strong>{sortBy}</strong> &middot;{" "}
+                        {metrics.length} metric{metrics.length === 1 ? "" : "s"}{" "}
+                        &middot; stage:{" "}
+                        <strong>{filterStage}</strong>, source:{" "}
+                        <strong>{filterSource}</strong>.
                     </div>
                 </div>
-                <DialogFooter>
-                    <Button
-                        variant="outline"
-                        onClick={onClose}
-                        className="h-9 rounded-xl border-slate-200 text-[12px]"
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        onClick={() =>
-                            onSave({
-                                name,
-                                metrics,
-                                groupBy,
-                                sortBy,
-                                filters: {
-                                    stage: filterStage,
-                                    source: filterSource,
-                                },
-                            })
-                        }
-                        className="h-9 rounded-xl text-white text-[12px]"
-                        style={{ backgroundColor: VIOLET }}
-                    >
-                        <Check className="h-3.5 w-3.5 mr-1.5" />
-                        Save report
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+            </div>
+        </SideFormSheet>
     );
 };
 

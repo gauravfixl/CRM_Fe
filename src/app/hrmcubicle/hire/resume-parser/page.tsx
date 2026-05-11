@@ -67,6 +67,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/shared/components/ui/alert-dialog"
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs"
 import {
   Select,
@@ -1309,7 +1310,7 @@ const ResumeParserPage = () => {
       </Dialog>
 
       {/* ── DIALOG: Convert to Pipeline ── */}
-      <Dialog
+      <SideFormSheet
         open={!!convertResume}
         onOpenChange={(o) => {
           if (!o) {
@@ -1317,91 +1318,62 @@ const ResumeParserPage = () => {
             setConvertJobId("")
           }
         }}
+        title="Add to pipeline"
+        description={`Create a candidate record for ${convertResume?.fullName ?? ""} in the selected job's pipeline.`}
+        icon={<ArrowRight className="h-5 w-5" />}
+        accentColor="#8B5CF6"
+        width="md"
+        submitLabel="Add to pipeline"
+        submitDisabled={!convertJobId}
+        onSubmit={(e) => { e.preventDefault(); doConvertSingle(); }}
       >
-        <DialogContent className="max-w-md rounded-2xl">
-          <DialogHeader>
-            <DialogTitle className="text-lg font-black text-slate-900 flex items-center gap-2">
-              <ArrowRight className="h-5 w-5 text-[#8B5CF6]" />
-              Add to pipeline
-            </DialogTitle>
-            <DialogDescription className="text-xs text-slate-500">
-              Create a candidate record for{" "}
-              <span className="font-bold text-slate-700">
-                {convertResume?.fullName}
-              </span>{" "}
-              in the selected job's pipeline.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-2">
-                Target Job
-              </label>
-              <Select value={convertJobId} onValueChange={setConvertJobId}>
-                <SelectTrigger className="rounded-xl h-10 text-xs">
-                  <SelectValue placeholder="Select a job..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {jobs.map((j) => {
-                    const match = convertResume?.matchScores.find(
-                      (m) => m.jobId === j.id
-                    )
-                    return (
-                      <SelectItem key={j.id} value={j.id}>
-                        <div className="flex items-center justify-between gap-3 w-full">
-                          <span>{j.title}</span>
-                          {match && (
-                            <span
-                              className={cn(
-                                "text-[10px] font-bold tabular-nums",
-                                qualityTone(match.score).text
-                              )}
-                            >
-                              {match.score}%
-                            </span>
-                          )}
-                        </div>
-                      </SelectItem>
-                    )
-                  })}
-                </SelectContent>
-              </Select>
-            </div>
-            {convertResume?.matchScores && convertResume.matchScores[0] && (
-              <div className="rounded-xl bg-violet-50 border border-violet-200 p-3 text-xs">
-                <div className="flex items-center gap-2 text-violet-700 font-bold mb-1">
-                  <Sparkles className="h-3.5 w-3.5" /> Top AI match
-                </div>
-                <p className="text-violet-900">
-                  {convertResume.matchScores[0].jobTitle} —{" "}
-                  <span className="font-bold tabular-nums">
-                    {convertResume.matchScores[0].score}% match
-                  </span>
-                </p>
+        <div className="space-y-4">
+          <Field label="Target Job" required>
+            <Select value={convertJobId} onValueChange={setConvertJobId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a job..." />
+              </SelectTrigger>
+              <SelectContent>
+                {jobs.map((j) => {
+                  const match = convertResume?.matchScores.find(
+                    (m) => m.jobId === j.id
+                  )
+                  return (
+                    <SelectItem key={j.id} value={j.id}>
+                      <div className="flex items-center justify-between gap-3 w-full">
+                        <span>{j.title}</span>
+                        {match && (
+                          <span
+                            className={cn(
+                              "text-[10px] font-bold tabular-nums",
+                              qualityTone(match.score).text
+                            )}
+                          >
+                            {match.score}%
+                          </span>
+                        )}
+                      </div>
+                    </SelectItem>
+                  )
+                })}
+              </SelectContent>
+            </Select>
+          </Field>
+          {convertResume?.matchScores && convertResume.matchScores[0] && (
+            <div className="rounded-xl bg-violet-50 border border-violet-200 p-3 text-xs">
+              <div className="flex items-center gap-2 text-violet-700 font-bold mb-1">
+                <Sparkles className="h-3.5 w-3.5" /> Top AI match
               </div>
-            )}
-          </div>
-          <DialogFooter className="gap-2">
-            <Button
-              variant="outline"
-              className="rounded-xl text-xs"
-              onClick={() => {
-                setConvertResume(null)
-                setConvertJobId("")
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              className="rounded-xl text-xs bg-[#8B5CF6] hover:bg-[#7C3AED] text-white font-bold"
-              disabled={!convertJobId}
-              onClick={doConvertSingle}
-            >
-              Add to pipeline
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+              <p className="text-violet-900">
+                {convertResume.matchScores[0].jobTitle} —{" "}
+                <span className="font-bold tabular-nums">
+                  {convertResume.matchScores[0].score}% match
+                </span>
+              </p>
+            </div>
+          )}
+        </div>
+      </SideFormSheet>
 
       {/* ── DIALOG: Bulk Upload Progress ── */}
       <Dialog
@@ -1459,56 +1431,36 @@ const ResumeParserPage = () => {
       </Dialog>
 
       {/* ── DIALOG: Bulk Convert ── */}
-      <Dialog open={bulkConvertOpen} onOpenChange={setBulkConvertOpen}>
-        <DialogContent className="max-w-md rounded-2xl">
-          <DialogHeader>
-            <DialogTitle className="text-lg font-black text-slate-900 flex items-center gap-2">
-              <ArrowRight className="h-5 w-5 text-[#8B5CF6]" />
-              Convert {selectedIds.size} to pipeline
-            </DialogTitle>
-            <DialogDescription className="text-xs text-slate-500">
-              Each selected parsed resume will be added as a candidate to the
-              chosen job. Already-converted or duplicate resumes will be skipped.
-            </DialogDescription>
-          </DialogHeader>
-          <div>
-            <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-2">
-              Target Job
-            </label>
-            <Select
-              value={bulkConvertJobId}
-              onValueChange={setBulkConvertJobId}
-            >
-              <SelectTrigger className="rounded-xl h-10 text-xs">
-                <SelectValue placeholder="Select a job..." />
-              </SelectTrigger>
-              <SelectContent>
-                {jobs.map((j) => (
-                  <SelectItem key={j.id} value={j.id}>
-                    {j.title}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <DialogFooter className="gap-2">
-            <Button
-              variant="outline"
-              className="rounded-xl text-xs"
-              onClick={() => setBulkConvertOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              className="rounded-xl text-xs bg-[#8B5CF6] hover:bg-[#7C3AED] text-white font-bold"
-              disabled={!bulkConvertJobId}
-              onClick={doBulkConvert}
-            >
-              Convert {selectedIds.size}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <SideFormSheet
+        open={bulkConvertOpen}
+        onOpenChange={setBulkConvertOpen}
+        title={`Convert ${selectedIds.size} to pipeline`}
+        description="Each selected parsed resume will be added as a candidate to the chosen job. Already-converted or duplicate resumes will be skipped."
+        icon={<ArrowRight className="h-5 w-5" />}
+        accentColor="#8B5CF6"
+        width="md"
+        submitLabel={`Convert ${selectedIds.size}`}
+        submitDisabled={!bulkConvertJobId}
+        onSubmit={(e) => { e.preventDefault(); doBulkConvert(); }}
+      >
+        <Field label="Target Job" required>
+          <Select
+            value={bulkConvertJobId}
+            onValueChange={setBulkConvertJobId}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select a job..." />
+            </SelectTrigger>
+            <SelectContent>
+              {jobs.map((j) => (
+                <SelectItem key={j.id} value={j.id}>
+                  {j.title}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Field>
+      </SideFormSheet>
 
       {/* ── DIALOG: Clear All Confirm ── */}
       <AlertDialog open={clearAllOpen} onOpenChange={setClearAllOpen}>

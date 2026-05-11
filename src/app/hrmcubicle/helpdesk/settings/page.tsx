@@ -36,6 +36,7 @@ import { Switch } from "@/shared/components/ui/switch";
 import { Textarea } from "@/shared/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/shared/components/ui/alert-dialog";
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
 import {
@@ -746,29 +747,32 @@ const HelpdeskSettingsPage = () => {
                 </div>
             </div>
 
-            {/* Category Dialog */}
-            <Dialog open={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen}>
-                <DialogContent className="max-w-lg p-0 overflow-hidden rounded-2xl">
-                    <DialogHeader className="bg-slate-50 border-b border-slate-200 p-6">
-                        <DialogTitle className="text-lg font-bold text-slate-900 uppercase">{editingCategory ? "Edit Category" : "New Category"}</DialogTitle>
-                        <DialogDescription className="text-xs text-slate-500">{editingCategory ? "Update classification and sub-issues." : "Add a new ticket cluster to the catalog."}</DialogDescription>
-                    </DialogHeader>
-                    <div className="p-6 space-y-5">
+            {/* Category Side Sheet */}
+            <SideFormSheet
+                open={isCategoryDialogOpen}
+                onOpenChange={setIsCategoryDialogOpen}
+                title={editingCategory ? "Edit Category" : "New Category"}
+                description={editingCategory ? "Update classification and sub-issues." : "Add a new ticket cluster to the catalog."}
+                icon={<Layers size={20} />}
+                accentColor={editingCategory ? "#7c3aed" : "#4f46e5"}
+                width="md"
+                submitLabel={editingCategory ? "Save Changes" : "Create Category"}
+                onSubmit={(e) => { e.preventDefault(); saveCategory(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Category Name" required>
+                        <Input placeholder="e.g. Procurement" value={categoryForm.name} onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })} />
+                    </Field>
+                    <Field label="Sub-categories">
                         <div className="space-y-2">
-                            <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Category Name</Label>
-                            <Input placeholder="e.g. Procurement" value={categoryForm.name} onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })} className="h-11 rounded-xl" />
-                        </div>
-                        <div className="space-y-2">
-                            <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Sub-categories</Label>
                             <div className="flex gap-2">
                                 <Input
                                     placeholder="e.g. Vendor onboarding"
                                     value={categoryForm.subInput}
                                     onChange={(e) => setCategoryForm({ ...categoryForm, subInput: e.target.value })}
                                     onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addSubToForm(); } }}
-                                    className="h-10 rounded-xl"
                                 />
-                                <Button type="button" onClick={addSubToForm} className="h-10 px-4 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-xs uppercase">Add</Button>
+                                <Button type="button" onClick={addSubToForm} className="h-10 px-4 bg-slate-900 hover:bg-slate-800 text-white rounded-md font-bold text-xs uppercase">Add</Button>
                             </div>
                             <div className="flex flex-wrap gap-2 pt-2 min-h-[40px] p-3 bg-slate-50 rounded-xl border border-slate-100">
                                 {categoryForm.subs.length === 0 && <span className="text-[10px] text-slate-400 italic font-bold uppercase tracking-widest">No sub-categories yet</span>}
@@ -780,153 +784,136 @@ const HelpdeskSettingsPage = () => {
                                 ))}
                             </div>
                         </div>
-                    </div>
-                    <DialogFooter className="p-4 bg-slate-50 border-t border-slate-200">
-                        <Button variant="ghost" onClick={() => setIsCategoryDialogOpen(false)}>Cancel</Button>
-                        <Button onClick={saveCategory} className="bg-indigo-600 hover:bg-indigo-700 text-white">{editingCategory ? "Save Changes" : "Create Category"}</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    </Field>
+                </div>
+            </SideFormSheet>
 
-            {/* SLA Dialog */}
-            <Dialog open={isSLADialogOpen} onOpenChange={setIsSLADialogOpen}>
-                <DialogContent className="max-w-lg p-0 overflow-hidden rounded-2xl">
-                    <DialogHeader className="bg-slate-50 border-b border-slate-200 p-6">
-                        <DialogTitle className="text-lg font-bold text-slate-900 uppercase">{editingSLA ? "Reconfigure SLA" : "New SLA Rule"}</DialogTitle>
-                        <DialogDescription className="text-xs text-slate-500">Configure response and resolution timelines.</DialogDescription>
-                    </DialogHeader>
-                    <div className="p-6 space-y-5">
-                        <div className="space-y-2">
-                            <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Priority Class</Label>
-                            <Select value={slaForm.priority} onValueChange={(v) => setSLAForm({ ...slaForm, priority: v as any })}>
-                                <SelectTrigger className="h-11 rounded-xl"><SelectValue /></SelectTrigger>
+            {/* SLA Side Sheet */}
+            <SideFormSheet
+                open={isSLADialogOpen}
+                onOpenChange={setIsSLADialogOpen}
+                title={editingSLA ? "Reconfigure SLA" : "New SLA Rule"}
+                description="Configure response and resolution timelines."
+                icon={<Gauge size={20} />}
+                accentColor={editingSLA ? "#7c3aed" : "#4f46e5"}
+                width="md"
+                submitLabel={editingSLA ? "Save Rule" : "Create Rule"}
+                onSubmit={(e) => { e.preventDefault(); saveSLA(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Priority Class" required>
+                        <Select value={slaForm.priority} onValueChange={(v) => setSLAForm({ ...slaForm, priority: v as any })}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Urgent">Urgent</SelectItem>
+                                <SelectItem value="High">High</SelectItem>
+                                <SelectItem value="Medium">Medium</SelectItem>
+                                <SelectItem value="Low">Low</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Response (Hours)" required>
+                            <Input type="number" min={1} value={slaForm.responseTimeHours} onChange={(e) => setSLAForm({ ...slaForm, responseTimeHours: Number(e.target.value) || 0 })} />
+                        </Field>
+                        <Field label="Resolution (Hours)" required>
+                            <Input type="number" min={1} value={slaForm.resolutionTimeHours} onChange={(e) => setSLAForm({ ...slaForm, resolutionTimeHours: Number(e.target.value) || 0 })} />
+                        </Field>
+                    </div>
+                    <Field label="Escalation Contact" hint="Optional email for escalations">
+                        <Input placeholder="supervisor@firm.com" value={slaForm.escalationContact} onChange={(e) => setSLAForm({ ...slaForm, escalationContact: e.target.value })} />
+                    </Field>
+                    <div className="flex items-center justify-between p-3 bg-slate-50 border border-slate-100 rounded-xl">
+                        <div>
+                            <Label className="text-[11px] font-bold text-slate-700">Auto-escalate on breach</Label>
+                            <p className="text-[10px] text-slate-400">Notify escalation contact when SLA is breached.</p>
+                        </div>
+                        <Switch checked={slaForm.escalationEnabled} onCheckedChange={(v) => setSLAForm({ ...slaForm, escalationEnabled: v })} />
+                    </div>
+                </div>
+            </SideFormSheet>
+
+            {/* Automation Side Sheet */}
+            <SideFormSheet
+                open={isAutomationDialogOpen}
+                onOpenChange={setIsAutomationDialogOpen}
+                title={editingAutomation ? "Edit Automation" : "New Automation"}
+                description="Define a trigger to reduce manual ops."
+                icon={<Workflow size={20} />}
+                accentColor={editingAutomation ? "#7c3aed" : "#4f46e5"}
+                width="md"
+                submitLabel={editingAutomation ? "Save Rule" : "Create Rule"}
+                onSubmit={(e) => { e.preventDefault(); saveAutomation(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Rule Title" required>
+                        <Input placeholder="e.g. Auto-escalate breached HR tickets" value={autoForm.title} onChange={(e) => setAutoForm({ ...autoForm, title: e.target.value })} />
+                    </Field>
+                    <Field label="Description" required>
+                        <Textarea placeholder="Explain what this rule does" value={autoForm.description} onChange={(e) => setAutoForm({ ...autoForm, description: e.target.value })} className="min-h-[80px]" />
+                    </Field>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Type">
+                            <Select value={autoForm.type} onValueChange={(v) => setAutoForm({ ...autoForm, type: v as any })}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="Urgent">Urgent</SelectItem>
-                                    <SelectItem value="High">High</SelectItem>
-                                    <SelectItem value="Medium">Medium</SelectItem>
-                                    <SelectItem value="Low">Low</SelectItem>
+                                    <SelectItem value="routing">Smart Routing</SelectItem>
+                                    <SelectItem value="auto-close">Auto-Close</SelectItem>
+                                    <SelectItem value="sentiment">Sentiment Triage</SelectItem>
+                                    <SelectItem value="escalation">Escalation</SelectItem>
+                                    <SelectItem value="custom">Custom</SelectItem>
                                 </SelectContent>
                             </Select>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Response (Hours)</Label>
-                                <Input type="number" min={1} value={slaForm.responseTimeHours} onChange={(e) => setSLAForm({ ...slaForm, responseTimeHours: Number(e.target.value) || 0 })} className="h-11 rounded-xl" />
+                        </Field>
+                        <Field label="Status">
+                            <div className="flex items-center gap-3 h-10 px-3 bg-slate-50 border border-slate-100 rounded-md">
+                                <Switch checked={autoForm.enabled} onCheckedChange={(v) => setAutoForm({ ...autoForm, enabled: v })} />
+                                <span className="text-xs font-bold text-slate-600">{autoForm.enabled ? "Enabled" : "Disabled"}</span>
                             </div>
-                            <div className="space-y-2">
-                                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Resolution (Hours)</Label>
-                                <Input type="number" min={1} value={slaForm.resolutionTimeHours} onChange={(e) => setSLAForm({ ...slaForm, resolutionTimeHours: Number(e.target.value) || 0 })} className="h-11 rounded-xl" />
-                            </div>
-                        </div>
-                        <div className="space-y-2">
-                            <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Escalation Contact (optional)</Label>
-                            <Input placeholder="supervisor@firm.com" value={slaForm.escalationContact} onChange={(e) => setSLAForm({ ...slaForm, escalationContact: e.target.value })} className="h-11 rounded-xl" />
-                        </div>
-                        <div className="flex items-center justify-between p-3 bg-slate-50 border border-slate-100 rounded-xl">
-                            <div>
-                                <Label className="text-[11px] font-bold text-slate-700">Auto-escalate on breach</Label>
-                                <p className="text-[10px] text-slate-400">Notify escalation contact when SLA is breached.</p>
-                            </div>
-                            <Switch checked={slaForm.escalationEnabled} onCheckedChange={(v) => setSLAForm({ ...slaForm, escalationEnabled: v })} />
-                        </div>
+                        </Field>
                     </div>
-                    <DialogFooter className="p-4 bg-slate-50 border-t border-slate-200">
-                        <Button variant="ghost" onClick={() => setIsSLADialogOpen(false)}>Cancel</Button>
-                        <Button onClick={saveSLA} className="bg-indigo-600 hover:bg-indigo-700 text-white">{editingSLA ? "Save Rule" : "Create Rule"}</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    <Field label="Condition" hint="Optional, e.g. priority == Urgent AND inactive > 48h">
+                        <Input placeholder="e.g. priority == Urgent AND inactive > 48h" value={autoForm.condition} onChange={(e) => setAutoForm({ ...autoForm, condition: e.target.value })} className="font-mono text-xs" />
+                    </Field>
+                </div>
+            </SideFormSheet>
 
-            {/* Automation Dialog */}
-            <Dialog open={isAutomationDialogOpen} onOpenChange={setIsAutomationDialogOpen}>
-                <DialogContent className="max-w-lg p-0 overflow-hidden rounded-2xl">
-                    <DialogHeader className="bg-slate-50 border-b border-slate-200 p-6">
-                        <DialogTitle className="text-lg font-bold text-slate-900 uppercase">{editingAutomation ? "Edit Automation" : "New Automation"}</DialogTitle>
-                        <DialogDescription className="text-xs text-slate-500">Define a trigger to reduce manual ops.</DialogDescription>
-                    </DialogHeader>
-                    <div className="p-6 space-y-5">
-                        <div className="space-y-2">
-                            <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Rule Title</Label>
-                            <Input placeholder="e.g. Auto-escalate breached HR tickets" value={autoForm.title} onChange={(e) => setAutoForm({ ...autoForm, title: e.target.value })} className="h-11 rounded-xl" />
-                        </div>
-                        <div className="space-y-2">
-                            <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Description</Label>
-                            <Textarea placeholder="Explain what this rule does" value={autoForm.description} onChange={(e) => setAutoForm({ ...autoForm, description: e.target.value })} className="min-h-[80px] rounded-xl" />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Type</Label>
-                                <Select value={autoForm.type} onValueChange={(v) => setAutoForm({ ...autoForm, type: v as any })}>
-                                    <SelectTrigger className="h-11 rounded-xl"><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="routing">Smart Routing</SelectItem>
-                                        <SelectItem value="auto-close">Auto-Close</SelectItem>
-                                        <SelectItem value="sentiment">Sentiment Triage</SelectItem>
-                                        <SelectItem value="escalation">Escalation</SelectItem>
-                                        <SelectItem value="custom">Custom</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-2 flex flex-col">
-                                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Status</Label>
-                                <div className="flex items-center gap-3 h-11">
-                                    <Switch checked={autoForm.enabled} onCheckedChange={(v) => setAutoForm({ ...autoForm, enabled: v })} />
-                                    <span className="text-xs font-bold text-slate-600">{autoForm.enabled ? "Enabled" : "Disabled"}</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="space-y-2">
-                            <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Condition (optional)</Label>
-                            <Input placeholder="e.g. priority == Urgent AND inactive > 48h" value={autoForm.condition} onChange={(e) => setAutoForm({ ...autoForm, condition: e.target.value })} className="h-11 rounded-xl font-mono text-xs" />
-                        </div>
+            {/* Notification Template Side Sheet */}
+            <SideFormSheet
+                open={isTplDialogOpen}
+                onOpenChange={setIsTplDialogOpen}
+                title={editingTpl ? "Edit Template" : "New Template"}
+                description="Supported placeholders: [TicketID], [EmployeeName], [Subject]"
+                icon={<Bell size={20} />}
+                accentColor={editingTpl ? "#7c3aed" : "#4f46e5"}
+                width="lg"
+                submitLabel={editingTpl ? "Save Template" : "Create Template"}
+                onSubmit={(e) => { e.preventDefault(); saveTpl(); }}
+            >
+                <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Channel" required>
+                            <Select value={tplForm.channel} onValueChange={(v) => setTplForm({ ...tplForm, channel: v as any })}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="email">Email</SelectItem>
+                                    <SelectItem value="push">Push</SelectItem>
+                                    <SelectItem value="sms">SMS</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <Field label="Template Name" required>
+                            <Input placeholder="e.g. Ticket Closed" value={tplForm.name} onChange={(e) => setTplForm({ ...tplForm, name: e.target.value })} />
+                        </Field>
                     </div>
-                    <DialogFooter className="p-4 bg-slate-50 border-t border-slate-200">
-                        <Button variant="ghost" onClick={() => setIsAutomationDialogOpen(false)}>Cancel</Button>
-                        <Button onClick={saveAutomation} className="bg-indigo-600 hover:bg-indigo-700 text-white">{editingAutomation ? "Save Rule" : "Create Rule"}</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            {/* Notification Template Dialog */}
-            <Dialog open={isTplDialogOpen} onOpenChange={setIsTplDialogOpen}>
-                <DialogContent className="max-w-xl p-0 overflow-hidden rounded-2xl">
-                    <DialogHeader className="bg-slate-50 border-b border-slate-200 p-6">
-                        <DialogTitle className="text-lg font-bold text-slate-900 uppercase">{editingTpl ? "Edit Template" : "New Template"}</DialogTitle>
-                        <DialogDescription className="text-xs text-slate-500">Supported placeholders: [TicketID], [EmployeeName], [Subject]</DialogDescription>
-                    </DialogHeader>
-                    <div className="p-6 space-y-5">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Channel</Label>
-                                <Select value={tplForm.channel} onValueChange={(v) => setTplForm({ ...tplForm, channel: v as any })}>
-                                    <SelectTrigger className="h-11 rounded-xl"><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="email">Email</SelectItem>
-                                        <SelectItem value="push">Push</SelectItem>
-                                        <SelectItem value="sms">SMS</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Template Name</Label>
-                                <Input placeholder="e.g. Ticket Closed" value={tplForm.name} onChange={(e) => setTplForm({ ...tplForm, name: e.target.value })} className="h-11 rounded-xl" />
-                            </div>
-                        </div>
-                        <div className="space-y-2">
-                            <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Subject Line</Label>
-                            <Input placeholder="e.g. Your ticket [TicketID] has been updated" value={tplForm.subject} onChange={(e) => setTplForm({ ...tplForm, subject: e.target.value })} className="h-11 rounded-xl" />
-                        </div>
-                        <div className="space-y-2">
-                            <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Body</Label>
-                            <Textarea placeholder="Hi [EmployeeName], your ticket [TicketID] has been resolved..." value={tplForm.body} onChange={(e) => setTplForm({ ...tplForm, body: e.target.value })} className="min-h-[140px] rounded-xl font-medium text-sm" />
-                        </div>
-                    </div>
-                    <DialogFooter className="p-4 bg-slate-50 border-t border-slate-200">
-                        <Button variant="ghost" onClick={() => setIsTplDialogOpen(false)}>Cancel</Button>
-                        <Button onClick={saveTpl} className="bg-indigo-600 hover:bg-indigo-700 text-white">{editingTpl ? "Save Template" : "Create Template"}</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    <Field label="Subject Line">
+                        <Input placeholder="e.g. Your ticket [TicketID] has been updated" value={tplForm.subject} onChange={(e) => setTplForm({ ...tplForm, subject: e.target.value })} />
+                    </Field>
+                    <Field label="Body" required>
+                        <Textarea placeholder="Hi [EmployeeName], your ticket [TicketID] has been resolved..." value={tplForm.body} onChange={(e) => setTplForm({ ...tplForm, body: e.target.value })} className="min-h-[140px] font-medium text-sm" />
+                    </Field>
+                </div>
+            </SideFormSheet>
 
             {/* Delete Confirmation */}
             <AlertDialog open={!!deleteTarget} onOpenChange={(v) => !v && setDeleteTarget(null)}>

@@ -15,7 +15,6 @@ import {
     AlertTriangle,
     TrendingUp,
     MoreHorizontal,
-    ArrowRight,
     RotateCcw,
 } from "lucide-react";
 import { Card } from "@/shared/components/ui/card";
@@ -25,9 +24,9 @@ import { useToast } from "@/shared/components/ui/use-toast";
 import { useLifecycleStore, LifecycleEmployee, HistoryLog } from "@/shared/data/lifecycle-store";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/shared/components/ui/dialog";
-import { Label } from "@/shared/components/ui/label";
 import { Textarea } from "@/shared/components/ui/textarea";
 import { Input } from "@/shared/components/ui/input";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 
 const ProbationManagementPage = () => {
     const { toast } = useToast();
@@ -402,48 +401,35 @@ const ProbationManagementPage = () => {
                 </DialogContent>
             </Dialog>
 
-            {/* Extension Dialog */}
-            <Dialog open={isExtendOpen} onOpenChange={setIsExtendOpen}>
-                <DialogContent className="bg-white rounded-2xl border-2 border-slate-200 p-6 max-w-md shadow-2xl">
-                    <DialogHeader>
-                        <div className="flex items-center gap-3 mb-1">
-                            <div className="h-11 w-11 rounded-xl bg-[#FDDBBB] flex items-center justify-center text-amber-800 shadow-md">
-                                <History size={18} />
-                            </div>
-                            <div>
-                                <DialogTitle className="text-lg font-bold text-slate-900">Extend Review Phase</DialogTitle>
-                                <DialogDescription className="text-[10px] font-bold text-slate-400">
-                                    {extendEmployee ? `Extending probation for ${extendEmployee.name}.` : 'Provide authorization for extension.'}
-                                </DialogDescription>
-                            </div>
-                        </div>
-                    </DialogHeader>
-                    <div className="space-y-4 py-3">
-                        <div className="space-y-1.5">
-                            <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide ml-1">Extension Period</Label>
-                            <Select onValueChange={setExtensionMonths} value={extensionMonths}>
-                                <SelectTrigger className="rounded-xl h-10 bg-slate-50 border border-slate-100 font-bold text-xs"><SelectValue /></SelectTrigger>
-                                <SelectContent className="rounded-xl font-bold">
-                                    <SelectItem value="1" className="text-xs">1 Month</SelectItem>
-                                    <SelectItem value="2" className="text-xs">2 Months</SelectItem>
-                                    <SelectItem value="3" className="text-xs">3 Months</SelectItem>
-                                    <SelectItem value="6" className="text-xs">6 Months</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide ml-1">Reason for Extension</Label>
-                            <Textarea placeholder="Briefly describe why this employee needs more time..." className="h-24 rounded-xl bg-slate-50 border border-slate-100 p-3 font-medium text-xs text-slate-700 resize-none focus-visible:ring-0" value={extensionReason} onChange={e => setExtensionReason(e.target.value)} />
-                        </div>
-                    </div>
-                    <DialogFooter className="gap-2">
-                        <Button variant="outline" onClick={() => setIsExtendOpen(false)} className="rounded-xl h-10 font-bold border-slate-200 text-xs">Cancel</Button>
-                        <Button className="flex-1 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold h-10 text-xs flex items-center justify-center gap-2" onClick={submitExtension}>
-                            Authorize Extension <ArrowRight size={14} />
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            {/* Extension Side Form */}
+            <SideFormSheet
+                open={isExtendOpen}
+                onOpenChange={setIsExtendOpen}
+                title="Extend Review Phase"
+                description={extendEmployee ? `Extending probation for ${extendEmployee.name}.` : 'Provide authorization for extension.'}
+                icon={<History size={20} />}
+                accentColor="#d97706"
+                width="md"
+                submitLabel="Authorize Extension"
+                onSubmit={(e) => { e.preventDefault(); submitExtension(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Extension Period" required>
+                        <Select onValueChange={setExtensionMonths} value={extensionMonths}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="1" className="text-xs">1 Month</SelectItem>
+                                <SelectItem value="2" className="text-xs">2 Months</SelectItem>
+                                <SelectItem value="3" className="text-xs">3 Months</SelectItem>
+                                <SelectItem value="6" className="text-xs">6 Months</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                    <Field label="Reason for Extension" required>
+                        <Textarea placeholder="Briefly describe why this employee needs more time..." className="h-24 resize-none" value={extensionReason} onChange={e => setExtensionReason(e.target.value)} />
+                    </Field>
+                </div>
+            </SideFormSheet>
         </div>
     );
 };

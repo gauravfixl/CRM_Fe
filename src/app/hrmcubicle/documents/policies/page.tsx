@@ -49,6 +49,7 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import {
     Sheet,
     SheetContent,
@@ -192,109 +193,9 @@ const PolicyPage = () => {
                         <Button variant="outline" className="hidden md:flex gap-2 border-slate-200 h-11 rounded-xl font-bold text-[10px] tracking-wide px-6" onClick={() => { const csv = policies.map(p => p.title + "," + p.category + "," + p.status).join("\n"); const blob = new Blob(["Title,Category,Status\n" + csv], { type: "text/csv" }); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = "policies_export.csv"; a.click(); URL.revokeObjectURL(url); toast.success("Policies exported"); }}>
                             <Download className="w-4 h-4" /> Export All
                         </Button>
-                        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-                            <DialogTrigger asChild>
-                                <Button className="bg-indigo-600 hover:bg-slate-900 text-white rounded-xl h-11 px-6 font-bold shadow-lg shadow-indigo-100 transition-all gap-2 text-[10px] tracking-wide border-none">
-                                    <Plus className="w-4 h-4" /> Create Policy
-                                </Button>
-                            </DialogTrigger>
-                            <DialogContent className="max-w-4xl bg-white rounded-[2rem] border border-slate-200 p-10 shadow-3xl font-sans" style={{ zoom: "80%" }}>
-                                <DialogHeader className="mb-4">
-                                    <DialogTitle className="text-3xl font-black tracking-tight text-slate-900">Create New Policy</DialogTitle>
-                                    <DialogDescription className="font-bold text-slate-400 text-xs tracking-wide">
-                                        Define and publish organizational standards for compliance.
-                                    </DialogDescription>
-                                </DialogHeader>
-                                <div className="grid grid-cols-3 gap-x-8 gap-y-6 py-6 transition-all duration-500">
-                                    <div className="col-span-2 space-y-2.5">
-                                        <label className="text-[11px] font-black tracking-wide text-slate-500 ml-1">Policy Title</label>
-                                        <Input
-                                            placeholder="e.g., Global Travel & Expense Policy"
-                                            value={newPolicy.title}
-                                            onChange={(e) => setNewPolicy({ ...newPolicy, title: e.target.value })}
-                                            className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 focus:bg-white focus:ring-4 focus:ring-indigo-100 transition-all text-sm"
-                                        />
-                                    </div>
-                                    <div className="space-y-2.5">
-                                        <label className="text-[11px] font-black tracking-wide text-slate-500 ml-1">Category</label>
-                                        <Select
-                                            value={newPolicy.category}
-                                            onValueChange={(val: any) => setNewPolicy({ ...newPolicy, category: val })}
-                                        >
-                                            <SelectTrigger className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 focus:bg-white focus:ring-4 focus:ring-indigo-100 transition-all">
-                                                <SelectValue placeholder="Select category" />
-                                            </SelectTrigger>
-                                            <SelectContent className="rounded-2xl border border-slate-200 shadow-2xl p-2 font-bold text-xs">
-                                                {categories.map(cat => (
-                                                    <SelectItem key={cat} value={cat} className="rounded-xl h-10">{cat}</SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-
-                                    <div className="space-y-2.5">
-                                        <label className="text-[11px] font-black tracking-wide text-slate-500 ml-1">Effective Date</label>
-                                        <Input
-                                            type="date"
-                                            value={newPolicy.effectiveDate}
-                                            onChange={(e) => setNewPolicy({ ...newPolicy, effectiveDate: e.target.value })}
-                                            className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 focus:bg-white focus:ring-4 focus:ring-indigo-100 transition-all"
-                                        />
-                                    </div>
-                                    <div className="space-y-2.5">
-                                        <label className="text-[11px] font-black tracking-wide text-slate-500 ml-1">Initial Version</label>
-                                        <Input
-                                            placeholder="1.0.0"
-                                            value={newPolicy.currentVersion}
-                                            onChange={(e) => setNewPolicy({ ...newPolicy, currentVersion: e.target.value })}
-                                            className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 focus:bg-white focus:ring-4 focus:ring-indigo-100 transition-all"
-                                        />
-                                    </div>
-                                    <div className="space-y-2.5">
-                                        <label className="text-[11px] font-black tracking-wide text-slate-500 ml-1">Target Audience</label>
-                                        <Select
-                                            value={newPolicy.audience[0] || "All Employees"}
-                                            onValueChange={(val) => setNewPolicy({ ...newPolicy, audience: [val] })}
-                                        >
-                                            <SelectTrigger className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 focus:bg-white focus:ring-4 focus:ring-indigo-100 transition-all">
-                                                <SelectValue placeholder="Select audience" />
-                                            </SelectTrigger>
-                                            <SelectContent className="rounded-2xl border border-slate-200 shadow-2xl p-2 font-bold text-xs">
-                                                <SelectItem value="All Employees" className="rounded-xl h-10">All Employees</SelectItem>
-                                                <SelectItem value="IT Department" className="rounded-xl h-10">IT Department</SelectItem>
-                                                <SelectItem value="HR Department" className="rounded-xl h-10">HR Department</SelectItem>
-                                                <SelectItem value="Sales & Marketing" className="rounded-xl h-10">Sales & Marketing</SelectItem>
-                                                <SelectItem value="Finance" className="rounded-xl h-10">Finance</SelectItem>
-                                                <SelectItem value="Engineering" className="rounded-xl h-10">Engineering</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-
-                                    <div className="col-span-3 space-y-2.5">
-                                        <label className="text-[11px] font-black tracking-wide text-slate-500 ml-1">Context & Description</label>
-                                        <Textarea
-                                            placeholder="Provide a brief summary and context for this policy..."
-                                            rows={3}
-                                            value={newPolicy.description}
-                                            onChange={(e) => setNewPolicy({ ...newPolicy, description: e.target.value })}
-                                            className="bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 py-4 focus:bg-white focus:ring-4 focus:ring-indigo-100 transition-all min-h-[100px] text-sm"
-                                        />
-                                    </div>
-
-                                    <div className="col-span-3 p-10 border-2 border-dashed border-indigo-100 rounded-[2rem] bg-indigo-50/20 flex flex-col items-center justify-center text-indigo-400 cursor-pointer hover:bg-indigo-50/50 hover:border-indigo-200 transition-all group/upload">
-                                        <div className="h-12 w-12 bg-white rounded-xl flex items-center justify-center shadow-md mb-3 group-hover/upload:scale-110 group-hover:rotate-6 transition-all duration-300">
-                                            <Plus className="w-6 h-6 text-indigo-600" />
-                                        </div>
-                                        <span className="text-[12px] font-black tracking-wide text-indigo-600/80">Upload Document (PDF, DOCX)</span>
-                                        <p className="text-[10px] font-bold text-slate-400 mt-1">Maximum file size: 10MB</p>
-                                    </div>
-                                </div>
-                                <DialogFooter className="gap-3 mt-4">
-                                    <Button variant="ghost" onClick={() => setIsAddDialogOpen(false)} className="h-12 rounded-xl font-bold text-[11px] tracking-wide transition-all px-8 hover:bg-slate-50">Cancel</Button>
-                                    <Button onClick={handleAddPolicy} className="bg-indigo-600 hover:bg-slate-900 text-white rounded-xl h-12 px-10 font-bold shadow-xl shadow-indigo-100 transition-all text-[11px] tracking-wide border-none">Activate Policy</Button>
-                                </DialogFooter>
-                            </DialogContent>
-                        </Dialog>
+                        <Button onClick={() => setIsAddDialogOpen(true)} className="bg-indigo-600 hover:bg-slate-900 text-white rounded-xl h-11 px-6 font-bold shadow-lg shadow-indigo-100 transition-all gap-2 text-[10px] tracking-wide border-none">
+                            <Plus className="w-4 h-4" /> Create Policy
+                        </Button>
                     </div>
                 </div>
             </header>
@@ -559,73 +460,170 @@ const PolicyPage = () => {
                     </SheetContent>
                 </Sheet>
 
-                {/* Edit Policy Dialog */}
-                <Dialog open={!!editingPolicy} onOpenChange={(open) => !open && setEditingPolicy(null)}>
-                    <DialogContent className="max-w-4xl bg-white rounded-[2rem] border border-slate-200 p-10 shadow-3xl font-sans" style={{ zoom: "80%" }}>
-                        <DialogHeader className="mb-4 text-start">
-                            <DialogTitle className="text-3xl font-black tracking-tight text-slate-900">Synchronize Policy</DialogTitle>
-                            <DialogDescription className="font-bold text-slate-400 text-xs tracking-wide">
-                                Update organizational blueprints for current compliance cycle.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="grid grid-cols-3 gap-x-8 gap-y-6 py-8">
-                            <div className="col-span-2 space-y-2.5 text-start">
-                                <label className="text-[11px] font-bold tracking-wide text-slate-500 ml-1">Document Title</label>
+                {/* Add Policy Sheet */}
+                <SideFormSheet
+                    open={isAddDialogOpen}
+                    onOpenChange={(o) => {
+                        setIsAddDialogOpen(o);
+                        if (!o) setNewPolicy({
+                            title: "",
+                            category: "General",
+                            description: "",
+                            effectiveDate: new Date().toISOString().split('T')[0],
+                            currentVersion: "1.0.0",
+                            audience: ["All Employees"],
+                            documentUrl: "#"
+                        });
+                    }}
+                    title="Create New Policy"
+                    description="Define and publish organizational standards for compliance."
+                    icon={<Plus size={20} />}
+                    accentColor="#4f46e5"
+                    width="lg"
+                    submitLabel="Activate Policy"
+                    onSubmit={(e) => { e.preventDefault(); handleAddPolicy(); }}
+                >
+                    <div className="space-y-4">
+                        <Field label="Policy Title" required>
+                            <Input
+                                placeholder="e.g., Global Travel & Expense Policy"
+                                value={newPolicy.title}
+                                onChange={(e) => setNewPolicy({ ...newPolicy, title: e.target.value })}
+                            />
+                        </Field>
+                        <div className="grid grid-cols-2 gap-3">
+                            <Field label="Category" required>
+                                <Select
+                                    value={newPolicy.category}
+                                    onValueChange={(val: any) => setNewPolicy({ ...newPolicy, category: val })}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select category" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {categories.map(cat => (
+                                            <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </Field>
+                            <Field label="Effective Date" required>
                                 <Input
-                                    placeholder="Policy title..."
-                                    value={editingPolicy?.title || ""}
-                                    onChange={(e) => setEditingPolicy(prev => prev ? { ...prev, title: e.target.value } : null)}
-                                    className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 focus:bg-white focus:ring-4 focus:ring-indigo-100 transition-all text-sm shadow-sm"
+                                    type="date"
+                                    value={newPolicy.effectiveDate}
+                                    onChange={(e) => setNewPolicy({ ...newPolicy, effectiveDate: e.target.value })}
                                 />
+                            </Field>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <Field label="Initial Version" required>
+                                <Input
+                                    placeholder="1.0.0"
+                                    value={newPolicy.currentVersion}
+                                    onChange={(e) => setNewPolicy({ ...newPolicy, currentVersion: e.target.value })}
+                                />
+                            </Field>
+                            <Field label="Target Audience" required>
+                                <Select
+                                    value={newPolicy.audience[0] || "All Employees"}
+                                    onValueChange={(val) => setNewPolicy({ ...newPolicy, audience: [val] })}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select audience" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="All Employees">All Employees</SelectItem>
+                                        <SelectItem value="IT Department">IT Department</SelectItem>
+                                        <SelectItem value="HR Department">HR Department</SelectItem>
+                                        <SelectItem value="Sales & Marketing">Sales & Marketing</SelectItem>
+                                        <SelectItem value="Finance">Finance</SelectItem>
+                                        <SelectItem value="Engineering">Engineering</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </Field>
+                        </div>
+                        <Field label="Context & Description" required>
+                            <Textarea
+                                placeholder="Provide a brief summary and context for this policy..."
+                                rows={4}
+                                value={newPolicy.description}
+                                onChange={(e) => setNewPolicy({ ...newPolicy, description: e.target.value })}
+                                className="min-h-[110px]"
+                            />
+                        </Field>
+                        <div className="p-6 border-2 border-dashed border-indigo-100 rounded-2xl bg-indigo-50/20 flex flex-col items-center justify-center text-indigo-400 cursor-pointer hover:bg-indigo-50/50 hover:border-indigo-200 transition-all">
+                            <div className="h-10 w-10 bg-white rounded-lg flex items-center justify-center shadow mb-2">
+                                <Plus className="w-5 h-5 text-indigo-600" />
                             </div>
-                            <div className="space-y-2.5 text-start">
-                                <label className="text-[11px] font-bold tracking-wide text-slate-500 ml-1">Classification</label>
+                            <span className="text-[12px] font-bold tracking-wide text-indigo-600/80">Upload Document (PDF, DOCX)</span>
+                            <p className="text-[10px] font-medium text-slate-400 mt-1">Maximum file size: 10MB</p>
+                        </div>
+                    </div>
+                </SideFormSheet>
+
+                {/* Edit Policy Sheet */}
+                <SideFormSheet
+                    open={!!editingPolicy}
+                    onOpenChange={(o) => { if (!o) setEditingPolicy(null); }}
+                    title="Synchronize Policy"
+                    description="Update organizational blueprints for current compliance cycle."
+                    icon={<FileText size={20} />}
+                    accentColor="#7c3aed"
+                    width="lg"
+                    submitLabel="Save Documentation"
+                    cancelLabel="Discard"
+                    onSubmit={(e) => { e.preventDefault(); handleUpdatePolicy(); }}
+                >
+                    <div className="space-y-4">
+                        <Field label="Document Title" required>
+                            <Input
+                                placeholder="Policy title..."
+                                value={editingPolicy?.title || ""}
+                                onChange={(e) => setEditingPolicy(prev => prev ? { ...prev, title: e.target.value } : null)}
+                            />
+                        </Field>
+                        <div className="grid grid-cols-2 gap-3">
+                            <Field label="Classification" required>
                                 <Select
                                     value={editingPolicy?.category}
                                     onValueChange={(val: any) => setEditingPolicy(prev => prev ? { ...prev, category: val } : null)}
                                 >
-                                    <SelectTrigger className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 focus:bg-white focus:ring-4 focus:ring-indigo-100 transition-all">
+                                    <SelectTrigger>
                                         <SelectValue />
                                     </SelectTrigger>
-                                    <SelectContent className="rounded-2xl border border-slate-200 shadow-2xl p-2 font-bold text-xs">
+                                    <SelectContent>
                                         {categories.map(cat => (
-                                            <SelectItem key={cat} value={cat} className="rounded-xl h-10">{cat}</SelectItem>
+                                            <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
-                            </div>
-                            <div className="space-y-2.5 text-start">
-                                <label className="text-[11px] font-bold tracking-wide text-slate-500 ml-1">Status Cycle</label>
+                            </Field>
+                            <Field label="Status Cycle" required>
                                 <Select
                                     value={editingPolicy?.status}
                                     onValueChange={(val: any) => setEditingPolicy(prev => prev ? { ...prev, status: val } : null)}
                                 >
-                                    <SelectTrigger className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 focus:bg-white focus:ring-4 focus:ring-indigo-100 transition-all">
+                                    <SelectTrigger>
                                         <SelectValue />
                                     </SelectTrigger>
-                                    <SelectContent className="rounded-2xl border border-slate-200 shadow-2xl p-2 font-bold text-xs">
-                                        <SelectItem value="Active" className="rounded-xl h-10">🌍 Active (Published)</SelectItem>
-                                        <SelectItem value="Draft" className="rounded-xl h-10">📝 Internal Draft</SelectItem>
-                                        <SelectItem value="Archived" className="rounded-xl h-10">📦 Legacy Archive</SelectItem>
+                                    <SelectContent>
+                                        <SelectItem value="Active">Active (Published)</SelectItem>
+                                        <SelectItem value="Draft">Internal Draft</SelectItem>
+                                        <SelectItem value="Archived">Legacy Archive</SelectItem>
                                     </SelectContent>
                                 </Select>
-                            </div>
-                            <div className="col-span-2 space-y-2.5 text-start">
-                                <label className="text-[11px] font-bold tracking-wide text-slate-500 ml-1">Documentation Summary</label>
-                                <Textarea
-                                    rows={3}
-                                    value={editingPolicy?.description || ""}
-                                    onChange={(e) => setEditingPolicy(prev => prev ? { ...prev, description: e.target.value } : null)}
-                                    className="bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 py-4 focus:bg-white focus:ring-4 focus:ring-indigo-100 transition-all min-h-[100px] text-sm shadow-sm"
-                                />
-                            </div>
+                            </Field>
                         </div>
-                        <DialogFooter className="gap-3 mt-4">
-                            <Button variant="ghost" onClick={() => setEditingPolicy(null)} className="h-12 rounded-xl font-bold text-[11px] tracking-wide transition-all px-8 hover:bg-slate-50">Discard</Button>
-                            <Button onClick={handleUpdatePolicy} className="bg-indigo-600 hover:bg-slate-900 text-white rounded-xl h-12 px-10 font-bold shadow-xl shadow-indigo-100 transition-all text-[11px] tracking-wide border-none">Save Documentation</Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                        <Field label="Documentation Summary" required>
+                            <Textarea
+                                rows={4}
+                                value={editingPolicy?.description || ""}
+                                onChange={(e) => setEditingPolicy(prev => prev ? { ...prev, description: e.target.value } : null)}
+                                className="min-h-[110px]"
+                            />
+                        </Field>
+                    </div>
+                </SideFormSheet>
             </main>
         </div>
     );

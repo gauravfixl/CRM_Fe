@@ -9,6 +9,7 @@ import { Label } from "@/shared/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/shared/components/ui/dropdown-menu";
 import { useDocumentsStore, type ESignatureRequest } from "@/shared/data/documents-store";
 import { toast } from "sonner";
@@ -466,21 +467,72 @@ const ESignaturesPage = () => {
                 </div>
             </div>
 
-            {/* Send for Signature Dialog */}
-            <Dialog open={isSendOpen} onOpenChange={setIsSendOpen}>
-                <DialogContent className="max-w-lg border-2 border-slate-200">
-                    <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2"><Send size={20} className="text-[#8B5CF6]" /> Send for Signature</DialogTitle>
-                        <DialogDescription>Select a document and add signers.</DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
-                        <div className="space-y-2">
-                            <Label className="text-xs font-bold text-slate-500">Document Name</Label>
-                            <Input placeholder="e.g. Offer Letter — Senior Designer" value={form.document} onChange={e => setForm({ ...form, document: e.target.value })} />
-                        </div>
-                        <div className="space-y-2">
-                            <Label className="text-xs font-bold text-slate-500">Document Type</Label>
-                            <Select value={form.type} onValueChange={(val: SignatureType) => setForm({ ...form, type: val })}>
+            {/* Send for Signature Sheet */}
+            <SideFormSheet
+                open={isSendOpen}
+                onOpenChange={(o) => { setIsSendOpen(o); if (!o) resetForm(); }}
+                title="Send for Signature"
+                description="Select a document and add signers."
+                icon={<Send size={20} />}
+                accentColor="#4f46e5"
+                width="md"
+                submitLabel="Send Document"
+                onSubmit={(e) => { e.preventDefault(); handleSend(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Document Name" required>
+                        <Input placeholder="e.g. Offer Letter — Senior Designer" value={form.document} onChange={e => setForm({ ...form, document: e.target.value })} />
+                    </Field>
+                    <Field label="Document Type" required>
+                        <Select value={form.type} onValueChange={(val: SignatureType) => setForm({ ...form, type: val })}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Offer Letter">Offer Letter</SelectItem>
+                                <SelectItem value="Contract">Contract</SelectItem>
+                                <SelectItem value="NDA">NDA</SelectItem>
+                                <SelectItem value="Policy">Policy</SelectItem>
+                                <SelectItem value="Amendment">Amendment</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Signer Name" required>
+                            <Input placeholder="e.g. Amit Joshi" value={form.signerName} onChange={e => setForm({ ...form, signerName: e.target.value })} />
+                        </Field>
+                        <Field label="Signer Email" required>
+                            <Input type="email" placeholder="e.g. amit@email.com" value={form.signerEmail} onChange={e => setForm({ ...form, signerEmail: e.target.value })} />
+                        </Field>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Signing Order">
+                            <Input type="number" min={1} value={form.signingOrder} onChange={e => setForm({ ...form, signingOrder: e.target.value })} />
+                        </Field>
+                        <Field label="Expiry Date">
+                            <Input type="date" value={form.expiryDate} onChange={e => setForm({ ...form, expiryDate: e.target.value })} />
+                        </Field>
+                    </div>
+                    <Field label="Message" hint="Optional">
+                        <Input placeholder="Add a note for the signer..." value={form.message} onChange={e => setForm({ ...form, message: e.target.value })} />
+                    </Field>
+                </div>
+            </SideFormSheet>
+
+            {/* Bulk Send Sheet */}
+            <SideFormSheet
+                open={isBulkSendOpen}
+                onOpenChange={setIsBulkSendOpen}
+                title="Bulk Signature Request"
+                description="Send the same document to multiple signers at once."
+                icon={<Users size={20} />}
+                accentColor="#4f46e5"
+                width="lg"
+                submitLabel="Send to All"
+                onSubmit={(e) => { e.preventDefault(); handleBulkSend(); }}
+            >
+                <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Document Type" required>
+                            <Select value={bulkDocument} onValueChange={(v: SignatureType) => setBulkDocument(v)}>
                                 <SelectTrigger><SelectValue /></SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="Offer Letter">Offer Letter</SelectItem>
@@ -490,147 +542,86 @@ const ESignaturesPage = () => {
                                     <SelectItem value="Amendment">Amendment</SelectItem>
                                 </SelectContent>
                             </Select>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label className="text-xs font-bold text-slate-500">Signer Name</Label>
-                                <Input placeholder="e.g. Amit Joshi" value={form.signerName} onChange={e => setForm({ ...form, signerName: e.target.value })} />
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="text-xs font-bold text-slate-500">Signer Email</Label>
-                                <Input type="email" placeholder="e.g. amit@email.com" value={form.signerEmail} onChange={e => setForm({ ...form, signerEmail: e.target.value })} />
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label className="text-xs font-bold text-slate-500">Signing Order</Label>
-                                <Input type="number" min={1} value={form.signingOrder} onChange={e => setForm({ ...form, signingOrder: e.target.value })} />
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="text-xs font-bold text-slate-500">Expiry Date</Label>
-                                <Input type="date" value={form.expiryDate} onChange={e => setForm({ ...form, expiryDate: e.target.value })} />
-                            </div>
-                        </div>
-                        <div className="space-y-2">
-                            <Label className="text-xs font-bold text-slate-500">Message (Optional)</Label>
-                            <Input placeholder="Add a note for the signer..." value={form.message} onChange={e => setForm({ ...form, message: e.target.value })} />
-                        </div>
+                        </Field>
+                        <Field label="Common Expiry Date">
+                            <Input type="date" value={bulkExpiry} onChange={e => setBulkExpiry(e.target.value)} />
+                        </Field>
                     </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => { setIsSendOpen(false); resetForm(); }}>Cancel</Button>
-                        <Button className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white font-bold" onClick={handleSend}>Send Document</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    <Field label="Signers" required>
+                        <div className="space-y-2 max-h-[320px] overflow-auto pr-1">
+                            {bulkRows.map((row, idx) => (
+                                <div key={idx} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center">
+                                    <Input placeholder="Signer name" value={row.name} onChange={e => setBulkRows(r => r.map((x, i) => i === idx ? { ...x, name: e.target.value } : x))} />
+                                    <Input type="email" placeholder="signer@email.com" value={row.email} onChange={e => setBulkRows(r => r.map((x, i) => i === idx ? { ...x, email: e.target.value } : x))} />
+                                    <Button type="button" variant="ghost" size="icon" className="h-9 w-9 text-rose-500" onClick={() => setBulkRows(r => r.length > 1 ? r.filter((_, i) => i !== idx) : r)} disabled={bulkRows.length <= 1}>
+                                        <Trash2 size={14} />
+                                    </Button>
+                                </div>
+                            ))}
+                        </div>
+                        <Button type="button" variant="outline" size="sm" className="font-bold text-xs mt-2" onClick={() => setBulkRows(r => [...r, { name: "", email: "" }])}>
+                            <Plus size={14} className="mr-1" /> Add Signer
+                        </Button>
+                    </Field>
+                </div>
+            </SideFormSheet>
 
-            {/* Bulk Send Dialog */}
-            <Dialog open={isBulkSendOpen} onOpenChange={setIsBulkSendOpen}>
-                <DialogContent className="max-w-2xl border-2 border-slate-200">
-                    <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2"><Users size={20} className="text-[#8B5CF6]" /> Bulk Signature Request</DialogTitle>
-                        <DialogDescription>Send the same document to multiple signers at once.</DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label className="text-xs font-bold text-slate-500">Document Type</Label>
-                                <Select value={bulkDocument} onValueChange={(v: SignatureType) => setBulkDocument(v)}>
-                                    <SelectTrigger><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="Offer Letter">Offer Letter</SelectItem>
-                                        <SelectItem value="Contract">Contract</SelectItem>
-                                        <SelectItem value="NDA">NDA</SelectItem>
-                                        <SelectItem value="Policy">Policy</SelectItem>
-                                        <SelectItem value="Amendment">Amendment</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="text-xs font-bold text-slate-500">Common Expiry Date</Label>
-                                <Input type="date" value={bulkExpiry} onChange={e => setBulkExpiry(e.target.value)} />
-                            </div>
-                        </div>
-                        <div className="space-y-2">
-                            <Label className="text-xs font-bold text-slate-500">Signers</Label>
-                            <div className="space-y-2 max-h-[260px] overflow-auto pr-1">
-                                {bulkRows.map((row, idx) => (
-                                    <div key={idx} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center">
-                                        <Input placeholder="Signer name" value={row.name} onChange={e => setBulkRows(r => r.map((x, i) => i === idx ? { ...x, name: e.target.value } : x))} />
-                                        <Input type="email" placeholder="signer@email.com" value={row.email} onChange={e => setBulkRows(r => r.map((x, i) => i === idx ? { ...x, email: e.target.value } : x))} />
-                                        <Button variant="ghost" size="icon" className="h-9 w-9 text-rose-500" onClick={() => setBulkRows(r => r.length > 1 ? r.filter((_, i) => i !== idx) : r)} disabled={bulkRows.length <= 1}>
-                                            <Trash2 size={14} />
-                                        </Button>
-                                    </div>
-                                ))}
-                            </div>
-                            <Button variant="outline" size="sm" className="font-bold text-xs mt-2" onClick={() => setBulkRows(r => [...r, { name: "", email: "" }])}>
-                                <Plus size={14} className="mr-1" /> Add Signer
-                            </Button>
-                        </div>
+            {/* Edit Sheet */}
+            <SideFormSheet
+                open={!!editingDoc}
+                onOpenChange={(o) => { if (!o) setEditingDoc(null); }}
+                title="Edit Signature Request"
+                description="Update document and signer details."
+                icon={<Pencil size={20} />}
+                accentColor="#7c3aed"
+                width="md"
+                submitLabel="Save Changes"
+                onSubmit={(e) => { e.preventDefault(); handleSaveEdit(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Document Name" required>
+                        <Input value={editingDoc?.name || ""} onChange={e => setEditingDoc(prev => prev ? { ...prev, name: e.target.value } : null)} />
+                    </Field>
+                    <Field label="Type" required>
+                        <Select value={editingDoc?.type} onValueChange={(val: SignatureType) => setEditingDoc(prev => prev ? { ...prev, type: val } : null)}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Offer Letter">Offer Letter</SelectItem>
+                                <SelectItem value="Contract">Contract</SelectItem>
+                                <SelectItem value="NDA">NDA</SelectItem>
+                                <SelectItem value="Policy">Policy</SelectItem>
+                                <SelectItem value="Amendment">Amendment</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Signer Name" required>
+                            <Input value={editingDoc?.sentTo || ""} onChange={e => setEditingDoc(prev => prev ? { ...prev, sentTo: e.target.value } : null)} />
+                        </Field>
+                        <Field label="Signer Email" required>
+                            <Input type="email" value={editingDoc?.sentToEmail || ""} onChange={e => setEditingDoc(prev => prev ? { ...prev, sentToEmail: e.target.value } : null)} />
+                        </Field>
                     </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsBulkSendOpen(false)}>Cancel</Button>
-                        <Button className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white font-bold" onClick={handleBulkSend}>Send to All</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    <Field label="Expiry Date" required>
+                        <Input type="date" value={editingDoc?.expiryDate || ""} onChange={e => setEditingDoc(prev => prev ? { ...prev, expiryDate: e.target.value } : null)} />
+                    </Field>
+                </div>
+            </SideFormSheet>
 
-            {/* Edit Dialog */}
-            <Dialog open={!!editingDoc} onOpenChange={(open) => !open && setEditingDoc(null)}>
-                <DialogContent className="max-w-lg border-2 border-slate-200">
-                    <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2"><Pencil size={20} className="text-[#8B5CF6]" /> Edit Signature Request</DialogTitle>
-                        <DialogDescription>Update document and signer details.</DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
-                        <div className="space-y-2">
-                            <Label className="text-xs font-bold text-slate-500">Document Name</Label>
-                            <Input value={editingDoc?.name || ""} onChange={e => setEditingDoc(prev => prev ? { ...prev, name: e.target.value } : null)} />
-                        </div>
-                        <div className="space-y-2">
-                            <Label className="text-xs font-bold text-slate-500">Type</Label>
-                            <Select value={editingDoc?.type} onValueChange={(val: SignatureType) => setEditingDoc(prev => prev ? { ...prev, type: val } : null)}>
-                                <SelectTrigger><SelectValue /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="Offer Letter">Offer Letter</SelectItem>
-                                    <SelectItem value="Contract">Contract</SelectItem>
-                                    <SelectItem value="NDA">NDA</SelectItem>
-                                    <SelectItem value="Policy">Policy</SelectItem>
-                                    <SelectItem value="Amendment">Amendment</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label className="text-xs font-bold text-slate-500">Signer Name</Label>
-                                <Input value={editingDoc?.sentTo || ""} onChange={e => setEditingDoc(prev => prev ? { ...prev, sentTo: e.target.value } : null)} />
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="text-xs font-bold text-slate-500">Signer Email</Label>
-                                <Input type="email" value={editingDoc?.sentToEmail || ""} onChange={e => setEditingDoc(prev => prev ? { ...prev, sentToEmail: e.target.value } : null)} />
-                            </div>
-                        </div>
-                        <div className="space-y-2">
-                            <Label className="text-xs font-bold text-slate-500">Expiry Date</Label>
-                            <Input type="date" value={editingDoc?.expiryDate || ""} onChange={e => setEditingDoc(prev => prev ? { ...prev, expiryDate: e.target.value } : null)} />
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setEditingDoc(null)}>Cancel</Button>
-                        <Button className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white font-bold" onClick={handleSaveEdit}>Save Changes</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            {/* Update Status Dialog */}
-            <Dialog open={!!statusChangeDoc} onOpenChange={(open) => !open && setStatusChangeDoc(null)}>
-                <DialogContent className="max-w-md border-2 border-slate-200">
-                    <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2"><RefreshCw size={20} className="text-[#8B5CF6]" /> Update Signature Status</DialogTitle>
-                        <DialogDescription>{statusChangeDoc?.name}</DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-3 py-4">
-                        <Label className="text-xs font-bold text-slate-500">New Status</Label>
+            {/* Update Status Sheet */}
+            <SideFormSheet
+                open={!!statusChangeDoc}
+                onOpenChange={(o) => { if (!o) setStatusChangeDoc(null); }}
+                title="Update Signature Status"
+                description={statusChangeDoc?.name}
+                icon={<RefreshCw size={20} />}
+                accentColor="#4f46e5"
+                width="sm"
+                submitLabel="Update"
+                onSubmit={(e) => { e.preventDefault(); handleStatusChange(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="New Status" required>
                         <Select value={pendingStatus} onValueChange={(v: SignatureStatus) => setPendingStatus(v)}>
                             <SelectTrigger><SelectValue /></SelectTrigger>
                             <SelectContent>
@@ -641,13 +632,9 @@ const ESignaturesPage = () => {
                                 <SelectItem value="Declined">Declined</SelectItem>
                             </SelectContent>
                         </Select>
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setStatusChangeDoc(null)}>Cancel</Button>
-                        <Button className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white font-bold" onClick={handleStatusChange}>Update</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    </Field>
+                </div>
+            </SideFormSheet>
 
             {/* Reminder Dialog */}
             <Dialog open={!!reminderDoc} onOpenChange={(open) => !open && setReminderDoc(null)}>

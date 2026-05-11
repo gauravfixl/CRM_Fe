@@ -46,6 +46,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/shared/components/ui/dialog"
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet"
 import {
     Select,
     SelectContent,
@@ -756,143 +757,124 @@ const ESIManagement = () => {
                 </div>
             </div>
 
-            {/* Add/Edit Dialog */}
-            <Dialog open={isAddOpen} onOpenChange={(o) => { setIsAddOpen(o); if (!o) setEditRecord(null) }}>
-                <DialogContent className="sm:max-w-[480px] rounded-2xl">
-                    <DialogHeader>
-                        <DialogTitle className="text-lg font-bold text-slate-900">{editRecord ? "Edit ESI Record" : "Add ESI Record"}</DialogTitle>
-                        <DialogDescription className="text-xs text-slate-500">
-                            {editRecord ? "Update the ESI contribution details." : "Enter employee details. Contributions auto-calculated (EE: 0.75%, ER: 3.25%)."}
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-2">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-1.5">
-                                <Label className="text-xs font-bold text-slate-500">Employee ID</Label>
-                                <Input className="h-9 text-xs rounded-lg" value={formData.employeeId} onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })} disabled={!!editRecord} />
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-xs font-bold text-slate-500">Employee Name</Label>
-                                <Input className="h-9 text-xs rounded-lg" value={formData.employeeName} onChange={(e) => setFormData({ ...formData, employeeName: e.target.value })} />
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-1.5">
-                                <Label className="text-xs font-bold text-slate-500">ESIC Number</Label>
-                                <Input className="h-9 text-xs rounded-lg" value={formData.esicNumber} onChange={(e) => setFormData({ ...formData, esicNumber: e.target.value })} />
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-xs font-bold text-slate-500">Month</Label>
-                                <Input className="h-9 text-xs rounded-lg" value={formData.month} onChange={(e) => setFormData({ ...formData, month: e.target.value })} />
-                            </div>
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label className="text-xs font-bold text-slate-500">Gross Wage (₹)</Label>
-                            <Input className="h-9 text-xs rounded-lg" type="number" value={formData.grossWage} onChange={(e) => setFormData({ ...formData, grossWage: e.target.value })} />
-                        </div>
-                        {formData.grossWage && (
-                            <>
-                                {parseFloat(formData.grossWage) > ESI_WAGE_LIMIT && (
-                                    <div className="p-3 rounded-xl bg-red-50 border border-red-100 flex items-center gap-2">
-                                        <AlertTriangle size={14} className="text-red-500" />
-                                        <p className="text-[10px] font-bold text-red-600">Gross wage exceeds ₹21,000 ESI threshold. Employee may not be eligible.</p>
-                                    </div>
-                                )}
-                                <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 space-y-1.5">
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Auto-Calculated Contributions</p>
-                                    <div className="grid grid-cols-2 gap-2 text-xs">
-                                        <div><span className="text-slate-500">Employee (0.75%):</span> <span className="font-bold text-slate-700">₹{Math.round(parseFloat(formData.grossWage) * ESI_EE_RATE)}</span></div>
-                                        <div><span className="text-slate-500">Employer (3.25%):</span> <span className="font-bold text-slate-700">₹{Math.round(parseFloat(formData.grossWage) * ESI_ER_RATE)}</span></div>
-                                    </div>
+            {/* Add/Edit Sheet */}
+            <SideFormSheet
+                open={isAddOpen}
+                onOpenChange={(o) => { setIsAddOpen(o); if (!o) setEditRecord(null) }}
+                title={editRecord ? "Edit ESI Record" : "Add ESI Record"}
+                description={editRecord ? "Update the ESI contribution details." : "Enter employee details. Contributions auto-calculated (EE: 0.75%, ER: 3.25%)."}
+                icon={<Shield size={20} />}
+                accentColor={editRecord ? "#7c3aed" : "#4f46e5"}
+                width="md"
+                submitLabel={editRecord ? "Update" : "Add Record"}
+                onSubmit={(e) => { e.preventDefault(); handleSave(); }}
+            >
+                <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Employee ID">
+                            <Input value={formData.employeeId} onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })} disabled={!!editRecord} />
+                        </Field>
+                        <Field label="Employee Name">
+                            <Input value={formData.employeeName} onChange={(e) => setFormData({ ...formData, employeeName: e.target.value })} />
+                        </Field>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="ESIC Number">
+                            <Input value={formData.esicNumber} onChange={(e) => setFormData({ ...formData, esicNumber: e.target.value })} />
+                        </Field>
+                        <Field label="Month">
+                            <Input value={formData.month} onChange={(e) => setFormData({ ...formData, month: e.target.value })} />
+                        </Field>
+                    </div>
+                    <Field label="Gross Wage (₹)">
+                        <Input type="number" value={formData.grossWage} onChange={(e) => setFormData({ ...formData, grossWage: e.target.value })} />
+                    </Field>
+                    {formData.grossWage && (
+                        <>
+                            {parseFloat(formData.grossWage) > ESI_WAGE_LIMIT && (
+                                <div className="p-3 rounded-xl bg-red-50 border border-red-100 flex items-center gap-2">
+                                    <AlertTriangle size={14} className="text-red-500" />
+                                    <p className="text-[10px] font-bold text-red-600">Gross wage exceeds ₹21,000 ESI threshold. Employee may not be eligible.</p>
                                 </div>
-                            </>
-                        )}
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" className="h-9 rounded-lg text-xs font-bold" onClick={() => { setIsAddOpen(false); setEditRecord(null) }}>Cancel</Button>
-                        <Button className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white h-9 rounded-lg text-xs font-bold shadow-lg shadow-[#8B5CF6]/20" onClick={handleSave}>
-                            {editRecord ? "Update" : "Add Record"}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                            )}
+                            <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 space-y-1.5">
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Auto-Calculated Contributions</p>
+                                <div className="grid grid-cols-2 gap-2 text-xs">
+                                    <div><span className="text-slate-500">Employee (0.75%):</span> <span className="font-bold text-slate-700">₹{Math.round(parseFloat(formData.grossWage) * ESI_EE_RATE)}</span></div>
+                                    <div><span className="text-slate-500">Employer (3.25%):</span> <span className="font-bold text-slate-700">₹{Math.round(parseFloat(formData.grossWage) * ESI_ER_RATE)}</span></div>
+                                </div>
+                            </div>
+                        </>
+                    )}
+                </div>
+            </SideFormSheet>
 
-            {/* New / Edit Benefit Claim Dialog */}
-            <Dialog open={isClaimOpen} onOpenChange={(o) => { setIsClaimOpen(o); if (!o) setClaimEdit(null) }}>
-                <DialogContent className="sm:max-w-[520px] rounded-2xl">
-                    <DialogHeader>
-                        <DialogTitle className="text-lg font-bold text-slate-900">{claimEdit ? "Edit benefit claim" : "New benefit claim"}</DialogTitle>
-                        <DialogDescription className="text-xs text-slate-500">
-                            Record a new ESI benefit claim. All fields except notes are recommended for faster settlement.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-2">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Employee</Label>
-                                <Select
-                                    value={claimForm.employeeId}
-                                    onValueChange={(val) => {
-                                        const emp = uniqueEmployees.find(e => e.employeeId === val)
-                                        setClaimForm({ ...claimForm, employeeId: val, employeeName: emp?.employeeName || "" })
-                                    }}
-                                >
-                                    <SelectTrigger className="h-9 rounded-lg text-xs">
-                                        <SelectValue placeholder="Select employee" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {uniqueEmployees.map((e) => (
-                                            <SelectItem key={e.employeeId} value={e.employeeId} className="text-xs">
-                                                {e.employeeName} — {e.esicNumber}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Benefit type</Label>
-                                <Select
-                                    value={claimForm.benefitType}
-                                    onValueChange={(val) => setClaimForm({ ...claimForm, benefitType: val as ESIBenefitClaim['benefitType'] })}
-                                >
-                                    <SelectTrigger className="h-9 rounded-lg text-xs">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {(["Sickness", "Maternity", "Disablement", "Dependent", "Medical", "Funeral"] as const).map((t) => (
-                                            <SelectItem key={t} value={t} className="text-xs">{t}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-3 gap-4">
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Claim date</Label>
-                                <Input type="date" className="h-9 text-xs rounded-lg" value={claimForm.claimDate} onChange={(e) => setClaimForm({ ...claimForm, claimDate: e.target.value })} />
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Amount (₹)</Label>
-                                <Input type="number" className="h-9 text-xs rounded-lg" value={claimForm.amount} onChange={(e) => setClaimForm({ ...claimForm, amount: e.target.value })} />
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Duration (days)</Label>
-                                <Input type="number" className="h-9 text-xs rounded-lg" value={claimForm.durationDays} onChange={(e) => setClaimForm({ ...claimForm, durationDays: e.target.value })} />
-                            </div>
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Notes</Label>
-                            <Textarea className="text-xs rounded-lg min-h-[72px]" value={claimForm.notes} onChange={(e) => setClaimForm({ ...claimForm, notes: e.target.value })} placeholder="Additional context, diagnosis reference, hospital etc." />
-                        </div>
+            {/* New / Edit Benefit Claim Sheet */}
+            <SideFormSheet
+                open={isClaimOpen}
+                onOpenChange={(o) => { setIsClaimOpen(o); if (!o) setClaimEdit(null) }}
+                title={claimEdit ? "Edit benefit claim" : "New benefit claim"}
+                description="Record a new ESI benefit claim. All fields except notes are recommended for faster settlement."
+                icon={<Heart size={20} />}
+                accentColor={claimEdit ? "#7c3aed" : "#4f46e5"}
+                width="lg"
+                submitLabel={claimEdit ? "Update claim" : "Submit claim"}
+                onSubmit={(e) => { e.preventDefault(); handleClaimSave(); }}
+            >
+                <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Employee">
+                            <Select
+                                value={claimForm.employeeId}
+                                onValueChange={(val) => {
+                                    const emp = uniqueEmployees.find(e => e.employeeId === val)
+                                    setClaimForm({ ...claimForm, employeeId: val, employeeName: emp?.employeeName || "" })
+                                }}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select employee" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {uniqueEmployees.map((e) => (
+                                        <SelectItem key={e.employeeId} value={e.employeeId} className="text-xs">
+                                            {e.employeeName} — {e.esicNumber}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <Field label="Benefit type">
+                            <Select
+                                value={claimForm.benefitType}
+                                onValueChange={(val) => setClaimForm({ ...claimForm, benefitType: val as ESIBenefitClaim['benefitType'] })}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {(["Sickness", "Maternity", "Disablement", "Dependent", "Medical", "Funeral"] as const).map((t) => (
+                                        <SelectItem key={t} value={t} className="text-xs">{t}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </Field>
                     </div>
-                    <DialogFooter>
-                        <Button variant="outline" className="h-9 rounded-lg text-xs font-bold" onClick={() => { setIsClaimOpen(false); setClaimEdit(null) }}>Cancel</Button>
-                        <Button className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white h-9 rounded-lg text-xs font-bold shadow-lg shadow-[#8B5CF6]/20" onClick={handleClaimSave}>
-                            {claimEdit ? "Update claim" : "Submit claim"}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    <div className="grid grid-cols-3 gap-3">
+                        <Field label="Claim date">
+                            <Input type="date" value={claimForm.claimDate} onChange={(e) => setClaimForm({ ...claimForm, claimDate: e.target.value })} />
+                        </Field>
+                        <Field label="Amount (₹)">
+                            <Input type="number" value={claimForm.amount} onChange={(e) => setClaimForm({ ...claimForm, amount: e.target.value })} />
+                        </Field>
+                        <Field label="Duration (days)">
+                            <Input type="number" value={claimForm.durationDays} onChange={(e) => setClaimForm({ ...claimForm, durationDays: e.target.value })} />
+                        </Field>
+                    </div>
+                    <Field label="Notes">
+                        <Textarea value={claimForm.notes} onChange={(e) => setClaimForm({ ...claimForm, notes: e.target.value })} placeholder="Additional context, diagnosis reference, hospital etc." />
+                    </Field>
+                </div>
+            </SideFormSheet>
 
             {/* Auto-detect Result Dialog */}
             <Dialog open={autoDetectResult !== null && autoDetectResult > 0} onOpenChange={(o) => { if (!o) setAutoDetectResult(null) }}>
@@ -923,73 +905,62 @@ const ESIManagement = () => {
                 </DialogContent>
             </Dialog>
 
-            {/* Exit Employee from ESI Dialog */}
-            <Dialog open={isExitOpen} onOpenChange={(o) => { setIsExitOpen(o); if (!o) setExitTarget(null) }}>
-                <DialogContent className="sm:max-w-[420px] rounded-2xl">
-                    <DialogHeader>
-                        <DialogTitle className="text-lg font-bold text-slate-900">Exit employee from ESI</DialogTitle>
-                        <DialogDescription className="text-xs text-slate-500">
-                            Record the effective exit date for {exitTarget?.employeeName}. The employee will be marked as exited from ESI scheme.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-2">
-                        <div className="p-3 rounded-xl bg-rose-50 border border-rose-100 flex items-start gap-2">
-                            <UserMinus size={14} className="text-rose-500 flex-shrink-0 mt-0.5" />
-                            <div>
-                                <p className="text-[11px] font-bold text-rose-600">{exitTarget?.employeeName} — {exitTarget?.esicNumber}</p>
-                                <p className="text-[10px] text-rose-500 mt-0.5">Breach month: {exitTarget?.breachMonth} · Wage {exitTarget ? formatINR(exitTarget.breachGrossWage) : ""}</p>
-                            </div>
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Exit date</Label>
-                            <Input type="date" className="h-9 text-xs rounded-lg" value={exitDate} onChange={(e) => setExitDate(e.target.value)} />
+            {/* Exit Employee from ESI Sheet */}
+            <SideFormSheet
+                open={isExitOpen}
+                onOpenChange={(o) => { setIsExitOpen(o); if (!o) setExitTarget(null) }}
+                title="Exit employee from ESI"
+                description={exitTarget ? `Record the effective exit date for ${exitTarget.employeeName}. The employee will be marked as exited from ESI scheme.` : undefined}
+                icon={<LogOut size={20} />}
+                accentColor="#e11d48"
+                width="sm"
+                submitLabel="Confirm exit"
+                onSubmit={(e) => { e.preventDefault(); handleConfirmExit(); }}
+            >
+                <div className="space-y-4">
+                    <div className="p-3 rounded-xl bg-rose-50 border border-rose-100 flex items-start gap-2">
+                        <UserMinus size={14} className="text-rose-500 flex-shrink-0 mt-0.5" />
+                        <div>
+                            <p className="text-[11px] font-bold text-rose-600">{exitTarget?.employeeName} — {exitTarget?.esicNumber}</p>
+                            <p className="text-[10px] text-rose-500 mt-0.5">Breach month: {exitTarget?.breachMonth} · Wage {exitTarget ? formatINR(exitTarget.breachGrossWage) : ""}</p>
                         </div>
                     </div>
-                    <DialogFooter>
-                        <Button variant="outline" className="h-9 rounded-lg text-xs font-bold" onClick={() => { setIsExitOpen(false); setExitTarget(null) }}>Cancel</Button>
-                        <Button className="bg-rose-500 hover:bg-rose-600 text-white h-9 rounded-lg text-xs font-bold shadow-lg shadow-rose-500/20 gap-2" onClick={handleConfirmExit}>
-                            <LogOut size={12} /> Confirm exit
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    <Field label="Exit date">
+                        <Input type="date" value={exitDate} onChange={(e) => setExitDate(e.target.value)} />
+                    </Field>
+                </div>
+            </SideFormSheet>
 
-            {/* Edit Breach Dialog */}
-            <Dialog open={isBreachEditOpen} onOpenChange={(o) => { setIsBreachEditOpen(o); if (!o) setBreachEdit(null) }}>
-                <DialogContent className="sm:max-w-[440px] rounded-2xl">
-                    <DialogHeader>
-                        <DialogTitle className="text-lg font-bold text-slate-900">Edit breach record</DialogTitle>
-                        <DialogDescription className="text-xs text-slate-500">
-                            Update the action status and notes for this breach.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-2">
-                        <div className="space-y-1.5">
-                            <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Action</Label>
-                            <Select value={breachEditAction} onValueChange={(v) => setBreachEditAction(v as 'Flagged' | 'Continued' | 'Exited')}>
-                                <SelectTrigger className="h-9 rounded-lg text-xs">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="Flagged" className="text-xs">Flagged</SelectItem>
-                                    <SelectItem value="Continued" className="text-xs">Continued</SelectItem>
-                                    <SelectItem value="Exited" className="text-xs">Exited</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Notes</Label>
-                            <Textarea className="text-xs rounded-lg min-h-[80px]" value={breachEditNotes} onChange={(e) => setBreachEditNotes(e.target.value)} />
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" className="h-9 rounded-lg text-xs font-bold" onClick={() => { setIsBreachEditOpen(false); setBreachEdit(null) }}>Cancel</Button>
-                        <Button className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white h-9 rounded-lg text-xs font-bold shadow-lg shadow-[#8B5CF6]/20" onClick={handleBreachEditSave}>
-                            Save changes
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            {/* Edit Breach Sheet */}
+            <SideFormSheet
+                open={isBreachEditOpen}
+                onOpenChange={(o) => { setIsBreachEditOpen(o); if (!o) setBreachEdit(null) }}
+                title="Edit breach record"
+                description="Update the action status and notes for this breach."
+                icon={<Edit size={20} />}
+                accentColor="#7c3aed"
+                width="md"
+                submitLabel="Save changes"
+                onSubmit={(e) => { e.preventDefault(); handleBreachEditSave(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Action">
+                        <Select value={breachEditAction} onValueChange={(v) => setBreachEditAction(v as 'Flagged' | 'Continued' | 'Exited')}>
+                            <SelectTrigger>
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Flagged" className="text-xs">Flagged</SelectItem>
+                                <SelectItem value="Continued" className="text-xs">Continued</SelectItem>
+                                <SelectItem value="Exited" className="text-xs">Exited</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                    <Field label="Notes">
+                        <Textarea value={breachEditNotes} onChange={(e) => setBreachEditNotes(e.target.value)} />
+                    </Field>
+                </div>
+            </SideFormSheet>
 
             {/* View Breach Detail Dialog */}
             <Dialog open={isBreachViewOpen} onOpenChange={(o) => { setIsBreachViewOpen(o); if (!o) setBreachView(null) }}>

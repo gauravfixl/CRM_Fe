@@ -31,8 +31,8 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/shared/components/ui/dialog";
-import { Label } from "@/shared/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 
 const TYPE_OPTIONS: InventoryAsset['type'][] = ["Laptop", "Mobile", "Monitor"];
 const CONDITION_OPTIONS: InventoryAsset['condition'][] = ["Excellent", "Good", "Used"];
@@ -331,149 +331,139 @@ const AssetAllocationPage = () => {
                 </div>
             </Card>
 
-            {/* Register Dialog */}
-            <Dialog open={isRegisterOpen} onOpenChange={setIsRegisterOpen}>
-                <DialogContent className="bg-white rounded-xl border-2 border-slate-200 p-6 max-w-md shadow-2xl">
-                    <DialogHeader>
-                        <DialogTitle className="text-lg font-bold">Register New Asset</DialogTitle>
-                        <DialogDescription className="text-[10px] font-bold text-slate-400">Add a new device to the company inventory.</DialogDescription>
-                    </DialogHeader>
-                    <div className="grid grid-cols-2 gap-3 py-3">
-                        <div className="space-y-1 col-span-2">
-                            <Label className="text-[11px] font-bold text-slate-700 ml-1">Asset Name</Label>
-                            <Input placeholder="e.g. MacBook Pro M3" className="h-9 rounded-xl text-xs font-bold bg-slate-50/50" value={registerForm.name} onChange={e => setRegisterForm({ ...registerForm, name: e.target.value })} />
-                            {formErrors.name && <p className="text-[10px] font-bold text-rose-500 ml-1">{formErrors.name}</p>}
-                        </div>
-                        <div className="space-y-1 col-span-2">
-                            <Label className="text-[11px] font-bold text-slate-700 ml-1">Asset ID / Serial No.</Label>
-                            <Input placeholder="ASST-00X" className="h-9 rounded-xl text-xs font-bold bg-slate-50/50" value={registerForm.id} onChange={e => setRegisterForm({ ...registerForm, id: e.target.value })} />
-                            {formErrors.id && <p className="text-[10px] font-bold text-rose-500 ml-1">{formErrors.id}</p>}
-                        </div>
-                        <div className="space-y-1">
-                            <Label className="text-[11px] font-bold text-slate-700 ml-1">Category</Label>
+            {/* Register Side Form */}
+            <SideFormSheet
+                open={isRegisterOpen}
+                onOpenChange={setIsRegisterOpen}
+                title="Register New Asset"
+                description="Add a new device to the company inventory."
+                icon={<PackagePlus size={20} />}
+                accentColor="#4f46e5"
+                width="md"
+                submitLabel="Add to Inventory"
+                onSubmit={(e) => { e.preventDefault(); handleRegister(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Asset Name" required error={formErrors.name || undefined}>
+                        <Input placeholder="e.g. MacBook Pro M3" value={registerForm.name} onChange={e => setRegisterForm({ ...registerForm, name: e.target.value })} />
+                    </Field>
+                    <Field label="Asset ID / Serial No." required error={formErrors.id || undefined}>
+                        <Input placeholder="ASST-00X" value={registerForm.id} onChange={e => setRegisterForm({ ...registerForm, id: e.target.value })} />
+                    </Field>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Category">
                             <Select value={registerForm.type} onValueChange={(v: InventoryAsset['type']) => setRegisterForm({ ...registerForm, type: v })}>
-                                <SelectTrigger className="h-9 rounded-xl text-xs font-bold bg-slate-50/50"><SelectValue /></SelectTrigger>
-                                <SelectContent className="rounded-xl font-bold">
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
                                     {TYPE_OPTIONS.map(t => <SelectItem key={t} value={t} className="text-xs">{t}</SelectItem>)}
                                 </SelectContent>
                             </Select>
-                        </div>
-                        <div className="space-y-1">
-                            <Label className="text-[11px] font-bold text-slate-700 ml-1">Condition</Label>
+                        </Field>
+                        <Field label="Condition">
                             <Select value={registerForm.condition} onValueChange={(v: InventoryAsset['condition']) => setRegisterForm({ ...registerForm, condition: v })}>
-                                <SelectTrigger className="h-9 rounded-xl text-xs font-bold bg-slate-50/50"><SelectValue /></SelectTrigger>
-                                <SelectContent className="rounded-xl font-bold">
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
                                     {CONDITION_OPTIONS.map(c => <SelectItem key={c} value={c} className="text-xs">{c}</SelectItem>)}
                                 </SelectContent>
                             </Select>
-                        </div>
-                        <div className="space-y-1 col-span-2">
-                            <Label className="text-[11px] font-bold text-slate-700 ml-1">Initial Status</Label>
-                            <Select value={registerForm.status} onValueChange={(v: InventoryAsset['status']) => setRegisterForm({ ...registerForm, status: v })}>
-                                <SelectTrigger className="h-9 rounded-xl text-xs font-bold bg-slate-50/50"><SelectValue /></SelectTrigger>
-                                <SelectContent className="rounded-xl font-bold">
-                                    <SelectItem value="Available" className="text-xs">Available</SelectItem>
-                                    <SelectItem value="Repair" className="text-xs">In Repair</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
+                        </Field>
                     </div>
-                    <DialogFooter className="gap-2">
-                        <Button variant="outline" onClick={() => setIsRegisterOpen(false)} className="rounded-xl h-9 font-bold border-slate-200 text-xs">Cancel</Button>
-                        <Button className="flex-1 bg-[#CB9DF0] hover:bg-[#b580e0] rounded-xl font-bold h-9 text-xs" onClick={handleRegister}>Add to Inventory</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    <Field label="Initial Status">
+                        <Select value={registerForm.status} onValueChange={(v: InventoryAsset['status']) => setRegisterForm({ ...registerForm, status: v })}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Available" className="text-xs">Available</SelectItem>
+                                <SelectItem value="Repair" className="text-xs">In Repair</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                </div>
+            </SideFormSheet>
 
-            {/* Edit Dialog */}
-            <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-                <DialogContent className="bg-white rounded-xl border-2 border-slate-200 p-6 max-w-md shadow-2xl">
-                    <DialogHeader>
-                        <DialogTitle className="text-lg font-bold">Edit Asset</DialogTitle>
-                        <DialogDescription className="text-[10px] font-bold text-slate-400">Update asset details. Assigned status can only be changed by returning the asset.</DialogDescription>
-                    </DialogHeader>
-                    <div className="grid grid-cols-2 gap-3 py-3">
-                        <div className="space-y-1 col-span-2">
-                            <Label className="text-[11px] font-bold text-slate-700 ml-1">Asset Name</Label>
-                            <Input className="h-9 rounded-xl text-xs font-bold bg-slate-50/50" value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} />
-                            {formErrors.name && <p className="text-[10px] font-bold text-rose-500 ml-1">{formErrors.name}</p>}
-                        </div>
-                        <div className="space-y-1">
-                            <Label className="text-[11px] font-bold text-slate-700 ml-1">Category</Label>
+            {/* Edit Side Form */}
+            <SideFormSheet
+                open={isEditOpen}
+                onOpenChange={setIsEditOpen}
+                title="Edit Asset"
+                description="Update asset details. Assigned status can only be changed by returning the asset."
+                icon={<Pencil size={20} />}
+                accentColor="#7c3aed"
+                width="md"
+                submitLabel="Save Changes"
+                onSubmit={(e) => { e.preventDefault(); handleEdit(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Asset Name" required error={formErrors.name || undefined}>
+                        <Input value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} />
+                    </Field>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Category">
                             <Select value={editForm.type} onValueChange={(v: InventoryAsset['type']) => setEditForm({ ...editForm, type: v })}>
-                                <SelectTrigger className="h-9 rounded-xl text-xs font-bold bg-slate-50/50"><SelectValue /></SelectTrigger>
-                                <SelectContent className="rounded-xl font-bold">
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
                                     {TYPE_OPTIONS.map(t => <SelectItem key={t} value={t} className="text-xs">{t}</SelectItem>)}
                                 </SelectContent>
                             </Select>
-                        </div>
-                        <div className="space-y-1">
-                            <Label className="text-[11px] font-bold text-slate-700 ml-1">Condition</Label>
+                        </Field>
+                        <Field label="Condition">
                             <Select value={editForm.condition} onValueChange={(v: InventoryAsset['condition']) => setEditForm({ ...editForm, condition: v })}>
-                                <SelectTrigger className="h-9 rounded-xl text-xs font-bold bg-slate-50/50"><SelectValue /></SelectTrigger>
-                                <SelectContent className="rounded-xl font-bold">
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
                                     {CONDITION_OPTIONS.map(c => <SelectItem key={c} value={c} className="text-xs">{c}</SelectItem>)}
                                 </SelectContent>
                             </Select>
-                        </div>
-                        <div className="space-y-1 col-span-2">
-                            <Label className="text-[11px] font-bold text-slate-700 ml-1">Status</Label>
-                            <Select value={editForm.status} onValueChange={(v: InventoryAsset['status']) => setEditForm({ ...editForm, status: v })}>
-                                <SelectTrigger className="h-9 rounded-xl text-xs font-bold bg-slate-50/50"><SelectValue /></SelectTrigger>
-                                <SelectContent className="rounded-xl font-bold">
-                                    {STATUS_OPTIONS.filter(s => s !== 'Assigned' || editForm.status === 'Assigned').map(s => <SelectItem key={s} value={s} className="text-xs">{s}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                        </div>
+                        </Field>
                     </div>
-                    <DialogFooter className="gap-2">
-                        <Button variant="outline" onClick={() => setIsEditOpen(false)} className="rounded-xl h-9 font-bold border-slate-200 text-xs">Cancel</Button>
-                        <Button className="flex-1 bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl font-bold h-9 text-xs" onClick={handleEdit}>Save Changes</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    <Field label="Status">
+                        <Select value={editForm.status} onValueChange={(v: InventoryAsset['status']) => setEditForm({ ...editForm, status: v })}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                {STATUS_OPTIONS.filter(s => s !== 'Assigned' || editForm.status === 'Assigned').map(s => <SelectItem key={s} value={s} className="text-xs">{s}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                </div>
+            </SideFormSheet>
 
-            {/* Assign Dialog */}
-            <Dialog open={isAssignOpen} onOpenChange={setIsAssignOpen}>
-                <DialogContent className="bg-white rounded-xl border-2 border-slate-200 p-6 max-w-md shadow-2xl">
-                    <DialogHeader>
-                        <DialogTitle className="text-lg font-bold">Assign Inventory</DialogTitle>
-                        <DialogDescription className="text-[10px] font-bold text-slate-400">Allocate an available asset to an active/onboarding employee.</DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-3 py-3">
-                        <div className="space-y-1.5">
-                            <Label className="text-[11px] font-bold text-slate-700 ml-1">Select Asset (Available Only)</Label>
-                            <Select value={assignForm.assetId} onValueChange={v => setAssignForm({ ...assignForm, assetId: v })}>
-                                <SelectTrigger className="rounded-xl h-9 text-xs font-bold bg-slate-50/50 border-slate-100"><SelectValue placeholder="Choose Asset..." /></SelectTrigger>
-                                <SelectContent>
-                                    {availableAssets.length === 0 ? (
-                                        <div className="px-3 py-2 text-xs font-bold text-slate-400">No available assets</div>
-                                    ) : availableAssets.map(a => (
-                                        <SelectItem key={a.id} value={a.id} className="text-xs font-bold">{a.name} ({a.type})</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label className="text-[11px] font-bold text-slate-700 ml-1">Assign To Employee</Label>
-                            <Select value={assignForm.employeeId} onValueChange={v => setAssignForm({ ...assignForm, employeeId: v })}>
-                                <SelectTrigger className="rounded-xl h-9 text-xs font-bold bg-slate-50/50 border-slate-100"><SelectValue placeholder="Choose Employee..." /></SelectTrigger>
-                                <SelectContent>
-                                    {eligibleEmployees.length === 0 ? (
-                                        <div className="px-3 py-2 text-xs font-bold text-slate-400">No eligible employees</div>
-                                    ) : eligibleEmployees.map(e => (
-                                        <SelectItem key={e.id} value={e.id} className="text-xs font-bold">{e.name} ({e.role} - {e.department})</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </div>
-                    <DialogFooter className="gap-2">
-                        <Button variant="outline" onClick={() => setIsAssignOpen(false)} className="rounded-xl h-9 font-bold border-slate-200 text-xs">Cancel</Button>
-                        <Button className="flex-1 bg-[#CB9DF0] hover:bg-[#b580e0] rounded-xl font-bold h-9 text-xs" onClick={handleAssign}>Confirm Allocation</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            {/* Assign Side Form */}
+            <SideFormSheet
+                open={isAssignOpen}
+                onOpenChange={setIsAssignOpen}
+                title="Assign Inventory"
+                description="Allocate an available asset to an active/onboarding employee."
+                icon={<Plus size={20} />}
+                accentColor="#4f46e5"
+                width="md"
+                submitLabel="Confirm Allocation"
+                onSubmit={(e) => { e.preventDefault(); handleAssign(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Select Asset (Available Only)" required>
+                        <Select value={assignForm.assetId} onValueChange={v => setAssignForm({ ...assignForm, assetId: v })}>
+                            <SelectTrigger><SelectValue placeholder="Choose Asset..." /></SelectTrigger>
+                            <SelectContent>
+                                {availableAssets.length === 0 ? (
+                                    <div className="px-3 py-2 text-xs font-bold text-slate-400">No available assets</div>
+                                ) : availableAssets.map(a => (
+                                    <SelectItem key={a.id} value={a.id} className="text-xs">{a.name} ({a.type})</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                    <Field label="Assign To Employee" required>
+                        <Select value={assignForm.employeeId} onValueChange={v => setAssignForm({ ...assignForm, employeeId: v })}>
+                            <SelectTrigger><SelectValue placeholder="Choose Employee..." /></SelectTrigger>
+                            <SelectContent>
+                                {eligibleEmployees.length === 0 ? (
+                                    <div className="px-3 py-2 text-xs font-bold text-slate-400">No eligible employees</div>
+                                ) : eligibleEmployees.map(e => (
+                                    <SelectItem key={e.id} value={e.id} className="text-xs">{e.name} ({e.role} - {e.department})</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                </div>
+            </SideFormSheet>
 
             {/* Delete Confirmation */}
             <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>

@@ -47,6 +47,7 @@ import {
     DialogDescription,
     DialogFooter,
 } from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import { Label } from "@/shared/components/ui/label";
 import { Textarea } from "@/shared/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
@@ -786,154 +787,143 @@ const DepartmentDetailPage = () => {
                 </TabsContent>
             </Tabs>
 
-            {/* Settings Dialog */}
-            <Dialog open={showSettings} onOpenChange={setShowSettings}>
-                <DialogContent className="rounded-[2rem] max-w-lg">
-                    <DialogHeader>
-                        <DialogTitle className="text-2xl font-black">Department Settings</DialogTitle>
-                        <DialogDescription>Modify core department parameters and configurations.</DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
-                        <div className="space-y-2">
-                            <Label className="font-bold text-xs uppercase text-slate-400">Department Name</Label>
-                            <Input value={settingsForm.name} onChange={(e) => setSettingsForm({ ...settingsForm, name: e.target.value })} className="rounded-xl" />
-                        </div>
-                        <div className="space-y-2">
-                            <Label className="font-bold text-xs uppercase text-slate-400">Department Code</Label>
-                            <Input value={settingsForm.code} onChange={(e) => setSettingsForm({ ...settingsForm, code: e.target.value })} className="rounded-xl" />
-                        </div>
-                        <div className="space-y-2">
-                            <Label className="font-bold text-xs uppercase text-slate-400">Description</Label>
-                            <Textarea value={settingsForm.description} onChange={(e) => setSettingsForm({ ...settingsForm, description: e.target.value })} className="rounded-xl" />
-                        </div>
-                        <div className="space-y-2">
-                            <Label className="font-bold text-xs uppercase text-slate-400">Head of Department</Label>
-                            <Select value={settingsForm.headId || "none"} onValueChange={(v) => setSettingsForm({ ...settingsForm, headId: v === "none" ? "" : v })}>
-                                <SelectTrigger className="rounded-xl"><SelectValue placeholder="Select HOD" /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="none">Unassigned</SelectItem>
-                                    {deptEmployees.map((e) => (
-                                        <SelectItem key={e.id} value={e.id}>{e.firstName} {e.lastName} · {e.employeeCode}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </div>
-                    <DialogFooter className="gap-2">
-                        <Button variant="outline" className="rounded-xl" onClick={() => setShowSettings(false)}>Cancel</Button>
-                        <Button className="rounded-xl font-bold bg-indigo-600 hover:bg-indigo-700" onClick={handleSaveSettings}>Save Changes</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            {/* Settings Sheet */}
+            <SideFormSheet
+                open={showSettings}
+                onOpenChange={setShowSettings}
+                title="Department Settings"
+                description="Modify core department parameters and configurations."
+                icon={<Settings size={20} />}
+                accentColor="#7c3aed"
+                width="md"
+                submitLabel="Save Changes"
+                onSubmit={(e) => { e.preventDefault(); handleSaveSettings(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Department Name" required>
+                        <Input value={settingsForm.name} onChange={(e) => setSettingsForm({ ...settingsForm, name: e.target.value })} />
+                    </Field>
+                    <Field label="Department Code" required>
+                        <Input value={settingsForm.code} onChange={(e) => setSettingsForm({ ...settingsForm, code: e.target.value })} />
+                    </Field>
+                    <Field label="Description">
+                        <Textarea value={settingsForm.description} onChange={(e) => setSettingsForm({ ...settingsForm, description: e.target.value })} className="min-h-[100px]" />
+                    </Field>
+                    <Field label="Head of Department">
+                        <Select value={settingsForm.headId || "none"} onValueChange={(v) => setSettingsForm({ ...settingsForm, headId: v === "none" ? "" : v })}>
+                            <SelectTrigger><SelectValue placeholder="Select HOD" /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="none">Unassigned</SelectItem>
+                                {deptEmployees.map((e) => (
+                                    <SelectItem key={e.id} value={e.id}>{e.firstName} {e.lastName} · {e.employeeCode}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                </div>
+            </SideFormSheet>
 
-            {/* Message HOD Dialog */}
-            <Dialog open={showMessageHOD} onOpenChange={setShowMessageHOD}>
-                <DialogContent className="rounded-[2rem] max-w-md">
-                    <DialogHeader>
-                        <DialogTitle className="text-2xl font-black">Message {hod ? `${hod.firstName} ${hod.lastName}` : "HOD"}</DialogTitle>
-                        <DialogDescription>Direct communication with the Department Head.</DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
-                        <Label className="font-bold text-xs uppercase text-slate-400">Your Message</Label>
+            {/* Message HOD Sheet */}
+            <SideFormSheet
+                open={showMessageHOD}
+                onOpenChange={setShowMessageHOD}
+                title={`Message ${hod ? `${hod.firstName} ${hod.lastName}` : "HOD"}`}
+                description="Direct communication with the Department Head."
+                icon={<Mail size={20} />}
+                accentColor="#0f172a"
+                width="md"
+                submitLabel="Send Message"
+                onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Your Message">
                         <Textarea
                             placeholder="Type your message here..."
-                            className="rounded-xl min-h-[120px]"
+                            className="min-h-[140px]"
                             value={messageBody}
                             onChange={(e) => setMessageBody(e.target.value)}
                         />
-                    </div>
-                    <DialogFooter className="gap-2">
-                        <Button variant="outline" className="rounded-xl" onClick={() => setShowMessageHOD(false)}>Cancel</Button>
-                        <Button className="rounded-xl font-bold bg-slate-900" onClick={handleSendMessage}>Send Message</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    </Field>
+                </div>
+            </SideFormSheet>
 
-            {/* Add Team Dialog */}
-            <Dialog open={showAddTeam} onOpenChange={(o) => { setShowAddTeam(o); if (!o) setTeamForm({ name: "", leadId: "", mission: "" }); }}>
-                <DialogContent className="rounded-[2rem] border-none shadow-2xl p-8 bg-white max-w-md">
-                    <DialogHeader>
-                        <DialogTitle className="text-2xl font-black">Create New Team</DialogTitle>
-                        <DialogDescription>Create a specialized functional team under {department.name}.</DialogDescription>
-                    </DialogHeader>
-                    <form onSubmit={handleCreateTeam} className="space-y-6 py-6">
-                        <div className="space-y-2">
-                            <Label className="font-bold text-xs uppercase tracking-widest text-slate-400">Team Name *</Label>
-                            <Input
-                                placeholder="e.g. Design Systems"
-                                className="h-12 rounded-xl border-slate-200"
-                                value={teamForm.name}
-                                onChange={(e) => setTeamForm({ ...teamForm, name: e.target.value })}
-                                required
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label className="font-bold text-xs uppercase tracking-widest text-slate-400">Team Lead *</Label>
-                            <Select value={teamForm.leadId} onValueChange={(v) => setTeamForm({ ...teamForm, leadId: v })}>
-                                <SelectTrigger className="h-12 rounded-xl border-slate-200 font-bold">
-                                    <SelectValue placeholder="Select Lead" />
-                                </SelectTrigger>
-                                <SelectContent className="rounded-xl">
-                                    {deptEmployees.length === 0 ? (
-                                        <SelectItem value="none" disabled>No employees in department</SelectItem>
-                                    ) : (
-                                        deptEmployees.map((e) => (
-                                            <SelectItem key={e.id} value={e.id}>{e.firstName} {e.lastName} · {e.employeeCode}</SelectItem>
-                                        ))
-                                    )}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="space-y-2">
-                            <Label className="font-bold text-xs uppercase tracking-widest text-slate-400">Mission / Description</Label>
-                            <Textarea
-                                placeholder="What will this team work on?"
-                                className="min-h-[100px] rounded-xl border-slate-200"
-                                value={teamForm.mission}
-                                onChange={(e) => setTeamForm({ ...teamForm, mission: e.target.value })}
-                            />
-                        </div>
-                        <Button type="submit" className="w-full h-12 bg-indigo-600 hover:bg-indigo-700 rounded-xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-indigo-100">
-                            Establish Team
-                        </Button>
-                    </form>
-                </DialogContent>
-            </Dialog>
-
-            {/* Edit Team Dialog */}
-            <Dialog open={showEditTeam} onOpenChange={(o) => { setShowEditTeam(o); if (!o) setSelectedTeam(null); }}>
-                <DialogContent className="rounded-[2rem] border-none shadow-2xl p-8 bg-white max-w-md">
-                    <DialogHeader>
-                        <DialogTitle className="text-2xl font-black">Edit Team</DialogTitle>
-                        <DialogDescription>Update details for {selectedTeam?.name}.</DialogDescription>
-                    </DialogHeader>
-                    <form onSubmit={handleUpdateTeam} className="space-y-6 py-6">
-                        <div className="space-y-2">
-                            <Label className="font-bold text-xs uppercase tracking-widest text-slate-400">Team Name *</Label>
-                            <Input className="h-12 rounded-xl border-slate-200" value={teamForm.name} onChange={(e) => setTeamForm({ ...teamForm, name: e.target.value })} required />
-                        </div>
-                        <div className="space-y-2">
-                            <Label className="font-bold text-xs uppercase tracking-widest text-slate-400">Team Lead *</Label>
-                            <Select value={teamForm.leadId} onValueChange={(v) => setTeamForm({ ...teamForm, leadId: v })}>
-                                <SelectTrigger className="h-12 rounded-xl border-slate-200 font-bold"><SelectValue placeholder="Select Lead" /></SelectTrigger>
-                                <SelectContent className="rounded-xl">
-                                    {deptEmployees.map((e) => (
+            {/* Add Team Sheet */}
+            <SideFormSheet
+                open={showAddTeam}
+                onOpenChange={(o) => { setShowAddTeam(o); if (!o) setTeamForm({ name: "", leadId: "", mission: "" }); }}
+                title="Create New Team"
+                description={`Create a specialized functional team under ${department.name}.`}
+                icon={<Plus size={20} />}
+                accentColor="#4f46e5"
+                width="md"
+                submitLabel="Establish Team"
+                onSubmit={handleCreateTeam}
+            >
+                <div className="space-y-4">
+                    <Field label="Team Name" required>
+                        <Input
+                            placeholder="e.g. Design Systems"
+                            value={teamForm.name}
+                            onChange={(e) => setTeamForm({ ...teamForm, name: e.target.value })}
+                            required
+                        />
+                    </Field>
+                    <Field label="Team Lead" required>
+                        <Select value={teamForm.leadId} onValueChange={(v) => setTeamForm({ ...teamForm, leadId: v })}>
+                            <SelectTrigger><SelectValue placeholder="Select Lead" /></SelectTrigger>
+                            <SelectContent>
+                                {deptEmployees.length === 0 ? (
+                                    <SelectItem value="none" disabled>No employees in department</SelectItem>
+                                ) : (
+                                    deptEmployees.map((e) => (
                                         <SelectItem key={e.id} value={e.id}>{e.firstName} {e.lastName} · {e.employeeCode}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="space-y-2">
-                            <Label className="font-bold text-xs uppercase tracking-widest text-slate-400">Mission</Label>
-                            <Textarea className="min-h-[100px] rounded-xl border-slate-200" value={teamForm.mission} onChange={(e) => setTeamForm({ ...teamForm, mission: e.target.value })} />
-                        </div>
-                        <div className="flex gap-3">
-                            <Button type="button" variant="outline" className="flex-1 rounded-xl" onClick={() => setShowEditTeam(false)}>Cancel</Button>
-                            <Button type="submit" className="flex-1 h-12 bg-indigo-600 hover:bg-indigo-700 rounded-xl font-black uppercase text-[10px] tracking-widest">Save</Button>
-                        </div>
-                    </form>
-                </DialogContent>
-            </Dialog>
+                                    ))
+                                )}
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                    <Field label="Mission / Description">
+                        <Textarea
+                            placeholder="What will this team work on?"
+                            className="min-h-[100px]"
+                            value={teamForm.mission}
+                            onChange={(e) => setTeamForm({ ...teamForm, mission: e.target.value })}
+                        />
+                    </Field>
+                </div>
+            </SideFormSheet>
+
+            {/* Edit Team Sheet */}
+            <SideFormSheet
+                open={showEditTeam}
+                onOpenChange={(o) => { setShowEditTeam(o); if (!o) setSelectedTeam(null); }}
+                title="Edit Team"
+                description={`Update details for ${selectedTeam?.name || "team"}.`}
+                icon={<Pencil size={20} />}
+                accentColor="#7c3aed"
+                width="md"
+                submitLabel="Save"
+                onSubmit={handleUpdateTeam}
+            >
+                <div className="space-y-4">
+                    <Field label="Team Name" required>
+                        <Input value={teamForm.name} onChange={(e) => setTeamForm({ ...teamForm, name: e.target.value })} required />
+                    </Field>
+                    <Field label="Team Lead" required>
+                        <Select value={teamForm.leadId} onValueChange={(v) => setTeamForm({ ...teamForm, leadId: v })}>
+                            <SelectTrigger><SelectValue placeholder="Select Lead" /></SelectTrigger>
+                            <SelectContent>
+                                {deptEmployees.map((e) => (
+                                    <SelectItem key={e.id} value={e.id}>{e.firstName} {e.lastName} · {e.employeeCode}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                    <Field label="Mission">
+                        <Textarea className="min-h-[100px]" value={teamForm.mission} onChange={(e) => setTeamForm({ ...teamForm, mission: e.target.value })} />
+                    </Field>
+                </div>
+            </SideFormSheet>
 
             {/* Manage Members Dialog */}
             <Dialog open={showManageMembers} onOpenChange={(o) => { setShowManageMembers(o); if (!o) setSelectedTeam(null); }}>

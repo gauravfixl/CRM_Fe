@@ -26,6 +26,7 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/shared/components/ui/dialog"
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet"
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
 } from "@/shared/components/ui/sheet"
@@ -1650,52 +1651,45 @@ const EmployeeReferralsPage: React.FC = () => {
       {/* ═════════════════════════════════════════════════════════════════ */}
 
       {/* 1. Refer Candidate Dialog */}
-      <Dialog open={referOpen} onOpenChange={setReferOpen}>
-        <DialogContent className="max-w-xl rounded-2xl p-0 overflow-hidden">
-          <div className="bg-gradient-to-br from-[#8B5CF6] to-[#7C3AED] p-5 text-white">
-            <DialogHeader>
-              <DialogTitle className="text-base font-black tracking-tight flex items-center gap-2">
-                <Gift className="h-5 w-5" /> Refer a Candidate
-              </DialogTitle>
-              <DialogDescription className="text-violet-100 text-xs">
-                Submit a great candidate — earn a bonus when they join.
-              </DialogDescription>
-            </DialogHeader>
-          </div>
-          <div className="p-5 space-y-4 max-h-[65vh] overflow-y-auto">
-            <div>
-              <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Candidate Name *</Label>
+      <SideFormSheet
+        open={referOpen}
+        onOpenChange={setReferOpen}
+        title="Refer a Candidate"
+        description="Submit a great candidate — earn a bonus when they join."
+        icon={<Gift className="h-5 w-5" />}
+        accentColor="#8B5CF6"
+        width="lg"
+        submitLabel="Confirm Referral"
+        onSubmit={(e) => { e.preventDefault(); handleSubmitReferral(); }}
+      >
+        <div className="space-y-4">
+          <Field label="Candidate Name" required>
+            <Input
+              value={referForm.candidateName}
+              onChange={(e) => setReferForm((p) => ({ ...p, candidateName: e.target.value }))}
+              placeholder="Full name"
+            />
+          </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Email" required>
               <Input
-                value={referForm.candidateName}
-                onChange={(e) => setReferForm((p) => ({ ...p, candidateName: e.target.value }))}
-                placeholder="Full name"
-                className="rounded-xl h-9 text-xs mt-1"
+                type="email"
+                value={referForm.candidateEmail}
+                onChange={(e) => setReferForm((p) => ({ ...p, candidateEmail: e.target.value }))}
+                placeholder="email@example.com"
               />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Email *</Label>
-                <Input
-                  type="email"
-                  value={referForm.candidateEmail}
-                  onChange={(e) => setReferForm((p) => ({ ...p, candidateEmail: e.target.value }))}
-                  placeholder="email@example.com"
-                  className="rounded-xl h-9 text-xs mt-1"
-                />
-              </div>
-              <div>
-                <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Phone</Label>
-                <Input
-                  value={referForm.candidatePhone}
-                  onChange={(e) => setReferForm((p) => ({ ...p, candidatePhone: e.target.value }))}
-                  placeholder="+91 98765 43210"
-                  className="rounded-xl h-9 text-xs mt-1"
-                />
-              </div>
-            </div>
+            </Field>
+            <Field label="Phone">
+              <Input
+                value={referForm.candidatePhone}
+                onChange={(e) => setReferForm((p) => ({ ...p, candidatePhone: e.target.value }))}
+                placeholder="+91 98765 43210"
+              />
+            </Field>
+          </div>
 
-            <div>
-              <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Position *</Label>
+          <Field label="Position" required>
+            <div className="space-y-2">
               <Select
                 value={referForm.jobId}
                 onValueChange={(v) => {
@@ -1703,7 +1697,7 @@ const EmployeeReferralsPage: React.FC = () => {
                   setReferForm((p) => ({ ...p, jobId: v, position: j?.title ?? p.position }))
                 }}
               >
-                <SelectTrigger className="rounded-xl h-9 text-xs mt-1">
+                <SelectTrigger>
                   <SelectValue placeholder="Select an open role…" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1718,10 +1712,9 @@ const EmployeeReferralsPage: React.FC = () => {
                 value={referForm.position}
                 onChange={(e) => setReferForm((p) => ({ ...p, position: e.target.value, jobId: "" }))}
                 placeholder="Or type a custom role title"
-                className="rounded-xl h-9 text-xs mt-2"
               />
               {referForm.position && (
-                <div className="mt-2 flex items-center gap-2 text-[11px] text-violet-700 bg-violet-50 rounded-lg px-3 py-1.5 border border-violet-100">
+                <div className="flex items-center gap-2 text-[11px] text-violet-700 bg-violet-50 rounded-lg px-3 py-1.5 border border-violet-100">
                   <Sparkles className="h-3 w-3" />
                   <span className="font-semibold">Estimated bonus:</span>
                   <span className="font-black tabular-nums">{fmtINR(matchBonusRule(referForm.position, bonusRules).amount)}</span>
@@ -1729,377 +1722,312 @@ const EmployeeReferralsPage: React.FC = () => {
                 </div>
               )}
             </div>
+          </Field>
 
-            <div>
-              <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Resume Upload</Label>
-              <div
-                className="mt-1 border-2 border-dashed border-slate-200 rounded-xl p-4 text-center hover:border-[#8B5CF6] transition cursor-pointer"
-                onClick={() => resumeInputRef.current?.click()}
-              >
-                <input
-                  ref={resumeInputRef}
-                  type="file"
-                  accept=".pdf,.doc,.docx"
-                  className="hidden"
-                  onChange={(e) => handleResumeUpload(e.target.files?.[0])}
-                />
-                {referForm.resumeName ? (
-                  <div className="flex items-center justify-center gap-2 text-xs text-slate-700">
-                    <FileText className="h-4 w-4 text-violet-600" />
-                    <span className="font-semibold">{referForm.resumeName}</span>
-                    <button
-                      className="text-rose-500 hover:text-rose-700"
-                      onClick={(e) => { e.stopPropagation(); setReferForm((p) => ({ ...p, resumeName: "", resumeUrl: "" })) }}
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                ) : (
-                  <>
-                    <Upload className="h-5 w-5 mx-auto text-slate-300 mb-1" />
-                    <p className="text-[11px] text-slate-500 font-medium">
-                      Drag & drop resume or <span className="text-[#8B5CF6] font-bold">browse</span>
-                    </p>
-                    <p className="text-[10px] text-slate-400 mt-0.5">PDF, DOC, DOCX — max 5MB</p>
-                  </>
-                )}
-              </div>
-            </div>
-
-            <div>
-              <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Notes</Label>
-              <Textarea
-                value={referForm.notes}
-                onChange={(e) => setReferForm((p) => ({ ...p, notes: e.target.value }))}
-                rows={3}
-                placeholder="Why is this candidate a great fit? How do you know them?"
-                className="rounded-xl text-xs mt-1 resize-none"
+          <Field label="Resume Upload">
+            <div
+              className="border-2 border-dashed border-slate-200 rounded-xl p-4 text-center hover:border-[#8B5CF6] transition cursor-pointer"
+              onClick={() => resumeInputRef.current?.click()}
+            >
+              <input
+                ref={resumeInputRef}
+                type="file"
+                accept=".pdf,.doc,.docx"
+                className="hidden"
+                onChange={(e) => handleResumeUpload(e.target.files?.[0])}
               />
+              {referForm.resumeName ? (
+                <div className="flex items-center justify-center gap-2 text-xs text-slate-700">
+                  <FileText className="h-4 w-4 text-violet-600" />
+                  <span className="font-semibold">{referForm.resumeName}</span>
+                  <button
+                    type="button"
+                    className="text-rose-500 hover:text-rose-700"
+                    onClick={(e) => { e.stopPropagation(); setReferForm((p) => ({ ...p, resumeName: "", resumeUrl: "" })) }}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <Upload className="h-5 w-5 mx-auto text-slate-300 mb-1" />
+                  <p className="text-[11px] text-slate-500 font-medium">
+                    Drag & drop resume or <span className="text-[#8B5CF6] font-bold">browse</span>
+                  </p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">PDF, DOC, DOCX — max 5MB</p>
+                </>
+              )}
             </div>
+          </Field>
 
-            <div className="rounded-xl bg-violet-50 border border-violet-100 p-3 flex items-start gap-2">
-              <Info className="h-4 w-4 text-violet-600 shrink-0 mt-0.5" />
-              <p className="text-[11px] text-violet-700 leading-relaxed">
-                Referrals stay active for 6 months. Bonus is released via payroll after the candidate completes 90 days.
-              </p>
-            </div>
+          <Field label="Notes">
+            <Textarea
+              value={referForm.notes}
+              onChange={(e) => setReferForm((p) => ({ ...p, notes: e.target.value }))}
+              rows={3}
+              placeholder="Why is this candidate a great fit? How do you know them?"
+              className="resize-none"
+            />
+          </Field>
+
+          <div className="rounded-xl bg-violet-50 border border-violet-100 p-3 flex items-start gap-2">
+            <Info className="h-4 w-4 text-violet-600 shrink-0 mt-0.5" />
+            <p className="text-[11px] text-violet-700 leading-relaxed">
+              Referrals stay active for 6 months. Bonus is released via payroll after the candidate completes 90 days.
+            </p>
           </div>
-          <DialogFooter className="p-5 border-t border-slate-100 bg-slate-50 gap-2">
-            <Button variant="outline" className="rounded-xl h-9 text-xs font-bold" onClick={() => setReferOpen(false)}>
-              Cancel
-            </Button>
-            <Button className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white rounded-xl h-9 text-xs font-bold" onClick={handleSubmitReferral}>
-              <Send className="mr-1.5 h-3.5 w-3.5" /> Confirm Referral
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        </div>
+      </SideFormSheet>
 
       {/* 2. Edit Referral Dialog */}
-      <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="max-w-lg rounded-2xl">
-          <DialogHeader>
-            <DialogTitle className="text-base font-black tracking-tight flex items-center gap-2">
-              <Edit className="h-4 w-4 text-violet-600" /> Edit Referral
-            </DialogTitle>
-            <DialogDescription className="text-xs text-slate-500">
-              Only referrals in 'Submitted' state can be edited.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Candidate Name</Label>
+      <SideFormSheet
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        title="Edit Referral"
+        description="Only referrals in 'Submitted' state can be edited."
+        icon={<Edit className="h-5 w-5" />}
+        accentColor="#7c3aed"
+        width="md"
+        submitLabel="Save Changes"
+        onSubmit={(e) => { e.preventDefault(); handleEditSubmit(); }}
+      >
+        <div className="space-y-4">
+          <Field label="Candidate Name">
+            <Input
+              value={editForm.candidateName}
+              onChange={(e) => setEditForm((p) => ({ ...p, candidateName: e.target.value }))}
+            />
+          </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Email">
               <Input
-                value={editForm.candidateName}
-                onChange={(e) => setEditForm((p) => ({ ...p, candidateName: e.target.value }))}
-                className="rounded-xl h-9 text-xs mt-1"
+                value={editForm.candidateEmail}
+                onChange={(e) => setEditForm((p) => ({ ...p, candidateEmail: e.target.value }))}
               />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Email</Label>
-                <Input
-                  value={editForm.candidateEmail}
-                  onChange={(e) => setEditForm((p) => ({ ...p, candidateEmail: e.target.value }))}
-                  className="rounded-xl h-9 text-xs mt-1"
-                />
-              </div>
-              <div>
-                <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Phone</Label>
-                <Input
-                  value={editForm.candidatePhone}
-                  onChange={(e) => setEditForm((p) => ({ ...p, candidatePhone: e.target.value }))}
-                  className="rounded-xl h-9 text-xs mt-1"
-                />
-              </div>
-            </div>
-            <div>
-              <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Position</Label>
+            </Field>
+            <Field label="Phone">
               <Input
-                value={editForm.position}
-                onChange={(e) => setEditForm((p) => ({ ...p, position: e.target.value }))}
-                className="rounded-xl h-9 text-xs mt-1"
+                value={editForm.candidatePhone}
+                onChange={(e) => setEditForm((p) => ({ ...p, candidatePhone: e.target.value }))}
               />
-            </div>
-            <div>
-              <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Notes</Label>
-              <Textarea
-                value={editForm.notes}
-                onChange={(e) => setEditForm((p) => ({ ...p, notes: e.target.value }))}
-                rows={3}
-                className="rounded-xl text-xs mt-1 resize-none"
-              />
-            </div>
+            </Field>
           </div>
-          <DialogFooter className="gap-2">
-            <Button variant="outline" className="rounded-xl h-9 text-xs font-bold" onClick={() => setEditOpen(false)}>
-              Cancel
-            </Button>
-            <Button className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white rounded-xl h-9 text-xs font-bold" onClick={handleEditSubmit}>
-              Save Changes
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          <Field label="Position">
+            <Input
+              value={editForm.position}
+              onChange={(e) => setEditForm((p) => ({ ...p, position: e.target.value }))}
+            />
+          </Field>
+          <Field label="Notes">
+            <Textarea
+              value={editForm.notes}
+              onChange={(e) => setEditForm((p) => ({ ...p, notes: e.target.value }))}
+              rows={3}
+              className="resize-none"
+            />
+          </Field>
+        </div>
+      </SideFormSheet>
 
       {/* 3. Update Status Dialog */}
-      <Dialog open={statusOpen} onOpenChange={setStatusOpen}>
-        <DialogContent className="max-w-md rounded-2xl">
-          <DialogHeader>
-            <DialogTitle className="text-base font-black tracking-tight flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-violet-600" /> Update Status
-            </DialogTitle>
-            {activeReferral && (
-              <DialogDescription className="text-xs text-slate-500">
-                {activeReferral.candidateName} — {activeReferral.position}
-              </DialogDescription>
-            )}
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2 block">New Status</Label>
-              <RadioGroup
-                value={statusForm.status}
-                onValueChange={(v) => setStatusForm((p) => ({ ...p, status: v as ReferralStatus }))}
-                className="grid grid-cols-2 gap-2"
-              >
-                {(Object.keys(STATUS_STYLES) as ReferralStatus[]).map((s) => {
-                  const style = STATUS_STYLES[s]
-                  const checked = statusForm.status === s
-                  return (
-                    <Label
-                      key={s}
-                      className={cn(
-                        "rounded-xl border-2 p-2.5 flex items-center gap-2 cursor-pointer transition",
-                        checked ? "border-[#8B5CF6] bg-violet-50" : "border-slate-200 hover:border-slate-300",
-                      )}
-                    >
-                      <RadioGroupItem value={s} className="sr-only" />
-                      <span className={cn("h-2 w-2 rounded-full", style.dot)} />
-                      <span className="text-xs font-bold text-slate-800">{s}</span>
-                    </Label>
-                  )
-                })}
-              </RadioGroup>
-            </div>
+      <SideFormSheet
+        open={statusOpen}
+        onOpenChange={setStatusOpen}
+        title="Update Status"
+        description={activeReferral ? `${activeReferral.candidateName} — ${activeReferral.position}` : undefined}
+        icon={<TrendingUp className="h-5 w-5" />}
+        accentColor="#7c3aed"
+        width="md"
+        submitLabel="Update Status"
+        onSubmit={(e) => { e.preventDefault(); handleStatusUpdate(); }}
+      >
+        <div className="space-y-4">
+          <Field label="New Status">
+            <RadioGroup
+              value={statusForm.status}
+              onValueChange={(v) => setStatusForm((p) => ({ ...p, status: v as ReferralStatus }))}
+              className="grid grid-cols-2 gap-2"
+            >
+              {(Object.keys(STATUS_STYLES) as ReferralStatus[]).map((s) => {
+                const style = STATUS_STYLES[s]
+                const checked = statusForm.status === s
+                return (
+                  <Label
+                    key={s}
+                    className={cn(
+                      "rounded-xl border-2 p-2.5 flex items-center gap-2 cursor-pointer transition",
+                      checked ? "border-[#8B5CF6] bg-violet-50" : "border-slate-200 hover:border-slate-300",
+                    )}
+                  >
+                    <RadioGroupItem value={s} className="sr-only" />
+                    <span className={cn("h-2 w-2 rounded-full", style.dot)} />
+                    <span className="text-xs font-bold text-slate-800">{s}</span>
+                  </Label>
+                )
+              })}
+            </RadioGroup>
+          </Field>
 
-            <div>
-              <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Link to Candidate (optional)</Label>
-              <Select
-                value={statusForm.linkCandidateId}
-                onValueChange={(v) => setStatusForm((p) => ({ ...p, linkCandidateId: v }))}
-              >
-                <SelectTrigger className="rounded-xl h-9 text-xs mt-1">
-                  <SelectValue placeholder="Select a candidate record…" />
-                </SelectTrigger>
-                <SelectContent>
-                  {candidates.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.firstName} {c.lastName} <span className="text-slate-400 text-[10px]">· {c.email}</span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          <Field label="Link to Candidate (optional)">
+            <Select
+              value={statusForm.linkCandidateId}
+              onValueChange={(v) => setStatusForm((p) => ({ ...p, linkCandidateId: v }))}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select a candidate record…" />
+              </SelectTrigger>
+              <SelectContent>
+                {candidates.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.firstName} {c.lastName} <span className="text-slate-400 text-[10px]">· {c.email}</span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
 
-            {(statusForm.status === "Rejected" || statusForm.status === "Dropped") && (
-              <div>
-                <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Reason</Label>
-                <Textarea
-                  value={statusForm.rejectionReason}
-                  onChange={(e) => setStatusForm((p) => ({ ...p, rejectionReason: e.target.value }))}
-                  rows={2}
-                  placeholder="Why was this candidate not moved forward?"
-                  className="rounded-xl text-xs mt-1 resize-none"
-                />
-              </div>
-            )}
-          </div>
-          <DialogFooter className="gap-2">
-            <Button variant="outline" className="rounded-xl h-9 text-xs font-bold" onClick={() => setStatusOpen(false)}>
-              Cancel
-            </Button>
-            <Button className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white rounded-xl h-9 text-xs font-bold" onClick={handleStatusUpdate}>
-              Update Status
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          {(statusForm.status === "Rejected" || statusForm.status === "Dropped") && (
+            <Field label="Reason">
+              <Textarea
+                value={statusForm.rejectionReason}
+                onChange={(e) => setStatusForm((p) => ({ ...p, rejectionReason: e.target.value }))}
+                rows={2}
+                placeholder="Why was this candidate not moved forward?"
+                className="resize-none"
+              />
+            </Field>
+          )}
+        </div>
+      </SideFormSheet>
 
       {/* 4. Approve / Reject Bonus Dialog */}
-      <Dialog open={bonusApproveOpen} onOpenChange={setBonusApproveOpen}>
-        <DialogContent className="max-w-md rounded-2xl">
-          <DialogHeader>
-            <DialogTitle className="text-base font-black tracking-tight flex items-center gap-2">
-              <Award className="h-4 w-4 text-amber-500" /> Approve / Reject Bonus
-            </DialogTitle>
-          </DialogHeader>
-          {activeReferral && (
-            <div className="space-y-4">
-              <div className="rounded-xl bg-slate-50 border border-slate-200 p-3">
-                <div className="flex items-center gap-3">
-                  <Avatar name={activeReferral.candidateName} size="md" />
-                  <div>
-                    <p className="text-sm font-bold text-slate-900">{activeReferral.candidateName}</p>
-                    <p className="text-[11px] text-slate-500">{activeReferral.position}</p>
-                  </div>
-                </div>
-                <div className="mt-3 grid grid-cols-2 gap-2 text-[11px]">
-                  <div>
-                    <p className="text-slate-400">Referred by</p>
-                    <p className="font-bold text-slate-700">{activeReferral.referrerName}</p>
-                  </div>
-                  <div>
-                    <p className="text-slate-400">Current status</p>
-                    <StatusBadge status={activeReferral.status} />
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2 block">Decision</Label>
-                <RadioGroup
-                  value={bonusForm.decision}
-                  onValueChange={(v) => setBonusForm((p) => ({ ...p, decision: v as "approve" | "reject" }))}
-                  className="grid grid-cols-2 gap-2"
-                >
-                  <Label className={cn("rounded-xl border-2 p-3 flex items-center gap-2 cursor-pointer transition",
-                    bonusForm.decision === "approve" ? "border-emerald-500 bg-emerald-50" : "border-slate-200")}>
-                    <RadioGroupItem value="approve" className="sr-only" />
-                    <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                    <span className="text-xs font-bold text-slate-800">Approve</span>
-                  </Label>
-                  <Label className={cn("rounded-xl border-2 p-3 flex items-center gap-2 cursor-pointer transition",
-                    bonusForm.decision === "reject" ? "border-rose-500 bg-rose-50" : "border-slate-200")}>
-                    <RadioGroupItem value="reject" className="sr-only" />
-                    <XCircle className="h-4 w-4 text-rose-600" />
-                    <span className="text-xs font-bold text-slate-800">Reject</span>
-                  </Label>
-                </RadioGroup>
-              </div>
-
-              {bonusForm.decision === "approve" && (
+      <SideFormSheet
+        open={bonusApproveOpen}
+        onOpenChange={setBonusApproveOpen}
+        title="Approve / Reject Bonus"
+        icon={<Award className="h-5 w-5" />}
+        accentColor={bonusForm.decision === "approve" ? "#059669" : "#e11d48"}
+        width="md"
+        submitLabel={bonusForm.decision === "approve" ? "Approve Bonus" : "Reject Bonus"}
+        onSubmit={(e) => { e.preventDefault(); handleBonusDecision(); }}
+      >
+        {activeReferral && (
+          <div className="space-y-4">
+            <div className="rounded-xl bg-slate-50 border border-slate-200 p-3">
+              <div className="flex items-center gap-3">
+                <Avatar name={activeReferral.candidateName} size="md" />
                 <div>
-                  <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Amount (INR)</Label>
-                  <Input
-                    type="number"
-                    value={bonusForm.amount}
-                    onChange={(e) => setBonusForm((p) => ({ ...p, amount: Number(e.target.value) }))}
-                    className="rounded-xl h-9 text-xs mt-1 tabular-nums"
-                  />
-                  <p className="text-[10px] text-slate-400 mt-1">
-                    Suggested: {fmtINR(matchBonusRule(activeReferral.position, bonusRules).amount)} ({matchBonusRule(activeReferral.position, bonusRules).level})
-                  </p>
+                  <p className="text-sm font-bold text-slate-900">{activeReferral.candidateName}</p>
+                  <p className="text-[11px] text-slate-500">{activeReferral.position}</p>
                 </div>
-              )}
-
-              <div>
-                <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Notes</Label>
-                <Textarea
-                  value={bonusForm.notes}
-                  onChange={(e) => setBonusForm((p) => ({ ...p, notes: e.target.value }))}
-                  rows={2}
-                  placeholder="Internal notes (optional)"
-                  className="rounded-xl text-xs mt-1 resize-none"
-                />
+              </div>
+              <div className="mt-3 grid grid-cols-2 gap-2 text-[11px]">
+                <div>
+                  <p className="text-slate-400">Referred by</p>
+                  <p className="font-bold text-slate-700">{activeReferral.referrerName}</p>
+                </div>
+                <div>
+                  <p className="text-slate-400">Current status</p>
+                  <StatusBadge status={activeReferral.status} />
+                </div>
               </div>
             </div>
-          )}
-          <DialogFooter className="gap-2">
-            <Button variant="outline" className="rounded-xl h-9 text-xs font-bold" onClick={() => setBonusApproveOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              className={cn(
-                "rounded-xl h-9 text-xs font-bold text-white",
-                bonusForm.decision === "approve" ? "bg-emerald-600 hover:bg-emerald-700" : "bg-rose-600 hover:bg-rose-700",
-              )}
-              onClick={handleBonusDecision}
-            >
-              {bonusForm.decision === "approve" ? "Approve Bonus" : "Reject Bonus"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+
+            <Field label="Decision">
+              <RadioGroup
+                value={bonusForm.decision}
+                onValueChange={(v) => setBonusForm((p) => ({ ...p, decision: v as "approve" | "reject" }))}
+                className="grid grid-cols-2 gap-2"
+              >
+                <Label className={cn("rounded-xl border-2 p-3 flex items-center gap-2 cursor-pointer transition",
+                  bonusForm.decision === "approve" ? "border-emerald-500 bg-emerald-50" : "border-slate-200")}>
+                  <RadioGroupItem value="approve" className="sr-only" />
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                  <span className="text-xs font-bold text-slate-800">Approve</span>
+                </Label>
+                <Label className={cn("rounded-xl border-2 p-3 flex items-center gap-2 cursor-pointer transition",
+                  bonusForm.decision === "reject" ? "border-rose-500 bg-rose-50" : "border-slate-200")}>
+                  <RadioGroupItem value="reject" className="sr-only" />
+                  <XCircle className="h-4 w-4 text-rose-600" />
+                  <span className="text-xs font-bold text-slate-800">Reject</span>
+                </Label>
+              </RadioGroup>
+            </Field>
+
+            {bonusForm.decision === "approve" && (
+              <Field
+                label="Amount (INR)"
+                hint={`Suggested: ${fmtINR(matchBonusRule(activeReferral.position, bonusRules).amount)} (${matchBonusRule(activeReferral.position, bonusRules).level})`}
+              >
+                <Input
+                  type="number"
+                  value={bonusForm.amount}
+                  onChange={(e) => setBonusForm((p) => ({ ...p, amount: Number(e.target.value) }))}
+                  className="tabular-nums"
+                />
+              </Field>
+            )}
+
+            <Field label="Notes">
+              <Textarea
+                value={bonusForm.notes}
+                onChange={(e) => setBonusForm((p) => ({ ...p, notes: e.target.value }))}
+                rows={2}
+                placeholder="Internal notes (optional)"
+                className="resize-none"
+              />
+            </Field>
+          </div>
+        )}
+      </SideFormSheet>
 
       {/* 5. Mark Bonus Paid Dialog */}
-      <Dialog open={bonusPaidOpen} onOpenChange={setBonusPaidOpen}>
-        <DialogContent className="max-w-md rounded-2xl">
-          <DialogHeader>
-            <DialogTitle className="text-base font-black tracking-tight flex items-center gap-2">
-              <Banknote className="h-4 w-4 text-indigo-600" /> Mark Bonus as Paid
-            </DialogTitle>
-          </DialogHeader>
-          {activeReferral && (
-            <div className="space-y-4">
-              <div className="rounded-xl bg-indigo-50 border border-indigo-100 p-4 flex items-center justify-between">
-                <div>
-                  <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider">Amount to settle</p>
-                  <p className="text-2xl font-black text-indigo-800 tabular-nums mt-0.5">{fmtINR(activeReferral.bonus)}</p>
-                </div>
-                <IndianRupee className="h-8 w-8 text-indigo-300" />
-              </div>
-
+      <SideFormSheet
+        open={bonusPaidOpen}
+        onOpenChange={setBonusPaidOpen}
+        title="Mark Bonus as Paid"
+        icon={<Banknote className="h-5 w-5" />}
+        accentColor="#4f46e5"
+        width="md"
+        submitLabel="Confirm Payment"
+        onSubmit={(e) => { e.preventDefault(); handleMarkPaid(); }}
+      >
+        {activeReferral && (
+          <div className="space-y-4">
+            <div className="rounded-xl bg-indigo-50 border border-indigo-100 p-4 flex items-center justify-between">
               <div>
-                <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Payment Date *</Label>
-                <Input
-                  type="date"
-                  value={paidForm.paymentDate}
-                  onChange={(e) => setPaidForm((p) => ({ ...p, paymentDate: e.target.value }))}
-                  className="rounded-xl h-9 text-xs mt-1"
-                />
+                <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider">Amount to settle</p>
+                <p className="text-2xl font-black text-indigo-800 tabular-nums mt-0.5">{fmtINR(activeReferral.bonus)}</p>
               </div>
-              <div>
-                <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Transaction Reference</Label>
-                <Input
-                  value={paidForm.transactionRef}
-                  onChange={(e) => setPaidForm((p) => ({ ...p, transactionRef: e.target.value }))}
-                  placeholder="e.g. TXN-20260418-001"
-                  className="rounded-xl h-9 text-xs mt-1"
-                />
-              </div>
-              <div>
-                <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Notes</Label>
-                <Textarea
-                  value={paidForm.notes}
-                  onChange={(e) => setPaidForm((p) => ({ ...p, notes: e.target.value }))}
-                  rows={2}
-                  placeholder="Payroll batch / processing notes"
-                  className="rounded-xl text-xs mt-1 resize-none"
-                />
-              </div>
+              <IndianRupee className="h-8 w-8 text-indigo-300" />
             </div>
-          )}
-          <DialogFooter className="gap-2">
-            <Button variant="outline" className="rounded-xl h-9 text-xs font-bold" onClick={() => setBonusPaidOpen(false)}>
-              Cancel
-            </Button>
-            <Button className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl h-9 text-xs font-bold" onClick={handleMarkPaid}>
-              <Banknote className="mr-1.5 h-3.5 w-3.5" /> Confirm Payment
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+
+            <Field label="Payment Date" required>
+              <Input
+                type="date"
+                value={paidForm.paymentDate}
+                onChange={(e) => setPaidForm((p) => ({ ...p, paymentDate: e.target.value }))}
+              />
+            </Field>
+            <Field label="Transaction Reference">
+              <Input
+                value={paidForm.transactionRef}
+                onChange={(e) => setPaidForm((p) => ({ ...p, transactionRef: e.target.value }))}
+                placeholder="e.g. TXN-20260418-001"
+              />
+            </Field>
+            <Field label="Notes">
+              <Textarea
+                value={paidForm.notes}
+                onChange={(e) => setPaidForm((p) => ({ ...p, notes: e.target.value }))}
+                rows={2}
+                placeholder="Payroll batch / processing notes"
+                className="resize-none"
+              />
+            </Field>
+          </div>
+        )}
+      </SideFormSheet>
 
       {/* 6. Referral Detail Sheet */}
       <Sheet open={detailOpen} onOpenChange={setDetailOpen}>

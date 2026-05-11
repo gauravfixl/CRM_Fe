@@ -57,6 +57,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/shared/components/ui/dialog"
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet"
 import { ScrollArea } from "@/shared/components/ui/scroll-area"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/shared/components/ui/tooltip"
 import { useToast } from "@/shared/components/ui/use-toast"
@@ -1218,99 +1219,83 @@ const StatutoryDashboard = () => {
                     </div>
                 </div>
 
-                {/* Event Dialog */}
-                <Dialog open={eventDialogOpen} onOpenChange={setEventDialogOpen}>
-                    <DialogContent className="max-w-lg bg-white rounded-2xl p-6 font-sans">
-                        <DialogHeader className="space-y-1">
-                            <div className="h-10 w-10 bg-[#8B5CF6]/10 rounded-xl flex items-center justify-center text-[#8B5CF6] mb-2">
-                                <CalendarDays size={20} />
-                            </div>
-                            <DialogTitle className="text-lg font-bold text-slate-900">
-                                {editingEvent ? "Edit event" : "Add compliance event"}
-                            </DialogTitle>
-                            <DialogDescription className="text-xs font-medium text-slate-500">
-                                Track regulatory deadlines with type, date, and notes.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="mt-4 space-y-3">
-                            <div className="grid grid-cols-2 gap-3">
-                                <FormField label="Type" required>
-                                    <Select value={eventForm.type} onValueChange={(v) => setEventForm({ ...eventForm, type: v as any })}>
-                                        <SelectTrigger className="h-10 text-sm"><SelectValue /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="PF">PF</SelectItem>
-                                            <SelectItem value="ESI">ESI</SelectItem>
-                                            <SelectItem value="PT">PT</SelectItem>
-                                            <SelectItem value="TDS">TDS</SelectItem>
-                                            <SelectItem value="LWF">LWF</SelectItem>
-                                            <SelectItem value="Form16">Form 16</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </FormField>
-                                <FormField label="Status" required>
-                                    <Select value={eventForm.status} onValueChange={(v) => setEventForm({ ...eventForm, status: v as any })}>
-                                        <SelectTrigger className="h-10 text-sm"><SelectValue /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="Upcoming">Upcoming</SelectItem>
-                                            <SelectItem value="Due Today">Due Today</SelectItem>
-                                            <SelectItem value="Overdue">Overdue</SelectItem>
-                                            <SelectItem value="Completed">Completed</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </FormField>
-                            </div>
-                            <FormField label="Title" required>
-                                <Input value={eventForm.title} onChange={(e) => setEventForm({ ...eventForm, title: e.target.value })} className="h-10 text-sm font-medium" placeholder="e.g. PF ECR Filing - April 2026" />
-                            </FormField>
-                            <FormField label="Description">
-                                <Textarea value={eventForm.description ?? ""} onChange={(e) => setEventForm({ ...eventForm, description: e.target.value })} className="min-h-[60px] text-xs font-medium" />
-                            </FormField>
-                            <div className="grid grid-cols-2 gap-3">
-                                <FormField label="Due date" required>
-                                    <Input type="date" value={eventForm.dueDate} onChange={(e) => setEventForm({ ...eventForm, dueDate: e.target.value })} className="h-10 text-sm font-medium" />
-                                </FormField>
-                                <FormField label="Related month">
-                                    <Input value={eventForm.relatedMonth ?? ""} onChange={(e) => setEventForm({ ...eventForm, relatedMonth: e.target.value })} className="h-10 text-sm font-medium" placeholder="e.g. March 2026" />
-                                </FormField>
-                            </div>
+                {/* Event Sheet */}
+                <SideFormSheet
+                    open={eventDialogOpen}
+                    onOpenChange={setEventDialogOpen}
+                    title={editingEvent ? "Edit event" : "Add compliance event"}
+                    description="Track regulatory deadlines with type, date, and notes."
+                    icon={<CalendarDays size={20} />}
+                    accentColor={editingEvent ? "#7c3aed" : "#4f46e5"}
+                    width="lg"
+                    submitLabel={editingEvent ? "Save" : "Add event"}
+                    onSubmit={(e) => { e.preventDefault(); handleSaveEvent(); }}
+                >
+                    <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-3">
+                            <Field label="Type" required>
+                                <Select value={eventForm.type} onValueChange={(v) => setEventForm({ ...eventForm, type: v as any })}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="PF">PF</SelectItem>
+                                        <SelectItem value="ESI">ESI</SelectItem>
+                                        <SelectItem value="PT">PT</SelectItem>
+                                        <SelectItem value="TDS">TDS</SelectItem>
+                                        <SelectItem value="LWF">LWF</SelectItem>
+                                        <SelectItem value="Form16">Form 16</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </Field>
+                            <Field label="Status" required>
+                                <Select value={eventForm.status} onValueChange={(v) => setEventForm({ ...eventForm, status: v as any })}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="Upcoming">Upcoming</SelectItem>
+                                        <SelectItem value="Due Today">Due Today</SelectItem>
+                                        <SelectItem value="Overdue">Overdue</SelectItem>
+                                        <SelectItem value="Completed">Completed</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </Field>
                         </div>
-                        <DialogFooter className="mt-4 gap-2">
-                            <Button variant="ghost" onClick={() => setEventDialogOpen(false)} className="h-10 font-semibold text-xs">Cancel</Button>
-                            <Button onClick={handleSaveEvent} className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-lg h-10 px-5 font-bold text-xs border-none">
-                                {editingEvent ? "Save" : "Add event"}
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                        <Field label="Title" required>
+                            <Input value={eventForm.title} onChange={(e) => setEventForm({ ...eventForm, title: e.target.value })} placeholder="e.g. PF ECR Filing - April 2026" />
+                        </Field>
+                        <Field label="Description">
+                            <Textarea value={eventForm.description ?? ""} onChange={(e) => setEventForm({ ...eventForm, description: e.target.value })} />
+                        </Field>
+                        <div className="grid grid-cols-2 gap-3">
+                            <Field label="Due date" required>
+                                <Input type="date" value={eventForm.dueDate} onChange={(e) => setEventForm({ ...eventForm, dueDate: e.target.value })} />
+                            </Field>
+                            <Field label="Related month">
+                                <Input value={eventForm.relatedMonth ?? ""} onChange={(e) => setEventForm({ ...eventForm, relatedMonth: e.target.value })} placeholder="e.g. March 2026" />
+                            </Field>
+                        </div>
+                    </div>
+                </SideFormSheet>
 
-                {/* New monthly filing dialog */}
-                <Dialog open={filingDialogOpen} onOpenChange={setFilingDialogOpen}>
-                    <DialogContent className="max-w-md bg-white rounded-2xl p-6 font-sans">
-                        <DialogHeader className="space-y-1">
-                            <div className="h-10 w-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 mb-2">
-                                <FileText size={20} />
-                            </div>
-                            <DialogTitle className="text-lg font-bold text-slate-900">Add month to tracker</DialogTitle>
-                            <DialogDescription className="text-xs font-medium text-slate-500">
-                                Start tracking PF/ESI/PT/TDS filing status for a new month.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="mt-4 space-y-3">
-                            <FormField label="Month label" required>
-                                <Input value={filingForm.month} onChange={(e) => setFilingForm({ ...filingForm, month: e.target.value })} className="h-10 text-sm font-medium" placeholder="e.g. April 2026" />
-                            </FormField>
-                            <p className="text-[11px] font-medium text-slate-500">
-                                All statuses start as "Pending". Click any cell in the tracker to cycle through Pending → Filed → Paid.
-                            </p>
-                        </div>
-                        <DialogFooter className="mt-4 gap-2">
-                            <Button variant="ghost" onClick={() => setFilingDialogOpen(false)} className="h-10 font-semibold text-xs">Cancel</Button>
-                            <Button onClick={handleSaveFiling} className="bg-blue-500 hover:bg-blue-600 text-white rounded-lg h-10 px-5 font-bold text-xs border-none">
-                                Add to tracker
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                {/* New monthly filing sheet */}
+                <SideFormSheet
+                    open={filingDialogOpen}
+                    onOpenChange={setFilingDialogOpen}
+                    title="Add month to tracker"
+                    description="Start tracking PF/ESI/PT/TDS filing status for a new month."
+                    icon={<FileText size={20} />}
+                    accentColor="#4f46e5"
+                    width="md"
+                    submitLabel="Add to tracker"
+                    onSubmit={(e) => { e.preventDefault(); handleSaveFiling(); }}
+                >
+                    <div className="space-y-4">
+                        <Field label="Month label" required>
+                            <Input value={filingForm.month} onChange={(e) => setFilingForm({ ...filingForm, month: e.target.value })} placeholder="e.g. April 2026" />
+                        </Field>
+                        <p className="text-[11px] font-medium text-slate-500">
+                            All statuses start as &quot;Pending&quot;. Click any cell in the tracker to cycle through Pending → Filed → Paid.
+                        </p>
+                    </div>
+                </SideFormSheet>
 
                 {/* Compliance Health Detail Dialog */}
                 <Dialog open={healthDialogOpen} onOpenChange={setHealthDialogOpen}>
@@ -1404,189 +1389,164 @@ const StatutoryDashboard = () => {
                     </DialogContent>
                 </Dialog>
 
-                {/* Generate Challan Dialog */}
-                <Dialog open={genChallanOpen} onOpenChange={setGenChallanOpen}>
-                    <DialogContent className="max-w-md bg-white rounded-2xl p-6 font-sans">
-                        <DialogHeader className="space-y-1">
-                            <div className="h-10 w-10 bg-[#8B5CF6]/10 rounded-xl flex items-center justify-center text-[#8B5CF6] mb-2">
-                                <Wand2 size={20} />
-                            </div>
-                            <DialogTitle className="text-lg font-bold text-slate-900">Generate challan</DialogTitle>
-                            <DialogDescription className="text-xs font-medium text-slate-500">
-                                Build a new challan from matching records for the chosen period.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="mt-4 space-y-3">
-                            <div className="grid grid-cols-2 gap-3">
-                                <FormField label="Type" required>
-                                    <Select value={genChallanType} onValueChange={(v) => setGenChallanType(v as ChallanType)}>
-                                        <SelectTrigger className="h-10 text-sm"><SelectValue /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="PF">PF</SelectItem>
-                                            <SelectItem value="ESI">ESI</SelectItem>
-                                            <SelectItem value="PT">PT</SelectItem>
-                                            <SelectItem value="TDS">TDS</SelectItem>
-                                            <SelectItem value="LWF">LWF</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </FormField>
-                                <FormField label="Period" required>
-                                    <Input value={genChallanPeriod} onChange={(e) => setGenChallanPeriod(e.target.value)} className="h-10 text-sm font-medium" placeholder="e.g. Mar 2026" />
-                                </FormField>
-                            </div>
-                            {/* Preview */}
-                            <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
-                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Preview</p>
-                                {(() => {
-                                    let estAmount = 0
-                                    let estEmployees = 0
-                                    if (genChallanType === "PF") {
-                                        const recs = pfRecords.filter((r) => r.month === genChallanPeriod)
-                                        estAmount = recs.reduce((s, r) => s + r.employeeContribution + r.employerContribution, 0)
-                                        estEmployees = recs.length
-                                    } else if (genChallanType === "ESI") {
-                                        const recs = esiRecords.filter((r) => r.month === genChallanPeriod)
-                                        estAmount = recs.reduce((s, r) => s + r.esiEmployee + r.esiEmployer, 0)
-                                        estEmployees = recs.length
-                                    } else if (genChallanType === "PT") {
-                                        const recs = ptRecords.filter((r) => r.month === genChallanPeriod)
-                                        estAmount = recs.reduce((s, r) => s + r.ptDeduction, 0)
-                                        estEmployees = recs.length
-                                    } else if (genChallanType === "LWF") {
-                                        const recs = lwfRecords.filter((r) => r.period === genChallanPeriod)
-                                        estAmount = recs.reduce((s, r) => s + r.employeeContribution + r.employerContribution, 0)
-                                        estEmployees = recs.length
-                                    }
-                                    return (
-                                        <div className="grid grid-cols-2 gap-3 mt-2">
-                                            <div>
-                                                <p className="text-[10px] font-semibold text-slate-400 uppercase">Amount</p>
-                                                <p className="text-base font-bold text-slate-900 tabular-nums">{estAmount > 0 ? formatINR(estAmount) : "—"}</p>
-                                            </div>
-                                            <div>
-                                                <p className="text-[10px] font-semibold text-slate-400 uppercase">Employees</p>
-                                                <p className="text-base font-bold text-slate-900 tabular-nums">{estEmployees || "—"}</p>
-                                            </div>
-                                            {estAmount === 0 && (
-                                                <p className="col-span-2 text-[11px] font-medium text-amber-600">
-                                                    No matching records — amount will be auto-estimated.
-                                                </p>
-                                            )}
-                                        </div>
-                                    )
-                                })()}
-                            </div>
+                {/* Generate Challan Sheet */}
+                <SideFormSheet
+                    open={genChallanOpen}
+                    onOpenChange={setGenChallanOpen}
+                    title="Generate challan"
+                    description="Build a new challan from matching records for the chosen period."
+                    icon={<Wand2 size={20} />}
+                    accentColor="#4f46e5"
+                    width="md"
+                    submitLabel="Generate"
+                    onSubmit={(e) => { e.preventDefault(); handleGenerateChallan(); }}
+                >
+                    <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-3">
+                            <Field label="Type" required>
+                                <Select value={genChallanType} onValueChange={(v) => setGenChallanType(v as ChallanType)}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="PF">PF</SelectItem>
+                                        <SelectItem value="ESI">ESI</SelectItem>
+                                        <SelectItem value="PT">PT</SelectItem>
+                                        <SelectItem value="TDS">TDS</SelectItem>
+                                        <SelectItem value="LWF">LWF</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </Field>
+                            <Field label="Period" required>
+                                <Input value={genChallanPeriod} onChange={(e) => setGenChallanPeriod(e.target.value)} placeholder="e.g. Mar 2026" />
+                            </Field>
                         </div>
-                        <DialogFooter className="mt-4 gap-2">
-                            <Button variant="ghost" onClick={() => setGenChallanOpen(false)} className="h-10 font-semibold text-xs">Cancel</Button>
-                            <Button onClick={handleGenerateChallan} className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-lg h-10 px-5 font-bold text-xs border-none">
-                                Generate
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
-
-                {/* Mark Challan Paid Dialog */}
-                <Dialog open={!!paidChallanDialog} onOpenChange={(o) => { if (!o) { setPaidChallanDialog(null); setPaidBankRef("") } }}>
-                    <DialogContent className="max-w-md bg-white rounded-2xl p-6 font-sans">
-                        <DialogHeader className="space-y-1">
-                            <div className="h-10 w-10 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 mb-2">
-                                <Banknote size={20} />
-                            </div>
-                            <DialogTitle className="text-lg font-bold text-slate-900">Mark challan paid</DialogTitle>
-                            <DialogDescription className="text-xs font-medium text-slate-500">
-                                Record the bank transaction reference and today's date.
-                            </DialogDescription>
-                        </DialogHeader>
-                        {paidChallanDialog && (
-                            <div className="mt-4 space-y-3">
-                                <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
-                                    <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">{paidChallanDialog.type} · {paidChallanDialog.period}</p>
-                                    <p className="text-sm font-bold text-slate-900 mt-1 font-mono">{paidChallanDialog.challanNumber}</p>
-                                    <p className="text-xl font-bold text-slate-900 tabular-nums mt-1">{formatINR(paidChallanDialog.amount)}</p>
-                                </div>
-                                <FormField label="Bank reference">
-                                    <Input value={paidBankRef} onChange={(e) => setPaidBankRef(e.target.value)} className="h-10 text-sm font-medium" placeholder="e.g. HDFC-TXN-5A6B7C" />
-                                </FormField>
-                                <FormField label="Paid date">
-                                    <Input disabled value={new Date().toISOString().split("T")[0]} className="h-10 text-sm font-medium bg-slate-50" />
-                                </FormField>
-                            </div>
-                        )}
-                        <DialogFooter className="mt-4 gap-2">
-                            <Button variant="ghost" onClick={() => { setPaidChallanDialog(null); setPaidBankRef("") }} className="h-10 font-semibold text-xs">Cancel</Button>
-                            <Button onClick={handleConfirmMarkPaid} className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg h-10 px-5 font-bold text-xs border-none">
-                                Confirm payment
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
-
-                {/* Reconcile Result Dialog */}
-                <Dialog open={!!reconResult} onOpenChange={(o) => { if (!o) setReconResult(null) }}>
-                    <DialogContent className="max-w-md bg-white rounded-2xl p-6 font-sans">
-                        <DialogHeader className="space-y-1">
-                            <div className={cn(
-                                "h-10 w-10 rounded-xl flex items-center justify-center mb-2",
-                                reconResult?.matched ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600"
-                            )}>
-                                <ScanLine size={20} />
-                            </div>
-                            <DialogTitle className="text-lg font-bold text-slate-900">Reconciliation result</DialogTitle>
-                            <DialogDescription className="text-xs font-medium text-slate-500">
-                                {reconResult?.matched ? "Bank amount matches expected amount." : "Variance detected — review below."}
-                            </DialogDescription>
-                        </DialogHeader>
-                        {reconResult && (
-                            <div className="mt-4 space-y-3">
-                                <div className={cn(
-                                    "p-3 rounded-xl border",
-                                    reconResult.matched ? "bg-emerald-50/50 border-emerald-100" : "bg-rose-50/50 border-rose-100"
-                                )}>
-                                    <div className="flex items-center justify-between">
-                                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Status</p>
-                                        <Badge className={cn(
-                                            "text-[10px] font-bold border-none",
-                                            reconResult.matched ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"
-                                        )}>
-                                            {reconResult.matched ? "MATCHED" : "VARIANCE"}
-                                        </Badge>
-                                    </div>
-                                    <p className="text-sm font-mono font-bold text-slate-900 mt-2">{reconResult.challan.challanNumber}</p>
-                                    <div className="grid grid-cols-2 gap-3 mt-3">
+                        {/* Preview */}
+                        <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Preview</p>
+                            {(() => {
+                                let estAmount = 0
+                                let estEmployees = 0
+                                if (genChallanType === "PF") {
+                                    const recs = pfRecords.filter((r) => r.month === genChallanPeriod)
+                                    estAmount = recs.reduce((s, r) => s + r.employeeContribution + r.employerContribution, 0)
+                                    estEmployees = recs.length
+                                } else if (genChallanType === "ESI") {
+                                    const recs = esiRecords.filter((r) => r.month === genChallanPeriod)
+                                    estAmount = recs.reduce((s, r) => s + r.esiEmployee + r.esiEmployer, 0)
+                                    estEmployees = recs.length
+                                } else if (genChallanType === "PT") {
+                                    const recs = ptRecords.filter((r) => r.month === genChallanPeriod)
+                                    estAmount = recs.reduce((s, r) => s + r.ptDeduction, 0)
+                                    estEmployees = recs.length
+                                } else if (genChallanType === "LWF") {
+                                    const recs = lwfRecords.filter((r) => r.period === genChallanPeriod)
+                                    estAmount = recs.reduce((s, r) => s + r.employeeContribution + r.employerContribution, 0)
+                                    estEmployees = recs.length
+                                }
+                                return (
+                                    <div className="grid grid-cols-2 gap-3 mt-2">
                                         <div>
                                             <p className="text-[10px] font-semibold text-slate-400 uppercase">Amount</p>
-                                            <p className="text-sm font-bold text-slate-900 tabular-nums">{formatINR(reconResult.challan.amount)}</p>
+                                            <p className="text-base font-bold text-slate-900 tabular-nums">{estAmount > 0 ? formatINR(estAmount) : "—"}</p>
                                         </div>
                                         <div>
-                                            <p className="text-[10px] font-semibold text-slate-400 uppercase">Variance</p>
-                                            <p className={cn(
-                                                "text-sm font-bold tabular-nums",
-                                                reconResult.matched ? "text-emerald-600" : "text-rose-600"
-                                            )}>
-                                                {reconResult.variance >= 0 ? "+" : ""}{formatINR(reconResult.variance)}
-                                            </p>
+                                            <p className="text-[10px] font-semibold text-slate-400 uppercase">Employees</p>
+                                            <p className="text-base font-bold text-slate-900 tabular-nums">{estEmployees || "—"}</p>
                                         </div>
+                                        {estAmount === 0 && (
+                                            <p className="col-span-2 text-[11px] font-medium text-amber-600">
+                                                No matching records — amount will be auto-estimated.
+                                            </p>
+                                        )}
+                                    </div>
+                                )
+                            })()}
+                        </div>
+                    </div>
+                </SideFormSheet>
+
+                {/* Mark Challan Paid Sheet */}
+                <SideFormSheet
+                    open={!!paidChallanDialog}
+                    onOpenChange={(o) => { if (!o) { setPaidChallanDialog(null); setPaidBankRef("") } }}
+                    title="Mark challan paid"
+                    description="Record the bank transaction reference and today's date."
+                    icon={<Banknote size={20} />}
+                    accentColor="#059669"
+                    width="md"
+                    submitLabel="Confirm payment"
+                    onSubmit={(e) => { e.preventDefault(); handleConfirmMarkPaid(); }}
+                >
+                    {paidChallanDialog && (
+                        <div className="space-y-4">
+                            <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                                <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">{paidChallanDialog.type} · {paidChallanDialog.period}</p>
+                                <p className="text-sm font-bold text-slate-900 mt-1 font-mono">{paidChallanDialog.challanNumber}</p>
+                                <p className="text-xl font-bold text-slate-900 tabular-nums mt-1">{formatINR(paidChallanDialog.amount)}</p>
+                            </div>
+                            <Field label="Bank reference">
+                                <Input value={paidBankRef} onChange={(e) => setPaidBankRef(e.target.value)} placeholder="e.g. HDFC-TXN-5A6B7C" />
+                            </Field>
+                            <Field label="Paid date">
+                                <Input disabled value={new Date().toISOString().split("T")[0]} />
+                            </Field>
+                        </div>
+                    )}
+                </SideFormSheet>
+
+                {/* Reconcile Result Sheet */}
+                <SideFormSheet
+                    open={!!reconResult}
+                    onOpenChange={(o) => { if (!o) setReconResult(null) }}
+                    title="Reconciliation result"
+                    description={reconResult?.matched ? "Bank amount matches expected amount." : "Variance detected — review below."}
+                    icon={<ScanLine size={20} />}
+                    accentColor={reconResult?.matched ? "#059669" : "#e11d48"}
+                    width="md"
+                    submitLabel="Save notes"
+                    onSubmit={(e) => { e.preventDefault(); handleSaveReconNotes(); }}
+                >
+                    {reconResult && (
+                        <div className="space-y-4">
+                            <div className={cn(
+                                "p-3 rounded-xl border",
+                                reconResult.matched ? "bg-emerald-50/50 border-emerald-100" : "bg-rose-50/50 border-rose-100"
+                            )}>
+                                <div className="flex items-center justify-between">
+                                    <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Status</p>
+                                    <Badge className={cn(
+                                        "text-[10px] font-bold border-none",
+                                        reconResult.matched ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"
+                                    )}>
+                                        {reconResult.matched ? "MATCHED" : "VARIANCE"}
+                                    </Badge>
+                                </div>
+                                <p className="text-sm font-mono font-bold text-slate-900 mt-2">{reconResult.challan.challanNumber}</p>
+                                <div className="grid grid-cols-2 gap-3 mt-3">
+                                    <div>
+                                        <p className="text-[10px] font-semibold text-slate-400 uppercase">Amount</p>
+                                        <p className="text-sm font-bold text-slate-900 tabular-nums">{formatINR(reconResult.challan.amount)}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-semibold text-slate-400 uppercase">Variance</p>
+                                        <p className={cn(
+                                            "text-sm font-bold tabular-nums",
+                                            reconResult.matched ? "text-emerald-600" : "text-rose-600"
+                                        )}>
+                                            {reconResult.variance >= 0 ? "+" : ""}{formatINR(reconResult.variance)}
+                                        </p>
                                     </div>
                                 </div>
-                                <FormField label="Reconciliation notes">
-                                    <Textarea
-                                        value={reconResult.notes}
-                                        onChange={(e) => setReconResult({ ...reconResult, notes: e.target.value })}
-                                        className="min-h-[70px] text-xs font-medium"
-                                        placeholder="Optional notes explaining the variance or approvals."
-                                    />
-                                </FormField>
                             </div>
-                        )}
-                        <DialogFooter className="mt-4 gap-2">
-                            <Button variant="ghost" onClick={() => setReconResult(null)} className="h-10 font-semibold text-xs">Cancel</Button>
-                            <Button onClick={handleSaveReconNotes} className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-lg h-10 px-5 font-bold text-xs border-none">
-                                Save notes
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                            <Field label="Reconciliation notes">
+                                <Textarea
+                                    value={reconResult.notes}
+                                    onChange={(e) => setReconResult({ ...reconResult, notes: e.target.value })}
+                                    placeholder="Optional notes explaining the variance or approvals."
+                                />
+                            </Field>
+                        </div>
+                    )}
+                </SideFormSheet>
 
                 {/* Bulk Reconcile Summary Dialog */}
                 <Dialog open={!!bulkReconSummary} onOpenChange={(o) => { if (!o) setBulkReconSummary(null) }}>

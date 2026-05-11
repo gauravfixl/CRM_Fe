@@ -51,6 +51,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Label } from "@/shared/components/ui/label";
 import { Input } from "@/shared/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import { Plus } from "lucide-react";
 import { Switch } from "@/shared/components/ui/switch";
 import { required, minLength, maxLength, runValidators } from "@/shared/utils/engage-validation";
@@ -440,94 +441,85 @@ const EmployeeFeedbackEngagePage = () => {
                 </SheetContent>
             </Sheet>
 
-            {/* Submit Idea Dialog */}
-            <Dialog open={isSubmitOpen} onOpenChange={(v) => { if (!v) setSubmitForm(defaultSubmitForm); setIsSubmitOpen(v); }}>
-                <DialogContent className="max-w-lg">
-                    <DialogHeader>
-                        <DialogTitle>Submit Your Idea</DialogTitle>
-                        <DialogDescription>Share your thoughts, suggestions, or concerns. Your voice matters.</DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-2">
-                        <div className="space-y-2">
-                            <Label>Subject</Label>
-                            <Input
-                                placeholder="e.g. Office snack suggestions"
-                                value={submitForm.subject}
-                                maxLength={120}
-                                onChange={e => setSubmitForm({ ...submitForm, subject: e.target.value })}
-                            />
-                            <p className="text-[10px] text-slate-400">{submitForm.subject.length}/120 • min 3</p>
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-2">
-                                <Label>Category</Label>
-                                <Select value={submitForm.category} onValueChange={v => setSubmitForm({ ...submitForm, category: v as Feedback["category"] })}>
-                                    <SelectTrigger><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="General">General</SelectItem>
-                                        <SelectItem value="Work Environment">Work Environment</SelectItem>
-                                        <SelectItem value="Management">Management</SelectItem>
-                                        <SelectItem value="Policies">Policies</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Department</Label>
-                                <Select value={submitForm.department} onValueChange={v => setSubmitForm({ ...submitForm, department: v })}>
-                                    <SelectTrigger><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="Engineering">Engineering</SelectItem>
-                                        <SelectItem value="Sales">Sales</SelectItem>
-                                        <SelectItem value="HR">HR</SelectItem>
-                                        <SelectItem value="Finance">Finance</SelectItem>
-                                        <SelectItem value="Marketing">Marketing</SelectItem>
-                                        <SelectItem value="Operations">Operations</SelectItem>
-                                        <SelectItem value="Product">Product</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Priority</Label>
-                            <Select value={submitForm.priority} onValueChange={v => setSubmitForm({ ...submitForm, priority: v as Feedback["priority"] })}>
+            {/* Submit Idea - SideFormSheet */}
+            <SideFormSheet
+                open={isSubmitOpen}
+                onOpenChange={(v) => { setIsSubmitOpen(v); if (!v) setSubmitForm(defaultSubmitForm); }}
+                title="Submit Your Idea"
+                description="Share your thoughts, suggestions, or concerns. Your voice matters."
+                icon={<Lightbulb size={20} />}
+                accentColor="#e11d48"
+                width="md"
+                submitLabel="Submit Idea"
+                onSubmit={(e) => { e.preventDefault(); handleSubmitIdea(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Subject" required hint={`${submitForm.subject.length}/120 • min 3`}>
+                        <Input
+                            placeholder="e.g. Office snack suggestions"
+                            value={submitForm.subject}
+                            maxLength={120}
+                            onChange={e => setSubmitForm({ ...submitForm, subject: e.target.value })}
+                        />
+                    </Field>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Category">
+                            <Select value={submitForm.category} onValueChange={v => setSubmitForm({ ...submitForm, category: v as Feedback["category"] })}>
                                 <SelectTrigger><SelectValue /></SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="Low">Low</SelectItem>
-                                    <SelectItem value="Medium">Medium</SelectItem>
-                                    <SelectItem value="High">High</SelectItem>
+                                    <SelectItem value="General">General</SelectItem>
+                                    <SelectItem value="Work Environment">Work Environment</SelectItem>
+                                    <SelectItem value="Management">Management</SelectItem>
+                                    <SelectItem value="Policies">Policies</SelectItem>
                                 </SelectContent>
                             </Select>
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Your Message</Label>
-                            <Textarea
-                                placeholder="Share your idea in detail..."
-                                rows={5}
-                                value={submitForm.content}
-                                maxLength={2000}
-                                onChange={e => setSubmitForm({ ...submitForm, content: e.target.value })}
-                            />
-                            <p className="text-[10px] text-slate-400">{submitForm.content.length}/2000 • min 10</p>
-                        </div>
-                        <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200">
-                            <div>
-                                <p className="text-sm font-bold text-slate-900">Submit Anonymously</p>
-                                <p className="text-xs text-slate-500">Your identity will be hidden</p>
-                            </div>
-                            <Switch
-                                checked={submitForm.isAnonymous}
-                                onCheckedChange={v => setSubmitForm({ ...submitForm, isAnonymous: v })}
-                            />
-                        </div>
+                        </Field>
+                        <Field label="Department">
+                            <Select value={submitForm.department} onValueChange={v => setSubmitForm({ ...submitForm, department: v })}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Engineering">Engineering</SelectItem>
+                                    <SelectItem value="Sales">Sales</SelectItem>
+                                    <SelectItem value="HR">HR</SelectItem>
+                                    <SelectItem value="Finance">Finance</SelectItem>
+                                    <SelectItem value="Marketing">Marketing</SelectItem>
+                                    <SelectItem value="Operations">Operations</SelectItem>
+                                    <SelectItem value="Product">Product</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
                     </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsSubmitOpen(false)}>Cancel</Button>
-                        <Button className="bg-rose-500 hover:bg-rose-600 text-white font-bold" onClick={handleSubmitIdea}>
-                            <Send size={14} className="mr-1" /> Submit Idea
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    <Field label="Priority">
+                        <Select value={submitForm.priority} onValueChange={v => setSubmitForm({ ...submitForm, priority: v as Feedback["priority"] })}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Low">Low</SelectItem>
+                                <SelectItem value="Medium">Medium</SelectItem>
+                                <SelectItem value="High">High</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                    <Field label="Your Message" required hint={`${submitForm.content.length}/2000 • min 10`}>
+                        <Textarea
+                            placeholder="Share your idea in detail..."
+                            rows={5}
+                            value={submitForm.content}
+                            maxLength={2000}
+                            onChange={e => setSubmitForm({ ...submitForm, content: e.target.value })}
+                        />
+                    </Field>
+                    <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200">
+                        <div>
+                            <p className="text-sm font-semibold text-slate-900">Submit Anonymously</p>
+                            <p className="text-[11px] text-slate-500">Your identity will be hidden</p>
+                        </div>
+                        <Switch
+                            checked={submitForm.isAnonymous}
+                            onCheckedChange={v => setSubmitForm({ ...submitForm, isAnonymous: v })}
+                        />
+                    </div>
+                </div>
+            </SideFormSheet>
         </div>
     );
 };

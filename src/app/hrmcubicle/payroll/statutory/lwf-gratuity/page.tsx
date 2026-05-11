@@ -45,6 +45,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/shared/components/ui/dialog"
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet"
 import {
     Select,
     SelectContent,
@@ -975,104 +976,95 @@ const LWFGratuityPage = () => {
                 </div>
             </div>
 
-            {/* LWF Add/Edit Dialog */}
-            <Dialog open={isLwfAddOpen} onOpenChange={(o) => { setIsLwfAddOpen(o); if (!o) setEditLwf(null) }}>
-                <DialogContent className="sm:max-w-[420px] rounded-2xl">
-                    <DialogHeader>
-                        <DialogTitle className="text-lg font-bold text-slate-900">{editLwf ? "Edit LWF Record" : "Add LWF Record"}</DialogTitle>
-                        <DialogDescription className="text-xs text-slate-500">Contributions are based on state rates.</DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-2">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-1.5">
-                                <Label className="text-xs font-bold text-slate-500">Employee ID</Label>
-                                <Input className="h-9 text-xs rounded-lg" value={lwfForm.employeeId} onChange={(e) => setLwfForm({ ...lwfForm, employeeId: e.target.value })} disabled={!!editLwf} />
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-xs font-bold text-slate-500">Employee Name</Label>
-                                <Input className="h-9 text-xs rounded-lg" value={lwfForm.employeeName} onChange={(e) => setLwfForm({ ...lwfForm, employeeName: e.target.value })} />
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-1.5">
-                                <Label className="text-xs font-bold text-slate-500">State</Label>
-                                <Select value={lwfForm.state} onValueChange={(v) => setLwfForm({ ...lwfForm, state: v })}>
-                                    <SelectTrigger className="h-9 text-xs rounded-lg"><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        {Object.keys(lwfRates).map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-xs font-bold text-slate-500">Period</Label>
-                                <Input className="h-9 text-xs rounded-lg" value={lwfForm.period} onChange={(e) => setLwfForm({ ...lwfForm, period: e.target.value })} />
-                            </div>
-                        </div>
-                        <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Contribution Preview</p>
-                            <div className="grid grid-cols-2 gap-2 text-xs">
-                                <div><span className="text-slate-500">Employee:</span> <span className="font-bold text-slate-700">₹{lwfRates[lwfForm.state]?.employee || 0}</span></div>
-                                <div><span className="text-slate-500">Employer:</span> <span className="font-bold text-slate-700">₹{lwfRates[lwfForm.state]?.employer || 0}</span></div>
-                            </div>
+            {/* LWF Add/Edit Sheet */}
+            <SideFormSheet
+                open={isLwfAddOpen}
+                onOpenChange={(o) => { setIsLwfAddOpen(o); if (!o) setEditLwf(null) }}
+                title={editLwf ? "Edit LWF Record" : "Add LWF Record"}
+                description="Contributions are based on state rates."
+                icon={<Gift size={20} />}
+                accentColor={editLwf ? "#7c3aed" : "#4f46e5"}
+                width="md"
+                submitLabel={editLwf ? "Update" : "Add"}
+                onSubmit={(e) => { e.preventDefault(); handleLwfSave(); }}
+            >
+                <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Employee ID">
+                            <Input value={lwfForm.employeeId} onChange={(e) => setLwfForm({ ...lwfForm, employeeId: e.target.value })} disabled={!!editLwf} />
+                        </Field>
+                        <Field label="Employee Name">
+                            <Input value={lwfForm.employeeName} onChange={(e) => setLwfForm({ ...lwfForm, employeeName: e.target.value })} />
+                        </Field>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="State">
+                            <Select value={lwfForm.state} onValueChange={(v) => setLwfForm({ ...lwfForm, state: v })}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    {Object.keys(lwfRates).map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <Field label="Period">
+                            <Input value={lwfForm.period} onChange={(e) => setLwfForm({ ...lwfForm, period: e.target.value })} />
+                        </Field>
+                    </div>
+                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Contribution Preview</p>
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div><span className="text-slate-500">Employee:</span> <span className="font-bold text-slate-700">₹{lwfRates[lwfForm.state]?.employee || 0}</span></div>
+                            <div><span className="text-slate-500">Employer:</span> <span className="font-bold text-slate-700">₹{lwfRates[lwfForm.state]?.employer || 0}</span></div>
                         </div>
                     </div>
-                    <DialogFooter>
-                        <Button variant="outline" className="h-9 rounded-lg text-xs font-bold" onClick={() => { setIsLwfAddOpen(false); setEditLwf(null) }}>Cancel</Button>
-                        <Button className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white h-9 rounded-lg text-xs font-bold shadow-lg shadow-[#8B5CF6]/20" onClick={handleLwfSave}>{editLwf ? "Update" : "Add"}</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                </div>
+            </SideFormSheet>
 
-            {/* Gratuity Add/Edit Dialog */}
-            <Dialog open={isGratuityAddOpen} onOpenChange={(o) => { setIsGratuityAddOpen(o); if (!o) setEditGratuity(null) }}>
-                <DialogContent className="sm:max-w-[480px] rounded-2xl">
-                    <DialogHeader>
-                        <DialogTitle className="text-lg font-bold text-slate-900">{editGratuity ? "Edit Gratuity Record" : "Add Gratuity Record"}</DialogTitle>
-                        <DialogDescription className="text-xs text-slate-500">Gratuity auto-calculated: (15 x salary x years) / 26</DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-2">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-1.5">
-                                <Label className="text-xs font-bold text-slate-500">Employee ID</Label>
-                                <Input className="h-9 text-xs rounded-lg" value={gratuityForm.employeeId} onChange={(e) => setGratuityForm({ ...gratuityForm, employeeId: e.target.value })} disabled={!!editGratuity} />
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-xs font-bold text-slate-500">Employee Name</Label>
-                                <Input className="h-9 text-xs rounded-lg" value={gratuityForm.employeeName} onChange={(e) => setGratuityForm({ ...gratuityForm, employeeName: e.target.value })} />
-                            </div>
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label className="text-xs font-bold text-slate-500">Date of Joining</Label>
-                            <Input className="h-9 text-xs rounded-lg" type="date" value={gratuityForm.dateOfJoining} onChange={(e) => setGratuityForm({ ...gratuityForm, dateOfJoining: e.target.value })} />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-1.5">
-                                <Label className="text-xs font-bold text-slate-500">Years of Service</Label>
-                                <Input className="h-9 text-xs rounded-lg" type="number" value={gratuityForm.yearsOfService} onChange={(e) => setGratuityForm({ ...gratuityForm, yearsOfService: e.target.value })} />
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-xs font-bold text-slate-500">Last Drawn Salary (₹)</Label>
-                                <Input className="h-9 text-xs rounded-lg" type="number" value={gratuityForm.lastDrawnSalary} onChange={(e) => setGratuityForm({ ...gratuityForm, lastDrawnSalary: e.target.value })} />
-                            </div>
-                        </div>
-                        {gratuityForm.yearsOfService && gratuityForm.lastDrawnSalary && (
-                            <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Calculated Gratuity</p>
-                                <p className="text-lg font-bold text-[#8B5CF6]">
-                                    ₹{calculateGratuity(parseFloat(gratuityForm.lastDrawnSalary), parseFloat(gratuityForm.yearsOfService)).toLocaleString("en-IN")}
-                                </p>
-                                {parseFloat(gratuityForm.yearsOfService) < 5 && (
-                                    <p className="text-[10px] text-red-500 font-medium mt-1">Not eligible (less than 5 years of service)</p>
-                                )}
-                            </div>
-                        )}
+            {/* Gratuity Add/Edit Sheet */}
+            <SideFormSheet
+                open={isGratuityAddOpen}
+                onOpenChange={(o) => { setIsGratuityAddOpen(o); if (!o) setEditGratuity(null) }}
+                title={editGratuity ? "Edit Gratuity Record" : "Add Gratuity Record"}
+                description="Gratuity auto-calculated: (15 x salary x years) / 26"
+                icon={<PiggyBank size={20} />}
+                accentColor={editGratuity ? "#7c3aed" : "#4f46e5"}
+                width="md"
+                submitLabel={editGratuity ? "Update" : "Add"}
+                onSubmit={(e) => { e.preventDefault(); handleGratuitySave(); }}
+            >
+                <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Employee ID">
+                            <Input value={gratuityForm.employeeId} onChange={(e) => setGratuityForm({ ...gratuityForm, employeeId: e.target.value })} disabled={!!editGratuity} />
+                        </Field>
+                        <Field label="Employee Name">
+                            <Input value={gratuityForm.employeeName} onChange={(e) => setGratuityForm({ ...gratuityForm, employeeName: e.target.value })} />
+                        </Field>
                     </div>
-                    <DialogFooter>
-                        <Button variant="outline" className="h-9 rounded-lg text-xs font-bold" onClick={() => { setIsGratuityAddOpen(false); setEditGratuity(null) }}>Cancel</Button>
-                        <Button className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white h-9 rounded-lg text-xs font-bold shadow-lg shadow-[#8B5CF6]/20" onClick={handleGratuitySave}>{editGratuity ? "Update" : "Add"}</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    <Field label="Date of Joining">
+                        <Input type="date" value={gratuityForm.dateOfJoining} onChange={(e) => setGratuityForm({ ...gratuityForm, dateOfJoining: e.target.value })} />
+                    </Field>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Years of Service">
+                            <Input type="number" value={gratuityForm.yearsOfService} onChange={(e) => setGratuityForm({ ...gratuityForm, yearsOfService: e.target.value })} />
+                        </Field>
+                        <Field label="Last Drawn Salary (₹)">
+                            <Input type="number" value={gratuityForm.lastDrawnSalary} onChange={(e) => setGratuityForm({ ...gratuityForm, lastDrawnSalary: e.target.value })} />
+                        </Field>
+                    </div>
+                    {gratuityForm.yearsOfService && gratuityForm.lastDrawnSalary && (
+                        <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Calculated Gratuity</p>
+                            <p className="text-lg font-bold text-[#8B5CF6]">
+                                ₹{calculateGratuity(parseFloat(gratuityForm.lastDrawnSalary), parseFloat(gratuityForm.yearsOfService)).toLocaleString("en-IN")}
+                            </p>
+                            {parseFloat(gratuityForm.yearsOfService) < 5 && (
+                                <p className="text-[10px] text-red-500 font-medium mt-1">Not eligible (less than 5 years of service)</p>
+                            )}
+                        </div>
+                    )}
+                </div>
+            </SideFormSheet>
 
             {/* Gratuity Calculator Dialog */}
             <Dialog open={isCalcOpen} onOpenChange={setIsCalcOpen}>
@@ -1106,86 +1098,75 @@ const LWFGratuityPage = () => {
                 </DialogContent>
             </Dialog>
 
-            {/* Record / Edit Gratuity Provision Dialog */}
-            <Dialog open={isProvisionOpen} onOpenChange={(o) => { setIsProvisionOpen(o); if (!o) setEditProvision(null) }}>
-                <DialogContent className="sm:max-w-[640px] rounded-2xl">
-                    <DialogHeader>
-                        <DialogTitle className="text-lg font-bold text-slate-900">{editProvision ? "Edit gratuity provision" : "Record gratuity provision"}</DialogTitle>
-                        <DialogDescription className="text-xs text-slate-500">Monthly actuarial provision (pre-filled from computation)</DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-2 max-h-[60vh] overflow-y-auto pr-2">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Month</Label>
-                                <Input className="h-9 text-xs rounded-lg" value={provisionForm.month} onChange={(e) => setProvisionForm({ ...provisionForm, month: e.target.value })} />
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Recorded by</Label>
-                                <Input className="h-9 text-xs rounded-lg" value={provisionForm.recordedBy} onChange={(e) => setProvisionForm({ ...provisionForm, recordedBy: e.target.value })} />
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Total liability (₹)</Label>
-                                <Input type="number" className="h-9 text-xs rounded-lg tabular-nums" value={provisionForm.totalLiability} onChange={(e) => setProvisionForm({ ...provisionForm, totalLiability: e.target.value })} />
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Current service cost (₹)</Label>
-                                <Input type="number" className="h-9 text-xs rounded-lg tabular-nums" value={provisionForm.currentServiceCost} onChange={(e) => setProvisionForm({ ...provisionForm, currentServiceCost: e.target.value })} />
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Interest cost (₹)</Label>
-                                <Input type="number" className="h-9 text-xs rounded-lg tabular-nums" value={provisionForm.interestCost} onChange={(e) => setProvisionForm({ ...provisionForm, interestCost: e.target.value })} />
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Actuarial gain/loss (₹)</Label>
-                                <Input type="number" className="h-9 text-xs rounded-lg tabular-nums" value={provisionForm.actuarialGainLoss} onChange={(e) => setProvisionForm({ ...provisionForm, actuarialGainLoss: e.target.value })} />
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Funded amount (₹)</Label>
-                                <Input type="number" className="h-9 text-xs rounded-lg tabular-nums" value={provisionForm.fundedAmount} onChange={(e) => setProvisionForm({ ...provisionForm, fundedAmount: e.target.value })} />
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Eligible employees</Label>
-                                <Input type="number" className="h-9 text-xs rounded-lg tabular-nums" value={provisionForm.eligibleEmployeeCount} onChange={(e) => setProvisionForm({ ...provisionForm, eligibleEmployeeCount: e.target.value })} />
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-3 gap-4">
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Discount rate %</Label>
-                                <Input type="number" step={0.1} className="h-9 text-xs rounded-lg tabular-nums" value={provisionForm.discountRate} onChange={(e) => setProvisionForm({ ...provisionForm, discountRate: e.target.value })} />
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Salary growth %</Label>
-                                <Input type="number" step={0.1} className="h-9 text-xs rounded-lg tabular-nums" value={provisionForm.salaryGrowthRate} onChange={(e) => setProvisionForm({ ...provisionForm, salaryGrowthRate: e.target.value })} />
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Attrition %</Label>
-                                <Input type="number" step={0.1} className="h-9 text-xs rounded-lg tabular-nums" value={provisionForm.attritionRate} onChange={(e) => setProvisionForm({ ...provisionForm, attritionRate: e.target.value })} />
-                            </div>
-                        </div>
-                        {(() => {
-                            const tl = parseFloat(provisionForm.totalLiability) || 0
-                            const fd = parseFloat(provisionForm.fundedAmount) || 0
-                            const un = Math.max(tl - fd, 0)
-                            return (
-                                <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between">
-                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Computed unfunded liability</p>
-                                    <p className={cn("text-sm font-bold tabular-nums", un > 0 ? "text-rose-500" : "text-emerald-500")}>{formatINR(un)}</p>
-                                </div>
-                            )
-                        })()}
+            {/* Record / Edit Gratuity Provision Sheet */}
+            <SideFormSheet
+                open={isProvisionOpen}
+                onOpenChange={(o) => { setIsProvisionOpen(o); if (!o) setEditProvision(null) }}
+                title={editProvision ? "Edit gratuity provision" : "Record gratuity provision"}
+                description="Monthly actuarial provision (pre-filled from computation)"
+                icon={<LineChart size={20} />}
+                accentColor={editProvision ? "#7c3aed" : "#4f46e5"}
+                width="xl"
+                submitLabel={editProvision ? "Update" : "Record"}
+                onSubmit={(e) => { e.preventDefault(); handleProvisionSave(); }}
+            >
+                <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Month">
+                            <Input value={provisionForm.month} onChange={(e) => setProvisionForm({ ...provisionForm, month: e.target.value })} />
+                        </Field>
+                        <Field label="Recorded by">
+                            <Input value={provisionForm.recordedBy} onChange={(e) => setProvisionForm({ ...provisionForm, recordedBy: e.target.value })} />
+                        </Field>
                     </div>
-                    <DialogFooter>
-                        <Button variant="outline" className="h-9 rounded-lg text-xs font-bold" onClick={() => { setIsProvisionOpen(false); setEditProvision(null) }}>Cancel</Button>
-                        <Button className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white h-9 rounded-lg text-xs font-bold shadow-lg shadow-[#8B5CF6]/20" onClick={handleProvisionSave}>{editProvision ? "Update" : "Record"}</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Total liability (₹)">
+                            <Input type="number" className="tabular-nums" value={provisionForm.totalLiability} onChange={(e) => setProvisionForm({ ...provisionForm, totalLiability: e.target.value })} />
+                        </Field>
+                        <Field label="Current service cost (₹)">
+                            <Input type="number" className="tabular-nums" value={provisionForm.currentServiceCost} onChange={(e) => setProvisionForm({ ...provisionForm, currentServiceCost: e.target.value })} />
+                        </Field>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Interest cost (₹)">
+                            <Input type="number" className="tabular-nums" value={provisionForm.interestCost} onChange={(e) => setProvisionForm({ ...provisionForm, interestCost: e.target.value })} />
+                        </Field>
+                        <Field label="Actuarial gain/loss (₹)">
+                            <Input type="number" className="tabular-nums" value={provisionForm.actuarialGainLoss} onChange={(e) => setProvisionForm({ ...provisionForm, actuarialGainLoss: e.target.value })} />
+                        </Field>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Funded amount (₹)">
+                            <Input type="number" className="tabular-nums" value={provisionForm.fundedAmount} onChange={(e) => setProvisionForm({ ...provisionForm, fundedAmount: e.target.value })} />
+                        </Field>
+                        <Field label="Eligible employees">
+                            <Input type="number" className="tabular-nums" value={provisionForm.eligibleEmployeeCount} onChange={(e) => setProvisionForm({ ...provisionForm, eligibleEmployeeCount: e.target.value })} />
+                        </Field>
+                    </div>
+                    <div className="grid grid-cols-3 gap-3">
+                        <Field label="Discount rate %">
+                            <Input type="number" step={0.1} className="tabular-nums" value={provisionForm.discountRate} onChange={(e) => setProvisionForm({ ...provisionForm, discountRate: e.target.value })} />
+                        </Field>
+                        <Field label="Salary growth %">
+                            <Input type="number" step={0.1} className="tabular-nums" value={provisionForm.salaryGrowthRate} onChange={(e) => setProvisionForm({ ...provisionForm, salaryGrowthRate: e.target.value })} />
+                        </Field>
+                        <Field label="Attrition %">
+                            <Input type="number" step={0.1} className="tabular-nums" value={provisionForm.attritionRate} onChange={(e) => setProvisionForm({ ...provisionForm, attritionRate: e.target.value })} />
+                        </Field>
+                    </div>
+                    {(() => {
+                        const tl = parseFloat(provisionForm.totalLiability) || 0
+                        const fd = parseFloat(provisionForm.fundedAmount) || 0
+                        const un = Math.max(tl - fd, 0)
+                        return (
+                            <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between">
+                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Computed unfunded liability</p>
+                                <p className={cn("text-sm font-bold tabular-nums", un > 0 ? "text-rose-500" : "text-emerald-500")}>{formatINR(un)}</p>
+                            </div>
+                        )
+                    })()}
+                </div>
+            </SideFormSheet>
 
             {/* Delete Provision Confirm */}
             <Dialog open={!!deleteProvisionId} onOpenChange={(o) => { if (!o) setDeleteProvisionId(null) }}>
@@ -1201,59 +1182,54 @@ const LWFGratuityPage = () => {
                 </DialogContent>
             </Dialog>
 
-            {/* Edit State LWF Config Dialog */}
-            <Dialog open={isStateCfgOpen} onOpenChange={(o) => { setIsStateCfgOpen(o); if (!o) setEditStateCfg(null) }}>
-                <DialogContent className="sm:max-w-[500px] rounded-2xl">
-                    <DialogHeader>
-                        <DialogTitle className="text-lg font-bold text-slate-900">{editStateCfg?.state} LWF configuration</DialogTitle>
-                        <DialogDescription className="text-xs text-slate-500">Update contribution rates, frequency and filing schedule</DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-2">
-                        <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-100">
-                            <div>
-                                <p className="text-xs font-bold text-slate-700">Applicable in state</p>
-                                <p className="text-[10px] text-slate-500">Disable to exclude this state from filing</p>
-                            </div>
-                            <Switch checked={stateCfgForm.applicable} onCheckedChange={(v) => setStateCfgForm({ ...stateCfgForm, applicable: v })} />
+            {/* Edit State LWF Config Sheet */}
+            <SideFormSheet
+                open={isStateCfgOpen}
+                onOpenChange={(o) => { setIsStateCfgOpen(o); if (!o) setEditStateCfg(null) }}
+                title={editStateCfg?.state ? `${editStateCfg.state} LWF configuration` : "LWF configuration"}
+                description="Update contribution rates, frequency and filing schedule"
+                icon={<MapPin size={20} />}
+                accentColor="#7c3aed"
+                width="md"
+                submitLabel="Update"
+                onSubmit={(e) => { e.preventDefault(); handleStateCfgSave(); }}
+            >
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-100">
+                        <div>
+                            <p className="text-xs font-bold text-slate-700">Applicable in state</p>
+                            <p className="text-[10px] text-slate-500">Disable to exclude this state from filing</p>
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Employee contribution</Label>
-                                <Input type="number" step={0.01} className="h-9 text-xs rounded-lg tabular-nums" value={stateCfgForm.employeeContribution} onChange={(e) => setStateCfgForm({ ...stateCfgForm, employeeContribution: e.target.value })} />
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Employer contribution</Label>
-                                <Input type="number" step={0.01} className="h-9 text-xs rounded-lg tabular-nums" value={stateCfgForm.employerContribution} onChange={(e) => setStateCfgForm({ ...stateCfgForm, employerContribution: e.target.value })} />
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Frequency</Label>
-                                <Select value={stateCfgForm.frequency} onValueChange={(v) => setStateCfgForm({ ...stateCfgForm, frequency: v as StateLwfConfig['frequency'] })}>
-                                    <SelectTrigger className="h-9 text-xs rounded-lg"><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="Monthly">Monthly</SelectItem>
-                                        <SelectItem value="Half-Yearly">Half-Yearly</SelectItem>
-                                        <SelectItem value="Annually">Annually</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Due date</Label>
-                                <Input className="h-9 text-xs rounded-lg" value={stateCfgForm.dueDate} onChange={(e) => setStateCfgForm({ ...stateCfgForm, dueDate: e.target.value })} placeholder="e.g. 15-Jul, 15-Jan" />
-                            </div>
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Notes</Label>
-                            <Input className="h-9 text-xs rounded-lg" value={stateCfgForm.notes} onChange={(e) => setStateCfgForm({ ...stateCfgForm, notes: e.target.value })} placeholder="Optional notes" />
-                        </div>
+                        <Switch checked={stateCfgForm.applicable} onCheckedChange={(v) => setStateCfgForm({ ...stateCfgForm, applicable: v })} />
                     </div>
-                    <DialogFooter>
-                        <Button variant="outline" className="h-9 rounded-lg text-xs font-bold" onClick={() => { setIsStateCfgOpen(false); setEditStateCfg(null) }}>Cancel</Button>
-                        <Button className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white h-9 rounded-lg text-xs font-bold shadow-lg shadow-[#8B5CF6]/20" onClick={handleStateCfgSave}>Update</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Employee contribution">
+                            <Input type="number" step={0.01} className="tabular-nums" value={stateCfgForm.employeeContribution} onChange={(e) => setStateCfgForm({ ...stateCfgForm, employeeContribution: e.target.value })} />
+                        </Field>
+                        <Field label="Employer contribution">
+                            <Input type="number" step={0.01} className="tabular-nums" value={stateCfgForm.employerContribution} onChange={(e) => setStateCfgForm({ ...stateCfgForm, employerContribution: e.target.value })} />
+                        </Field>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Frequency">
+                            <Select value={stateCfgForm.frequency} onValueChange={(v) => setStateCfgForm({ ...stateCfgForm, frequency: v as StateLwfConfig['frequency'] })}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Monthly">Monthly</SelectItem>
+                                    <SelectItem value="Half-Yearly">Half-Yearly</SelectItem>
+                                    <SelectItem value="Annually">Annually</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <Field label="Due date">
+                            <Input value={stateCfgForm.dueDate} onChange={(e) => setStateCfgForm({ ...stateCfgForm, dueDate: e.target.value })} placeholder="e.g. 15-Jul, 15-Jan" />
+                        </Field>
+                    </div>
+                    <Field label="Notes">
+                        <Input value={stateCfgForm.notes} onChange={(e) => setStateCfgForm({ ...stateCfgForm, notes: e.target.value })} placeholder="Optional notes" />
+                    </Field>
+                </div>
+            </SideFormSheet>
         </div>
     )
 }

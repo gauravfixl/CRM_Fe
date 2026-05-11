@@ -35,6 +35,7 @@ import {
     DialogFooter,
     DialogDescription,
 } from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import { Label } from "@/shared/components/ui/label";
 import { Input } from "@/shared/components/ui/input";
 import { getHolidaysByYear, createHoliday, deleteHoliday } from "@/modules/hrm/hooks/hrmHooks";
@@ -458,89 +459,75 @@ const TeamCalendarPage = () => {
             </div>
 
             {/* Add/Edit Event Dialog */}
-            <Dialog open={isAddEventOpen} onOpenChange={(open) => { setIsAddEventOpen(open); if (!open) setEditingEvent(null); }}>
-                <DialogContent className="rounded-[2rem] border border-slate-100 shadow-2xl p-0 bg-white max-w-md overflow-hidden">
-                    <div className="h-2 w-full bg-indigo-600" />
-                    <div className="p-8 pt-6 text-start">
-                        <DialogHeader>
-                            <DialogTitle className="text-xl font-bold tracking-tight text-slate-900">{editingEvent ? "Edit Event" : "New Event"}</DialogTitle>
-                            <DialogDescription className="text-slate-500 text-xs mt-1">{editingEvent ? "Update event details below." : "Schedule a new team event."}</DialogDescription>
-                        </DialogHeader>
-                        <div className="space-y-4 py-4">
-                            <div className="space-y-1 text-start">
-                                <Label className="text-[10px] font-bold text-slate-400 tracking-widest ml-1">Event Title * (min 2 chars)</Label>
-                                <Input
-                                    placeholder="Meeting, Lunch, etc."
-                                    value={newEventTitle}
-                                    onChange={(e) => { setNewEventTitle(e.target.value); if (formErrors.title) setFormErrors({ ...formErrors, title: "" }); }}
-                                    className={`rounded-xl bg-slate-50 border h-11 font-bold text-sm ${formErrors.title ? 'border-rose-400' : 'border-slate-200'}`}
-                                />
-                                {formErrors.title && <p className="text-[11px] font-medium text-rose-500">{formErrors.title}</p>}
-                            </div>
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="space-y-1 text-start">
-                                    <Label className="text-[10px] font-bold text-slate-400 tracking-widest ml-1">Date *</Label>
-                                    <Input
-                                        type="date"
-                                        value={newEventDate}
-                                        onChange={(e) => { setNewEventDate(e.target.value); if (formErrors.date) setFormErrors({ ...formErrors, date: "" }); }}
-                                        className={`rounded-xl bg-slate-50 border h-11 font-bold text-sm ${formErrors.date ? 'border-rose-400' : 'border-slate-200'}`}
-                                    />
-                                    {formErrors.date && <p className="text-[11px] font-medium text-rose-500">{formErrors.date}</p>}
-                                </div>
-                                <div className="space-y-1 text-start">
-                                    <Label className="text-[10px] font-bold text-slate-400 tracking-widest ml-1">Time</Label>
-                                    <Input
-                                        type="time"
-                                        value={newEventTime}
-                                        onChange={(e) => setNewEventTime(e.target.value)}
-                                        className="rounded-xl bg-slate-50 border border-slate-200 h-11 font-bold text-sm"
-                                    />
-                                </div>
-                            </div>
-                            <div className="space-y-1.5 text-start">
-                                <Label className="text-[10px] font-bold text-slate-400 tracking-widest ml-1">Location</Label>
-                                <Input
-                                    placeholder="Zoom, Conference Room A..."
-                                    value={newEventLocation}
-                                    onChange={(e) => setNewEventLocation(e.target.value)}
-                                    className="rounded-xl bg-slate-50 border border-slate-200 h-11 font-bold text-sm"
-                                />
-                            </div>
-                            <div className="space-y-1.5 text-start">
-                                <Label className="text-[10px] font-bold text-slate-400 tracking-widest ml-1">Event Type</Label>
-                                <Select value={newEventType} onValueChange={(v: any) => setNewEventType(v)}>
-                                    <SelectTrigger className="rounded-xl bg-slate-50 border border-slate-200 h-11 font-bold text-sm">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent className="rounded-xl border-none shadow-xl bg-white">
-                                        <SelectItem value="meeting" className="font-bold py-2 text-xs">Meeting</SelectItem>
-                                        <SelectItem value="birthday" className="font-bold py-2 text-xs">Birthday</SelectItem>
-                                        <SelectItem value="anniversary" className="font-bold py-2 text-xs">Anniversary</SelectItem>
-                                        <SelectItem value="holiday" className="font-bold py-2 text-xs">Holiday</SelectItem>
-                                        <SelectItem value="leave" className="font-bold py-2 text-xs">Leave</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-                        <DialogFooter className="pt-2 gap-2">
-                            {editingEvent && (
-                                <Button variant="outline" className="border-rose-100 text-rose-500 hover:bg-rose-50 rounded-xl h-11 font-bold" onClick={() => { handleDeleteEvent(editingEvent.id, editingEvent.title); setIsAddEventOpen(false); setEditingEvent(null); }}>
-                                    <Trash2 className="h-4 w-4 mr-2" /> Delete
-                                </Button>
-                            )}
-                            <Button variant="outline" className="rounded-xl h-11 font-bold" onClick={() => { setIsAddEventOpen(false); setEditingEvent(null); setFormErrors({}); }}>Cancel</Button>
-                            <Button
-                                disabled={isSubmitting}
-                                className="h-11 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm shadow-lg shadow-indigo-100 transition-all duration-300 disabled:opacity-50"
-                                onClick={handleSaveEvent}
-                            >
-                                {isSubmitting ? "Saving..." : (editingEvent ? "Save Changes" : "Create Event")}
+            <SideFormSheet
+                open={isAddEventOpen}
+                onOpenChange={(open) => { setIsAddEventOpen(open); if (!open) { setEditingEvent(null); setFormErrors({}); } }}
+                title={editingEvent ? "Edit Event" : "New Event"}
+                description={editingEvent ? "Update event details below." : "Schedule a new team event."}
+                accentColor="#4f46e5"
+                width="md"
+                loading={isSubmitting}
+                submitLabel={editingEvent ? "Save Changes" : "Create Event"}
+                onSubmit={(e) => { e.preventDefault(); handleSaveEvent(); }}
+                footer={
+                    <>
+                        {editingEvent && (
+                            <Button type="button" variant="outline" className="border-rose-100 text-rose-500 hover:bg-rose-50 rounded-lg h-10 px-4 font-bold mr-auto" onClick={() => { handleDeleteEvent(editingEvent.id, editingEvent.title); setIsAddEventOpen(false); setEditingEvent(null); }}>
+                                <Trash2 className="h-4 w-4 mr-2" /> Delete
                             </Button>
-                        </DialogFooter>
+                        )}
+                        <Button type="button" variant="outline" onClick={() => { setIsAddEventOpen(false); setEditingEvent(null); setFormErrors({}); }} disabled={isSubmitting} className="h-10 px-5 rounded-lg border-[#E5E7EB] text-[#374151] hover:bg-[#F3F4F6]">Cancel</Button>
+                        <Button type="submit" disabled={isSubmitting} className="h-10 px-5 rounded-lg text-white hover:brightness-110" style={{ backgroundColor: "#4f46e5", boxShadow: "0 4px 12px #4f46e533" }}>
+                            {isSubmitting ? "Saving..." : (editingEvent ? "Save Changes" : "Create Event")}
+                        </Button>
+                    </>
+                }
+            >
+                <div className="space-y-4">
+                    <Field label="Event Title" required hint="min 2 chars" error={formErrors.title || undefined}>
+                        <Input
+                            placeholder="Meeting, Lunch, etc."
+                            value={newEventTitle}
+                            onChange={(e) => { setNewEventTitle(e.target.value); if (formErrors.title) setFormErrors({ ...formErrors, title: "" }); }}
+                        />
+                    </Field>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Date" required error={formErrors.date || undefined}>
+                            <Input
+                                type="date"
+                                value={newEventDate}
+                                onChange={(e) => { setNewEventDate(e.target.value); if (formErrors.date) setFormErrors({ ...formErrors, date: "" }); }}
+                            />
+                        </Field>
+                        <Field label="Time">
+                            <Input
+                                type="time"
+                                value={newEventTime}
+                                onChange={(e) => setNewEventTime(e.target.value)}
+                            />
+                        </Field>
                     </div>
-                </DialogContent>
-            </Dialog>
+                    <Field label="Location">
+                        <Input
+                            placeholder="Zoom, Conference Room A..."
+                            value={newEventLocation}
+                            onChange={(e) => setNewEventLocation(e.target.value)}
+                        />
+                    </Field>
+                    <Field label="Event Type">
+                        <Select value={newEventType} onValueChange={(v: any) => setNewEventType(v)}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="meeting">Meeting</SelectItem>
+                                <SelectItem value="birthday">Birthday</SelectItem>
+                                <SelectItem value="anniversary">Anniversary</SelectItem>
+                                <SelectItem value="holiday">Holiday</SelectItem>
+                                <SelectItem value="leave">Leave</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                </div>
+            </SideFormSheet>
 
             {/* Day Events Dialog */}
             <Dialog open={dayEventsOpen} onOpenChange={setDayEventsOpen}>

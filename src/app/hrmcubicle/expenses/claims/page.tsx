@@ -18,7 +18,6 @@ import { Card, CardContent } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
 import { Badge } from "@/shared/components/ui/badge";
 import { Input } from "@/shared/components/ui/input";
-import { Label } from "@/shared/components/ui/label";
 import {
     Table,
     TableBody,
@@ -31,10 +30,10 @@ import {
     Dialog,
     DialogContent,
     DialogDescription,
-    DialogFooter,
     DialogHeader,
     DialogTitle,
 } from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -473,46 +472,62 @@ const ExpenseClaimsPage = () => {
                 </CardContent>
             </Card>
 
-            {/* New / Edit Claim Dialog */}
-            <Dialog open={isClaimDialogOpen} onOpenChange={(o) => { setIsClaimDialogOpen(o); if (!o) { setEditingClaim(null); setClaimForm(emptyForm); } }}>
-                <DialogContent className="max-w-lg border-2 border-slate-200">
-                    <DialogHeader>
-                        <DialogTitle>{editingClaim ? `Edit Claim ${editingClaim.id}` : 'New Expense Claim'}</DialogTitle>
-                        <DialogDescription>{editingClaim ? 'Update the claim details below.' : 'Submit an expense for reimbursement. Fill in the details below.'}</DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-2">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-1.5">
-                                <Label className="text-xs font-bold text-slate-500">Category *</Label>
-                                <Select value={claimForm.category || undefined} onValueChange={(v) => setClaimForm({ ...claimForm, category: v as ExpenseCategory })}>
-                                    <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
-                                    <SelectContent>
-                                        {categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-xs font-bold text-slate-500">Amount (INR) *</Label>
-                                <Input type="number" min="0" step="0.01" placeholder="0.00" value={claimForm.amount} onChange={(e) => setClaimForm({ ...claimForm, amount: e.target.value })} />
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-1.5">
-                                <Label className="text-xs font-bold text-slate-500">Date *</Label>
-                                <Input type="date" max={new Date().toISOString().split('T')[0]} value={claimForm.date} onChange={(e) => setClaimForm({ ...claimForm, date: e.target.value })} />
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-xs font-bold text-slate-500">Project</Label>
-                                <Input placeholder="Project name" value={claimForm.project} onChange={(e) => setClaimForm({ ...claimForm, project: e.target.value })} />
-                            </div>
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label className="text-xs font-bold text-slate-500">Description</Label>
-                            <Textarea placeholder="Describe the expense (min 5 chars when submitting)..." value={claimForm.description} onChange={(e) => setClaimForm({ ...claimForm, description: e.target.value })} rows={3} maxLength={500} />
-                            <p className="text-xs text-slate-400 text-right">{claimForm.description.length}/500</p>
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label className="text-xs font-bold text-slate-500">Receipt</Label>
+            {/* New / Edit Claim Sheet */}
+            <SideFormSheet
+                open={isClaimDialogOpen}
+                onOpenChange={(o) => { setIsClaimDialogOpen(o); if (!o) { setEditingClaim(null); setClaimForm(emptyForm); } }}
+                title={editingClaim ? `Edit Claim ${editingClaim.id}` : 'New Expense Claim'}
+                description={editingClaim ? 'Update the claim details below.' : 'Submit an expense for reimbursement. Fill in the details below.'}
+                icon={editingClaim ? <Edit3 size={20} /> : <Plus size={20} />}
+                accentColor={editingClaim ? "#7c3aed" : "#4f46e5"}
+                width="md"
+                footer={
+                    <>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => handleSaveClaim(true)}
+                            className="h-10 px-5 rounded-lg gap-1.5"
+                        >
+                            <FileText className="h-4 w-4" /> Save Draft
+                        </Button>
+                        <Button
+                            type="button"
+                            onClick={() => handleSaveClaim(false)}
+                            className="h-10 px-5 rounded-lg gap-1.5 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white"
+                        >
+                            <Send className="h-4 w-4" /> {editingClaim ? 'Update & Submit' : 'Submit Claim'}
+                        </Button>
+                    </>
+                }
+            >
+                <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Category" required>
+                            <Select value={claimForm.category || undefined} onValueChange={(v) => setClaimForm({ ...claimForm, category: v as ExpenseCategory })}>
+                                <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+                                <SelectContent>
+                                    {categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <Field label="Amount (INR)" required>
+                            <Input type="number" min="0" step="0.01" placeholder="0.00" value={claimForm.amount} onChange={(e) => setClaimForm({ ...claimForm, amount: e.target.value })} />
+                        </Field>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Date" required>
+                            <Input type="date" max={new Date().toISOString().split('T')[0]} value={claimForm.date} onChange={(e) => setClaimForm({ ...claimForm, date: e.target.value })} />
+                        </Field>
+                        <Field label="Project">
+                            <Input placeholder="Project name" value={claimForm.project} onChange={(e) => setClaimForm({ ...claimForm, project: e.target.value })} />
+                        </Field>
+                    </div>
+                    <Field label="Description" hint={`${claimForm.description.length}/500`}>
+                        <Textarea placeholder="Describe the expense (min 5 chars when submitting)..." value={claimForm.description} onChange={(e) => setClaimForm({ ...claimForm, description: e.target.value })} rows={3} maxLength={500} />
+                    </Field>
+                    <Field label="Receipt">
+                        <>
                             <input
                                 ref={fileInputRef}
                                 type="file"
@@ -538,18 +553,10 @@ const ExpenseClaimsPage = () => {
                                     <p className="text-xs text-slate-400 mt-1">PDF, PNG, JPG up to 5MB</p>
                                 </div>
                             )}
-                        </div>
-                    </div>
-                    <DialogFooter className="gap-2">
-                        <Button variant="outline" onClick={() => handleSaveClaim(true)} className="gap-1.5">
-                            <FileText className="h-4 w-4" /> Save Draft
-                        </Button>
-                        <Button onClick={() => handleSaveClaim(false)} className="gap-1.5 bg-[#8B5CF6] hover:bg-[#7C3AED]">
-                            <Send className="h-4 w-4" /> {editingClaim ? 'Update & Submit' : 'Submit Claim'}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                        </>
+                    </Field>
+                </div>
+            </SideFormSheet>
 
             {/* View Details Dialog */}
             <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>

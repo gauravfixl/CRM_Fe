@@ -9,6 +9,7 @@ import { Label } from "@/shared/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import { useToast } from "@/shared/components/ui/use-toast";
 import { validateDelegation, type ValidationErrors } from "@/shared/api/settings-validators";
 import {
@@ -275,64 +276,52 @@ const DelegationPage = () => {
                 </div>
             </div>
 
-            {/* Create Dialog */}
-            <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-                <DialogContent className="max-w-lg">
-                    <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2"><ArrowRightLeft size={20} className="text-[#8B5CF6]" /> Create Delegation</DialogTitle>
-                        <DialogDescription>Transfer approval authority temporarily to another employee.</DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
-                        <div className="space-y-2">
-                            <Label className="text-xs font-bold text-slate-500">Delegator (Assigning Person) *</Label>
-                            <Input placeholder="e.g. Rajesh Kumar" value={form.delegator} onChange={e => setForm({ ...form, delegator: e.target.value })} className={formErrors.delegator ? "border-rose-400" : ""} />
-                            {formErrors.delegator && <p className="text-[11px] text-rose-600 font-medium">{formErrors.delegator}</p>}
-                        </div>
-                        <div className="space-y-2">
-                            <Label className="text-xs font-bold text-slate-500">Delegate (Acting Person) *</Label>
-                            <Input placeholder="e.g. Priya Sharma" value={form.delegate} onChange={e => setForm({ ...form, delegate: e.target.value })} className={formErrors.delegate ? "border-rose-400" : ""} />
-                            {formErrors.delegate && <p className="text-[11px] text-rose-600 font-medium">{formErrors.delegate}</p>}
-                        </div>
-                        <div className="space-y-2">
-                            <Label className="text-xs font-bold text-slate-500">Module to Delegate *</Label>
-                            <Select value={form.module} onValueChange={v => setForm({ ...form, module: v as Delegation["module"] })}>
-                                <SelectTrigger className={formErrors.module ? "border-rose-400" : ""}><SelectValue /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="Leave">Leave</SelectItem>
-                                    <SelectItem value="Expense">Expense</SelectItem>
-                                    <SelectItem value="Payroll">Payroll</SelectItem>
-                                    <SelectItem value="All">All Modules</SelectItem>
-                                </SelectContent>
-                            </Select>
-                            {formErrors.module && <p className="text-[11px] text-rose-600 font-medium">{formErrors.module}</p>}
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label className="text-xs font-bold text-slate-500">Start Date *</Label>
-                                <Input type="date" value={form.startDate} onChange={e => setForm({ ...form, startDate: e.target.value })} className={formErrors.startDate ? "border-rose-400" : ""} />
-                                {formErrors.startDate && <p className="text-[11px] text-rose-600 font-medium">{formErrors.startDate}</p>}
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="text-xs font-bold text-slate-500">End Date *</Label>
-                                <Input type="date" value={form.endDate} onChange={e => setForm({ ...form, endDate: e.target.value })} className={formErrors.endDate ? "border-rose-400" : ""} />
-                                {formErrors.endDate && <p className="text-[11px] text-rose-600 font-medium">{formErrors.endDate}</p>}
-                            </div>
-                        </div>
-                        <div className="space-y-2">
-                            <Label className="text-xs font-bold text-slate-500">Reason * (min 10 chars)</Label>
-                            <Input placeholder="e.g. Vacation, Medical leave - details" value={form.reason} onChange={e => setForm({ ...form, reason: e.target.value })} maxLength={200} className={formErrors.reason ? "border-rose-400" : ""} />
-                            {formErrors.reason && <p className="text-[11px] text-rose-600 font-medium">{formErrors.reason}</p>}
-                        </div>
-                        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-700 font-medium">
-                            Both parties will be notified via email and in-app notification. Max delegation period is 30 days.
-                        </div>
+            {/* Create Delegation Sheet */}
+            <SideFormSheet
+                open={isCreateOpen}
+                onOpenChange={setIsCreateOpen}
+                title="Create Delegation"
+                description="Transfer approval authority temporarily to another employee."
+                icon={<ArrowRightLeft size={20} />}
+                accentColor="#8B5CF6"
+                width="md"
+                submitLabel="Create Delegation"
+                onSubmit={(e) => { e.preventDefault(); handleCreate(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Delegator (Assigning Person)" required error={formErrors.delegator || undefined}>
+                        <Input placeholder="e.g. Rajesh Kumar" value={form.delegator} onChange={e => setForm({ ...form, delegator: e.target.value })} />
+                    </Field>
+                    <Field label="Delegate (Acting Person)" required error={formErrors.delegate || undefined}>
+                        <Input placeholder="e.g. Priya Sharma" value={form.delegate} onChange={e => setForm({ ...form, delegate: e.target.value })} />
+                    </Field>
+                    <Field label="Module to Delegate" required error={formErrors.module || undefined}>
+                        <Select value={form.module} onValueChange={v => setForm({ ...form, module: v as Delegation["module"] })}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Leave">Leave</SelectItem>
+                                <SelectItem value="Expense">Expense</SelectItem>
+                                <SelectItem value="Payroll">Payroll</SelectItem>
+                                <SelectItem value="All">All Modules</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Start Date" required error={formErrors.startDate || undefined}>
+                            <Input type="date" value={form.startDate} onChange={e => setForm({ ...form, startDate: e.target.value })} />
+                        </Field>
+                        <Field label="End Date" required error={formErrors.endDate || undefined}>
+                            <Input type="date" value={form.endDate} onChange={e => setForm({ ...form, endDate: e.target.value })} />
+                        </Field>
                     </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
-                        <Button className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white font-bold" onClick={handleCreate}>Create Delegation</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    <Field label="Reason (min 10 chars)" required error={formErrors.reason || undefined}>
+                        <Input placeholder="e.g. Vacation, Medical leave - details" value={form.reason} onChange={e => setForm({ ...form, reason: e.target.value })} maxLength={200} />
+                    </Field>
+                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-700 font-medium">
+                        Both parties will be notified via email and in-app notification. Max delegation period is 30 days.
+                    </div>
+                </div>
+            </SideFormSheet>
 
             {/* Revoke Confirmation */}
             <Dialog open={!!revokeId} onOpenChange={() => setRevokeId(null)}>

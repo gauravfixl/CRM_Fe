@@ -49,6 +49,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/shared/components/ui/dialog"
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet"
 import {
     Select,
     SelectContent,
@@ -892,71 +893,62 @@ const LoansPage = () => {
                     </div>
                 </div>
 
-                {/* ── Create / Edit Dialog ───────────── */}
-                <Dialog open={formOpen} onOpenChange={setFormOpen}>
-                    <DialogContent className="max-w-xl bg-white rounded-2xl p-6 font-sans">
-                        <DialogHeader className="space-y-1">
-                            <div className="h-10 w-10 bg-[#8B5CF6]/10 rounded-xl flex items-center justify-center text-[#8B5CF6] mb-2">
-                                {editingLoan ? <Edit size={20} /> : <Plus size={20} />}
+                {/* Create / Edit Loan Sheet */}
+                <SideFormSheet
+                    open={formOpen}
+                    onOpenChange={setFormOpen}
+                    title={editingLoan ? "Edit loan" : "New loan request"}
+                    description="EMI and amortisation are auto-computed. Tenure up to 120 months."
+                    icon={editingLoan ? <Edit size={20} /> : <Banknote size={20} />}
+                    accentColor={editingLoan ? "#7c3aed" : "#4f46e5"}
+                    width="lg"
+                    submitLabel={editingLoan ? "Save changes" : "Submit request"}
+                    onSubmit={(e) => { e.preventDefault(); handleSaveLoan(); }}
+                >
+                    <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-3">
+                            <Field label="Employee name" required>
+                                <Input value={form.employeeName} onChange={(e) => setForm({ ...form, employeeName: e.target.value })} placeholder="e.g. Rajesh Kumar" />
+                            </Field>
+                            <Field label="Employee ID">
+                                <Input value={form.employeeId} onChange={(e) => setForm({ ...form, employeeId: e.target.value })} placeholder="EMP001" />
+                            </Field>
+                            <Field label="Loan type" required>
+                                <Select value={form.loanType} onValueChange={(v) => setForm({ ...form, loanType: v as Loan["loanType"] })}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        {LOAN_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                            </Field>
+                            <Field label="Disbursement date">
+                                <Input type="date" value={form.disbursedDate} onChange={(e) => setForm({ ...form, disbursedDate: e.target.value })} />
+                            </Field>
+                        </div>
+                        <div className="grid grid-cols-3 gap-3">
+                            <Field label="Principal (₹)" required>
+                                <Input type="number" className="tabular-nums" value={form.principal || ""} onChange={(e) => setForm({ ...form, principal: parseFloat(e.target.value) || 0 })} />
+                            </Field>
+                            <Field label="Interest rate (%)" required>
+                                <Input type="number" step="0.1" className="tabular-nums" value={form.interestRate || ""} onChange={(e) => setForm({ ...form, interestRate: parseFloat(e.target.value) || 0 })} />
+                            </Field>
+                            <Field label="Tenure (months)" required>
+                                <Input type="number" className="tabular-nums" value={form.tenure || ""} onChange={(e) => setForm({ ...form, tenure: parseInt(e.target.value) || 0 })} />
+                            </Field>
+                        </div>
+                        <div className="p-4 bg-gradient-to-br from-[#8B5CF6]/5 to-[#EC4899]/5 border border-[#8B5CF6]/10 rounded-xl space-y-2">
+                            <div className="flex items-center gap-2 mb-1">
+                                <Calculator size={14} className="text-[#8B5CF6]" />
+                                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Live calculation</span>
                             </div>
-                            <DialogTitle className="text-lg font-bold text-slate-900">
-                                {editingLoan ? "Edit loan" : "New loan request"}
-                            </DialogTitle>
-                            <DialogDescription className="text-xs font-medium text-slate-500">
-                                EMI and amortisation are auto-computed. Tenure up to 120 months.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="mt-4 space-y-3">
-                            <div className="grid grid-cols-2 gap-3">
-                                <FormField label="Employee name" required>
-                                    <Input value={form.employeeName} onChange={(e) => setForm({ ...form, employeeName: e.target.value })} className="h-10 text-sm font-medium" placeholder="e.g. Rajesh Kumar" />
-                                </FormField>
-                                <FormField label="Employee ID">
-                                    <Input value={form.employeeId} onChange={(e) => setForm({ ...form, employeeId: e.target.value })} className="h-10 text-sm font-medium" placeholder="EMP001" />
-                                </FormField>
-                                <FormField label="Loan type" required>
-                                    <Select value={form.loanType} onValueChange={(v) => setForm({ ...form, loanType: v as Loan["loanType"] })}>
-                                        <SelectTrigger className="h-10 text-sm"><SelectValue /></SelectTrigger>
-                                        <SelectContent>
-                                            {LOAN_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                                        </SelectContent>
-                                    </Select>
-                                </FormField>
-                                <FormField label="Disbursement date">
-                                    <Input type="date" value={form.disbursedDate} onChange={(e) => setForm({ ...form, disbursedDate: e.target.value })} className="h-10 text-sm font-medium" />
-                                </FormField>
-                            </div>
-                            <div className="grid grid-cols-3 gap-3">
-                                <FormField label="Principal (₹)" required>
-                                    <Input type="number" value={form.principal || ""} onChange={(e) => setForm({ ...form, principal: parseFloat(e.target.value) || 0 })} className="h-10 text-sm font-semibold tabular-nums" />
-                                </FormField>
-                                <FormField label="Interest rate (%)" required>
-                                    <Input type="number" step="0.1" value={form.interestRate || ""} onChange={(e) => setForm({ ...form, interestRate: parseFloat(e.target.value) || 0 })} className="h-10 text-sm font-semibold tabular-nums" />
-                                </FormField>
-                                <FormField label="Tenure (months)" required>
-                                    <Input type="number" value={form.tenure || ""} onChange={(e) => setForm({ ...form, tenure: parseInt(e.target.value) || 0 })} className="h-10 text-sm font-semibold tabular-nums" />
-                                </FormField>
-                            </div>
-                            <div className="p-4 bg-gradient-to-br from-[#8B5CF6]/5 to-[#EC4899]/5 border border-[#8B5CF6]/10 rounded-xl space-y-2">
-                                <div className="flex items-center gap-2 mb-1">
-                                    <Calculator size={14} className="text-[#8B5CF6]" />
-                                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Live calculation</span>
-                                </div>
-                                <div className="grid grid-cols-3 gap-2">
-                                    <PreviewStat label="Monthly EMI" value={formatINR(calculatedEMI)} color="text-[#8B5CF6]" />
-                                    <PreviewStat label="Total interest" value={formatINR(totalInterestForForm)} color="text-rose-600" />
-                                    <PreviewStat label="Total payable" value={formatINR(calculatedEMI * form.tenure)} color="text-slate-900" />
-                                </div>
+                            <div className="grid grid-cols-3 gap-2">
+                                <PreviewStat label="Monthly EMI" value={formatINR(calculatedEMI)} color="text-[#8B5CF6]" />
+                                <PreviewStat label="Total interest" value={formatINR(totalInterestForForm)} color="text-rose-600" />
+                                <PreviewStat label="Total payable" value={formatINR(calculatedEMI * form.tenure)} color="text-slate-900" />
                             </div>
                         </div>
-                        <DialogFooter className="mt-4 gap-2">
-                            <Button variant="ghost" onClick={() => setFormOpen(false)} className="h-10 font-semibold text-xs">Cancel</Button>
-                            <Button onClick={handleSaveLoan} className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-lg h-10 px-5 font-bold text-xs border-none">
-                                {editingLoan ? "Save changes" : "Submit request"}
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                    </div>
+                </SideFormSheet>
 
                 {/* ── EMI Schedule Sheet ──────────────── */}
                 <Sheet open={detailOpen} onOpenChange={setDetailOpen}>
@@ -1177,239 +1169,178 @@ const LoansPage = () => {
                     </DialogContent>
                 </Dialog>
 
-                {/* ── Eligibility Calculator ────────── */}
-                <Dialog open={eligibilityOpen} onOpenChange={setEligibilityOpen}>
-                    <DialogContent className="max-w-2xl bg-white rounded-2xl p-6 font-sans">
-                        <DialogHeader className="space-y-1">
-                            <div className="h-10 w-10 bg-violet-100 rounded-xl flex items-center justify-center text-violet-600 mb-2">
-                                <Gauge size={20} />
-                            </div>
-                            <DialogTitle className="text-lg font-bold text-slate-900">Loan eligibility calculator</DialogTitle>
-                            <DialogDescription className="text-xs font-medium text-slate-500">
-                                50% FOIR cap. Score drops for low income, multiple active loans, or long tenure.
-                                {eligibilityLoan && (
-                                    <span className="ml-1 text-violet-600 font-semibold">· {eligibilityLoan.employeeName}</span>
-                                )}
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-5">
-                            <div className="space-y-3">
-                                {!eligibilityLoan && (
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <FormField label="Employee name">
-                                            <Input
-                                                value={eligibilityForm.employeeName}
-                                                onChange={(e) => setEligibilityForm({ ...eligibilityForm, employeeName: e.target.value })}
-                                                className="h-10 text-sm font-medium"
-                                                placeholder="e.g. Rajesh Kumar"
-                                            />
-                                        </FormField>
-                                        <FormField label="Employee ID">
-                                            <Input
-                                                value={eligibilityForm.employeeId}
-                                                onChange={(e) => setEligibilityForm({ ...eligibilityForm, employeeId: e.target.value })}
-                                                className="h-10 text-sm font-medium"
-                                                placeholder="EMP001"
-                                            />
-                                        </FormField>
-                                    </div>
-                                )}
-                                <FormField label="Requested amount (₹)" required>
-                                    <Input
-                                        type="number"
-                                        value={eligibilityForm.requestedAmount || ""}
-                                        onChange={(e) => setEligibilityForm({ ...eligibilityForm, requestedAmount: parseFloat(e.target.value) || 0 })}
-                                        className="h-10 text-sm font-semibold tabular-nums"
-                                    />
-                                </FormField>
-                                <FormField label="Tenure (months)" required>
-                                    <Input
-                                        type="number"
-                                        value={eligibilityForm.tenure || ""}
-                                        onChange={(e) => setEligibilityForm({ ...eligibilityForm, tenure: parseInt(e.target.value) || 0 })}
-                                        className="h-10 text-sm font-semibold tabular-nums"
-                                    />
-                                </FormField>
-                                <FormField label="Monthly gross (₹)" required>
-                                    <Input
-                                        type="number"
-                                        value={eligibilityForm.monthlyGross || ""}
-                                        onChange={(e) => setEligibilityForm({ ...eligibilityForm, monthlyGross: parseFloat(e.target.value) || 0 })}
-                                        className="h-10 text-sm font-semibold tabular-nums"
-                                    />
-                                </FormField>
-                                <FormField label="Existing EMI obligations (₹/mo)">
-                                    <Input
-                                        type="number"
-                                        value={eligibilityForm.existingObligations || ""}
-                                        onChange={(e) => setEligibilityForm({ ...eligibilityForm, existingObligations: parseFloat(e.target.value) || 0 })}
-                                        className="h-10 text-sm font-semibold tabular-nums"
-                                    />
-                                </FormField>
-                            </div>
-                            <div className="p-4 bg-gradient-to-br from-violet-50 to-blue-50 border border-violet-100 rounded-2xl space-y-3">
-                                <div className="flex items-center gap-2">
-                                    <Sparkles size={14} className="text-violet-600" />
-                                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Live result</span>
-                                </div>
-                                <div>
-                                    <div className="flex items-center justify-between mb-1.5">
-                                        <span className="text-[11px] font-semibold text-slate-600">Eligibility score</span>
-                                        <span className={cn("text-lg font-bold tabular-nums",
-                                            eligibilityResult.score >= 70 ? "text-blue-600" : eligibilityResult.score >= 40 ? "text-amber-600" : "text-rose-600")}>
-                                            {eligibilityResult.score}/100
-                                        </span>
-                                    </div>
-                                    <div className="h-2 w-full bg-white rounded-full overflow-hidden border border-slate-100">
-                                        <motion.div
-                                            className={cn("h-full rounded-full",
-                                                eligibilityResult.score >= 70 ? "bg-blue-500" : eligibilityResult.score >= 40 ? "bg-amber-500" : "bg-rose-500")}
-                                            initial={{ width: 0 }}
-                                            animate={{ width: `${eligibilityResult.score}%` }}
+                {/* Eligibility Calculator Sheet */}
+                <SideFormSheet
+                    open={eligibilityOpen}
+                    onOpenChange={setEligibilityOpen}
+                    title="Loan eligibility calculator"
+                    description={`50% FOIR cap. Score drops for low income, multiple active loans, or long tenure.${eligibilityLoan ? ` · ${eligibilityLoan.employeeName}` : ""}`}
+                    icon={<Gauge size={20} />}
+                    accentColor="#4f46e5"
+                    width="xl"
+                    submitLabel={eligibilityLoan ? "Save to loan" : "Close"}
+                    onSubmit={eligibilityLoan ? (e) => { e.preventDefault(); handleSaveEligibilityToLoan(); } : undefined}
+                    footer={!eligibilityLoan ? (
+                        <Button type="button" variant="outline" onClick={() => setEligibilityOpen(false)} className="h-10 px-5 rounded-lg">Close</Button>
+                    ) : undefined}
+                >
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div className="space-y-4">
+                            {!eligibilityLoan && (
+                                <div className="grid grid-cols-2 gap-3">
+                                    <Field label="Employee name">
+                                        <Input
+                                            value={eligibilityForm.employeeName}
+                                            onChange={(e) => setEligibilityForm({ ...eligibilityForm, employeeName: e.target.value })}
+                                            placeholder="e.g. Rajesh Kumar"
                                         />
-                                    </div>
+                                    </Field>
+                                    <Field label="Employee ID">
+                                        <Input
+                                            value={eligibilityForm.employeeId}
+                                            onChange={(e) => setEligibilityForm({ ...eligibilityForm, employeeId: e.target.value })}
+                                            placeholder="EMP001"
+                                        />
+                                    </Field>
                                 </div>
-                                <div className="grid grid-cols-2 gap-2">
-                                    <PreviewStat label="Max EMI" value={formatINR(eligibilityResult.maxEmi)} color="text-violet-600" />
-                                    <PreviewStat label="Eligible amount" value={formatINR(eligibilityResult.eligibleAmount)} color="text-emerald-600" />
-                                </div>
-                                <div className="p-3 bg-white rounded-lg border border-slate-100">
-                                    <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Notes</div>
-                                    <div className="text-[11px] font-medium text-slate-600 leading-relaxed">{eligibilityResult.notes}</div>
-                                </div>
-                            </div>
-                        </div>
-                        <DialogFooter className="mt-4 gap-2">
-                            <Button variant="ghost" onClick={() => setEligibilityOpen(false)} className="h-10 font-semibold text-xs">Close</Button>
-                            {eligibilityLoan && (
-                                <Button onClick={handleSaveEligibilityToLoan} className="bg-violet-600 hover:bg-violet-700 text-white rounded-lg h-10 px-5 font-bold text-xs border-none">
-                                    <CheckCircle2 size={13} className="mr-1.5" /> Save to loan
-                                </Button>
                             )}
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
-
-                {/* ── Prepayment Dialog ─────────────── */}
-                <Dialog open={prepaymentOpen} onOpenChange={setPrepaymentOpen}>
-                    <DialogContent className="max-w-lg bg-white rounded-2xl p-6 font-sans">
-                        <DialogHeader className="space-y-1">
-                            <div className="h-10 w-10 bg-[#8B5CF6]/10 rounded-xl flex items-center justify-center text-[#8B5CF6] mb-2">
-                                <HandCoins size={20} />
+                            <Field label="Requested amount (₹)" required>
+                                <Input type="number" className="tabular-nums" value={eligibilityForm.requestedAmount || ""} onChange={(e) => setEligibilityForm({ ...eligibilityForm, requestedAmount: parseFloat(e.target.value) || 0 })} />
+                            </Field>
+                            <Field label="Tenure (months)" required>
+                                <Input type="number" className="tabular-nums" value={eligibilityForm.tenure || ""} onChange={(e) => setEligibilityForm({ ...eligibilityForm, tenure: parseInt(e.target.value) || 0 })} />
+                            </Field>
+                            <Field label="Monthly gross (₹)" required>
+                                <Input type="number" className="tabular-nums" value={eligibilityForm.monthlyGross || ""} onChange={(e) => setEligibilityForm({ ...eligibilityForm, monthlyGross: parseFloat(e.target.value) || 0 })} />
+                            </Field>
+                            <Field label="Existing EMI obligations (₹/mo)">
+                                <Input type="number" className="tabular-nums" value={eligibilityForm.existingObligations || ""} onChange={(e) => setEligibilityForm({ ...eligibilityForm, existingObligations: parseFloat(e.target.value) || 0 })} />
+                            </Field>
+                        </div>
+                        <div className="p-4 bg-gradient-to-br from-violet-50 to-blue-50 border border-violet-100 rounded-2xl space-y-3">
+                            <div className="flex items-center gap-2">
+                                <Sparkles size={14} className="text-violet-600" />
+                                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Live result</span>
                             </div>
-                            <DialogTitle className="text-lg font-bold text-slate-900">Record prepayment</DialogTitle>
-                            <DialogDescription className="text-xs font-medium text-slate-500">
-                                {prepaymentLoan && (
-                                    <>
-                                        {prepaymentLoan.employeeName} · current balance {formatINR(prepaymentLoan.remainingBalance)}
-                                    </>
-                                )}
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="mt-4 space-y-4">
-                            <div className="grid grid-cols-2 gap-2">
-                                <button
-                                    type="button"
-                                    onClick={() => setPrepaymentForm({ ...prepaymentForm, type: "Partial" })}
-                                    className={cn("p-3 rounded-xl border-2 text-left transition-all",
-                                        prepaymentForm.type === "Partial"
-                                            ? "border-[#8B5CF6] bg-[#8B5CF6]/5"
-                                            : "border-slate-200 bg-white hover:border-slate-300")}
-                                >
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <div className={cn("h-4 w-4 rounded-full border-2 flex items-center justify-center",
-                                            prepaymentForm.type === "Partial" ? "border-[#8B5CF6]" : "border-slate-300")}>
-                                            {prepaymentForm.type === "Partial" && <div className="h-2 w-2 rounded-full bg-[#8B5CF6]" />}
-                                        </div>
-                                        <span className="text-xs font-bold text-slate-900">Partial</span>
-                                    </div>
-                                    <div className="text-[10px] font-medium text-slate-500">Reduces balance, recomputes pending EMIs</div>
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setPrepaymentForm({ ...prepaymentForm, type: "Full" })}
-                                    className={cn("p-3 rounded-xl border-2 text-left transition-all",
-                                        prepaymentForm.type === "Full"
-                                            ? "border-rose-400 bg-rose-50"
-                                            : "border-slate-200 bg-white hover:border-slate-300")}
-                                >
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <div className={cn("h-4 w-4 rounded-full border-2 flex items-center justify-center",
-                                            prepaymentForm.type === "Full" ? "border-rose-500" : "border-slate-300")}>
-                                            {prepaymentForm.type === "Full" && <div className="h-2 w-2 rounded-full bg-rose-500" />}
-                                        </div>
-                                        <span className="text-xs font-bold text-slate-900">Full</span>
-                                    </div>
-                                    <div className="text-[10px] font-medium text-slate-500">Closes loan, marks pending EMIs paid</div>
-                                </button>
-                            </div>
-
-                            {prepaymentForm.type === "Partial" && (
-                                <FormField label="Prepayment amount (₹)" required>
-                                    <Input
-                                        type="number"
-                                        value={prepaymentForm.amount || ""}
-                                        onChange={(e) => setPrepaymentForm({ ...prepaymentForm, amount: parseFloat(e.target.value) || 0 })}
-                                        className="h-10 text-sm font-semibold tabular-nums"
-                                        placeholder="e.g. 25000"
+                            <div>
+                                <div className="flex items-center justify-between mb-1.5">
+                                    <span className="text-[11px] font-semibold text-slate-600">Eligibility score</span>
+                                    <span className={cn("text-lg font-bold tabular-nums",
+                                        eligibilityResult.score >= 70 ? "text-blue-600" : eligibilityResult.score >= 40 ? "text-amber-600" : "text-rose-600")}>
+                                        {eligibilityResult.score}/100
+                                    </span>
+                                </div>
+                                <div className="h-2 w-full bg-white rounded-full overflow-hidden border border-slate-100">
+                                    <motion.div
+                                        className={cn("h-full rounded-full",
+                                            eligibilityResult.score >= 70 ? "bg-blue-500" : eligibilityResult.score >= 40 ? "bg-amber-500" : "bg-rose-500")}
+                                        initial={{ width: 0 }}
+                                        animate={{ width: `${eligibilityResult.score}%` }}
                                     />
-                                </FormField>
-                            )}
-
-                            <FormField label="Notes (optional)">
-                                <Textarea
-                                    value={prepaymentForm.notes}
-                                    onChange={(e) => setPrepaymentForm({ ...prepaymentForm, notes: e.target.value })}
-                                    rows={2}
-                                    className="text-xs font-medium resize-none"
-                                    placeholder="Reason, payment reference…"
-                                />
-                            </FormField>
-
-                            <div className="p-3 bg-gradient-to-br from-emerald-50 to-blue-50 border border-emerald-100 rounded-xl grid grid-cols-2 gap-2">
-                                <PreviewStat label="New balance" value={formatINR(prepaymentPreview.newBalance)} color="text-emerald-600" />
-                                <PreviewStat label="EMIs remaining" value={String(prepaymentPreview.emisRemaining)} color="text-slate-900" />
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                                <PreviewStat label="Max EMI" value={formatINR(eligibilityResult.maxEmi)} color="text-violet-600" />
+                                <PreviewStat label="Eligible amount" value={formatINR(eligibilityResult.eligibleAmount)} color="text-emerald-600" />
+                            </div>
+                            <div className="p-3 bg-white rounded-lg border border-slate-100">
+                                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Notes</div>
+                                <div className="text-[11px] font-medium text-slate-600 leading-relaxed">{eligibilityResult.notes}</div>
                             </div>
                         </div>
-                        <DialogFooter className="mt-4 gap-2">
-                            <Button variant="ghost" onClick={() => setPrepaymentOpen(false)} className="h-10 font-semibold text-xs">Cancel</Button>
-                            <Button onClick={handleConfirmPrepayment} className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-lg h-10 px-5 font-bold text-xs border-none">
-                                <HandCoins size={13} className="mr-1.5" /> Record prepayment
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                    </div>
+                </SideFormSheet>
 
-                {/* ── Bulk EMI Mark Paid ────────────── */}
-                <Dialog open={bulkEmiOpen} onOpenChange={setBulkEmiOpen}>
-                    <DialogContent className="max-w-md bg-white rounded-2xl p-6 font-sans">
-                        <DialogHeader className="space-y-1">
-                            <div className="h-10 w-10 bg-emerald-100 rounded-xl flex items-center justify-center text-emerald-600 mb-2">
-                                <ListChecks size={20} />
-                            </div>
-                            <DialogTitle className="text-lg font-bold text-slate-900">Bulk mark EMI paid</DialogTitle>
-                            <DialogDescription className="text-xs font-medium text-slate-500">
-                                Marks the chosen month's EMI as paid across {selectedIds.length} selected loan{selectedIds.length === 1 ? "" : "s"}. Only loans with that pending month are affected.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="mt-4 space-y-3">
-                            <FormField label="Month" required>
-                                <Select value={bulkEmiMonth} onValueChange={setBulkEmiMonth}>
-                                    <SelectTrigger className="h-10 text-sm"><SelectValue placeholder="Pick a month" /></SelectTrigger>
-                                    <SelectContent>
-                                        {bulkEmiMonths.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
-                            </FormField>
+                {/* Prepayment Sheet */}
+                <SideFormSheet
+                    open={prepaymentOpen}
+                    onOpenChange={setPrepaymentOpen}
+                    title="Record prepayment"
+                    description={prepaymentLoan ? `${prepaymentLoan.employeeName} · current balance ${formatINR(prepaymentLoan.remainingBalance)}` : undefined}
+                    icon={<HandCoins size={20} />}
+                    accentColor="#4f46e5"
+                    width="md"
+                    submitLabel="Record prepayment"
+                    onSubmit={(e) => { e.preventDefault(); handleConfirmPrepayment(); }}
+                >
+                    <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-2">
+                            <button
+                                type="button"
+                                onClick={() => setPrepaymentForm({ ...prepaymentForm, type: "Partial" })}
+                                className={cn("p-3 rounded-xl border-2 text-left transition-all",
+                                    prepaymentForm.type === "Partial"
+                                        ? "border-[#8B5CF6] bg-[#8B5CF6]/5"
+                                        : "border-slate-200 bg-white hover:border-slate-300")}
+                            >
+                                <div className="flex items-center gap-2 mb-1">
+                                    <div className={cn("h-4 w-4 rounded-full border-2 flex items-center justify-center",
+                                        prepaymentForm.type === "Partial" ? "border-[#8B5CF6]" : "border-slate-300")}>
+                                        {prepaymentForm.type === "Partial" && <div className="h-2 w-2 rounded-full bg-[#8B5CF6]" />}
+                                    </div>
+                                    <span className="text-xs font-bold text-slate-900">Partial</span>
+                                </div>
+                                <div className="text-[10px] font-medium text-slate-500">Reduces balance, recomputes pending EMIs</div>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setPrepaymentForm({ ...prepaymentForm, type: "Full" })}
+                                className={cn("p-3 rounded-xl border-2 text-left transition-all",
+                                    prepaymentForm.type === "Full"
+                                        ? "border-rose-400 bg-rose-50"
+                                        : "border-slate-200 bg-white hover:border-slate-300")}
+                            >
+                                <div className="flex items-center gap-2 mb-1">
+                                    <div className={cn("h-4 w-4 rounded-full border-2 flex items-center justify-center",
+                                        prepaymentForm.type === "Full" ? "border-rose-500" : "border-slate-300")}>
+                                        {prepaymentForm.type === "Full" && <div className="h-2 w-2 rounded-full bg-rose-500" />}
+                                    </div>
+                                    <span className="text-xs font-bold text-slate-900">Full</span>
+                                </div>
+                                <div className="text-[10px] font-medium text-slate-500">Closes loan, marks pending EMIs paid</div>
+                            </button>
                         </div>
-                        <DialogFooter className="mt-4 gap-2">
-                            <Button variant="ghost" onClick={() => setBulkEmiOpen(false)} className="h-10 font-semibold text-xs">Cancel</Button>
-                            <Button onClick={handleConfirmBulkEmi} className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg h-10 px-5 font-bold text-xs border-none">
-                                <CheckCircle2 size={13} className="mr-1.5" /> Mark paid
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+
+                        {prepaymentForm.type === "Partial" && (
+                            <Field label="Prepayment amount (₹)" required>
+                                <Input type="number" className="tabular-nums" value={prepaymentForm.amount || ""} onChange={(e) => setPrepaymentForm({ ...prepaymentForm, amount: parseFloat(e.target.value) || 0 })} placeholder="e.g. 25000" />
+                            </Field>
+                        )}
+
+                        <Field label="Notes (optional)">
+                            <Textarea value={prepaymentForm.notes} onChange={(e) => setPrepaymentForm({ ...prepaymentForm, notes: e.target.value })} rows={2} placeholder="Reason, payment reference…" />
+                        </Field>
+
+                        <div className="p-3 bg-gradient-to-br from-emerald-50 to-blue-50 border border-emerald-100 rounded-xl grid grid-cols-2 gap-2">
+                            <PreviewStat label="New balance" value={formatINR(prepaymentPreview.newBalance)} color="text-emerald-600" />
+                            <PreviewStat label="EMIs remaining" value={String(prepaymentPreview.emisRemaining)} color="text-slate-900" />
+                        </div>
+                    </div>
+                </SideFormSheet>
+
+                {/* Bulk EMI Mark Paid Sheet */}
+                <SideFormSheet
+                    open={bulkEmiOpen}
+                    onOpenChange={setBulkEmiOpen}
+                    title="Bulk mark EMI paid"
+                    description={`Marks the chosen month's EMI as paid across ${selectedIds.length} selected loan${selectedIds.length === 1 ? "" : "s"}. Only loans with that pending month are affected.`}
+                    icon={<ListChecks size={20} />}
+                    accentColor="#059669"
+                    width="md"
+                    submitLabel="Mark paid"
+                    onSubmit={(e) => { e.preventDefault(); handleConfirmBulkEmi(); }}
+                >
+                    <div className="space-y-4">
+                        <Field label="Month" required>
+                            <Select value={bulkEmiMonth} onValueChange={setBulkEmiMonth}>
+                                <SelectTrigger><SelectValue placeholder="Pick a month" /></SelectTrigger>
+                                <SelectContent>
+                                    {bulkEmiMonths.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                    </div>
+                </SideFormSheet>
 
                 {/* ── EMI Preview Dialog ────────────── */}
                 <Dialog open={emiPreviewOpen} onOpenChange={setEmiPreviewOpen}>
