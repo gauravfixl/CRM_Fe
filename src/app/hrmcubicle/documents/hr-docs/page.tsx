@@ -46,6 +46,7 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import {
     Select,
     SelectContent,
@@ -241,72 +242,9 @@ const HRDocsPage = () => {
                                         </Button>
                                     </motion.div>
                                 )}
-                                <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
-                                    <DialogTrigger asChild>
-                                        <Button className="bg-indigo-600 hover:bg-slate-900 text-white rounded-xl h-12 px-8 font-bold shadow-lg shadow-indigo-100 transition-all gap-2 text-[10px] tracking-wide border-none">
-                                            <Plus size={20} /> Upload New Asset
-                                        </Button>
-                                    </DialogTrigger>
-                                    <DialogContent className="max-w-xl bg-white rounded-[2.5rem] border border-slate-200 p-8 shadow-3xl font-sans" style={{ zoom: "80%" }}>
-                                        <DialogHeader>
-                                            <DialogTitle className="text-2xl font-black tracking-tight text-slate-900">Deposit New Asset</DialogTitle>
-                                            <DialogDescription className="font-bold text-slate-400 text-[11px] tracking-wide mt-2 leading-relaxed">
-                                                Files are encrypted and stored in the secure end-to-end organizational vault.
-                                            </DialogDescription>
-                                        </DialogHeader>
-                                        <div className="space-y-6 py-8">
-                                            <div className="space-y-3 text-start">
-                                                <label className="text-[10px] font-bold tracking-wide text-slate-400 ml-1">Asset Reference Name</label>
-                                                <Input
-                                                    placeholder="Internal Security Audit - Q1"
-                                                    value={newDoc.name}
-                                                    onChange={(e) => setNewDoc({ ...newDoc, name: e.target.value })}
-                                                    className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 focus:bg-white transition-all shadow-sm"
-                                                />
-                                            </div>
-                                            <div className="grid grid-cols-2 gap-6">
-                                                <div className="space-y-3 text-start">
-                                                    <label className="text-[10px] font-bold tracking-wide text-slate-400 ml-1">Classification Target</label>
-                                                    <Select value={newDoc.category} onValueChange={(val) => setNewDoc({ ...newDoc, category: val })}>
-                                                        <SelectTrigger className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 focus:bg-white transition-all shadow-sm">
-                                                            <SelectValue />
-                                                        </SelectTrigger>
-                                                        <SelectContent className="rounded-2xl border border-slate-200 shadow-2xl p-2 font-bold text-xs font-sans">
-                                                            {categories.filter(c => c !== "All").map(cat => (
-                                                                <SelectItem key={cat} value={cat} className="rounded-xl h-10">{cat}</SelectItem>
-                                                            ))}
-                                                        </SelectContent>
-                                                    </Select>
-                                                </div>
-                                                <div className="space-y-3 text-start">
-                                                    <label className="text-[10px] font-bold tracking-wide text-slate-400 ml-1">Security Visibility</label>
-                                                    <Select value={newDoc.status} onValueChange={(val: any) => setNewDoc({ ...newDoc, status: val })}>
-                                                        <SelectTrigger className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 focus:bg-white transition-all shadow-sm">
-                                                            <SelectValue />
-                                                        </SelectTrigger>
-                                                        <SelectContent className="rounded-2xl border border-slate-200 shadow-2xl p-2 font-bold text-xs font-sans">
-                                                            <SelectItem value="Published" className="rounded-xl h-10">Public (Open)</SelectItem>
-                                                            <SelectItem value="Internal" className="rounded-xl h-10">Internal (Locked)</SelectItem>
-                                                            <SelectItem value="Confidential" className="rounded-xl h-10">Encrypted (Confidential)</SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
-                                                </div>
-                                            </div>
-                                            <div className="p-10 border-2 border-dashed rounded-[2.5rem] bg-indigo-50/30 border-indigo-200/50 flex flex-col items-center justify-center text-slate-500 hover:bg-indigo-50/50 transition-all cursor-pointer group mt-4 relative overflow-hidden">
-                                                <div className="absolute top-[-10px] left-[-10px] h-20 w-20 bg-indigo-500/5 rounded-full blur-xl group-hover:scale-150 transition-transform duration-700" />
-                                                <div className="w-16 h-16 rounded-2xl bg-white shadow-lg flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-6 transition-all border border-indigo-100/50 relative z-10">
-                                                    <Upload size={30} className="text-indigo-600" />
-                                                </div>
-                                                <p className="text-sm font-black text-slate-900 tracking-tight leading-tight relative z-10">Drop your secure assets here</p>
-                                                <p className="text-[10px] mt-2 text-indigo-400 font-bold tracking-[0.2em] relative z-10">Maximum bitstream: 50MB</p>
-                                            </div>
-                                        </div>
-                                        <DialogFooter className="gap-3">
-                                            <Button variant="ghost" onClick={() => setIsUploadOpen(false)} className="h-12 rounded-xl font-bold text-[10px] tracking-wide transition-all px-6">Discard</Button>
-                                            <Button onClick={handleUpload} className="bg-indigo-600 hover:bg-slate-900 text-white rounded-xl h-12 px-10 font-bold shadow-lg shadow-indigo-100 transition-all text-[10px] tracking-wide border-none">Secure Upload</Button>
-                                        </DialogFooter>
-                                    </DialogContent>
-                                </Dialog>
+                                <Button onClick={() => setIsUploadOpen(true)} className="bg-indigo-600 hover:bg-slate-900 text-white rounded-xl h-12 px-8 font-bold shadow-lg shadow-indigo-100 transition-all gap-2 text-[10px] tracking-wide border-none">
+                                    <Plus size={20} /> Upload New Asset
+                                </Button>
                             </div>
                         </div>
                     </header>
@@ -557,61 +495,112 @@ const HRDocsPage = () => {
                 </SheetContent>
             </Sheet>
 
-            {/* Edit Document Dialog */}
-            <Dialog open={!!editingDoc} onOpenChange={(open) => { if (!open) setEditingDoc(null) }}>
-                <DialogContent className="max-w-xl bg-white rounded-[2.5rem] border-2 border-slate-200 p-8 shadow-3xl font-sans" style={{ zoom: "80%" }}>
-                    <DialogHeader>
-                        <DialogTitle className="text-2xl font-black tracking-tight text-slate-900">Edit Document</DialogTitle>
-                        <DialogDescription className="font-bold text-slate-400 text-[11px] tracking-wide mt-2 leading-relaxed">
-                            Update the metadata for this organizational asset.
-                        </DialogDescription>
-                    </DialogHeader>
-                    {editingDoc && (
-                        <div className="space-y-6 py-8">
-                            <div className="space-y-3 text-start">
-                                <label className="text-[10px] font-bold tracking-wide text-slate-400 ml-1">Document Name</label>
-                                <Input
-                                    placeholder="Document name"
-                                    value={editingDoc.name}
-                                    onChange={(e) => setEditingDoc({ ...editingDoc, name: e.target.value })}
-                                    className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 focus:bg-white transition-all shadow-sm"
-                                />
-                            </div>
-                            <div className="space-y-3 text-start">
-                                <label className="text-[10px] font-bold tracking-wide text-slate-400 ml-1">Category</label>
-                                <Select value={editingDoc.category} onValueChange={(val) => setEditingDoc({ ...editingDoc, category: val })}>
-                                    <SelectTrigger className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 focus:bg-white transition-all shadow-sm">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent className="rounded-2xl border border-slate-200 shadow-2xl p-2 font-bold text-xs font-sans">
-                                        {categories.filter(c => c !== "All").map(cat => (
-                                            <SelectItem key={cat} value={cat} className="rounded-xl h-10">{cat}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-3 text-start">
-                                <label className="text-[10px] font-bold tracking-wide text-slate-400 ml-1">Status</label>
-                                <Select value={editingDoc.status} onValueChange={(val: any) => setEditingDoc({ ...editingDoc, status: val })}>
-                                    <SelectTrigger className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold px-6 focus:bg-white transition-all shadow-sm">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent className="rounded-2xl border border-slate-200 shadow-2xl p-2 font-bold text-xs font-sans">
-                                        <SelectItem value="Published" className="rounded-xl h-10">Published</SelectItem>
-                                        <SelectItem value="Internal" className="rounded-xl h-10">Internal</SelectItem>
-                                        <SelectItem value="Confidential" className="rounded-xl h-10">Confidential</SelectItem>
-                                        <SelectItem value="Archived" className="rounded-xl h-10">Archived</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
+            {/* Upload New Asset Sheet */}
+            <SideFormSheet
+                open={isUploadOpen}
+                onOpenChange={(o) => { setIsUploadOpen(o); if (!o) setNewDoc({ name: "", category: "General", status: "Published", fileUrl: "#" }); }}
+                title="Deposit New Asset"
+                description="Files are encrypted and stored in the secure end-to-end organizational vault."
+                icon={<Upload size={20} />}
+                accentColor="#4f46e5"
+                width="md"
+                submitLabel="Secure Upload"
+                cancelLabel="Discard"
+                onSubmit={(e) => { e.preventDefault(); handleUpload(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Asset Reference Name" required>
+                        <Input
+                            placeholder="Internal Security Audit - Q1"
+                            value={newDoc.name}
+                            onChange={(e) => setNewDoc({ ...newDoc, name: e.target.value })}
+                        />
+                    </Field>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Classification Target" required>
+                            <Select value={newDoc.category} onValueChange={(val) => setNewDoc({ ...newDoc, category: val })}>
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {categories.filter(c => c !== "All").map(cat => (
+                                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <Field label="Security Visibility" required>
+                            <Select value={newDoc.status} onValueChange={(val: any) => setNewDoc({ ...newDoc, status: val })}>
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Published">Public (Open)</SelectItem>
+                                    <SelectItem value="Internal">Internal (Locked)</SelectItem>
+                                    <SelectItem value="Confidential">Encrypted (Confidential)</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                    </div>
+                    <div className="p-6 border-2 border-dashed rounded-2xl bg-indigo-50/30 border-indigo-200/50 flex flex-col items-center justify-center text-slate-500 hover:bg-indigo-50/50 transition-all cursor-pointer">
+                        <div className="w-12 h-12 rounded-xl bg-white shadow flex items-center justify-center mb-3 border border-indigo-100/50">
+                            <Upload size={22} className="text-indigo-600" />
                         </div>
-                    )}
-                    <DialogFooter className="gap-3">
-                        <Button variant="ghost" onClick={() => setEditingDoc(null)} className="h-12 rounded-xl font-bold text-[10px] tracking-wide transition-all px-6">Cancel</Button>
-                        <Button onClick={handleUpdate} className="bg-indigo-600 hover:bg-slate-900 text-white rounded-xl h-12 px-10 font-bold shadow-lg shadow-indigo-100 transition-all text-[10px] tracking-wide border-none">Save Changes</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                        <p className="text-sm font-bold text-slate-900 tracking-tight">Drop your secure assets here</p>
+                        <p className="text-[11px] mt-1 text-indigo-400 font-bold tracking-wide">Maximum bitstream: 50MB</p>
+                    </div>
+                </div>
+            </SideFormSheet>
+
+            {/* Edit Document Sheet */}
+            <SideFormSheet
+                open={!!editingDoc}
+                onOpenChange={(o) => { if (!o) setEditingDoc(null); }}
+                title="Edit Document"
+                description="Update the metadata for this organizational asset."
+                icon={<FileText size={20} />}
+                accentColor="#7c3aed"
+                width="md"
+                submitLabel="Save Changes"
+                onSubmit={(e) => { e.preventDefault(); handleUpdate(); }}
+            >
+                {editingDoc && (
+                    <div className="space-y-4">
+                        <Field label="Document Name" required>
+                            <Input
+                                placeholder="Document name"
+                                value={editingDoc.name}
+                                onChange={(e) => setEditingDoc({ ...editingDoc, name: e.target.value })}
+                            />
+                        </Field>
+                        <Field label="Category" required>
+                            <Select value={editingDoc.category} onValueChange={(val) => setEditingDoc({ ...editingDoc, category: val })}>
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {categories.filter(c => c !== "All").map(cat => (
+                                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <Field label="Status" required>
+                            <Select value={editingDoc.status} onValueChange={(val: any) => setEditingDoc({ ...editingDoc, status: val })}>
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Published">Published</SelectItem>
+                                    <SelectItem value="Internal">Internal</SelectItem>
+                                    <SelectItem value="Confidential">Confidential</SelectItem>
+                                    <SelectItem value="Archived">Archived</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                    </div>
+                )}
+            </SideFormSheet>
         </div>
     );
 };

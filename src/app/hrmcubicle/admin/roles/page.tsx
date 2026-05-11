@@ -29,6 +29,7 @@ const FieldError = ({ msg }: { msg?: string }) =>
     msg ? <p className="text-[11px] text-rose-600 font-medium mt-1">{msg}</p> : null;
 import { useTeamStore } from "@/shared/data/team-store"; // Integration with real employee data
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
@@ -547,48 +548,43 @@ const RolesPermissionsPage = () => {
                 </Tabs>
             </div>
 
-            {/* Field Configuration Dialog */}
-            <Dialog open={!!fieldConfigModule} onOpenChange={(open) => !open && setFieldConfigModule(null)}>
-                <DialogContent className="max-w-2xl rounded-2xl border-none p-8">
-                    <DialogHeader className="border-b border-slate-100 pb-4 mb-4">
-                        <DialogTitle className="text-xl font-bold flex items-center gap-2">
-                            <Settings className="text-indigo-600" size={20} />
-                            Field Permissions - {fieldConfigModule}
-                        </DialogTitle>
-                        <DialogDescription>
-                            Configure granular access rights for sensitive fields within this module.
-                        </DialogDescription>
-                    </DialogHeader>
-                    
-                    <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                        {fieldConfigModule && MODULE_FIELDS[fieldConfigModule]?.map(field => {
-                            const currentVal = activeFieldModule?.fieldAccess?.[field] || 'view';
-                            return (
-                                <div key={field} className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-100">
-                                    <span className="text-sm font-semibold text-slate-700">{field}</span>
-                                    <div className="flex bg-white rounded-lg p-1 border border-slate-200 shadow-sm">
-                                        {(['view', 'edit', 'hidden'] as const).map(option => (
-                                            <button
-                                                key={option}
-                                                onClick={() => updateFieldPermission(fieldConfigModule, field, option)}
-                                                className={`px-3 py-1 rounded-md text-xs font-bold capitalize transition-all ${currentVal === option 
-                                                    ? option === 'hidden' ? 'bg-rose-100 text-rose-700' : 'bg-indigo-100 text-indigo-700' 
-                                                    : 'text-slate-400 hover:text-slate-600'}`}
-                                            >
-                                                {option}
-                                            </button>
-                                        ))}
-                                    </div>
+            {/* Field Configuration Sheet */}
+            <SideFormSheet
+                open={!!fieldConfigModule}
+                onOpenChange={(open) => !open && setFieldConfigModule(null)}
+                title={`Field Permissions - ${fieldConfigModule || ''}`}
+                description="Configure granular access rights for sensitive fields within this module."
+                icon={<Settings size={20} />}
+                accentColor="#4f46e5"
+                width="lg"
+                footer={
+                    <Button onClick={() => setFieldConfigModule(null)} className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg h-10 px-5 font-semibold">Done</Button>
+                }
+            >
+                <div className="space-y-4">
+                    {fieldConfigModule && MODULE_FIELDS[fieldConfigModule]?.map(field => {
+                        const currentVal = activeFieldModule?.fieldAccess?.[field] || 'view';
+                        return (
+                            <div key={field} className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-100">
+                                <span className="text-sm font-semibold text-slate-700">{field}</span>
+                                <div className="flex bg-white rounded-lg p-1 border border-slate-200 shadow-sm">
+                                    {(['view', 'edit', 'hidden'] as const).map(option => (
+                                        <button
+                                            key={option}
+                                            onClick={() => updateFieldPermission(fieldConfigModule, field, option)}
+                                            className={`px-3 py-1 rounded-md text-xs font-bold capitalize transition-all ${currentVal === option
+                                                ? option === 'hidden' ? 'bg-rose-100 text-rose-700' : 'bg-indigo-100 text-indigo-700'
+                                                : 'text-slate-400 hover:text-slate-600'}`}
+                                        >
+                                            {option}
+                                        </button>
+                                    ))}
                                 </div>
-                            );
-                        })}
-                    </div>
-                    
-                    <DialogFooter className="pt-4 border-t border-slate-100">
-                        <Button onClick={() => setFieldConfigModule(null)} className="bg-indigo-600 text-white rounded-xl">Done</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                            </div>
+                        );
+                    })}
+                </div>
+            </SideFormSheet>
 
             {/* Create Role Dialog */}
             <CreateRoleDialog open={isCreateDialogOpen} onClose={() => setIsCreateDialogOpen(false)} onCreate={handleCreate} />
@@ -616,35 +612,31 @@ const CreateRoleDialog = ({ open, onClose, onCreate }: { open: boolean; onClose:
     };
 
     return (
-        <Dialog open={open} onOpenChange={(v) => { if (!v) { setName(""); setDesc(""); setErrs({}); } onClose(); }}>
-            <DialogContent className="sm:max-w-md rounded-2xl border-none p-6">
-                <DialogHeader>
-                    <DialogTitle className="text-xl font-bold">Create New Role</DialogTitle>
-                    <DialogDescription>Define a new security profile for your organization.</DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                    <div className="space-y-2">
-                        <Label>Role Name *</Label>
-                        <Input
-                            value={name}
-                            onChange={e => setName(e.target.value)}
-                            placeholder="e.g. Finance Auditor"
-                            maxLength={60}
-                            className={errs.name ? "border-rose-400" : ""}
-                        />
-                        <FieldError msg={errs.name} />
-                    </div>
-                    <div className="space-y-2">
-                        <Label>Description</Label>
-                        <Input value={desc} onChange={e => setDesc(e.target.value)} placeholder="What is this role for?" maxLength={200} />
-                    </div>
-                </div>
-                <DialogFooter>
-                    <Button variant="ghost" onClick={onClose}>Cancel</Button>
-                    <Button onClick={handleSubmit} className="bg-indigo-600 text-white hover:bg-indigo-700">Create Role</Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+        <SideFormSheet
+            open={open}
+            onOpenChange={(v) => { if (!v) { setName(""); setDesc(""); setErrs({}); onClose(); } }}
+            title="Create New Role"
+            description="Define a new security profile for your organization."
+            icon={<ShieldCheck size={20} />}
+            accentColor="#4f46e5"
+            width="md"
+            submitLabel="Create Role"
+            onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}
+        >
+            <div className="space-y-4">
+                <Field label="Role Name" required error={errs.name || undefined}>
+                    <Input
+                        value={name}
+                        onChange={e => setName(e.target.value)}
+                        placeholder="e.g. Finance Auditor"
+                        maxLength={60}
+                    />
+                </Field>
+                <Field label="Description">
+                    <Input value={desc} onChange={e => setDesc(e.target.value)} placeholder="What is this role for?" maxLength={200} />
+                </Field>
+            </div>
+        </SideFormSheet>
     );
 };
 

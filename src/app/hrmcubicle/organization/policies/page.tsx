@@ -36,6 +36,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import {
     Select,
     SelectContent,
@@ -373,78 +374,66 @@ const PolicyCenterPage = () => {
                 </div>
             </main>
 
-            {/* Add Policy Dialog */}
-            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-                <DialogContent className="bg-white rounded-[2.5rem] border border-slate-300 p-8 max-w-lg shadow-3xl">
-                    <DialogHeader className="space-y-2">
-                        <div className="h-11 w-11 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600 mb-1 shadow-inner">
-                            <Plus size={24} />
-                        </div>
-                        <DialogTitle className="text-2xl font-bold tracking-tight text-slate-900">Publish Policy</DialogTitle>
-                        <DialogDescription className="text-slate-500 font-medium text-xs">
-                            Upload and detail a new company policy for institutional awareness.
-                        </DialogDescription>
-                    </DialogHeader>
+            {/* Add Policy Sheet */}
+            <SideFormSheet
+                open={isAddDialogOpen}
+                onOpenChange={(o) => { setIsAddDialogOpen(o); if (!o) resetAddForm(); }}
+                title="Publish Policy"
+                description="Upload and detail a new company policy for institutional awareness."
+                icon={<Plus size={20} />}
+                accentColor="#4f46e5"
+                width="md"
+                submitLabel="Publish Policy"
+                onSubmit={(e) => { e.preventDefault(); handleAddPolicy(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Policy Title" required>
+                        <Input
+                            placeholder="e.g. Remote Work Policy"
+                            value={formData.title}
+                            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                        />
+                    </Field>
 
-                    <div className="py-6 space-y-5">
-                        <div className="space-y-1.5">
-                            <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Policy Title *</Label>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Category">
+                            <Select value={formData.category} onValueChange={(v) => setFormData({ ...formData, category: v as any })}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="HR">HR & People</SelectItem>
+                                    <SelectItem value="IT">IT & Assets</SelectItem>
+                                    <SelectItem value="Finance">Finance & Travel</SelectItem>
+                                    <SelectItem value="General">General</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <Field label="Version">
                             <Input
-                                className="rounded-lg h-10 bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors"
-                                placeholder="e.g. Remote Work Policy"
-                                value={formData.title}
-                                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                                placeholder="1.0"
+                                value={formData.version}
+                                onChange={(e) => setFormData({ ...formData, version: e.target.value })}
                             />
-                        </div>
+                        </Field>
+                    </div>
 
-                        <div className="grid grid-cols-2 gap-5">
-                            <div className="space-y-1.5">
-                                <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Category</Label>
-                                <Select value={formData.category} onValueChange={(v) => setFormData({ ...formData, category: v as any })}>
-                                    <SelectTrigger className="h-10 rounded-lg bg-slate-50 border border-slate-300 font-bold px-4 text-xs">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent className="rounded-xl border-none shadow-2xl p-2 font-bold">
-                                        <SelectItem value="HR" className="rounded-lg h-9">HR & People</SelectItem>
-                                        <SelectItem value="IT" className="rounded-lg h-9">IT & Assets</SelectItem>
-                                        <SelectItem value="Finance" className="rounded-lg h-9">Finance & Travel</SelectItem>
-                                        <SelectItem value="General" className="rounded-lg h-9">General</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Version</Label>
-                                <Input
-                                    className="rounded-lg h-10 bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors"
-                                    placeholder="1.0"
-                                    value={formData.version}
-                                    onChange={(e) => setFormData({ ...formData, version: e.target.value })}
-                                />
-                            </div>
-                        </div>
+                    <Field label="Effective Date">
+                        <Input
+                            type="date"
+                            value={formData.effectiveDate}
+                            onChange={(e) => setFormData({ ...formData, effectiveDate: e.target.value })}
+                        />
+                    </Field>
 
-                        <div className="space-y-1.5">
-                            <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Effective Date</Label>
-                            <Input
-                                type="date"
-                                className="rounded-lg h-10 bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors"
-                                value={formData.effectiveDate}
-                                onChange={(e) => setFormData({ ...formData, effectiveDate: e.target.value })}
-                            />
-                        </div>
+                    <Field label="Description">
+                        <Input
+                            placeholder="Short summary (optional)"
+                            value={formData.description || ""}
+                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                        />
+                    </Field>
 
-                        <div className="space-y-1.5">
-                            <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Description</Label>
-                            <Input
-                                className="rounded-lg h-10 bg-slate-50 border border-slate-300 font-medium px-4 text-xs focus:border-indigo-500 transition-colors"
-                                placeholder="Short summary (optional)"
-                                value={formData.description || ""}
-                                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                            />
-                        </div>
-
-                        <div className="space-y-3 pt-2">
-                            <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Document Upload</Label>
+                    <Field label="Document Upload">
+                        <>
                             <input
                                 ref={addFileInputRef}
                                 type="file"
@@ -454,7 +443,7 @@ const PolicyCenterPage = () => {
                             />
                             <div
                                 onClick={() => addFileInputRef.current?.click()}
-                                className="border-2 border-dashed border-slate-200 rounded-[1.5rem] p-8 flex flex-col items-center justify-center bg-slate-50 hover:bg-indigo-50/30 hover:border-indigo-200 transition-all cursor-pointer group"
+                                className="border-2 border-dashed border-slate-200 rounded-2xl p-8 flex flex-col items-center justify-center bg-slate-50 hover:bg-indigo-50/30 hover:border-indigo-200 transition-all cursor-pointer group"
                             >
                                 <div className="h-12 w-12 bg-white rounded-full flex items-center justify-center shadow-sm border border-slate-100 mb-3 group-hover:scale-110 transition-transform">
                                     <Download size={20} className="text-indigo-600 rotate-180" />
@@ -471,92 +460,68 @@ const PolicyCenterPage = () => {
                                     </>
                                 )}
                             </div>
-                        </div>
+                        </>
+                    </Field>
+                </div>
+            </SideFormSheet>
+
+            {/* Edit Policy Sheet */}
+            <SideFormSheet
+                open={isEditDialogOpen}
+                onOpenChange={(o) => { setIsEditDialogOpen(o); if (!o) setUploadedFileName(""); }}
+                title="Update Policy"
+                description="Modify policy details or update versioning."
+                icon={<Edit size={20} />}
+                accentColor="#7c3aed"
+                width="md"
+                submitLabel="Save Changes"
+                onSubmit={(e) => { e.preventDefault(); handleUpdatePolicy(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Policy Title" required>
+                        <Input
+                            value={formData.title}
+                            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                        />
+                    </Field>
+
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Category">
+                            <Select value={formData.category} onValueChange={(v) => setFormData({ ...formData, category: v as any })}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="HR">HR & People</SelectItem>
+                                    <SelectItem value="IT">IT & Assets</SelectItem>
+                                    <SelectItem value="Finance">Finance & Travel</SelectItem>
+                                    <SelectItem value="General">General</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <Field label="Version Tag">
+                            <Input
+                                value={formData.version}
+                                onChange={(e) => setFormData({ ...formData, version: e.target.value })}
+                            />
+                        </Field>
                     </div>
 
-                    <DialogFooter className="gap-2 pt-6 border-t border-slate-200 sm:justify-end">
-                        <Button
-                            className="flex-1 bg-indigo-600 hover:bg-slate-900 text-white rounded-lg h-10 font-bold text-xs shadow-xl shadow-indigo-100 transition-all"
-                            onClick={handleAddPolicy}
-                        >
-                            Publish Policy
-                        </Button>
-                        <Button variant="outline" className="h-10 px-6 rounded-lg font-bold border-slate-300 text-slate-600 text-xs" onClick={() => { setIsAddDialogOpen(false); resetAddForm(); }}>
-                            Cancel
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    <Field label="Effective Date">
+                        <Input
+                            type="date"
+                            value={formData.effectiveDate}
+                            onChange={(e) => setFormData({ ...formData, effectiveDate: e.target.value })}
+                        />
+                    </Field>
 
-            {/* Edit Policy Dialog */}
-            <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-                <DialogContent className="bg-white rounded-[2.5rem] border border-slate-300 p-8 max-w-lg shadow-3xl">
-                    <DialogHeader className="space-y-2">
-                        <div className="h-11 w-11 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 mb-1 shadow-inner">
-                            <Edit size={24} />
-                        </div>
-                        <DialogTitle className="text-2xl font-bold tracking-tight text-slate-900">Update Policy</DialogTitle>
-                        <DialogDescription className="text-slate-500 font-medium text-xs">
-                            Modify policy details or update versioning.
-                        </DialogDescription>
-                    </DialogHeader>
+                    <Field label="Description">
+                        <Input
+                            value={formData.description || ""}
+                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                        />
+                    </Field>
 
-                    <div className="py-6 space-y-5">
-                        <div className="space-y-1.5">
-                            <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Policy Title *</Label>
-                            <Input
-                                className="rounded-lg h-10 bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors"
-                                value={formData.title}
-                                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                            />
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-5">
-                            <div className="space-y-1.5">
-                                <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Category</Label>
-                                <Select value={formData.category} onValueChange={(v) => setFormData({ ...formData, category: v as any })}>
-                                    <SelectTrigger className="h-10 rounded-lg bg-slate-50 border border-slate-300 font-bold px-4 text-xs">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent className="rounded-xl border-none shadow-2xl p-2 font-bold">
-                                        <SelectItem value="HR" className="rounded-lg h-9">HR & People</SelectItem>
-                                        <SelectItem value="IT" className="rounded-lg h-9">IT & Assets</SelectItem>
-                                        <SelectItem value="Finance" className="rounded-lg h-9">Finance & Travel</SelectItem>
-                                        <SelectItem value="General" className="rounded-lg h-9">General</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Version Tag</Label>
-                                <Input
-                                    className="rounded-lg h-10 bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors"
-                                    value={formData.version}
-                                    onChange={(e) => setFormData({ ...formData, version: e.target.value })}
-                                />
-                            </div>
-                        </div>
-
-                        <div className="space-y-1.5">
-                            <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Effective Date</Label>
-                            <Input
-                                type="date"
-                                className="rounded-lg h-10 bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors"
-                                value={formData.effectiveDate}
-                                onChange={(e) => setFormData({ ...formData, effectiveDate: e.target.value })}
-                            />
-                        </div>
-
-                        <div className="space-y-1.5">
-                            <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Description</Label>
-                            <Input
-                                className="rounded-lg h-10 bg-slate-50 border border-slate-300 font-medium px-4 text-xs focus:border-indigo-500 transition-colors"
-                                value={formData.description || ""}
-                                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                            />
-                        </div>
-
-                        <div className="space-y-3 pt-2">
-                            <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Replace Document (optional)</Label>
+                    <Field label="Replace Document (optional)">
+                        <>
                             <input
                                 ref={editFileInputRef}
                                 type="file"
@@ -566,7 +531,7 @@ const PolicyCenterPage = () => {
                             />
                             <div
                                 onClick={() => editFileInputRef.current?.click()}
-                                className="border-2 border-dashed border-slate-200 rounded-[1.5rem] p-5 flex items-center gap-3 bg-slate-50 hover:bg-indigo-50/30 hover:border-indigo-200 transition-all cursor-pointer"
+                                className="border-2 border-dashed border-slate-200 rounded-2xl p-5 flex items-center gap-3 bg-slate-50 hover:bg-indigo-50/30 hover:border-indigo-200 transition-all cursor-pointer"
                             >
                                 <div className="h-10 w-10 bg-white rounded-full flex items-center justify-center shadow-sm border border-slate-100">
                                     <FileText size={16} className="text-indigo-600" />
@@ -576,22 +541,10 @@ const PolicyCenterPage = () => {
                                     <p className="text-[10px] text-slate-400 font-medium">{formData.fileSize || ""} · Click to replace</p>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-
-                    <DialogFooter className="gap-2 pt-6 border-t border-slate-200 sm:justify-end">
-                        <Button
-                            className="flex-1 bg-indigo-600 hover:bg-slate-900 text-white rounded-lg h-10 font-bold text-xs shadow-xl shadow-indigo-100 transition-all"
-                            onClick={handleUpdatePolicy}
-                        >
-                            Save Changes
-                        </Button>
-                        <Button variant="outline" className="h-10 px-6 rounded-lg font-bold border-slate-300 text-slate-600 text-xs" onClick={() => { setIsEditDialogOpen(false); setUploadedFileName(""); }}>
-                            Cancel
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                        </>
+                    </Field>
+                </div>
+            </SideFormSheet>
             {/* View Document Dialog */}
             <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
                 <DialogContent className="bg-white rounded-[2.5rem] border border-slate-300 p-8 max-w-lg shadow-3xl">

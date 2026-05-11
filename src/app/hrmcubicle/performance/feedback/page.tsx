@@ -57,6 +57,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import {
     createFeedback as apiCreateFeedback,
     deleteFeedback as apiDeleteFeedback,
@@ -458,176 +459,142 @@ const ContinuousFeedbackPage = () => {
                 </div>
             </main>
 
-            {/* Give Feedback Dialog */}
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="bg-white rounded-[2.5rem] border-none p-10 max-w-2xl shadow-3xl font-sans" style={{ zoom: "80%" }}>
-                    <DialogHeader className="space-y-3 text-start">
-                        <div className="h-14 w-14 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600 mb-2 shadow-inner border border-emerald-100">
-                            <Zap size={28} fill="currentColor" />
-                        </div>
-                        <DialogTitle className="text-2xl font-bold tracking-tight text-slate-900">Configure Recognition</DialogTitle>
-                        <DialogDescription className="text-slate-500 font-semibold text-sm text-start">Select visibility, identity control, and participation category.</DialogDescription>
-                    </DialogHeader>
-
-                    <div className="py-8 space-y-5 text-start">
-                        <div className="grid grid-cols-2 gap-5">
-                            <div className="space-y-1.5 col-span-full md:col-span-1">
-                                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">To Participant *</Label>
-                                <Select value={formData.toId} onValueChange={(v) => {
-                                    const emp = employees.find((e) => e.id === v);
-                                    setFormData({ ...formData, toId: v, to: { name: emp?.name || "", avatar: (emp?.name || "").charAt(0).toUpperCase() } });
-                                }}>
-                                    <SelectTrigger className={`h-12 rounded-xl bg-slate-50 border-slate-100 font-bold px-5 focus:bg-white text-sm ${sendErrors.toId ? "border-rose-400" : ""}`}>
-                                        <SelectValue placeholder={employees.length ? "Choose recipient" : "Loading employees…"} />
-                                    </SelectTrigger>
-                                    <SelectContent className="rounded-xl border-none shadow-2xl p-1.5 font-bold max-h-72 overflow-y-auto">
-                                        {employees.length === 0 && <div className="px-3 py-2 text-xs text-slate-400 italic">No employees available</div>}
-                                        {employees.map((e) => (
-                                            <SelectItem key={e.id} value={e.id} className="rounded-lg h-9 text-[11px]">{e.label}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                                {sendErrors.toId && (
-                                    <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 ml-1"><AlertCircle size={10} /> {sendErrors.toId}</p>
-                                )}
-                            </div>
-                            <div className="space-y-1.5 col-span-full md:col-span-1">
-                                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Evaluation Category</Label>
-                                <Select value={formData.category} onValueChange={(v) => setFormData({ ...formData, category: v as any })}>
-                                    <SelectTrigger className="h-12 rounded-xl bg-slate-50 border-slate-100 font-bold px-5 focus:bg-white text-sm">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent className="rounded-xl border-none shadow-2xl p-1.5 font-bold">
-                                        <SelectItem value="Appreciation" className="rounded-lg h-10 text-[10px] uppercase tracking-wide">Appreciation</SelectItem>
-                                        <SelectItem value="Improvement" className="rounded-lg h-10 text-[10px] uppercase tracking-wide">Coaching / Improvement</SelectItem>
-                                        <SelectItem value="General" className="rounded-lg h-10 text-[10px] uppercase tracking-wide">General Observations</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-
-                        <div className="space-y-1.5">
-                            <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Rating (1-5) *</Label>
-                            <Input
-                                type="number" min={1} max={5}
-                                className={`rounded-xl h-12 bg-slate-50 border-slate-100 font-bold px-5 focus:bg-white text-sm ${sendErrors.rating ? "border-rose-400" : ""}`}
-                                value={formData.rating}
-                                onChange={(e) => setFormData({ ...formData, rating: Math.max(1, Math.min(5, parseInt(e.target.value) || 1)) })}
-                            />
-                            {sendErrors.rating && (
-                                <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 ml-1"><AlertCircle size={10} /> {sendErrors.rating}</p>
-                            )}
-                        </div>
-
-                        <div className="space-y-1.5">
-                            <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Notes / Description *</Label>
-                            <Textarea
-                                maxLength={1000}
-                                className={`rounded-2xl bg-slate-50 border-slate-100 min-h-[120px] p-5 font-semibold text-sm focus:bg-white transition-all shadow-inner ${sendErrors.message ? "border-rose-400" : ""}`}
-                                placeholder="Describe the impact or behavior..."
-                                value={formData.message}
-                                onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                            />
-                            <p className="text-[10px] text-slate-400 ml-1">{formData.message.length}/1000</p>
-                            {sendErrors.message && (
-                                <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 ml-1"><AlertCircle size={10} /> {sendErrors.message}</p>
-                            )}
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="flex items-center justify-between p-4 bg-slate-50/50 rounded-2xl border border-slate-100 transition-all hover:bg-white group cursor-pointer" onClick={() => setFormData({ ...formData, isAnonymous: !formData.isAnonymous })}>
-                                <div className="flex items-center gap-3">
-                                    <div className={`h-9 w-9 rounded-xl flex items-center justify-center transition-all ${formData.isAnonymous ? "bg-slate-900 text-white shadow-lg" : "bg-white text-slate-300 group-hover:text-indigo-600 shadow-sm border border-slate-100"}`}>
-                                        <EyeOff size={16} />
-                                    </div>
-                                    <div className="space-y-0.5">
-                                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-900">Anonymous</p>
-                                        <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Identity Hidden</p>
-                                    </div>
-                                </div>
-                                <Switch checked={formData.isAnonymous} onCheckedChange={(val) => setFormData({ ...formData, isAnonymous: val })} />
-                            </div>
-
-                            <div className="flex items-center justify-between p-4 bg-slate-50/50 rounded-2xl border border-slate-100 transition-all hover:bg-white group cursor-pointer" onClick={() => setFormData({ ...formData, isPublic: !formData.isPublic })}>
-                                <div className="flex items-center gap-3">
-                                    <div className={`h-9 w-9 rounded-xl flex items-center justify-center transition-all ${formData.isPublic ? "bg-indigo-600 text-white shadow-lg" : "bg-white text-slate-300 group-hover:text-amber-600 shadow-sm border border-slate-100"}`}>
-                                        <Users size={16} />
-                                    </div>
-                                    <div className="space-y-0.5">
-                                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-900">Public Post</p>
-                                        <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Live Wall</p>
-                                    </div>
-                                </div>
-                                <Switch checked={formData.isPublic} onCheckedChange={(val) => setFormData({ ...formData, isPublic: val })} />
-                            </div>
-                        </div>
-                    </div>
-
-                    <DialogFooter className="gap-2 pt-6 border-t border-slate-50 sm:justify-start">
-                        <Button
-                            className="flex-1 bg-indigo-600 hover:bg-slate-900 text-white rounded-xl h-12 font-bold text-[11px] uppercase tracking-widest shadow-xl shadow-indigo-100 transition-all flex gap-3 border-none"
-                            onClick={handleSendFeedback}
-                            disabled={saving}
-                        >
-                            {saving ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-                            {saving ? "Sending..." : "Dispatch Recognition"}
-                        </Button>
-                        <Button variant="ghost" className="h-12 px-6 rounded-xl font-bold text-[10px] uppercase tracking-widest text-slate-400" onClick={() => setIsDialogOpen(false)} disabled={saving}>
-                            Discard
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            {/* Edit Feedback Dialog */}
-            <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-                <DialogContent className="bg-white rounded-[2.5rem] border-none p-10 max-w-lg shadow-3xl" style={{ zoom: "80%" }}>
-                    <DialogHeader>
-                        <DialogTitle className="text-xl font-bold uppercase tracking-tight">Edit Feedback</DialogTitle>
-                        <DialogDescription>Revise message, category, and visibility.</DialogDescription>
-                    </DialogHeader>
-                    <div className="py-4 space-y-4 text-start">
-                        <div className="space-y-1.5">
-                            <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Message *</Label>
-                            <Textarea
-                                maxLength={1000}
-                                className={`rounded-xl bg-slate-50 border-slate-100 min-h-[100px] p-4 text-sm font-semibold ${editErrors.message ? "border-rose-400" : ""}`}
-                                value={editData.message}
-                                onChange={(e) => setEditData({ ...editData, message: e.target.value })}
-                            />
-                            <p className="text-[10px] text-slate-400 ml-1">{editData.message.length}/1000</p>
-                            {editErrors.message && (
-                                <p className="text-[10px] font-bold text-rose-600 flex items-center gap-1 ml-1"><AlertCircle size={10} /> {editErrors.message}</p>
-                            )}
-                        </div>
-                        <div className="space-y-1.5">
-                            <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Category</Label>
-                            <Select value={editData.category} onValueChange={(v) => setEditData({ ...editData, category: v as any })}>
-                                <SelectTrigger className="h-11 rounded-xl bg-slate-50 border-slate-100 font-bold">
+            {/* Give Feedback SideFormSheet */}
+            <SideFormSheet
+                open={isDialogOpen}
+                onOpenChange={(o) => { setIsDialogOpen(o); if (!o) setSendErrors({}); }}
+                title="Configure Recognition"
+                description="Select visibility, identity control, and participation category."
+                icon={<Zap size={20} />}
+                accentColor="#059669"
+                width="lg"
+                loading={saving}
+                submitLabel={saving ? "Sending..." : "Dispatch Recognition"}
+                onSubmit={(e) => { e.preventDefault(); handleSendFeedback(); }}
+            >
+                <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="To Participant" required error={sendErrors.toId || undefined}>
+                            <Select value={formData.toId} onValueChange={(v) => {
+                                const emp = employees.find((e) => e.id === v);
+                                setFormData({ ...formData, toId: v, to: { name: emp?.name || "", avatar: (emp?.name || "").charAt(0).toUpperCase() } });
+                            }}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder={employees.length ? "Choose recipient" : "Loading employees…"} />
+                                </SelectTrigger>
+                                <SelectContent className="max-h-72 overflow-y-auto">
+                                    {employees.length === 0 && <div className="px-3 py-2 text-xs text-slate-400 italic">No employees available</div>}
+                                    {employees.map((e) => (
+                                        <SelectItem key={e.id} value={e.id}>{e.label}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <Field label="Evaluation Category">
+                            <Select value={formData.category} onValueChange={(v) => setFormData({ ...formData, category: v as any })}>
+                                <SelectTrigger>
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="Appreciation">Appreciation</SelectItem>
-                                    <SelectItem value="Improvement">Improvement</SelectItem>
-                                    <SelectItem value="General">General</SelectItem>
+                                    <SelectItem value="Improvement">Coaching / Improvement</SelectItem>
+                                    <SelectItem value="General">General Observations</SelectItem>
                                 </SelectContent>
                             </Select>
+                        </Field>
+                    </div>
+
+                    <Field label="Rating (1-5)" required error={sendErrors.rating || undefined}>
+                        <Input
+                            type="number" min={1} max={5}
+                            value={formData.rating}
+                            onChange={(e) => setFormData({ ...formData, rating: Math.max(1, Math.min(5, parseInt(e.target.value) || 1)) })}
+                        />
+                    </Field>
+
+                    <Field label="Notes / Description" required error={sendErrors.message || undefined} hint={`${formData.message.length}/1000`}>
+                        <Textarea
+                            maxLength={1000}
+                            className="min-h-[120px]"
+                            placeholder="Describe the impact or behavior..."
+                            value={formData.message}
+                            onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                        />
+                    </Field>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100 cursor-pointer" onClick={() => setFormData({ ...formData, isAnonymous: !formData.isAnonymous })}>
+                            <div className="flex items-center gap-3">
+                                <div className={`h-9 w-9 rounded-xl flex items-center justify-center transition-all ${formData.isAnonymous ? "bg-slate-900 text-white" : "bg-white text-slate-300 border border-slate-100"}`}>
+                                    <EyeOff size={16} />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-semibold text-slate-900">Anonymous</p>
+                                    <p className="text-[11px] text-slate-400">Identity Hidden</p>
+                                </div>
+                            </div>
+                            <Switch checked={formData.isAnonymous} onCheckedChange={(val) => setFormData({ ...formData, isAnonymous: val })} />
                         </div>
-                        <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
-                            <Label className="text-xs font-bold">Anonymous</Label>
-                            <Switch checked={editData.isAnonymous} onCheckedChange={(v) => setEditData({ ...editData, isAnonymous: v })} />
-                        </div>
-                        <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
-                            <Label className="text-xs font-bold">Public</Label>
-                            <Switch checked={editData.isPublic} onCheckedChange={(v) => setEditData({ ...editData, isPublic: v })} />
+
+                        <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100 cursor-pointer" onClick={() => setFormData({ ...formData, isPublic: !formData.isPublic })}>
+                            <div className="flex items-center gap-3">
+                                <div className={`h-9 w-9 rounded-xl flex items-center justify-center transition-all ${formData.isPublic ? "bg-indigo-600 text-white" : "bg-white text-slate-300 border border-slate-100"}`}>
+                                    <Users size={16} />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-semibold text-slate-900">Public Post</p>
+                                    <p className="text-[11px] text-slate-400">Live Wall</p>
+                                </div>
+                            </div>
+                            <Switch checked={formData.isPublic} onCheckedChange={(val) => setFormData({ ...formData, isPublic: val })} />
                         </div>
                     </div>
-                    <DialogFooter>
-                        <Button variant="ghost" onClick={() => setIsEditOpen(false)}>Cancel</Button>
-                        <Button className="bg-indigo-600 hover:bg-slate-900 text-white border-none" onClick={handleEdit}>Save</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                </div>
+            </SideFormSheet>
+
+            {/* Edit Feedback SideFormSheet */}
+            <SideFormSheet
+                open={isEditOpen}
+                onOpenChange={(o) => { setIsEditOpen(o); if (!o) setEditErrors({}); }}
+                title="Edit Feedback"
+                description="Revise message, category, and visibility."
+                icon={<Edit size={20} />}
+                accentColor="#7c3aed"
+                width="md"
+                submitLabel="Save"
+                onSubmit={(e) => { e.preventDefault(); handleEdit(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Message" required error={editErrors.message || undefined} hint={`${editData.message.length}/1000`}>
+                        <Textarea
+                            maxLength={1000}
+                            className="min-h-[100px]"
+                            value={editData.message}
+                            onChange={(e) => setEditData({ ...editData, message: e.target.value })}
+                        />
+                    </Field>
+                    <Field label="Category">
+                        <Select value={editData.category} onValueChange={(v) => setEditData({ ...editData, category: v as any })}>
+                            <SelectTrigger>
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Appreciation">Appreciation</SelectItem>
+                                <SelectItem value="Improvement">Improvement</SelectItem>
+                                <SelectItem value="General">General</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                    <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+                        <Label className="text-xs font-bold">Anonymous</Label>
+                        <Switch checked={editData.isAnonymous} onCheckedChange={(v) => setEditData({ ...editData, isAnonymous: v })} />
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+                        <Label className="text-xs font-bold">Public</Label>
+                        <Switch checked={editData.isPublic} onCheckedChange={(v) => setEditData({ ...editData, isPublic: v })} />
+                    </div>
+                </div>
+            </SideFormSheet>
 
             {/* Mod Panel */}
             <Dialog open={isModPanelOpen} onOpenChange={setIsModPanelOpen}>

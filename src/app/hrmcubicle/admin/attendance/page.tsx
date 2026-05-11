@@ -20,6 +20,7 @@ import {
 import { useToast } from "@/shared/components/ui/use-toast";
 import { useAttendanceSettingsStore, type Shift, type AttendanceRule, type Holiday } from "@/shared/data/attendance-settings-store";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/shared/components/ui/alert-dialog";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
@@ -535,172 +536,137 @@ const AttendanceRulesPage = () => {
                 </ScrollArea>
             </Tabs>
 
-            {/* Shift Dialog */}
-            <Dialog open={shiftDialogOpen} onOpenChange={(v) => { setShiftDialogOpen(v); if (!v) setCurrentShift({}); }}>
-                <DialogContent className="rounded-2xl border-none p-8 max-w-lg">
-                    <DialogHeader>
-                        <DialogTitle className="text-xl font-bold">{currentShift.id ? "Edit Shift" : "Configure Shift"}</DialogTitle>
-                        <DialogDescription>Set working hours and breaks.</DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-6 py-4">
-                        <div className="grid gap-2">
-                            <Label>Shift Name *</Label>
-                            <Input value={currentShift.name || ""} onChange={e => setCurrentShift({ ...currentShift, name: e.target.value })} className={`bg-slate-50 ${shiftErrors.name ? "border-rose-400" : ""}`} />
-                            <FieldError msg={shiftErrors.name} />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="grid gap-2">
-                                <Label>Start Time *</Label>
-                                <Input type="time" value={currentShift.startTime || ""} onChange={e => setCurrentShift({ ...currentShift, startTime: e.target.value })} className={`bg-slate-50 ${shiftErrors.startTime ? "border-rose-400" : ""}`} />
-                                <FieldError msg={shiftErrors.startTime} />
-                            </div>
-                            <div className="grid gap-2">
-                                <Label>End Time *</Label>
-                                <Input type="time" value={currentShift.endTime || ""} onChange={e => setCurrentShift({ ...currentShift, endTime: e.target.value })} className={`bg-slate-50 ${shiftErrors.endTime ? "border-rose-400" : ""}`} />
-                                <FieldError msg={shiftErrors.endTime} />
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="grid gap-2">
-                                <Label>Work Hours</Label>
-                                <Input type="number" min="0" max="24" step="0.5" value={currentShift.workingHours ?? ""} onChange={e => setCurrentShift({ ...currentShift, workingHours: parseFloat(e.target.value) })} className={`bg-slate-50 ${shiftErrors.workingHours ? "border-rose-400" : ""}`} />
-                                <FieldError msg={shiftErrors.workingHours} />
-                            </div>
-                            <div className="grid gap-2">
-                                <Label>Break (Mins)</Label>
-                                <Input type="number" min="0" max="480" value={currentShift.breakDuration ?? ""} onChange={e => setCurrentShift({ ...currentShift, breakDuration: parseInt(e.target.value) })} className={`bg-slate-50 ${shiftErrors.breakDuration ? "border-rose-400" : ""}`} />
-                                <FieldError msg={shiftErrors.breakDuration} />
-                            </div>
-                        </div>
-                        <div className="space-y-3">
-                            <Label>Applicable Days *</Label>
-                            <div className="flex gap-2">
-                                {daysOfWeek.map((day, idx) => (
-                                    <button
-                                        type="button"
-                                        key={day}
-                                        onClick={() => {
-                                            const days = currentShift.applicableDays || [];
-                                            const newDays = days.includes(idx) ? days.filter(d => d !== idx) : [...days, idx];
-                                            setCurrentShift({ ...currentShift, applicableDays: newDays });
-                                        }}
-                                        className={`h-8 w-8 rounded-full text-xs font-bold transition-all ${(currentShift.applicableDays || []).includes(idx) ? 'bg-rose-600 text-white shadow-md shadow-rose-200' : 'bg-slate-100 text-slate-400'
-                                            }`}
-                                    >
-                                        {day.charAt(0)}
-                                    </button>
-                                ))}
-                            </div>
-                            <FieldError msg={shiftErrors.applicableDays} />
-                        </div>
+            {/* Shift Sheet */}
+            <SideFormSheet
+                open={shiftDialogOpen}
+                onOpenChange={(v) => { setShiftDialogOpen(v); if (!v) setCurrentShift({}); }}
+                title={currentShift.id ? "Edit Shift" : "Configure Shift"}
+                description="Set working hours and breaks."
+                icon={<Clock size={20} />}
+                accentColor={currentShift.id ? "#7c3aed" : "#e11d48"}
+                width="md"
+                submitLabel={currentShift.id ? "Save Changes" : "Create Shift"}
+                onSubmit={(e) => { e.preventDefault(); saveShift(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Shift Name" required error={shiftErrors.name || undefined}>
+                        <Input value={currentShift.name || ""} onChange={e => setCurrentShift({ ...currentShift, name: e.target.value })} />
+                    </Field>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Start Time" required error={shiftErrors.startTime || undefined}>
+                            <Input type="time" value={currentShift.startTime || ""} onChange={e => setCurrentShift({ ...currentShift, startTime: e.target.value })} />
+                        </Field>
+                        <Field label="End Time" required error={shiftErrors.endTime || undefined}>
+                            <Input type="time" value={currentShift.endTime || ""} onChange={e => setCurrentShift({ ...currentShift, endTime: e.target.value })} />
+                        </Field>
                     </div>
-                    <DialogFooter className="gap-2">
-                        <Button variant="outline" onClick={() => { setShiftDialogOpen(false); setCurrentShift({}); }}>Cancel</Button>
-                        <Button onClick={saveShift} className="bg-rose-600 hover:bg-rose-700 text-white font-bold">
-                            {currentShift.id ? "Save Changes" : "Create Shift"}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            {/* Rule Dialog */}
-            <Dialog open={ruleDialogOpen} onOpenChange={(v) => { setRuleDialogOpen(v); if (!v) setCurrentRule({}); }}>
-                <DialogContent className="rounded-2xl border-none p-8 max-w-lg">
-                    <DialogHeader>
-                        <DialogTitle className="text-xl font-bold">{currentRule.id ? "Edit Policy Rule" : "New Policy Rule"}</DialogTitle>
-                        <DialogDescription>Configure attendance rule parameters.</DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-6 py-4">
-                        <div className="grid gap-2">
-                            <Label>Rule Name *</Label>
-                            <Input value={currentRule.name || ""} onChange={e => setCurrentRule({ ...currentRule, name: e.target.value })} className={`bg-slate-50 ${ruleErrors.name ? "border-rose-400" : ""}`} />
-                            <FieldError msg={ruleErrors.name} />
-                        </div>
-                        <div className="grid gap-2">
-                            <Label>Rule Type *</Label>
-                            <Select value={currentRule.type} onValueChange={(val: any) => setCurrentRule({ ...currentRule, type: val })}>
-                                <SelectTrigger className={`bg-slate-50 ${ruleErrors.type ? "border-rose-400" : ""}`}><SelectValue /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="Grace Period">Grace Period</SelectItem>
-                                    <SelectItem value="Late Mark">Late Mark</SelectItem>
-                                    <SelectItem value="Overtime">Overtime</SelectItem>
-                                    <SelectItem value="Half Day">Half Day</SelectItem>
-                                </SelectContent>
-                            </Select>
-                            <FieldError msg={ruleErrors.type} />
-                        </div>
-
-                        {/* Dynamic Config Fields based on Type */}
-                        {currentRule.type === 'Grace Period' && (
-                            <div className="grid gap-2">
-                                <Label>Grace Minutes *</Label>
-                                <Input type="number" min="0" max="120" value={currentRule.config?.gracePeriodMinutes ?? ''} onChange={e => setCurrentRule({ ...currentRule, config: { ...currentRule.config, gracePeriodMinutes: parseInt(e.target.value) } })} className={`bg-slate-50 ${ruleErrors.gracePeriodMinutes ? "border-rose-400" : ""}`} />
-                                <FieldError msg={ruleErrors.gracePeriodMinutes} />
-                            </div>
-                        )}
-                        {currentRule.type === 'Late Mark' && (
-                            <div className="grid gap-2">
-                                <Label>Mark Late After (Minutes) *</Label>
-                                <Input type="number" min="0" max="240" value={currentRule.config?.lateMarkAfterMinutes ?? ''} onChange={e => setCurrentRule({ ...currentRule, config: { ...currentRule.config, lateMarkAfterMinutes: parseInt(e.target.value) } })} className={`bg-slate-50 ${ruleErrors.lateMarkAfterMinutes ? "border-rose-400" : ""}`} />
-                                <FieldError msg={ruleErrors.lateMarkAfterMinutes} />
-                            </div>
-                        )}
-                        {currentRule.type === 'Overtime' && (
-                            <div className="grid gap-2">
-                                <Label>Pay Multiplier (e.g. 1.5) *</Label>
-                                <Input type="number" step="0.1" min="0" max="10" value={currentRule.config?.overtimeMultiplier ?? ''} onChange={e => setCurrentRule({ ...currentRule, config: { ...currentRule.config, overtimeMultiplier: parseFloat(e.target.value) } })} className={`bg-slate-50 ${ruleErrors.overtimeMultiplier ? "border-rose-400" : ""}`} />
-                                <FieldError msg={ruleErrors.overtimeMultiplier} />
-                            </div>
-                        )}
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Work Hours" error={shiftErrors.workingHours || undefined}>
+                            <Input type="number" min="0" max="24" step="0.5" value={currentShift.workingHours ?? ""} onChange={e => setCurrentShift({ ...currentShift, workingHours: parseFloat(e.target.value) })} />
+                        </Field>
+                        <Field label="Break (Mins)" error={shiftErrors.breakDuration || undefined}>
+                            <Input type="number" min="0" max="480" value={currentShift.breakDuration ?? ""} onChange={e => setCurrentShift({ ...currentShift, breakDuration: parseInt(e.target.value) })} />
+                        </Field>
                     </div>
-                    <DialogFooter className="gap-2">
-                        <Button variant="outline" onClick={() => { setRuleDialogOpen(false); setCurrentRule({}); }}>Cancel</Button>
-                        <Button onClick={saveRule} className="bg-rose-600 hover:bg-rose-700 text-white font-bold">
-                            {currentRule.id ? "Save Changes" : "Create Rule"}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    <Field label="Applicable Days" required error={shiftErrors.applicableDays || undefined}>
+                        <div className="flex gap-2">
+                            {daysOfWeek.map((day, idx) => (
+                                <button
+                                    type="button"
+                                    key={day}
+                                    onClick={() => {
+                                        const days = currentShift.applicableDays || [];
+                                        const newDays = days.includes(idx) ? days.filter(d => d !== idx) : [...days, idx];
+                                        setCurrentShift({ ...currentShift, applicableDays: newDays });
+                                    }}
+                                    className={`h-8 w-8 rounded-full text-xs font-bold transition-all ${(currentShift.applicableDays || []).includes(idx) ? 'bg-rose-600 text-white shadow-md shadow-rose-200' : 'bg-slate-100 text-slate-400'
+                                        }`}
+                                >
+                                    {day.charAt(0)}
+                                </button>
+                            ))}
+                        </div>
+                    </Field>
+                </div>
+            </SideFormSheet>
 
-            {/* Holiday Dialog */}
-            <Dialog open={holidayDialogOpen} onOpenChange={(v) => { setHolidayDialogOpen(v); if (!v) setCurrentHoliday({}); }}>
-                <DialogContent className="rounded-2xl border-none p-8 max-w-lg">
-                    <DialogHeader>
-                        <DialogTitle className="text-xl font-bold">{currentHoliday.id ? "Edit Holiday" : "Add Holiday"}</DialogTitle>
-                        <DialogDescription>Mark a non-working day on the calendar.</DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-6 py-4">
-                        <div className="grid gap-2">
-                            <Label>Holiday Name *</Label>
-                            <Input value={currentHoliday.name || ""} onChange={e => setCurrentHoliday({ ...currentHoliday, name: e.target.value })} className={`bg-slate-50 ${holidayErrors.name ? "border-rose-400" : ""}`} />
-                            <FieldError msg={holidayErrors.name} />
-                        </div>
-                        <div className="grid gap-2">
-                            <Label>Date *</Label>
-                            <Input type="date" value={currentHoliday.date || ""} onChange={e => setCurrentHoliday({ ...currentHoliday, date: e.target.value })} className={`bg-slate-50 ${holidayErrors.date ? "border-rose-400" : ""}`} />
-                            <FieldError msg={holidayErrors.date} />
-                        </div>
-                        <div className="grid gap-2">
-                            <Label>Type *</Label>
-                            <Select value={currentHoliday.type} onValueChange={(val: any) => setCurrentHoliday({ ...currentHoliday, type: val })}>
-                                <SelectTrigger className={`bg-slate-50 ${holidayErrors.type ? "border-rose-400" : ""}`}><SelectValue /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="National">National Holiday</SelectItem>
-                                    <SelectItem value="Regional">Regional Holiday</SelectItem>
-                                    <SelectItem value="Optional">Optional Holiday</SelectItem>
-                                </SelectContent>
-                            </Select>
-                            <FieldError msg={holidayErrors.type} />
-                        </div>
-                    </div>
-                    <DialogFooter className="gap-2">
-                        <Button variant="outline" onClick={() => { setHolidayDialogOpen(false); setCurrentHoliday({}); }}>Cancel</Button>
-                        <Button onClick={saveHoliday} className="bg-rose-600 hover:bg-rose-700 text-white font-bold">
-                            {currentHoliday.id ? "Save Changes" : "Add to Calendar"}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            {/* Rule Sheet */}
+            <SideFormSheet
+                open={ruleDialogOpen}
+                onOpenChange={(v) => { setRuleDialogOpen(v); if (!v) setCurrentRule({}); }}
+                title={currentRule.id ? "Edit Policy Rule" : "New Policy Rule"}
+                description="Configure attendance rule parameters."
+                icon={<AlertCircle size={20} />}
+                accentColor={currentRule.id ? "#7c3aed" : "#e11d48"}
+                width="md"
+                submitLabel={currentRule.id ? "Save Changes" : "Create Rule"}
+                onSubmit={(e) => { e.preventDefault(); saveRule(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Rule Name" required error={ruleErrors.name || undefined}>
+                        <Input value={currentRule.name || ""} onChange={e => setCurrentRule({ ...currentRule, name: e.target.value })} />
+                    </Field>
+                    <Field label="Rule Type" required error={ruleErrors.type || undefined}>
+                        <Select value={currentRule.type} onValueChange={(val: any) => setCurrentRule({ ...currentRule, type: val })}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Grace Period">Grace Period</SelectItem>
+                                <SelectItem value="Late Mark">Late Mark</SelectItem>
+                                <SelectItem value="Overtime">Overtime</SelectItem>
+                                <SelectItem value="Half Day">Half Day</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </Field>
+
+                    {currentRule.type === 'Grace Period' && (
+                        <Field label="Grace Minutes" required error={ruleErrors.gracePeriodMinutes || undefined}>
+                            <Input type="number" min="0" max="120" value={currentRule.config?.gracePeriodMinutes ?? ''} onChange={e => setCurrentRule({ ...currentRule, config: { ...currentRule.config, gracePeriodMinutes: parseInt(e.target.value) } })} />
+                        </Field>
+                    )}
+                    {currentRule.type === 'Late Mark' && (
+                        <Field label="Mark Late After (Minutes)" required error={ruleErrors.lateMarkAfterMinutes || undefined}>
+                            <Input type="number" min="0" max="240" value={currentRule.config?.lateMarkAfterMinutes ?? ''} onChange={e => setCurrentRule({ ...currentRule, config: { ...currentRule.config, lateMarkAfterMinutes: parseInt(e.target.value) } })} />
+                        </Field>
+                    )}
+                    {currentRule.type === 'Overtime' && (
+                        <Field label="Pay Multiplier (e.g. 1.5)" required error={ruleErrors.overtimeMultiplier || undefined}>
+                            <Input type="number" step="0.1" min="0" max="10" value={currentRule.config?.overtimeMultiplier ?? ''} onChange={e => setCurrentRule({ ...currentRule, config: { ...currentRule.config, overtimeMultiplier: parseFloat(e.target.value) } })} />
+                        </Field>
+                    )}
+                </div>
+            </SideFormSheet>
+
+            {/* Holiday Sheet */}
+            <SideFormSheet
+                open={holidayDialogOpen}
+                onOpenChange={(v) => { setHolidayDialogOpen(v); if (!v) setCurrentHoliday({}); }}
+                title={currentHoliday.id ? "Edit Holiday" : "Add Holiday"}
+                description="Mark a non-working day on the calendar."
+                icon={<CalendarDays size={20} />}
+                accentColor={currentHoliday.id ? "#7c3aed" : "#e11d48"}
+                width="md"
+                submitLabel={currentHoliday.id ? "Save Changes" : "Add to Calendar"}
+                onSubmit={(e) => { e.preventDefault(); saveHoliday(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Holiday Name" required error={holidayErrors.name || undefined}>
+                        <Input value={currentHoliday.name || ""} onChange={e => setCurrentHoliday({ ...currentHoliday, name: e.target.value })} />
+                    </Field>
+                    <Field label="Date" required error={holidayErrors.date || undefined}>
+                        <Input type="date" value={currentHoliday.date || ""} onChange={e => setCurrentHoliday({ ...currentHoliday, date: e.target.value })} />
+                    </Field>
+                    <Field label="Type" required error={holidayErrors.type || undefined}>
+                        <Select value={currentHoliday.type} onValueChange={(val: any) => setCurrentHoliday({ ...currentHoliday, type: val })}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="National">National Holiday</SelectItem>
+                                <SelectItem value="Regional">Regional Holiday</SelectItem>
+                                <SelectItem value="Optional">Optional Holiday</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                </div>
+            </SideFormSheet>
 
             {/* Delete Confirmation */}
             <AlertDialog open={!!deleteTarget} onOpenChange={(v) => !v && setDeleteTarget(null)}>

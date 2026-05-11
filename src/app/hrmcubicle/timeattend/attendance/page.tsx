@@ -28,7 +28,6 @@ import { Badge } from "@/shared/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/shared/components/ui/avatar";
 import { useToast } from "@/shared/components/ui/use-toast";
 import { Input } from "@/shared/components/ui/input";
-import { Label } from "@/shared/components/ui/label";
 import { useAttendanceStore, AttendanceLog } from "@/shared/data/attendance-store";
 import { overrideAttendance } from "@/modules/hrm/hooks/hrmHooks";
 import {
@@ -38,15 +37,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/shared/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 
 const MasterAttendancePage = () => {
   const { toast } = useToast();
@@ -455,68 +446,59 @@ const MasterAttendancePage = () => {
         </Card>
       </div>
 
-      {/* Edit Attendance Dialog */}
-      <Dialog open={editingLog !== null} onOpenChange={(open) => { if (!open) setEditingLog(null); }}>
-        <DialogContent className="bg-white rounded-2xl border-2 border-slate-200 p-8 sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-slate-900">Edit Attendance Record</DialogTitle>
-            <DialogDescription className="text-slate-500">
-              Update punch times, status, or add a remark for {editingLog?.empName} on {editingLog?.date}.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Check In</Label>
-                <Input
-                  type="time"
-                  value={editForm.checkIn}
-                  onChange={(e) => setEditForm({ ...editForm, checkIn: e.target.value })}
-                  className="rounded-lg border border-slate-200"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Check Out</Label>
-                <Input
-                  type="time"
-                  value={editForm.checkOut}
-                  onChange={(e) => setEditForm({ ...editForm, checkOut: e.target.value })}
-                  className="rounded-lg border border-slate-200"
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Status</Label>
-              <Select value={editForm.status} onValueChange={(v) => setEditForm({ ...editForm, status: v as AttendanceLog["status"] })}>
-                <SelectTrigger className="rounded-lg border border-slate-200">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Present">Present</SelectItem>
-                  <SelectItem value="Absent">Absent</SelectItem>
-                  <SelectItem value="Late">Late</SelectItem>
-                  <SelectItem value="Half Day">Half Day</SelectItem>
-                  <SelectItem value="On Leave">On Leave</SelectItem>
-                  <SelectItem value="Weekend">Weekend</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Remark</Label>
+      {/* Edit Attendance */}
+      <SideFormSheet
+        open={editingLog !== null}
+        onOpenChange={(o) => { if (!o) setEditingLog(null); }}
+        title="Edit Attendance Record"
+        description={editingLog ? `Update punch times, status, or add a remark for ${editingLog.empName} on ${editingLog.date}.` : undefined}
+        icon={<FileEdit size={20} />}
+        accentColor="#7c3aed"
+        width="md"
+        submitLabel="Save Changes"
+        onSubmit={(e) => { e.preventDefault(); handleSaveEdit(); }}
+      >
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Check In">
               <Input
-                placeholder="Optional reason or note"
-                value={editForm.remark}
-                onChange={(e) => setEditForm({ ...editForm, remark: e.target.value })}
-                className="rounded-lg border border-slate-200"
+                type="time"
+                value={editForm.checkIn}
+                onChange={(e) => setEditForm({ ...editForm, checkIn: e.target.value })}
               />
-            </div>
+            </Field>
+            <Field label="Check Out">
+              <Input
+                type="time"
+                value={editForm.checkOut}
+                onChange={(e) => setEditForm({ ...editForm, checkOut: e.target.value })}
+              />
+            </Field>
           </div>
-          <DialogFooter className="flex gap-2">
-            <Button variant="ghost" onClick={() => setEditingLog(null)}>Cancel</Button>
-            <Button className="bg-[#6366f1] hover:bg-[#5558e6]" onClick={handleSaveEdit}>Save Changes</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          <Field label="Status">
+            <Select value={editForm.status} onValueChange={(v) => setEditForm({ ...editForm, status: v as AttendanceLog["status"] })}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Present">Present</SelectItem>
+                <SelectItem value="Absent">Absent</SelectItem>
+                <SelectItem value="Late">Late</SelectItem>
+                <SelectItem value="Half Day">Half Day</SelectItem>
+                <SelectItem value="On Leave">On Leave</SelectItem>
+                <SelectItem value="Weekend">Weekend</SelectItem>
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field label="Remark">
+            <Input
+              placeholder="Optional reason or note"
+              value={editForm.remark}
+              onChange={(e) => setEditForm({ ...editForm, remark: e.target.value })}
+            />
+          </Field>
+        </div>
+      </SideFormSheet>
     </div>
   );
 };

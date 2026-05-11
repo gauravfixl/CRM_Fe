@@ -31,15 +31,7 @@ import { Badge } from "@/shared/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/shared/components/ui/avatar";
 import { useToast } from "@/shared/components/ui/use-toast";
 import { useAttendanceSettingsStore, Shift, Holiday, AttendanceRule } from "@/shared/data/attendance-settings-store";
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
@@ -503,235 +495,209 @@ const ShiftsAdminPage = () => {
                     </TabsContent>
                 </Tabs>
 
-                {/* --- Dialogs --- */}
+                {/* --- Side Form Sheets --- */}
 
-                {/* Holiday Dialog */}
-                <Dialog open={isHolidayOpen} onOpenChange={setIsHolidayOpen}>
-                    <DialogContent className="bg-white rounded-[2.5rem] border-2 border-slate-200 p-10 max-w-md shadow-2xl">
-                        <DialogHeader>
-                            <DialogTitle className="text-2xl font-bold tracking-tight text-slate-900">Register new holiday</DialogTitle>
-                            <DialogDescription className="font-bold text-slate-400 text-sm">Add statutory holidays to the 2026 corporate calendar.</DialogDescription>
-                        </DialogHeader>
-                        <div className="space-y-6 py-6 font-sans">
-                            <div className="space-y-2">
-                                <Label className="font-bold ml-1 text-slate-600">Event name</Label>
-                                <Input
-                                    placeholder="e.g. Diwali Pooja"
-                                    className="h-14 rounded-2xl bg-slate-50 border border-slate-200 px-6 font-bold text-lg"
-                                    value={newHoliday.name}
-                                    onChange={e => setNewHoliday({ ...newHoliday, name: e.target.value })}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="font-bold ml-1 text-slate-600">Calendar date</Label>
-                                <Input
-                                    type="date"
-                                    className="h-14 rounded-2xl bg-slate-50 border border-slate-200 px-6 font-bold text-lg"
-                                    value={newHoliday.date}
-                                    onChange={e => setNewHoliday({ ...newHoliday, date: e.target.value })}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="font-bold ml-1 text-slate-600">Holiday type</Label>
-                                <Select value={newHoliday.type} onValueChange={(v: any) => setNewHoliday({ ...newHoliday, type: v })}>
-                                    <SelectTrigger className="h-14 rounded-2xl bg-slate-50 border border-slate-200 font-bold px-6 text-lg">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent className="rounded-2xl border-none shadow-2xl">
-                                        <SelectItem value="National">National statutory</SelectItem>
-                                        <SelectItem value="Regional">Regional / State</SelectItem>
-                                        <SelectItem value="Optional">Optional / Floating</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-                        <DialogFooter className="mt-4">
-                            <Button className="w-full h-16 bg-slate-900 text-white rounded-[1.5rem] font-bold text-xl shadow-2xl shadow-slate-200 tracking-tight" onClick={handleHolidaySubmit}>Save holiday record</Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                {/* Holiday */}
+                <SideFormSheet
+                    open={isHolidayOpen}
+                    onOpenChange={setIsHolidayOpen}
+                    title="Register New Holiday"
+                    description="Add statutory holidays to the 2026 corporate calendar."
+                    icon={<CalendarDays size={20} />}
+                    accentColor="#4f46e5"
+                    width="md"
+                    submitLabel="Save Holiday Record"
+                    onSubmit={(e) => { e.preventDefault(); handleHolidaySubmit(); }}
+                >
+                    <div className="space-y-4">
+                        <Field label="Event Name" required>
+                            <Input
+                                placeholder="e.g. Diwali Pooja"
+                                value={newHoliday.name}
+                                onChange={e => setNewHoliday({ ...newHoliday, name: e.target.value })}
+                            />
+                        </Field>
+                        <Field label="Calendar Date" required>
+                            <Input
+                                type="date"
+                                value={newHoliday.date}
+                                onChange={e => setNewHoliday({ ...newHoliday, date: e.target.value })}
+                            />
+                        </Field>
+                        <Field label="Holiday Type">
+                            <Select value={newHoliday.type} onValueChange={(v: any) => setNewHoliday({ ...newHoliday, type: v })}>
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="National">National statutory</SelectItem>
+                                    <SelectItem value="Regional">Regional / State</SelectItem>
+                                    <SelectItem value="Optional">Optional / Floating</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                    </div>
+                </SideFormSheet>
 
-                {/* Shift Dialog */}
-                <Dialog open={isShiftOpen} onOpenChange={setIsShiftOpen}>
-                    <DialogContent className="bg-white rounded-[2.5rem] border-2 border-slate-200 p-10 max-w-lg shadow-2xl">
-                        <DialogHeader>
-                            <DialogTitle className="text-2xl font-bold tracking-tight text-slate-900">{selectedShift ? 'Configure shift logic' : 'Create new shift'}</DialogTitle>
-                            <DialogDescription className="font-bold text-slate-400 text-sm">Define working hours and operational window for this shift.</DialogDescription>
-                        </DialogHeader>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-6">
-                            <div className="space-y-2 md:col-span-2">
-                                <Label className="font-bold ml-1 text-slate-600">Shift name</Label>
-                                <Input
-                                    placeholder="e.g. Asia-Pac Morning"
-                                    className="h-14 rounded-2xl bg-slate-50 border border-slate-200 px-6 font-bold text-lg"
-                                    value={newShift.name}
-                                    onChange={e => setNewShift({ ...newShift, name: e.target.value })}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="font-bold ml-1 text-slate-600">Start time</Label>
+                {/* Shift */}
+                <SideFormSheet
+                    open={isShiftOpen}
+                    onOpenChange={setIsShiftOpen}
+                    title={selectedShift ? "Configure Shift Logic" : "Create New Shift"}
+                    description="Define working hours and operational window for this shift."
+                    icon={<Clock size={20} />}
+                    accentColor={selectedShift ? "#7c3aed" : "#4f46e5"}
+                    width="lg"
+                    submitLabel={selectedShift ? "Update Configuration" : "Enable New Shift"}
+                    onSubmit={(e) => { e.preventDefault(); handleShiftSubmit(); }}
+                >
+                    <div className="space-y-4">
+                        <Field label="Shift Name" required>
+                            <Input
+                                placeholder="e.g. Asia-Pac Morning"
+                                value={newShift.name}
+                                onChange={e => setNewShift({ ...newShift, name: e.target.value })}
+                            />
+                        </Field>
+                        <div className="grid grid-cols-2 gap-3">
+                            <Field label="Start Time" required>
                                 <Input
                                     type="time"
-                                    className="h-14 rounded-2xl bg-slate-50 border border-slate-200 px-6 font-bold text-lg text-center"
                                     value={newShift.startTime}
                                     onChange={e => setNewShift({ ...newShift, startTime: e.target.value })}
                                 />
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="font-bold ml-1 text-slate-600">End time</Label>
+                            </Field>
+                            <Field label="End Time" required>
                                 <Input
                                     type="time"
-                                    className="h-14 rounded-2xl bg-slate-50 border border-slate-200 px-6 font-bold text-lg text-center"
                                     value={newShift.endTime}
                                     onChange={e => setNewShift({ ...newShift, endTime: e.target.value })}
                                 />
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="font-bold ml-1 text-slate-600">Working hours</Label>
+                            </Field>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <Field label="Working Hours">
                                 <Input
                                     type="number"
-                                    className="h-14 rounded-2xl bg-slate-50 border border-slate-200 px-6 font-bold text-lg"
                                     value={newShift.workingHours}
                                     onChange={e => setNewShift({ ...newShift, workingHours: Number(e.target.value) })}
                                 />
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="font-bold ml-1 text-slate-600">Break duration (mins)</Label>
+                            </Field>
+                            <Field label="Break Duration (mins)">
                                 <Input
                                     type="number"
-                                    className="h-14 rounded-2xl bg-slate-50 border border-slate-200 px-6 font-bold text-lg"
                                     value={newShift.breakDuration}
                                     onChange={e => setNewShift({ ...newShift, breakDuration: Number(e.target.value) })}
                                 />
-                            </div>
+                            </Field>
                         </div>
-                        <DialogFooter className="mt-4">
-                            <Button className="w-full h-16 bg-[#CB9DF0] text-white rounded-[1.5rem] font-bold text-xl shadow-2xl shadow-purple-100 tracking-tight" onClick={handleShiftSubmit}>
-                                {selectedShift ? 'Update configuration' : 'Enable new shift'}
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                    </div>
+                </SideFormSheet>
 
-                {/* Bulk Roster Dialog */}
-                <Dialog open={isRosterOpen} onOpenChange={setIsRosterOpen}>
-                    <DialogContent className="bg-white rounded-[2.5rem] border-2 border-slate-200 p-10 max-w-md shadow-2xl">
-                        <DialogHeader>
-                            <DialogTitle className="text-2xl font-bold tracking-tight text-slate-900">Bulk shift assignment</DialogTitle>
-                            <DialogDescription className="font-bold text-slate-400 text-sm">Reassign entire team to a different operational shift.</DialogDescription>
-                        </DialogHeader>
-                        <div className="space-y-8 py-8">
-                            <div className="bg-indigo-50 p-6 rounded-3xl border border-indigo-100">
-                                <p className="font-bold text-indigo-700 text-xs uppercase tracking-widest mb-1">Team impact</p>
-                                <p className="text-indigo-900 font-bold text-2xl tracking-tight leading-none">{roster.length} staff members</p>
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="font-bold ml-1 text-slate-600">Target operational shift</Label>
-                                <Select value={targetShiftId} onValueChange={setTargetShiftId}>
-                                    <SelectTrigger className="h-14 rounded-2xl bg-slate-50 border border-slate-200 font-bold px-6 text-lg">
-                                        <SelectValue placeholder="Select target shift" />
-                                    </SelectTrigger>
-                                    <SelectContent className="rounded-2xl border-none shadow-2xl">
-                                        {shifts.map(s => <SelectItem key={s.id} value={s.id}>{s.name} ({s.startTime}-{s.endTime})</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
-                            </div>
+                {/* Bulk Roster */}
+                <SideFormSheet
+                    open={isRosterOpen}
+                    onOpenChange={setIsRosterOpen}
+                    title="Bulk Shift Assignment"
+                    description="Reassign entire team to a different operational shift."
+                    icon={<ArrowRightLeft size={20} />}
+                    accentColor="#4f46e5"
+                    width="md"
+                    submitLabel="Execute Reassignment"
+                    onSubmit={(e) => { e.preventDefault(); handleBulkRoster(); }}
+                >
+                    <div className="space-y-4">
+                        <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-100">
+                            <p className="font-bold text-indigo-700 text-xs uppercase tracking-widest mb-1">Team impact</p>
+                            <p className="text-indigo-900 font-bold text-xl tracking-tight leading-none">{roster.length} staff members</p>
                         </div>
-                        <DialogFooter className="mt-4">
-                            <Button
-                                className="w-full h-16 bg-indigo-600 text-white rounded-[1.5rem] font-bold text-xl shadow-2xl shadow-indigo-100 tracking-tight"
-                                onClick={handleBulkRoster}
-                            >
-                                Execute reassignment
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                        <Field label="Target Operational Shift" required>
+                            <Select value={targetShiftId} onValueChange={setTargetShiftId}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select target shift" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {shifts.map(s => <SelectItem key={s.id} value={s.id}>{s.name} ({s.startTime}-{s.endTime})</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                    </div>
+                </SideFormSheet>
 
-                {/* Modify Individual Slot Dialog */}
-                <Dialog open={isModifySlotOpen} onOpenChange={setIsModifySlotOpen}>
-                    <DialogContent className="bg-white rounded-[2.5rem] border-2 border-slate-200 p-10 max-w-md shadow-2xl">
-                        <DialogHeader>
-                            <DialogTitle className="text-2xl font-bold tracking-tight text-slate-900">Modify staff slot</DialogTitle>
-                            <DialogDescription className="font-bold text-slate-400 text-sm">Change individual shift assignment for {selectedStaff?.name}.</DialogDescription>
-                        </DialogHeader>
-                        <div className="space-y-8 py-8">
-                            <div className="flex items-center gap-4 bg-slate-50 p-6 rounded-3xl border border-slate-100">
-                                <Avatar className="h-14 w-14 rounded-2xl shadow-lg border-4 border-white">
-                                    <AvatarFallback className="bg-purple-100 text-purple-600 font-bold">{selectedStaff?.name[0]}</AvatarFallback>
-                                </Avatar>
-                                <div>
-                                    <p className="font-bold text-slate-900 text-lg leading-tight">{selectedStaff?.name}</p>
-                                    <p className="text-xs font-bold text-slate-400">{selectedStaff?.id} • {selectedStaff?.dept}</p>
-                                </div>
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="font-bold ml-1 text-slate-600">Assign to shift</Label>
-                                <Select value={targetShiftId} onValueChange={setTargetShiftId}>
-                                    <SelectTrigger className="h-14 rounded-2xl bg-slate-50 border border-slate-200 font-bold px-6 text-lg">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent className="rounded-2xl border-none shadow-2xl">
-                                        {shifts.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
+                {/* Modify Individual Slot */}
+                <SideFormSheet
+                    open={isModifySlotOpen}
+                    onOpenChange={setIsModifySlotOpen}
+                    title="Modify Staff Slot"
+                    description={selectedStaff ? `Change individual shift assignment for ${selectedStaff.name}.` : undefined}
+                    icon={<Users size={20} />}
+                    accentColor="#7c3aed"
+                    width="md"
+                    submitLabel="Save Slot Update"
+                    onSubmit={(e) => { e.preventDefault(); handleRosterUpdate(); }}
+                >
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-3 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                            <Avatar className="h-12 w-12 rounded-xl shadow-sm border-2 border-white">
+                                <AvatarFallback className="bg-purple-100 text-purple-600 font-bold">{selectedStaff?.name?.[0]}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                                <p className="font-bold text-slate-900 leading-tight">{selectedStaff?.name}</p>
+                                <p className="text-xs font-medium text-slate-400">{selectedStaff?.id} • {selectedStaff?.dept}</p>
                             </div>
                         </div>
-                        <DialogFooter className="mt-4">
-                            <Button
-                                className="w-full h-16 bg-slate-900 text-white rounded-[1.5rem] font-bold text-xl shadow-2xl shadow-slate-200 tracking-tight"
-                                onClick={handleRosterUpdate}
-                            >
-                                Save slot update
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                        <Field label="Assign to Shift" required>
+                            <Select value={targetShiftId} onValueChange={setTargetShiftId}>
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {shifts.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                    </div>
+                </SideFormSheet>
 
-                {/* Rule Config Dialog */}
-                <Dialog open={isRuleOpen} onOpenChange={setIsRuleOpen}>
-                    <DialogContent className="bg-white rounded-[2.5rem] border-2 border-slate-200 p-10 max-w-md shadow-2xl">
-                        <DialogHeader>
-                            <DialogTitle className="text-2xl font-bold tracking-tight text-slate-900">System rule config</DialogTitle>
-                            <DialogDescription className="font-bold text-slate-400 text-sm">Adjust global threshold for {selectedRule?.name}.</DialogDescription>
-                        </DialogHeader>
-                        <div className="space-y-8 py-8">
-                            <div className="space-y-2">
-                                <Label className="font-bold ml-1 text-slate-600">Configure value</Label>
-                                <div className="relative group">
-                                    <Input
-                                        type="number"
-                                        className="h-14 rounded-2xl bg-slate-50 border border-slate-200 px-6 font-bold text-2xl text-[#CB9DF0]"
-                                        value={ruleValue}
-                                        onChange={e => setRuleValue(e.target.value)}
-                                    />
-                                    <span className="absolute right-6 top-1/2 -translate-y-1/2 font-bold text-slate-400">
-                                        {selectedRule?.type === 'Grace Period' ? 'Mins' : 'Multiplier'}
-                                    </span>
-                                </div>
+                {/* Rule Config */}
+                <SideFormSheet
+                    open={isRuleOpen}
+                    onOpenChange={setIsRuleOpen}
+                    title="System Rule Config"
+                    description={selectedRule ? `Adjust global threshold for ${selectedRule.name}.` : undefined}
+                    icon={<Settings size={20} />}
+                    accentColor="#7c3aed"
+                    width="md"
+                    submitLabel="Synchronize Rule"
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        if (selectedRule) {
+                            const numVal = Number(ruleValue);
+                            if (selectedRule.type === 'Grace Period') {
+                                updateRule(selectedRule.id, { config: { ...selectedRule.config, gracePeriodMinutes: numVal } });
+                            } else if (selectedRule.type === 'Overtime') {
+                                updateRule(selectedRule.id, { config: { ...selectedRule.config, overtimeMultiplier: numVal } });
+                            }
+                        }
+                        setIsRuleOpen(false);
+                        toast({ title: "Rule Optimized", description: "Global attendance logic has been successfully calibrated." });
+                    }}
+                >
+                    <div className="space-y-4">
+                        <Field label="Configure Value" required>
+                            <div className="relative">
+                                <Input
+                                    type="number"
+                                    value={ruleValue}
+                                    onChange={e => setRuleValue(e.target.value)}
+                                />
+                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400">
+                                    {selectedRule?.type === 'Grace Period' ? 'Mins' : 'Multiplier'}
+                                </span>
                             </div>
-                        </div>
-                        <DialogFooter className="mt-4">
-                            <Button
-                                className="w-full h-16 bg-[#CB9DF0] text-white rounded-[1.5rem] font-bold text-xl shadow-2xl shadow-purple-100 tracking-tight"
-                                onClick={() => {
-                                    if (selectedRule) {
-                                        const numVal = Number(ruleValue);
-                                        if (selectedRule.type === 'Grace Period') {
-                                            updateRule(selectedRule.id, { config: { ...selectedRule.config, gracePeriodMinutes: numVal } });
-                                        } else if (selectedRule.type === 'Overtime') {
-                                            updateRule(selectedRule.id, { config: { ...selectedRule.config, overtimeMultiplier: numVal } });
-                                        }
-                                    }
-                                    setIsRuleOpen(false);
-                                    toast({ title: "Rule Optimized", description: "Global attendance logic has been successfully calibrated." });
-                                }}
-                            >
-                                <Save size={20} className="mr-2" /> Synchronize rule
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                        </Field>
+                    </div>
+                </SideFormSheet>
 
             </div>
         </div>

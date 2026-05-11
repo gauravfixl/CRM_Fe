@@ -36,6 +36,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import { Label } from "@/shared/components/ui/label";
 import { Textarea } from "@/shared/components/ui/textarea";
 import { Checkbox } from "@/shared/components/ui/checkbox";
@@ -581,93 +582,79 @@ const ApprovalsPage = () => {
             </main>
 
             {/* Rejection Dialog */}
-            <Dialog open={isRejectDialogOpen} onOpenChange={(open) => { setIsRejectDialogOpen(open); if (!open) setRejectionReason(""); }}>
-                <DialogContent className="bg-white rounded-3xl border-none p-10 max-w-md shadow-2xl">
-                    <DialogHeader className="space-y-4">
-                        <div className="h-12 w-12 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-600 mb-2">
-                            <XCircle size={28} />
-                        </div>
-                        <DialogTitle className="text-2xl font-bold tracking-tight text-slate-900">Reject This Request</DialogTitle>
-                        <DialogDescription className="text-slate-500 font-medium">Please provide a valid administrative reason for rejection.</DialogDescription>
-                    </DialogHeader>
-                    <div className="py-6 space-y-2">
-                        <div className="flex items-center justify-between">
-                            <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Administrative Feedback *</Label>
-                            <span className={`text-[10px] font-bold tabular-nums ${rejectionReasonTrimmed.length > 500 ? 'text-rose-500' : 'text-slate-300'}`}>{rejectionReasonTrimmed.length}/500</span>
-                        </div>
+            <SideFormSheet
+                open={isRejectDialogOpen}
+                onOpenChange={(open) => { setIsRejectDialogOpen(open); if (!open) setRejectionReason(""); }}
+                title="Reject This Request"
+                description="Please provide a valid administrative reason for rejection."
+                icon={<XCircle size={20} />}
+                accentColor="#e11d48"
+                width="md"
+                loading={isActing}
+                submitLabel={isActing ? 'Rejecting…' : 'Reject Forever'}
+                submitDisabled={!isRejectValid}
+                onSubmit={(e) => { e.preventDefault(); handleReject(); }}
+            >
+                <div className="space-y-2">
+                    <Field
+                        label="Administrative Feedback"
+                        required
+                        error={rejectionReasonError || undefined}
+                        hint={rejectionReasonError ? undefined : `${rejectionReasonTrimmed.length}/500`}
+                    >
                         <Textarea
-                            className={`rounded-2xl bg-slate-50 focus:bg-white min-h-[120px] font-medium p-4 ${rejectionReasonError ? 'border-rose-300 focus:border-rose-400' : 'border-slate-200'}`}
+                            className="min-h-[140px]"
                             placeholder="e.g. Please resubmit with supporting documents..."
                             value={rejectionReason}
                             maxLength={550}
                             onChange={(e) => setRejectionReason(e.target.value)}
                             aria-invalid={!!rejectionReasonError}
                         />
-                        {rejectionReasonError && <p className="text-[11px] font-semibold text-rose-500 ml-1">{rejectionReasonError}</p>}
-                    </div>
-                    <DialogFooter className="gap-3">
-                        <Button variant="outline" className="rounded-xl h-12 font-bold px-8" onClick={() => { setIsRejectDialogOpen(false); setRejectionReason(""); }}>Cancel</Button>
-                        <Button
-                            className="flex-1 bg-rose-600 hover:bg-rose-700 text-white rounded-xl h-12 font-bold shadow-lg shadow-rose-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
-                            onClick={handleReject}
-                            disabled={!isRejectValid || isActing}
-                        >
-                            {isActing ? 'Rejecting…' : 'Reject Forever'}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-            {/* Delegate Dialog */}
-            <Dialog open={isDelegateDialogOpen} onOpenChange={setIsDelegateDialogOpen}>
-                <DialogContent className="bg-white rounded-3xl border-none p-10 max-w-md shadow-2xl">
-                    <DialogHeader className="space-y-4">
-                        <div className="h-12 w-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 mb-2">
-                            <Forward size={28} />
-                        </div>
-                        <DialogTitle className="text-2xl font-bold tracking-tight text-slate-900">Delegate Request</DialogTitle>
-                        <DialogDescription className="text-slate-500 font-medium">Assign this request to another team lead or manager for review.</DialogDescription>
-                    </DialogHeader>
-                    <div className="py-6 space-y-2">
-                        <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Delegate To *</Label>
-                        <Input
-                            className="rounded-2xl bg-slate-50 border-slate-200 focus:bg-white h-12 font-medium px-4"
-                            placeholder="e.g. Team Lead - Sarah, HR Manager..."
-                            value={delegateTo}
-                            onChange={(e) => setDelegateTo(e.target.value)}
-                        />
-                    </div>
-                    <DialogFooter className="gap-3">
-                        <Button variant="outline" className="rounded-xl h-12 font-bold px-8" onClick={() => setIsDelegateDialogOpen(false)}>Cancel</Button>
-                        <Button className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl h-12 font-bold shadow-lg shadow-indigo-100" onClick={handleDelegate}>Delegate Now</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    </Field>
+                </div>
+            </SideFormSheet>
 
-            {/* Escalate Dialog */}
-            <Dialog open={isEscalateDialogOpen} onOpenChange={setIsEscalateDialogOpen}>
-                <DialogContent className="bg-white rounded-3xl border-none p-10 max-w-md shadow-2xl">
-                    <DialogHeader className="space-y-4">
-                        <div className="h-12 w-12 bg-purple-50 rounded-2xl flex items-center justify-center text-purple-600 mb-2">
-                            <TrendingUp size={28} />
-                        </div>
-                        <DialogTitle className="text-2xl font-bold tracking-tight text-slate-900">Escalate Request</DialogTitle>
-                        <DialogDescription className="text-slate-500 font-medium">Escalate this to a higher authority for urgent attention.</DialogDescription>
-                    </DialogHeader>
-                    <div className="py-6 space-y-2">
-                        <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Escalate To *</Label>
-                        <Input
-                            className="rounded-2xl bg-slate-50 border-slate-200 focus:bg-white h-12 font-medium px-4"
-                            placeholder="e.g. Head of Operations, VP HR..."
-                            value={escalateTo}
-                            onChange={(e) => setEscalateTo(e.target.value)}
-                        />
-                    </div>
-                    <DialogFooter className="gap-3">
-                        <Button variant="outline" className="rounded-xl h-12 font-bold px-8" onClick={() => setIsEscalateDialogOpen(false)}>Cancel</Button>
-                        <Button className="flex-1 bg-purple-600 hover:bg-purple-700 text-white rounded-xl h-12 font-bold shadow-lg shadow-purple-100" onClick={handleEscalate}>Escalate Now</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            {/* Delegate Sheet */}
+            <SideFormSheet
+                open={isDelegateDialogOpen}
+                onOpenChange={setIsDelegateDialogOpen}
+                title="Delegate Request"
+                description="Assign this request to another team lead or manager for review."
+                icon={<Forward size={20} />}
+                accentColor="#4f46e5"
+                width="md"
+                submitLabel="Delegate Now"
+                onSubmit={(e) => { e.preventDefault(); handleDelegate(); }}
+            >
+                <Field label="Delegate To" required>
+                    <Input
+                        placeholder="e.g. Team Lead - Sarah, HR Manager..."
+                        value={delegateTo}
+                        onChange={(e) => setDelegateTo(e.target.value)}
+                    />
+                </Field>
+            </SideFormSheet>
+
+            {/* Escalate Sheet */}
+            <SideFormSheet
+                open={isEscalateDialogOpen}
+                onOpenChange={setIsEscalateDialogOpen}
+                title="Escalate Request"
+                description="Escalate this to a higher authority for urgent attention."
+                icon={<TrendingUp size={20} />}
+                accentColor="#7c3aed"
+                width="md"
+                submitLabel="Escalate Now"
+                onSubmit={(e) => { e.preventDefault(); handleEscalate(); }}
+            >
+                <Field label="Escalate To" required>
+                    <Input
+                        placeholder="e.g. Head of Operations, VP HR..."
+                        value={escalateTo}
+                        onChange={(e) => setEscalateTo(e.target.value)}
+                    />
+                </Field>
+            </SideFormSheet>
 
             {/* Audit Trail Dialog */}
             <Dialog open={isAuditDialogOpen} onOpenChange={setIsAuditDialogOpen}>

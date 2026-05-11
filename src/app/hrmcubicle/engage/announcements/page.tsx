@@ -41,6 +41,7 @@ import { useToast } from "@/shared/components/ui/use-toast";
 import { useEngageStore, type Announcement, type EmployeeCelebration } from "@/shared/data/engage-store";
 import { required, minLength, maxLength, isFutureOrToday, runValidators } from "@/shared/utils/engage-validation";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { Textarea } from "@/shared/components/ui/textarea";
@@ -127,7 +128,7 @@ const AnnouncementsPage = () => {
             addAnnouncement(formData);
             toast({
                 title: "Live on the Wall!",
-                description: "Broadcasted successfully. 🚀",
+                description: "Broadcasted successfully.",
                 className: "bg-indigo-600 text-white font-bold"
             });
         }
@@ -370,193 +371,155 @@ const AnnouncementsPage = () => {
                 </div>
             </div>
 
-            {/* Post Creation Modal - Vibrant */}
-            <Dialog open={isDialogOpen} onOpenChange={(val) => { if (!val) resetForm(); setIsDialogOpen(val); }}>
-                <DialogContent className="max-w-5xl p-0 overflow-hidden border-2 border-slate-300 rounded-[3rem] shadow-3xl bg-white" style={{ zoom: "67%" }}>
-                    <div className="bg-gradient-to-r from-indigo-900 to-indigo-700 p-10 text-white">
-                        <DialogHeader>
-                            <div className="flex items-center gap-6 mb-2">
-                                <div className="h-16 w-16 bg-white/10 backdrop-blur-md rounded-3xl flex items-center justify-center border border-white/20 shadow-2xl">
-                                    <Megaphone size={32} />
-                                </div>
-                                <div>
-                                    <DialogTitle className="text-3xl font-bold tracking-tighter text-white">{selectedAnn ? "Edit Announcement" : "Create a Splash"}</DialogTitle>
-                                    <DialogDescription className="text-white/40 font-medium text-xs tracking-widest mt-2">{selectedAnn ? "Update the broadcast" : "\u201CWords that move the mission adelante\u201D"}</DialogDescription>
-                                </div>
-                            </div>
-                        </DialogHeader>
+            {/* Post Creation - SideFormSheet */}
+            <SideFormSheet
+                open={isDialogOpen}
+                onOpenChange={(val) => { setIsDialogOpen(val); if (!val) resetForm(); }}
+                title={selectedAnn ? "Edit Announcement" : "Create a Splash"}
+                description={selectedAnn ? "Update the broadcast." : "Words that move the mission forward."}
+                icon={<Megaphone size={20} />}
+                accentColor={selectedAnn ? "#7c3aed" : "#4f46e5"}
+                width="lg"
+                submitLabel={selectedAnn ? "Save Changes" : "Deploy Broadcast"}
+                onSubmit={(e) => { e.preventDefault(); handleSave(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Headline" required hint={`${(formData.title ?? "").length}/120`}>
+                        <Input
+                            placeholder="Make it bold. Make it buzz."
+                            value={formData.title}
+                            maxLength={120}
+                            onChange={e => setFormData({ ...formData, title: e.target.value })}
+                        />
+                    </Field>
+
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Category">
+                            <Select value={formData.type} onValueChange={(v) => setFormData({ ...formData, type: v })}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="News">Corporate News</SelectItem>
+                                    <SelectItem value="Policy">Security Update</SelectItem>
+                                    <SelectItem value="Event">Event Note</SelectItem>
+                                    <SelectItem value="Celebration">Winning Moment</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <Field label="Urgency">
+                            <Select value={formData.priority} onValueChange={(v) => setFormData({ ...formData, priority: v })}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Low">Standard</SelectItem>
+                                    <SelectItem value="Medium">Crucial</SelectItem>
+                                    <SelectItem value="High">Emergency</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
                     </div>
 
-                    <ScrollArea className="max-h-[70vh]">
-                        <div className="p-10 space-y-10">
-                            {/* Main Form Fields - Horizontal Grid */}
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                                {/* Left Column: Meta Details */}
-                                <div className="space-y-8">
-                                    <div className="space-y-4">
-                                        <Label className="text-[10px] font-black text-slate-400 tracking-widest ml-1">The Headline</Label>
-                                        <Input
-                                            placeholder="Make it bold. Make it buzz."
-                                            value={formData.title}
-                                            maxLength={120}
-                                            onChange={e => setFormData({ ...formData, title: e.target.value })}
-                                            className="h-16 border-slate-300 bg-slate-50/50 rounded-2xl px-6 font-black text-lg text-slate-900 focus:ring-4 focus:ring-indigo-50 transition-all shadow-inner"
-                                        />
-                                        <p className="text-[10px] text-slate-400 font-bold ml-2">{(formData.title ?? "").length}/120</p>
-                                    </div>
+                    <Field label="Narrative" required hint={`${(formData.content ?? "").length}/5000 • min 10`}>
+                        <Textarea
+                            className="min-h-[140px]"
+                            placeholder="Tell the story..."
+                            value={formData.content}
+                            maxLength={5000}
+                            onChange={e => setFormData({ ...formData, content: e.target.value })}
+                        />
+                    </Field>
 
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                        <div className="space-y-4">
-                                            <Label className="text-[10px] font-black text-slate-400 tracking-widest ml-1">Buzz Category</Label>
-                                            <Select value={formData.type} onValueChange={(v) => setFormData({ ...formData, type: v })}>
-                                                <SelectTrigger className="h-14 border-slate-300 bg-white rounded-2xl px-6 font-bold text-slate-600"><SelectValue /></SelectTrigger>
-                                                <SelectContent className="rounded-2xl border-none shadow-2xl font-bold">
-                                                    <SelectItem value="News" className="rounded-xl my-1">Corporate News</SelectItem>
-                                                    <SelectItem value="Policy" className="rounded-xl my-1">Security Update</SelectItem>
-                                                    <SelectItem value="Event" className="rounded-xl my-1">Event Note</SelectItem>
-                                                    <SelectItem value="Celebration" className="rounded-xl my-1">Winning Moment</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                        <div className="space-y-4">
-                                            <Label className="text-[10px] font-black text-slate-400 tracking-widest ml-1">Urgency</Label>
-                                            <Select value={formData.priority} onValueChange={(v) => setFormData({ ...formData, priority: v })}>
-                                                <SelectTrigger className="h-14 border-slate-300 bg-white rounded-2xl px-6 font-bold text-slate-600"><SelectValue /></SelectTrigger>
-                                                <SelectContent className="rounded-2xl border-none shadow-2xl font-bold">
-                                                    <SelectItem value="Low">Standard</SelectItem>
-                                                    <SelectItem value="Medium">Crucial</SelectItem>
-                                                    <SelectItem value="High">Emergency</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Right Column: Narrative */}
-                                <div className="space-y-4 flex flex-col h-full">
-                                    <Label className="text-[10px] font-black text-slate-400 tracking-widest ml-1">The Narrative</Label>
-                                    <Textarea
-                                        placeholder="Tell the story..."
-                                        value={formData.content}
-                                        maxLength={5000}
-                                        onChange={e => setFormData({ ...formData, content: e.target.value })}
-                                        className="flex-1 min-h-[160px] border-slate-300 bg-slate-50/50 rounded-[2rem] p-6 font-bold text-sm leading-relaxed focus:ring-4 focus:ring-indigo-50 resize-none shadow-inner"
-                                    />
-                                    <p className="text-[10px] text-slate-400 font-bold ml-2">{(formData.content ?? "").length}/5000 • min 10</p>
-                                </div>
-                            </div>
-
-                            {/* Target Audience */}
-                            <div className="p-8 bg-slate-50 rounded-[2.5rem] border border-slate-300 space-y-6 shadow-inner">
-                                <Label className="text-[10px] font-black text-slate-400 tracking-widest">Target Audience</Label>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <div className="space-y-2">
-                                        <Label className="text-[10px] font-bold text-slate-400">Departments</Label>
-                                        <Select
-                                            value={formData.targetAudience?.departments?.[0] ?? "All"}
-                                            onValueChange={(v) => setFormData({ ...formData, targetAudience: { ...formData.targetAudience, departments: [v] } })}
-                                        >
-                                            <SelectTrigger className="h-11 bg-white rounded-xl"><SelectValue /></SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="All">All Departments</SelectItem>
-                                                <SelectItem value="Engineering">Engineering</SelectItem>
-                                                <SelectItem value="Sales">Sales</SelectItem>
-                                                <SelectItem value="HR">HR</SelectItem>
-                                                <SelectItem value="Finance">Finance</SelectItem>
-                                                <SelectItem value="Marketing">Marketing</SelectItem>
-                                                <SelectItem value="Product">Product</SelectItem>
-                                                <SelectItem value="Operations">Operations</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label className="text-[10px] font-bold text-slate-400">Locations</Label>
-                                        <Select
-                                            value={formData.targetAudience?.locations?.[0] ?? "All"}
-                                            onValueChange={(v) => setFormData({ ...formData, targetAudience: { ...formData.targetAudience, locations: [v] } })}
-                                        >
-                                            <SelectTrigger className="h-11 bg-white rounded-xl"><SelectValue /></SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="All">All Locations</SelectItem>
-                                                <SelectItem value="India">India</SelectItem>
-                                                <SelectItem value="USA">USA</SelectItem>
-                                                <SelectItem value="UK">UK</SelectItem>
-                                                <SelectItem value="Remote">Remote</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label className="text-[10px] font-bold text-slate-400">Roles</Label>
-                                        <Select
-                                            value={formData.targetAudience?.roles?.[0] ?? "All"}
-                                            onValueChange={(v) => setFormData({ ...formData, targetAudience: { ...formData.targetAudience, roles: [v] } })}
-                                        >
-                                            <SelectTrigger className="h-11 bg-white rounded-xl"><SelectValue /></SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="All">All Roles</SelectItem>
-                                                <SelectItem value="Manager">Managers</SelectItem>
-                                                <SelectItem value="IC">Individual Contributors</SelectItem>
-                                                <SelectItem value="Executive">Executives</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Status + Schedule */}
-                            <div className="p-8 bg-slate-50 rounded-[2.5rem] border border-slate-300 grid grid-cols-1 md:grid-cols-2 gap-6 shadow-inner">
-                                <div className="space-y-2">
-                                    <Label className="text-[10px] font-bold text-slate-400">Publication Status</Label>
-                                    <Select value={formData.status} onValueChange={(v) => setFormData({ ...formData, status: v })}>
-                                        <SelectTrigger className="h-12 bg-white rounded-xl"><SelectValue /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="Active">Publish Now (Active)</SelectItem>
-                                            <SelectItem value="Scheduled">Schedule for Later</SelectItem>
-                                            <SelectItem value="Archived">Save to Archive</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                {formData.status === "Scheduled" && (
-                                    <div className="space-y-2">
-                                        <Label className="text-[10px] font-bold text-slate-400">Scheduled Date</Label>
-                                        <Input
-                                            type="date"
-                                            value={formData.scheduledDate ?? ""}
-                                            onChange={(e) => setFormData({ ...formData, scheduledDate: e.target.value })}
-                                            className="h-12 bg-white rounded-xl"
-                                        />
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Settings Switches */}
-                            <div className="p-8 bg-slate-50 rounded-[2.5rem] border border-slate-300 grid grid-cols-1 md:grid-cols-2 gap-8 shadow-inner">
-                                <div className="flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
-                                    <div className="space-y-1">
-                                        <p className="text-xs font-black text-slate-900 leading-none">Pin to Wall</p>
-                                        <p className="text-[10px] font-bold text-slate-400">Keep it visible at the top</p>
-                                    </div>
-                                    <Switch checked={formData.pinned} onCheckedChange={(v) => setFormData({ ...formData, pinned: v })} />
-                                </div>
-                                <div className="flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
-                                    <div className="space-y-1">
-                                        <p className="text-xs font-black text-slate-900 leading-none">Require Ack</p>
-                                        <p className="text-[10px] font-bold text-slate-400">Employees must acknowledge</p>
-                                    </div>
-                                    <Switch checked={formData.acknowledgementRequired} onCheckedChange={(v) => setFormData({ ...formData, acknowledgementRequired: v })} />
-                                </div>
-                            </div>
+                    <div className="pt-2">
+                        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2">Target Audience</p>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <Field label="Departments">
+                                <Select
+                                    value={formData.targetAudience?.departments?.[0] ?? "All"}
+                                    onValueChange={(v) => setFormData({ ...formData, targetAudience: { ...formData.targetAudience, departments: [v] } })}
+                                >
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="All">All Departments</SelectItem>
+                                        <SelectItem value="Engineering">Engineering</SelectItem>
+                                        <SelectItem value="Sales">Sales</SelectItem>
+                                        <SelectItem value="HR">HR</SelectItem>
+                                        <SelectItem value="Finance">Finance</SelectItem>
+                                        <SelectItem value="Marketing">Marketing</SelectItem>
+                                        <SelectItem value="Product">Product</SelectItem>
+                                        <SelectItem value="Operations">Operations</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </Field>
+                            <Field label="Locations">
+                                <Select
+                                    value={formData.targetAudience?.locations?.[0] ?? "All"}
+                                    onValueChange={(v) => setFormData({ ...formData, targetAudience: { ...formData.targetAudience, locations: [v] } })}
+                                >
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="All">All Locations</SelectItem>
+                                        <SelectItem value="India">India</SelectItem>
+                                        <SelectItem value="USA">USA</SelectItem>
+                                        <SelectItem value="UK">UK</SelectItem>
+                                        <SelectItem value="Remote">Remote</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </Field>
+                            <Field label="Roles">
+                                <Select
+                                    value={formData.targetAudience?.roles?.[0] ?? "All"}
+                                    onValueChange={(v) => setFormData({ ...formData, targetAudience: { ...formData.targetAudience, roles: [v] } })}
+                                >
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="All">All Roles</SelectItem>
+                                        <SelectItem value="Manager">Managers</SelectItem>
+                                        <SelectItem value="IC">Individual Contributors</SelectItem>
+                                        <SelectItem value="Executive">Executives</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </Field>
                         </div>
-                    </ScrollArea>
+                    </div>
 
-                    <DialogFooter className="p-10 bg-slate-50 border-t border-slate-100 flex gap-4">
-                        <Button variant="ghost" onClick={() => setIsDialogOpen(false)} className="h-14 px-8 font-black text-slate-400 text-[10px] tracking-wider hover:text-slate-600">Discard</Button>
-                        <Button onClick={handleSave} className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-[1.5rem] h-14 px-12 font-black text-xs tracking-widest shadow-xl flex-1">
-                            {selectedAnn ? "Save Changes" : "Deploy Broadcast 🚀"}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Publication Status">
+                            <Select value={formData.status} onValueChange={(v) => setFormData({ ...formData, status: v })}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Active">Publish Now (Active)</SelectItem>
+                                    <SelectItem value="Scheduled">Schedule for Later</SelectItem>
+                                    <SelectItem value="Archived">Save to Archive</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        {formData.status === "Scheduled" && (
+                            <Field label="Scheduled Date">
+                                <Input
+                                    type="date"
+                                    value={formData.scheduledDate ?? ""}
+                                    onChange={(e) => setFormData({ ...formData, scheduledDate: e.target.value })}
+                                />
+                            </Field>
+                        )}
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                        <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200">
+                            <div className="space-y-0.5">
+                                <p className="text-sm font-semibold text-slate-900">Pin to Wall</p>
+                                <p className="text-[11px] text-slate-500">Keep visible at the top</p>
+                            </div>
+                            <Switch checked={formData.pinned} onCheckedChange={(v) => setFormData({ ...formData, pinned: v })} />
+                        </div>
+                        <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200">
+                            <div className="space-y-0.5">
+                                <p className="text-sm font-semibold text-slate-900">Require Ack</p>
+                                <p className="text-[11px] text-slate-500">Employees must acknowledge</p>
+                            </div>
+                            <Switch checked={formData.acknowledgementRequired} onCheckedChange={(v) => setFormData({ ...formData, acknowledgementRequired: v })} />
+                        </div>
+                    </div>
+                </div>
+            </SideFormSheet>
         </div>
     );
 };

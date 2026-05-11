@@ -8,6 +8,7 @@ import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import { Textarea } from "@/shared/components/ui/textarea";
 import { useToast } from "@/shared/components/ui/use-toast";
 import {
@@ -608,58 +609,52 @@ const SocialFeedPage = () => {
                 </div>
             </div>
 
-            {/* Edit Post Dialog */}
-            <Dialog open={!!editingPost} onOpenChange={(val) => { if (!val) setEditingPost(null); }}>
-                <DialogContent className="max-w-md">
-                    <DialogHeader>
-                        <DialogTitle>Edit Post</DialogTitle>
-                        <DialogDescription>Update your post content.</DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                        <div className="space-y-2">
-                            <Label>Content</Label>
-                            <Textarea
-                                value={editContent}
-                                maxLength={2000}
-                                onChange={e => setEditContent(e.target.value)}
-                                rows={4}
-                            />
-                            <p className="text-[10px] text-slate-400">{editContent.length}/2000 • min 3</p>
-                        </div>
-                        {editingPost?.type === "Shoutout" && (
-                            <>
-                                <div className="space-y-2">
-                                    <Label>Tagged Employee</Label>
-                                    <Input
-                                        value={editTag}
-                                        maxLength={80}
-                                        onChange={e => setEditTag(e.target.value)}
-                                        placeholder="e.g. Priya Sharma"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>Value Tag</Label>
-                                    <Select value={editValue || "none"} onValueChange={v => setEditValue(v === "none" ? "" : v as ValueTag)}>
-                                        <SelectTrigger><SelectValue placeholder="Select value" /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="none">None</SelectItem>
-                                            {(Object.keys(valueColors) as ValueTag[]).map(v => (
-                                                <SelectItem key={v} value={v}>{v}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </>
-                        )}
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setEditingPost(null)}>Cancel</Button>
-                        <Button className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white font-bold" onClick={handleSaveEdit}>
-                            Save Changes
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            {/* Edit Post - SideFormSheet */}
+            <SideFormSheet
+                open={!!editingPost}
+                onOpenChange={(val) => { if (!val) setEditingPost(null); }}
+                title="Edit Post"
+                description="Update your post content."
+                icon={<Edit size={20} />}
+                accentColor="#7c3aed"
+                width="md"
+                submitLabel="Save Changes"
+                onSubmit={(e) => { e.preventDefault(); handleSaveEdit(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Content" required hint={`${editContent.length}/2000 • min 3`}>
+                        <Textarea
+                            value={editContent}
+                            maxLength={2000}
+                            onChange={e => setEditContent(e.target.value)}
+                            rows={4}
+                        />
+                    </Field>
+                    {editingPost?.type === "Shoutout" && (
+                        <>
+                            <Field label="Tagged Employee">
+                                <Input
+                                    value={editTag}
+                                    maxLength={80}
+                                    onChange={e => setEditTag(e.target.value)}
+                                    placeholder="e.g. Priya Sharma"
+                                />
+                            </Field>
+                            <Field label="Value Tag">
+                                <Select value={editValue || "none"} onValueChange={v => setEditValue(v === "none" ? "" : v as ValueTag)}>
+                                    <SelectTrigger><SelectValue placeholder="Select value" /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="none">None</SelectItem>
+                                        {(Object.keys(valueColors) as ValueTag[]).map(v => (
+                                            <SelectItem key={v} value={v}>{v}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </Field>
+                        </>
+                    )}
+                </div>
+            </SideFormSheet>
         </div>
     );
 };

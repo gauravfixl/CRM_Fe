@@ -50,6 +50,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/shared/components/ui/dialog"
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet"
 import {
     Select,
     SelectContent,
@@ -1394,75 +1395,66 @@ export default function SalaryStructurePage() {
                     </DialogContent>
                 </Dialog>
 
-                {/* ── Component add/edit dialog ─────────── */}
-                <Dialog open={componentFormOpen} onOpenChange={setComponentFormOpen}>
-                    <DialogContent className="max-w-md bg-white rounded-2xl p-6 font-sans">
-                        <DialogHeader className="space-y-1">
-                            <div className="h-10 w-10 bg-[#8B5CF6]/10 rounded-xl flex items-center justify-center text-[#8B5CF6] mb-2">
-                                {editingComponent ? <Edit size={20} /> : <Plus size={20} />}
-                            </div>
-                            <DialogTitle className="text-lg font-bold text-slate-900">
-                                {editingComponent ? "Edit component" : "New component"}
-                            </DialogTitle>
-                            <DialogDescription className="text-xs font-medium text-slate-500">
-                                Components are reusable pieces — add once, use in multiple templates.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="mt-4 space-y-3">
-                            <FormField label="Name" required>
-                                <Input value={componentForm.name} onChange={(e) => setComponentForm({ ...componentForm, name: e.target.value })} className="h-10 text-sm font-medium" placeholder="e.g. Internet Allowance" />
-                            </FormField>
-                            <FormField label="Description">
-                                <Textarea value={componentForm.description ?? ""} onChange={(e) => setComponentForm({ ...componentForm, description: e.target.value })} className="min-h-[60px] text-xs font-medium" placeholder="What does this cover?" />
-                            </FormField>
-                            <div className="grid grid-cols-2 gap-3">
-                                <FormField label="Type" required>
-                                    <Select value={componentForm.type} onValueChange={(v) => setComponentForm({ ...componentForm, type: v as TemplateComponent["type"] })}>
-                                        <SelectTrigger className="h-10 text-sm"><SelectValue /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="Earning">Earning</SelectItem>
-                                            <SelectItem value="Deduction">Deduction</SelectItem>
-                                            <SelectItem value="Employer Contribution">Employer Contribution</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </FormField>
-                                <FormField label="Calculation">
-                                    <Select value={componentForm.calculationType} onValueChange={(v) => setComponentForm({ ...componentForm, calculationType: v as TemplateComponent["calculationType"] })}>
-                                        <SelectTrigger className="h-10 text-sm"><SelectValue /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="Fixed">Fixed (monthly)</SelectItem>
-                                            <SelectItem value="% of Basic">% of Basic</SelectItem>
-                                            <SelectItem value="% of CTC">% of CTC</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </FormField>
-                            </div>
-                            <FormField label={componentForm.calculationType === "Fixed" ? "Default amount (₹/month)" : "Default value (%)"}>
-                                <Input type="number" value={componentForm.value} onChange={(e) => setComponentForm({ ...componentForm, value: parseFloat(e.target.value) || 0 })} className="h-10 text-sm font-semibold tabular-nums" />
-                            </FormField>
-                            <div className="flex items-center justify-between p-2.5 bg-slate-50 rounded-lg border border-slate-200">
-                                <div>
-                                    <Label className="text-xs font-bold text-slate-700">Taxable</Label>
-                                    <p className="text-[10px] font-medium text-slate-500 mt-0.5">Adds to taxable income</p>
-                                </div>
-                                <Switch checked={componentForm.isTaxable ?? false} onCheckedChange={(v) => setComponentForm({ ...componentForm, isTaxable: v })} className="data-[state=checked]:bg-[#8B5CF6]" />
-                            </div>
-                            <div className="flex items-center justify-between p-2.5 bg-slate-50 rounded-lg border border-slate-200">
-                                <div>
-                                    <Label className="text-xs font-bold text-slate-700">Statutory</Label>
-                                    <p className="text-[10px] font-medium text-slate-500 mt-0.5">Required by law (PF, ESI, PT)</p>
-                                </div>
-                                <Switch checked={componentForm.isStatutory ?? false} onCheckedChange={(v) => setComponentForm({ ...componentForm, isStatutory: v })} className="data-[state=checked]:bg-[#8B5CF6]" />
-                            </div>
+                {/* Component add/edit Sheet */}
+                <SideFormSheet
+                    open={componentFormOpen}
+                    onOpenChange={setComponentFormOpen}
+                    title={editingComponent ? "Edit component" : "New component"}
+                    description="Components are reusable pieces — add once, use in multiple templates."
+                    icon={editingComponent ? <Edit size={20} /> : <Package size={20} />}
+                    accentColor={editingComponent ? "#7c3aed" : "#4f46e5"}
+                    width="md"
+                    submitLabel={editingComponent ? "Save" : "Add to library"}
+                    onSubmit={(e) => { e.preventDefault(); handleSubmitComponent(); }}
+                >
+                    <div className="space-y-4">
+                        <Field label="Name" required>
+                            <Input value={componentForm.name} onChange={(e) => setComponentForm({ ...componentForm, name: e.target.value })} placeholder="e.g. Internet Allowance" />
+                        </Field>
+                        <Field label="Description">
+                            <Textarea value={componentForm.description ?? ""} onChange={(e) => setComponentForm({ ...componentForm, description: e.target.value })} placeholder="What does this cover?" />
+                        </Field>
+                        <div className="grid grid-cols-2 gap-3">
+                            <Field label="Type" required>
+                                <Select value={componentForm.type} onValueChange={(v) => setComponentForm({ ...componentForm, type: v as TemplateComponent["type"] })}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="Earning">Earning</SelectItem>
+                                        <SelectItem value="Deduction">Deduction</SelectItem>
+                                        <SelectItem value="Employer Contribution">Employer Contribution</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </Field>
+                            <Field label="Calculation">
+                                <Select value={componentForm.calculationType} onValueChange={(v) => setComponentForm({ ...componentForm, calculationType: v as TemplateComponent["calculationType"] })}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="Fixed">Fixed (monthly)</SelectItem>
+                                        <SelectItem value="% of Basic">% of Basic</SelectItem>
+                                        <SelectItem value="% of CTC">% of CTC</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </Field>
                         </div>
-                        <DialogFooter className="mt-4 gap-2">
-                            <Button variant="ghost" onClick={() => setComponentFormOpen(false)} className="h-10 font-semibold text-xs">Cancel</Button>
-                            <Button onClick={handleSubmitComponent} className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-lg h-10 px-5 font-bold text-xs border-none">
-                                {editingComponent ? "Save" : "Add to library"}
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                        <Field label={componentForm.calculationType === "Fixed" ? "Default amount (₹/month)" : "Default value (%)"}>
+                            <Input type="number" className="tabular-nums" value={componentForm.value} onChange={(e) => setComponentForm({ ...componentForm, value: parseFloat(e.target.value) || 0 })} />
+                        </Field>
+                        <div className="flex items-center justify-between p-2.5 bg-slate-50 rounded-lg border border-slate-200">
+                            <div>
+                                <Label className="text-xs font-bold text-slate-700">Taxable</Label>
+                                <p className="text-[10px] font-medium text-slate-500 mt-0.5">Adds to taxable income</p>
+                            </div>
+                            <Switch checked={componentForm.isTaxable ?? false} onCheckedChange={(v) => setComponentForm({ ...componentForm, isTaxable: v })} className="data-[state=checked]:bg-[#8B5CF6]" />
+                        </div>
+                        <div className="flex items-center justify-between p-2.5 bg-slate-50 rounded-lg border border-slate-200">
+                            <div>
+                                <Label className="text-xs font-bold text-slate-700">Statutory</Label>
+                                <p className="text-[10px] font-medium text-slate-500 mt-0.5">Required by law (PF, ESI, PT)</p>
+                            </div>
+                            <Switch checked={componentForm.isStatutory ?? false} onCheckedChange={(v) => setComponentForm({ ...componentForm, isStatutory: v })} className="data-[state=checked]:bg-[#8B5CF6]" />
+                        </div>
+                    </div>
+                </SideFormSheet>
 
                 {/* ── CTC Calculator dialog ─────────── */}
                 <Dialog open={ctcCalcOpen} onOpenChange={setCtcCalcOpen}>
@@ -1695,148 +1687,123 @@ export default function SalaryStructurePage() {
                     </DialogContent>
                 </Dialog>
 
-                {/* ── New Version dialog ─────────── */}
-                <Dialog open={versionOpen} onOpenChange={setVersionOpen}>
-                    <DialogContent className="max-w-md bg-white rounded-2xl p-6 font-sans">
-                        <DialogHeader className="space-y-1">
-                            <div className="h-10 w-10 bg-[#8B5CF6]/10 rounded-xl flex items-center justify-center text-[#8B5CF6] mb-2">
-                                <GitBranch size={20} />
-                            </div>
-                            <DialogTitle className="text-lg font-bold text-slate-900">Create new version</DialogTitle>
-                            <DialogDescription className="text-xs font-medium text-slate-500">
-                                Clone this template as a new version. Employees stay on the current version until re-assigned.
-                            </DialogDescription>
-                        </DialogHeader>
-                        {(() => {
-                            const tpl = versionTargetId ? templates.find((t) => t.id === versionTargetId) : null
-                            return (
-                                <div className="mt-4 space-y-3">
-                                    {tpl && (
-                                        <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
-                                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Parent template</div>
-                                            <div className="text-sm font-bold text-slate-900 mt-0.5">{tpl.name}</div>
-                                            <div className="text-[11px] font-semibold text-slate-500 mt-0.5">
-                                                Current version: v{tpl.version ?? 1} · Will become v{(tpl.version ?? 1) + 1}
-                                            </div>
+                {/* New Version Sheet */}
+                <SideFormSheet
+                    open={versionOpen}
+                    onOpenChange={setVersionOpen}
+                    title="Create new version"
+                    description="Clone this template as a new version. Employees stay on the current version until re-assigned."
+                    icon={<GitBranch size={20} />}
+                    accentColor="#4f46e5"
+                    width="md"
+                    submitLabel="Create version"
+                    onSubmit={(e) => { e.preventDefault(); handleConfirmVersion(); }}
+                >
+                    {(() => {
+                        const tpl = versionTargetId ? templates.find((t) => t.id === versionTargetId) : null
+                        return (
+                            <div className="space-y-4">
+                                {tpl && (
+                                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Parent template</div>
+                                        <div className="text-sm font-bold text-slate-900 mt-0.5">{tpl.name}</div>
+                                        <div className="text-[11px] font-semibold text-slate-500 mt-0.5">
+                                            Current version: v{tpl.version ?? 1} · Will become v{(tpl.version ?? 1) + 1}
                                         </div>
-                                    )}
-                                    <FormField label="Changelog" required>
-                                        <Textarea
-                                            value={versionChangelog}
-                                            onChange={(e) => setVersionChangelog(e.target.value)}
-                                            className="min-h-[90px] text-xs font-medium"
-                                            placeholder="e.g. Increased HRA to 50% of Basic; added food allowance."
-                                        />
-                                    </FormField>
-                                </div>
-                            )
-                        })()}
-                        <DialogFooter className="mt-4 gap-2">
-                            <Button variant="ghost" onClick={() => setVersionOpen(false)} className="h-10 font-semibold text-xs">Cancel</Button>
-                            <Button onClick={handleConfirmVersion} className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-lg h-10 px-5 font-bold text-xs border-none gap-2">
-                                <GitBranch size={13} /> Create version
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
-
-                {/* ── Assignment dialog ─────────── */}
-                <Dialog open={assignOpen} onOpenChange={setAssignOpen}>
-                    <DialogContent className="max-w-2xl bg-white rounded-2xl p-0 font-sans max-h-[90vh] overflow-hidden flex flex-col">
-                        <DialogHeader className="p-6 border-b border-slate-100 space-y-1">
-                            <div className="flex items-center gap-3 mb-2">
-                                <div className="h-10 w-10 bg-[#8B5CF6]/10 rounded-xl flex items-center justify-center text-[#8B5CF6]">
-                                    <Users size={20} />
-                                </div>
-                                <div>
-                                    <DialogTitle className="text-lg font-bold text-slate-900">
-                                        Assign to employees
-                                    </DialogTitle>
-                                    <DialogDescription className="text-xs font-medium text-slate-500">
-                                        {(() => {
-                                            const tpl = assignTargetId ? templates.find((t) => t.id === assignTargetId) : null
-                                            return tpl ? tpl.name : "Select employees to assign to this template."
-                                        })()}
-                                    </DialogDescription>
-                                </div>
-                            </div>
-                        </DialogHeader>
-                        <div className="p-6 pb-3 space-y-3">
-                            <div className="flex items-center gap-2">
-                                <div className="relative flex-1">
-                                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                                    <Input
-                                        placeholder="Search employees..."
-                                        value={assignSearch}
-                                        onChange={(e) => setAssignSearch(e.target.value)}
-                                        className="pl-9 h-9 text-xs font-medium"
-                                    />
-                                </div>
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => setAssignSelected(filteredAssignEmployees.map((e) => e.empCode))}
-                                    className="h-9 rounded-lg border-slate-200 text-xs font-semibold"
-                                >
-                                    Select all
-                                </Button>
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => setAssignSelected([])}
-                                    className="h-9 rounded-lg border-slate-200 text-xs font-semibold"
-                                >
-                                    Clear
-                                </Button>
-                            </div>
-                        </div>
-                        <ScrollArea className="flex-1 px-6">
-                            <div className="space-y-1 pb-3">
-                                {filteredAssignEmployees.length === 0 ? (
-                                    <div className="text-center text-slate-400 text-xs py-10">No employees match.</div>
-                                ) : (
-                                    filteredAssignEmployees.map((emp) => {
-                                        const checked = assignSelected.includes(emp.empCode)
-                                        return (
-                                            <label
-                                                key={emp.empCode}
-                                                className={cn(
-                                                    "flex items-center gap-3 p-2.5 rounded-lg border cursor-pointer transition-colors",
-                                                    checked ? "border-[#8B5CF6]/40 bg-[#8B5CF6]/5" : "border-slate-200 bg-white hover:bg-slate-50"
-                                                )}
-                                            >
-                                                <Checkbox
-                                                    checked={checked}
-                                                    onCheckedChange={() => toggleAssignEmployee(emp.empCode)}
-                                                    className="data-[state=checked]:bg-[#8B5CF6] data-[state=checked]:border-[#8B5CF6]"
-                                                />
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="text-xs font-bold text-slate-900 truncate">{emp.name}</div>
-                                                    <div className="text-[10px] font-medium text-slate-500 truncate">
-                                                        {emp.empCode} · {emp.designation} · {emp.dept}
-                                                    </div>
-                                                </div>
-                                            </label>
-                                        )
-                                    })
+                                    </div>
                                 )}
+                                <Field label="Changelog" required>
+                                    <Textarea
+                                        value={versionChangelog}
+                                        onChange={(e) => setVersionChangelog(e.target.value)}
+                                        placeholder="e.g. Increased HRA to 50% of Basic; added food allowance."
+                                    />
+                                </Field>
                             </div>
-                        </ScrollArea>
-                        <DialogFooter className="p-4 border-t border-slate-100 bg-slate-50/50 flex sm:flex-row items-center sm:justify-between gap-2">
-                            <div className="text-[11px] font-semibold text-slate-500">
-                                <span className="text-[#8B5CF6] font-bold">{assignSelected.length}</span> selected / {uniqueEmployees.length} total employees
+                        )
+                    })()}
+                </SideFormSheet>
+
+                {/* Assignment Sheet */}
+                <SideFormSheet
+                    open={assignOpen}
+                    onOpenChange={setAssignOpen}
+                    title="Assign to employees"
+                    description={(() => {
+                        const tpl = assignTargetId ? templates.find((t) => t.id === assignTargetId) : null
+                        return tpl ? tpl.name : "Select employees to assign to this template."
+                    })()}
+                    icon={<Users size={20} />}
+                    accentColor="#4f46e5"
+                    width="lg"
+                    submitLabel="Save assignments"
+                    onSubmit={(e) => { e.preventDefault(); handleConfirmAssign(); }}
+                >
+                    <div className="space-y-3">
+                        <div className="flex items-center gap-2">
+                            <div className="relative flex-1">
+                                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                <Input
+                                    placeholder="Search employees..."
+                                    value={assignSearch}
+                                    onChange={(e) => setAssignSearch(e.target.value)}
+                                    className="pl-9"
+                                />
                             </div>
-                            <div className="flex gap-2">
-                                <Button variant="ghost" onClick={() => setAssignOpen(false)} className="h-10 font-semibold text-xs">Cancel</Button>
-                                <Button onClick={handleConfirmAssign} className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-lg h-10 px-5 font-bold text-xs border-none gap-2">
-                                    <Check size={13} /> Save assignments
-                                </Button>
-                            </div>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setAssignSelected(filteredAssignEmployees.map((e) => e.empCode))}
+                                className="h-9 rounded-lg border-slate-200 text-xs font-semibold"
+                            >
+                                Select all
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setAssignSelected([])}
+                                className="h-9 rounded-lg border-slate-200 text-xs font-semibold"
+                            >
+                                Clear
+                            </Button>
+                        </div>
+                        <div className="space-y-1">
+                            {filteredAssignEmployees.length === 0 ? (
+                                <div className="text-center text-slate-400 text-xs py-10">No employees match.</div>
+                            ) : (
+                                filteredAssignEmployees.map((emp) => {
+                                    const checked = assignSelected.includes(emp.empCode)
+                                    return (
+                                        <label
+                                            key={emp.empCode}
+                                            className={cn(
+                                                "flex items-center gap-3 p-2.5 rounded-lg border cursor-pointer transition-colors",
+                                                checked ? "border-[#8B5CF6]/40 bg-[#8B5CF6]/5" : "border-slate-200 bg-white hover:bg-slate-50"
+                                            )}
+                                        >
+                                            <Checkbox
+                                                checked={checked}
+                                                onCheckedChange={() => toggleAssignEmployee(emp.empCode)}
+                                                className="data-[state=checked]:bg-[#8B5CF6] data-[state=checked]:border-[#8B5CF6]"
+                                            />
+                                            <div className="flex-1 min-w-0">
+                                                <div className="text-xs font-bold text-slate-900 truncate">{emp.name}</div>
+                                                <div className="text-[10px] font-medium text-slate-500 truncate">
+                                                    {emp.empCode} · {emp.designation} · {emp.dept}
+                                                </div>
+                                            </div>
+                                        </label>
+                                    )
+                                })
+                            )}
+                        </div>
+                        <div className="text-[11px] font-semibold text-slate-500 pt-2 border-t border-slate-100">
+                            <span className="text-[#8B5CF6] font-bold">{assignSelected.length}</span> selected / {uniqueEmployees.length} total employees
+                        </div>
+                    </div>
+                </SideFormSheet>
 
                 {/* ── Assigned employees view dialog ─────────── */}
                 <Dialog open={assignedViewOpen} onOpenChange={setAssignedViewOpen}>

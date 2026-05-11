@@ -37,6 +37,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -451,301 +452,221 @@ const LocationsPage = () => {
                 )}
             </main>
 
-            {/* Add Location Dialog */}
-            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-                <DialogContent className="bg-white rounded-3xl border border-slate-300 p-8 max-w-4xl shadow-3xl max-h-[90vh] overflow-y-auto my-4 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                    <DialogHeader className="space-y-1">
-                        <div className="h-9 w-9 bg-amber-50 rounded-lg flex items-center justify-center text-amber-600 mb-1 shadow-inner">
-                            <MapPin size={20} />
-                        </div>
-                        <DialogTitle className="text-xl font-bold tracking-tight text-slate-900">Add Location</DialogTitle>
-                        <DialogDescription className="text-slate-500 font-medium text-[10px]">
-                            Register a new office, remote, or hybrid work location.
-                        </DialogDescription>
-                    </DialogHeader>
+            {/* Add Location Sheet */}
+            <SideFormSheet
+                open={isAddDialogOpen}
+                onOpenChange={setIsAddDialogOpen}
+                title="Add Location"
+                description="Register a new office, remote, or hybrid work location."
+                icon={<MapPin size={20} />}
+                accentColor="#4f46e5"
+                width="lg"
+                submitLabel="Add Location"
+                onSubmit={(e) => { e.preventDefault(); handleAddLocation(); }}
+            >
+                <div className="space-y-4">
+                    <div className="grid grid-cols-3 gap-3">
+                        <Field label="Location Name" required className="col-span-2">
+                            <Input
+                                placeholder="e.g., Bangalore HQ"
+                                value={formData.name}
+                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                            />
+                        </Field>
+                        <Field label="Code" required>
+                            <Input
+                                placeholder="BLR-HQ"
+                                value={formData.code}
+                                onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
+                            />
+                        </Field>
+                    </div>
 
-                    <div className="py-6 space-y-6">
-                        <div className="grid grid-cols-2 gap-6">
-                            <div className="space-y-4">
-                                <div className="grid grid-cols-3 gap-3">
-                                    <div className="col-span-2 space-y-1">
-                                        <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Location Name *</Label>
-                                        <Input
-                                            className="rounded-lg h-10 bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors"
-                                            placeholder="e.g., Bangalore HQ"
-                                            value={formData.name}
-                                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                        />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Code *</Label>
-                                        <Input
-                                            className="rounded-lg h-10 bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors"
-                                            placeholder="BLR-HQ"
-                                            value={formData.code}
-                                            onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
-                                        />
-                                    </div>
-                                </div>
+                    <Field label="Location Type" required>
+                        <Select value={formData.type} onValueChange={(v) => setFormData({ ...formData, type: v as any })}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Office">Office</SelectItem>
+                                <SelectItem value="Remote">Remote</SelectItem>
+                                <SelectItem value="Hybrid">Hybrid</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </Field>
 
-                                <div className="space-y-1">
-                                    <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Location Type *</Label>
-                                    <Select value={formData.type} onValueChange={(v) => setFormData({ ...formData, type: v as any })}>
-                                        <SelectTrigger className="h-10 rounded-lg bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent className="rounded-xl border border-slate-200 shadow-2xl p-1 font-bold">
-                                            <SelectItem value="Office" className="rounded-lg h-8 text-xs">Office</SelectItem>
-                                            <SelectItem value="Remote" className="rounded-lg h-8 text-xs">Remote</SelectItem>
-                                            <SelectItem value="Hybrid" className="rounded-lg h-8 text-xs">Hybrid</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="HR Contact">
+                            <Select value={formData.hrContactId || "none"} onValueChange={(v) => setFormData({ ...formData, hrContactId: v === "none" ? undefined : v })}>
+                                <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                                <SelectContent className="max-h-[200px]">
+                                    <SelectItem value="none">No Contact</SelectItem>
+                                    {employees.filter(e => e.status === 'Active').map(emp => (
+                                        <SelectItem key={emp.id} value={emp.id}>
+                                            {emp.firstName} {emp.lastName}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <Field label="Timezone">
+                            <Input
+                                value={formData.timezone}
+                                onChange={(e) => setFormData({ ...formData, timezone: e.target.value })}
+                            />
+                        </Field>
+                    </div>
 
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-1">
-                                        <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">HR Contact</Label>
-                                        <Select value={formData.hrContactId || "none"} onValueChange={(v) => setFormData({ ...formData, hrContactId: v === "none" ? undefined : v })}>
-                                            <SelectTrigger className="h-10 rounded-lg bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors">
-                                                <SelectValue placeholder="Select" />
-                                            </SelectTrigger>
-                                            <SelectContent className="rounded-xl border border-slate-200 shadow-2xl p-1 font-bold max-h-[200px]">
-                                                <SelectItem value="none" className="rounded-lg h-8 text-xs">No Contact</SelectItem>
-                                                {employees.filter(e => e.status === 'Active').map(emp => (
-                                                    <SelectItem key={emp.id} value={emp.id} className="rounded-lg h-8 text-xs">
-                                                        {emp.firstName} {emp.lastName}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
+                    <div className="pt-2 border-t border-slate-100">
+                        <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-widest mb-3">Address Details</p>
+                        <div className="space-y-3">
+                            <Field label="Street Address">
+                                <Input
+                                    placeholder="Building, Street"
+                                    value={formData.address?.street}
+                                    onChange={(e) => setFormData({ ...formData, address: { ...formData.address!, street: e.target.value } })}
+                                />
+                            </Field>
 
-                                    <div className="space-y-1">
-                                        <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Timezone</Label>
-                                        <Input
-                                            className="rounded-lg h-10 bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors"
-                                            value={formData.timezone}
-                                            onChange={(e) => setFormData({ ...formData, timezone: e.target.value })}
-                                        />
-                                    </div>
-                                </div>
+                            <div className="grid grid-cols-2 gap-3">
+                                <Field label="City" required>
+                                    <Input
+                                        placeholder="Bangalore"
+                                        value={formData.address?.city}
+                                        onChange={(e) => setFormData({ ...formData, address: { ...formData.address!, city: e.target.value } })}
+                                    />
+                                </Field>
+                                <Field label="State">
+                                    <Input
+                                        placeholder="Karnataka"
+                                        value={formData.address?.state}
+                                        onChange={(e) => setFormData({ ...formData, address: { ...formData.address!, state: e.target.value } })}
+                                    />
+                                </Field>
                             </div>
 
-                            <div className="space-y-4 p-5 bg-slate-50/50 rounded-2xl border border-slate-300">
-                                <h4 className="text-[10px] font-bold text-slate-500 capitalize tracking-widest ml-1 border-b border-slate-200 pb-2 mb-4">Address Details</h4>
-
-                                <div className="space-y-1">
-                                    <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Street Address</Label>
+                            <div className="grid grid-cols-2 gap-3">
+                                <Field label="Country">
                                     <Input
-                                        className="rounded-lg h-10 bg-white border border-slate-300 font-medium px-4 text-xs focus:border-indigo-500 transition-colors"
-                                        placeholder="Building, Street"
-                                        value={formData.address?.street}
-                                        onChange={(e) => setFormData({ ...formData, address: { ...formData.address!, street: e.target.value } })}
+                                        value={formData.address?.country}
+                                        onChange={(e) => setFormData({ ...formData, address: { ...formData.address!, country: e.target.value } })}
                                     />
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-1">
-                                        <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">City *</Label>
-                                        <Input
-                                            className="rounded-lg h-10 bg-white border border-slate-300 font-medium px-4 text-xs focus:border-indigo-500 transition-colors"
-                                            placeholder="Bangalore"
-                                            value={formData.address?.city}
-                                            onChange={(e) => setFormData({ ...formData, address: { ...formData.address!, city: e.target.value } })}
-                                        />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">State</Label>
-                                        <Input
-                                            className="rounded-lg h-10 bg-white border border-slate-300 font-medium px-4 text-xs focus:border-indigo-500 transition-colors"
-                                            placeholder="Karnataka"
-                                            value={formData.address?.state}
-                                            onChange={(e) => setFormData({ ...formData, address: { ...formData.address!, state: e.target.value } })}
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-1">
-                                        <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Country</Label>
-                                        <Input
-                                            className="rounded-lg h-10 bg-white border border-slate-300 font-medium px-4 text-xs focus:border-indigo-500 transition-colors"
-                                            value={formData.address?.country}
-                                            onChange={(e) => setFormData({ ...formData, address: { ...formData.address!, country: e.target.value } })}
-                                        />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Pincode</Label>
-                                        <Input
-                                            className="rounded-lg h-10 bg-white border border-slate-300 font-medium px-4 text-xs focus:border-indigo-500 transition-colors"
-                                            placeholder="560001"
-                                            value={formData.address?.pincode}
-                                            onChange={(e) => setFormData({ ...formData, address: { ...formData.address!, pincode: e.target.value } })}
-                                        />
-                                    </div>
-                                </div>
+                                </Field>
+                                <Field label="Pincode">
+                                    <Input
+                                        placeholder="560001"
+                                        value={formData.address?.pincode}
+                                        onChange={(e) => setFormData({ ...formData, address: { ...formData.address!, pincode: e.target.value } })}
+                                    />
+                                </Field>
                             </div>
                         </div>
                     </div>
+                </div>
+            </SideFormSheet>
 
-                    <DialogFooter className="gap-2 pt-6 border-t border-slate-200 sm:justify-end">
-                        <Button
-                            className="flex-1 bg-indigo-600 hover:bg-slate-900 text-white rounded-lg h-9 font-bold text-xs shadow-xl shadow-indigo-100 transition-all"
-                            onClick={handleAddLocation}
-                        >
-                            Add Location
-                        </Button>
-                        <Button variant="outline" className="h-9 px-4 rounded-lg font-bold border-slate-200 text-slate-600 text-xs" onClick={() => setIsAddDialogOpen(false)}>
-                            Cancel
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            {/* Edit Location Sheet */}
+            <SideFormSheet
+                open={isEditDialogOpen}
+                onOpenChange={setIsEditDialogOpen}
+                title="Edit Location"
+                description="Update location details and configuration."
+                icon={<Edit size={20} />}
+                accentColor="#7c3aed"
+                width="lg"
+                submitLabel="Save Changes"
+                onSubmit={(e) => { e.preventDefault(); handleUpdateLocation(); }}
+            >
+                <div className="space-y-4">
+                    <div className="grid grid-cols-3 gap-3">
+                        <Field label="Location Name" required className="col-span-2">
+                            <Input
+                                value={formData.name}
+                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                            />
+                        </Field>
+                        <Field label="Code" required>
+                            <Input
+                                value={formData.code}
+                                onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
+                            />
+                        </Field>
+                    </div>
 
-            {/* Edit Location Dialog */}
-            <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-                <DialogContent className="bg-white rounded-3xl border border-slate-300 p-8 max-w-4xl shadow-3xl max-h-[90vh] overflow-y-auto my-4 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                    <DialogHeader className="space-y-1">
-                        <div className="h-9 w-9 bg-amber-50 rounded-lg flex items-center justify-center text-amber-600 mb-1 shadow-inner">
-                            <Edit size={20} />
-                        </div>
-                        <DialogTitle className="text-xl font-bold tracking-tight text-slate-900">Edit Location</DialogTitle>
-                        <DialogDescription className="text-slate-500 font-medium text-[10px]">
-                            Update location details and configuration.
-                        </DialogDescription>
-                    </DialogHeader>
+                    <Field label="Location Type" required>
+                        <Select value={formData.type} onValueChange={(v) => setFormData({ ...formData, type: v as any })}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Office">Office</SelectItem>
+                                <SelectItem value="Remote">Remote</SelectItem>
+                                <SelectItem value="Hybrid">Hybrid</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </Field>
 
-                    <div className="py-6 space-y-6">
-                        <div className="grid grid-cols-2 gap-6">
-                            <div className="space-y-4">
-                                <div className="grid grid-cols-3 gap-3">
-                                    <div className="col-span-2 space-y-1">
-                                        <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Location Name *</Label>
-                                        <Input
-                                            className="rounded-lg h-10 bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors"
-                                            value={formData.name}
-                                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                        />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Code *</Label>
-                                        <Input
-                                            className="rounded-lg h-10 bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors"
-                                            value={formData.code}
-                                            onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
-                                        />
-                                    </div>
-                                </div>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="HR Contact">
+                            <Select value={formData.hrContactId || "none"} onValueChange={(v) => setFormData({ ...formData, hrContactId: v === "none" ? undefined : v })}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent className="max-h-[200px]">
+                                    <SelectItem value="none">No Contact</SelectItem>
+                                    {employees.filter(e => e.status === 'Active').map(emp => (
+                                        <SelectItem key={emp.id} value={emp.id}>
+                                            {emp.firstName} {emp.lastName}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <Field label="Timezone">
+                            <Input
+                                value={formData.timezone}
+                                onChange={(e) => setFormData({ ...formData, timezone: e.target.value })}
+                            />
+                        </Field>
+                    </div>
 
-                                <div className="space-y-1">
-                                    <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Location Type *</Label>
-                                    <Select value={formData.type} onValueChange={(v) => setFormData({ ...formData, type: v as any })}>
-                                        <SelectTrigger className="h-10 rounded-lg bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent className="rounded-xl border border-slate-200 shadow-2xl p-1 font-bold">
-                                            <SelectItem value="Office" className="rounded-lg h-8 text-xs">Office</SelectItem>
-                                            <SelectItem value="Remote" className="rounded-lg h-8 text-xs">Remote</SelectItem>
-                                            <SelectItem value="Hybrid" className="rounded-lg h-8 text-xs">Hybrid</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
+                    <div className="pt-2 border-t border-slate-100">
+                        <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-widest mb-3">Address Details</p>
+                        <div className="space-y-3">
+                            <Field label="Street Address">
+                                <Input
+                                    value={formData.address?.street}
+                                    onChange={(e) => setFormData({ ...formData, address: { ...formData.address!, street: e.target.value } })}
+                                />
+                            </Field>
 
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-1">
-                                        <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">HR Contact</Label>
-                                        <Select value={formData.hrContactId || "none"} onValueChange={(v) => setFormData({ ...formData, hrContactId: v === "none" ? undefined : v })}>
-                                            <SelectTrigger className="h-10 rounded-lg bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors">
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent className="rounded-xl border border-slate-200 shadow-2xl p-1 font-bold max-h-[200px]">
-                                                <SelectItem value="none" className="rounded-lg h-8 text-xs">No Contact</SelectItem>
-                                                {employees.filter(e => e.status === 'Active').map(emp => (
-                                                    <SelectItem key={emp.id} value={emp.id} className="rounded-lg h-8 text-xs">
-                                                        {emp.firstName} {emp.lastName}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-
-                                    <div className="space-y-1">
-                                        <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Timezone</Label>
-                                        <Input
-                                            className="rounded-lg h-10 bg-slate-50 border border-slate-300 font-bold px-4 text-xs focus:border-indigo-500 transition-colors"
-                                            value={formData.timezone}
-                                            onChange={(e) => setFormData({ ...formData, timezone: e.target.value })}
-                                        />
-                                    </div>
-                                </div>
+                            <div className="grid grid-cols-2 gap-3">
+                                <Field label="City" required>
+                                    <Input
+                                        value={formData.address?.city}
+                                        onChange={(e) => setFormData({ ...formData, address: { ...formData.address!, city: e.target.value } })}
+                                    />
+                                </Field>
+                                <Field label="State">
+                                    <Input
+                                        value={formData.address?.state}
+                                        onChange={(e) => setFormData({ ...formData, address: { ...formData.address!, state: e.target.value } })}
+                                    />
+                                </Field>
                             </div>
 
-                            <div className="space-y-4 p-5 bg-slate-50/50 rounded-2xl border border-slate-300">
-                                <h4 className="text-[10px] font-bold text-slate-500 capitalize tracking-widest ml-1 border-b border-slate-200 pb-2 mb-4">Address Details</h4>
-
-                                <div className="space-y-1">
-                                    <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Street Address</Label>
+                            <div className="grid grid-cols-2 gap-3">
+                                <Field label="Country">
                                     <Input
-                                        className="rounded-lg h-10 bg-white border border-slate-300 font-medium px-4 text-xs focus:border-indigo-500 transition-colors"
-                                        value={formData.address?.street}
-                                        onChange={(e) => setFormData({ ...formData, address: { ...formData.address!, street: e.target.value } })}
+                                        value={formData.address?.country}
+                                        onChange={(e) => setFormData({ ...formData, address: { ...formData.address!, country: e.target.value } })}
                                     />
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-1">
-                                        <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">City *</Label>
-                                        <Input
-                                            className="rounded-lg h-10 bg-white border border-slate-300 font-medium px-4 text-xs focus:border-indigo-500 transition-colors"
-                                            value={formData.address?.city}
-                                            onChange={(e) => setFormData({ ...formData, address: { ...formData.address!, city: e.target.value } })}
-                                        />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">State</Label>
-                                        <Input
-                                            className="rounded-lg h-10 bg-white border border-slate-300 font-medium px-4 text-xs focus:border-indigo-500 transition-colors"
-                                            value={formData.address?.state}
-                                            onChange={(e) => setFormData({ ...formData, address: { ...formData.address!, state: e.target.value } })}
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-1">
-                                        <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Country</Label>
-                                        <Input
-                                            className="rounded-lg h-10 bg-white border border-slate-300 font-medium px-4 text-xs focus:border-indigo-500 transition-colors"
-                                            value={formData.address?.country}
-                                            onChange={(e) => setFormData({ ...formData, address: { ...formData.address!, country: e.target.value } })}
-                                        />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <Label className="text-[9px] font-bold text-slate-500 capitalize tracking-widest ml-1">Pincode</Label>
-                                        <Input
-                                            className="rounded-lg h-10 bg-white border border-slate-300 font-medium px-4 text-xs focus:border-indigo-500 transition-colors"
-                                            value={formData.address?.pincode}
-                                            onChange={(e) => setFormData({ ...formData, address: { ...formData.address!, pincode: e.target.value } })}
-                                        />
-                                    </div>
-                                </div>
+                                </Field>
+                                <Field label="Pincode">
+                                    <Input
+                                        value={formData.address?.pincode}
+                                        onChange={(e) => setFormData({ ...formData, address: { ...formData.address!, pincode: e.target.value } })}
+                                    />
+                                </Field>
                             </div>
                         </div>
                     </div>
-
-                    <DialogFooter className="gap-2 pt-6 border-t border-slate-200 sm:justify-end">
-                        <Button
-                            className="flex-1 bg-indigo-600 hover:bg-slate-900 text-white rounded-lg h-9 font-bold text-xs shadow-xl shadow-indigo-100 transition-all"
-                            onClick={handleUpdateLocation}
-                        >
-                            Save Changes
-                        </Button>
-                        <Button variant="outline" className="h-9 px-4 rounded-lg font-bold border-slate-200 text-slate-600 text-xs" onClick={() => setIsEditDialogOpen(false)}>
-                            Cancel
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                </div>
+            </SideFormSheet>
 
             {/* View Members Dialog */}
             <Dialog open={isMembersDialogOpen} onOpenChange={(o) => { setIsMembersDialogOpen(o); if (!o) setSelectedLocation(null); }}>

@@ -57,6 +57,7 @@ import {
     DialogFooter,
     DialogDescription,
 } from "@/shared/components/ui/dialog"
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet"
 import {
     Sheet,
     SheetContent,
@@ -2117,7 +2118,7 @@ const CareerPageBuilderPage = () => {
             </Dialog>
 
             {/* 4. Move to pipeline dialog */}
-            <Dialog
+            <SideFormSheet
                 open={Boolean(moveSubmissionId)}
                 onOpenChange={(open) => {
                     if (!open) {
@@ -2125,55 +2126,30 @@ const CareerPageBuilderPage = () => {
                         setMoveJobId("")
                     }
                 }}
+                title="Move to hiring pipeline"
+                description="Select which job this candidate should be linked to. A candidate profile will be created automatically."
+                icon={<Send className="h-5 w-5" />}
+                accentColor="#4f46e5"
+                width="md"
+                submitLabel="Move candidate"
+                submitDisabled={!moveJobId}
+                onSubmit={(e) => { e.preventDefault(); confirmMoveSubmission(); }}
             >
-                <DialogContent className="max-w-md rounded-2xl">
-                    <DialogHeader>
-                        <DialogTitle className="text-lg font-black text-slate-900">
-                            Move to hiring pipeline
-                        </DialogTitle>
-                        <DialogDescription className="text-xs">
-                            Select which job this candidate should be linked to. A candidate
-                            profile will be created automatically.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-3">
-                        <Label className="text-[10px] uppercase tracking-wider font-bold text-slate-500">
-                            Target job
-                        </Label>
-                        <Select value={moveJobId} onValueChange={setMoveJobId}>
-                            <SelectTrigger className="rounded-xl">
-                                <SelectValue placeholder="Select a job" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {jobs.map((j) => (
-                                    <SelectItem key={j.id} value={j.id}>
-                                        {j.title} — {j.department}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <DialogFooter>
-                        <Button
-                            variant="outline"
-                            className="rounded-xl"
-                            onClick={() => {
-                                setMoveSubmissionId(null)
-                                setMoveJobId("")
-                            }}
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white rounded-xl font-bold"
-                            onClick={confirmMoveSubmission}
-                            disabled={!moveJobId}
-                        >
-                            <Send className="h-4 w-4 mr-1" /> Move candidate
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                <Field label="Target job" required>
+                    <Select value={moveJobId} onValueChange={setMoveJobId}>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Select a job" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {jobs.map((j) => (
+                                <SelectItem key={j.id} value={j.id}>
+                                    {j.title} — {j.department}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </Field>
+            </SideFormSheet>
 
             {/* 5. Delete field confirm */}
             <AlertDialog
@@ -2226,81 +2202,58 @@ const CareerPageBuilderPage = () => {
             </AlertDialog>
 
             {/* Perk editor dialog */}
-            <Dialog open={perkDialogOpen} onOpenChange={setPerkDialogOpen}>
-                <DialogContent className="max-w-md rounded-2xl">
-                    <DialogHeader>
-                        <DialogTitle className="text-lg font-black text-slate-900">
-                            {editingPerkIndex === null ? "Add perk" : "Edit perk"}
-                        </DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-3">
-                        <div>
-                            <Label className="text-[10px] uppercase tracking-wider font-bold text-slate-500">
-                                Icon
-                            </Label>
-                            <div className="flex flex-wrap gap-2 mt-2">
-                                {PERK_ICONS.map((icon) => (
-                                    <button
-                                        key={icon}
-                                        type="button"
-                                        className={cn(
-                                            "h-10 w-10 rounded-xl border flex items-center justify-center transition-all",
-                                            perkForm.icon === icon
-                                                ? "border-[#8B5CF6] bg-violet-50 text-[#8B5CF6]"
-                                                : "border-slate-200 text-slate-400 hover:border-slate-300",
-                                        )}
-                                        onClick={() => setPerkForm({ ...perkForm, icon })}
-                                    >
-                                        {renderPerkIcon(icon, "h-4 w-4")}
-                                    </button>
-                                ))}
-                            </div>
+            <SideFormSheet
+                open={perkDialogOpen}
+                onOpenChange={setPerkDialogOpen}
+                title={editingPerkIndex === null ? "Add perk" : "Edit perk"}
+                icon={<Sparkles className="h-5 w-5" />}
+                accentColor={editingPerkIndex === null ? "#4f46e5" : "#7c3aed"}
+                width="md"
+                submitLabel={editingPerkIndex === null ? "Add perk" : "Save changes"}
+                onSubmit={(e) => { e.preventDefault(); savePerk(); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Icon">
+                        <div className="flex flex-wrap gap-2">
+                            {PERK_ICONS.map((icon) => (
+                                <button
+                                    key={icon}
+                                    type="button"
+                                    className={cn(
+                                        "h-10 w-10 rounded-xl border flex items-center justify-center transition-all",
+                                        perkForm.icon === icon
+                                            ? "border-[#8B5CF6] bg-violet-50 text-[#8B5CF6]"
+                                            : "border-slate-200 text-slate-400 hover:border-slate-300",
+                                    )}
+                                    onClick={() => setPerkForm({ ...perkForm, icon })}
+                                >
+                                    {renderPerkIcon(icon, "h-4 w-4")}
+                                </button>
+                            ))}
                         </div>
-                        <div>
-                            <Label className="text-[10px] uppercase tracking-wider font-bold text-slate-500">
-                                Title
-                            </Label>
-                            <Input
-                                value={perkForm.title}
-                                onChange={(e) =>
-                                    setPerkForm({ ...perkForm, title: e.target.value })
-                                }
-                                className="rounded-xl mt-1"
-                                placeholder="e.g. Learning budget"
-                            />
-                        </div>
-                        <div>
-                            <Label className="text-[10px] uppercase tracking-wider font-bold text-slate-500">
-                                Description
-                            </Label>
-                            <Textarea
-                                value={perkForm.description}
-                                onChange={(e) =>
-                                    setPerkForm({ ...perkForm, description: e.target.value })
-                                }
-                                className="rounded-xl mt-1 resize-none"
-                                rows={3}
-                                placeholder="Brief, concrete value for candidates."
-                            />
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button
-                            variant="outline"
-                            className="rounded-xl"
-                            onClick={() => setPerkDialogOpen(false)}
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white rounded-xl font-bold"
-                            onClick={savePerk}
-                        >
-                            {editingPerkIndex === null ? "Add perk" : "Save changes"}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    </Field>
+                    <Field label="Title">
+                        <Input
+                            value={perkForm.title}
+                            onChange={(e) =>
+                                setPerkForm({ ...perkForm, title: e.target.value })
+                            }
+                            placeholder="e.g. Learning budget"
+                        />
+                    </Field>
+                    <Field label="Description">
+                        <Textarea
+                            value={perkForm.description}
+                            onChange={(e) =>
+                                setPerkForm({ ...perkForm, description: e.target.value })
+                            }
+                            className="resize-none"
+                            rows={3}
+                            placeholder="Brief, concrete value for candidates."
+                        />
+                    </Field>
+                </div>
+            </SideFormSheet>
         </div>
     )
 }
@@ -2602,18 +2555,18 @@ const FieldEditorDialog: React.FC<FieldEditorDialogProps> = ({
     }
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-lg rounded-2xl">
-                <DialogHeader>
-                    <DialogTitle className="text-lg font-black text-slate-900">
-                        {mode === "edit" ? "Edit field" : "Add custom field"}
-                    </DialogTitle>
-                    <DialogDescription className="text-xs">
-                        Customise how candidates see this field on your application form.
-                    </DialogDescription>
-                </DialogHeader>
-
-                <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
+        <SideFormSheet
+            open={open}
+            onOpenChange={onOpenChange}
+            title={mode === "edit" ? "Edit field" : "Add custom field"}
+            description="Customise how candidates see this field on your application form."
+            icon={<Plus className="h-5 w-5" />}
+            accentColor={mode === "edit" ? "#7c3aed" : "#4f46e5"}
+            width="lg"
+            submitLabel={mode === "edit" ? "Save changes" : "Add field"}
+            onSubmit={(e) => { e.preventDefault(); submit(); }}
+        >
+            <div className="space-y-3">
                     <div>
                         <Label className="text-[10px] uppercase tracking-wider font-bold text-slate-500">
                             Label
@@ -2686,6 +2639,7 @@ const FieldEditorDialog: React.FC<FieldEditorDialogProps> = ({
                                     placeholder="Add option and press Enter"
                                 />
                                 <Button
+                                    type="button"
                                     variant="outline"
                                     className="rounded-lg text-xs"
                                     onClick={addOption}
@@ -2704,6 +2658,7 @@ const FieldEditorDialog: React.FC<FieldEditorDialogProps> = ({
                                     >
                                         {o}
                                         <button
+                                            type="button"
                                             onClick={() => removeOption(o)}
                                             className="h-5 w-5 rounded-full hover:bg-slate-100 flex items-center justify-center"
                                         >
@@ -2744,24 +2699,7 @@ const FieldEditorDialog: React.FC<FieldEditorDialogProps> = ({
                         </div>
                     </div>
                 </div>
-
-                <DialogFooter>
-                    <Button
-                        variant="outline"
-                        className="rounded-xl"
-                        onClick={() => onOpenChange(false)}
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white rounded-xl font-bold"
-                        onClick={submit}
-                    >
-                        {mode === "edit" ? "Save changes" : "Add field"}
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+        </SideFormSheet>
     )
 }
 

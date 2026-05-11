@@ -18,18 +18,9 @@ import { Card } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
 import { Badge } from "@/shared/components/ui/badge";
 import { Input } from "@/shared/components/ui/input";
-import { Label } from "@/shared/components/ui/label";
 import { Textarea } from "@/shared/components/ui/textarea";
 import { useToast } from "@/shared/components/ui/use-toast";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
 import {
   DropdownMenu,
@@ -167,74 +158,68 @@ const MyLeavePage = () => {
           <p className="text-slate-500 text-sm font-medium">Manage your leave applications and check balances.</p>
         </div>
 
-        <Dialog open={isApplyOpen} onOpenChange={setIsApplyOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl h-12 px-6 shadow-lg font-bold border-none">
-              <Plus className="mr-2 h-5 w-5" /> Apply for Leave
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="bg-white rounded-2xl border-none p-6 max-w-xl">
-            <DialogHeader>
-              <DialogTitle>Apply for Leave</DialogTitle>
-              <DialogDescription>Submit a new leave application to your manager.</DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-6 py-4">
-              <div className="space-y-2">
-                <Label>Leave Type *</Label>
-                <Select value={leaveForm.type} onValueChange={(v) => setLeaveForm({ ...leaveForm, type: v })}>
-                  <SelectTrigger className="rounded-xl h-12 bg-slate-50 border border-slate-200">
-                    <SelectValue placeholder="Select type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Casual Leave">Casual Leave</SelectItem>
-                    <SelectItem value="Sick Leave">Sick Leave</SelectItem>
-                    <SelectItem value="Earned Leave">Earned Leave</SelectItem>
-                    <SelectItem value="Maternity Leave">Maternity Leave</SelectItem>
-                    <SelectItem value="Paternity Leave">Paternity Leave</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Start Date *</Label>
-                  <Input
-                    type="date"
-                    min={leaveForm.type === "Sick Leave" ? undefined : new Date().toISOString().split("T")[0]}
-                    value={leaveForm.startDate}
-                    onChange={e => setLeaveForm({ ...leaveForm, startDate: e.target.value })}
-                    className="rounded-xl bg-slate-50 border border-slate-200 h-12"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>End Date *</Label>
-                  <Input
-                    type="date"
-                    min={leaveForm.startDate || undefined}
-                    value={leaveForm.endDate}
-                    onChange={e => setLeaveForm({ ...leaveForm, endDate: e.target.value })}
-                    className="rounded-xl bg-slate-50 border border-slate-200 h-12"
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Reason * (10-500 chars)</Label>
-                <Textarea
-                  placeholder="Why are you taking leave?"
-                  maxLength={500}
-                  value={leaveForm.reason}
-                  onChange={e => setLeaveForm({ ...leaveForm, reason: e.target.value })}
-                  className="rounded-xl bg-slate-50 border border-slate-200 min-h-[100px]"
+        <Button
+          className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl h-12 px-6 shadow-lg font-bold border-none"
+          onClick={() => setIsApplyOpen(true)}
+        >
+          <Plus className="mr-2 h-5 w-5" /> Apply for Leave
+        </Button>
+
+        <SideFormSheet
+          open={isApplyOpen}
+          onOpenChange={setIsApplyOpen}
+          title="Apply for Leave"
+          description="Submit a new leave application to your manager."
+          icon={<Calendar size={20} />}
+          accentColor="#4f46e5"
+          width="md"
+          submitLabel="Submit Application"
+          onSubmit={(e) => { e.preventDefault(); handleApply(); }}
+        >
+          <div className="space-y-4">
+            <Field label="Leave Type" required>
+              <Select value={leaveForm.type} onValueChange={(v) => setLeaveForm({ ...leaveForm, type: v })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Casual Leave">Casual Leave</SelectItem>
+                  <SelectItem value="Sick Leave">Sick Leave</SelectItem>
+                  <SelectItem value="Earned Leave">Earned Leave</SelectItem>
+                  <SelectItem value="Maternity Leave">Maternity Leave</SelectItem>
+                  <SelectItem value="Paternity Leave">Paternity Leave</SelectItem>
+                </SelectContent>
+              </Select>
+            </Field>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Start Date" required>
+                <Input
+                  type="date"
+                  min={leaveForm.type === "Sick Leave" ? undefined : new Date().toISOString().split("T")[0]}
+                  value={leaveForm.startDate}
+                  onChange={e => setLeaveForm({ ...leaveForm, startDate: e.target.value })}
                 />
-                <p className="text-[10px] text-slate-400">{leaveForm.reason.length}/500 chars</p>
-              </div>
+              </Field>
+              <Field label="End Date" required>
+                <Input
+                  type="date"
+                  min={leaveForm.startDate || undefined}
+                  value={leaveForm.endDate}
+                  onChange={e => setLeaveForm({ ...leaveForm, endDate: e.target.value })}
+                />
+              </Field>
             </div>
-            <DialogFooter>
-              <Button className="w-full bg-slate-900 text-white rounded-xl h-12 font-bold" onClick={handleApply}>
-                Submit Application
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            <Field label="Reason" required hint={`${leaveForm.reason.length}/500 chars (min 10)`}>
+              <Textarea
+                placeholder="Why are you taking leave?"
+                maxLength={500}
+                value={leaveForm.reason}
+                onChange={e => setLeaveForm({ ...leaveForm, reason: e.target.value })}
+                className="min-h-[100px]"
+              />
+            </Field>
+          </div>
+        </SideFormSheet>
       </div>
 
       {/* Balance Cards */}

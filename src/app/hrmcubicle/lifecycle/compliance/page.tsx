@@ -34,6 +34,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 
 const CompliancePage = () => {
     const { toast } = useToast();
@@ -315,41 +316,44 @@ const CompliancePage = () => {
                 </Card>
             </div>
 
-            {/* Policy Config Dialog */}
-            <Dialog open={isPolicyDialogOpen} onOpenChange={setIsPolicyDialogOpen}>
-                <DialogContent className="bg-white rounded-2xl border-2 border-slate-200 p-6 max-w-lg shadow-2xl">
-                    <DialogHeader>
-                        <DialogTitle className="text-lg font-bold text-slate-900">Policy Configuration</DialogTitle>
-                        <DialogDescription className="text-xs font-bold text-slate-400">Add or remove mandatory compliance documents.</DialogDescription>
-                    </DialogHeader>
-                    <div className="py-4 space-y-4">
+            {/* Policy Config Side Form */}
+            <SideFormSheet
+                open={isPolicyDialogOpen}
+                onOpenChange={setIsPolicyDialogOpen}
+                title="Policy Configuration"
+                description="Add or remove mandatory compliance documents."
+                icon={<Settings2 size={20} />}
+                accentColor="#7c3aed"
+                width="lg"
+                submitLabel="Done"
+                onSubmit={(e) => { e.preventDefault(); setIsPolicyDialogOpen(false); }}
+            >
+                <div className="space-y-4">
+                    <Field label="Add New Policy">
                         <div className="flex gap-2">
-                            <Input placeholder="Enter policy name (e.g. Data Protection)" className="h-10 rounded-xl bg-slate-50 border border-slate-100 font-bold text-xs" value={newPolicyName} onChange={e => setNewPolicyName(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleAddPolicy()} />
-                            <Button className="h-10 w-10 rounded-xl bg-[#CB9DF0] hover:bg-[#b580e0] text-white p-0" onClick={handleAddPolicy}>
+                            <Input placeholder="Enter policy name (e.g. Data Protection)" value={newPolicyName} onChange={e => setNewPolicyName(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddPolicy(); } }} />
+                            <Button type="button" className="h-10 w-10 rounded-md bg-[#CB9DF0] hover:bg-[#b580e0] text-white p-0 shrink-0" onClick={handleAddPolicy}>
                                 <Plus size={16} />
                             </Button>
                         </div>
-                        <div className="space-y-2 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
-                            {policies.length === 0 ? (
-                                <p className="text-[10px] text-slate-400 italic text-center py-6 font-bold">No policies configured yet.</p>
-                            ) : policies.map(p => (
-                                <div key={p.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100 group">
-                                    <div className="flex items-center gap-2">
-                                        <Lock size={14} className="text-slate-400" />
-                                        <span className="font-bold text-slate-700 text-xs">{p.name}</span>
-                                    </div>
-                                    <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg" onClick={() => setPolicyToDelete(p)}>
-                                        <Trash2 size={12} />
-                                    </Button>
+                    </Field>
+                    <div className="space-y-2 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+                        {policies.length === 0 ? (
+                            <p className="text-[10px] text-slate-400 italic text-center py-6 font-bold">No policies configured yet.</p>
+                        ) : policies.map(p => (
+                            <div key={p.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100 group">
+                                <div className="flex items-center gap-2">
+                                    <Lock size={14} className="text-slate-400" />
+                                    <span className="font-bold text-slate-700 text-xs">{p.name}</span>
                                 </div>
-                            ))}
-                        </div>
+                                <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg" onClick={() => setPolicyToDelete(p)}>
+                                    <Trash2 size={12} />
+                                </Button>
+                            </div>
+                        ))}
                     </div>
-                    <DialogFooter>
-                        <Button onClick={() => setIsPolicyDialogOpen(false)} className="bg-[#CB9DF0] hover:bg-[#b580e0] text-white font-bold rounded-xl h-10 w-full text-xs">Done</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                </div>
+            </SideFormSheet>
 
             {/* Delete Policy Confirm */}
             <Dialog open={!!policyToDelete} onOpenChange={o => !o && setPolicyToDelete(null)}>

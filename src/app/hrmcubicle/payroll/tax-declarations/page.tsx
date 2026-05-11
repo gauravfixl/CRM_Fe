@@ -66,6 +66,7 @@ import {
     DialogDescription,
     DialogFooter,
 } from "@/shared/components/ui/dialog"
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet"
 import {
     Popover,
     PopoverContent,
@@ -990,22 +991,19 @@ const TaxDeclarationsPage = () => {
                     </div>
                 </div>
 
-                {/* ── Add/Edit Dialog ───────────────── */}
-                <Dialog open={formOpen} onOpenChange={setFormOpen}>
-                    <DialogContent className="max-w-3xl bg-white rounded-2xl p-0 font-sans max-h-[92vh] overflow-hidden flex flex-col">
-                        <DialogHeader className="p-6 border-b border-slate-100 space-y-1">
-                            <div className="h-10 w-10 bg-[#8B5CF6]/10 rounded-xl flex items-center justify-center text-[#8B5CF6] mb-2">
-                                {editingDec ? <Edit size={20} /> : <Plus size={20} />}
-                            </div>
-                            <DialogTitle className="text-lg font-bold text-slate-900">
-                                {editingDec ? "Edit declaration" : "New tax declaration"}
-                            </DialogTitle>
-                            <DialogDescription className="text-xs font-medium text-slate-500">
-                                Enter employee info + investment declarations. Tax auto-calculates from slabs (rough).
-                            </DialogDescription>
-                        </DialogHeader>
-                        <ScrollArea className="flex-1 p-6">
-                            <div className="space-y-5">
+                {/* Add/Edit Tax Declaration Sheet */}
+                <SideFormSheet
+                    open={formOpen}
+                    onOpenChange={setFormOpen}
+                    title={editingDec ? "Edit declaration" : "New tax declaration"}
+                    description="Enter employee info + investment declarations. Tax auto-calculates from slabs (rough)."
+                    icon={editingDec ? <Edit size={20} /> : <ShieldCheck size={20} />}
+                    accentColor={editingDec ? "#7c3aed" : "#4f46e5"}
+                    width="xl"
+                    submitLabel={editingDec ? "Save changes" : "Add declaration"}
+                    onSubmit={(e) => { e.preventDefault(); handleSubmitForm(); }}
+                >
+                    <div className="space-y-5">
                                 <section className="space-y-3">
                                     <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Employee</h4>
                                     <div className="grid grid-cols-2 gap-3">
@@ -1148,16 +1146,8 @@ const TaxDeclarationsPage = () => {
                                         * Rough projection based on simplified slabs. Actual TDS may vary.
                                     </p>
                                 </section>
-                            </div>
-                        </ScrollArea>
-                        <DialogFooter className="p-4 border-t border-slate-100 bg-slate-50/50 gap-2">
-                            <Button variant="ghost" onClick={() => setFormOpen(false)} className="h-10 px-5 font-semibold text-xs">Cancel</Button>
-                            <Button onClick={handleSubmitForm} className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-lg h-10 px-6 font-bold text-xs border-none">
-                                {editingDec ? "Save changes" : "Add declaration"}
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                    </div>
+                </SideFormSheet>
 
                 {/* ── Detail Sheet ───────────────────── */}
                 <Sheet open={detailOpen} onOpenChange={setDetailOpen}>
@@ -1309,31 +1299,22 @@ const TaxDeclarationsPage = () => {
                     </SheetContent>
                 </Sheet>
 
-                {/* ── Reject Dialog ───────────────── */}
-                <Dialog open={rejectOpen} onOpenChange={setRejectOpen}>
-                    <DialogContent className="max-w-md bg-white rounded-2xl p-6 font-sans">
-                        <DialogHeader className="space-y-1">
-                            <div className="h-10 w-10 bg-rose-50 rounded-xl flex items-center justify-center text-rose-500 mb-2">
-                                <XCircle size={20} />
-                            </div>
-                            <DialogTitle className="text-lg font-bold text-slate-900">Reject declaration</DialogTitle>
-                            <DialogDescription className="text-xs font-medium text-slate-500">
-                                Explain what's wrong so the employee can resubmit.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="mt-4 space-y-3">
-                            <FormField label="Reason" required>
-                                <Textarea value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} placeholder="e.g., Missing proofs, PAN mismatch..." className="min-h-[90px] text-xs font-medium" />
-                            </FormField>
-                        </div>
-                        <DialogFooter className="mt-4 gap-2">
-                            <Button variant="ghost" onClick={() => setRejectOpen(false)} className="h-10 font-semibold text-xs">Cancel</Button>
-                            <Button onClick={handleConfirmReject} className="bg-rose-500 hover:bg-rose-600 text-white rounded-lg h-10 px-5 font-bold text-xs border-none">
-                                Confirm reject
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                {/* Reject Sheet */}
+                <SideFormSheet
+                    open={rejectOpen}
+                    onOpenChange={setRejectOpen}
+                    title="Reject declaration"
+                    description="Explain what's wrong so the employee can resubmit."
+                    icon={<XCircle size={20} />}
+                    accentColor="#e11d48"
+                    width="md"
+                    submitLabel="Confirm reject"
+                    onSubmit={(e) => { e.preventDefault(); handleConfirmReject(); }}
+                >
+                    <Field label="Reason" required>
+                        <Textarea value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} placeholder="e.g., Missing proofs, PAN mismatch..." />
+                    </Field>
+                </SideFormSheet>
 
                 {/* ── Bulk Delete Confirm ─────────── */}
                 <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
@@ -1357,78 +1338,61 @@ const TaxDeclarationsPage = () => {
 
                 {/* ──────────── Round 2 Dialogs ──────────── */}
 
-                {/* ── Lock Window Dialog ───── */}
-                <Dialog open={lockDialogOpen} onOpenChange={setLockDialogOpen}>
-                    <DialogContent className="max-w-md bg-white rounded-2xl p-6 font-sans">
-                        <DialogHeader className="space-y-1">
-                            <div className="h-10 w-10 bg-amber-50 rounded-xl flex items-center justify-center text-amber-600 mb-2">
-                                <Lock size={20} />
-                            </div>
-                            <DialogTitle className="text-lg font-bold text-slate-900">Lock declaration</DialogTitle>
-                            <DialogDescription className="text-xs font-medium text-slate-500">
-                                Employee won't be able to edit {lockTarget?.employeeName}'s declaration until the unlock date.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="mt-4 space-y-3">
-                            <div className="space-y-1.5">
-                                <Label className="text-[11px] font-semibold text-slate-600">Locked until</Label>
-                                <Input type="date" value={lockUntilDate} onChange={(e) => setLockUntilDate(e.target.value)} className="h-10 text-sm font-medium" />
-                                <p className="text-[10px] font-medium text-slate-500">Commonly the tax filing window closure (e.g. last day of January).</p>
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-[11px] font-semibold text-slate-600">Reason (optional)</Label>
-                                <Textarea value={lockReasonInput} onChange={(e) => setLockReasonInput(e.target.value)} placeholder="e.g. FY window closed, awaiting proofs..." className="min-h-[60px] text-xs font-medium" />
-                            </div>
-                        </div>
-                        <DialogFooter className="mt-4 gap-2">
-                            <Button variant="ghost" onClick={() => setLockDialogOpen(false)} className="h-10 font-semibold text-xs">Cancel</Button>
-                            <Button onClick={handleConfirmLock} className="bg-amber-500 hover:bg-amber-600 text-white rounded-lg h-10 px-5 font-bold text-xs border-none">
-                                <Lock size={13} className="mr-1.5" /> Lock
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                {/* Lock Window Sheet */}
+                <SideFormSheet
+                    open={lockDialogOpen}
+                    onOpenChange={setLockDialogOpen}
+                    title="Lock declaration"
+                    description={lockTarget ? `Employee won't be able to edit ${lockTarget.employeeName}'s declaration until the unlock date.` : undefined}
+                    icon={<Lock size={20} />}
+                    accentColor="#d97706"
+                    width="md"
+                    submitLabel="Lock"
+                    onSubmit={(e) => { e.preventDefault(); handleConfirmLock(); }}
+                >
+                    <div className="space-y-4">
+                        <Field label="Locked until" hint="Commonly the tax filing window closure (e.g. last day of January).">
+                            <Input type="date" value={lockUntilDate} onChange={(e) => setLockUntilDate(e.target.value)} />
+                        </Field>
+                        <Field label="Reason (optional)">
+                            <Textarea value={lockReasonInput} onChange={(e) => setLockReasonInput(e.target.value)} placeholder="e.g. FY window closed, awaiting proofs..." />
+                        </Field>
+                    </div>
+                </SideFormSheet>
 
-                {/* ── Bulk Flip Dialog ───── */}
-                <Dialog open={bulkFlipOpen} onOpenChange={setBulkFlipOpen}>
-                    <DialogContent className="max-w-md bg-white rounded-2xl p-6 font-sans">
-                        <DialogHeader className="space-y-1">
-                            <div className="h-10 w-10 bg-[#8B5CF6]/10 rounded-xl flex items-center justify-center text-[#8B5CF6] mb-2">
-                                <ArrowLeftRight size={20} />
-                            </div>
-                            <DialogTitle className="text-lg font-bold text-slate-900">Bulk flip regime</DialogTitle>
-                            <DialogDescription className="text-xs font-medium text-slate-500">
-                                Change regime for {selectedIds.length} declarations. Tax computations update instantly.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="mt-4 space-y-3">
-                            <div className="grid grid-cols-2 gap-2">
-                                <button
-                                    onClick={() => setBulkFlipTarget("Old")}
-                                    className={cn("p-3 rounded-xl border-2 text-left",
-                                        bulkFlipTarget === "Old" ? "border-[#EC4899] bg-[#EC4899]/5" : "border-slate-200 bg-white")}
-                                >
-                                    <div className="text-sm font-bold text-slate-900">Old Regime</div>
-                                    <div className="text-[10px] font-medium text-slate-500 mt-0.5">Higher rates, but deductions allowed</div>
-                                </button>
-                                <button
-                                    onClick={() => setBulkFlipTarget("New")}
-                                    className={cn("p-3 rounded-xl border-2 text-left",
-                                        bulkFlipTarget === "New" ? "border-[#8B5CF6] bg-[#8B5CF6]/5" : "border-slate-200 bg-white")}
-                                >
-                                    <div className="text-sm font-bold text-slate-900">New Regime</div>
-                                    <div className="text-[10px] font-medium text-slate-500 mt-0.5">Lower rates, no deductions</div>
-                                </button>
-                            </div>
-                        </div>
-                        <DialogFooter className="mt-4 gap-2">
-                            <Button variant="ghost" onClick={() => setBulkFlipOpen(false)} className="h-10 font-semibold text-xs">Cancel</Button>
-                            <Button onClick={handleConfirmBulkFlip} className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-lg h-10 px-5 font-bold text-xs border-none">
-                                Flip {selectedIds.length} to {bulkFlipTarget}
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                {/* Bulk Flip Sheet */}
+                <SideFormSheet
+                    open={bulkFlipOpen}
+                    onOpenChange={setBulkFlipOpen}
+                    title="Bulk flip regime"
+                    description={`Change regime for ${selectedIds.length} declarations. Tax computations update instantly.`}
+                    icon={<ArrowLeftRight size={20} />}
+                    accentColor="#4f46e5"
+                    width="md"
+                    submitLabel={`Flip ${selectedIds.length} to ${bulkFlipTarget}`}
+                    onSubmit={(e) => { e.preventDefault(); handleConfirmBulkFlip(); }}
+                >
+                    <div className="grid grid-cols-2 gap-2">
+                        <button
+                            type="button"
+                            onClick={() => setBulkFlipTarget("Old")}
+                            className={cn("p-3 rounded-xl border-2 text-left",
+                                bulkFlipTarget === "Old" ? "border-[#EC4899] bg-[#EC4899]/5" : "border-slate-200 bg-white")}
+                        >
+                            <div className="text-sm font-bold text-slate-900">Old Regime</div>
+                            <div className="text-[10px] font-medium text-slate-500 mt-0.5">Higher rates, but deductions allowed</div>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setBulkFlipTarget("New")}
+                            className={cn("p-3 rounded-xl border-2 text-left",
+                                bulkFlipTarget === "New" ? "border-[#8B5CF6] bg-[#8B5CF6]/5" : "border-slate-200 bg-white")}
+                        >
+                            <div className="text-sm font-bold text-slate-900">New Regime</div>
+                            <div className="text-[10px] font-medium text-slate-500 mt-0.5">Lower rates, no deductions</div>
+                        </button>
+                    </div>
+                </SideFormSheet>
 
                 {/* ── Investment Planner ───── */}
                 <Dialog open={plannerOpen} onOpenChange={setPlannerOpen}>

@@ -46,6 +46,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/shared/components/ui/dialog"
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet"
 import {
     Select,
     SelectContent,
@@ -1413,65 +1414,56 @@ const MultiEntityPage = () => {
                     </div>
                 </div>
 
-                {/* ── Entity Form Dialog ────────────── */}
-                <Dialog open={entityFormOpen} onOpenChange={setEntityFormOpen}>
-                    <DialogContent className="max-w-xl bg-white rounded-2xl p-6 font-sans">
-                        <DialogHeader className="space-y-1">
-                            <div className="h-10 w-10 bg-[#8B5CF6]/10 rounded-xl flex items-center justify-center text-[#8B5CF6] mb-2">
-                                {editingEntity ? <Edit size={20} /> : <Plus size={20} />}
-                            </div>
-                            <DialogTitle className="text-lg font-bold text-slate-900">
-                                {editingEntity ? "Edit entity" : "Add legal entity"}
-                            </DialogTitle>
-                            <DialogDescription className="text-xs font-medium text-slate-500">
-                                Configure the legal entity used for payroll processing and statutory filings.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="mt-4 space-y-3">
-                            <div className="grid grid-cols-2 gap-3">
-                                <FormField label="Display name" required>
-                                    <Input value={entityForm.name} onChange={(e) => setEntityForm({ ...entityForm, name: e.target.value })} className="h-10 text-sm font-medium" placeholder="e.g. Fixl India" />
-                                </FormField>
-                                <FormField label="Legal name" required>
-                                    <Input value={entityForm.legalName} onChange={(e) => setEntityForm({ ...entityForm, legalName: e.target.value })} className="h-10 text-sm font-medium" placeholder="Fixl Solutions Pvt. Ltd." />
-                                </FormField>
-                                <FormField label="GSTIN">
-                                    <Input value={entityForm.gstin} onChange={(e) => setEntityForm({ ...entityForm, gstin: e.target.value.toUpperCase() })} className="h-10 text-sm font-mono font-semibold" placeholder="29AABCF1234D1ZF" maxLength={15} />
-                                </FormField>
-                                <FormField label="PAN">
-                                    <Input value={entityForm.pan} onChange={(e) => setEntityForm({ ...entityForm, pan: e.target.value.toUpperCase() })} className="h-10 text-sm font-mono font-semibold" placeholder="AABCF1234D" maxLength={10} />
-                                </FormField>
-                                <FormField label="State" required>
-                                    <Select value={entityForm.state} onValueChange={(v) => setEntityForm({ ...entityForm, state: v })}>
-                                        <SelectTrigger className="h-10 text-sm"><SelectValue /></SelectTrigger>
-                                        <SelectContent>
-                                            {STATES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                                        </SelectContent>
-                                    </Select>
-                                </FormField>
-                                <FormField label="Employee count">
-                                    <Input type="number" value={entityForm.employeeCount ?? 0} onChange={(e) => setEntityForm({ ...entityForm, employeeCount: parseInt(e.target.value) || 0 })} className="h-10 text-sm font-semibold tabular-nums" />
-                                </FormField>
-                            </div>
-                            <FormField label="Registered address">
-                                <Textarea value={entityForm.address} onChange={(e) => setEntityForm({ ...entityForm, address: e.target.value })} className="min-h-[60px] text-xs font-medium" placeholder="Full registered address" />
-                            </FormField>
-                            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200">
-                                <div>
-                                    <Label className="text-xs font-bold text-slate-700">Active</Label>
-                                    <p className="text-[11px] font-medium text-slate-500 mt-0.5">Inactive entities don't appear in payroll dropdowns</p>
-                                </div>
-                                <Switch checked={entityForm.isActive} onCheckedChange={(v) => setEntityForm({ ...entityForm, isActive: v })} className="data-[state=checked]:bg-[#8B5CF6]" />
-                            </div>
+                {/* Entity Form Sheet */}
+                <SideFormSheet
+                    open={entityFormOpen}
+                    onOpenChange={setEntityFormOpen}
+                    title={editingEntity ? "Edit entity" : "Add legal entity"}
+                    description="Configure the legal entity used for payroll processing and statutory filings."
+                    icon={editingEntity ? <Edit size={20} /> : <Building2 size={20} />}
+                    accentColor={editingEntity ? "#7c3aed" : "#4f46e5"}
+                    width="lg"
+                    submitLabel={editingEntity ? "Save" : "Add entity"}
+                    onSubmit={(e) => { e.preventDefault(); handleSaveEntity(); }}
+                >
+                    <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-3">
+                            <Field label="Display name" required>
+                                <Input value={entityForm.name} onChange={(e) => setEntityForm({ ...entityForm, name: e.target.value })} placeholder="e.g. Fixl India" />
+                            </Field>
+                            <Field label="Legal name" required>
+                                <Input value={entityForm.legalName} onChange={(e) => setEntityForm({ ...entityForm, legalName: e.target.value })} placeholder="Fixl Solutions Pvt. Ltd." />
+                            </Field>
+                            <Field label="GSTIN">
+                                <Input className="font-mono" value={entityForm.gstin} onChange={(e) => setEntityForm({ ...entityForm, gstin: e.target.value.toUpperCase() })} placeholder="29AABCF1234D1ZF" maxLength={15} />
+                            </Field>
+                            <Field label="PAN">
+                                <Input className="font-mono" value={entityForm.pan} onChange={(e) => setEntityForm({ ...entityForm, pan: e.target.value.toUpperCase() })} placeholder="AABCF1234D" maxLength={10} />
+                            </Field>
+                            <Field label="State" required>
+                                <Select value={entityForm.state} onValueChange={(v) => setEntityForm({ ...entityForm, state: v })}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        {STATES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                            </Field>
+                            <Field label="Employee count">
+                                <Input type="number" className="tabular-nums" value={entityForm.employeeCount ?? 0} onChange={(e) => setEntityForm({ ...entityForm, employeeCount: parseInt(e.target.value) || 0 })} />
+                            </Field>
                         </div>
-                        <DialogFooter className="mt-4 gap-2">
-                            <Button variant="ghost" onClick={() => setEntityFormOpen(false)} className="h-10 font-semibold text-xs">Cancel</Button>
-                            <Button onClick={handleSaveEntity} className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-lg h-10 px-5 font-bold text-xs border-none">
-                                {editingEntity ? "Save" : "Add entity"}
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                        <Field label="Registered address">
+                            <Textarea value={entityForm.address} onChange={(e) => setEntityForm({ ...entityForm, address: e.target.value })} placeholder="Full registered address" />
+                        </Field>
+                        <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200">
+                            <div>
+                                <Label className="text-xs font-bold text-slate-700">Active</Label>
+                                <p className="text-[11px] font-medium text-slate-500 mt-0.5">Inactive entities don&apos;t appear in payroll dropdowns</p>
+                            </div>
+                            <Switch checked={entityForm.isActive} onCheckedChange={(v) => setEntityForm({ ...entityForm, isActive: v })} className="data-[state=checked]:bg-[#8B5CF6]" />
+                        </div>
+                    </div>
+                </SideFormSheet>
 
                 {/* ── Entity Delete Confirm ──────────── */}
                 <Dialog open={entityDeleteOpen} onOpenChange={setEntityDeleteOpen}>
@@ -1622,341 +1614,303 @@ const MultiEntityPage = () => {
                     </SheetContent>
                 </Sheet>
 
-                {/* ── Location Dialog ─────────────── */}
-                <Dialog open={locationFormOpen} onOpenChange={setLocationFormOpen}>
-                    <DialogContent className="max-w-lg bg-white rounded-2xl p-6 font-sans">
-                        <DialogHeader className="space-y-1">
-                            <div className="h-10 w-10 bg-[#8B5CF6]/10 rounded-xl flex items-center justify-center text-[#8B5CF6] mb-2">
-                                <MapPin size={20} />
-                            </div>
-                            <DialogTitle className="text-lg font-bold text-slate-900">
-                                {editingLocation ? "Edit location" : "Add location"}
-                            </DialogTitle>
-                        </DialogHeader>
-                        <div className="mt-4 space-y-3">
-                            <FormField label="Entity" required>
-                                <Select value={locationForm.entityId} onValueChange={(v) => setLocationForm({ ...locationForm, entityId: v })}>
-                                    <SelectTrigger className="h-10 text-sm"><SelectValue /></SelectTrigger>
+                {/* Location Sheet */}
+                <SideFormSheet
+                    open={locationFormOpen}
+                    onOpenChange={setLocationFormOpen}
+                    title={editingLocation ? "Edit location" : "Add location"}
+                    icon={<MapPin size={20} />}
+                    accentColor={editingLocation ? "#7c3aed" : "#4f46e5"}
+                    width="lg"
+                    submitLabel={editingLocation ? "Save" : "Add location"}
+                    onSubmit={(e) => { e.preventDefault(); handleSaveLocation(); }}
+                >
+                    <div className="space-y-4">
+                        <Field label="Entity" required>
+                            <Select value={locationForm.entityId} onValueChange={(v) => setLocationForm({ ...locationForm, entityId: v })}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    {entities.map((e) => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <div className="grid grid-cols-2 gap-3">
+                            <Field label="Location name" required>
+                                <Input value={locationForm.name} onChange={(e) => setLocationForm({ ...locationForm, name: e.target.value })} placeholder="e.g. Bangalore HQ" />
+                            </Field>
+                            <Field label="Type">
+                                <Select value={locationForm.type} onValueChange={(v) => setLocationForm({ ...locationForm, type: v as EntityLocation["type"] })}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
                                     <SelectContent>
-                                        {entities.map((e) => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}
+                                        {LOCATION_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
                                     </SelectContent>
                                 </Select>
-                            </FormField>
-                            <div className="grid grid-cols-2 gap-3">
-                                <FormField label="Location name" required>
-                                    <Input value={locationForm.name} onChange={(e) => setLocationForm({ ...locationForm, name: e.target.value })} className="h-10 text-sm font-medium" placeholder="e.g. Bangalore HQ" />
-                                </FormField>
-                                <FormField label="Type">
-                                    <Select value={locationForm.type} onValueChange={(v) => setLocationForm({ ...locationForm, type: v as EntityLocation["type"] })}>
-                                        <SelectTrigger className="h-10 text-sm"><SelectValue /></SelectTrigger>
-                                        <SelectContent>
-                                            {LOCATION_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                                        </SelectContent>
-                                    </Select>
-                                </FormField>
-                                <FormField label="City">
-                                    <Input value={locationForm.city ?? ""} onChange={(e) => setLocationForm({ ...locationForm, city: e.target.value })} className="h-10 text-sm font-medium" />
-                                </FormField>
-                                <FormField label="State">
-                                    <Select value={locationForm.state ?? ""} onValueChange={(v) => setLocationForm({ ...locationForm, state: v })}>
-                                        <SelectTrigger className="h-10 text-sm"><SelectValue /></SelectTrigger>
-                                        <SelectContent>
-                                            {STATES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                                        </SelectContent>
-                                    </Select>
-                                </FormField>
-                                <FormField label="Pincode">
-                                    <Input value={locationForm.pincode ?? ""} onChange={(e) => setLocationForm({ ...locationForm, pincode: e.target.value })} className="h-10 text-sm font-medium font-mono" maxLength={6} />
-                                </FormField>
-                                <FormField label="Employee count">
-                                    <Input type="number" value={locationForm.employeeCount} onChange={(e) => setLocationForm({ ...locationForm, employeeCount: parseInt(e.target.value) || 0 })} className="h-10 text-sm font-semibold tabular-nums" />
-                                </FormField>
-                            </div>
-                            <FormField label="Address">
-                                <Textarea value={locationForm.address} onChange={(e) => setLocationForm({ ...locationForm, address: e.target.value })} className="min-h-[60px] text-xs font-medium" />
-                            </FormField>
-                            <div className="flex items-center justify-between p-2.5 bg-slate-50 rounded-lg border border-slate-200">
-                                <Label className="text-xs font-bold text-slate-700">Active</Label>
-                                <Switch checked={locationForm.isActive} onCheckedChange={(v) => setLocationForm({ ...locationForm, isActive: v })} className="data-[state=checked]:bg-[#8B5CF6]" />
-                            </div>
-                        </div>
-                        <DialogFooter className="mt-4 gap-2">
-                            <Button variant="ghost" onClick={() => setLocationFormOpen(false)} className="h-10 font-semibold text-xs">Cancel</Button>
-                            <Button onClick={handleSaveLocation} className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-lg h-10 px-5 font-bold text-xs border-none">
-                                {editingLocation ? "Save" : "Add location"}
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
-
-                {/* ── Registration Dialog ─────────── */}
-                <Dialog open={registrationFormOpen} onOpenChange={setRegistrationFormOpen}>
-                    <DialogContent className="max-w-lg bg-white rounded-2xl p-6 font-sans">
-                        <DialogHeader className="space-y-1">
-                            <div className="h-10 w-10 bg-[#8B5CF6]/10 rounded-xl flex items-center justify-center text-[#8B5CF6] mb-2">
-                                <ShieldCheck size={20} />
-                            </div>
-                            <DialogTitle className="text-lg font-bold text-slate-900">
-                                {editingRegistration ? "Edit registration" : "Add statutory registration"}
-                            </DialogTitle>
-                            <DialogDescription className="text-xs font-medium text-slate-500">
-                                Track regulatory registration numbers per entity.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="mt-4 space-y-3">
-                            <FormField label="Entity" required>
-                                <Select value={registrationForm.entityId} onValueChange={(v) => setRegistrationForm({ ...registrationForm, entityId: v })}>
-                                    <SelectTrigger className="h-10 text-sm"><SelectValue /></SelectTrigger>
+                            </Field>
+                            <Field label="City">
+                                <Input value={locationForm.city ?? ""} onChange={(e) => setLocationForm({ ...locationForm, city: e.target.value })} />
+                            </Field>
+                            <Field label="State">
+                                <Select value={locationForm.state ?? ""} onValueChange={(v) => setLocationForm({ ...locationForm, state: v })}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
                                     <SelectContent>
-                                        {entities.map((e) => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}
+                                        {STATES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                                     </SelectContent>
                                 </Select>
-                            </FormField>
-                            <div className="grid grid-cols-2 gap-3">
-                                <FormField label="Type" required>
-                                    <Select value={registrationForm.type} onValueChange={(v) => setRegistrationForm({ ...registrationForm, type: v })}>
-                                        <SelectTrigger className="h-10 text-sm"><SelectValue /></SelectTrigger>
-                                        <SelectContent>
-                                            {REGISTRATION_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                                        </SelectContent>
-                                    </Select>
-                                </FormField>
-                                <FormField label="State">
-                                    <Select value={registrationForm.state ?? ""} onValueChange={(v) => setRegistrationForm({ ...registrationForm, state: v })}>
-                                        <SelectTrigger className="h-10 text-sm"><SelectValue /></SelectTrigger>
-                                        <SelectContent>
-                                            {STATES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                                        </SelectContent>
-                                    </Select>
-                                </FormField>
-                                <FormField label="Registration number">
-                                    <Input value={registrationForm.registrationNumber} onChange={(e) => setRegistrationForm({ ...registrationForm, registrationNumber: e.target.value })} className="h-10 text-sm font-mono font-semibold" />
-                                </FormField>
-                                <FormField label="Status">
-                                    <Select value={registrationForm.status} onValueChange={(v) => setRegistrationForm({ ...registrationForm, status: v as StatutoryRegistration["status"] })}>
-                                        <SelectTrigger className="h-10 text-sm"><SelectValue /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="Active">Active</SelectItem>
-                                            <SelectItem value="Pending">Pending</SelectItem>
-                                            <SelectItem value="Expired">Expired</SelectItem>
-                                            <SelectItem value="Suspended">Suspended</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </FormField>
-                                <FormField label="Issued date">
-                                    <Input type="date" value={registrationForm.issuedDate ?? ""} onChange={(e) => setRegistrationForm({ ...registrationForm, issuedDate: e.target.value })} className="h-10 text-sm font-medium" />
-                                </FormField>
-                                <FormField label="Expiry date">
-                                    <Input type="date" value={registrationForm.expiryDate ?? ""} onChange={(e) => setRegistrationForm({ ...registrationForm, expiryDate: e.target.value })} className="h-10 text-sm font-medium" />
-                                </FormField>
-                            </div>
-                            <FormField label="Notes">
-                                <Textarea value={registrationForm.notes ?? ""} onChange={(e) => setRegistrationForm({ ...registrationForm, notes: e.target.value })} className="min-h-[50px] text-xs font-medium" />
-                            </FormField>
+                            </Field>
+                            <Field label="Pincode">
+                                <Input className="font-mono" value={locationForm.pincode ?? ""} onChange={(e) => setLocationForm({ ...locationForm, pincode: e.target.value })} maxLength={6} />
+                            </Field>
+                            <Field label="Employee count">
+                                <Input type="number" className="tabular-nums" value={locationForm.employeeCount} onChange={(e) => setLocationForm({ ...locationForm, employeeCount: parseInt(e.target.value) || 0 })} />
+                            </Field>
                         </div>
-                        <DialogFooter className="mt-4 gap-2">
-                            <Button variant="ghost" onClick={() => setRegistrationFormOpen(false)} className="h-10 font-semibold text-xs">Cancel</Button>
-                            <Button onClick={handleSaveRegistration} className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-lg h-10 px-5 font-bold text-xs border-none">
-                                {editingRegistration ? "Save" : "Add registration"}
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                        <Field label="Address">
+                            <Textarea value={locationForm.address} onChange={(e) => setLocationForm({ ...locationForm, address: e.target.value })} />
+                        </Field>
+                        <div className="flex items-center justify-between p-2.5 bg-slate-50 rounded-lg border border-slate-200">
+                            <Label className="text-xs font-bold text-slate-700">Active</Label>
+                            <Switch checked={locationForm.isActive} onCheckedChange={(v) => setLocationForm({ ...locationForm, isActive: v })} className="data-[state=checked]:bg-[#8B5CF6]" />
+                        </div>
+                    </div>
+                </SideFormSheet>
 
-                {/* ── Status Dialog ────────────────── */}
-                <Dialog open={statusFormOpen} onOpenChange={setStatusFormOpen}>
-                    <DialogContent className="max-w-lg bg-white rounded-2xl p-6 font-sans">
-                        <DialogHeader className="space-y-1">
-                            <div className="h-10 w-10 bg-[#8B5CF6]/10 rounded-xl flex items-center justify-center text-[#8B5CF6] mb-2">
-                                <Activity size={20} />
-                            </div>
-                            <DialogTitle className="text-lg font-bold text-slate-900">
-                                {editingStatus ? "Edit payroll status" : "Add entity payroll status"}
-                            </DialogTitle>
-                        </DialogHeader>
-                        <div className="mt-4 space-y-3">
-                            <FormField label="Entity" required>
-                                <Select value={statusForm.entityId} onValueChange={(v) => setStatusForm({ ...statusForm, entityId: v })}>
-                                    <SelectTrigger className="h-10 text-sm"><SelectValue /></SelectTrigger>
+                {/* Registration Sheet */}
+                <SideFormSheet
+                    open={registrationFormOpen}
+                    onOpenChange={setRegistrationFormOpen}
+                    title={editingRegistration ? "Edit registration" : "Add statutory registration"}
+                    description="Track regulatory registration numbers per entity."
+                    icon={<ShieldCheck size={20} />}
+                    accentColor={editingRegistration ? "#7c3aed" : "#4f46e5"}
+                    width="lg"
+                    submitLabel={editingRegistration ? "Save" : "Add registration"}
+                    onSubmit={(e) => { e.preventDefault(); handleSaveRegistration(); }}
+                >
+                    <div className="space-y-4">
+                        <Field label="Entity" required>
+                            <Select value={registrationForm.entityId} onValueChange={(v) => setRegistrationForm({ ...registrationForm, entityId: v })}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    {entities.map((e) => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <div className="grid grid-cols-2 gap-3">
+                            <Field label="Type" required>
+                                <Select value={registrationForm.type} onValueChange={(v) => setRegistrationForm({ ...registrationForm, type: v })}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
                                     <SelectContent>
-                                        {entities.map((e) => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}
+                                        {REGISTRATION_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
                                     </SelectContent>
                                 </Select>
-                            </FormField>
-                            <div className="grid grid-cols-2 gap-3">
-                                <FormField label="Month" required>
-                                    <Input value={statusForm.month} onChange={(e) => setStatusForm({ ...statusForm, month: e.target.value })} className="h-10 text-sm font-medium" placeholder="April 2026" />
-                                </FormField>
-                                <FormField label="Status">
-                                    <Select value={statusForm.status} onValueChange={(v) => setStatusForm({ ...statusForm, status: v as EntityPayrollStatus["status"] })}>
-                                        <SelectTrigger className="h-10 text-sm"><SelectValue /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="Draft">Draft</SelectItem>
-                                            <SelectItem value="Processing">Processing</SelectItem>
-                                            <SelectItem value="Processed">Processed</SelectItem>
-                                            <SelectItem value="Locked">Locked</SelectItem>
-                                            <SelectItem value="Paid">Paid</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </FormField>
-                                <FormField label="Employee count">
-                                    <Input type="number" value={statusForm.employeeCount} onChange={(e) => setStatusForm({ ...statusForm, employeeCount: parseInt(e.target.value) || 0 })} className="h-10 text-sm font-semibold tabular-nums" />
-                                </FormField>
-                                <FormField label="Total cost (₹)">
-                                    <Input type="number" value={statusForm.totalCost} onChange={(e) => setStatusForm({ ...statusForm, totalCost: parseFloat(e.target.value) || 0 })} className="h-10 text-sm font-semibold tabular-nums" />
-                                </FormField>
-                                <FormField label="Processed date">
-                                    <Input type="date" value={statusForm.processedDate ?? ""} onChange={(e) => setStatusForm({ ...statusForm, processedDate: e.target.value })} className="h-10 text-sm font-medium" />
-                                </FormField>
-                            </div>
-                            <FormField label="Notes">
-                                <Textarea value={statusForm.notes ?? ""} onChange={(e) => setStatusForm({ ...statusForm, notes: e.target.value })} className="min-h-[50px] text-xs font-medium" />
-                            </FormField>
+                            </Field>
+                            <Field label="State">
+                                <Select value={registrationForm.state ?? ""} onValueChange={(v) => setRegistrationForm({ ...registrationForm, state: v })}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        {STATES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                            </Field>
+                            <Field label="Registration number">
+                                <Input className="font-mono" value={registrationForm.registrationNumber} onChange={(e) => setRegistrationForm({ ...registrationForm, registrationNumber: e.target.value })} />
+                            </Field>
+                            <Field label="Status">
+                                <Select value={registrationForm.status} onValueChange={(v) => setRegistrationForm({ ...registrationForm, status: v as StatutoryRegistration["status"] })}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="Active">Active</SelectItem>
+                                        <SelectItem value="Pending">Pending</SelectItem>
+                                        <SelectItem value="Expired">Expired</SelectItem>
+                                        <SelectItem value="Suspended">Suspended</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </Field>
+                            <Field label="Issued date">
+                                <Input type="date" value={registrationForm.issuedDate ?? ""} onChange={(e) => setRegistrationForm({ ...registrationForm, issuedDate: e.target.value })} />
+                            </Field>
+                            <Field label="Expiry date">
+                                <Input type="date" value={registrationForm.expiryDate ?? ""} onChange={(e) => setRegistrationForm({ ...registrationForm, expiryDate: e.target.value })} />
+                            </Field>
                         </div>
-                        <DialogFooter className="mt-4 gap-2">
-                            <Button variant="ghost" onClick={() => setStatusFormOpen(false)} className="h-10 font-semibold text-xs">Cancel</Button>
-                            <Button onClick={handleSaveStatus} className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-lg h-10 px-5 font-bold text-xs border-none">
-                                {editingStatus ? "Save" : "Add status"}
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                        <Field label="Notes">
+                            <Textarea value={registrationForm.notes ?? ""} onChange={(e) => setRegistrationForm({ ...registrationForm, notes: e.target.value })} />
+                        </Field>
+                    </div>
+                </SideFormSheet>
 
-                {/* ── Clone Entity Dialog ─────────── */}
-                <Dialog open={cloneEntOpen} onOpenChange={setCloneEntOpen}>
-                    <DialogContent className="max-w-md bg-white rounded-2xl p-6 font-sans">
-                        <DialogHeader className="space-y-1">
-                            <div className="h-10 w-10 bg-[#8B5CF6]/10 rounded-xl flex items-center justify-center text-[#8B5CF6] mb-2">
-                                <Copy size={20} />
-                            </div>
-                            <DialogTitle className="text-lg font-bold text-slate-900">Clone legal entity</DialogTitle>
-                            <DialogDescription className="text-xs font-medium text-slate-500">
-                                Duplicates the entity and its statutory registrations. New registrations are created in Pending status.
-                            </DialogDescription>
-                        </DialogHeader>
-                        {cloneSource && (
-                            <div className="mt-4 space-y-3">
-                                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-                                    <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Source</div>
-                                    <div className="flex items-center gap-2 mt-1">
-                                        <Building2 size={14} className="text-[#8B5CF6]" />
-                                        <div>
-                                            <div className="text-sm font-bold text-slate-900">{cloneSource.name}</div>
-                                            <div className="text-[11px] font-medium text-slate-500">{cloneSource.legalName}</div>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-3 mt-2 text-[11px] font-semibold text-slate-600">
-                                        <span className="flex items-center gap-1"><ShieldCheck size={11} /> {registrations.filter((r) => r.entityId === cloneSource.id).length} registration(s) will be cloned</span>
+                {/* Status Sheet */}
+                <SideFormSheet
+                    open={statusFormOpen}
+                    onOpenChange={setStatusFormOpen}
+                    title={editingStatus ? "Edit payroll status" : "Add entity payroll status"}
+                    icon={<Activity size={20} />}
+                    accentColor={editingStatus ? "#7c3aed" : "#4f46e5"}
+                    width="lg"
+                    submitLabel={editingStatus ? "Save" : "Add status"}
+                    onSubmit={(e) => { e.preventDefault(); handleSaveStatus(); }}
+                >
+                    <div className="space-y-4">
+                        <Field label="Entity" required>
+                            <Select value={statusForm.entityId} onValueChange={(v) => setStatusForm({ ...statusForm, entityId: v })}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    {entities.map((e) => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <div className="grid grid-cols-2 gap-3">
+                            <Field label="Month" required>
+                                <Input value={statusForm.month} onChange={(e) => setStatusForm({ ...statusForm, month: e.target.value })} placeholder="April 2026" />
+                            </Field>
+                            <Field label="Status">
+                                <Select value={statusForm.status} onValueChange={(v) => setStatusForm({ ...statusForm, status: v as EntityPayrollStatus["status"] })}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="Draft">Draft</SelectItem>
+                                        <SelectItem value="Processing">Processing</SelectItem>
+                                        <SelectItem value="Processed">Processed</SelectItem>
+                                        <SelectItem value="Locked">Locked</SelectItem>
+                                        <SelectItem value="Paid">Paid</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </Field>
+                            <Field label="Employee count">
+                                <Input type="number" className="tabular-nums" value={statusForm.employeeCount} onChange={(e) => setStatusForm({ ...statusForm, employeeCount: parseInt(e.target.value) || 0 })} />
+                            </Field>
+                            <Field label="Total cost (₹)">
+                                <Input type="number" className="tabular-nums" value={statusForm.totalCost} onChange={(e) => setStatusForm({ ...statusForm, totalCost: parseFloat(e.target.value) || 0 })} />
+                            </Field>
+                            <Field label="Processed date">
+                                <Input type="date" value={statusForm.processedDate ?? ""} onChange={(e) => setStatusForm({ ...statusForm, processedDate: e.target.value })} />
+                            </Field>
+                        </div>
+                        <Field label="Notes">
+                            <Textarea value={statusForm.notes ?? ""} onChange={(e) => setStatusForm({ ...statusForm, notes: e.target.value })} />
+                        </Field>
+                    </div>
+                </SideFormSheet>
+
+                {/* Clone Entity Sheet */}
+                <SideFormSheet
+                    open={cloneEntOpen}
+                    onOpenChange={setCloneEntOpen}
+                    title="Clone legal entity"
+                    description="Duplicates the entity and its statutory registrations. New registrations are created in Pending status."
+                    icon={<Copy size={20} />}
+                    accentColor="#4f46e5"
+                    width="md"
+                    submitLabel="Clone entity"
+                    onSubmit={(e) => { e.preventDefault(); handleConfirmClone(); }}
+                >
+                    {cloneSource && (
+                        <div className="space-y-4">
+                            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Source</div>
+                                <div className="flex items-center gap-2 mt-1">
+                                    <Building2 size={14} className="text-[#8B5CF6]" />
+                                    <div>
+                                        <div className="text-sm font-bold text-slate-900">{cloneSource.name}</div>
+                                        <div className="text-[11px] font-medium text-slate-500">{cloneSource.legalName}</div>
                                     </div>
                                 </div>
-                                <FormField label="New display name" required>
-                                    <Input value={cloneName} onChange={(e) => setCloneName(e.target.value)} className="h-10 text-sm font-medium" placeholder="Fixl India (Subsidiary)" />
-                                </FormField>
-                                <FormField label="New legal name" required>
-                                    <Input value={cloneLegalName} onChange={(e) => setCloneLegalName(e.target.value)} className="h-10 text-sm font-medium" placeholder="Fixl India Subsidiary Pvt. Ltd." />
-                                </FormField>
-                            </div>
-                        )}
-                        <DialogFooter className="mt-4 gap-2">
-                            <Button variant="ghost" onClick={() => setCloneEntOpen(false)} className="h-10 font-semibold text-xs">Cancel</Button>
-                            <Button onClick={handleConfirmClone} className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-lg h-10 px-5 font-bold text-xs border-none gap-2">
-                                <Copy size={13} /> Clone entity
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
-
-                {/* ── Transfer Employee Dialog ────── */}
-                <Dialog open={transferOpen} onOpenChange={setTransferOpen}>
-                    <DialogContent className="max-w-xl bg-white rounded-2xl p-6 font-sans">
-                        <DialogHeader className="space-y-1">
-                            <div className="h-10 w-10 bg-[#8B5CF6]/10 rounded-xl flex items-center justify-center text-[#8B5CF6] mb-2">
-                                <ArrowLeftRight size={20} />
-                            </div>
-                            <DialogTitle className="text-lg font-bold text-slate-900">Transfer employee between entities</DialogTitle>
-                            <DialogDescription className="text-xs font-medium text-slate-500">
-                                Schedule an inter-entity transfer. Configure statutory continuity for PF, ESI, and gratuity tenure.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="mt-4 space-y-3">
-                            <FormField label="Employee" required>
-                                <div className="relative">
-                                    <Input
-                                        value={transferEmpQuery}
-                                        onChange={(e) => { setTransferEmpQuery(e.target.value); setTransferEmpId(""); setTransferEmpName("") }}
-                                        className="h-10 text-sm font-medium"
-                                        placeholder="Search by name or emp code..."
-                                    />
-                                    {transferEmpQuery && !transferEmpId && employeeMatches.length > 0 && (
-                                        <div className="absolute z-40 left-0 right-0 top-[44px] bg-white border border-slate-200 rounded-xl shadow-lg max-h-[240px] overflow-y-auto">
-                                            {employeeMatches.map((emp) => (
-                                                <button
-                                                    key={emp.empCode}
-                                                    type="button"
-                                                    onClick={() => { setTransferEmpId(emp.empCode); setTransferEmpName(emp.name); setTransferEmpQuery(`${emp.empCode} — ${emp.name}`) }}
-                                                    className="w-full text-left px-3 py-2 hover:bg-slate-50 border-b border-slate-100 last:border-none flex items-center gap-2"
-                                                >
-                                                    <div className="h-7 w-7 rounded-full bg-[#8B5CF6]/10 flex items-center justify-center text-[#8B5CF6] text-[10px] font-bold shrink-0">
-                                                        {emp.name.split(" ").map((n) => n[0]).slice(0, 2).join("")}
-                                                    </div>
-                                                    <div className="min-w-0">
-                                                        <div className="text-xs font-semibold text-slate-900 truncate">{emp.name}</div>
-                                                        <div className="text-[10px] font-mono text-slate-500">{emp.empCode} • {emp.dept}</div>
-                                                    </div>
-                                                </button>
-                                            ))}
-                                        </div>
-                                    )}
+                                <div className="flex items-center gap-3 mt-2 text-[11px] font-semibold text-slate-600">
+                                    <span className="flex items-center gap-1"><ShieldCheck size={11} /> {registrations.filter((r) => r.entityId === cloneSource.id).length} registration(s) will be cloned</span>
                                 </div>
-                            </FormField>
-                            <div className="grid grid-cols-2 gap-3">
-                                <FormField label="From entity" required>
-                                    <Select value={transferFromId} onValueChange={setTransferFromId}>
-                                        <SelectTrigger className="h-10 text-sm"><SelectValue /></SelectTrigger>
-                                        <SelectContent>
-                                            {entities.map((e) => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}
-                                        </SelectContent>
-                                    </Select>
-                                </FormField>
-                                <FormField label="To entity" required>
-                                    <Select value={transferToId} onValueChange={setTransferToId}>
-                                        <SelectTrigger className="h-10 text-sm"><SelectValue /></SelectTrigger>
-                                        <SelectContent>
-                                            {entities.map((e) => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}
-                                        </SelectContent>
-                                    </Select>
-                                </FormField>
-                                <FormField label="Effective date" required>
-                                    <Input type="date" value={transferDate} onChange={(e) => setTransferDate(e.target.value)} className="h-10 text-sm font-medium" />
-                                </FormField>
                             </div>
-                            <FormField label="Reason">
-                                <Textarea value={transferReason} onChange={(e) => setTransferReason(e.target.value)} className="min-h-[60px] text-xs font-medium" placeholder="Promotion, relocation, subsidiary move, etc." />
-                            </FormField>
-                            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
-                                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Preserve statutory continuity</div>
-                                <label className="flex items-center justify-between cursor-pointer">
-                                    <span className="text-xs font-semibold text-slate-700">Preserve PF account</span>
-                                    <Checkbox checked={transferPreservePF} onCheckedChange={(v) => setTransferPreservePF(!!v)} />
-                                </label>
-                                <label className="flex items-center justify-between cursor-pointer">
-                                    <span className="text-xs font-semibold text-slate-700">Preserve ESI</span>
-                                    <Checkbox checked={transferPreserveESI} onCheckedChange={(v) => setTransferPreserveESI(!!v)} />
-                                </label>
-                                <label className="flex items-center justify-between cursor-pointer">
-                                    <span className="text-xs font-semibold text-slate-700">Preserve gratuity tenure</span>
-                                    <Checkbox checked={transferPreserveGratuity} onCheckedChange={(v) => setTransferPreserveGratuity(!!v)} />
-                                </label>
-                            </div>
+                            <Field label="New display name" required>
+                                <Input value={cloneName} onChange={(e) => setCloneName(e.target.value)} placeholder="Fixl India (Subsidiary)" />
+                            </Field>
+                            <Field label="New legal name" required>
+                                <Input value={cloneLegalName} onChange={(e) => setCloneLegalName(e.target.value)} placeholder="Fixl India Subsidiary Pvt. Ltd." />
+                            </Field>
                         </div>
-                        <DialogFooter className="mt-4 gap-2">
-                            <Button variant="ghost" onClick={() => setTransferOpen(false)} className="h-10 font-semibold text-xs">Cancel</Button>
-                            <Button onClick={handleConfirmTransfer} className="bg-[#8B5CF6] hover:bg-[#7c4dff] text-white rounded-lg h-10 px-5 font-bold text-xs border-none gap-2">
-                                <ArrowLeftRight size={13} /> Schedule transfer
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                    )}
+                </SideFormSheet>
+
+                {/* Transfer Employee Sheet */}
+                <SideFormSheet
+                    open={transferOpen}
+                    onOpenChange={setTransferOpen}
+                    title="Transfer employee between entities"
+                    description="Schedule an inter-entity transfer. Configure statutory continuity for PF, ESI, and gratuity tenure."
+                    icon={<ArrowLeftRight size={20} />}
+                    accentColor="#4f46e5"
+                    width="lg"
+                    submitLabel="Schedule transfer"
+                    onSubmit={(e) => { e.preventDefault(); handleConfirmTransfer(); }}
+                >
+                    <div className="space-y-4">
+                        <Field label="Employee" required>
+                            <div className="relative">
+                                <Input
+                                    value={transferEmpQuery}
+                                    onChange={(e) => { setTransferEmpQuery(e.target.value); setTransferEmpId(""); setTransferEmpName("") }}
+                                    placeholder="Search by name or emp code..."
+                                />
+                                {transferEmpQuery && !transferEmpId && employeeMatches.length > 0 && (
+                                    <div className="absolute z-40 left-0 right-0 top-[44px] bg-white border border-slate-200 rounded-xl shadow-lg max-h-[240px] overflow-y-auto">
+                                        {employeeMatches.map((emp) => (
+                                            <button
+                                                key={emp.empCode}
+                                                type="button"
+                                                onClick={() => { setTransferEmpId(emp.empCode); setTransferEmpName(emp.name); setTransferEmpQuery(`${emp.empCode} — ${emp.name}`) }}
+                                                className="w-full text-left px-3 py-2 hover:bg-slate-50 border-b border-slate-100 last:border-none flex items-center gap-2"
+                                            >
+                                                <div className="h-7 w-7 rounded-full bg-[#8B5CF6]/10 flex items-center justify-center text-[#8B5CF6] text-[10px] font-bold shrink-0">
+                                                    {emp.name.split(" ").map((n) => n[0]).slice(0, 2).join("")}
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <div className="text-xs font-semibold text-slate-900 truncate">{emp.name}</div>
+                                                    <div className="text-[10px] font-mono text-slate-500">{emp.empCode} • {emp.dept}</div>
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </Field>
+                        <div className="grid grid-cols-2 gap-3">
+                            <Field label="From entity" required>
+                                <Select value={transferFromId} onValueChange={setTransferFromId}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        {entities.map((e) => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                            </Field>
+                            <Field label="To entity" required>
+                                <Select value={transferToId} onValueChange={setTransferToId}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        {entities.map((e) => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                            </Field>
+                            <Field label="Effective date" required>
+                                <Input type="date" value={transferDate} onChange={(e) => setTransferDate(e.target.value)} />
+                            </Field>
+                        </div>
+                        <Field label="Reason">
+                            <Textarea value={transferReason} onChange={(e) => setTransferReason(e.target.value)} placeholder="Promotion, relocation, subsidiary move, etc." />
+                        </Field>
+                        <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                            <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Preserve statutory continuity</div>
+                            <label className="flex items-center justify-between cursor-pointer">
+                                <span className="text-xs font-semibold text-slate-700">Preserve PF account</span>
+                                <Checkbox checked={transferPreservePF} onCheckedChange={(v) => setTransferPreservePF(!!v)} />
+                            </label>
+                            <label className="flex items-center justify-between cursor-pointer">
+                                <span className="text-xs font-semibold text-slate-700">Preserve ESI</span>
+                                <Checkbox checked={transferPreserveESI} onCheckedChange={(v) => setTransferPreserveESI(!!v)} />
+                            </label>
+                            <label className="flex items-center justify-between cursor-pointer">
+                                <span className="text-xs font-semibold text-slate-700">Preserve gratuity tenure</span>
+                                <Checkbox checked={transferPreserveGratuity} onCheckedChange={(v) => setTransferPreserveGratuity(!!v)} />
+                            </label>
+                        </div>
+                    </div>
+                </SideFormSheet>
 
                 {/* ── Compliance Summary Dashboard ── */}
                 <Dialog open={complianceOpen} onOpenChange={setComplianceOpen}>

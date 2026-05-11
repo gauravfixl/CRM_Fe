@@ -41,6 +41,7 @@ import {
     DialogTitle,
     DialogFooter,
 } from "@/shared/components/ui/dialog";
+import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet";
 import { Label } from "@/shared/components/ui/label";
 import { Textarea } from "@/shared/components/ui/textarea";
 
@@ -342,37 +343,25 @@ const TeamRequestsPage = () => {
                 </DialogContent>
             </Dialog>
 
-            {/* Batch Actions Dialog */}
-            <Dialog open={showBatch} onOpenChange={setShowBatch}>
-                <DialogContent className="rounded-2xl border-none shadow-xl p-6 bg-white max-w-sm text-start">
-                    <DialogHeader>
-                        <DialogTitle className="text-xl font-bold tracking-tight">Batch Processing</DialogTitle>
-                        <p className="text-slate-500 font-medium text-xs mt-1">Apply actions to all {pendingRequests.length} pending items.</p>
-                    </DialogHeader>
-                    <div className="space-y-5 py-6">
-                        <div className="p-4 bg-amber-50/50 rounded-xl border border-amber-100/30 flex gap-3">
-                            <AlertCircle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
-                            <p className="text-[10px] text-amber-800 font-bold leading-relaxed">Batch actions are irreversible and will notify all team members immediately. Please use with caution.</p>
-                        </div>
-                        <div className="space-y-2">
-                            <Label className="font-bold text-[9px] uppercase tracking-widest text-slate-400 ml-1">Batch Remark</Label>
-                            <Textarea
-                                value={batchRemark}
-                                onChange={(e) => setBatchRemark(e.target.value)}
-                                placeholder="Add a comment for all processed requests..."
-                                className="rounded-xl border border-slate-200 bg-slate-100/50 p-4 min-h-[100px] text-xs font-bold focus:bg-white shadow-inner"
-                            />
-                        </div>
-                    </div>
-                    <DialogFooter className="flex-col gap-3">
-                        <Button className="w-full h-11 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold text-[11px] tracking-widest shadow-md border-none transition-all" onClick={() => {
+            {/* Batch Actions Sheet */}
+            <SideFormSheet
+                open={showBatch}
+                onOpenChange={setShowBatch}
+                title="Batch Processing"
+                description={`Apply actions to all ${pendingRequests.length} pending items.`}
+                icon={<AlertCircle size={20} />}
+                accentColor="#d97706"
+                width="md"
+                footer={
+                    <div className="flex flex-col gap-2 w-full">
+                        <Button type="button" className="w-full h-10 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-bold text-xs tracking-widest" onClick={() => {
                             const count = requests.filter(r => r.status === 'pending').length;
                             setRequests(requests.map(r => r.status === 'pending' ? { ...r, status: 'approved' } : r));
                             toast({ title: "Batch Approved", description: `${count} pending request(s) approved. ${batchRemark ? `Remark: ${batchRemark}` : ''}` });
                             setShowBatch(false);
                             setBatchRemark("");
                         }}>Approve All Pending</Button>
-                        <Button className="w-full h-11 bg-rose-500 hover:bg-rose-600 text-white rounded-xl font-bold text-[11px] tracking-widest shadow-md border-none transition-all" onClick={() => {
+                        <Button type="button" className="w-full h-10 bg-rose-500 hover:bg-rose-600 text-white rounded-lg font-bold text-xs tracking-widest" onClick={() => {
                             if (!batchRemark.trim() || batchRemark.trim().length < 5) {
                                 toast({ title: "Remark Required", description: "Rejection requires a remark (at least 5 characters).", variant: "destructive" });
                                 return;
@@ -383,10 +372,25 @@ const TeamRequestsPage = () => {
                             setShowBatch(false);
                             setBatchRemark("");
                         }}>Reject All Pending</Button>
-                        <Button variant="ghost" className="w-full h-11 rounded-xl font-bold text-[11px] tracking-widest text-slate-400 border-none" onClick={() => setShowBatch(false)}>Cancel</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                        <Button type="button" variant="ghost" className="w-full h-10 rounded-lg font-bold text-xs text-slate-500" onClick={() => setShowBatch(false)}>Cancel</Button>
+                    </div>
+                }
+            >
+                <div className="space-y-4">
+                    <div className="p-4 bg-amber-50/50 rounded-xl border border-amber-100/30 flex gap-3">
+                        <AlertCircle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+                        <p className="text-[11px] text-amber-800 font-bold leading-relaxed">Batch actions are irreversible and will notify all team members immediately. Please use with caution.</p>
+                    </div>
+                    <Field label="Batch Remark">
+                        <Textarea
+                            value={batchRemark}
+                            onChange={(e) => setBatchRemark(e.target.value)}
+                            placeholder="Add a comment for all processed requests..."
+                            className="min-h-[120px]"
+                        />
+                    </Field>
+                </div>
+            </SideFormSheet>
 
         </div>
     );
