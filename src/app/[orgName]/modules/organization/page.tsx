@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import React, { useState } from "react"
 import {
@@ -54,9 +54,9 @@ interface ActionTileProps {
 const ActionTile = ({ title, desc, icon: Icon, color, onClick }: ActionTileProps) => (
   <div
     onClick={onClick}
-    className="group relative bg-card border border-border rounded-3xl p-5 hover:border-primary/50 hover:shadow-2xl hover:shadow-primary/5 transition-all cursor-pointer overflow-hidden"
+    className="group relative bg-card border border-border rounded-none p-5 hover:border-primary/50 hover:shadow-2xl hover:shadow-primary/5 transition-all cursor-pointer overflow-hidden"
   >
-    <div className={`h-12 w-12 rounded-2xl ${color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
+    <div className={`h-12 w-12 rounded-none ${color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
       <Icon className="w-6 h-6 text-white" />
     </div>
     <h4 className="text-sm font-black text-foreground leading-none">{title}</h4>
@@ -104,24 +104,24 @@ export default function OrganizationDashboard() {
           {/* IMPORT DIALOG */}
           <Dialog open={isImportOpen} onOpenChange={setIsImportOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline" className="h-11 rounded-2xl border-border bg-card text-foreground font-black uppercase text-[10px] tracking-widest px-6 hover:bg-muted hover:border-primary transition-all">
+              <Button variant="outline" className="h-11 rounded-none border-border bg-card text-foreground font-black uppercase text-[10px] tracking-widest px-6 hover:bg-muted hover:border-primary transition-all">
                 <Upload className="w-4 h-4 mr-2" />
                 Import Structure
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[450px] p-0 border border-border bg-background rounded-3xl overflow-hidden shadow-2xl">
+            <DialogContent className="sm:max-w-[450px] p-0 border border-border bg-background rounded-none overflow-hidden shadow-2xl">
               <div className="bg-zinc-900 p-8 text-white text-center">
                 <Upload className="w-12 h-12 text-primary mx-auto mb-4 animate-bounce" />
                 <DialogTitle className="text-2xl font-black">Institutional Sync</DialogTitle>
                 <p className="text-zinc-400 text-xs font-medium mt-2">Upload CSV/JSON to bulk provision units.</p>
               </div>
               <div className="p-10 space-y-6 bg-card">
-                <div className="border-2 border-dashed border-border rounded-3xl p-10 text-center hover:border-primary transition-colors cursor-pointer group">
+                <div className="border-2 border-dashed border-border rounded-none p-10 text-center hover:border-primary transition-colors cursor-pointer group">
                   <Layers className="w-10 h-10 text-muted-foreground/30 mx-auto group-hover:text-primary transition-colors" />
                   <p className="text-sm font-bold text-muted-foreground mt-4">Drop files here or click to browse</p>
                   <p className="text-[10px] text-muted-foreground/60 mt-1 uppercase tracking-widest font-black">Max 50MB per batch</p>
                 </div>
-                <Button className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase tracking-widest text-[11px] rounded-2xl shadow-xl shadow-primary/20" onClick={() => { toast.success("Batch processing manual override initiated."); setIsImportOpen(false); }}>
+                <Button className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase tracking-widest text-[11px] rounded-none shadow-xl shadow-primary/20" onClick={() => { toast.success("Batch processing manual override initiated."); setIsImportOpen(false); }}>
                   Process Catalog
                 </Button>
               </div>
@@ -131,12 +131,12 @@ export default function OrganizationDashboard() {
           {/* ADD DEPARTMENT DIALOG */}
           <Dialog open={isAddDeptOpen} onOpenChange={setIsAddDeptOpen}>
             <DialogTrigger asChild>
-              <Button className="h-11 bg-primary hover:bg-primary/90 text-primary-foreground gap-2 font-black uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20 px-6 rounded-2xl">
+              <Button className="h-11 bg-primary hover:bg-primary/90 text-primary-foreground gap-2 font-black uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20 px-6 rounded-none">
                 <Plus className="w-4 h-4" />
                 Add Department
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[450px] p-0 border border-border bg-background rounded-3xl overflow-hidden shadow-2xl">
+            <DialogContent className="sm:max-w-[450px] p-0 border border-border bg-background rounded-none overflow-hidden shadow-2xl">
               <div className="bg-primary p-8 text-primary-foreground">
                 <Building2 className="w-12 h-12 text-primary-foreground/20 absolute right-4 top-4" />
                 <DialogTitle className="text-2xl font-black tracking-tight">Institutional Unit</DialogTitle>
@@ -146,12 +146,12 @@ export default function OrganizationDashboard() {
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Department Name</Label>
-                    <Input name="deptName" placeholder="e.g. Strategic Global Sales" className="h-12 bg-background border-border rounded-2xl font-bold text-foreground" />
+                    <Input name="deptName" placeholder="e.g. Strategic Global Sales" className="h-12 bg-background border-border rounded-none font-bold text-foreground" />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Parent Division</Label>
                     <Select defaultValue="hq">
-                      <SelectTrigger className="h-12 bg-background border-border rounded-2xl font-bold text-foreground">
+                      <SelectTrigger className="h-12 bg-background border-border rounded-none font-bold text-foreground">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="bg-card border-border">
@@ -163,7 +163,7 @@ export default function OrganizationDashboard() {
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button type="submit" className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase tracking-widest text-[11px] rounded-2xl shadow-xl shadow-primary/20">
+                  <Button type="submit" className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase tracking-widest text-[11px] rounded-none shadow-xl shadow-primary/20">
                     Create Department
                   </Button>
                 </DialogFooter>
@@ -182,7 +182,7 @@ export default function OrganizationDashboard() {
           <SmallCardContent>
             <p className="text-3xl font-black text-primary-foreground">12 Firms</p>
             <p className="text-[10px] text-primary-foreground/90 font-medium flex items-center gap-1 mt-1 font-bold">
-              <Building2 className="w-3 h-3" /> 8 Active • 4 Incubating
+              <Building2 className="w-3 h-3" /> 8 Active â€¢ 4 Incubating
             </p>
           </SmallCardContent>
         </SmallCard>
@@ -257,7 +257,7 @@ export default function OrganizationDashboard() {
       {/* BOTTOM SECTION */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pb-10">
         {/* RECENT CRITICAL EVENTS */}
-        <Card className="lg:col-span-2 border-border shadow-sm bg-card overflow-hidden flex flex-col rounded-3xl">
+        <Card className="lg:col-span-2 border-border shadow-sm bg-card overflow-hidden flex flex-col rounded-none">
           <CardHeader className="bg-muted/30 border-b border-border flex flex-row items-center justify-between">
             <div>
               <CardTitle className="text-base font-black text-foreground uppercase tracking-tight">Governance Alert Stream</CardTitle>
@@ -298,7 +298,7 @@ export default function OrganizationDashboard() {
         </Card>
 
         {/* SYSTEM HEALTH MINI */}
-        <Card className="bg-zinc-950 text-white rounded-3xl border border-zinc-800 shadow-2xl relative overflow-hidden group">
+        <Card className="bg-zinc-950 text-white rounded-none border border-zinc-800 shadow-2xl relative overflow-hidden group">
           <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-110 transition-transform duration-700">
             <Zap className="w-32 h-32 text-white" />
           </div>
@@ -332,7 +332,7 @@ export default function OrganizationDashboard() {
             </div>
           </CardContent>
           <CardFooter className="pt-4">
-            <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase text-[10px] tracking-widest h-12 shadow-xl shadow-primary/20 gap-2 rounded-2xl border-none">
+            <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase text-[10px] tracking-widest h-12 shadow-xl shadow-primary/20 gap-2 rounded-none border-none">
               Nexus Status Center <ExternalLink className="w-4 h-4" />
             </Button>
           </CardFooter>

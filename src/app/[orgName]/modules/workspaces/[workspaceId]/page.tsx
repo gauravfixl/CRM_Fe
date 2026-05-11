@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
@@ -155,42 +155,42 @@ export default function WorkspaceDetailsPage() {
             <div className="flex-1 overflow-y-auto px-6 py-6 font-sans scrollbar-hide">
                 {/* Stats Row */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                    <div className="bg-white dark:bg-zinc-950 p-6 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm flex items-center justify-between group hover:border-blue-400 hover:shadow-xl hover:shadow-blue-50/50 transition-all duration-300">
+                    <div className="bg-white dark:bg-zinc-950 p-6 rounded-none border border-zinc-200 dark:border-zinc-800 shadow-sm flex items-center justify-between group hover:border-blue-400 hover:shadow-xl hover:shadow-blue-50/50 transition-all duration-300">
                         <div>
                             <p className="text-zinc-400 text-[10px] font-black uppercase tracking-widest mb-1">Total Projects</p>
                             <p className="text-3xl font-black text-zinc-900 group-hover:text-blue-600 transition-colors">{projects.length}</p>
                         </div>
-                        <div className="h-12 w-12 bg-blue-50 dark:bg-blue-900/10 rounded-2xl flex items-center justify-center">
+                        <div className="h-12 w-12 bg-blue-50 dark:bg-blue-900/10 rounded-none flex items-center justify-center">
                             <FolderKanban className="w-6 h-6 text-blue-600" />
                         </div>
                     </div>
 
-                    <div className="bg-white dark:bg-zinc-950 p-6 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm flex items-center justify-between group hover:border-orange-400 hover:shadow-xl hover:shadow-orange-50/50 transition-all duration-300">
+                    <div className="bg-white dark:bg-zinc-950 p-6 rounded-none border border-zinc-200 dark:border-zinc-800 shadow-sm flex items-center justify-between group hover:border-orange-400 hover:shadow-xl hover:shadow-orange-50/50 transition-all duration-300">
                         <div>
                             <p className="text-zinc-400 text-[10px] font-black uppercase tracking-widest mb-1">Members</p>
                             <p className="text-3xl font-black text-zinc-900 group-hover:text-orange-600 transition-colors">{analytics?.totalMembers || 0}</p>
                         </div>
-                        <div className="h-12 w-12 bg-orange-50 dark:bg-orange-900/10 rounded-2xl flex items-center justify-center">
+                        <div className="h-12 w-12 bg-orange-50 dark:bg-orange-900/10 rounded-none flex items-center justify-center">
                             <Users className="w-6 h-6 text-orange-600" />
                         </div>
                     </div>
 
-                    <div className="bg-white dark:bg-zinc-950 p-6 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm flex items-center justify-between group hover:border-green-400 hover:shadow-xl hover:shadow-green-50/50 transition-all duration-300">
+                    <div className="bg-white dark:bg-zinc-950 p-6 rounded-none border border-zinc-200 dark:border-zinc-800 shadow-sm flex items-center justify-between group hover:border-green-400 hover:shadow-xl hover:shadow-green-50/50 transition-all duration-300">
                         <div>
                             <p className="text-zinc-400 text-[10px] font-black uppercase tracking-widest mb-1">Active Tasks</p>
                             <p className="text-3xl font-black text-zinc-900 group-hover:text-green-600 transition-colors">{analytics?.activeTasks || 0}</p>
                         </div>
-                        <div className="h-12 w-12 bg-green-50 dark:bg-green-900/10 rounded-2xl flex items-center justify-center">
+                        <div className="h-12 w-12 bg-green-50 dark:bg-green-900/10 rounded-none flex items-center justify-center">
                             <Clock className="w-6 h-6 text-green-600" />
                         </div>
                     </div>
 
-                    <div className="bg-white dark:bg-zinc-950 p-6 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm flex items-center justify-between group hover:border-purple-400 hover:shadow-xl hover:shadow-purple-50/50 transition-all duration-300">
+                    <div className="bg-white dark:bg-zinc-950 p-6 rounded-none border border-zinc-200 dark:border-zinc-800 shadow-sm flex items-center justify-between group hover:border-purple-400 hover:shadow-xl hover:shadow-purple-50/50 transition-all duration-300">
                         <div>
                             <p className="text-zinc-400 text-[10px] font-black uppercase tracking-widest mb-1">Completed</p>
                             <p className="text-3xl font-black text-zinc-900 group-hover:text-purple-600 transition-colors">{analytics?.completedTasks || 0}</p>
                         </div>
-                        <div className="h-12 w-12 bg-purple-50 dark:bg-purple-900/10 rounded-2xl flex items-center justify-center">
+                        <div className="h-12 w-12 bg-purple-50 dark:bg-purple-900/10 rounded-none flex items-center justify-center">
                             <CheckCircle2 className="w-6 h-6 text-purple-600" />
                         </div>
                     </div>
@@ -235,7 +235,7 @@ export default function WorkspaceDetailsPage() {
                                 </p>
                                 <CustomButton
                                     onClick={() => setIsProjectDialogOpen(true)}
-                                    className="mt-10 bg-blue-600 text-white font-black px-10 shadow-2xl shadow-blue-200 h-14 rounded-2xl hover:scale-105 transition-transform"
+                                    className="mt-10 bg-blue-600 text-white font-black px-10 shadow-2xl shadow-blue-200 h-14 rounded-none hover:scale-105 transition-transform"
                                 >
                                     <Plus className="w-5 h-5 mr-2" /> CREATE NEW PROJECT
                                 </CustomButton>
@@ -245,7 +245,7 @@ export default function WorkspaceDetailsPage() {
 
                     <TabsContent value="overview" className="mt-0 outline-none animate-in fade-in slide-in-from-bottom-2 duration-500">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            <div className="bg-white dark:bg-zinc-950 rounded-3xl border border-zinc-200 dark:border-zinc-800 p-8 shadow-sm">
+                            <div className="bg-white dark:bg-zinc-950 rounded-none border border-zinc-200 dark:border-zinc-800 p-8 shadow-sm">
                                 <h3 className="text-lg font-black text-zinc-900 dark:text-zinc-100 mb-4">Workspace Details</h3>
                                 <div className="space-y-4">
                                     <div>
@@ -266,7 +266,7 @@ export default function WorkspaceDetailsPage() {
                                     </div>
                                 </div>
                             </div>
-                            <div className="bg-white dark:bg-zinc-950 rounded-3xl border border-zinc-200 dark:border-zinc-800 p-8 shadow-sm">
+                            <div className="bg-white dark:bg-zinc-950 rounded-none border border-zinc-200 dark:border-zinc-800 p-8 shadow-sm">
                                 <h3 className="text-lg font-black text-zinc-900 dark:text-zinc-100 mb-4">Quick Stats</h3>
                                 <div className="space-y-4">
                                     <div className="flex justify-between items-center">
@@ -292,7 +292,7 @@ export default function WorkspaceDetailsPage() {
 
                     <TabsContent value="members" className="mt-0 outline-none animate-in fade-in slide-in-from-bottom-2 duration-500">
                         {members.length > 0 ? (
-                            <div className="bg-white dark:bg-zinc-950 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
+                            <div className="bg-white dark:bg-zinc-950 rounded-none border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
                                 <div className="p-6 border-b border-zinc-100 dark:border-zinc-800">
                                     <h3 className="text-lg font-black text-zinc-900 dark:text-zinc-100">Workspace Members ({members.length})</h3>
                                 </div>
@@ -339,15 +339,15 @@ export default function WorkspaceDetailsPage() {
                         {analytics ? (
                             <div className="space-y-8">
                                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                                    <div className="bg-white dark:bg-zinc-950 p-6 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
+                                    <div className="bg-white dark:bg-zinc-950 p-6 rounded-none border border-zinc-200 dark:border-zinc-800 shadow-sm">
                                         <p className="text-zinc-400 text-[10px] font-black uppercase tracking-widest mb-1">Total Projects</p>
                                         <p className="text-3xl font-black text-blue-600">{analytics.totalProjects}</p>
                                     </div>
-                                    <div className="bg-white dark:bg-zinc-950 p-6 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
+                                    <div className="bg-white dark:bg-zinc-950 p-6 rounded-none border border-zinc-200 dark:border-zinc-800 shadow-sm">
                                         <p className="text-zinc-400 text-[10px] font-black uppercase tracking-widest mb-1">Total Teams</p>
                                         <p className="text-3xl font-black text-orange-600">{analytics.totalTeams}</p>
                                     </div>
-                                    <div className="bg-white dark:bg-zinc-950 p-6 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
+                                    <div className="bg-white dark:bg-zinc-950 p-6 rounded-none border border-zinc-200 dark:border-zinc-800 shadow-sm">
                                         <p className="text-zinc-400 text-[10px] font-black uppercase tracking-widest mb-1">Completion Rate</p>
                                         <p className="text-3xl font-black text-green-600">
                                             {analytics.activeTasks + analytics.completedTasks > 0
@@ -355,14 +355,14 @@ export default function WorkspaceDetailsPage() {
                                                 : 0}%
                                         </p>
                                     </div>
-                                    <div className="bg-white dark:bg-zinc-950 p-6 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
+                                    <div className="bg-white dark:bg-zinc-950 p-6 rounded-none border border-zinc-200 dark:border-zinc-800 shadow-sm">
                                         <p className="text-zinc-400 text-[10px] font-black uppercase tracking-widest mb-1">Total Tasks</p>
                                         <p className="text-3xl font-black text-purple-600">{analytics.activeTasks + analytics.completedTasks}</p>
                                     </div>
                                 </div>
 
                                 {analytics.workloadPerMember && analytics.workloadPerMember.length > 0 && (
-                                    <div className="bg-white dark:bg-zinc-950 rounded-3xl border border-zinc-200 dark:border-zinc-800 p-8 shadow-sm">
+                                    <div className="bg-white dark:bg-zinc-950 rounded-none border border-zinc-200 dark:border-zinc-800 p-8 shadow-sm">
                                         <h3 className="text-lg font-black text-zinc-900 dark:text-zinc-100 mb-6">Workload Distribution</h3>
                                         <div className="space-y-4">
                                             {analytics.workloadPerMember.map((m, i) => {

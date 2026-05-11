@@ -341,7 +341,7 @@ export default function OrgHealthPage() {
 
             {/* MEMBER STATUS + GROWTH */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <Card className="lg:col-span-2 border-zinc-200 dark:border-zinc-800 shadow-xl rounded-3xl overflow-hidden bg-white">
+                <Card className="lg:col-span-2 border-zinc-200 dark:border-zinc-800 shadow-xl rounded-none overflow-hidden bg-white">
                     <CardHeader className="border-b border-zinc-100 p-6">
                         <CardTitle className="text-lg font-bold text-zinc-900 flex items-center gap-2">
                             <Briefcase className="w-5 h-5 text-indigo-600" /> Members per Firm
@@ -401,7 +401,7 @@ export default function OrgHealthPage() {
                     </CardContent>
                 </Card>
 
-                <Card className="border-zinc-200 dark:border-zinc-800 shadow-xl rounded-3xl overflow-hidden bg-white">
+                <Card className="border-zinc-200 dark:border-zinc-800 shadow-xl rounded-none overflow-hidden bg-white">
                     <CardHeader className="border-b border-zinc-100 p-6">
                         <CardTitle className="text-lg font-bold text-zinc-900 flex items-center gap-2">
                             <PieChart className="w-5 h-5 text-indigo-600" /> Member Health
@@ -409,7 +409,7 @@ export default function OrgHealthPage() {
                         <p className="text-xs text-zinc-500 mt-1">Status snapshot</p>
                     </CardHeader>
                     <CardContent className="p-6 space-y-4">
-                        <div className="rounded-2xl bg-emerald-50 border border-emerald-100 p-3 flex items-center gap-3">
+                        <div className="rounded-none bg-emerald-50 border border-emerald-100 p-3 flex items-center gap-3">
                             <div className="h-10 w-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center">
                                 <UserCheck className="w-5 h-5" />
                             </div>
@@ -419,7 +419,7 @@ export default function OrgHealthPage() {
                             </div>
                         </div>
 
-                        <div className="rounded-2xl bg-amber-50 border border-amber-100 p-3 flex items-center gap-3">
+                        <div className="rounded-none bg-amber-50 border border-amber-100 p-3 flex items-center gap-3">
                             <div className="h-10 w-10 rounded-xl bg-amber-500 text-white flex items-center justify-center">
                                 <Mail className="w-5 h-5" />
                             </div>
@@ -429,7 +429,7 @@ export default function OrgHealthPage() {
                             </div>
                         </div>
 
-                        <div className="rounded-2xl bg-red-50 border border-red-100 p-3 flex items-center gap-3">
+                        <div className="rounded-none bg-red-50 border border-red-100 p-3 flex items-center gap-3">
                             <div className="h-10 w-10 rounded-xl bg-red-500 text-white flex items-center justify-center">
                                 <UserX className="w-5 h-5" />
                             </div>
@@ -452,7 +452,7 @@ export default function OrgHealthPage() {
 
             {/* GROWTH + COMPLIANCE */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card className="border-zinc-200 dark:border-zinc-800 shadow-xl rounded-3xl overflow-hidden bg-white">
+                <Card className="border-zinc-200 dark:border-zinc-800 shadow-xl rounded-none overflow-hidden bg-white">
                     <CardHeader className="border-b border-zinc-100 p-6">
                         <CardTitle className="text-lg font-bold text-zinc-900 flex items-center gap-2">
                             <TrendingUp className="w-5 h-5 text-emerald-600" /> Recent Growth
@@ -466,7 +466,7 @@ export default function OrgHealthPage() {
                                 { label: "Last 30 days", users: memberGrowth.d30, firms: firmGrowth.d30 },
                                 { label: "Last 90 days", users: memberGrowth.d90, firms: firmGrowth.d90 },
                             ].map((g) => (
-                                <div key={g.label} className="rounded-2xl border border-zinc-100 p-4 bg-gradient-to-br from-zinc-50 to-white">
+                                <div key={g.label} className="rounded-none border border-zinc-100 p-4 bg-gradient-to-br from-zinc-50 to-white">
                                     <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">{g.label}</p>
                                     <div className="mt-3 space-y-2">
                                         <div className="flex items-center justify-between">
@@ -509,7 +509,7 @@ export default function OrgHealthPage() {
                     </CardContent>
                 </Card>
 
-                <Card className="border-zinc-200 dark:border-zinc-800 shadow-xl rounded-3xl overflow-hidden bg-white">
+                <Card className="border-zinc-200 dark:border-zinc-800 shadow-xl rounded-none overflow-hidden bg-white">
                     <CardHeader className="border-b border-zinc-100 p-6">
                         <CardTitle className="text-lg font-bold text-zinc-900 flex items-center gap-2">
                             <ShieldCheck className="w-5 h-5 text-indigo-600" /> Compliance & Status

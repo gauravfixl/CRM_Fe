@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { Workflow, Search, Plus, Filter, MoreVertical, Zap, Terminal, Settings2, PlayCircle, Eye, Rocket, Layout, Box } from "lucide-react";
@@ -61,7 +61,7 @@ export default function LeadWorkflowsPage() {
                                         <div className="space-y-1.5 flex flex-col">
                                             <label className="text-sm font-black uppercase text-zinc-400 tracking-widest">Entry Trigger</label>
                                             <Select defaultValue="lead_created">
-                                                <SelectTrigger className="h-12 rounded-2xl border-zinc-100 bg-zinc-50 font-bold">
+                                                <SelectTrigger className="h-12 rounded-none border-zinc-100 bg-zinc-50 font-bold">
                                                     <SelectValue placeholder="When to start?" />
                                                 </SelectTrigger>
                                                 <SelectContent>
@@ -75,7 +75,7 @@ export default function LeadWorkflowsPage() {
                                         <div className="space-y-1.5 flex flex-col">
                                             <label className="text-sm font-black uppercase text-zinc-400 tracking-widest">Immediate Action</label>
                                             <Select defaultValue="send_email">
-                                                <SelectTrigger className="h-12 rounded-2xl border-zinc-100 bg-zinc-50 font-bold">
+                                                <SelectTrigger className="h-12 rounded-none border-zinc-100 bg-zinc-50 font-bold">
                                                     <SelectValue placeholder="What to do?" />
                                                 </SelectTrigger>
                                                 <SelectContent>
@@ -92,7 +92,7 @@ export default function LeadWorkflowsPage() {
                                     <p className="text-[10px] font-bold text-zinc-400 max-w-[200px]">Changes will be versioned and applied to incoming leads immediately.</p>
                                     <div className="flex gap-4">
                                         <CustomButton type="button" variant="ghost" onClick={() => setIsDesignOpen(false)}>Back to Lab</CustomButton>
-                                        <CustomButton type="submit" className="bg-zinc-950 text-white px-12 rounded-2xl h-12 font-black uppercase tracking-tight shadow-xl shadow-zinc-200 transition-all hover:scale-105 active:scale-95">
+                                        <CustomButton type="submit" className="bg-zinc-950 text-white px-12 rounded-none h-12 font-black uppercase tracking-tight shadow-xl shadow-zinc-200 transition-all hover:scale-105 active:scale-95">
                                             <Rocket className="h-4 w-4 mr-2" /> Launch Flow
                                         </CustomButton>
                                     </div>
@@ -114,7 +114,7 @@ export default function LeadWorkflowsPage() {
                             className="bg-white p-8 rounded-[40px] border border-zinc-100 shadow-sm hover:shadow-2xl transition-all group flex flex-col h-[320px] justify-between relative"
                         >
                             <div className="flex justify-between items-start">
-                                <div className={`p-4 rounded-3xl ${flow.status === 'active' ? 'bg-emerald-50 text-emerald-600 shadow-lg shadow-emerald-100' : 'bg-zinc-50 text-zinc-400'}`}>
+                                <div className={`p-4 rounded-none ${flow.status === 'active' ? 'bg-emerald-50 text-emerald-600 shadow-lg shadow-emerald-100' : 'bg-zinc-50 text-zinc-400'}`}>
                                     <Zap size={24} />
                                 </div>
                                 <Badge className={flow.status === 'active' ? 'bg-emerald-50 text-emerald-600 border-none px-3 uppercase text-[9px] font-black' : 'bg-zinc-50 text-zinc-400 border-none px-3 uppercase text-[9px] font-black'}>
@@ -136,9 +136,9 @@ export default function LeadWorkflowsPage() {
                                     <p className="text-sm font-black text-zinc-900">{flow.executions.toLocaleString()}</p>
                                 </div>
                                 <div className="flex justify-end items-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <CustomButton onClick={() => toast.info(`Viewing analytics for ${flow.name}`)} variant="default" size="sm" className="h-9 w-9 p-0 rounded-2xl transition-all"><Eye size={16} /></CustomButton>
-                                    <CustomButton onClick={() => toast.success(`${flow.name} restarted successfully`)} variant="default" size="sm" className="h-9 w-9 p-0 rounded-2xl transition-all"><PlayCircle size={16} /></CustomButton>
-                                    <CustomButton variant="outline" size="sm" className="h-9 w-9 p-0 rounded-2xl border-zinc-100"><MoreVertical size={16} /></CustomButton>
+                                    <CustomButton onClick={() => toast.info(`Viewing analytics for ${flow.name}`)} variant="default" size="sm" className="h-9 w-9 p-0 rounded-none transition-all"><Eye size={16} /></CustomButton>
+                                    <CustomButton onClick={() => toast.success(`${flow.name} restarted successfully`)} variant="default" size="sm" className="h-9 w-9 p-0 rounded-none transition-all"><PlayCircle size={16} /></CustomButton>
+                                    <CustomButton variant="outline" size="sm" className="h-9 w-9 p-0 rounded-none border-zinc-100"><MoreVertical size={16} /></CustomButton>
                                 </div>
                             </div>
                         </motion.div>
@@ -165,7 +165,7 @@ export default function LeadWorkflowsPage() {
                             Connect lead life-cycle events to external webhooks or direct code execution using our serverless automation engine.
                         </p>
                     </div>
-                    <CustomButton onClick={() => toast.promise(new Promise(r => setTimeout(r, 1000)), { loading: 'Loading Integrations Store...', success: 'Store Loaded!', error: 'Failed' })} variant="default" className="font-bold px-12 h-14 rounded-2xl shadow-xl relative z-10 uppercase tracking-tighter">
+                    <CustomButton onClick={() => toast.promise(new Promise(r => setTimeout(r, 1000)), { loading: 'Loading Integrations Store...', success: 'Store Loaded!', error: 'Failed' })} variant="default" className="font-bold px-12 h-14 rounded-none shadow-xl relative z-10 uppercase tracking-tighter">
                         Explore Integrations
                     </CustomButton>
                 </div>

@@ -1,13 +1,14 @@
 "use client"
 
 import * as React from "react"
-import { useMemo } from "react"
-import { Check, X, Search } from "lucide-react"
+import { useMemo, useState } from "react"
+import { Check, X, Search, ClipboardCheck } from "lucide-react"
 import { Button } from "@/shared/components/ui/button"
 import { useToast } from "@/shared/components/ui/use-toast"
 
 import { DataTable, type DataTableColumn } from "@/shared/components/scm/shared/DataTable"
 import { StatusBadge } from "@/shared/components/scm/shared/StatusBadge"
+import { RowDetailSheet } from "@/shared/components/scm/shared/RowDetailSheet"
 import { useScmReturnsStore, type ScmCustomerReturn } from "@/shared/data/scm/scm-returns-store"
 import { useScmProcurementExtraStore, type ScmPurchaseReturn } from "@/shared/data/scm/scm-procurement-extra-store"
 
@@ -28,6 +29,7 @@ export default function ReturnApprovalsPage() {
     const updateCustomerReturn = useScmReturnsStore((s) => s.updateCustomerReturn)
     const purchaseReturns = useScmProcurementExtraStore((s) => s.purchaseReturns)
     const updatePurchaseReturn = useScmProcurementExtraStore((s) => s.updatePurchaseReturn)
+    const [viewing, setViewing] = useState<ApprovalRow | null>(null)
 
     const rows: ApprovalRow[] = useMemo(() => {
         const fromCustomers: ApprovalRow[] = customerReturns
@@ -80,21 +82,21 @@ export default function ReturnApprovalsPage() {
 
             <div className="grid grid-cols-3 gap-4">
                 <div
-                    className="rounded-xl border shadow-sm p-4"
+                    className="rounded-none border shadow-sm p-4"
                     style={{ background: "linear-gradient(135deg, #2563eb14 0%, #2563eb06 45%, #ffffff 100%)", borderColor: "#2563eb33" }}
                 >
                     <p className="text-[12px] text-[#64748B] font-medium">Customer Returns</p>
                     <p className="text-[22px] font-semibold text-blue-600 mt-1 tabular-nums leading-tight">{rows.filter((r) => r.type === "Customer").length}</p>
                 </div>
                 <div
-                    className="rounded-xl border shadow-sm p-4"
+                    className="rounded-none border shadow-sm p-4"
                     style={{ background: "linear-gradient(135deg, #8b5cf614 0%, #8b5cf606 45%, #ffffff 100%)", borderColor: "#8b5cf633" }}
                 >
                     <p className="text-[12px] text-[#64748B] font-medium">Supplier Returns</p>
                     <p className="text-[22px] font-semibold text-purple-600 mt-1 tabular-nums leading-tight">{rows.filter((r) => r.type === "Supplier").length}</p>
                 </div>
                 <div
-                    className="rounded-xl border shadow-sm p-4"
+                    className="rounded-none border shadow-sm p-4"
                     style={{ background: "linear-gradient(135deg, #0F172A14 0%, #0F172A06 45%, #ffffff 100%)", borderColor: "#0F172A22" }}
                 >
                     <p className="text-[12px] text-[#64748B] font-medium">Total Pending</p>
@@ -110,6 +112,7 @@ export default function ReturnApprovalsPage() {
                 searchKeys={["reference", "party", "product", "reason"]}
                 pageSize={15}
                 emptyMessage="No returns pending approval."
+                onRowClick={(row) => setViewing(row)}
                 actions={(row) => (
                     <div className="flex items-center gap-1 justify-end">
                         <Button onClick={() => handleApprove(row)} size="sm" variant="ghost" className="h-8 px-2 text-emerald-700 hover:bg-emerald-50" title="Approve">
@@ -123,6 +126,16 @@ export default function ReturnApprovalsPage() {
                         </Button>
                     </div>
                 )}
+            />
+
+            <RowDetailSheet
+                row={viewing}
+                columns={columns}
+                onOpenChange={(o) => !o && setViewing(null)}
+                title={(r) => r.reference}
+                description={(r) => `${r.type} · ${r.party}`}
+                icon={<ClipboardCheck className="w-5 h-5" />}
+                accentColor="#2563eb"
             />
         </div>
     )

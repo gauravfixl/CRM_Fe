@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -141,7 +141,7 @@ export default function InvoiceDetailsPage() {
                 {/* Top: Firm & Info */}
                 <div className="flex justify-between items-start mb-20">
                   <div className="space-y-6">
-                    <div className="w-16 h-16 bg-zinc-50 rounded-2xl flex items-center justify-center border border-zinc-100 shadow-inner">
+                    <div className="w-16 h-16 bg-zinc-50 rounded-none flex items-center justify-center border border-zinc-100 shadow-inner">
                       <Building className="h-8 w-8 text-zinc-300" />
                     </div>
                     <div>
@@ -238,7 +238,7 @@ export default function InvoiceDetailsPage() {
                     </div>
 
                     {invoice?.amountPaid > 0 && (
-                      <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100 flex justify-between items-center mt-6">
+                      <div className="p-4 bg-emerald-50 rounded-none border border-emerald-100 flex justify-between items-center mt-6">
                         <p className="text-[10px] font-black text-emerald-700 uppercase">Amount Paid</p>
                         <p className="text-sm font-black text-emerald-700">${(invoice?.amountPaid || 0).toLocaleString()}</p>
                       </div>
@@ -272,7 +272,7 @@ export default function InvoiceDetailsPage() {
 
               <div className="space-y-4">
                 <CustomButton
-                  className="w-full h-14 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black uppercase tracking-tighter shadow-xl shadow-emerald-500/10"
+                  className="w-full h-14 bg-emerald-600 hover:bg-emerald-700 text-white rounded-none font-black uppercase tracking-tighter shadow-xl shadow-emerald-500/10"
                   disabled={invoice?.status === "Paid"}
                   onClick={() => toast.info("Record Payment launched...")}
                 >
@@ -281,7 +281,7 @@ export default function InvoiceDetailsPage() {
 
                 {invoice?.status === "Draft" && (
                   <CustomButton
-                    className="w-full h-12 bg-zinc-900 text-white rounded-2xl font-black uppercase tracking-tighter shadow-lg"
+                    className="w-full h-12 bg-zinc-900 text-white rounded-none font-black uppercase tracking-tighter shadow-lg"
                     onClick={() => handleAction(() => draftToInvoice(invoice._id), "Draft finalized!")}
                   >
                     Finalize Draft

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -161,7 +161,7 @@ export default function CreateInvoicePage() {
       </div>
 
       <main className="max-w-4xl mx-auto py-12 px-6">
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-xl overflow-hidden">
+        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-none shadow-xl overflow-hidden">
 
           <div className="p-10 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-white/[0.02] flex justify-between items-end">
             <div>
@@ -192,8 +192,8 @@ export default function CreateInvoicePage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="USD">USD ($)</SelectItem>
-                    <SelectItem value="EUR">EUR (€)</SelectItem>
-                    <SelectItem value="INR">INR (₹)</SelectItem>
+                    <SelectItem value="EUR">EUR (â‚¬)</SelectItem>
+                    <SelectItem value="INR">INR (â‚¹)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import React, { useState } from "react"
 import {
@@ -158,10 +158,10 @@ export default function CompliancePage() {
                                 { label: "Client CRM History", meta: "Institution Policy", value: "Indefinite", autoPurge: false },
                                 { label: "Internal Activity Logs", meta: "System Default", value: "12 Months", autoPurge: true },
                             ].map((pol) => (
-                                <div key={pol.label} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                <div key={pol.label} className="flex items-center justify-between p-4 bg-slate-50 rounded-none border border-slate-100">
                                     <div>
                                         <p className="text-sm font-bold text-slate-900 leading-none">{pol.label}</p>
-                                        <p className="text-[10px] text-slate-400 font-bold mt-1 uppercase tracking-tighter">{pol.meta} • {pol.value}</p>
+                                        <p className="text-[10px] text-slate-400 font-bold mt-1 uppercase tracking-tighter">{pol.meta} â€¢ {pol.value}</p>
                                     </div>
                                     <div className="flex items-center gap-3">
                                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Auto-Purge</span>
@@ -175,7 +175,7 @@ export default function CompliancePage() {
 
                 {/* SIDEBAR OPS */}
                 <div className="space-y-6">
-                    <Card className="bg-slate-900 text-white border-none rounded-3xl p-6 shadow-2xl relative overflow-hidden group">
+                    <Card className="bg-slate-900 text-white border-none rounded-none p-6 shadow-2xl relative overflow-hidden group">
                         <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-110 transition-transform duration-700">
                             <Gavel className="w-32 h-32" />
                         </div>
@@ -208,7 +208,7 @@ export default function CompliancePage() {
                         </Button>
                     </Card>
 
-                    <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl flex items-start gap-3">
+                    <div className="p-4 bg-amber-50 border border-amber-100 rounded-none flex items-start gap-3">
                         <ShieldAlert className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
                         <div>
                             <h5 className="text-[11px] font-black text-amber-900 uppercase">Policy Warning</h5>

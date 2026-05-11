@@ -76,7 +76,7 @@ export function StatusBadge({ status, tone, className }: StatusBadgeProps) {
     return (
         <span
             className={cn(
-                "inline-flex items-center px-2 py-0.5 rounded-md border text-[11.5px] font-semibold capitalize",
+                "inline-flex items-center px-2 py-0.5 rounded-none border text-[11.5px] font-semibold capitalize",
                 TONE_STYLES[resolved],
                 className
             )}

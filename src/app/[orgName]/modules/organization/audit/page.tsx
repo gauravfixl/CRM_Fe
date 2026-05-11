@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import React, { useEffect, useMemo, useState } from "react"
 import { axiosInstance } from "@/lib/axios"
@@ -67,7 +67,7 @@ export default function OrgAuditPage() {
             user: act?.userId ? act.userId.toString() : "System",
             ip: "N/A",
             status,
-            time: createdAt ? formatTimeAgo(createdAt) : "—",
+            time: createdAt ? formatTimeAgo(createdAt) : "â€”",
             detail: act?.activityDesc || act?.activity || "No details available",
             createdAtMs: createdAt ? createdAt.getTime() : 0,
         }
@@ -124,7 +124,7 @@ export default function OrgAuditPage() {
             {/* AUDIT SUMMARY */}
             <div className="grid gap-4 md:grid-cols-3">
                 <Card className="bg-white border-slate-200 shadow-sm flex items-center p-6 gap-6">
-                    <div className="p-4 bg-emerald-50 rounded-2xl text-emerald-600 border border-emerald-100">
+                    <div className="p-4 bg-emerald-50 rounded-none text-emerald-600 border border-emerald-100">
                         <CheckCircle2 className="w-6 h-6" />
                     </div>
                     <div>
@@ -133,7 +133,7 @@ export default function OrgAuditPage() {
                     </div>
                 </Card>
                 <Card className="bg-white border-slate-200 shadow-sm flex items-center p-6 gap-6">
-                    <div className="p-4 bg-amber-50 rounded-2xl text-amber-600 border border-amber-100">
+                    <div className="p-4 bg-amber-50 rounded-none text-amber-600 border border-amber-100">
                         <AlertTriangle className="w-6 h-6" />
                     </div>
                     <div>
@@ -142,7 +142,7 @@ export default function OrgAuditPage() {
                     </div>
                 </Card>
                 <Card className="bg-white border-slate-200 shadow-sm flex items-center p-6 gap-6">
-                    <div className="p-4 bg-red-50 rounded-2xl text-red-600 border border-red-100">
+                    <div className="p-4 bg-red-50 rounded-none text-red-600 border border-red-100">
                         <Shield className="w-6 h-6" />
                     </div>
                     <div>

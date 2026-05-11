@@ -13,6 +13,7 @@ import { useToast } from "@/shared/components/ui/use-toast"
 import { DataTable, type DataTableColumn } from "@/shared/components/scm/shared/DataTable"
 import { StatusBadge } from "@/shared/components/scm/shared/StatusBadge"
 import { RowActions, DeleteConfirmDialog } from "@/shared/components/scm/shared/RowActions"
+import { RowDetailSheet } from "@/shared/components/scm/shared/RowDetailSheet"
 import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet"
 import { useScmSettingsStore, type ScmUnit } from "@/shared/data/scm/scm-settings-store"
 
@@ -36,6 +37,7 @@ export default function UnitManagementPage() {
     const [touched, setTouched] = useState<Record<string, boolean>>({})
     const [deleting, setDeleting] = useState<ScmUnit | null>(null)
     const [submitting, setSubmitting] = useState(false)
+    const [viewing, setViewing] = useState<ScmUnit | null>(null)
 
     useEffect(() => {
         if (!formOpen) return
@@ -110,9 +112,20 @@ export default function UnitManagementPage() {
                 searchKeys={["name", "abbreviation", "type"]}
                 pageSize={10}
                 emptyMessage="No units yet."
+                onRowClick={(row) => setViewing(row)}
                 actions={(row) => (
                     <RowActions onEdit={() => { setEditing(row); setMode("edit"); setFormOpen(true) }} onDelete={() => setDeleting(row)} />
                 )}
+            />
+
+            <RowDetailSheet
+                row={viewing}
+                columns={columns}
+                onOpenChange={(o) => !o && setViewing(null)}
+                title={(r) => `${r.name} (${r.abbreviation})`}
+                description={(r) => `Type: ${r.type}`}
+                icon={<Ruler className="w-5 h-5" />}
+                accentColor="#2563eb"
             />
 
             <SideFormSheet

@@ -46,26 +46,26 @@ export default function SeasonalTrendsPage() {
                 <p className="text-[13px] text-[#64748B] mt-0.5">Demand patterns by season, region, and year.</p>
             </div>
 
-            <div className="bg-white rounded-xl border border-[#EEF1F6] shadow-sm p-4">
+            <div className="bg-white rounded-none border border-[#EEF1F6] shadow-sm p-4">
                 <div className="flex flex-wrap items-center gap-3">
                     <span className="text-[12px] font-medium text-[#64748B]">Filters:</span>
                     <Select value={product} onValueChange={setProduct}>
-                        <SelectTrigger className="h-9 w-[200px] border-[#E5E7EB] text-[13px]"><SelectValue placeholder="All products" /></SelectTrigger>
+                        <SelectTrigger className="h-9 w-[200px] rounded-none border-[#E5E7EB] text-[13px]"><SelectValue placeholder="All products" /></SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">All products</SelectItem>
                             {products.map((p) => <SelectItem key={p.id} value={p.id}>{p.sku} · {p.productName}</SelectItem>)}
                         </SelectContent>
                     </Select>
                     <Select value={region} onValueChange={setRegion}>
-                        <SelectTrigger className="h-9 w-[160px] border-[#E5E7EB] text-[13px]"><SelectValue /></SelectTrigger>
+                        <SelectTrigger className="h-9 w-[160px] rounded-none border-[#E5E7EB] text-[13px]"><SelectValue /></SelectTrigger>
                         <SelectContent>{REGIONS.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
                     </Select>
                     <Select value={season} onValueChange={setSeason}>
-                        <SelectTrigger className="h-9 w-[150px] border-[#E5E7EB] text-[13px]"><SelectValue /></SelectTrigger>
+                        <SelectTrigger className="h-9 w-[150px] rounded-none border-[#E5E7EB] text-[13px]"><SelectValue /></SelectTrigger>
                         <SelectContent>{SEASONS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
                     </Select>
                     <Select value={year} onValueChange={setYear}>
-                        <SelectTrigger className="h-9 w-[110px] border-[#E5E7EB] text-[13px]"><SelectValue /></SelectTrigger>
+                        <SelectTrigger className="h-9 w-[110px] rounded-none border-[#E5E7EB] text-[13px]"><SelectValue /></SelectTrigger>
                         <SelectContent>
                             {["2024", "2025", "2026", "2027"].map((y) => <SelectItem key={y} value={y}>{y}</SelectItem>)}
                         </SelectContent>
@@ -74,11 +74,11 @@ export default function SeasonalTrendsPage() {
             </div>
 
             <div
-                className="rounded-xl border shadow-sm p-4"
+                className="rounded-none border shadow-sm p-4"
                 style={{ background: "linear-gradient(180deg, #8b5cf60d 0%, #ffffff 50%)", borderColor: "#8b5cf626" }}
             >
                 <div className="flex items-start gap-2 mb-3">
-                    <span className="w-1 h-9 rounded-full shrink-0 bg-violet-500" />
+                    <span className="w-1 h-9 rounded-none shrink-0 bg-violet-500" />
                     <div>
                         <h3 className="text-[14px] font-semibold text-[#0F172A]">Monthly Demand by Season</h3>
                         <p className="text-[11.5px] text-[#94A3B8] mt-0.5">Stacked area chart showing seasonal demand contributions</p>
@@ -94,7 +94,7 @@ export default function SeasonalTrendsPage() {
                         <CartesianGrid strokeDasharray="3 3" stroke="#EEF1F6" vertical={false} />
                         <XAxis dataKey="month" tick={{ fontSize: 12, fill: "#64748B" }} axisLine={false} tickLine={false} />
                         <YAxis tick={{ fontSize: 12, fill: "#64748B" }} axisLine={false} tickLine={false} />
-                        <ReTooltip contentStyle={{ background: "white", border: "1px solid #EEF1F6", borderRadius: 8, fontSize: 12 }} />
+                        <ReTooltip contentStyle={{ background: "white", border: "1px solid #EEF1F6", borderRadius: 0, fontSize: 12 }} />
                         <Legend wrapperStyle={{ fontSize: 12 }} />
                         <Area type="monotone" dataKey="winter" stackId="1" stroke="#3b82f6" fill="url(#winter)" />
                         <Area type="monotone" dataKey="summer" stackId="1" stroke="#f59e0b" fill="url(#summer)" />
@@ -115,7 +115,7 @@ export default function SeasonalTrendsPage() {
 function Insight({ title, value, detail, color }: { title: string; value: string; detail: string; color: string }) {
     return (
         <div
-            className="rounded-xl border shadow-sm p-4 transition-all duration-200"
+            className="rounded-none border shadow-sm p-4 transition-all duration-200"
             style={{
                 background: `linear-gradient(135deg, ${color}14 0%, ${color}06 45%, #ffffff 100%)`,
                 borderColor: `${color}33`,

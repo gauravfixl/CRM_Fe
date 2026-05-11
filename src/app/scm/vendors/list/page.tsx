@@ -183,6 +183,7 @@ function VendorsListPageInner() {
                 searchKeys={["vendorName", "vendorCode", "contactPerson", "city", "category", "email"]}
                 pageSize={10}
                 emptyMessage="No vendors yet. Click 'Add Vendor' to register one."
+                onRowClick={(row) => setViewing(row)}
                 actions={(row) => (
                     <RowActions
                         onView={() => setViewing(row)}

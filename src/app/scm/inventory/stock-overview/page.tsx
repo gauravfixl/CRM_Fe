@@ -18,6 +18,7 @@ import {
 import { DataTable, type DataTableColumn } from "@/shared/components/scm/shared/DataTable"
 import { StatusBadge } from "@/shared/components/scm/shared/StatusBadge"
 import { KpiCard } from "@/shared/components/scm/shared/KpiCard"
+import { RowDetailSheet } from "@/shared/components/scm/shared/RowDetailSheet"
 import {
     useScmProductsStore,
     type ScmProduct,
@@ -56,6 +57,7 @@ export default function StockOverviewPage() {
 
     const [whFilter, setWhFilter] = useState<string>("all")
     const [statusFilter, setStatusFilter] = useState<StockStatusFilter>("all")
+    const [viewing, setViewing] = useState<OverviewRow | null>(null)
 
     const overview: OverviewRow[] = useMemo(() => {
         return products.map((p: ScmProduct) => {
@@ -157,7 +159,7 @@ export default function StockOverviewPage() {
                     <h1 className="text-[20px] font-semibold text-[#0F172A] leading-tight">Stock Overview</h1>
                     <p className="text-[13px] text-[#64748B] mt-0.5">Stock availability across products and warehouses.</p>
                 </div>
-                <Button variant="outline" onClick={handleExport} className="h-9 px-3 rounded-lg border-[#E5E7EB] text-[#374151] hover:bg-[#F3F4F6] text-[13px]">
+                <Button variant="outline" onClick={handleExport} className="h-9 px-3 rounded-none border-[#E5E7EB] text-[#374151] hover:bg-[#F3F4F6] text-[13px]">
                     <Download className="w-4 h-4 mr-1.5" /> Export
                 </Button>
             </div>
@@ -169,13 +171,13 @@ export default function StockOverviewPage() {
                 <KpiCard label="Out of Stock" value={summary.outOfStock} icon={<XCircle className="w-5 h-5" />} accentColor="#ef4444" />
             </div>
 
-            <div className="bg-white rounded-xl border border-[#EEF1F6] shadow-sm p-4">
+            <div className="bg-white rounded-none border border-[#EEF1F6] shadow-sm p-4">
                 <div className="flex items-center gap-3 flex-wrap">
                     <div className="flex items-center gap-2 text-[12px] font-medium text-[#64748B]">
                         <Filter className="w-4 h-4" /> Filters
                     </div>
                     <Select value={whFilter} onValueChange={setWhFilter}>
-                        <SelectTrigger className="h-9 w-[200px] border-[#E5E7EB] text-[13px]">
+                        <SelectTrigger className="h-9 w-[200px] rounded-none border-[#E5E7EB] text-[13px]">
                             <SelectValue placeholder="All warehouses" />
                         </SelectTrigger>
                         <SelectContent>
@@ -186,7 +188,7 @@ export default function StockOverviewPage() {
                         </SelectContent>
                     </Select>
                     <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StockStatusFilter)}>
-                        <SelectTrigger className="h-9 w-[180px] border-[#E5E7EB] text-[13px]">
+                        <SelectTrigger className="h-9 w-[180px] rounded-none border-[#E5E7EB] text-[13px]">
                             <SelectValue placeholder="All statuses" />
                         </SelectTrigger>
                         <SelectContent>
@@ -211,6 +213,17 @@ export default function StockOverviewPage() {
                 searchKeys={["productName", "sku", "warehouse"]}
                 pageSize={15}
                 emptyMessage="No products match the current filters."
+                onRowClick={(row) => setViewing(row)}
+            />
+
+            <RowDetailSheet
+                row={viewing}
+                columns={columns}
+                onOpenChange={(o) => !o && setViewing(null)}
+                title={(r) => r.productName}
+                description={(r) => `${r.sku} · ${r.warehouse}`}
+                icon={<Boxes className="w-5 h-5" />}
+                accentColor="#2563eb"
             />
         </div>
     )

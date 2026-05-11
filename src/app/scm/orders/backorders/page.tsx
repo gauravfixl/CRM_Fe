@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import Link from "next/link"
 import { Download, AlertCircle, FilePlus2, BellRing } from "lucide-react"
 import { Button } from "@/shared/components/ui/button"
@@ -10,6 +10,7 @@ import { useToast } from "@/shared/components/ui/use-toast"
 import { DataTable, type DataTableColumn } from "@/shared/components/scm/shared/DataTable"
 import { StatusBadge } from "@/shared/components/scm/shared/StatusBadge"
 import { RowActions } from "@/shared/components/scm/shared/RowActions"
+import { RowDetailSheet } from "@/shared/components/scm/shared/RowDetailSheet"
 import { useScmSalesOrdersStore, type ScmSalesOrder } from "@/shared/data/scm/scm-sales-orders-store"
 
 const formatINR = (n: number) =>
@@ -19,6 +20,7 @@ export default function BackordersPage() {
     const { toast } = useToast()
     const orders = useScmSalesOrdersStore((s) => s.salesOrders)
     const updateSO = useScmSalesOrdersStore((s) => s.updateSO)
+    const [viewing, setViewing] = useState<ScmSalesOrder | null>(null)
 
     const filtered = useMemo(() => orders.filter((o) => o.fulfillmentStatus === "Awaiting Stock"), [orders])
 
@@ -83,6 +85,7 @@ export default function BackordersPage() {
                 searchKeys={["orderNumber", "customerName", "warehouse"]}
                 pageSize={15}
                 emptyMessage="No backorders. All accepted orders have stock."
+                onRowClick={(row) => setViewing(row)}
                 actions={(row) => (
                     <RowActions
                         extraItems={
@@ -95,6 +98,16 @@ export default function BackordersPage() {
                         }
                     />
                 )}
+            />
+
+            <RowDetailSheet
+                row={viewing}
+                columns={columns}
+                onOpenChange={(o) => !o && setViewing(null)}
+                title={(r) => r.orderNumber}
+                description={(r) => r.customerName}
+                icon={<AlertCircle className="w-5 h-5" />}
+                accentColor="#ef4444"
             />
         </div>
     )

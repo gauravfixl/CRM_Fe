@@ -1,13 +1,14 @@
 "use client"
 
 import * as React from "react"
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import { Download, CheckCircle2 } from "lucide-react"
 import { Button } from "@/shared/components/ui/button"
 import { useToast } from "@/shared/components/ui/use-toast"
 
 import { DataTable, type DataTableColumn } from "@/shared/components/scm/shared/DataTable"
 import { StatusBadge } from "@/shared/components/scm/shared/StatusBadge"
+import { RowDetailSheet } from "@/shared/components/scm/shared/RowDetailSheet"
 import { useScmSalesOrdersStore, type ScmSalesOrder } from "@/shared/data/scm/scm-sales-orders-store"
 import { useScmShipmentsStore } from "@/shared/data/scm/scm-shipments-store"
 
@@ -18,6 +19,7 @@ export default function FulfilledOrdersPage() {
     const { toast } = useToast()
     const orders = useScmSalesOrdersStore((s) => s.salesOrders)
     const shipments = useScmShipmentsStore((s) => s.shipments)
+    const [viewing, setViewing] = useState<ScmSalesOrder | null>(null)
 
     const filtered = useMemo(() => orders.filter((o) => ["Shipped", "Delivered"].includes(o.fulfillmentStatus)), [orders])
 
@@ -74,6 +76,17 @@ export default function FulfilledOrdersPage() {
                 searchKeys={["orderNumber", "customerName"]}
                 pageSize={15}
                 emptyMessage="No fulfilled orders yet."
+                onRowClick={(row) => setViewing(row)}
+            />
+
+            <RowDetailSheet
+                row={viewing}
+                columns={columns}
+                onOpenChange={(o) => !o && setViewing(null)}
+                title={(r) => r.orderNumber}
+                description={(r) => r.customerName}
+                icon={<CheckCircle2 className="w-5 h-5" />}
+                accentColor="#10b981"
             />
         </div>
     )

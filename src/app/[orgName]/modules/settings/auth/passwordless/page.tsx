@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import React, { useState } from "react"
 import SubHeader from "@/components/custom/SubHeader"
@@ -211,7 +211,7 @@ export default function PasswordlessSecurityPage() {
 
             {/* Setup Guide Dialog */}
             <Dialog open={isGuideOpen} onOpenChange={setIsGuideOpen}>
-                <DialogContent className="sm:max-w-2xl rounded-2xl border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
+                <DialogContent className="sm:max-w-2xl rounded-none border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
                     <DialogHeader>
                         <DialogTitle className="text-xl font-bold tracking-tight flex items-center gap-2">
                             <BookOpen className="w-5 h-5 text-indigo-600" />
@@ -243,7 +243,7 @@ export default function PasswordlessSecurityPage() {
 
             {/* Enable Globally Confirmation */}
             <Dialog open={isEnableAllOpen} onOpenChange={setIsEnableAllOpen}>
-                <DialogContent className="sm:max-w-md rounded-2xl border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
+                <DialogContent className="sm:max-w-md rounded-none border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
                     <DialogHeader>
                         <div className="h-12 w-12 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded-full flex items-center justify-center mb-2">
                             <Shield className="w-6 h-6" />

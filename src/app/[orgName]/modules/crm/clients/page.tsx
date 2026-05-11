@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
@@ -286,7 +286,7 @@ export default function ClientsPage() {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: i * 0.1 }}
               whileHover={{ y: -5 }}
-              className={`relative overflow-hidden rounded-2xl p-6 bg-gradient-to-br ${stat.gradient} ${stat.shadow} border-0 flex flex-col justify-between h-32 group cursor-default`}
+              className={`relative overflow-hidden rounded-none p-6 bg-gradient-to-br ${stat.gradient} ${stat.shadow} border-0 flex flex-col justify-between h-32 group cursor-default`}
             >
               <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl transition-transform duration-700" />
               <div className="flex items-center justify-between z-10">
@@ -307,7 +307,7 @@ export default function ClientsPage() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-2xl border border-zinc-100 overflow-hidden shadow-sm"
+          className="bg-white rounded-none border border-zinc-100 overflow-hidden shadow-sm"
         >
           <div className="p-4 border-b flex flex-col md:flex-row items-center justify-between gap-4 bg-zinc-50/30">
             <div className="flex items-center gap-3 w-full md:w-auto">

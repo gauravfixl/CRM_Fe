@@ -241,6 +241,7 @@ export default function ProductsPage() {
                 searchKeys={["productName", "sku", "category", "brand", "warehouse"]}
                 pageSize={10}
                 emptyMessage="No products yet. Click 'Add Product' to create your first one."
+                onRowClick={(row) => setViewing(row)}
                 actions={(row) => (
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>

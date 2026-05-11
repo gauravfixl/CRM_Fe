@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -196,7 +196,7 @@ export default function AddLeadPage() {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.3 }}
-              className="bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200/50 dark:border-zinc-800 shadow-xl overflow-hidden"
+              className="bg-white dark:bg-zinc-900 rounded-none border border-zinc-200/50 dark:border-zinc-800 shadow-xl overflow-hidden"
             >
               <div className="p-10 space-y-8">
 
@@ -377,7 +377,7 @@ export default function AddLeadPage() {
                       <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">Review Submission</h2>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-zinc-50/50 dark:bg-zinc-800/20 p-8 rounded-2xl border border-zinc-100 dark:border-zinc-800">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-zinc-50/50 dark:bg-zinc-800/20 p-8 rounded-none border border-zinc-100 dark:border-zinc-800">
                       <div className="space-y-4">
                         <h3 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Lead Details</h3>
                         <div className="space-y-3">

@@ -14,6 +14,7 @@ import { useToast } from "@/shared/components/ui/use-toast"
 import { DataTable, type DataTableColumn } from "@/shared/components/scm/shared/DataTable"
 import { StatusBadge } from "@/shared/components/scm/shared/StatusBadge"
 import { RowActions, DeleteConfirmDialog } from "@/shared/components/scm/shared/RowActions"
+import { RowDetailSheet } from "@/shared/components/scm/shared/RowDetailSheet"
 import { SideFormSheet, Field } from "@/shared/components/ui/side-form-sheet"
 import { useScmSettingsStore, type ScmCategory } from "@/shared/data/scm/scm-settings-store"
 import { validateField } from "@/shared/components/scm/shared/validation"
@@ -36,6 +37,7 @@ export default function ProductCategoriesPage() {
     const [touched, setTouched] = useState<Record<string, boolean>>({})
     const [deleting, setDeleting] = useState<ScmCategory | null>(null)
     const [submitting, setSubmitting] = useState(false)
+    const [viewing, setViewing] = useState<ScmCategory | null>(null)
 
     useEffect(() => {
         if (!formOpen) return
@@ -127,9 +129,20 @@ export default function ProductCategoriesPage() {
                 searchKeys={["name", "parent", "description"]}
                 pageSize={10}
                 emptyMessage="No categories yet."
+                onRowClick={(row) => setViewing(row)}
                 actions={(row) => (
                     <RowActions onEdit={() => handleEdit(row)} onDelete={() => setDeleting(row)} />
                 )}
+            />
+
+            <RowDetailSheet
+                row={viewing}
+                columns={columns}
+                onOpenChange={(o) => !o && setViewing(null)}
+                title={(r) => r.name}
+                description={(r) => `Parent: ${r.parent}`}
+                icon={<FolderTree className="w-5 h-5" />}
+                accentColor="#2563eb"
             />
 
             <SideFormSheet

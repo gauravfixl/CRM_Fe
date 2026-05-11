@@ -116,8 +116,8 @@ export default function ApprovalsPage() {
                     <h1 className="text-[20px] font-semibold text-[#0F172A] leading-tight">Approval Queue</h1>
                     <p className="text-[13px] text-[#64748B] mt-0.5">Pending purchase requests and purchase orders awaiting approval.</p>
                 </div>
-                <div className="bg-white rounded-xl border border-[#EEF1F6] shadow-sm p-12 text-center">
-                    <div className="w-14 h-14 rounded-full bg-emerald-50 flex items-center justify-center mx-auto">
+                <div className="bg-white rounded-none border border-[#EEF1F6] shadow-sm p-12 text-center">
+                    <div className="w-14 h-14 rounded-none bg-emerald-50 flex items-center justify-center mx-auto">
                         <Check className="w-7 h-7 text-emerald-600" />
                     </div>
                     <p className="text-[15px] font-semibold text-[#0F172A] mt-4">All caught up!</p>
@@ -142,7 +142,7 @@ export default function ApprovalsPage() {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 {/* Queue list */}
-                <div className="bg-white rounded-xl border border-[#EEF1F6] shadow-sm lg:col-span-1 max-h-[640px] overflow-y-auto">
+                <div className="bg-white rounded-none border border-[#EEF1F6] shadow-sm lg:col-span-1 max-h-[640px] overflow-y-auto">
                     <div className="px-4 py-3 border-b border-[#EEF1F6] sticky top-0 bg-white z-10">
                         <p className="text-[13px] font-semibold text-[#0F172A]">Queue</p>
                         <p className="text-[11.5px] text-[#94A3B8] mt-0.5">{rows.length} pending</p>
@@ -155,7 +155,7 @@ export default function ApprovalsPage() {
                                     <button
                                         onClick={() => setActiveIndex(idx)}
                                         className={cn(
-                                            "w-full text-left p-2.5 rounded-lg border transition-colors",
+                                            "w-full text-left p-2.5 rounded-none border transition-colors",
                                             isActive
                                                 ? "bg-blue-50 border-blue-200"
                                                 : "border-transparent hover:bg-slate-50"
@@ -180,10 +180,10 @@ export default function ApprovalsPage() {
                 </div>
 
                 {/* Active card */}
-                <div className="bg-white rounded-xl border border-[#EEF1F6] shadow-sm lg:col-span-2 flex flex-col">
-                    <div className="px-5 py-3.5 border-b border-[#EEF1F6] flex items-center justify-between gap-3 bg-[#F8FAFC] rounded-t-xl">
+                <div className="bg-white rounded-none border border-[#EEF1F6] shadow-sm lg:col-span-2 flex flex-col">
+                    <div className="px-5 py-3.5 border-b border-[#EEF1F6] flex items-center justify-between gap-3 bg-[#F8FAFC] rounded-none">
                         <div className="flex items-center gap-2 min-w-0">
-                            <span className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 text-white" style={{ backgroundColor: active.type === "Purchase Order" ? "#8b5cf6" : "#2563eb" }}>
+                            <span className="w-9 h-9 rounded-none flex items-center justify-center shrink-0 text-white" style={{ backgroundColor: active.type === "Purchase Order" ? "#8b5cf6" : "#2563eb" }}>
                                 {active.type === "Purchase Order" ? <ShoppingCart className="w-4 h-4" /> : <ClipboardCheck className="w-4 h-4" />}
                             </span>
                             <div className="min-w-0">
@@ -219,7 +219,7 @@ export default function ApprovalsPage() {
                         {active.items && active.items.length > 0 && (
                             <div>
                                 <p className="text-[11.5px] uppercase tracking-wide font-semibold text-[#94A3B8] mb-2">Items</p>
-                                <div className="border border-[#EEF1F6] rounded-lg overflow-hidden">
+                                <div className="border border-[#EEF1F6] rounded-none overflow-hidden">
                                     <table className="w-full text-[12.5px]">
                                         <thead className="bg-[#F8FAFC] text-[11px] uppercase tracking-wide text-[#64748B]">
                                             <tr>
@@ -248,15 +248,15 @@ export default function ApprovalsPage() {
                         )}
                     </div>
 
-                    <div className="px-5 py-4 border-t border-[#EEF1F6] bg-[#FAFBFC] flex items-center justify-between gap-2 rounded-b-xl">
-                        <Button variant="outline" onClick={() => handleEscalate(active)} className="h-10 border-[#E5E7EB] text-[#374151] hover:bg-[#F3F4F6] text-[13px]">
+                    <div className="px-5 py-4 border-t border-[#EEF1F6] bg-[#FAFBFC] flex items-center justify-between gap-2 rounded-none">
+                        <Button variant="outline" onClick={() => handleEscalate(active)} className="h-10 rounded-none border-[#E5E7EB] text-[#374151] hover:bg-[#F3F4F6] text-[13px]">
                             <ArrowUpRight className="w-4 h-4 mr-1.5" /> Escalate
                         </Button>
                         <div className="flex items-center gap-2">
-                            <Button onClick={() => handleReject(active)} variant="outline" className="h-10 border-red-200 text-red-700 hover:bg-red-50 text-[13px]">
+                            <Button onClick={() => handleReject(active)} variant="outline" className="h-10 rounded-none border-red-200 text-red-700 hover:bg-red-50 text-[13px]">
                                 <X className="w-4 h-4 mr-1.5" /> Reject
                             </Button>
-                            <Button onClick={() => handleApprove(active)} className="h-10 bg-emerald-600 hover:bg-emerald-700 text-white text-[13px]" style={{ boxShadow: "0 4px 12px #10b98133" }}>
+                            <Button onClick={() => handleApprove(active)} className="h-10 rounded-none bg-emerald-600 hover:bg-emerald-700 text-white text-[13px]" style={{ boxShadow: "0 4px 12px #10b98133" }}>
                                 <Check className="w-4 h-4 mr-1.5" /> Approve
                             </Button>
                         </div>
@@ -270,7 +270,7 @@ export default function ApprovalsPage() {
 function PriorityChip({ priority }: { priority: string }) {
     const tone = PRIORITY_TONE[priority] ?? PRIORITY_TONE.Low
     return (
-        <span className={cn("inline-flex items-center px-1.5 py-0.5 rounded-md border text-[11px] font-semibold", tone.bg, tone.text, tone.border)}>
+        <span className={cn("inline-flex items-center px-1.5 py-0.5 rounded-none border text-[11px] font-semibold", tone.bg, tone.text, tone.border)}>
             {priority}
         </span>
     )
@@ -279,7 +279,7 @@ function PriorityChip({ priority }: { priority: string }) {
 function SummaryCard({ label, value, color }: { label: string; value: number; color: string }) {
     return (
         <div
-            className="rounded-xl border shadow-sm p-4 transition-all duration-200"
+            className="rounded-none border shadow-sm p-4 transition-all duration-200"
             style={{
                 background: `linear-gradient(135deg, ${color}14 0%, ${color}06 45%, #ffffff 100%)`,
                 borderColor: `${color}33`,

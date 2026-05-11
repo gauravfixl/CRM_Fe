@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import React, { useState } from "react"
 import {
@@ -99,7 +99,7 @@ export default function BrandAssetsLibrary() {
                                 Add New Asset
                             </Button>
                         </DialogTrigger>
-                        <DialogContent className="sm:max-w-[450px] p-0 border-none rounded-3xl overflow-hidden shadow-2xl bg-card">
+                        <DialogContent className="sm:max-w-[450px] p-0 border-none rounded-none overflow-hidden shadow-2xl bg-card">
                             <div className="bg-blue-600 p-8 text-white relative">
                                 <FileImage className="w-12 h-12 text-white/20 absolute right-4 top-4" />
                                 <DialogTitle className="text-2xl font-black">Asset Ingestion</DialogTitle>
@@ -107,18 +107,18 @@ export default function BrandAssetsLibrary() {
                             </div>
                             <form onSubmit={handleUpload} className="p-8 space-y-6 bg-card">
                                 <div className="space-y-4">
-                                    <div className="border-2 border-dashed border-border rounded-3xl p-8 text-center hover:border-blue-300 transition-colors cursor-pointer bg-muted/30">
+                                    <div className="border-2 border-dashed border-border rounded-none p-8 text-center hover:border-blue-300 transition-colors cursor-pointer bg-muted/30">
                                         <Upload className="w-8 h-8 text-muted-foreground mx-auto" />
                                         <p className="text-xs font-bold text-muted-foreground mt-2">Browse files to upload</p>
                                     </div>
                                     <div className="space-y-2">
                                         <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Asset Name</Label>
-                                        <Input name="fileName" placeholder="e.g. Hero_Banner_v2.png" className="h-12 bg-background border-border rounded-2xl font-bold text-foreground" />
+                                        <Input name="fileName" placeholder="e.g. Hero_Banner_v2.png" className="h-12 bg-background border-border rounded-none font-bold text-foreground" />
                                     </div>
                                     <div className="space-y-2">
                                         <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Global Category</Label>
                                         <Select name="category" defaultValue="Logos">
-                                            <SelectTrigger className="h-12 bg-background border-border rounded-2xl font-bold text-foreground">
+                                            <SelectTrigger className="h-12 bg-background border-border rounded-none font-bold text-foreground">
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
@@ -131,7 +131,7 @@ export default function BrandAssetsLibrary() {
                                     </div>
                                 </div>
                                 <DialogFooter>
-                                    <Button type="submit" className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-black uppercase tracking-widest text-[11px] rounded-2xl shadow-xl shadow-blue-100">
+                                    <Button type="submit" className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-black uppercase tracking-widest text-[11px] rounded-none shadow-xl shadow-blue-100">
                                         Deploy to Library
                                     </Button>
                                 </DialogFooter>
@@ -143,7 +143,7 @@ export default function BrandAssetsLibrary() {
 
             {/* QUICK STATS */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <SmallCard className="bg-card border-border shadow-sm border-t-4 border-t-blue-600 rounded-xl overflow-hidden">
+                <SmallCard className="bg-card border-border shadow-sm border-t-4 border-t-blue-600 rounded-none overflow-hidden">
                     <SmallCardHeader className="pb-2 text-left bg-card">
                         <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Total Library</p>
                     </SmallCardHeader>
@@ -153,7 +153,7 @@ export default function BrandAssetsLibrary() {
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="bg-card border-border shadow-sm border-t-4 border-t-emerald-500 rounded-xl overflow-hidden">
+                <SmallCard className="bg-card border-border shadow-sm border-t-4 border-t-emerald-500 rounded-none overflow-hidden">
                     <SmallCardHeader className="pb-2 text-left bg-card">
                         <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Vector Data</p>
                     </SmallCardHeader>
@@ -163,7 +163,7 @@ export default function BrandAssetsLibrary() {
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="bg-card border-border shadow-sm border-t-4 border-t-amber-500 rounded-xl overflow-hidden">
+                <SmallCard className="bg-card border-border shadow-sm border-t-4 border-t-amber-500 rounded-none overflow-hidden">
                     <SmallCardHeader className="pb-2 text-left bg-card">
                         <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Sync Nodes</p>
                     </SmallCardHeader>
@@ -173,7 +173,7 @@ export default function BrandAssetsLibrary() {
                     </SmallCardContent>
                 </SmallCard>
 
-                <SmallCard className="bg-card border-border shadow-sm border-t-4 border-t-purple-500 rounded-xl overflow-hidden">
+                <SmallCard className="bg-card border-border shadow-sm border-t-4 border-t-purple-500 rounded-none overflow-hidden">
                     <SmallCardHeader className="pb-2 text-left bg-card">
                         <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Download Hits</p>
                     </SmallCardHeader>
@@ -185,7 +185,7 @@ export default function BrandAssetsLibrary() {
             </div>
 
             {/* FILTER & SEARCH */}
-            <div className="flex flex-col md:flex-row items-center gap-4 bg-muted/30 p-3 rounded-2xl border border-border shadow-sm">
+            <div className="flex flex-col md:flex-row items-center gap-4 bg-muted/30 p-3 rounded-none border border-border shadow-sm">
                 <div className="relative flex-1 w-full">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
@@ -211,7 +211,7 @@ export default function BrandAssetsLibrary() {
             {/* ASSET GRID - LUXURY PRESENTATION */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 pb-10">
                 {filteredAssets.map((asset) => (
-                    <Card key={asset.id} className="group border-border shadow-sm hover:shadow-xl hover:border-primary/50 transition-all rounded-3xl overflow-hidden bg-card">
+                    <Card key={asset.id} className="group border-border shadow-sm hover:shadow-xl hover:border-primary/50 transition-all rounded-none overflow-hidden bg-card">
                         <div className="aspect-square bg-muted/30 border-b border-border relative group-hover:bg-primary/5 transition-colors flex items-center justify-center">
                             <ImageIcon className="w-8 h-8 text-muted-foreground/30 group-hover:text-primary transition-colors" />
                             <div className="absolute top-2 right-2">
@@ -222,7 +222,7 @@ export default function BrandAssetsLibrary() {
                         <CardContent className="p-4">
                             <h4 className="text-xs font-black text-foreground truncate" title={asset.name}>{asset.name}</h4>
                             <div className="flex items-center justify-between mt-2">
-                                <span className="text-[10px] font-bold text-muted-foreground uppercase">{asset.type} • {asset.size}</span>
+                                <span className="text-[10px] font-bold text-muted-foreground uppercase">{asset.type} â€¢ {asset.size}</span>
                                 <Badge variant="secondary" className="text-[9px] font-bold bg-muted text-muted-foreground border-none">{asset.resolution}</Badge>
                             </div>
                         </CardContent>

@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { useMemo, useState } from "react"
-import { Download, Filter } from "lucide-react"
+import { Download, Filter, Receipt } from "lucide-react"
 import { Button } from "@/shared/components/ui/button"
 import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -12,6 +12,7 @@ import { useToast } from "@/shared/components/ui/use-toast"
 import { DataTable, type DataTableColumn } from "@/shared/components/scm/shared/DataTable"
 import { StatusBadge } from "@/shared/components/scm/shared/StatusBadge"
 import { RowActions } from "@/shared/components/scm/shared/RowActions"
+import { RowDetailSheet } from "@/shared/components/scm/shared/RowDetailSheet"
 import { useScmReturnsStore, type ScmCustomerReturn } from "@/shared/data/scm/scm-returns-store"
 
 const formatINR = (n: number) =>
@@ -25,6 +26,7 @@ export default function RefundReplacementStatusPage() {
     const updateReturn = useScmReturnsStore((s) => s.updateCustomerReturn)
 
     const [filter, setFilter] = useState<StatusFilter>("all")
+    const [viewing, setViewing] = useState<ScmCustomerReturn | null>(null)
 
     const filtered = useMemo(() => {
         if (filter === "all") return customerReturns
@@ -86,10 +88,10 @@ export default function RefundReplacementStatusPage() {
                 <Stat label="Rejected" value={summary.rejected} color="#ef4444" />
             </div>
 
-            <div className="bg-white rounded-xl border border-[#EEF1F6] shadow-sm p-4 flex items-center gap-3">
+            <div className="bg-white rounded-none border border-[#EEF1F6] shadow-sm p-4 flex items-center gap-3">
                 <span className="text-[12px] font-medium text-[#64748B] inline-flex items-center gap-1.5"><Filter className="w-3.5 h-3.5" /> Filter:</span>
                 <Select value={filter} onValueChange={(v) => setFilter(v as StatusFilter)}>
-                    <SelectTrigger className="h-9 w-[220px] border-[#E5E7EB] text-[13px]"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="h-9 w-[220px] rounded-none border-[#E5E7EB] text-[13px]"><SelectValue /></SelectTrigger>
                     <SelectContent>
                         <SelectItem value="all">All</SelectItem>
                         <SelectItem value="refund-pending">Refund Pending</SelectItem>
@@ -110,20 +112,31 @@ export default function RefundReplacementStatusPage() {
                 searchKeys={["returnId", "orderNumber", "customerName", "productName"]}
                 pageSize={15}
                 emptyMessage="No returns match the filter."
+                onRowClick={(row) => setViewing(row)}
                 actions={(row) => (
                     <RowActions
                         extraItems={
                             <>
                                 {row.status !== "Refunded" && row.status !== "Rejected" && (
-                                    <button onClick={() => handleProcessRefund(row)} className="w-full text-left px-2 py-1.5 text-[13px] hover:bg-emerald-50 text-emerald-700 rounded-md">Process Refund</button>
+                                    <button onClick={() => handleProcessRefund(row)} className="w-full text-left px-2 py-1.5 text-[13px] hover:bg-emerald-50 text-emerald-700 rounded-none">Process Refund</button>
                                 )}
                                 {row.status !== "Replaced" && row.status !== "Rejected" && (
-                                    <button onClick={() => handleShipReplacement(row)} className="w-full text-left px-2 py-1.5 text-[13px] hover:bg-blue-50 text-blue-700 rounded-md">Ship Replacement</button>
+                                    <button onClick={() => handleShipReplacement(row)} className="w-full text-left px-2 py-1.5 text-[13px] hover:bg-blue-50 text-blue-700 rounded-none">Ship Replacement</button>
                                 )}
                             </>
                         }
                     />
                 )}
+            />
+
+            <RowDetailSheet
+                row={viewing}
+                columns={columns}
+                onOpenChange={(o) => !o && setViewing(null)}
+                title={(r) => r.returnId}
+                description={(r) => `${r.customerName} · Order ${r.orderNumber}`}
+                icon={<Receipt className="w-5 h-5" />}
+                accentColor="#10b981"
             />
         </div>
     )
@@ -132,7 +145,7 @@ export default function RefundReplacementStatusPage() {
 function Stat({ label, value, color }: { label: string; value: number; color: string }) {
     return (
         <div
-            className="rounded-xl border shadow-sm p-4 transition-all duration-200"
+            className="rounded-none border shadow-sm p-4 transition-all duration-200"
             style={{
                 background: `linear-gradient(135deg, ${color}14 0%, ${color}06 45%, #ffffff 100%)`,
                 borderColor: `${color}33`,

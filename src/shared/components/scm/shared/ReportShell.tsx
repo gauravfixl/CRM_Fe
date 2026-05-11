@@ -14,6 +14,7 @@ import {
 } from "@/shared/components/ui/select"
 import { useToast } from "@/shared/components/ui/use-toast"
 import { DataTable, type DataTableColumn } from "@/shared/components/scm/shared/DataTable"
+import { RowDetailSheet } from "@/shared/components/scm/shared/RowDetailSheet"
 
 export interface ReportFilters {
     fromDate: string
@@ -50,6 +51,9 @@ interface ReportShellProps<T> {
         categories?: string[]
     }
     applyFilters?: (rows: T[], filters: ReportFilters) => T[]
+    detailTitle?: (row: T) => string
+    detailDescription?: (row: T) => string | undefined
+    detailIcon?: React.ReactNode
 }
 
 export function ReportShell<T extends Record<string, any>>({
@@ -64,9 +68,13 @@ export function ReportShell<T extends Record<string, any>>({
     csvRow,
     filterOptions = {},
     applyFilters,
+    detailTitle,
+    detailDescription,
+    detailIcon,
 }: ReportShellProps<T>) {
     const { toast } = useToast()
     const [filters, setFilters] = useState<ReportFilters>(emptyFilters)
+    const [viewing, setViewing] = useState<T | null>(null)
 
     const filteredRows = applyFilters ? applyFilters(rows, filters) : rows
 
@@ -198,6 +206,17 @@ export function ReportShell<T extends Record<string, any>>({
                 rowKey={rowKey}
                 pageSize={15}
                 emptyMessage="No data matches the current filters."
+                onRowClick={(row) => setViewing(row)}
+            />
+
+            <RowDetailSheet
+                row={viewing}
+                columns={columns}
+                onOpenChange={(o) => !o && setViewing(null)}
+                title={detailTitle ?? title}
+                description={detailDescription}
+                icon={detailIcon ?? <FileText className="w-5 h-5" />}
+                accentColor={accentColor}
             />
         </div>
     )

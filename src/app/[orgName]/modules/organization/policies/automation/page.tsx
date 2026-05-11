@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import React, { useState, useEffect } from "react"
 import {
@@ -77,7 +77,7 @@ export default function AutomationPoliciesPage() {
                     id: r._id || r.id || "",
                     _id: r._id,
                     name: r.name || "Untitled",
-                    engine: r.module || r.engine || "—",
+                    engine: r.module || r.engine || "â€”",
                     status: r.enabled === false ? "Paused" : "Running",
                     success: typeof r.successRate === "number" ? r.successRate : 100,
                     triggers: typeof r.triggerCount === "number" ? r.triggerCount : 0,
@@ -85,7 +85,7 @@ export default function AutomationPoliciesPage() {
                 }))
             )
         } catch (err) {
-            // Silent — table just stays empty
+            // Silent â€” table just stays empty
         }
     }
 
@@ -159,7 +159,7 @@ export default function AutomationPoliciesPage() {
                                 New Policy Engine
                             </Button>
                         </DialogTrigger>
-                        <DialogContent className="sm:max-w-[550px] p-0 overflow-hidden border-none rounded-3xl shadow-2xl">
+                        <DialogContent className="sm:max-w-[550px] p-0 overflow-hidden border-none rounded-none shadow-2xl">
                             <div className="bg-indigo-600 p-8 text-white relative">
                                 <Activity className="absolute right-4 top-4 w-12 h-12 text-white opacity-10 animate-pulse" />
                                 <DialogHeader>
@@ -297,7 +297,7 @@ export default function AutomationPoliciesPage() {
                                     <tr key={rule.id} className="hover:bg-slate-50/50 transition-colors group">
                                         <td className="px-6 py-5">
                                             <div className="flex items-center gap-4">
-                                                <div className={`h-11 w-11 rounded-2xl bg-white border border-slate-200 flex items-center justify-center transition-colors shadow-sm ${rule.status === 'Running' ? 'text-indigo-600' : 'text-slate-300'}`}>
+                                                <div className={`h-11 w-11 rounded-none bg-white border border-slate-200 flex items-center justify-center transition-colors shadow-sm ${rule.status === 'Running' ? 'text-indigo-600' : 'text-slate-300'}`}>
                                                     <Cpu className="w-5 h-5" />
                                                 </div>
                                                 <div>
@@ -339,10 +339,10 @@ export default function AutomationPoliciesPage() {
                 </CardContent>
             </Card>
 
-            <div className="p-4 bg-blue-50/40 border border-blue-100 rounded-2xl flex items-center gap-4 border-dashed">
+            <div className="p-4 bg-blue-50/40 border border-blue-100 rounded-none flex items-center gap-4 border-dashed">
                 <Settings2 className="w-5 h-5 text-blue-500 shrink-0" />
                 <p className="text-[11px] font-medium text-blue-700 leading-relaxed font-sans">
-                    Institutional policies use the <span className="font-bold">Edge-First Engine®</span>. New rules are compiled and synchronized across all distributed business units within 300ms.
+                    Institutional policies use the <span className="font-bold">Edge-First EngineÂ®</span>. New rules are compiled and synchronized across all distributed business units within 300ms.
                 </p>
             </div>
         </div>

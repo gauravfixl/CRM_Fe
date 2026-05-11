@@ -46,7 +46,7 @@ export function KpiCard({
             }}
             style={tintedStyle}
             className={cn(
-                "group rounded-xl border p-4 shadow-sm transition-all duration-200",
+                "group rounded-none border p-4 shadow-sm transition-all duration-200",
                 tinted ? "" : "bg-white border-[#EEF1F6]",
                 interactive && "cursor-pointer hover:shadow-md hover:-translate-y-0.5"
             )}
@@ -65,7 +65,7 @@ export function KpiCard({
                             {delta && (
                                 <span
                                     className={cn(
-                                        "inline-flex items-center gap-0.5 text-[11.5px] font-semibold px-1.5 py-0.5 rounded-md",
+                                        "inline-flex items-center gap-0.5 text-[11.5px] font-semibold px-1.5 py-0.5 rounded-none",
                                         delta.trend === "up" && "bg-emerald-50 text-emerald-700",
                                         delta.trend === "down" && "bg-red-50 text-red-700",
                                         delta.trend === "neutral" && "bg-slate-100 text-slate-600"
@@ -85,7 +85,7 @@ export function KpiCard({
                     )}
                 </div>
                 <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-white"
+                    className="w-10 h-10 rounded-none flex items-center justify-center shrink-0 text-white"
                     style={{
                         backgroundColor: accentColor,
                         boxShadow: `0 4px 12px ${accentColor}33`,

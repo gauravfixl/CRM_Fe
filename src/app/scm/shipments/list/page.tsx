@@ -140,6 +140,7 @@ function ShipmentsListPageInner() {
                 searchKeys={["shipmentId", "orderNumber", "customerName", "courierPartner", "trackingNumber", "warehouse", "status"]}
                 pageSize={10}
                 emptyMessage="No shipments yet."
+                onRowClick={(row) => setViewing(row)}
                 actions={(row) => (
                     <RowActions
                         onView={() => setViewing(row)}
