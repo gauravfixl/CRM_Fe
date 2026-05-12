@@ -644,7 +644,11 @@ const MyAttendancePage = () => {
                                                             <Badge className="bg-white border border-indigo-100 text-indigo-700 font-black text-[10px] px-2 py-0.5 shadow-sm">
                                                                 {attendanceData?.totalHours || '0.0h'}
                                                             </Badge>
-                                                            {status === 'Late' && <AlertTriangle size={12} className="text-orange-500" title="Late Check-in Policy Applied" />}
+                                                            {status === 'Late' && (
+                                                                <span title="Late Check-in Policy Applied" className="inline-flex">
+                                                                    <AlertTriangle size={12} className="text-orange-500" />
+                                                                </span>
+                                                            )}
                                                         </div>
                                                     </td>
                                                     <td className="px-6 py-3.5 text-right">
@@ -658,7 +662,7 @@ const MyAttendancePage = () => {
                                                                 CORRECT LOG
                                                             </Button>
                                                         ) : (
-                                                            <Badge variant="ghost" className="text-slate-300 pointer-events-none">
+                                                            <Badge variant="outline" className="text-slate-300 border-transparent pointer-events-none">
                                                                 <CheckCircle2 size={14} />
                                                             </Badge>
                                                         )}

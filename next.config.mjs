@@ -11,6 +11,7 @@ const nextConfig = {
   },
   productionBrowserSourceMaps: false,
   experimental: {
+    cpus: 2,
     optimizePackageImports: [
       "lucide-react",
       "@radix-ui/react-icons",
