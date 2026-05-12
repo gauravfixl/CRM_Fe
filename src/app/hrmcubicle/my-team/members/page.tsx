@@ -48,6 +48,13 @@ import {
     DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/shared/components/ui/tabs";
+import {
+    Sheet,
+    SheetContent,
+    SheetHeader,
+    SheetTitle,
+    SheetDescription,
+} from "@/shared/components/ui/sheet";
 import TeamDocumentsPanel from "@/shared/components/hrm/my-team/panels/team-documents-panel";
 import { createEmployee, updateEmployee, deleteEmployee, getAllEmployees } from "@/modules/hrm/hooks/hrmHooks";
 import { validateMemberForm, ValidationErrors } from "@/shared/utils/form-validation";
