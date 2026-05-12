@@ -49,6 +49,13 @@ import {
     DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/shared/components/ui/tabs";
+import {
+    Sheet,
+    SheetContent,
+    SheetHeader,
+    SheetTitle,
+    SheetDescription,
+} from "@/shared/components/ui/sheet";
 import TeamDocumentsPanel from "@/shared/components/hrm/my-team/panels/team-documents-panel";
 import { createEmployee, updateEmployee, deleteEmployee, getAllEmployees } from "@/modules/hrm/hooks/hrmHooks";
 import { validateMemberForm, ValidationErrors } from "@/shared/utils/form-validation";
@@ -128,6 +135,7 @@ const TeamMembersPage = () => {
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [selectedMember, setSelectedMember] = useState<any>(null);
+    const [detailMember, setDetailMember] = useState<any | null>(null);
     const [memberForm, setMemberForm] = useState({
         name: '',
         email: '',
@@ -419,7 +427,10 @@ const TeamMembersPage = () => {
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: i * 0.05 }}
                         >
-                            <Card className="border-none shadow-sm hover:shadow-xl transition-all duration-300 rounded-2xl bg-white p-4 group relative overflow-hidden border border-white/50">
+                            <Card
+                                onClick={() => setDetailMember(member)}
+                                className="border-none shadow-sm hover:shadow-xl transition-all duration-300 rounded-2xl bg-white p-4 group relative overflow-hidden border border-white/50 cursor-pointer"
+                            >
                                 <div className="absolute top-0 right-0 w-20 h-20 bg-indigo-50 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
 
                                 <div className="flex items-start justify-between mb-4 relative z-10">
@@ -434,7 +445,7 @@ const TeamMembersPage = () => {
                                     </div>
                                     <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="rounded-xl h-8 w-8 hover:bg-slate-50 opacity-0 group-hover:opacity-100 transition-all border-none">
+                                            <Button variant="ghost" size="icon" className="rounded-xl h-8 w-8 hover:bg-slate-50 opacity-0 group-hover:opacity-100 transition-all border-none" onClick={(e) => e.stopPropagation()}>
                                                 <MoreVertical size={14} className="text-slate-400" />
                                             </Button>
                                         </DropdownMenuTrigger>
@@ -627,6 +638,73 @@ const TeamMembersPage = () => {
                   </DialogFooter>
               </DialogContent>
           </Dialog>
+
+          {/* 🪟 Slide-in: Member Quick Details */}
+          <Sheet open={!!detailMember} onOpenChange={(open) => !open && setDetailMember(null)}>
+              <SheetContent side="right" className="w-full sm:max-w-md bg-white rounded-none border-l border-slate-200 p-0 flex flex-col">
+                  {detailMember && (
+                      <>
+                          <SheetHeader className="p-6 border-b border-slate-100 bg-slate-50/50">
+                              <div className="flex items-center gap-3">
+                                  <Avatar className="h-14 w-14 ring-2 ring-white shadow">
+                                      <AvatarFallback className="bg-indigo-100 text-indigo-700 font-bold">{detailMember.avatar}</AvatarFallback>
+                                  </Avatar>
+                                  <div className="text-start min-w-0">
+                                      <SheetTitle className="text-base font-bold text-slate-900 tracking-tight truncate">{detailMember.name}</SheetTitle>
+                                      <SheetDescription className="text-xs font-medium text-slate-500">{detailMember.designation}</SheetDescription>
+                                  </div>
+                              </div>
+                          </SheetHeader>
+                          <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                              <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-none flex items-center justify-between">
+                                  <p className="text-[10px] font-bold text-emerald-700 uppercase tracking-wide">Status</p>
+                                  <Badge className={`${detailMember.status === 'Active' ? 'bg-emerald-200 text-emerald-800' : 'bg-amber-200 text-amber-800'} border-none text-[10px] font-bold`}>{detailMember.status}</Badge>
+                              </div>
+                              <div className="grid grid-cols-1 gap-3">
+                                  <div className="p-3 bg-white border border-slate-100 rounded-none">
+                                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Email</p>
+                                      <p className="text-xs font-bold text-slate-800 mt-1 break-all">{detailMember.email}</p>
+                                  </div>
+                                  <div className="p-3 bg-white border border-slate-100 rounded-none">
+                                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Department</p>
+                                      <p className="text-xs font-bold text-slate-800 mt-1">{detailMember.department}</p>
+                                  </div>
+                                  <div className="p-3 bg-white border border-slate-100 rounded-none">
+                                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Designation</p>
+                                      <p className="text-xs font-bold text-slate-800 mt-1">{detailMember.designation}</p>
+                                  </div>
+                                  <div className="p-3 bg-white border border-slate-100 rounded-none">
+                                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Joined</p>
+                                      <p className="text-xs font-bold text-slate-800 mt-1">{detailMember.joiningDate ? new Date(detailMember.joiningDate).toLocaleDateString() : '—'}</p>
+                                  </div>
+                              </div>
+                          </div>
+                          <div className="p-4 border-t border-slate-100 bg-slate-50/50 flex flex-wrap gap-2">
+                              <Button
+                                  variant="outline"
+                                  className="flex-1 h-10 rounded-none border-slate-200 text-slate-700 font-bold text-xs"
+                                  onClick={() => { window.location.href = `mailto:${detailMember.email}`; }}
+                              >
+                                  <Mail size={14} className="mr-1.5" /> Message
+                              </Button>
+                              <Button
+                                  className="flex-1 h-10 rounded-none bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs"
+                                  onClick={() => { handleEdit(detailMember); setDetailMember(null); }}
+                              >
+                                  <Edit size={14} className="mr-1.5" /> Edit
+                              </Button>
+                              <Button
+                                  variant="outline"
+                                  className="w-full h-10 rounded-none border-amber-200 text-amber-700 hover:bg-amber-50 font-bold text-xs"
+                                  onClick={() => { setSelectedMember(detailMember); setShowVault(true); setDetailMember(null); }}
+                              >
+                                  <FileText size={14} className="mr-1.5" /> Documents Vault
+                              </Button>
+                          </div>
+                      </>
+                  )}
+              </SheetContent>
+          </Sheet>
         </div>
     );
 };

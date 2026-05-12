@@ -254,10 +254,13 @@ const ShiftsAdminPage = () => {
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                             {shifts.map((shift, i) => (
                                 <motion.div key={shift.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
-                                    <Card className="border border-slate-100 shadow-2xl rounded-[3rem] bg-white overflow-hidden p-0 group h-full flex flex-col">
+                                    <Card
+                                        onClick={() => { setSelectedShift(shift); setNewShift(shift); setIsShiftOpen(true); }}
+                                        className="border border-slate-100 shadow-2xl rounded-[3rem] bg-white overflow-hidden p-0 group h-full flex flex-col cursor-pointer"
+                                    >
                                         <div className="p-8 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
                                             <h3 className="text-2xl font-black text-slate-900 tracking-tight">{shift.name}</h3>
-                                            <div className="flex gap-2">
+                                            <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                                                 <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-300 hover:text-rose-500" onClick={() => deleteShift(shift.id)}>
                                                     <Trash2 size={16} />
                                                 </Button>

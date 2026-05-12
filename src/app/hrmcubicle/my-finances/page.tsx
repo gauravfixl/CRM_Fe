@@ -40,6 +40,13 @@ import {
   DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu";
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/shared/components/ui/sheet";
 
 import { useMeStore } from "@/shared/data/me-store";
 
@@ -73,6 +80,8 @@ const MyFinancesPage = () => {
     { id: '1', type: 'Travel', amount: 4500, date: '2026-01-15', status: 'Approved', description: 'Client meeting travel' },
     { id: '2', type: 'Medical', amount: 2000, date: '2026-01-10', status: 'Pending', description: 'Medicine bills' },
   ]);
+  const [selectedClaim, setSelectedClaim] = useState<any | null>(null);
+  const [selectedPayslip, setSelectedPayslip] = useState<any | null>(null);
 
   const stats = [
     { label: "Annual CTC", value: finances.salary.ytd, color: "text-purple-700", cardBg: "bg-purple-100", icon: DollarSign },
@@ -333,7 +342,10 @@ const MyFinancesPage = () => {
                       };
                       return (
                         <motion.div key={claim.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="h-full">
-                          <Card className={`rounded-2xl border-none ${getCardStyle(claim.type)} p-6 shadow-sm group hover:shadow-md transition-all text-start relative overflow-hidden h-full`}>
+                          <Card
+                            onClick={() => setSelectedClaim(claim)}
+                            className={`rounded-2xl border-none ${getCardStyle(claim.type)} p-6 shadow-sm group hover:shadow-md transition-all text-start relative overflow-hidden h-full cursor-pointer`}
+                          >
                             <div className="flex justify-between items-start mb-6 text-start">
                               <div className="h-10 w-10 bg-white rounded-xl flex items-center justify-center text-slate-400 group-hover:text-slate-600 transition-colors shadow-sm">
                                 <Receipt size={18} />
@@ -347,7 +359,7 @@ const MyFinancesPage = () => {
                                     variant="ghost"
                                     size="icon"
                                     className="h-8 w-8 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-white transition-all"
-                                    onClick={() => handleCancelClaim(claim.id)}
+                                    onClick={(e) => { e.stopPropagation(); handleCancelClaim(claim.id); }}
                                   >
                                     <Trash2 size={14} />
                                   </Button>
@@ -389,7 +401,7 @@ const MyFinancesPage = () => {
                         <div
                           key={i}
                           className="flex items-center justify-between p-4 bg-slate-50 hover:bg-white hover:shadow-xl hover:shadow-indigo-500/5 border border-transparent hover:border-slate-100 rounded-2xl transition-all cursor-pointer group text-start"
-                          onClick={() => toast({ title: "Opening Payslip", description: `Viewing payslip for ${slip.month}...` })}
+                          onClick={() => setSelectedPayslip(slip)}
                         >
                           <div className="flex items-center gap-4 text-start">
                             <div className="h-10 w-10 bg-white rounded-xl flex items-center justify-center text-slate-300 group-hover:text-indigo-600 transition-colors shadow-sm">
@@ -451,6 +463,120 @@ const MyFinancesPage = () => {
           </div>
         </div>
       </ScrollArea>
+
+      {/* 🪟 Slide-in: Claim Details */}
+      <Sheet open={!!selectedClaim} onOpenChange={(open) => !open && setSelectedClaim(null)}>
+        <SheetContent side="right" className="w-full sm:max-w-md bg-white rounded-none border-l border-slate-200 p-0 flex flex-col">
+          {selectedClaim && (
+            <>
+              <SheetHeader className="p-6 border-b border-slate-100 bg-slate-50/50">
+                <Badge className={`w-fit text-[10px] font-bold ${selectedClaim.status === 'Approved' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'} border-none`}>
+                  {selectedClaim.status}
+                </Badge>
+                <SheetTitle className="text-lg font-bold text-slate-900 tracking-tight text-start mt-2">{selectedClaim.type} Claim</SheetTitle>
+                <SheetDescription className="text-xs font-medium text-slate-500 text-start">Reference #{selectedClaim.id}</SheetDescription>
+              </SheetHeader>
+              <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                <div className="p-5 bg-indigo-50 border border-indigo-100 rounded-none text-center">
+                  <p className="text-[10px] font-bold text-indigo-700 uppercase tracking-wide mb-1">Amount</p>
+                  <p className="text-3xl font-bold text-indigo-900">{formatINR(selectedClaim.amount)}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-3 bg-white border border-slate-100 rounded-none">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Category</p>
+                    <p className="text-xs font-bold text-slate-800 mt-1">{selectedClaim.type}</p>
+                  </div>
+                  <div className="p-3 bg-white border border-slate-100 rounded-none">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Date</p>
+                    <p className="text-xs font-bold text-slate-800 mt-1">{new Date(selectedClaim.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                  </div>
+                </div>
+                <div className="p-4 bg-slate-50 border border-slate-100 rounded-none">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-2">Description</p>
+                  <p className="text-xs font-medium text-slate-700 leading-relaxed">{selectedClaim.description}</p>
+                </div>
+              </div>
+              <div className="p-4 border-t border-slate-100 bg-slate-50/50 flex gap-2">
+                <Button
+                  variant="outline"
+                  className="flex-1 h-10 rounded-none border-slate-200 text-slate-700 font-bold text-xs"
+                  onClick={() => setSelectedClaim(null)}
+                >
+                  Close
+                </Button>
+                {selectedClaim.status === 'Pending' && (
+                  <Button
+                    variant="outline"
+                    className="flex-1 h-10 rounded-none border-rose-200 text-rose-600 hover:bg-rose-50 font-bold text-xs"
+                    onClick={() => {
+                      handleCancelClaim(selectedClaim.id);
+                      setSelectedClaim(null);
+                    }}
+                  >
+                    <Trash2 size={14} className="mr-1.5" /> Cancel
+                  </Button>
+                )}
+              </div>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
+
+      {/* 🪟 Slide-in: Payslip Details */}
+      <Sheet open={!!selectedPayslip} onOpenChange={(open) => !open && setSelectedPayslip(null)}>
+        <SheetContent side="right" className="w-full sm:max-w-md bg-white rounded-none border-l border-slate-200 p-0 flex flex-col">
+          {selectedPayslip && (
+            <>
+              <SheetHeader className="p-6 border-b border-slate-100 bg-slate-50/50">
+                <Badge className="w-fit text-[10px] font-bold bg-emerald-100 text-emerald-700 border-none">Paid</Badge>
+                <SheetTitle className="text-lg font-bold text-slate-900 tracking-tight text-start mt-2">{selectedPayslip.month} Payslip</SheetTitle>
+                <SheetDescription className="text-xs font-medium text-slate-500 text-start">Net pay credited to bank account</SheetDescription>
+              </SheetHeader>
+              <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                <div className="p-5 bg-emerald-50 border border-emerald-100 rounded-none text-center">
+                  <p className="text-[10px] font-bold text-emerald-700 uppercase tracking-wide mb-1">Net Pay</p>
+                  <p className="text-3xl font-bold text-emerald-900">{selectedPayslip.net}</p>
+                </div>
+                <div className="p-4 bg-slate-50 border border-slate-100 rounded-none">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-3">Quick Breakdown</p>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-slate-500 font-medium">Gross Salary</span>
+                      <span className="font-bold text-slate-800">{finances.salary.ytd}</span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-slate-500 font-medium">Deductions</span>
+                      <span className="font-bold text-rose-600">{finances.salary.deductions}</span>
+                    </div>
+                    <div className="h-px bg-slate-200 my-2" />
+                    <div className="flex justify-between text-xs">
+                      <span className="text-slate-700 font-bold">Take Home</span>
+                      <span className="font-bold text-emerald-700">{selectedPayslip.net}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="p-4 border-t border-slate-100 bg-slate-50/50 flex gap-2">
+                <Button
+                  variant="outline"
+                  className="flex-1 h-10 rounded-none border-slate-200 text-slate-700 font-bold text-xs"
+                  onClick={() => setSelectedPayslip(null)}
+                >
+                  Close
+                </Button>
+                <Button
+                  className="flex-1 h-10 rounded-none bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs"
+                  onClick={() => {
+                    toast({ title: 'Download Started', description: `Downloading payslip for ${selectedPayslip.month}.` });
+                  }}
+                >
+                  <Download size={14} className="mr-1.5" /> Download PDF
+                </Button>
+              </div>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };

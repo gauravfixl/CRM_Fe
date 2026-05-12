@@ -28,6 +28,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/shared/components/ui/sheet";
 
 interface LeaveRequest {
   id: string;
@@ -53,6 +60,7 @@ const MyLeavePage = () => {
     endDate: '',
     reason: ''
   });
+  const [selectedLeave, setSelectedLeave] = useState<any | null>(null);
 
   useEffect(() => {
     loadMyLeave().catch((err) => {
@@ -348,7 +356,10 @@ const MyLeavePage = () => {
 
             return filteredRequests.map((leave, i) => (
               <motion.div key={leave.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}>
-                <div className="p-6 bg-slate-50/30 rounded-2xl border border-slate-100 hover:border-indigo-100 hover:bg-white hover:shadow-xl hover:shadow-indigo-500/5 transition-all group">
+                <div
+                  onClick={() => setSelectedLeave(leave)}
+                  className="p-6 bg-slate-50/30 rounded-2xl border border-slate-100 hover:border-indigo-100 hover:bg-white hover:shadow-xl hover:shadow-indigo-500/5 transition-all group cursor-pointer"
+                >
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-5">
                       <div className="h-14 w-14 bg-white rounded-2xl flex items-center justify-center shadow-md group-hover:scale-110 transition-transform duration-300 ring-1 ring-slate-100">
@@ -374,18 +385,20 @@ const MyLeavePage = () => {
                     <div className="flex flex-col items-end gap-4">
                       {getStatusBadge(leave.status)}
                       {leave.status === 'Pending' && (
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-white hover:shadow-md border border-transparent hover:border-slate-100 transition-all">
-                              <MoreVertical size={18} className="text-slate-400" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="rounded-xl border-slate-200">
-                            <DropdownMenuItem className="text-rose-600 font-bold p-3 rounded-lg cursor-pointer focus:bg-rose-50" onClick={() => handleCancel(leave.id)}>
-                              <Trash2 size={16} className="mr-2" /> Cancel Request
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-white hover:shadow-md border border-transparent hover:border-slate-100 transition-all">
+                                <MoreVertical size={18} className="text-slate-400" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="rounded-xl border-slate-200">
+                              <DropdownMenuItem className="text-rose-600 font-bold p-3 rounded-lg cursor-pointer focus:bg-rose-50" onClick={() => handleCancel(leave.id)}>
+                                <Trash2 size={16} className="mr-2" /> Cancel Request
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -399,6 +412,99 @@ const MyLeavePage = () => {
           })()}
         </div>
       </Card>
+
+      {/* 🪟 Slide-in: Leave Request Details */}
+      <Sheet open={!!selectedLeave} onOpenChange={(open) => !open && setSelectedLeave(null)}>
+        <SheetContent side="right" className="w-full sm:max-w-md bg-white rounded-none border-l border-slate-200 p-0 flex flex-col">
+          {selectedLeave && (
+            <>
+              <SheetHeader className="p-6 border-b border-slate-100 bg-slate-50/50">
+                <div className="flex items-center gap-2 mb-2">
+                  {getStatusBadge(selectedLeave.status)}
+                  <Badge className="bg-indigo-100 text-indigo-700 border-none text-[10px] font-bold">
+                    {selectedLeave.days} {selectedLeave.days === 1 ? 'Day' : 'Days'}
+                  </Badge>
+                </div>
+                <SheetTitle className="text-lg font-bold text-slate-900 tracking-tight text-start">{selectedLeave.type}</SheetTitle>
+                <SheetDescription className="text-xs font-medium text-slate-500 text-start">
+                  Applied on {new Date(selectedLeave.appliedOn).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                </SheetDescription>
+              </SheetHeader>
+              <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-4 bg-white border border-slate-100 rounded-none">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">Start Date</p>
+                    <p className="text-sm font-bold text-slate-800">
+                      {new Date(selectedLeave.startDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    </p>
+                  </div>
+                  <div className="p-4 bg-white border border-slate-100 rounded-none">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">End Date</p>
+                    <p className="text-sm font-bold text-slate-800">
+                      {new Date(selectedLeave.endDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    </p>
+                  </div>
+                </div>
+                <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-none">
+                  <p className="text-[10px] font-bold text-indigo-700 uppercase tracking-wide mb-1">Total Days</p>
+                  <p className="text-2xl font-bold text-indigo-900">{selectedLeave.days}</p>
+                </div>
+                <div className="p-4 bg-slate-50 border border-slate-100 rounded-none">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-2">Reason</p>
+                  <p className="text-xs font-medium text-slate-700 leading-relaxed">{selectedLeave.reason}</p>
+                </div>
+                <div className="p-4 bg-white border border-slate-100 rounded-none">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-3">Activity</p>
+                  <div className="space-y-3">
+                    <div className="flex items-start gap-3">
+                      <div className="h-2 w-2 rounded-full bg-indigo-500 mt-1.5 shrink-0" />
+                      <div>
+                        <p className="text-xs font-bold text-slate-800">Application submitted</p>
+                        <p className="text-[10px] text-slate-400 font-medium">{new Date(selectedLeave.appliedOn).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <div className={`h-2 w-2 rounded-full mt-1.5 shrink-0 ${
+                        selectedLeave.status === 'Approved' ? 'bg-emerald-500' :
+                        selectedLeave.status === 'Rejected' ? 'bg-rose-500' :
+                        selectedLeave.status === 'Cancelled' ? 'bg-slate-400' :
+                        'bg-amber-500'
+                      }`} />
+                      <div>
+                        <p className="text-xs font-bold text-slate-800">{selectedLeave.status}</p>
+                        <p className="text-[10px] text-slate-400 font-medium">
+                          {selectedLeave.status === 'Pending' ? 'Awaiting manager review' : 'Status updated'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="p-4 border-t border-slate-100 bg-slate-50/50 flex gap-2">
+                <Button
+                  variant="outline"
+                  className="flex-1 h-10 rounded-none border-slate-200 text-slate-700 font-bold text-xs"
+                  onClick={() => setSelectedLeave(null)}
+                >
+                  Close
+                </Button>
+                {selectedLeave.status === 'Pending' && (
+                  <Button
+                    variant="outline"
+                    className="flex-1 h-10 rounded-none border-rose-200 text-rose-600 hover:bg-rose-50 font-bold text-xs"
+                    onClick={() => {
+                      handleCancel(selectedLeave.id);
+                      setSelectedLeave(null);
+                    }}
+                  >
+                    <Trash2 size={14} className="mr-1.5" /> Cancel
+                  </Button>
+                )}
+              </div>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };

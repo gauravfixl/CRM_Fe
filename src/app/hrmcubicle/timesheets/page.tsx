@@ -630,7 +630,11 @@ const TimesheetsPage = () => {
                                         ) : filteredHistory.map(h => {
                                             const pct = h.totalHours > 0 ? Math.round((h.billableHours / h.totalHours) * 100) : 0;
                                             return (
-                                                <TableRow key={h.id} className="hover:bg-slate-50/50">
+                                                <TableRow
+                                                    key={h.id}
+                                                    onClick={() => toast({ title: "Timesheet Details", description: `Viewing ${h.id} for ${h.week}.` })}
+                                                    className="hover:bg-slate-50/50 cursor-pointer"
+                                                >
                                                     <TableCell className="font-mono text-xs text-slate-500">{h.id}</TableCell>
                                                     <TableCell className="font-bold text-slate-700">{h.week}</TableCell>
                                                     <TableCell className="text-sm text-slate-500">{h.submittedOn}</TableCell>

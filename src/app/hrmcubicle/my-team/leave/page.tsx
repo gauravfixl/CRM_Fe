@@ -308,7 +308,11 @@ const TeamLeavePage = () => {
                                     {pendingLeaves.map((leave) => {
                                         const member = (members || []).find(m => m.id === leave.empId);
                                         return (
-                                            <Card key={leave.id} className="border-none shadow-sm hover:shadow-xl transition-all duration-300 rounded-2xl bg-white p-6 group overflow-hidden relative border border-white/50">
+                                            <Card
+                                                key={leave.id}
+                                                onClick={() => handleViewApplication(leave)}
+                                                className="border-none shadow-sm hover:shadow-xl transition-all duration-300 rounded-2xl bg-white p-6 group overflow-hidden relative border border-white/50 cursor-pointer"
+                                            >
                                                 <div className="absolute top-0 right-0 w-24 h-24 bg-amber-50 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
 
                                                 <div className="flex items-start justify-between mb-6 relative z-10">
@@ -341,7 +345,7 @@ const TeamLeavePage = () => {
                                                         </div>
                                                     </div>
 
-                                                    <div className="flex gap-3 mt-2">
+                                                    <div className="flex gap-3 mt-2" onClick={(e) => e.stopPropagation()}>
                                                         <Button
                                                             className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl h-11 text-xs shadow-md border-none transition-all tracking-wide"
                                                             onClick={() => handleAction(leave.id, 'Approve')}
@@ -406,7 +410,11 @@ const TeamLeavePage = () => {
                                             {processedLeaves.length === 0 ? (
                                                 <tr><td colSpan={6} className="text-center py-12 text-xs text-slate-400 font-bold">No processed leaves yet.</td></tr>
                                             ) : processedLeaves.map((leave) => (
-                                                <tr key={leave.id} className="hover:bg-slate-50/50 transition-colors group">
+                                                <tr
+                                                    key={leave.id}
+                                                    onClick={() => handleViewApplication(leave)}
+                                                    className="hover:bg-slate-50/50 transition-colors group cursor-pointer"
+                                                >
                                                     <td className="px-6 py-5">
                                                         <div className="flex items-center gap-3">
                                                             <Avatar className="h-9 w-9 ring-2 ring-slate-50 shadow-sm bg-indigo-50 text-indigo-700 font-bold text-[10px]">

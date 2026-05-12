@@ -55,6 +55,7 @@ const MasterAttendancePage = () => {
   const [filterDept, setFilterDept] = useState("All Departments");
   const [filterStatus, setFilterStatus] = useState("All Status");
   const [filterType, setFilterType] = useState<"All" | "Discrepancy" | "Regularization">("All");
+  const [detailLog, setDetailLog] = useState<AttendanceLog | null>(null);
 
   // Edit dialog state
   const [editingLog, setEditingLog] = useState<AttendanceLog | null>(null);
@@ -335,7 +336,8 @@ const MasterAttendancePage = () => {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: i * 0.02 }}
-                  className="group hover:bg-slate-50/50 transition-colors"
+                  onClick={() => setDetailLog(log)}
+                  className="group hover:bg-slate-50/50 transition-colors cursor-pointer"
                 >
                   <td className="p-8">
                     <div className="flex items-center gap-5">
@@ -395,7 +397,7 @@ const MasterAttendancePage = () => {
                       </div>
                     )}
                   </td>
-                  <td className="p-8 text-right">
+                  <td className="p-8 text-right" onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center justify-end gap-2">
                       {log.regularizationStatus === 'Pending' ? (
                         <div className="flex items-center gap-2 bg-indigo-50 p-2 rounded-2xl border border-indigo-100 shadow-sm animate-in fade-in slide-in-from-right-4">

@@ -327,7 +327,11 @@ const OrganisationDashboard = () => {
                                         const deptCount = employees.filter(e => e.departmentId === dept.id).length;
                                         const percentage = metrics.totalHeadcount > 0 ? (deptCount / metrics.totalHeadcount) * 100 : 0;
                                         return (
-                                            <div key={i} className="space-y-3">
+                                            <div
+                                                key={i}
+                                                onClick={() => router.push(`/hrmcubicle/organization/departments/${dept.id}`)}
+                                                className="space-y-3 cursor-pointer hover:bg-slate-50/50 -mx-2 px-2 py-2 rounded-lg transition-colors"
+                                            >
                                                 <div className="flex justify-between items-center">
                                                     <div className="flex items-center gap-3">
                                                         <div className="h-8 w-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center font-black text-[9px]">

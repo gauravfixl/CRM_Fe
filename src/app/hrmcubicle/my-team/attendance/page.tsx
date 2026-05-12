@@ -76,6 +76,8 @@ const TeamAttendancePage = () => {
     const [logsOpen, setLogsOpen] = useState(false);
     const [correctionOpen, setCorrectionOpen] = useState(false);
     const [selectedMember, setSelectedMember] = useState<any>(null);
+    const [detailRecord, setDetailRecord] = useState<any | null>(null);
+    const [detailReg, setDetailReg] = useState<RegularizationRequest | null>(null);
 
     // Correction form state
     const [correctionStatus, setCorrectionStatus] = useState<'Present' | 'Absent' | 'On Leave'>('Present');
@@ -258,7 +260,10 @@ const TeamAttendancePage = () => {
                                 if (!member) return null;
                                 return (
                                     <motion.div key={record.empId} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}>
-                                        <div className="flex items-center justify-between p-4 bg-white rounded-2xl hover:shadow-lg transition-all group border border-white/50 mx-2">
+                                        <div
+                                            onClick={() => setDetailRecord({ ...record, member })}
+                                            className="flex items-center justify-between p-4 bg-white rounded-2xl hover:shadow-lg transition-all group border border-white/50 mx-2 cursor-pointer"
+                                        >
                                             <div className="flex items-center gap-4 text-start">
                                                 <Avatar className="h-11 w-11 ring-2 ring-slate-50 shadow-md bg-indigo-50 text-indigo-700 font-bold text-xs">
                                                     <AvatarFallback>{member.avatar}</AvatarFallback>
@@ -278,7 +283,7 @@ const TeamAttendancePage = () => {
                                                 </Badge>
                                                 <DropdownMenu>
                                                     <DropdownMenuTrigger asChild>
-                                                        <Button variant="ghost" size="icon" className="rounded-xl h-8 w-8 hover:bg-slate-50 opacity-0 group-hover:opacity-100 transition-all border-none">
+                                                        <Button variant="ghost" size="icon" className="rounded-xl h-8 w-8 hover:bg-slate-50 opacity-0 group-hover:opacity-100 transition-all border-none" onClick={(e) => e.stopPropagation()}>
                                                             <MoreVertical size={16} className="text-slate-400" />
                                                         </Button>
                                                     </DropdownMenuTrigger>
@@ -317,7 +322,10 @@ const TeamAttendancePage = () => {
                                 <div className="text-center py-8 text-xs font-bold text-slate-400">All caught up! No pending fixes.</div>
                             ) : pendingRegs.map((req, idx) => (
                                 <motion.div key={req.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.1 }}>
-                                    <div className="bg-white p-5 rounded-2xl border border-white/50 text-start shadow-sm hover:shadow-md transition-all">
+                                    <div
+                                        onClick={() => setDetailReg(req)}
+                                        className="bg-white p-5 rounded-2xl border border-white/50 text-start shadow-sm hover:shadow-md transition-all cursor-pointer"
+                                    >
                                         <div className="flex justify-between items-start mb-3">
                                             <div>
                                                 <h4 className="font-bold text-slate-900 text-[13px] leading-tight capitalize">{req.empName}</h4>
@@ -326,7 +334,7 @@ const TeamAttendancePage = () => {
                                             <Badge variant="outline" className="text-[9px] border-indigo-200 text-indigo-600 font-bold tracking-widest shadow-none bg-indigo-50 px-2 py-0.5">FIX</Badge>
                                         </div>
                                         <p className="text-[13px] text-slate-500 mb-5 font-bold border-l-4 border-rose-200 pl-3 leading-relaxed opacity-80">{req.reason}</p>
-                                        <div className="grid grid-cols-2 gap-3">
+                                        <div className="grid grid-cols-2 gap-3" onClick={(e) => e.stopPropagation()}>
                                             <Button
                                                 className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl h-10 text-[11px] shadow-sm tracking-wide"
                                                 onClick={() => handleApproveRegularization(req)}

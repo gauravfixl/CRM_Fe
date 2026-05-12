@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "cross-env NODE_OPTIONS=--max-old-space-size=8192 next build",
+    "build": "cross-env NODE_OPTIONS=\"--max-old-space-size=8192 --max-semi-space-size=512\" next build",
     "dev": "next dev",
     "lint": "next lint",
     "start": "next start"

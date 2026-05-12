@@ -615,9 +615,10 @@ const OfferLettersPage: React.FC = () => {
                                         return (
                                             <TableRow
                                                 key={offer.id}
-                                                className="border-slate-100 hover:bg-slate-50/50 group"
+                                                onClick={() => setActiveOfferId(offer.id)}
+                                                className="border-slate-100 hover:bg-slate-50/50 group cursor-pointer"
                                             >
-                                                <TableCell className="pl-5">
+                                                <TableCell className="pl-5" onClick={(e) => e.stopPropagation()}>
                                                     <button
                                                         onClick={() => toggleSelect(offer.id)}
                                                         className="text-slate-400 hover:text-violet-600"

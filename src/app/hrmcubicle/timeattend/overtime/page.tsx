@@ -260,7 +260,7 @@ const OvertimeAdminPage = () => {
                                     <td className="p-8 text-center text-xl font-bold text-slate-900 tracking-tight leading-none">
                                         ₹{r.estimatedPayout.toLocaleString()}
                                     </td>
-                                    <td className="p-8 text-right">
+                                    <td className="p-8 text-right" onClick={(e) => e.stopPropagation()}>
                                         <div className="flex items-center justify-end gap-3">
                                             {r.status === 'Pending' ? (
                                                 <div className="flex gap-2 animate-in fade-in slide-in-from-right-4">

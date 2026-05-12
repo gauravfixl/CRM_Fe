@@ -415,7 +415,8 @@ const LeavePage = () => {
                                                 layout
                                                 initial={{ opacity: 0 }}
                                                 animate={{ opacity: 1 }}
-                                                className="border-slate-50 group hover:bg-slate-50/30 transition-colors"
+                                                onClick={() => openDetails(req)}
+                                                className="border-slate-50 group hover:bg-slate-50/30 transition-colors cursor-pointer"
                                             >
                                                 <TableCell className="p-10">
                                                     <div className="font-bold text-slate-900 text-xl tracking-tight">{req.employee}</div>
@@ -437,7 +438,7 @@ const LeavePage = () => {
                                                     <div className="text-xs font-bold text-indigo-500 mt-2 bg-indigo-50 w-fit px-3 py-1 rounded-full">{req.days} Day(s) cycle</div>
                                                 </TableCell>
                                                 <TableCell className="p-10"><StatusBadge status={req.status} /></TableCell>
-                                                <TableCell className="p-10 text-right">
+                                                <TableCell className="p-10 text-right" onClick={(e) => e.stopPropagation()}>
                                                     <div className="flex justify-end items-center gap-4">
                                                         {req.status === "Pending" ? (
                                                             <>

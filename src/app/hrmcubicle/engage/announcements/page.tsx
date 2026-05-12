@@ -278,7 +278,10 @@ const AnnouncementsPage = () => {
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: idx * 0.1 }}
                                 >
-                                    <Card className={`group relative rounded-[2rem] border-2 border-slate-100 shadow-sm hover:shadow-xl transition-all duration-500 bg-white overflow-hidden ${ann.status === 'Archived' ? 'opacity-70 bg-slate-50' : ''} ${ann.pinned ? 'border-indigo-200 ring-4 ring-indigo-50' : ''}`}>
+                                    <Card
+                                        onClick={() => { setSelectedAnn(ann); setFormData({ ...ann }); setIsDialogOpen(true); }}
+                                        className={`group relative rounded-[2rem] border-2 border-slate-100 shadow-sm hover:shadow-xl transition-all duration-500 bg-white overflow-hidden cursor-pointer ${ann.status === 'Archived' ? 'opacity-70 bg-slate-50' : ''} ${ann.pinned ? 'border-indigo-200 ring-4 ring-indigo-50' : ''}`}
+                                    >
                                         <CardContent className="p-4 px-5">
                                             {/* Header */}
                                             <div className="flex justify-between items-start mb-3">
@@ -296,7 +299,7 @@ const AnnouncementsPage = () => {
                                                 </div>
                                                 <DropdownMenu>
                                                     <DropdownMenuTrigger asChild>
-                                                        <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-300 hover:text-slate-600 hover:bg-slate-50 rounded-lg">
+                                                        <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-300 hover:text-slate-600 hover:bg-slate-50 rounded-lg" onClick={(e) => e.stopPropagation()}>
                                                             <MoreHorizontal size={16} />
                                                         </Button>
                                                     </DropdownMenuTrigger>
@@ -326,7 +329,7 @@ const AnnouncementsPage = () => {
                                             </div>
 
                                             {/* Footer */}
-                                            <div className="flex items-center justify-between">
+                                            <div className="flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
                                                 <div className="flex items-center gap-3">
                                                     <div className="flex items-center gap-1.5 text-slate-400">
                                                         <Eye size={10} />
